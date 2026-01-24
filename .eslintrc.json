@@ -1,0 +1,135 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "boundaries", "import"],
+  "settings": {
+    "import/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true
+      }
+    },
+    "boundaries/elements": [
+      {
+        "type": "contract",
+        "pattern": "packages/contracts/src/published/common/**/*"
+      },
+      {
+        "type": "validation",
+        "pattern": "packages/validation/src/**/*"
+      },
+      {
+        "type": "domain",
+        "pattern": "apps/backend/src/domains/*/domain/**/*"
+      },
+      {
+        "type": "application",
+        "pattern": "apps/backend/src/domains/*/application/**/*"
+      },
+      {
+        "type": "infrastructure",
+        "pattern": "apps/backend/src/domains/*/infrastructure/**/*"
+      },
+      {
+        "type": "people",
+        "pattern": "apps/backend/src/domains/core/people/**/*"
+      },
+      {
+        "type": "shared",
+        "pattern": "apps/backend/src/shared/**/*"
+      }
+    ]
+  },
+  "rules": {
+    "boundaries/entry-point": [
+      2,
+      {
+        "default": "disallow",
+        "rules": [
+          {
+            "target": ["contract", "validation", "domain", "application", "infrastructure", "shared", "people"],
+            "allow": "index.ts"
+          },
+          {
+             "target": ["domain", "application", "infrastructure", "people"],
+             "allow": "**/*.ts"
+          }
+        ]
+      }
+    ],
+    "boundaries/element-types": [
+      2,
+      {
+        "default": "disallow",
+        "rules": [
+          {
+            "from": "domain",
+            "allow": ["domain"]
+          },
+          {
+            "from": "application",
+            "allow": ["domain", "application", "contract"]
+          },
+          {
+            "from": "infrastructure",
+            "allow": ["domain", "application", "infrastructure", "contract", "validation", "shared"]
+          },
+          {
+            "from": "shared",
+            "allow": ["shared", "contract"]
+          },
+          {
+            "from": "people",
+            "allow": ["people", "domain", "application", "contract", "shared"]
+          }
+        ]
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["**/infrastructure/**"],
+            "message": "Domain and Application layers cannot import from Infrastructure."
+          },
+          {
+            "group": ["apps/backend/src/domains/*/domain/*", "!apps/backend/src/domains/*/domain/index.ts"],
+            "message": "Deep imports into domain are forbidden. Import from the layer index instead."
+          },
+          {
+            "group": ["apps/backend/src/domains/*/application/*", "!apps/backend/src/domains/*/application/index.ts"],
+            "message": "Deep imports into application are forbidden. Import from the layer index instead."
+          },
+          {
+            "group": ["apps/backend/src/domains/core/people/**", "!apps/backend/src/domains/core/people/**/index.ts"],
+            "message": "Deep imports into people domain are forbidden. Import from the layer index instead."
+          },
+          {
+            "group": ["@banijjik/contracts/src/**/*"],
+            "message": "Deep imports are forbidden. Use '@banijjik/contracts' instead."
+          },
+          {
+            "group": ["@banijjik/validation/src/**/*"],
+            "message": "Deep imports are forbidden. Use '@banijjik/validation' instead."
+          }
+        ]
+      }
+    ],
+    "import/no-internal-modules": [
+      "error",
+      {
+        "allow": [
+          "@banijjik/contracts",
+          "@banijjik/validation",
+          "@banijjik/i18n",
+          "@identity/domain",
+          "@identity/application",
+          "@identity/application/dto",
+          "@identity/infrastructure",
+          "@people/*",
+          "@shared/*"
+        ]
+      }
+    ]
+  }
+}

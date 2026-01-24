@@ -1,0 +1,25 @@
+{
+  "validation": {
+    "common": {
+      "required": "This field is required",
+      "invalid_format": "Invalid format provided"
+    },
+    "user": {
+      "first_name_required": "First name is required",
+      "first_name_max": "First name cannot exceed 50 characters",
+      "last_name_max": "Last name cannot exceed 50 characters",
+      "email_required": "Email is required",
+      "email_invalid": "Please provide a valid email",
+      "email_already_exists": "This email is already registered",
+      "phone_required": "Phone number is required",
+      "phone_invalid": "Please provide a valid phone number",
+      "password_min": "Password must be at least 8 characters long",
+      "password_uppercase": "Password must contain at least one uppercase letter",
+      "password_number": "Password must contain at least one number",
+      "password_mismatch": "Passwords do not match",
+      "current_password_required": "Current password is required",
+      "invalid_credentials": "Invalid email or password",
+      "account_disabled": "Your account is disabled or deleted"
+    }
+  }
+}

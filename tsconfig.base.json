@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "outDir": "dist",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@banijjik/contracts": ["./packages/contracts/src/index.ts"],
+      "@banijjik/validation": ["./packages/validation/src/index.ts"],
+      "@banijjik/i18n": ["./packages/i18n/src/index.ts"],
+      "@identity/*": ["./apps/backend/src/domains/core/identity/*"],
+      "@people/*": ["./apps/backend/src/domains/core/people/*"],
+      "@shared": ["./apps/backend/src/shared/index.ts"],
+      "@shared/*": ["./apps/backend/src/shared/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build"]
+}

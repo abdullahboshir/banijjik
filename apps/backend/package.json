@@ -1,0 +1,28 @@
+{
+  "name": "@banijjik/backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --exec \"node --import tsx\" src/server.ts",
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@banijjik/contracts": "*",
+    "@banijjik/validation": "*",
+    "express": "^5.1.0",
+    "mongoose": "^8.19.4",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^6.0.0",
+    "zod": "4.3.5",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/bcrypt": "^6.0.0",
+    "nodemon": "^3.1.11",
+    "tsx": "^4.20.6",
+    "typescript": "^5.0.0"
+  }
+}

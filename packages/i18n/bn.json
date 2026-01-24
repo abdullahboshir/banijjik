@@ -1,0 +1,25 @@
+{
+  "validation": {
+    "common": {
+      "required": "এই ক্ষেত্রটি আবশ্যক",
+      "invalid_format": "সঠিক ফরম্যাট প্রদান করুন"
+    },
+    "user": {
+      "first_name_required": "প্রথম নাম আবশ্যক",
+      "first_name_max": "প্রথম নাম ৫০ অক্ষরের বেশি হতে পারবে না",
+      "last_name_max": "শেষ নাম ৫০ অক্ষরের বেশি হতে পারবে না",
+      "email_required": "ইমেইল আবশ্যক",
+      "email_invalid": "সঠিক ইমেইল প্রদান করুন",
+      "email_already_exists": "এই ইমেইল ইতোমধ্যে নিবন্ধিত আছে",
+      "phone_required": "ফোন নম্বর আবশ্যক",
+      "phone_invalid": "সঠিক ফোন নম্বর ফরম্যাট প্রদান করুন",
+      "password_min": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে",
+      "password_uppercase": "পাসওয়ার্ডে কমপক্ষে একটি বড় হাতের অক্ষর থাকতে হবে",
+      "password_number": "পাসওয়ার্ডে কমপক্ষে একটি সংখ্যা থাকতে হবে",
+      "password_mismatch": "পাসওয়ার্ড মিলছে না",
+      "current_password_required": "বর্তমান পাসওয়ার্ড আবশ্যক",
+      "invalid_credentials": "ভুল ইমেইল অথবা পাসওয়ার্ড",
+      "account_disabled": "আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে"
+    }
+  }
+}
