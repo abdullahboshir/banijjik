@@ -28,7 +28,7 @@ export class Person {
   constructor(props: PersonProps) {
     this.props = {
       ...props,
-      status: props.status ?? UserStatus.ACTIVE,
+      status: props.status ?? UserStatus.VALUE.ACTIVE,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
       profiles: props.profiles ?? [],
