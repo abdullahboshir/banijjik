@@ -1,5 +1,6 @@
-import { LoginUseCase } from '../use-cases';
-import { LoginDto, LoginResponseDto } from '../dto';
+import { LoginUseCase } from "../use-cases";
+import { LoginDto } from "../dto";
+import { LoginResponseDto } from "@banijjik/contracts";
 
 export class LoginHandler {
   constructor(private readonly loginUseCase: LoginUseCase) {}

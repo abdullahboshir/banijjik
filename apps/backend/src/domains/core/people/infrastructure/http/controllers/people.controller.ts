@@ -1,20 +1,16 @@
-import { Request, Response } from 'express';
-import { JoinOrganizationUseCase, JoinOrganizationSchema } from '@people/application';
-import { createSuccessResponse, ValidationError } from '@shared';
+import { Request, Response } from "express";
+import { JoinOrganizationUseCase } from "@people/application";
+import { createSuccessResponse, ValidationError } from "@shared";
+import { JoinOrganizationSchema } from "@banijjik/validation";
 
 export class PeopleController {
-  constructor(
-    private readonly joinOrgUseCase: JoinOrganizationUseCase
-  ) {}
+  constructor(private readonly joinOrgUseCase: JoinOrganizationUseCase) {}
 
-  /**
-   * Register or Look up a person and join them to an organization
-   */
   async joinOrganization(req: Request, res: Response): Promise<void> {
     // 1. Validate Input
     const result = JoinOrganizationSchema.safeParse(req.body);
     if (!result.success) {
-      throw new ValidationError('Invalid join request', result.error.format());
+      throw new ValidationError("Invalid join request", result.error.format());
     }
 
     // 2. Execute Use Case

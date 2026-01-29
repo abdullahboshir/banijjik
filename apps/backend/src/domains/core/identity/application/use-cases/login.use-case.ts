@@ -1,12 +1,13 @@
-import { LoginDto, LoginResponseDto } from '../dto';
-import { IUserRepository, InvalidCredentialsError } from '@identity/domain';
-import { IPasswordHasher, IJwtService } from '../ports';
+import { LoginDto } from "../dto";
+import { IUserRepository, InvalidCredentialsError } from "@identity/domain";
+import { IPasswordHasher, IJwtService } from "../ports";
+import { LoginResponseDto } from "@banijjik/contracts";
 
 export class LoginUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly passwordHasher: IPasswordHasher,
-    private readonly jwtService: IJwtService
+    private readonly jwtService: IJwtService,
   ) {}
 
   async execute(dto: LoginDto): Promise<LoginResponseDto> {
@@ -18,11 +19,14 @@ export class LoginUseCase {
 
     // 2. Check if user is eligible to login (Domain Logic in Entity)
     if (!user.canLogin()) {
-      throw new Error('validation.user.account_disabled');
+      throw new Error("validation.user.account_disabled");
     }
 
     // 3. Verify Password
-    const isPasswordValid = await this.passwordHasher.compare(dto.password, user.getPassword() || '');
+    const isPasswordValid = await this.passwordHasher.compare(
+      dto.password,
+      user.getPassword() || "",
+    );
     if (!isPasswordValid) {
       throw new InvalidCredentialsError();
     }

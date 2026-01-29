@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
 export interface IPersonDoc extends Document {
   identityId: string;
@@ -12,19 +12,22 @@ export interface IPersonDoc extends Document {
   status: string;
 }
 
-const PersonSchema = new Schema<IPersonDoc>({
-  identityId: { type: String, required: true, index: true },
-  firstName: { type: String, required: true },
-  lastName: { type: String },
-  email: { type: String, required: true, unique: true },
-  phone: { type: String },
-  gender: { type: String },
-  dateOfBirth: { type: Date },
-  profilePicture: { type: String },
-  status: { type: String, default: 'active' }
-}, { timestamps: true });
+const PersonSchema = new Schema<IPersonDoc>(
+  {
+    identityId: { type: String, required: true, index: true },
+    firstName: { type: String, required: true },
+    lastName: { type: String },
+    email: { type: String, required: true, unique: true },
+    phone: { type: String },
+    gender: { type: String },
+    dateOfBirth: { type: Date },
+    profilePicture: { type: String },
+    status: { type: String, default: "active" },
+  },
+  { timestamps: true },
+);
 
-export const PersonModel = model<IPersonDoc>('Person', PersonSchema);
+export const PersonModel = model<IPersonDoc>("Person", PersonSchema);
 
 export interface IMemberProfileDoc extends Document {
   personId: Schema.Types.ObjectId;
@@ -35,21 +38,26 @@ export interface IMemberProfileDoc extends Document {
   joinedAt: Date;
 }
 
-const MemberProfileSchema = new Schema<IMemberProfileDoc>({
-  personId: { type: Schema.Types.ObjectId, ref: 'Person', required: true },
-  organizationId: { type: String, required: true, index: true },
-  type: { type: String, required: true },
-  metadata: { type: Schema.Types.Mixed, default: {} },
-  status: { 
-  type: String, 
-  enum: ['active', 'inactive', 'suspended'],
-  default: 'active'
-}
-,
-  joinedAt: { type: Date, default: Date.now }
-}, { timestamps: true });
+const MemberProfileSchema = new Schema<IMemberProfileDoc>(
+  {
+    personId: { type: Schema.Types.ObjectId, ref: "Person", required: true },
+    organizationId: { type: String, required: true, index: true },
+    type: { type: String, required: true },
+    metadata: { type: Schema.Types.Mixed, default: {} },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "suspended"],
+      default: "active",
+    },
+    joinedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true },
+);
 
 // Compound index for quick lookup of a person in an organization
 MemberProfileSchema.index({ personId: 1, organizationId: 1 }, { unique: true });
 
-export const MemberProfileModel = model<IMemberProfileDoc>('MemberProfile', MemberProfileSchema);
+export const MemberProfileModel = model<IMemberProfileDoc>(
+  "MemberProfile",
+  MemberProfileSchema,
+);

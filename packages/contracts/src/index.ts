@@ -1,15 +1,14 @@
 // 1. Common & Infrastructure Shapes
-export * from './common/api-response';
+export * from "./api-interface/common/api-response";
 
-// 2. Enums
-export * from './enums/index';
-
+// 2. Constants (formerly enums)
+export * from "./constants/index";
 
 // 3. Error Codes
-export * from './errors/error-code.enum';
+export * from "./errors/error-code.enum";
 
 // 4. API Interface (Core & Platform)
-export * from './api-interface/core/auth.contract';
-export * from './api-interface/core/people.contract';
-export * from './api-interface/core/identity.capabilities';
-export * from './api-interface/platform/billing.capabilities';
+export * from "./api-interface/core/auth";
+export * from "./api-interface/core/people";
+export * from "./api-interface/core/identity.capabilities";
+export * from "./api-interface/platform/billing.capabilities";

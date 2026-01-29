@@ -1,27 +1,19 @@
-export const USER_STATUS = [
-  'ACTIVE',
-  'PENDING',
-  'SUSPENDED',
-  'DELETED',
-] as const;
-
-type UserStatusType = typeof USER_STATUS[number];
+import { USER_STATUS_ENUM, UserStatusType } from "@banijjik/contracts";
 
 export class UserStatus {
-  private constructor(
-    private readonly value: UserStatusType
-  ) {}
+  private constructor(private readonly value: UserStatusType) {}
 
   // Registry
-  private static readonly registry: Record<UserStatusType, UserStatus> = (() => {
-    const map = {} as Record<UserStatusType, UserStatus>;
+  private static readonly registry: Record<UserStatusType, UserStatus> =
+    (() => {
+      const map = {} as Record<UserStatusType, UserStatus>;
 
-    for (const status of USER_STATUS) {
-      map[status] = new UserStatus(status);
-    }
+      for (const status of USER_STATUS_ENUM) {
+        map[status] = new UserStatus(status);
+      }
 
-    return map;
-  })();
+      return map;
+    })();
 
   // Friendly API
   static get VALUE(): Readonly<typeof UserStatus.registry> {

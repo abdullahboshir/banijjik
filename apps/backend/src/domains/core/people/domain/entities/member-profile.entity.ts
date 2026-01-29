@@ -1,17 +1,13 @@
-/**
- * MemberProfile Entity
- * Platinum Standard: Contextual role of a person within a specific business.
- */
-
-import { ProfileType } from '../value-objects';
+import { ProfileType } from "../value-objects";
+import { UserStatus } from "../value-objects";
 
 export interface IMemberProfileProps {
   id?: string;
   personId: string;
   organizationId: string;
   type: ProfileType;
-  metadata: Record<string, any>; // Dynamic business-specific data
-  status: 'active' | 'inactive' | 'suspended';
+  metadata: Record<string, any>;
+  status: UserStatus;
   joinedAt: Date;
 }
 
@@ -22,18 +18,33 @@ export class MemberProfile {
     this.props = {
       ...props,
       metadata: props.metadata || {},
-      status: props.status || 'active',
+      status: props.status || UserStatus.VALUE.ACTIVE,
       joinedAt: props.joinedAt || new Date(),
     };
   }
 
-  public get id(): string | undefined { return this.props.id; }
-  public get personId(): string { return this.props.personId; }
-  public get organizationId(): string { return this.props.organizationId; }
-  public get type(): ProfileType { return this.props.type; }
-  public get metadata(): Record<string, any> { return this.props.metadata; }
-  public get status(): 'active' | 'inactive' | 'suspended' { return this.props.status; }
-  public get joinedAt(): Date { return this.props.joinedAt; }
+  public get id(): string | undefined {
+    return this.props.id;
+  }
+  public get personId(): string {
+    return this.props.personId;
+  }
+  public get organizationId(): string {
+    return this.props.organizationId;
+  }
+  public get type(): ProfileType {
+    return this.props.type;
+  }
+  public get metadata(): Record<string, any> {
+    return this.props.metadata;
+  }
+
+  public get status(): UserStatus {
+    return this.props.status;
+  }
+  public get joinedAt(): Date {
+    return this.props.joinedAt;
+  }
 
   /**
    * Update metadata dynamically

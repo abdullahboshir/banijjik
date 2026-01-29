@@ -1,13 +1,25 @@
-import { User, IUserRepository, UniqueEmailPolicy, PasswordStrengthPolicy, Email, Password, UserName, Phone, EmailAlreadyExistsError, PasswordTooWeakError } from '@identity/domain';
-import { CreateUserDto, UserResponseDto } from '../dto';
-import { IPasswordHasher } from '../ports';
+import {
+  User,
+  IUserRepository,
+  UniqueEmailPolicy,
+  PasswordStrengthPolicy,
+  Email,
+  Password,
+  UserName,
+  Phone,
+  EmailAlreadyExistsError,
+  PasswordTooWeakError,
+} from "@identity/domain";
+import { CreateUserDto } from "../dto";
+import { IPasswordHasher } from "../ports";
+import { USER_STATUS, UserResponseDto } from "@banijjik/contracts";
 
 export class CreateUserUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly passwordHasher: IPasswordHasher,
     private readonly uniqueEmailPolicy: UniqueEmailPolicy,
-    private readonly passwordStrengthPolicy: PasswordStrengthPolicy
+    private readonly passwordStrengthPolicy: PasswordStrengthPolicy,
   ) {}
 
   async execute(dto: CreateUserDto): Promise<UserResponseDto> {
@@ -19,7 +31,9 @@ export class CreateUserUseCase {
 
     // 2. Business Policy: Password strength check (Secondary domain level check)
     if (!this.passwordStrengthPolicy.isSatisfiedBy(dto.password)) {
-      throw new PasswordTooWeakError(this.passwordStrengthPolicy.getErrorMessage());
+      throw new PasswordTooWeakError(
+        this.passwordStrengthPolicy.getErrorMessage(),
+      );
     }
 
     // 3. Create Value Objects (Validation & Logic)
@@ -29,7 +43,9 @@ export class CreateUserUseCase {
     const phone = Phone.createOptional(dto.phone);
 
     // 4. Security: Hash Password
-    const hashedPassword = await this.passwordHasher.hash(passwordVO.toString());
+    const hashedPassword = await this.passwordHasher.hash(
+      passwordVO.toString(),
+    );
 
     // 5. Instantiate Domain Entity
     const user = new User(
@@ -42,7 +58,7 @@ export class CreateUserUseCase {
       null,
       dto.isEmailVerified ?? false,
       dto.isPhoneVerified ?? false,
-      dto.status ?? 'PENDING' as any,
+      dto.status ?? USER_STATUS.PENDING,
       dto.isActive ?? true,
       false, // isDeleted
       dto.isSuperAdmin ?? false,
@@ -51,10 +67,10 @@ export class CreateUserUseCase {
       dto.businessAccess ?? [],
       null, // lastLogin
       [], // loginHistory
-      dto.settings ?? { theme: 'system', tableHeight: 'medium' },
+      dto.settings ?? { theme: "system", tableHeight: "medium" },
       dto.metadata ?? {},
       dto.organization,
-      dto.region
+      dto.region,
     );
 
     // 6. Persistence

@@ -1,6 +1,10 @@
-import { Person, MemberProfile, ProfileType, UserStatus } from '../../../domain';
-import { IPersonDoc, IMemberProfileDoc } from './people.model';
-
+import {
+  Person,
+  MemberProfile,
+  ProfileType,
+  UserStatus,
+} from "../../../domain";
+import { IPersonDoc, IMemberProfileDoc } from "./people.model";
 
 export class PeopleMapper {
   public static toPersonDomain(doc: IPersonDoc): Person {
@@ -14,7 +18,7 @@ export class PeopleMapper {
       gender: doc.gender as any,
       dateOfBirth: doc.dateOfBirth,
       profilePicture: doc.profilePicture,
-      status: doc.status as UserStatus,
+      status: UserStatus.from(doc.status),
       createdAt: (doc as any).createdAt,
       updatedAt: (doc as any).updatedAt,
     });
@@ -25,23 +29,15 @@ export class PeopleMapper {
       id: doc._id.toString(),
       personId: doc.personId.toString(),
       organizationId: doc.organizationId,
-      type: doc.type as ProfileType,
+      type: ProfileType.from(doc.type),
       metadata: doc.metadata,
       status: doc.status as any,
       joinedAt: doc.joinedAt,
     });
   }
 
-  public static toPersistence(person: Person) {
+  public static toPersonPersistence(person: Person) {
     const primitives = person.toPrimitives();
-    
-    // Explicitly mapping or using primitives directly. 
-    // Since toPrimitives returns the shape we need, we can reuse it.
-    // However, Mongo usually needs explicit ID handling if not part of primitives or named differently.
-    // Our primitives include `id` as string, but Mongo needs `_id`. 
-    // Usually persistence layer handles strict shape.
-    
-    // Constructing exact persistence shape:
     const personData = {
       identityId: primitives.identityId,
       firstName: primitives.firstName,
@@ -54,7 +50,9 @@ export class PeopleMapper {
       status: primitives.status,
     };
 
-    const profilesData = person.profiles.map(profile => this.toMemberProfilePersistence(profile));
+    const profilesData = person.profiles.map((profile) =>
+      this.toMemberProfilePersistence(profile),
+    );
 
     return {
       person: personData,
@@ -67,7 +65,7 @@ export class PeopleMapper {
     return {
       personId: primitives.personId,
       organizationId: primitives.organizationId,
-      type: primitives.type,
+      type: primitives.type.getValue(),
       metadata: primitives.metadata,
       status: primitives.status,
       joinedAt: primitives.joinedAt,

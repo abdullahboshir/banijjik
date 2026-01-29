@@ -1,12 +1,12 @@
-import { PersonRepository } from '@people/domain';
-import { Person, MemberProfile } from '@people/domain';
-import { PersonModel, MemberProfileModel } from './people.model';
-import { PeopleMapper } from './people.mapper';
+import { PeopleRepository } from "@people/domain";
+import { Person, MemberProfile } from "@people/domain";
+import { PersonModel, MemberProfileModel } from "./people.model";
+import { PeopleMapper } from "./people.mapper";
 
-export class MongoosePeopleRepository implements PersonRepository {
+export class MongoosePeopleImplRepository implements PeopleRepository {
   async save(person: Person): Promise<void> {
-    const { person: personData } = PeopleMapper.toPersistence(person);
-    
+    const { person: personData } = PeopleMapper.toPersonPersistence(person);
+
     if (person.id) {
       await PersonModel.findByIdAndUpdate(person.id, personData);
     } else {
@@ -42,10 +42,13 @@ export class MongoosePeopleRepository implements PersonRepository {
   // Aggregate-level MemberProfile methods
   async findProfilesByPerson(personId: string): Promise<MemberProfile[]> {
     const docs = await MemberProfileModel.find({ personId });
-    return docs.map(doc => PeopleMapper.toMemberProfileDomain(doc));
+    return docs.map((doc) => PeopleMapper.toMemberProfileDomain(doc));
   }
 
-  async findProfileByOrg(personId: string, organizationId: string): Promise<MemberProfile | null> {
+  async findProfileByOrg(
+    personId: string,
+    organizationId: string,
+  ): Promise<MemberProfile | null> {
     const doc = await MemberProfileModel.findOne({ personId, organizationId });
     return doc ? PeopleMapper.toMemberProfileDomain(doc) : null;
   }

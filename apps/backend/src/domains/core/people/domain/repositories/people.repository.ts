@@ -1,7 +1,7 @@
-import { Person } from '../entities/person.entity';
-import { MemberProfile } from '../entities/member-profile.entity';
+import { Person } from "../entities/person.entity";
+import { MemberProfile } from "../entities/member-profile.entity";
 
-export interface PersonRepository {
+export interface PeopleRepository {
   save(person: Person): Promise<void>;
 
   findById(id: string): Promise<Person | null>;
@@ -12,6 +12,6 @@ export interface PersonRepository {
   findProfilesByPerson(personId: string): Promise<MemberProfile[]>;
   findProfileByOrg(
     personId: string,
-    organizationId: string
+    organizationId: string,
   ): Promise<MemberProfile | null>;
 }

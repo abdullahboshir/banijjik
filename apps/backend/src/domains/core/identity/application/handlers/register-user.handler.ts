@@ -1,12 +1,13 @@
-import { CreateUserUseCase } from '../use-cases';
-import { CreateUserDto, UserResponseDto } from '../dto';
+import { CreateUserUseCase } from "../use-cases";
+import { CreateUserDto } from "../dto";
+import { UserResponseDto } from "@banijjik/contracts";
 
 export class RegisterUserHandler {
   constructor(private readonly createUserUseCase: CreateUserUseCase) {}
 
   /**
    * Orchestrates the registration process.
-   * In the future, this can handle multi-step registrations, 
+   * In the future, this can handle multi-step registrations,
    * multiple use-case coordination, and transaction management.
    */
   async handle(dto: CreateUserDto): Promise<UserResponseDto> {

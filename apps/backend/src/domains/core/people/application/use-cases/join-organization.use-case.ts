@@ -1,41 +1,39 @@
-import { PersonRepository, Person, MemberProfile } from '@people/domain';
-import { JoinOrganizationDto, ProfileResponseDto } from '../dto';
-import { ConflictError } from '@shared';
+import { PeopleRepository, Person, MemberProfile } from "@people/domain";
+import { JoinOrganizationDto } from "../dto";
+import { ConflictError } from "@shared";
+import { ProfileResponseDto, USER_STATUS } from "@banijjik/contracts";
 
 export class JoinOrganizationUseCase {
-  constructor(
-    private readonly personRepository: PersonRepository
-  ) {}
+  constructor(private readonly peopleRepository: PeopleRepository) {}
 
   async execute(dto: JoinOrganizationDto): Promise<ProfileResponseDto> {
-    // 1. Find or Create the Global Person
-    let person = await this.personRepository.findByIdentityId(dto.identityId);
-    
+    let person = await this.peopleRepository.findByIdentityId(dto.identityId);
+
     if (!person) {
       person = new Person({
         identityId: dto.identityId,
         firstName: dto.firstName,
         lastName: dto.lastName,
         email: dto.email,
-        status: 'active' as any,
+        status: USER_STATUS.ACTIVE,
       });
-      await this.personRepository.save(person);
-      // Re-fetch to get the ID
-      person = await this.personRepository.findByIdentityId(dto.identityId);
+      await this.peopleRepository.save(person);
+      person = await this.peopleRepository.findByIdentityId(dto.identityId);
     }
 
     if (!person || !person.id) {
-      throw new Error('Failed to create or find person');
+      throw new Error("Failed to create or find person");
     }
 
-    // 2. Check if profile already exists for this organization
-    const existingProfile = await this.personRepository.findProfileByOrg(
+    const existingProfile = await this.peopleRepository.findProfileByOrg(
       person.id,
-      dto.organizationId
+      dto.organizationId,
     );
 
     if (existingProfile) {
-      throw new ConflictError('Person is already a member of this organization');
+      throw new ConflictError(
+        "Person is already a member of this organization",
+      );
     }
 
     // 3. Create the Contextual Profile
@@ -44,25 +42,25 @@ export class JoinOrganizationUseCase {
       organizationId: dto.organizationId,
       type: dto.type as any, // Mapper handles strict validation
       metadata: dto.metadata,
-      status: 'active',
+      status: USER_STATUS.ACTIVE,
       joinedAt: new Date(),
     });
 
     person.addProfile(profile);
-    await this.personRepository.save(person);
+    await this.peopleRepository.save(person);
 
     return {
-      id: (profile as any).id || '',
+      id: (profile as any).id || "",
       type: profile.type.toString(),
       organizationId: profile.organizationId,
-      status: profile.status,
+      status: profile.status.toString(),
       joinedAt: profile.joinedAt.toISOString(),
       metadata: profile.metadata,
       person: {
         id: person.id,
         fullName: person.fullName,
         email: person.email,
-      }
+      },
     };
   }
 }

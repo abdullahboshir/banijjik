@@ -1,4 +1,8 @@
-import { UserStatus } from '../../enums/user-status.enum';
+import { UserStatusType } from "../../constants/user-status";
+import { UserThemeType } from "../../constants/user-theme";
+import { TableHeightType } from "../../constants/table-height";
+import { PermissionEffectType } from "../../constants/permission-effect";
+import { CommonStatusType } from "../../constants/common-status";
 
 /**
  * Identity Base Types
@@ -15,21 +19,21 @@ export interface ILoginHistory {
 }
 
 export interface IUserDetail {
-  theme: 'light' | 'dark' | 'system';
-  tableHeight: 'small' | 'medium' | 'large';
+  theme: UserThemeType;
+  tableHeight: TableHeightType;
   [key: string]: any;
 }
 
 export interface IDirectPermission {
   permissionId: string;
-  effect: 'allow' | 'deny';
+  effect: PermissionEffectType;
 }
 
 export interface IBusinessAccess {
   role: string;
   organization: string;
   businessUnit?: string;
-  status: 'active' | 'inactive';
+  status: CommonStatusType;
 }
 
 /**
@@ -42,7 +46,7 @@ export interface UserResponseDto {
   phone: string | null;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
-  status: UserStatus;
+  status: UserStatusType;
   isActive: boolean;
   isSuperAdmin: boolean;
   globalRoles: string[];
