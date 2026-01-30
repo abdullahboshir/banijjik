@@ -1,6 +1,6 @@
 import { IRoleRepository, Role } from "@iam/domain";
-import { RoleModel } from "./role.model";
-import { RoleMapper } from "./role.mapper";
+import { RoleModel } from "../models/role.model";
+import { RoleMapper } from "../mappers/role.mapper";
 
 export class MongooseRoleRepository implements IRoleRepository {
   async save(role: Role): Promise<void> {

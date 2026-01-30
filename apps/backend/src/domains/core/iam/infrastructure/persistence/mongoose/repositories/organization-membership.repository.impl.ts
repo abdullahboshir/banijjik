@@ -2,8 +2,8 @@ import {
   IOrganizationMembershipRepository,
   OrganizationMembership,
 } from "@iam/domain";
-import { OrganizationMembershipModel } from "./organization-membership.model";
-import { OrganizationMembershipMapper } from "./organization-membership.mapper";
+import { OrganizationMembershipModel } from "../models/organization-membership.model";
+import { OrganizationMembershipMapper } from "../mappers/organization-membership.mapper";
 
 export class MongooseOrganizationMembershipRepository implements IOrganizationMembershipRepository {
   async save(membership: OrganizationMembership): Promise<void> {

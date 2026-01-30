@@ -1,6 +1,6 @@
-import { IUserRepository, User } from '@iam/domain';
-import { UserModel } from './user.model';
-import { UserPersistenceMapper } from './user.mapper';
+import { IUserRepository, User } from "@iam/domain";
+import { UserModel } from "../models/user.model";
+import { UserPersistenceMapper } from "../mappers/user.mapper";
 
 export class MongooseUserRepository implements IUserRepository {
   async save(user: User): Promise<void> {

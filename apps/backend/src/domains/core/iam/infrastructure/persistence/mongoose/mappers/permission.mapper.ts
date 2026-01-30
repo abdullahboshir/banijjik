@@ -1,5 +1,5 @@
 import { Permission } from "@iam/domain";
-import { IPermissionDoc } from "./permission.model";
+import { IPermissionDoc } from "../models/permission.model";
 
 export class PermissionMapper {
   static toDomain(doc: IPermissionDoc): Permission {

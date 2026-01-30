@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import { OrganizationMembership } from "@iam/domain";
-import { IOrganizationMembershipDoc } from "./organization-membership.model";
+import { IOrganizationMembershipDoc } from "../models/organization-membership.model";
 
 export class OrganizationMembershipMapper {
   static toDomain(doc: IOrganizationMembershipDoc): OrganizationMembership {

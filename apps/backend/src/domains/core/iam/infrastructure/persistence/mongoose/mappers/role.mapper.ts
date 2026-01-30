@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import { Role } from "@iam/domain";
-import { IRoleDoc } from "./role.model";
+import { IRoleDoc } from "../models/role.model";
 
 export class RoleMapper {
   static toDomain(doc: IRoleDoc): Role {

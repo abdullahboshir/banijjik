@@ -1,6 +1,6 @@
 import { IPermissionRepository, Permission } from "@iam/domain";
-import { PermissionModel } from "./permission.model";
-import { PermissionMapper } from "./permission.mapper";
+import { PermissionModel } from "../models/permission.model";
+import { PermissionMapper } from "../mappers/permission.mapper";
 
 export class MongoosePermissionRepository implements IPermissionRepository {
   async save(permission: Permission): Promise<void> {

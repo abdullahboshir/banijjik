@@ -1,5 +1,5 @@
 import { User } from "@iam/domain";
-import { IUserDocument } from "./user.model";
+import { IUserDocument } from "../models/user.model";
 import {
   Email,
   Phone,

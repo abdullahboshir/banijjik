@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createPeopleRouter } from "../../../domains/core/people/presentation/routes/people.routes";
 import { createUserRouter } from "../../../domains/core/iam/presentation/routes/user.routes";
-import { MongooseUserRepository } from "../../../domains/core/iam/infrastructure/persistence/mongoose/user.repository.impl";
+import { MongooseUserRepository } from "../../../domains/core/iam/infrastructure/persistence/mongoose/repositories/user.repository.impl";
 
 const v1Router = Router();
 

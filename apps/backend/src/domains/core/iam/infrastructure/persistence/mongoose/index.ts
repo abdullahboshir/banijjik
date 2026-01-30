@@ -1,3 +1,3 @@
-export * from './user.mapper';
-export * from './user.model';
-export * from './user.repository.impl';
+export * from "./mappers/user.mapper";
+export * from "./models/user.model";
+export * from "./repositories/user.repository.impl";

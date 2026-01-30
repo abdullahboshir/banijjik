@@ -1,8 +1,9 @@
-import { UserStatusType } from "../../constants/user-status";
+import { UserStatusType } from "../../constants/iam/user-status";
 import { UserThemeType } from "../../constants/user-theme";
 import { TableHeightType } from "../../constants/table-height";
-import { PermissionEffectType } from "../../constants/permission-effect";
+
 import { CommonStatusType } from "../../constants/common-status";
+import { PermissionEffectType } from "../../constants/iam/permission-effect";
 
 /**
  * Identity Base Types
