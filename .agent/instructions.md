@@ -18,6 +18,23 @@
 - **Scalability:** Shared vs Dedicated tenant types.
 - **Centralized Configuration:** No hard-coded values. Everything from `.env` or centralized constants.
 - **Strict Monorepo Boundaries:** Clean import/export using packages for shared code.
+- **Naming Protocol: Organization vs Tenant:**
+  - **Organization (Domain/Business):** Use this for ALL business logic, entities, UI, and routing. It is the single ubiquitous name for the client entity (e.g., `OrganizationService`, `organizationId`).
+  - **Tenant (Infrastructure/Technical):** Use this ONLY for the underlying multi-tenancy mechanism (e.g., `TenantMiddleware`, `TenantDatabaseResolver`).
+  - **The Rule:** You manage **Organizations**, but you isolate data by **Tenants**.
+
+## 3. Route & Context Architecture
+
+To avoid naming confusion, follow this hierarchy:
+
+1. **Platform Level (The SaaS Provider):**
+   - **Folder:** `/src/routes/platform/`
+   - **Scope:** Global management (managing organizations, global billing, system configs).
+   - **Primary Entity:** `Platform`, `System`.
+2. **Organization Level (The Client/Tenant):**
+   - **Folder:** `/src/routes/organization/`
+   - **Scope:** Daily operations of the specific coaching, gym, or clinic.
+   - **Primary Entity:** `Organization`.
 
 ## 3. Explicit Naming for Settings (No Confusion)
 
@@ -25,7 +42,7 @@ To avoid ambiguity between different types of configuration, use these specific 
 
 - **SystemSettings:** Internal system-level configurations managed by developers (e.g., Mail, Logs, Cron).
 - **PlatformSettings:** Product-level business rules managed by the SaaS owner (e.g., Feature Catalog, Subscription Plans, Business Type registry).
-- **BusinessSettings:** Tenant-level specialized rules managed by individual business owners (e.g., Branding, Invoice prefixes, Office hours).
+- **BusinessSettings:** Tenant-level specialized rules managed by individual organization owners (e.g., Branding, Invoice prefixes, Office hours).
 
 ## 4. Hierarchy-Based Naming & Separation
 
@@ -56,11 +73,22 @@ Layered structure within each domain module:
   - **Repository Ports (Interfaces):** MUST be defined here to invert dependency.
 - `application/`: Application logic. Contains:
   - **Use Cases / Services:** Orchestrates entities and repository ports.
-  - **DTOs:** Input/Output contracts.
-- `infrastructure/`: External implementations. Contains:
-  - **Persistence:** Mongoose/SQL Models and Repository Implementations.
-  - **Mappers:** Conversions between Entity <-> Persistence Model.
+  - **DTOs:** Request/Input contracts (inferred from schemas).
+- `presentation/`: Interface layer. Contains:
+  - **Controllers:** Express/HTTP controllers.
+  - **Transformers/Mappers:** Converting DTOs to Domain-ready data.
+- `infrastructure/`: External implementations (Adapters). Contains:
+  - **Persistence:** Mongoose Models and Repository implementations.
   - **External Services:** Mailers, Third-party APIs.
+
+### 6.2 Contract-First Communication (DTO Standards)
+
+To ensure a "Single Source of Truth" and perfect alignment between Backend and Frontend:
+
+1. **Response DTOs (Output):** MUST be defined as interfaces in `packages/contracts/src/api-interface/` and imported DIRECTLY into Use Cases and Controllers. DO NOT re-export them in local `dto.ts` files.
+2. **Request DTOs (Input):** MUST be inferred from Zod schemas (usually in `packages/validation`) and defined in a local `[domain].dto.ts` file within the `application/dto/` folder.
+   - Example: `export type CreateUserDto = z.infer<typeof CreateUserSchema>;`
+3. **Naming:** Always use the `Dto` suffix (e.g., `UserResponseDto`). Avoid `I` prefix for DTOs.
 
 ### 6.1 The "Rule of Three" (Persistence Boundary)
 

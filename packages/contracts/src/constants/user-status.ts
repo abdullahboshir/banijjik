@@ -1,7 +1,9 @@
 export const USER_STATUS_ENUM = [
   "ACTIVE",
+  "INACTIVE",
   "PENDING",
   "SUSPENDED",
+  "BLOCKED",
   "DELETED",
 ] as const;
 

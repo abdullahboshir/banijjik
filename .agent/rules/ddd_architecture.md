@@ -1,4 +1,5 @@
 ---
+trigger: always_on
 description: Strict Domain-Driven Design (DDD) Architecture Rules
 ---
 
@@ -26,6 +27,7 @@ Dependencies point **INWARDS**.
 - **Infrastructure** depends on **Application** & **Domain**.
 - **Application** depends on **Domain**.
 - **Domain** depends on **NOTHING**.
+- **PRESENTATION**
 
 ## 3. The Role of Contracts & Validation 📜
 

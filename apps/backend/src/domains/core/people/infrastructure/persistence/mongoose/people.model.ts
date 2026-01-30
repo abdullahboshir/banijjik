@@ -6,10 +6,14 @@ export interface IPersonDoc extends Document {
   lastName?: string;
   email: string;
   phone?: string;
+  profileType: string;
+  designation?: string;
   gender?: string;
   dateOfBirth?: Date;
   profilePicture?: string;
   status: string;
+  // Dynamic Attributes Pattern
+  profileAttributes: Record<string, any>;
 }
 
 const PersonSchema = new Schema<IPersonDoc>(
@@ -23,41 +27,10 @@ const PersonSchema = new Schema<IPersonDoc>(
     dateOfBirth: { type: Date },
     profilePicture: { type: String },
     status: { type: String, default: "active" },
+    // Key-Value Store for Dynamic Profile Data
+    profileAttributes: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true },
 );
 
 export const PersonModel = model<IPersonDoc>("Person", PersonSchema);
-
-export interface IMemberProfileDoc extends Document {
-  personId: Schema.Types.ObjectId;
-  organizationId: string;
-  type: string;
-  metadata: Record<string, any>;
-  status: string;
-  joinedAt: Date;
-}
-
-const MemberProfileSchema = new Schema<IMemberProfileDoc>(
-  {
-    personId: { type: Schema.Types.ObjectId, ref: "Person", required: true },
-    organizationId: { type: String, required: true, index: true },
-    type: { type: String, required: true },
-    metadata: { type: Schema.Types.Mixed, default: {} },
-    status: {
-      type: String,
-      enum: ["active", "inactive", "suspended"],
-      default: "active",
-    },
-    joinedAt: { type: Date, default: Date.now },
-  },
-  { timestamps: true },
-);
-
-// Compound index for quick lookup of a person in an organization
-MemberProfileSchema.index({ personId: 1, organizationId: 1 }, { unique: true });
-
-export const MemberProfileModel = model<IMemberProfileDoc>(
-  "MemberProfile",
-  MemberProfileSchema,
-);

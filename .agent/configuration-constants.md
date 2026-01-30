@@ -10,17 +10,33 @@
 
 To avoid hard-coded strings and ensure consistency:
 
-- **Shared Constants:** Values used by both frontend and backend (e.g., `SystemRole`, `AuditAction`, `ResourceNames`) go into `packages/shared-types` or a dedicated `packages/constants`.
-- **Backend-Only:** Application-specific logic (e.g., DB collection names, internal service IDs) stay in `apps/backend/src/shared/constants/`.
-- **Frontend-Only:** UI-specific logic (e.g., CSS classes, Route names, LocalStorage keys) stay in `apps/frontend/src/shared/constants/`.
+- **Shared Constants:** Values used by both frontend and backend (e.g., `USER_STATUS`, `USER_PROFILE_TYPE`) MUST go into `packages/contracts/src/constants/`.
+- **Backend-Only:** Application-specific logic (e.g., DB collection names) stay in `apps/backend/src/shared/constants/`.
 
-## 3. Forbidden Harcoding
+## 3. Single Source of Truth Pattern (Mandatory)
 
-- ❌ `if (user.role === 'admin')` -> ✅ `if (user.role === SystemRole.ADMIN)`
-- ❌ `permission: 'create-invoice'` -> ✅ `permission: InvoiceActions.CREATE`
-- ❌ `baseUrl: 'http://localhost:3000'` -> ✅ `baseUrl: config.api.baseUrl`
+To avoid repetition and ensure consistency, all constant files in `packages/contracts` MUST follow this pattern:
+
+1. **The Array (Source):** Define a `const` array.
+2. **The Type:** Infer the type from the array.
+3. **The Object:** Generate a runtime object from the array for dot-notation usage.
+
+```typescript
+// Example: user-status.ts
+export const USER_STATUS_ENUM = ["ACTIVE", "PENDING"] as const;
+export type UserStatusType = (typeof USER_STATUS_ENUM)[number];
+
+export const USER_STATUS = USER_STATUS_ENUM.reduce(
+  (acc, current) => {
+    acc[current] = current;
+    return acc;
+  },
+  {} as { [K in UserStatusType]: K },
+);
+```
 
 ## 4. Constant Naming
 
-- Use `SCREAMING_SNAKE_CASE` for values.
-- Group related constants into `Objects` or `Enums` for better discoverability.
+- **Arrays/Enums:** `SCREAMING_SNAKE_CASE_ENUM` (e.g., `USER_STATUS_ENUM`).
+- **Runtime Objects:** `SCREAMING_SNAKE_CASE` (e.g., `USER_STATUS`).
+- **Types:** `PascalCaseType` (e.g., `UserStatusType`).

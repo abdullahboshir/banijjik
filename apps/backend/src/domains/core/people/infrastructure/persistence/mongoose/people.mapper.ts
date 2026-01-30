@@ -1,10 +1,6 @@
-import {
-  Person,
-  MemberProfile,
-  ProfileType,
-  UserStatus,
-} from "../../../domain";
-import { IPersonDoc, IMemberProfileDoc } from "./people.model";
+import { Person } from "../../../domain";
+import { IPersonDoc } from "./people.model";
+import { UserStatus } from "../../../domain/value-objects/user-status.vo";
 
 export class PeopleMapper {
   public static toPersonDomain(doc: IPersonDoc): Person {
@@ -18,27 +14,17 @@ export class PeopleMapper {
       gender: doc.gender as any,
       dateOfBirth: doc.dateOfBirth,
       profilePicture: doc.profilePicture,
+      designation: doc.designation,
       status: UserStatus.from(doc.status),
       createdAt: (doc as any).createdAt,
       updatedAt: (doc as any).updatedAt,
-    });
-  }
-
-  public static toMemberProfileDomain(doc: IMemberProfileDoc): MemberProfile {
-    return new MemberProfile({
-      id: doc._id.toString(),
-      personId: doc.personId.toString(),
-      organizationId: doc.organizationId,
-      type: ProfileType.from(doc.type),
-      metadata: doc.metadata,
-      status: doc.status as any,
-      joinedAt: doc.joinedAt,
+      profileAttributes: doc.profileAttributes,
     });
   }
 
   public static toPersonPersistence(person: Person) {
     const primitives = person.toPrimitives();
-    const personData = {
+    return {
       identityId: primitives.identityId,
       firstName: primitives.firstName,
       lastName: primitives.lastName,
@@ -47,28 +33,8 @@ export class PeopleMapper {
       gender: primitives.gender,
       dateOfBirth: primitives.dateOfBirth,
       profilePicture: primitives.profilePicture,
-      status: primitives.status,
-    };
-
-    const profilesData = person.profiles.map((profile) =>
-      this.toMemberProfilePersistence(profile),
-    );
-
-    return {
-      person: personData,
-      profiles: profilesData,
-    };
-  }
-
-  public static toMemberProfilePersistence(profile: MemberProfile): any {
-    const primitives = profile.toPrimitives();
-    return {
-      personId: primitives.personId,
-      organizationId: primitives.organizationId,
-      type: primitives.type.getValue(),
-      metadata: primitives.metadata,
-      status: primitives.status,
-      joinedAt: primitives.joinedAt,
+      status: person.status.getValue(),
+      profileAttributes: primitives.profileAttributes,
     };
   }
 }

@@ -1,5 +1,4 @@
-import { UserStatus } from "../value-objects";
-import { MemberProfile } from "./member-profile.entity";
+import { UserStatus } from "../value-objects/user-status.vo";
 
 export interface PersonProps {
   id?: string;
@@ -8,13 +7,14 @@ export interface PersonProps {
   lastName?: string;
   email: string;
   phone?: string;
-  gender?: 'male' | 'female' | 'other';
+  gender?: "male" | "female" | "other";
   dateOfBirth?: Date;
   profilePicture?: string;
+  designation?: string;
   status?: UserStatus;
   createdAt?: Date;
   updatedAt?: Date;
-  profiles?: MemberProfile[];
+  profileAttributes?: Record<string, any>;
 }
 
 export class Person {
@@ -22,7 +22,7 @@ export class Person {
     status: UserStatus;
     createdAt: Date;
     updatedAt: Date;
-    profiles: MemberProfile[];
+    profileAttributes: Record<string, any>;
   };
 
   constructor(props: PersonProps) {
@@ -31,25 +31,47 @@ export class Person {
       status: props.status ?? UserStatus.VALUE.ACTIVE,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
-      profiles: props.profiles ?? [],
+      profileAttributes: props.profileAttributes ?? {},
     };
   }
 
-  get id(): string | undefined { return this.props.id; }
-  get identityId(): string { return this.props.identityId; }
-  get email(): string { return this.props.email; }
-  get phone(): string | undefined { return this.props.phone; }
-  get status(): UserStatus { return this.props.status; }
-  get profilePicture(): string | undefined { return this.props.profilePicture; }
-  
-  get profiles(): MemberProfile[] { return this.props.profiles; }
-
-  get fullName(): string {
-    return `${this.props.firstName} ${this.props.lastName ?? ''}`.trim();
+  get id(): string | undefined {
+    return this.props.id;
+  }
+  get identityId(): string {
+    return this.props.identityId;
+  }
+  get email(): string {
+    return this.props.email;
+  }
+  get phone(): string | undefined {
+    return this.props.phone;
+  }
+  get status(): UserStatus {
+    return this.props.status;
+  }
+  get profilePicture(): string | undefined {
+    return this.props.profilePicture;
+  }
+  get designation(): string | undefined {
+    return this.props.designation;
   }
 
-  addProfile(profile: MemberProfile) {
-    this.props.profiles.push(profile);
+  get profileAttributes(): Record<string, any> {
+    return this.props.profileAttributes;
+  }
+
+  get fullName(): string {
+    return `${this.props.firstName} ${this.props.lastName ?? ""}`.trim();
+  }
+
+  /**
+   * updateProfileAttribute
+   * Dynamically updates a specific attribute for a business profile.
+   * key: "weight" | "class"
+   */
+  updateProfileAttribute(key: string, value: any) {
+    this.props.profileAttributes[key] = value;
     this.touch();
   }
 
@@ -74,11 +96,11 @@ export class Person {
       gender: this.props.gender,
       dateOfBirth: this.props.dateOfBirth,
       profilePicture: this.props.profilePicture,
+      designation: this.props.designation,
       status: this.props.status,
       createdAt: this.props.createdAt,
       updatedAt: this.props.updatedAt,
-      // We do not include profiles here to avoid circular recursion loops 
-      // if profiles also call back to Person. Handled separately in Mapper if needed.
+      profileAttributes: this.props.profileAttributes,
     };
   }
 }

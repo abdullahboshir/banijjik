@@ -29,7 +29,7 @@ export interface IDirectPermission {
   effect: PermissionEffectType;
 }
 
-export interface IBusinessAccess {
+export interface IOrganizationMembership {
   role: string;
   organization: string;
   businessUnit?: string;
@@ -51,7 +51,7 @@ export interface UserResponseDto {
   isSuperAdmin: boolean;
   globalRoles: string[];
   directPermissions: IDirectPermission[];
-  businessAccess: IBusinessAccess[];
+  organizationMembership: IOrganizationMembership[];
   lastLogin: Date | null | string;
   loginHistory: ILoginHistory[];
   settings: IUserDetail;

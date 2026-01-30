@@ -3,7 +3,8 @@ export const USER_PROFILE_TYPE_ENUM = [
   "MEMBER",
   "PATIENT",
   "CUSTOMER",
-  "EMPLOYEE",
+  "STAFF",
+  "GUARDIAN",
   "GUEST",
 ] as const;
 

@@ -14,7 +14,6 @@ dotenv.config({ path: path.join(process.cwd(), ".env") });
 
 // ======================== ZOD SCHEMA ========================
 const envSchema = z.object({
-  // Core
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
@@ -22,10 +21,8 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
   BACKEND_URL: z.string().url().default("http://localhost:5000"),
 
-  // Database
   DB_URL: z.string(),
 
-  // Security
   BCRYPT_SALT_ROUNDS: z.string().default("12"),
   DEFAULT_PASS: z.string().min(6),
   COOKIE_SECRET: z.string(),

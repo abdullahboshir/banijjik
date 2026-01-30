@@ -1,11 +1,7 @@
-import app from "./app";
+import { bootstrapApp } from "./bootstrap";
 
-const port = process.env.PORT || 5000;
+async function main() {
+  await bootstrapApp();
+}
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
-
-app.get("/", (_req, res) => {
-  res.send("Hello World!");
-});
+main();
