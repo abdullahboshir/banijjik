@@ -17,6 +17,7 @@ import {
 } from "@banijjik/contracts";
 
 export interface IOrganizationDocument extends Document {
+  id: string;
   name: string;
   slug: string;
   industry: (typeof ORGANIZATION_INDUSTRY_ENUM)[number];
@@ -29,38 +30,6 @@ export interface IOrganizationDocument extends Document {
   website?: string;
   address?: string;
   establishedDate?: Date;
-  socialMedia: {
-    facebook?: string;
-    instagram?: string;
-    twitter?: string;
-    youtube?: string;
-    linkedin?: string;
-  };
-  branding: {
-    logo?: string;
-    banner?: string;
-    favicon?: string;
-    tagline?: string;
-    theme: {
-      primaryColor: string;
-      secondaryColor: string;
-      accentColor: string;
-      fontFamily: string;
-    };
-  };
-  seo: {
-    metaTitle?: string;
-    metaDescription?: string;
-    keywords: string[];
-    canonicalUrl?: string;
-    ogImage?: string;
-    structuredData?: Record<string, any>;
-  };
-  policies: {
-    privacyPolicy?: string;
-    termsOfService?: string;
-    refundPolicy?: string;
-  };
   localization: {
     currency: (typeof ORGANIZATION_CURRENCY_ENUM)[number];
     language: (typeof ORGANIZATION_LANGUAGE_ENUM)[number];
@@ -87,6 +56,7 @@ export interface IOrganizationDocument extends Document {
 
 const OrganizationSchema = new Schema<IOrganizationDocument>(
   {
+    id: { type: String, required: true },
     name: { type: String, required: true, trim: true, index: true },
     slug: {
       type: String,
@@ -123,38 +93,6 @@ const OrganizationSchema = new Schema<IOrganizationDocument>(
     website: { type: String, trim: true },
     address: { type: String },
     establishedDate: { type: Date },
-    socialMedia: {
-      facebook: { type: String },
-      instagram: { type: String },
-      twitter: { type: String },
-      youtube: { type: String },
-      linkedin: { type: String },
-    },
-    branding: {
-      logo: { type: String },
-      banner: { type: String },
-      favicon: { type: String },
-      tagline: { type: String },
-      theme: {
-        primaryColor: { type: String, default: "#3B82F6" },
-        secondaryColor: { type: String, default: "#1E40AF" },
-        accentColor: { type: String, default: "#F59E0B" },
-        fontFamily: { type: String, default: "Inter" },
-      },
-    },
-    seo: {
-      metaTitle: { type: String, default: "" },
-      metaDescription: { type: String, default: "" },
-      keywords: [{ type: String }],
-      canonicalUrl: { type: String },
-      ogImage: { type: String },
-      structuredData: { type: Schema.Types.Mixed },
-    },
-    policies: {
-      privacyPolicy: { type: String },
-      termsOfService: { type: String },
-      refundPolicy: { type: String },
-    },
     localization: {
       currency: {
         type: String,

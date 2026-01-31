@@ -9,20 +9,31 @@ export class OrganizationMembershipMapper {
       userId: doc.userId.toString(),
       organizationId: doc.organizationId.toString(),
       roleId: doc.roleId.toString(),
+      type: doc.type,
+      designation: doc.designation,
+      memberCode: doc.memberCode,
       status: doc.status as any,
+      source: doc.source,
       joinedAt: doc.joinedAt,
+      updatedAt: (doc as any).updatedAt,
       metadata: doc.metadata,
     });
   }
 
   static toPersistence(domain: OrganizationMembership): any {
+    const props = domain.toObject();
     return {
-      userId: new Types.ObjectId(domain.userId),
-      organizationId: new Types.ObjectId(domain.organizationId),
-      roleId: new Types.ObjectId(domain.roleId),
-      status: domain.status,
-      joinedAt: domain.joinedAt,
-      metadata: domain.toObject().metadata,
+      userId: new Types.ObjectId(props.userId),
+      organizationId: new Types.ObjectId(props.organizationId),
+      roleId: new Types.ObjectId(props.roleId),
+      type: props.type,
+      designation: props.designation,
+      memberCode: props.memberCode,
+      status: props.status,
+      source: props.source,
+      joinedAt: props.joinedAt,
+      updatedAt: props.updatedAt,
+      metadata: props.metadata,
     };
   }
 }

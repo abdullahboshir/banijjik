@@ -1,5 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { DomainError, createErrorResponse } from '../kernel';
+import { Request, Response, NextFunction } from "express";
+import { DomainError } from "../errors";
+import { ApiResponse } from "../presentation";
+import { logger } from "../utils";
 
 /**
  * Global Error Middleware
@@ -9,33 +11,36 @@ export const globalErrorMiddleware = (
   error: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
-  // 1. Log error for observability (In prod use a logger like Winston/Pino)
-  console.error(`[Error] ${req.method} ${req.url}:`, error);
+  // 1. Log error for observability
+  logger.error(`${req.method} ${req.url}:`, {
+    message: error.message,
+    stack: error.stack,
+  });
 
   // 2. Map DomainError to ApiResponse
   if (error instanceof DomainError) {
-    return res.status(error.statusCode).json(
-      createErrorResponse(
-        error.code,
-        error.message,
-        error.details,
-        process.env.NODE_ENV === 'development' ? error.stack : undefined
-      )
+    return ApiResponse.error(
+      res,
+      error.code,
+      error.message,
+      error.statusCode,
+      error.details,
+      process.env.NODE_ENV === "development" ? error.stack : undefined,
     );
   }
 
   // 3. Handle Generic Errors (Internal Server Error)
-  const internalErrorCode = 'INTERNAL_SERVER_ERROR';
-  const internalErrorMessage = 'An unexpected error occurred';
-  
-  return res.status(500).json(
-    createErrorResponse(
-      internalErrorCode,
-      internalErrorMessage,
-      null,
-      process.env.NODE_ENV === 'development' ? error.stack : undefined
-    )
+  const internalErrorCode = "INTERNAL_SERVER_ERROR";
+  const internalErrorMessage = "An unexpected error occurred";
+
+  return ApiResponse.error(
+    res,
+    internalErrorCode,
+    internalErrorMessage,
+    500,
+    null,
+    process.env.NODE_ENV === "development" ? error.stack : undefined,
   );
 };

@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon --exec \"node --import tsx\" src/server.ts",
+    "seed": "node --import tsx src/scripts/seed.ts",
     "build": "tsc -b"
   },
   "dependencies": {
     "@banijjik/contracts": "*",
+    "@banijjik/shared-kernel": "*",
     "@banijjik/validation": "*",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",

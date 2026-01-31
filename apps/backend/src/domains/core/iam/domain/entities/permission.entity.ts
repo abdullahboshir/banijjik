@@ -1,8 +1,8 @@
 export interface PermissionProps {
   id?: string;
   name: string;
-  key: string; // e.g., 'create:invoice'
-  module: string; // e.g., 'CORE_BILLING'
+  key: string;
+  module: string;
   description?: string;
   createdAt?: Date;
   updatedAt?: Date;

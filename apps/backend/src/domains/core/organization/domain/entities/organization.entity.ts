@@ -5,34 +5,14 @@ import {
   OrganizationStatusType,
   DeploymentType,
   OrganizationCurrencyType,
+  OrganizationStorageProviderType,
 } from "@banijjik/contracts";
 
-export interface OrganizationBranding {
-  logo?: string;
-  banner?: string;
-  favicon?: string;
-  tagline?: string;
-  theme: {
-    primaryColor: string;
-    secondaryColor: string;
-    accentColor: string;
-    fontFamily: string;
-  };
-}
-
-export interface OrganizationSEO {
-  metaTitle?: string;
-  metaDescription?: string;
-  keywords: string[];
-  canonicalUrl?: string;
-  ogImage?: string;
-  structuredData?: Record<string, any>;
-}
-
-export interface OrganizationPolicies {
-  privacyPolicy?: string;
-  termsOfService?: string;
-  refundPolicy?: string;
+export interface OrganizationLocalization {
+  currency: OrganizationCurrencyType;
+  language: string;
+  timezone: string;
+  dateFormat: string;
 }
 
 export interface OrganizationLocalization {
@@ -50,13 +30,14 @@ export interface OrganizationDeployment {
   dbCluster?: string;
   customEnv?: Record<string, any>;
   storageConfig?: {
-    provider: "cloudinary" | "s3" | "local";
+    provider: OrganizationStorageProviderType;
     bucket?: string;
     region?: string;
   };
 }
 
 export interface OrganizationProps {
+  _id?: string;
   id?: string;
   name: string;
   slug: string;
@@ -70,16 +51,6 @@ export interface OrganizationProps {
   website?: string;
   address?: string;
   establishedDate?: Date;
-  socialMedia?: {
-    facebook?: string;
-    instagram?: string;
-    twitter?: string;
-    youtube?: string;
-    linkedin?: string;
-  };
-  branding: OrganizationBranding;
-  seo: OrganizationSEO;
-  policies: OrganizationPolicies;
   localization: OrganizationLocalization;
   deployment: OrganizationDeployment;
   metadata?: Record<string, any>;
@@ -93,9 +64,9 @@ export class Organization {
   constructor(props: OrganizationProps) {
     this.props = {
       ...props,
+      id: props.id ?? crypto.randomUUID(),
       status: props.status || "PENDING",
       nature: props.nature || "SERVICE",
-      socialMedia: props.socialMedia || {},
       establishedDate: props.establishedDate || new Date(),
       metadata: props.metadata || {},
       createdAt: props.createdAt || new Date(),
@@ -103,6 +74,9 @@ export class Organization {
     };
   }
 
+  get _id() {
+    return this.props._id;
+  }
   get id() {
     return this.props.id;
   }
@@ -123,9 +97,6 @@ export class Organization {
   }
   get status() {
     return this.props.status;
-  }
-  get branding() {
-    return this.props.branding;
   }
   get deployment() {
     return this.props.deployment;

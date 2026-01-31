@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { createSuccessResponse } from '../kernel';
+import { Request, Response, NextFunction } from "express";
+import { ApiResponse } from "../presentation";
 
 /**
  * Global Success Wrap Middleware (Reference)
@@ -8,17 +8,23 @@ import { createSuccessResponse } from '../kernel';
 export const successResponseMiddleware = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const originalJson = res.json;
 
   res.json = function (data: any) {
     // Avoid double wrapping
-    if (data && typeof data === 'object' && 'success' in data) {
+    if (data && typeof data === "object" && "success" in data) {
       return originalJson.call(this, data);
     }
 
-    const wrapped = createSuccessResponse(data);
+    const wrapped = {
+      success: true,
+      data,
+      meta: {
+        timestamp: new Date().toISOString(),
+      },
+    };
     return originalJson.call(this, wrapped);
   };
 

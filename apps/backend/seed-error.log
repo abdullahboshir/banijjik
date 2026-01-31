@@ -1,0 +1,45 @@
+﻿node.exe : E:\WEB-DEVELOPME
+NT\PROJECTS\business-platfo
+rm\banijjik\apps\backend\sr
+c\domains\core\iam\infrastr
+ucture\persistence\mongoose
+\seeds\iam.seeder.ts:3
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Users\Abdullah 
+Bashir\AppDat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (E:\  
+  WEB-DEVELOPM...iam.see   
+ der.ts:3:String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+  RESOURCE_TYPE,
+  ^
+SyntaxError: The requested 
+module 
+'@banijjik/contracts' does 
+not provide an export 
+named 'RESOURCE_TYPE'
+    at #_instantiate (node:
+internal/modules/esm/module
+_job:254:21)
+    at async ModuleJob.run 
+(node:internal/modules/esm/
+module_job:369:5)
+    at async onImport.trace
+Promise.__proto__ (node:int
+ernal/modules/esm/loader:67
+1:26)
+    at async asyncRunEntryP
+ointWithESMLoader (node:int
+ernal/modules/run_main:101:
+5)
+
+Node.js v24.11.1

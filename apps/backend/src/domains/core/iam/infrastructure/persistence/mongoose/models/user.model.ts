@@ -1,8 +1,13 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { UserStatusType, USER_STATUS } from "@banijjik/contracts";
+import {
+  UserStatusType,
+  USER_STATUS,
+  IUserLastActiveContext,
+} from "@banijjik/contracts";
 
 export interface IUserDocument extends Omit<Document, "_id"> {
   _id: string;
+  id: string;
   firstName: string;
   lastName?: string;
   email: string;
@@ -16,14 +21,13 @@ export interface IUserDocument extends Omit<Document, "_id"> {
   isActive: boolean;
   isDeleted: boolean;
   isSuperAdmin: boolean;
-  globalRoles: string[];
+  systemRoles: string[];
   directPermissions: any[];
   lastLogin: Date | null;
+  lastActiveContext?: IUserLastActiveContext;
   loginHistory: any[];
   settings: any;
   metadata: any;
-  organization?: string;
-  region?: string;
   createdBy?: string;
   updatedBy?: string;
   createdAt: Date;
@@ -56,14 +60,24 @@ const UserSchema = new Schema<IUserDocument>(
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
     isSuperAdmin: { type: Boolean, default: false },
-    globalRoles: [{ type: String }],
+    systemRoles: [{ type: String }],
     directPermissions: [{ type: Schema.Types.Mixed }],
     lastLogin: { type: Date, default: null },
+    lastActiveContext: {
+      portal: { type: String, required: true }, // PLATFORM | ORGANIZATION | CONSUMER
+      organizationId: { type: String },
+      roleId: { type: String },
+
+      // New Context Fields
+      activeProfileType: { type: String }, // e.g. GUARDIAN
+      activeIndustryType: { type: String }, // e.g. COACHING
+
+      profileId: { type: String },
+      lastAccessedAt: { type: Date, default: null },
+    },
     loginHistory: [{ type: Schema.Types.Mixed }],
     settings: { type: Schema.Types.Mixed, default: {} },
     metadata: { type: Schema.Types.Mixed, default: {} },
-    organization: { type: String, index: true },
-    region: { type: String },
     createdBy: { type: String },
     updatedBy: { type: String },
   },
