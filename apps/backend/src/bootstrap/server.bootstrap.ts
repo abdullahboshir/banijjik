@@ -95,6 +95,6 @@ export class ServerBootstrap {
 /**
  * Function export for compatibility with bootstrap runner.
  */
-export async function bootstrapServer(): Promise<void> {
-  console.log("🚀 Server bootstrap ready (middleware configured in app.ts)");
+export async function bootstrapServer(_app: Express): Promise<void> {
+  console.log("⚙️  Server bootstrap logic prepared (Ready to listen)");
 }

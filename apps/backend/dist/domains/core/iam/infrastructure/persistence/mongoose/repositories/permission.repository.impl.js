@@ -3,15 +3,15 @@ import { PermissionMapper } from "../mappers/permission.mapper";
 export class MongoosePermissionRepository {
     async save(permission) {
         const data = PermissionMapper.toPersistence(permission);
-        if (permission.id) {
-            await PermissionModel.findByIdAndUpdate(permission.id, data);
+        if (permission.permissionId) {
+            await PermissionModel.findByIdAndUpdate(permission.permissionId, data);
         }
         else {
             await PermissionModel.create(data);
         }
     }
-    async findById(id) {
-        const doc = await PermissionModel.findById(id);
+    async findById(permissionId) {
+        const doc = await PermissionModel.findById(permissionId);
         if (!doc)
             return null;
         return PermissionMapper.toDomain(doc);
@@ -26,8 +26,8 @@ export class MongoosePermissionRepository {
         const docs = await PermissionModel.find();
         return docs.map((doc) => PermissionMapper.toDomain(doc));
     }
-    async delete(id) {
-        await PermissionModel.findByIdAndDelete(id);
+    async delete(permissionId) {
+        await PermissionModel.findByIdAndDelete(permissionId);
     }
 }
 //# sourceMappingURL=permission.repository.impl.js.map

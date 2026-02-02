@@ -1,0 +1,1 @@
+{"version":3,"file":"super-admin.routes.js","sourceRoot":"","sources":["../../../../src/routes/v1/platform/super-admin.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,SAAS,CAAC;AAEjC,MAAM,CAAC,MAAM,sBAAsB,GAAG,GAAG,EAAE;IACzC,MAAM,MAAM,GAAG,MAAM,EAAE,CAAC;IACxB,6DAA6D;IAE7D,wCAAwC;IAExC,OAAO,MAAM,CAAC;AAChB,CAAC,CAAC"}

@@ -27,12 +27,12 @@ export const PERMISSION_RESOURCE_ENUM = [
   "ORDERING",
 ] as const;
 
-export type ResourceType = (typeof PERMISSION_RESOURCE_ENUM)[number];
+export type PermissionResourceType = (typeof PERMISSION_RESOURCE_ENUM)[number];
 
-export const RESOURCE_TYPE = PERMISSION_RESOURCE_ENUM.reduce(
+export const PERMISSION_RESOURCE = PERMISSION_RESOURCE_ENUM.reduce(
   (acc: any, current) => {
     acc[current] = current;
     return acc;
   },
-  {} as { [K in ResourceType]: K },
+  {} as { [K in PermissionResourceType]: K },
 );

@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { USER_STATUS, } from "@banijjik/contracts";
 const UserSchema = new Schema({
-    _id: { type: String, required: true },
+    userId: { type: String, required: true, unique: true, index: true },
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, trim: true },
     email: {
@@ -45,7 +45,6 @@ const UserSchema = new Schema({
     updatedBy: { type: String },
 }, {
     timestamps: true,
-    _id: false, // We use string IDs
 });
 export const UserModel = mongoose.model("User", UserSchema);
 //# sourceMappingURL=user.model.js.map

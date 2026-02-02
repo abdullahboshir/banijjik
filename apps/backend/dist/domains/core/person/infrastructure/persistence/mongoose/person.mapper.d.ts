@@ -3,8 +3,7 @@ import { IPersonDoc } from "./person.model";
 export declare class PersonMapper {
     static toPersonDomain(doc: IPersonDoc): Person;
     static toPersonPersistence(person: Person): {
-        _id: string | undefined;
-        id: string | undefined;
+        personId: string;
         userId: string;
         firstName: string;
         lastName: string | undefined;

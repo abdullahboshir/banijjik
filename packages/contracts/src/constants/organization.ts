@@ -7,6 +7,7 @@ export const ORGANIZATION_INDUSTRY_ENUM = [
   "CLINIC",
   "HOSTEL",
   "PARLOR",
+  "IT",
   "OTHER",
 ] as const;
 
@@ -75,7 +76,7 @@ export const ORGANIZATION_STATUS = ORGANIZATION_STATUS_ENUM.reduce(
   {} as { [K in OrganizationStatusType]: K },
 );
 
-export const DEPLOYMENT_TYPE_ENUM = ["SHARED", "DEDICATED"] as const;
+export const DEPLOYMENT_TYPE_ENUM = ["SHARED", "DEDICATED", "SAAS"] as const;
 export type DeploymentType = (typeof DEPLOYMENT_TYPE_ENUM)[number];
 
 export const DEPLOYMENT_TYPE = DEPLOYMENT_TYPE_ENUM.reduce(

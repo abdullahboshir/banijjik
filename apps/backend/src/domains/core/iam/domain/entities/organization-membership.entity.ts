@@ -5,7 +5,7 @@ import {
 } from "@banijjik/contracts";
 
 export interface OrganizationMembershipProps {
-  id?: string;
+  membershipId?: string;
   userId: string;
   organizationId: string;
   roleId: string;
@@ -16,20 +16,18 @@ export interface OrganizationMembershipProps {
   source: MembershipSourceType;
   joinedAt: Date;
   updatedAt?: Date;
-  /**
-   * [CONTEXT-SPECIFIC] Dynamic Attributes
-   * Stores data relevant ONLY to this Organization.
-   * Defined by `industry-field-blueprint`.
-   * Examples: `roll_no` (Coaching), `membership_plan` (Gym), `patient_id` (Clinic).
-   */
   metadata?: Record<string, any>;
 }
 
 export class OrganizationMembership {
   constructor(private readonly props: OrganizationMembershipProps) {}
 
-  get id(): string | undefined {
-    return this.props.id;
+  get _id(): string | undefined {
+    return this.props.membershipId;
+  }
+
+  get membershipId(): string | undefined {
+    return this.props.membershipId;
   }
   get userId(): string {
     return this.props.userId;
@@ -77,6 +75,7 @@ export class OrganizationMembership {
   static create(props: OrganizationMembershipProps): OrganizationMembership {
     return new OrganizationMembership({
       ...props,
+      membershipId: props.membershipId ?? crypto.randomUUID(),
       updatedAt: props.updatedAt ?? new Date(),
     });
   }

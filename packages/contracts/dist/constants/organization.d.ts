@@ -1,0 +1,25 @@
+export declare const ORGANIZATION_INDUSTRY_ENUM: readonly ["GYM", "COACHING", "SALON", "RETAIL", "RESTAURANT", "CLINIC", "HOSTEL", "PARLOR", "IT", "OTHER"];
+export type OrganizationIndustryType = (typeof ORGANIZATION_INDUSTRY_ENUM)[number];
+export declare const ORGANIZATION_INDUSTRY: any;
+export declare const ORGANIZATION_LEGAL_TYPE_ENUM: readonly ["PROPRIETORSHIP", "PARTNERSHIP", "PRIVATE_LIMITED", "PUBLIC_LIMITED", "NON_PROFIT", "TRUST"];
+export type OrganizationLegalType = (typeof ORGANIZATION_LEGAL_TYPE_ENUM)[number];
+export declare const ORGANIZATION_LEGAL_TYPE: any;
+export declare const ORGANIZATION_NATURE_ENUM: readonly ["SERVICE", "PRODUCT", "HYBRID"];
+export type OrganizationNatureType = (typeof ORGANIZATION_NATURE_ENUM)[number];
+export declare const ORGANIZATION_NATURE: any;
+export declare const ORGANIZATION_STATUS_ENUM: readonly ["PENDING", "ACTIVE", "SUSPENDED", "ARCHIVED", "INACTIVE"];
+export type OrganizationStatusType = (typeof ORGANIZATION_STATUS_ENUM)[number];
+export declare const ORGANIZATION_STATUS: any;
+export declare const DEPLOYMENT_TYPE_ENUM: readonly ["SHARED", "DEDICATED", "SAAS"];
+export type DeploymentType = (typeof DEPLOYMENT_TYPE_ENUM)[number];
+export declare const DEPLOYMENT_TYPE: any;
+export declare const ORGANIZATION_CURRENCY_ENUM: readonly ["BDT", "USD"];
+export type OrganizationCurrencyType = (typeof ORGANIZATION_CURRENCY_ENUM)[number];
+export declare const ORGANIZATION_CURRENCY: any;
+export declare const ORGANIZATION_LANGUAGE_ENUM: readonly ["EN", "BN"];
+export type OrganizationLanguageType = (typeof ORGANIZATION_LANGUAGE_ENUM)[number];
+export declare const ORGANIZATION_LANGUAGE: any;
+export declare const ORGANIZATION_STORAGE_PROVIDER_ENUM: readonly ["CLOUDINARY", "S3", "LOCAL"];
+export type OrganizationStorageProviderType = (typeof ORGANIZATION_STORAGE_PROVIDER_ENUM)[number];
+export declare const ORGANIZATION_STORAGE_PROVIDER: any;
+//# sourceMappingURL=organization.d.ts.map

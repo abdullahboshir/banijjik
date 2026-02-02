@@ -12,6 +12,7 @@
     "@banijjik/contracts": "*",
     "@banijjik/shared-kernel": "*",
     "@banijjik/validation": "*",
+    "@banijjik/logger": "*",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
@@ -22,6 +23,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.4",
     "morgan": "^1.10.1",
+    "nodemailer": "^7.0.13",
     "reflect-metadata": "^0.2.2",
     "zod": "4.3.5"
   },
@@ -33,6 +35,7 @@
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
+    "@types/nodemailer": "^7.0.9",
     "nodemon": "^3.1.11",
     "tsx": "^4.20.6",
     "typescript": "^5.0.0"

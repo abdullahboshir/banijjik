@@ -5,8 +5,7 @@ import { UserStatus } from "../../../domain/value-objects/user-status.vo";
 export class PersonMapper {
   public static toPersonDomain(doc: IPersonDoc): Person {
     return new Person({
-      _id: doc._id.toString(),
-      id: doc.id,
+      personId: doc._id.toString(),
       userId: doc.userId,
       firstName: doc.firstName,
       lastName: doc.lastName,
@@ -33,8 +32,7 @@ export class PersonMapper {
   public static toPersonPersistence(person: Person) {
     const primitives = person.toPrimitives();
     return {
-      _id: primitives._id,
-      id: primitives.id,
+      personId: primitives.personId,
       userId: primitives.userId,
       firstName: primitives.firstName,
       lastName: primitives.lastName,

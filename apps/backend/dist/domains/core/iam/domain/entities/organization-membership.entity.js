@@ -2,8 +2,11 @@ export class OrganizationMembership {
     constructor(props) {
         this.props = props;
     }
-    get id() {
-        return this.props.id;
+    get _id() {
+        return this.props.membershipId;
+    }
+    get membershipId() {
+        return this.props.membershipId;
     }
     get userId() {
         return this.props.userId;
@@ -48,6 +51,7 @@ export class OrganizationMembership {
     static create(props) {
         return new OrganizationMembership({
             ...props,
+            membershipId: props.membershipId ?? crypto.randomUUID(),
             updatedAt: props.updatedAt ?? new Date(),
         });
     }

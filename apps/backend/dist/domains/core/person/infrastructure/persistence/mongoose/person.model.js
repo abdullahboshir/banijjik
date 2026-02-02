@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 const PersonSchema = new Schema({
-    id: { type: String, required: true, unique: true, index: true },
+    personId: { type: String, required: true, unique: true, index: true },
     userId: { type: String, required: true, index: true },
     firstName: { type: String, required: true },
     lastName: { type: String },

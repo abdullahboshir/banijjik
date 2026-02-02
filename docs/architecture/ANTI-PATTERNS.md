@@ -159,7 +159,7 @@ import { OrganizationDto } from "@banijjik/contracts";
 
 // অথবা port/interface define করুন
 export interface IOrganizationService {
-  findById(id: string): Promise<OrganizationDto>;
+  findById(organizationId: string): Promise<OrganizationDto>;
 }
 ```
 

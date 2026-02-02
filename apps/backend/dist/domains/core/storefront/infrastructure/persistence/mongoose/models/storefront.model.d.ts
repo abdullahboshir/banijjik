@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { STOREFRONT_STATUS_ENUM, ORGANIZATION_INDUSTRY_ENUM } from "@banijjik/contracts";
 export interface IStorefrontDoc extends Document {
-    id: string;
-    organizationId: mongoose.Types.ObjectId;
+    storefrontId: string;
+    organizationId: string;
     slug: string;
     industry: (typeof ORGANIZATION_INDUSTRY_ENUM)[number];
     status: (typeof STOREFRONT_STATUS_ENUM)[number];
@@ -47,7 +47,7 @@ export interface IStorefrontDoc extends Document {
         ogImage?: string;
     };
     sections: Array<{
-        id: string;
+        sectionId: string;
         type: string;
         title?: string;
         subtitle?: string;

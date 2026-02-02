@@ -1,6 +1,6 @@
 import { Document } from "mongoose";
 export interface IPersonDoc extends Document {
-    id: string;
+    personId: string;
     userId: string;
     firstName: string;
     lastName?: string;

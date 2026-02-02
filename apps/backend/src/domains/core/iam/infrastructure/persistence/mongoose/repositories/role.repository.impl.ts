@@ -5,15 +5,17 @@ import { RoleMapper } from "../mappers/role.mapper";
 export class MongooseRoleRepository implements IRoleRepository {
   async save(role: Role): Promise<void> {
     const data = RoleMapper.toPersistence(role);
-    if (role.id) {
-      await RoleModel.findByIdAndUpdate(role.id, data);
+    if (role.roleId) {
+      await RoleModel.findOneAndUpdate({ roleId: role.roleId }, data, {
+        upsert: true,
+      });
     } else {
       await RoleModel.create(data);
     }
   }
 
-  async findById(id: string): Promise<Role | null> {
-    const doc = await RoleModel.findById(id).populate("permissions");
+  async findById(roleId: string): Promise<Role | null> {
+    const doc = await RoleModel.findOne({ roleId }).populate("permissions");
     if (!doc) return null;
     return RoleMapper.toDomain(doc as any);
   }
@@ -34,7 +36,7 @@ export class MongooseRoleRepository implements IRoleRepository {
     return docs.map((doc) => RoleMapper.toDomain(doc as any));
   }
 
-  async delete(id: string): Promise<void> {
-    await RoleModel.findByIdAndDelete(id);
+  async delete(roleId: string): Promise<void> {
+    await RoleModel.findOneAndDelete({ roleId });
   }
 }

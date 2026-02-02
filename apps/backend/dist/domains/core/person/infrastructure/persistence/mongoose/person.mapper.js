@@ -3,8 +3,7 @@ import { UserStatus } from "../../../domain/value-objects/user-status.vo";
 export class PersonMapper {
     static toPersonDomain(doc) {
         return new Person({
-            _id: doc._id.toString(),
-            id: doc.id,
+            personId: doc._id.toString(),
             userId: doc.userId,
             firstName: doc.firstName,
             lastName: doc.lastName,
@@ -30,8 +29,7 @@ export class PersonMapper {
     static toPersonPersistence(person) {
         const primitives = person.toPrimitives();
         return {
-            _id: primitives._id,
-            id: primitives.id,
+            personId: primitives.personId,
             userId: primitives.userId,
             firstName: primitives.firstName,
             lastName: primitives.lastName,

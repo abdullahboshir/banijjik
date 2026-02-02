@@ -1,0 +1,1 @@
+{"version":3,"file":"user-context.port.d.ts","sourceRoot":"","sources":["../../../../../../src/domains/core/iam/application/ports/user-context.port.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,iBAAiB;IAChC,MAAM,EAAE,MAAM,CAAC;IACf,KAAK,EAAE,MAAM,CAAC;IACd,KAAK,EAAE,MAAM,EAAE,CAAC;IAChB,cAAc,CAAC,EAAE,MAAM,CAAC;IACxB,YAAY,EAAE,OAAO,CAAC;CACvB"}

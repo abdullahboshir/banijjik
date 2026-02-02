@@ -1,0 +1,1 @@
+{"version":3,"file":"system.routes.js","sourceRoot":"","sources":["../../../../src/routes/v1/platform/system.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,SAAS,CAAC;AAEjC,MAAM,CAAC,MAAM,kBAAkB,GAAG,GAAG,EAAE;IACrC,MAAM,MAAM,GAAG,MAAM,EAAE,CAAC;IAExB,gCAAgC;IAChC,kCAAkC;IAElC,OAAO,MAAM,CAAC;AAChB,CAAC,CAAC"}

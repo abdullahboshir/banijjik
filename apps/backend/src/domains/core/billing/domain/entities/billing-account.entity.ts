@@ -1,7 +1,7 @@
 import { TransactionStatus } from "../value-object/billing-account-status.vo";
 
 export interface BillingAccountProps {
-  id: string;
+  billingAccountId: string;
   ownerId: string;
   ownerType: string;
   currency: string;
@@ -13,7 +13,7 @@ export interface BillingAccountProps {
 
 export class BillingAccount {
   private props: BillingAccountProps & {
-    id: string;
+    billingAccountId: string;
     ownerId: string;
     ownerType: string;
     status: TransactionStatus;
@@ -28,8 +28,8 @@ export class BillingAccount {
     };
   }
 
-  get id(): string | undefined {
-    return this.props.id;
+  get billingAccountId(): string | undefined {
+    return this.props.billingAccountId;
   }
   get ownerId(): string {
     return this.props.ownerId;

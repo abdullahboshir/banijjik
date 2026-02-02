@@ -19,9 +19,11 @@
     "paths": {
       "@banijjik/contracts": ["./packages/contracts/src/index.ts"],
       "@banijjik/validation": ["./packages/validation/src/index.ts"],
+      "@banijjik/shared-kernel": ["./packages/shared-kernel/src/index.ts"],
       "@banijjik/i18n": ["./packages/i18n/src/index.ts"],
       "@iam/*": ["./apps/backend/src/domains/core/iam/*"],
-      "@people/*": ["./apps/backend/src/domains/core/people/*"],
+      "@person/*": ["./apps/backend/src/domains/core/person/*"],
+      "@storefront/*": ["./apps/backend/src/domains/core/storefront/*"],
       "@shared": ["./apps/backend/src/shared/index.ts"],
       "@shared/*": ["./apps/backend/src/shared/*"]
     }

@@ -1,0 +1,1 @@
+{"version":3,"file":"legal-type.vo.d.ts","sourceRoot":"","sources":["../../../../../../src/domains/core/organization/domain/value-objects/legal-type.vo.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,qBAAqB,EAAE,MAAM,qBAAqB,CAAC;AAE5D,qBAAa,iBAAiB;IACR,OAAO,CAAC,QAAQ,CAAC,KAAK;IAA1C,OAAO;WAEO,MAAM,CAAC,KAAK,EAAE,qBAAqB,GAAG,iBAAiB;IAI9D,QAAQ,IAAI,qBAAqB;CAGzC"}

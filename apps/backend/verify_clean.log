@@ -1,0 +1,8 @@
+[dotenv@17.2.3] injecting env (104) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+Connected to DB
+Executing UseCase...
+Verification Failed: Error: Invalid Industry Type
+    at OrganizationIndustry.create (E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik\apps\backend\src\domains\core\organization\domain\value-objects\industry.vo.ts:12:13)
+    at CreateOrganizationUseCase.execute (E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik\apps\backend\src\domains\core\organization\application\use-cases\create-organization.use-case.ts:51:38)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async verify (E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik\apps\backend\src\scripts\verify-organization-flow.ts:76:20)

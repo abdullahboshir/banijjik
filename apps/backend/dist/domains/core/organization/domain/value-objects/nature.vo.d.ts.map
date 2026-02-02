@@ -1,0 +1,1 @@
+{"version":3,"file":"nature.vo.d.ts","sourceRoot":"","sources":["../../../../../../src/domains/core/organization/domain/value-objects/nature.vo.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,sBAAsB,EAAE,MAAM,qBAAqB,CAAC;AAE7D,qBAAa,kBAAkB;IACT,OAAO,CAAC,QAAQ,CAAC,KAAK;IAA1C,OAAO;WAEO,MAAM,CAAC,KAAK,EAAE,sBAAsB,GAAG,kBAAkB;IAIhE,QAAQ,IAAI,sBAAsB;CAG1C"}

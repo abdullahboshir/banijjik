@@ -1,7 +1,6 @@
 import { StorefrontStatusType, IStorefrontSection, IStorefrontTheme, IStorefrontSEO, IStorefrontHero, IStorefrontAbout, IStorefrontSocialMedia, IStorefrontPolicies, OrganizationIndustryType } from "@banijjik/contracts";
 export interface StorefrontProps {
-    _id?: string;
-    id?: string;
+    storefrontId: string;
     organizationId: string;
     slug: string;
     industry: OrganizationIndustryType;
@@ -21,8 +20,7 @@ export interface StorefrontProps {
 export declare class Storefront {
     private props;
     constructor(props: StorefrontProps);
-    get _id(): string | undefined;
-    get id(): string | undefined;
+    get storefrontId(): string | undefined;
     get organizationId(): string;
     get slug(): string;
     get industry(): OrganizationIndustryType;
@@ -46,8 +44,7 @@ export declare class Storefront {
     updateSections(sections: IStorefrontSection[]): void;
     private touch;
     toPrimitives(): {
-        _id?: string;
-        id?: string;
+        storefrontId: string;
         organizationId: string;
         slug: string;
         industry: OrganizationIndustryType;

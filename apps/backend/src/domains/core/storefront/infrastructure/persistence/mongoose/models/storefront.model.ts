@@ -6,8 +6,8 @@ import {
 } from "@banijjik/contracts";
 
 export interface IStorefrontDoc extends Document {
-  id: string;
-  organizationId: mongoose.Types.ObjectId;
+  storefrontId: string;
+  organizationId: string;
   slug: string;
   industry: (typeof ORGANIZATION_INDUSTRY_ENUM)[number];
   status: (typeof STOREFRONT_STATUS_ENUM)[number];
@@ -52,7 +52,7 @@ export interface IStorefrontDoc extends Document {
     ogImage?: string;
   };
   sections: Array<{
-    id: string;
+    sectionId: string;
     type: string;
     title?: string;
     subtitle?: string;
@@ -69,12 +69,10 @@ export interface IStorefrontDoc extends Document {
 
 const StorefrontSchema = new Schema<IStorefrontDoc>(
   {
-    id: { type: String, required: true, unique: true, index: true },
+    storefrontId: { type: String, required: true, unique: true, index: true },
     organizationId: {
-      type: Schema.Types.ObjectId,
-      ref: "Organization",
+      type: String,
       required: true,
-      unique: true,
       index: true,
     },
     slug: {
@@ -136,7 +134,7 @@ const StorefrontSchema = new Schema<IStorefrontDoc>(
     },
     sections: [
       {
-        id: { type: String, required: true },
+        sectionId: { type: String, required: true },
         type: {
           type: String,
           enum: STOREFRONT_SECTION_TYPE_ENUM,
@@ -153,8 +151,20 @@ const StorefrontSchema = new Schema<IStorefrontDoc>(
     customCss: { type: String },
     publishedAt: { type: Date },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
+
+// Virtual for Populate Support
+StorefrontSchema.virtual("organization", {
+  ref: "Organization",
+  localField: "organizationId",
+  foreignField: "organizationId",
+  justOne: true,
+});
 
 export const StorefrontModel = model<IStorefrontDoc>(
   "Storefront",

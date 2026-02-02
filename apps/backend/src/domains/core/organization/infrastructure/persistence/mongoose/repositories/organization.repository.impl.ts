@@ -4,22 +4,24 @@ import { OrganizationModel } from "../models/organization.model";
 import { OrganizationMapper } from "../mappers/organization.mapper";
 
 export class MongooseOrganizationRepository implements IOrganizationRepository {
-  async save(organization: Organization): Promise<void> {
+  async save(organization: Organization): Promise<Organization> {
     const persistence = OrganizationMapper.toPersistence(organization);
     // Use the explicit business id for upsert/save
-    if (organization.id) {
-      await OrganizationModel.findOneAndUpdate(
-        { id: organization.id },
+    let doc;
+    if (organization.organizationId) {
+      doc = await OrganizationModel.findOneAndUpdate(
+        { organizationId: organization.organizationId },
         persistence,
         { upsert: true, new: true },
       );
     } else {
-      await OrganizationModel.create(persistence);
+      doc = await OrganizationModel.create(persistence);
     }
+    return OrganizationMapper.toDomain(doc);
   }
 
-  async findById(id: string): Promise<Organization | null> {
-    const doc = await OrganizationModel.findOne({ id });
+  async findById(organizationId: string): Promise<Organization | null> {
+    const doc = await OrganizationModel.findOne({ organizationId });
     return doc ? OrganizationMapper.toDomain(doc) : null;
   }
 

@@ -5,8 +5,8 @@ export class UserPersistenceMapper {
      * Domain Entity -> Mongoose Document (Persistence)
      */
     static toPersistence(user) {
-        return {
-            _id: user.id,
+        const persistence = {
+            userId: user.userId,
             firstName: user.name.getFirstName(),
             lastName: user.name.getLastName(),
             email: user.email.toString(),
@@ -20,25 +20,25 @@ export class UserPersistenceMapper {
             isActive: user.isActive,
             isDeleted: user.isDeleted,
             isSuperAdmin: user.isSuperAdmin,
-            globalRoles: user.globalRoles,
+            systemRoles: user.systemRoles,
             directPermissions: user.directPermissions.map((p) => p.toObject()),
             lastLogin: user.lastLogin,
+            lastActiveContext: user.lastActiveContext,
             loginHistory: user.loginHistory.map((h) => h.toObject()),
             settings: user.settings.toObject(),
             metadata: user.metadata,
-            organization: user.organization,
-            region: user.region,
             createdBy: user.createdBy,
             updatedBy: user.updatedBy,
         };
+        return persistence;
     }
     /**
      * Mongoose Document -> Domain Entity
      */
     static toDomain(doc) {
-        return new User(doc._id, UserName.create(doc.firstName, doc.lastName), Email.create(doc.email), Phone.createOptional(doc.phone), doc.password, doc.needsPasswordChange, doc.passwordChangedAt, doc.isEmailVerified, doc.isPhoneVerified, UserStatus.from(doc.status), doc.isActive, doc.isDeleted, doc.isSuperAdmin, doc.globalRoles, 
+        return new User(doc.userId, UserName.create(doc.firstName, doc.lastName), Email.create(doc.email), Phone.createOptional(doc.phone), doc.password, doc.needsPasswordChange, doc.passwordChangedAt, doc.isEmailVerified, doc.isPhoneVerified, UserStatus.from(doc.status), doc.isActive, doc.isDeleted, doc.isSuperAdmin, doc.systemRoles || [], 
         // Handle potential null/undefined for arrays coming from DB
-        (doc.directPermissions || []).map((p) => DirectPermission.create(p)), doc.lastLogin, (doc.loginHistory || []).map((h) => LoginHistory.create(h)), UserSettings.create(doc.settings || { theme: "SYSTEM", tableHeight: "MEDIUM" }), doc.metadata, doc.organization, doc.region, doc.createdBy, doc.updatedBy, doc.createdAt, doc.updatedAt);
+        (doc.directPermissions || []).map((p) => DirectPermission.create(p)), doc.lastLogin, doc.lastActiveContext || null, (doc.loginHistory || []).map((h) => LoginHistory.create(h)), UserSettings.create(doc.settings || { theme: "SYSTEM", tableHeight: "MEDIUM" }), doc.metadata, doc.createdBy, doc.updatedBy, doc.createdAt, doc.updatedAt);
     }
 }
 //# sourceMappingURL=user.mapper.js.map

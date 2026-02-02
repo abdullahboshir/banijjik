@@ -1,50 +1,18 @@
-import {
-  OrganizationIndustryType,
-  OrganizationLegalType,
-  OrganizationNatureType,
-  OrganizationStatusType,
-  DeploymentType,
-  OrganizationCurrencyType,
-  OrganizationStorageProviderType,
-} from "@banijjik/contracts";
-
-export interface OrganizationLocalization {
-  currency: OrganizationCurrencyType;
-  language: string;
-  timezone: string;
-  dateFormat: string;
-}
-
-export interface OrganizationLocalization {
-  currency: OrganizationCurrencyType;
-  language: string;
-  timezone: string;
-  dateFormat: string;
-}
-
-export interface OrganizationDeployment {
-  type: DeploymentType;
-  customDomain?: string;
-  databaseUri?: string; // Sensitive
-  serverRegion?: string;
-  dbCluster?: string;
-  customEnv?: Record<string, any>;
-  storageConfig?: {
-    provider: OrganizationStorageProviderType;
-    bucket?: string;
-    region?: string;
-  };
-}
+import { OrganizationIndustry } from "../value-objects/industry.vo.js";
+import { OrganizationLegal } from "../value-objects/legal-type.vo.js";
+import { OrganizationNature } from "../value-objects/nature.vo.js";
+import { OrganizationStatus } from "../value-objects/status.vo.js";
+import { OrganizationLocalization } from "../value-objects/localization.vo.js";
+import { OrganizationDeployment } from "../value-objects/deployment.vo.js";
 
 export interface OrganizationProps {
-  _id?: string;
-  id?: string;
+  organizationId?: string;
   name: string;
-  slug: string;
-  industry: OrganizationIndustryType;
-  legalType: OrganizationLegalType;
-  nature: OrganizationNatureType;
-  status: OrganizationStatusType;
+  slug: string; // Could be VO
+  industry: OrganizationIndustry;
+  legalType: OrganizationLegal;
+  nature: OrganizationNature;
+  status: OrganizationStatus;
   email?: string;
   phone?: string;
   supportPhone?: string;
@@ -64,9 +32,7 @@ export class Organization {
   constructor(props: OrganizationProps) {
     this.props = {
       ...props,
-      id: props.id ?? crypto.randomUUID(),
-      status: props.status || "PENDING",
-      nature: props.nature || "SERVICE",
+      organizationId: props.organizationId ?? crypto.randomUUID(),
       establishedDate: props.establishedDate || new Date(),
       metadata: props.metadata || {},
       createdAt: props.createdAt || new Date(),
@@ -74,11 +40,8 @@ export class Organization {
     };
   }
 
-  get _id() {
-    return this.props._id;
-  }
-  get id() {
-    return this.props.id;
+  get organizationId() {
+    return this.props.organizationId;
   }
   get name() {
     return this.props.name;
@@ -101,8 +64,29 @@ export class Organization {
   get deployment() {
     return this.props.deployment;
   }
+  get localization() {
+    return this.props.localization;
+  }
   get metadata() {
     return this.props.metadata;
+  }
+  get email() {
+    return this.props.email;
+  }
+  get phone() {
+    return this.props.phone;
+  }
+  get supportPhone() {
+    return this.props.supportPhone;
+  }
+  get establishedDate() {
+    return this.props.establishedDate;
+  }
+  get address() {
+    return this.props.address;
+  }
+  get website() {
+    return this.props.website;
   }
 
   public update(props: Partial<OrganizationProps>): void {
@@ -114,6 +98,14 @@ export class Organization {
   }
 
   public toJSON() {
-    return { ...this.props };
+    return {
+      ...this.props,
+      industry: this.props.industry.getValue(),
+      legalType: this.props.legalType.getValue(),
+      nature: this.props.nature.getValue(),
+      status: this.props.status.getValue(),
+      localization: this.props.localization.toValue(),
+      deployment: this.props.deployment.toValue(),
+    };
   }
 }

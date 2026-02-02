@@ -1,8 +1,7 @@
 import mongoose, { Document } from "mongoose";
 import { UserStatusType, IUserLastActiveContext } from "@banijjik/contracts";
-export interface IUserDocument extends Omit<Document, "_id"> {
-    _id: string;
-    id: string;
+export interface IUserDocument extends Document {
+    userId: string;
     firstName: string;
     lastName?: string;
     email: string;
@@ -29,7 +28,7 @@ export interface IUserDocument extends Omit<Document, "_id"> {
     updatedAt: Date;
 }
 export declare const UserModel: mongoose.Model<IUserDocument, {}, {}, {}, mongoose.Document<unknown, {}, IUserDocument, {}, {}> & IUserDocument & Required<{
-    _id: string;
+    _id: mongoose.Types.ObjectId;
 }> & {
     __v: number;
 }, any>;

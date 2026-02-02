@@ -1,4 +1,4 @@
-import { catchAsync } from "../utils/catch-async";
+import { catchAsync } from "@banijjik/shared-kernel";
 /**
  * Platinum Standard: Request Validation Middleware.
  * Decouples schema validation from business controllers.

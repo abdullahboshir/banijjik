@@ -54,6 +54,16 @@ Dependencies point **INWARDS**.
   - `ProfileType (Contract)` <--> `ProfileType (Domain)`
   - _Reason:_ If the API changes "MEMBER" to "SUBSCRIBER", the Domain "MEMBER" remains untouched.
 
+## 6. Zero-Threshold Enum & Value Object Rule 🎯
+
+To ensure zero hardcoding and perfect type safety:
+
+1.  **Requirement Check:** Before using any enum, type, or specific object value in the **Domain**, look for it in `packages/contracts`.
+2.  **Contract-First:** If the value/enum does not exist in `contracts`, you MUST add it there first.
+3.  **VO implementation:** Import the contract enum into a dedicated **Value Object (VO)** registry (following Rule 4).
+4.  **Domain Usage:** Use ONLY the Domain VO registry.
+5.  **Prohibition:** ❌ NEVER use string literals or hardcoded values for domain logic.
+
 ## 5. Explicit Mappers 🗺️
 
 - **Rule:** Data never crosses layers without translation.

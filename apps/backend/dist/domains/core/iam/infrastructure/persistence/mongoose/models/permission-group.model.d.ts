@@ -1,9 +1,10 @@
 import { Document, Types } from "mongoose";
 export interface IPermissionGroupDoc extends Document {
+    permissionGroupId: string;
     name: string;
     domain: string;
     description: string;
-    permissions: Types.ObjectId[];
+    permissions: string[];
     resolver: {
         strategy: string;
         priority: number;

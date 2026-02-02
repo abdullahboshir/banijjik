@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { DomainError } from "../errors";
 import { ApiResponse } from "../presentation";
 import { logger } from "../utils";
+import { appConfig } from "../../config/app.config";
 
 /**
  * Global Error Middleware
@@ -27,7 +28,7 @@ export const globalErrorMiddleware = (
       error.message,
       error.statusCode,
       error.details,
-      process.env.NODE_ENV === "development" ? error.stack : undefined,
+      appConfig.NODE_ENV === "development" ? error.stack : undefined,
     );
   }
 
@@ -41,6 +42,6 @@ export const globalErrorMiddleware = (
     internalErrorMessage,
     500,
     null,
-    process.env.NODE_ENV === "development" ? error.stack : undefined,
+    appConfig.NODE_ENV === "development" ? error.stack : undefined,
   );
 };

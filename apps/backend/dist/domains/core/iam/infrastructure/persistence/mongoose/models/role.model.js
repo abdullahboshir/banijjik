@@ -4,11 +4,13 @@ import { Schema, model } from "mongoose";
 // Role Schema
 // ═══════════════════════════════════════════════════════════════
 const RoleSchema = new Schema({
+    roleId: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true, trim: true },
+    key: { type: String, required: true, trim: true, unique: true },
     description: { type: String, required: true, trim: true },
-    permissions: [{ type: Schema.Types.ObjectId, ref: "Permission" }],
-    permissionGroups: [{ type: Schema.Types.ObjectId, ref: "PermissionGroup" }],
-    isSystemRole: { type: Boolean, default: false },
+    permissions: [{ type: String, ref: "Permission" }],
+    permissionGroups: [{ type: String, ref: "PermissionGroup" }],
+    isSystem: { type: Boolean, default: false },
     roleScope: {
         type: String,
         enum: Object.values(PERMISSION_SCOPE),
@@ -17,9 +19,8 @@ const RoleSchema = new Schema({
     },
     isActive: { type: Boolean, default: true },
     hierarchyLevel: { type: Number, required: true, default: 1 },
-    organization: {
-        type: Schema.Types.ObjectId,
-        ref: "Organization",
+    organizationId: {
+        type: String,
         default: null,
         index: true,
     },
@@ -27,6 +28,12 @@ const RoleSchema = new Schema({
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
+});
+// Virtual for permissions populate support
+RoleSchema.virtual("permissionDetails", {
+    ref: "Permission",
+    localField: "permissions",
+    foreignField: "permissionId",
 });
 RoleSchema.index({ name: 1, roleScope: 1 }, { unique: true });
 export const RoleModel = model("Role", RoleSchema);

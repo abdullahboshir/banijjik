@@ -1,0 +1,14 @@
+[dotenv@17.2.3] injecting env (104) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+Connected to DB
+Executing UseCase...
+---------------------------------------------------
+[MOCK WELCOME EMAIL] To: verify_1769940948717@example.com
+[MOCK WELCOME EMAIL] Name: Verify User
+[MOCK WELCOME EMAIL] Link: http://localhost:3000/auth/setup-password?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MDRjNjFjYS0zZjZjLTRmMmMtOWVmZC1kZTFkMTFlZjAxMmYiLCJlbWFpbCI6InZlcmlmeV8xNzY5OTQwOTQ4NzE3QGV4YW1wbGUuY29tIiwidHlwZSI6IlNFVFVQX1BBU1NXT1JEIiwib3JnYW5pemF0aW9uSWQiOiJmYTE5NTVmOC0zMDdjLTQ2MTUtODhmYy04MTRiMTRhNDY2ODUiLCJpYXQiOjE3Njk5NDA5NDksImV4cCI6MTc3MDAyNzM0OX0.9IhPECZdqah32A9kpH2NJY03UvEoi5uUQVGUPLf3JcI&email=verify_1769940948717@example.com
+---------------------------------------------------
+Result: {
+  organizationId: 'fa1955f8-307c-4615-88fc-814b14a46685',
+  ownerId: '704c61ca-3f6c-4f2c-9efd-de1d11ef012f',
+  slug: 'verification-corp-1769940948717',
+  message: 'Organization created and invitation sent.'
+}

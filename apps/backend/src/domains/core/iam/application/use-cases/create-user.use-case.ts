@@ -13,6 +13,7 @@ import {
   OrganizationMembershipVO,
   DirectPermission,
   UserSettings,
+  PortalType,
 } from "@iam/domain";
 import { CreateUserDto } from "../dto";
 import { IPasswordHasher } from "../ports";
@@ -23,7 +24,6 @@ import {
   IUserDetail,
   ILoginHistory,
   PermissionEffectType,
-  CommonStatusType,
   UserThemeType,
   USER_THEME,
   TABLE_HEIGHT,
@@ -95,7 +95,7 @@ export class CreateUserUseCase {
 
     // 5. Instantiate Domain Entity
     const user = new User(
-      crypto.randomUUID(),
+      crypto.randomUUID(), // userId
       name,
       email,
       phone,
@@ -108,14 +108,18 @@ export class CreateUserUseCase {
       dto.isActive ?? true,
       false, // isDeleted
       dto.isSuperAdmin ?? false,
-      dto.globalRoles ?? [],
+      dto.systemRoles ?? [],
       directPermissions,
       null, // lastLogin
+      {
+        portal: dto.lastActiveContext?.portal || PortalType.VALUE.PLATFORM,
+        organizationId: dto.lastActiveContext?.organizationId,
+        lastAccessedAt: new Date(),
+      },
       [], // loginHistory
       settings,
       dto.metadata ?? {},
-      dto.organization,
-      dto.region,
+      // creating user directly in domain doesn't set organization/region at top level anymore
     );
 
     // 6. Persistence
@@ -123,7 +127,7 @@ export class CreateUserUseCase {
 
     // 7. Return Response DTO
     return {
-      id: user.id,
+      userId: user.userId,
       name: user.name.toObject(),
       email: user.email.toString(),
       phone: user.phone ? user.phone.toString() : null,
@@ -132,7 +136,7 @@ export class CreateUserUseCase {
       status: user.status.getValue(),
       isActive: user.isActive,
       isSuperAdmin: user.isSuperAdmin,
-      globalRoles: user.globalRoles,
+      systemRoles: user.systemRoles,
       directPermissions: user.directPermissions.map(
         (p) => p.toObject() as IDirectPermission,
       ),
@@ -143,8 +147,7 @@ export class CreateUserUseCase {
         return { ...obj, date: obj.timestamp } as unknown as ILoginHistory;
       }),
       settings: user.settings.toObject() as IUserDetail,
-      organization: user.organization,
-      region: user.region,
+      lastActiveContext: user.lastActiveContext,
       createdAt: user.createdAt,
     };
   }

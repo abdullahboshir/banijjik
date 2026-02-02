@@ -8,15 +8,16 @@ import { USER_ROLE, PERMISSION_SCOPE } from "@banijjik/contracts";
 export async function seedOrganizationRoles() {
     console.log("📡 Step 4: Syncing Organization-Level Roles...");
     const allGroups = await PermissionGroupModel.find({});
-    // Helper: Get groups by domain and return both group IDs and flattened permission IDs
+    // Helper: Get groups by domain and return both group IDs and flattened permission IDs (all strings)
     const getGroupsAndPermissions = (domainNames) => {
         const groups = allGroups.filter((g) => domainNames.includes(g.domain));
-        const permissionGroups = groups.map((g) => g._id);
+        const permissionGroups = groups.map((g) => g.permissionGroupId);
         const permissions = groups.flatMap((g) => g.permissions);
         return { permissionGroups, permissions };
     };
     const roleConfigs = [
         {
+            roleId: crypto.randomUUID(),
             name: USER_ROLE.ORGANIZATION_OWNER,
             description: "Full organization access and management",
             ...getGroupsAndPermissions([
@@ -27,49 +28,60 @@ export async function seedOrganizationRoles() {
             ]),
             roleScope: PERMISSION_SCOPE.ORGANIZATION,
             hierarchyLevel: 90,
-            isSystemRole: true,
+            isSystem: true,
+            key: "organization_owner_org",
         },
         {
+            roleId: crypto.randomUUID(),
             name: USER_ROLE.ADMIN,
             description: "Organization administrator with full operational access",
             ...getGroupsAndPermissions(["organization", "inventory", "ordering"]),
             roleScope: PERMISSION_SCOPE.ORGANIZATION,
             hierarchyLevel: 80,
-            isSystemRole: true,
+            isSystem: true,
+            key: "admin_org",
         },
         {
+            roleId: crypto.randomUUID(),
             name: USER_ROLE.MANAGER,
             description: "Department or team manager",
             ...getGroupsAndPermissions(["inventory", "ordering"]),
             roleScope: PERMISSION_SCOPE.ORGANIZATION,
             hierarchyLevel: 60,
-            isSystemRole: true,
+            isSystem: true,
+            key: "manager_org",
         },
         {
+            roleId: crypto.randomUUID(),
             name: USER_ROLE.STAFF,
             description: "Standard staff member with operational access",
             ...getGroupsAndPermissions(["ordering"]),
             roleScope: PERMISSION_SCOPE.ORGANIZATION,
             hierarchyLevel: 40,
-            isSystemRole: true,
+            isSystem: true,
+            key: "staff_org",
         },
         {
+            roleId: crypto.randomUUID(),
             name: USER_ROLE.CONSUMER,
             description: "End customer with limited self-service access",
             permissionGroups: [],
             permissions: [],
             roleScope: PERMISSION_SCOPE.SELF,
             hierarchyLevel: 10,
-            isSystemRole: true,
+            isSystem: true,
+            key: "consumer_self",
         },
         {
+            roleId: crypto.randomUUID(),
             name: USER_ROLE.VIEWER,
             description: "Read-only access for auditing purposes",
             permissionGroups: [],
             permissions: [],
             roleScope: PERMISSION_SCOPE.ORGANIZATION,
             hierarchyLevel: 5,
-            isSystemRole: true,
+            isSystem: true,
+            key: "viewer_org",
         },
     ];
     const ops = roleConfigs.map((role) => ({
@@ -77,15 +89,17 @@ export async function seedOrganizationRoles() {
             filter: { name: role.name, roleScope: role.roleScope },
             update: {
                 $set: {
+                    roleId: role.roleId,
                     name: role.name,
+                    key: role.key,
                     description: role.description,
                     permissions: role.permissions,
                     permissionGroups: role.permissionGroups,
-                    isSystemRole: role.isSystemRole,
+                    isSystem: role.isSystem,
                     roleScope: role.roleScope,
                     isActive: true,
                     hierarchyLevel: role.hierarchyLevel,
-                    organization: null,
+                    organizationId: null,
                 },
             },
             upsert: true,

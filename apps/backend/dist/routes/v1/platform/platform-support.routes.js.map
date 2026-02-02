@@ -1,0 +1,1 @@
+{"version":3,"file":"platform-support.routes.js","sourceRoot":"","sources":["../../../../src/routes/v1/platform/platform-support.routes.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,SAAS,CAAC;AAEjC,MAAM,CAAC,MAAM,mBAAmB,GAAG,GAAG,EAAE;IACtC,MAAM,MAAM,GAAG,MAAM,EAAE,CAAC;IAExB,wCAAwC;IAExC,OAAO,MAAM,CAAC;AAChB,CAAC,CAAC"}

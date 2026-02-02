@@ -5,9 +5,8 @@ import {
   IUserLastActiveContext,
 } from "@banijjik/contracts";
 
-export interface IUserDocument extends Omit<Document, "_id"> {
-  _id: string;
-  id: string;
+export interface IUserDocument extends Document {
+  userId: string;
   firstName: string;
   lastName?: string;
   email: string;
@@ -36,7 +35,7 @@ export interface IUserDocument extends Omit<Document, "_id"> {
 
 const UserSchema = new Schema<IUserDocument>(
   {
-    _id: { type: String, required: true },
+    userId: { type: String, required: true, unique: true, index: true },
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, trim: true },
     email: {
@@ -83,7 +82,6 @@ const UserSchema = new Schema<IUserDocument>(
   },
   {
     timestamps: true,
-    _id: false, // We use string IDs
   },
 );
 

@@ -8,9 +8,9 @@ import {
 } from "@banijjik/contracts";
 
 export interface IOrganizationMembershipDoc extends Document {
-  userId: Types.ObjectId;
-  organizationId: Types.ObjectId;
-  roleId: Types.ObjectId;
+  userId: string;
+  organizationId: string;
+  roleId: string;
   type: (typeof MEMBERSHIP_TYPE_ENUM)[number];
   designation?: string;
   memberCode?: string;
@@ -22,13 +22,13 @@ export interface IOrganizationMembershipDoc extends Document {
 
 const OrganizationMembershipSchema = new Schema<IOrganizationMembershipDoc>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, index: true },
     organizationId: {
-      type: Schema.Types.ObjectId,
-      ref: "Organization",
+      type: String,
       required: true,
+      index: true,
     },
-    roleId: { type: Schema.Types.ObjectId, ref: "Role", required: true },
+    roleId: { type: String, required: true, index: true },
     type: {
       type: String,
       enum: MEMBERSHIP_TYPE_ENUM,
@@ -50,8 +50,34 @@ const OrganizationMembershipSchema = new Schema<IOrganizationMembershipDoc>(
     joinedAt: { type: Date, default: Date.now },
     metadata: { type: Schema.Types.Map, of: Schema.Types.Mixed },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
+
+// Virtuals for Populate support using String IDs
+OrganizationMembershipSchema.virtual("user", {
+  ref: "User",
+  localField: "userId",
+  foreignField: "userId",
+  justOne: true,
+});
+
+OrganizationMembershipSchema.virtual("organization", {
+  ref: "Organization",
+  localField: "organizationId",
+  foreignField: "organizationId",
+  justOne: true,
+});
+
+OrganizationMembershipSchema.virtual("role", {
+  ref: "Role",
+  localField: "roleId",
+  foreignField: "roleId",
+  justOne: true,
+});
 
 OrganizationMembershipSchema.index(
   { userId: 1, organizationId: 1, roleId: 1 },

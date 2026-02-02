@@ -5,15 +5,17 @@ import { Schema, model, Document, Types } from "mongoose";
 // Role Document Interface
 // ═══════════════════════════════════════════════════════════════
 export interface IRoleDoc extends Document {
+  roleId: string;
   name: string;
+  key: string;
   description: string;
-  permissions: Types.ObjectId[];
-  permissionGroups: Types.ObjectId[];
-  isSystemRole: boolean;
+  permissions: string[];
+  permissionGroups: string[];
+  isSystem: boolean;
   roleScope: string;
   isActive: boolean;
   hierarchyLevel: number;
-  organization?: Types.ObjectId;
+  organizationId?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -21,11 +23,13 @@ export interface IRoleDoc extends Document {
 // ═══════════════════════════════════════════════════════════════
 const RoleSchema = new Schema<IRoleDoc>(
   {
+    roleId: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true, trim: true },
+    key: { type: String, required: true, trim: true, unique: true },
     description: { type: String, required: true, trim: true },
-    permissions: [{ type: Schema.Types.ObjectId, ref: "Permission" }],
-    permissionGroups: [{ type: Schema.Types.ObjectId, ref: "PermissionGroup" }],
-    isSystemRole: { type: Boolean, default: false },
+    permissions: [{ type: String, ref: "Permission" }],
+    permissionGroups: [{ type: String, ref: "PermissionGroup" }],
+    isSystem: { type: Boolean, default: false },
     roleScope: {
       type: String,
       enum: Object.values(PERMISSION_SCOPE),
@@ -34,9 +38,8 @@ const RoleSchema = new Schema<IRoleDoc>(
     },
     isActive: { type: Boolean, default: true },
     hierarchyLevel: { type: Number, required: true, default: 1 },
-    organization: {
-      type: Schema.Types.ObjectId,
-      ref: "Organization",
+    organizationId: {
+      type: String,
       default: null,
       index: true,
     },
@@ -47,6 +50,13 @@ const RoleSchema = new Schema<IRoleDoc>(
     toObject: { virtuals: true },
   },
 );
+
+// Virtual for permissions populate support
+RoleSchema.virtual("permissionDetails", {
+  ref: "Permission",
+  localField: "permissions",
+  foreignField: "permissionId",
+});
 
 RoleSchema.index({ name: 1, roleScope: 1 }, { unique: true });
 

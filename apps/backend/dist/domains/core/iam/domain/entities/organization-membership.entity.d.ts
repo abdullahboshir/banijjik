@@ -1,6 +1,6 @@
 import { CommonStatusType, MembershipType, MembershipSourceType } from "@banijjik/contracts";
 export interface OrganizationMembershipProps {
-    id?: string;
+    membershipId?: string;
     userId: string;
     organizationId: string;
     roleId: string;
@@ -16,7 +16,8 @@ export interface OrganizationMembershipProps {
 export declare class OrganizationMembership {
     private readonly props;
     constructor(props: OrganizationMembershipProps);
-    get id(): string | undefined;
+    get _id(): string | undefined;
+    get membershipId(): string | undefined;
     get userId(): string;
     get organizationId(): string;
     get roleId(): string;
@@ -27,7 +28,7 @@ export declare class OrganizationMembership {
     get source(): MembershipSourceType;
     get joinedAt(): Date;
     toObject(): {
-        id?: string;
+        membershipId?: string;
         userId: string;
         organizationId: string;
         roleId: string;

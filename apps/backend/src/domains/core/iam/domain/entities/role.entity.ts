@@ -1,5 +1,5 @@
 export interface RoleProps {
-  id?: string;
+  roleId?: string;
   name: string;
   key: string; // e.g., 'ORGANIZATION_ADMIN'
   organizationId?: string; // null for platform-level roles
@@ -12,8 +12,8 @@ export interface RoleProps {
 export class Role {
   constructor(private readonly props: RoleProps) {}
 
-  get id(): string | undefined {
-    return this.props.id;
+  get roleId(): string | undefined {
+    return this.props.roleId;
   }
   get name(): string {
     return this.props.name;
@@ -36,6 +36,9 @@ export class Role {
   }
 
   static create(props: RoleProps): Role {
-    return new Role(props);
+    return new Role({
+      ...props,
+      roleId: props.roleId ?? crypto.randomUUID(),
+    });
   }
 }

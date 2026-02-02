@@ -1,2 +1,3 @@
-export * from './controllers';
-export * from './routes';
+export * from "./controllers/index.js";
+export * from "./routes/index.js";
+export * from "./middleware/index.js";

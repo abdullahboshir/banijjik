@@ -9,11 +9,8 @@ export class Person {
             profileAttributes: props.profileAttributes ?? {},
         };
     }
-    get _id() {
-        return this.props._id;
-    }
-    get id() {
-        return this.props.id;
+    get personId() {
+        return this.props.personId;
     }
     get userId() {
         return this.props.userId;
@@ -73,8 +70,7 @@ export class Person {
     }
     toPrimitives() {
         return {
-            _id: this.props._id,
-            id: this.props.id,
+            personId: this.props.personId,
             userId: this.props.userId,
             firstName: this.props.firstName,
             lastName: this.props.lastName,
@@ -96,6 +92,9 @@ export class Person {
             updatedAt: this.props.updatedAt,
             profileAttributes: this.props.profileAttributes,
         };
+    }
+    static create(props) {
+        return new Person(props);
     }
 }
 //# sourceMappingURL=person.entity.js.map

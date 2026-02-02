@@ -1,9 +1,12 @@
 export interface PermissionProps {
-  id?: string;
-  name: string;
-  key: string;
-  module: string;
-  description?: string;
+  permissionId?: string;
+  domain: string;
+  resource: string;
+  action: string;
+  scope: string;
+  effect: string;
+  description: string;
+  isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -11,17 +14,23 @@ export interface PermissionProps {
 export class Permission {
   constructor(private readonly props: PermissionProps) {}
 
-  get id(): string | undefined {
-    return this.props.id;
+  get permissionId(): string | undefined {
+    return this.props.permissionId;
   }
-  get name(): string {
-    return this.props.name;
+  get domain(): string {
+    return this.props.domain;
   }
-  get key(): string {
-    return this.props.key;
+  get resource(): string {
+    return this.props.resource;
   }
-  get module(): string {
-    return this.props.module;
+  get action(): string {
+    return this.props.action;
+  }
+  get scope(): string {
+    return this.props.scope;
+  }
+  get effect(): string {
+    return this.props.effect;
   }
 
   toObject() {
@@ -29,6 +38,9 @@ export class Permission {
   }
 
   static create(props: PermissionProps): Permission {
-    return new Permission(props);
+    return new Permission({
+      ...props,
+      permissionId: props.permissionId ?? crypto.randomUUID(),
+    });
   }
 }

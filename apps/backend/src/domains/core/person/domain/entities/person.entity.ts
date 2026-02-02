@@ -1,8 +1,9 @@
 import { UserStatus } from "../value-objects/user-status.vo";
+import { IndustryBlueprint } from "../value-objects/industry-blueprint.vo";
+import { OrganizationIndustry } from "../value-objects/organization-industry.vo";
 
 export interface PersonProps {
-  _id?: string;
-  id?: string;
+  personId: string;
   userId: string;
   firstName: string;
   lastName?: string;
@@ -49,11 +50,8 @@ export class Person {
     };
   }
 
-  get _id(): string | undefined {
-    return this.props._id;
-  }
-  get id(): string | undefined {
-    return this.props.id;
+  get personId(): string {
+    return this.props.personId;
   }
   get userId(): string {
     return this.props.userId;
@@ -94,6 +92,14 @@ export class Person {
     return this.props.profileAttributes;
   }
 
+  /**
+   * Helper to get typed profile attributes
+   * Usage: person.getTypedProfileAttributes<CoachingProfileAttributes>()
+   */
+  getTypedProfileAttributes<T>(): T {
+    return this.props.profileAttributes as T;
+  }
+
   get fullName(): string {
     return `${this.props.firstName} ${this.props.lastName ?? ""}`.trim();
   }
@@ -114,14 +120,46 @@ export class Person {
     this.touch();
   }
 
+  /**
+   * Validates dynamic profile attributes against the industry blueprint.
+   * STRICT Domain Rule: Checks if required fields exist.
+   * @throws Error if required fields are missing
+   */
+  validateIndustryAttributes(industry: string): void {
+    // Validate industry type using VO
+    if (!OrganizationIndustry.isValid(industry)) return;
+
+    const blueprint = IndustryBlueprint.get(industry);
+    if (!blueprint) return;
+
+    const missingFields: string[] = [];
+    const attributes = this.props.profileAttributes || {};
+
+    for (const field of blueprint) {
+      if (
+        field.required &&
+        (attributes[field.key] === undefined || attributes[field.key] === null)
+      ) {
+        missingFields.push(field.label);
+      }
+    }
+
+    if (missingFields.length > 0) {
+      throw new Error(
+        `Missing required profile fields for ${industry}: ${missingFields.join(
+          ", ",
+        )}`,
+      );
+    }
+  }
+
   private touch() {
     this.props.updatedAt = new Date();
   }
 
   toPrimitives() {
     return {
-      _id: this.props._id,
-      id: this.props.id,
+      personId: this.props.personId,
       userId: this.props.userId,
       firstName: this.props.firstName,
       lastName: this.props.lastName,
@@ -143,5 +181,9 @@ export class Person {
       updatedAt: this.props.updatedAt,
       profileAttributes: this.props.profileAttributes,
     };
+  }
+
+  static create(props: PersonProps): Person {
+    return new Person(props);
   }
 }

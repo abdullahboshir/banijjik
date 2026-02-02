@@ -12,8 +12,7 @@ import {
 } from "@banijjik/contracts";
 
 export interface StorefrontProps {
-  _id?: string;
-  id?: string;
+  storefrontId: string;
   organizationId: string;
   slug: string;
   industry: OrganizationIndustryType;
@@ -37,7 +36,7 @@ export class Storefront {
   constructor(props: StorefrontProps) {
     this.props = {
       ...props,
-      id: props.id ?? crypto.randomUUID(),
+      storefrontId: props.storefrontId ?? crypto.randomUUID(),
       status: props.status ?? STOREFRONT_STATUS.DRAFT,
       sections: props.sections ?? [],
       createdAt: props.createdAt ?? new Date(),
@@ -45,12 +44,8 @@ export class Storefront {
     };
   }
 
-  get _id(): string | undefined {
-    return this.props._id;
-  }
-
-  get id(): string | undefined {
-    return this.props.id;
+  get storefrontId(): string | undefined {
+    return this.props.storefrontId;
   }
 
   get organizationId(): string {

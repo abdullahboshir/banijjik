@@ -1,6 +1,7 @@
 import { LogLevel } from "@banijjik/contracts";
+import { appConfig } from "../../config/app.config";
 
-const isProd = process.env.NODE_ENV === "production";
+const isProd = appConfig.NODE_ENV === "production";
 
 const LEVEL_VALUE: Record<LogLevel, number> = {
   debug: 0,

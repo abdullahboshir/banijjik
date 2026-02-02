@@ -1,10 +1,8 @@
-import { USER_ROLE } from "@banijjik/contracts";
 import {
   Email,
   Phone,
   UserName,
   UserStatus,
-  OrganizationMembershipVO,
   DirectPermission,
   LoginHistory,
   UserSettings,
@@ -12,7 +10,7 @@ import {
 
 export class User {
   constructor(
-    public readonly id: string,
+    public readonly userId: string = crypto.randomUUID(),
 
     // Identity
     public name: UserName,
@@ -35,11 +33,12 @@ export class User {
 
     // Authorization
     public isSuperAdmin: boolean,
-    public globalRoles: string[],
+    public systemRoles: string[],
     public directPermissions: DirectPermission[],
 
     // Activity
     public lastLogin: Date | null,
+    public lastActiveContext: any, // Value object would be better, but any for now to match doc
     public loginHistory: LoginHistory[],
 
     // UI & Meta
@@ -47,16 +46,16 @@ export class User {
     // Typically metadata is primitives, so Record<string, any> is fine.
     public metadata: Record<string, any>,
 
-    // Tenant (Global/Default Context)
-    public organization?: string,
-    public region?: string,
-
     // Audit
     public createdBy?: string,
     public updatedBy?: string,
     public createdAt?: Date,
     public updatedAt?: Date,
   ) {}
+
+  get _id(): string {
+    return this.userId;
+  }
 
   public getPassword(): string | null {
     return this.password;

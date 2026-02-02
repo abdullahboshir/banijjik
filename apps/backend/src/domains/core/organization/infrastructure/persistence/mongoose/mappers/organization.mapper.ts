@@ -1,25 +1,33 @@
+import { OrganizationIndustry } from "../../../../domain/value-objects/industry.vo.js";
+import { OrganizationLegal } from "../../../../domain/value-objects/legal-type.vo.js";
+import { OrganizationNature } from "../../../../domain/value-objects/nature.vo.js";
+import { OrganizationStatus } from "../../../../domain/value-objects/status.vo.js";
+import { OrganizationLocalization } from "../../../../domain/value-objects/localization.vo.js";
+import { OrganizationDeployment } from "../../../../domain/value-objects/deployment.vo.js";
 import { Organization } from "../../../../domain/entities/organization.entity";
 import { IOrganizationDocument } from "../models/organization.model";
 
 export class OrganizationMapper {
   public static toDomain(raw: IOrganizationDocument): Organization {
     return new Organization({
-      _id: raw._id.toString(),
-      id: raw.id,
+      organizationId: raw.organizationId,
       name: raw.name,
       slug: raw.slug,
-      industry: raw.industry,
-      legalType: raw.legalType,
-      nature: raw.nature,
-      status: raw.status,
+
+      // Instantiate VOs
+      industry: OrganizationIndustry.create(raw.industry),
+      legalType: OrganizationLegal.create(raw.legalType),
+      nature: OrganizationNature.create(raw.nature),
+      status: OrganizationStatus.create(raw.status),
+      localization: OrganizationLocalization.create(raw.localization),
+      deployment: OrganizationDeployment.create(raw.deployment),
+
       email: raw.email,
       phone: raw.phone,
       supportPhone: raw.supportPhone,
       website: raw.website,
       address: raw.address,
       establishedDate: raw.establishedDate,
-      localization: raw.localization,
-      deployment: raw.deployment,
       metadata: raw.metadata,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
@@ -29,8 +37,7 @@ export class OrganizationMapper {
   public static toPersistence(organization: Organization): any {
     const json = organization.toJSON();
     return {
-      _id: json._id,
-      id: json.id,
+      organizationId: json.organizationId,
       name: json.name,
       slug: json.slug,
       industry: json.industry,

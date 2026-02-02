@@ -1,0 +1,1 @@
+{"version":3,"file":"billing.d.ts","sourceRoot":"","sources":["../../../src/api-interface/core/billing.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,yBAAyB;IACxC,gBAAgB,EAAE,MAAM,CAAC;IACzB,OAAO,EAAE,MAAM,CAAC;IAChB,SAAS,EAAE,MAAM,CAAC;IAClB,QAAQ,EAAE,MAAM,CAAC;IACjB,OAAO,EAAE,MAAM,CAAC;IAChB,MAAM,EAAE,MAAM,CAAC;IACf,SAAS,EAAE,IAAI,CAAC;IAChB,SAAS,EAAE,IAAI,CAAC;CACjB"}

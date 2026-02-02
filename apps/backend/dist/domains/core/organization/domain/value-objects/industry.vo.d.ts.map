@@ -1,0 +1,1 @@
+{"version":3,"file":"industry.vo.d.ts","sourceRoot":"","sources":["../../../../../../src/domains/core/organization/domain/value-objects/industry.vo.ts"],"names":[],"mappings":"AAAA,OAAO,EACL,wBAAwB,EAEzB,MAAM,qBAAqB,CAAC;AAE7B,qBAAa,oBAAoB;IACX,OAAO,CAAC,QAAQ,CAAC,KAAK;IAA1C,OAAO;WAEO,MAAM,CAAC,KAAK,EAAE,wBAAwB,GAAG,oBAAoB;IAQpE,QAAQ,IAAI,wBAAwB;CAG5C"}

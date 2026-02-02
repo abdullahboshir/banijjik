@@ -2,20 +2,15 @@ export class Organization {
     constructor(props) {
         this.props = {
             ...props,
-            id: props.id ?? crypto.randomUUID(),
-            status: props.status || "PENDING",
-            nature: props.nature || "SERVICE",
+            organizationId: props.organizationId ?? crypto.randomUUID(),
             establishedDate: props.establishedDate || new Date(),
             metadata: props.metadata || {},
             createdAt: props.createdAt || new Date(),
             updatedAt: props.updatedAt || new Date(),
         };
     }
-    get _id() {
-        return this.props._id;
-    }
-    get id() {
-        return this.props.id;
+    get organizationId() {
+        return this.props.organizationId;
     }
     get name() {
         return this.props.name;
@@ -38,8 +33,29 @@ export class Organization {
     get deployment() {
         return this.props.deployment;
     }
+    get localization() {
+        return this.props.localization;
+    }
     get metadata() {
         return this.props.metadata;
+    }
+    get email() {
+        return this.props.email;
+    }
+    get phone() {
+        return this.props.phone;
+    }
+    get supportPhone() {
+        return this.props.supportPhone;
+    }
+    get establishedDate() {
+        return this.props.establishedDate;
+    }
+    get address() {
+        return this.props.address;
+    }
+    get website() {
+        return this.props.website;
     }
     update(props) {
         this.props = {
@@ -49,7 +65,15 @@ export class Organization {
         };
     }
     toJSON() {
-        return { ...this.props };
+        return {
+            ...this.props,
+            industry: this.props.industry.getValue(),
+            legalType: this.props.legalType.getValue(),
+            nature: this.props.nature.getValue(),
+            status: this.props.status.getValue(),
+            localization: this.props.localization.toValue(),
+            deployment: this.props.deployment.toValue(),
+        };
     }
 }
 //# sourceMappingURL=organization.entity.js.map

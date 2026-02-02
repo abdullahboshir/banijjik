@@ -1,4 +1,5 @@
-const isProd = process.env.NODE_ENV === "production";
+import { appConfig } from "../../config/app.config";
+const isProd = appConfig.NODE_ENV === "production";
 const LEVEL_VALUE = {
     debug: 0,
     info: 1,

@@ -1,13 +1,13 @@
 import { Schema, model } from "mongoose";
 import { COMMON_STATUS, MEMBERSHIP_TYPE_ENUM, MEMBERSHIP_TYPE, MEMBERSHIP_SOURCE_ENUM, MEMBERSHIP_SOURCE, } from "@banijjik/contracts";
 const OrganizationMembershipSchema = new Schema({
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, index: true },
     organizationId: {
-        type: Schema.Types.ObjectId,
-        ref: "Organization",
+        type: String,
         required: true,
+        index: true,
     },
-    roleId: { type: Schema.Types.ObjectId, ref: "Role", required: true },
+    roleId: { type: String, required: true, index: true },
     type: {
         type: String,
         enum: MEMBERSHIP_TYPE_ENUM,
@@ -28,7 +28,30 @@ const OrganizationMembershipSchema = new Schema({
     },
     joinedAt: { type: Date, default: Date.now },
     metadata: { type: Schema.Types.Map, of: Schema.Types.Mixed },
-}, { timestamps: true });
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+});
+// Virtuals for Populate support using String IDs
+OrganizationMembershipSchema.virtual("user", {
+    ref: "User",
+    localField: "userId",
+    foreignField: "userId",
+    justOne: true,
+});
+OrganizationMembershipSchema.virtual("organization", {
+    ref: "Organization",
+    localField: "organizationId",
+    foreignField: "organizationId",
+    justOne: true,
+});
+OrganizationMembershipSchema.virtual("role", {
+    ref: "Role",
+    localField: "roleId",
+    foreignField: "roleId",
+    justOne: true,
+});
 OrganizationMembershipSchema.index({ userId: 1, organizationId: 1, roleId: 1 }, { unique: true });
 export const OrganizationMembershipModel = model("OrganizationMembership", OrganizationMembershipSchema);
 //# sourceMappingURL=organization-membership.model.js.map

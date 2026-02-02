@@ -1,13 +1,15 @@
 import { Router } from "express";
 import { StorefrontController } from "../controllers/storefront.controller";
 
-const router = Router();
+export const createStorefrontRouter = () => {
+  const router = Router();
 
-// Public routes
-router.get("/public/:slug", StorefrontController.getPublicStorefront);
+  // Public routes
+  router.get("/public/:slug", StorefrontController.getPublicStorefront);
 
-// Admin routes (Protected by middleware in main router)
-router.get("/admin", StorefrontController.getAdminStorefront);
-router.patch("/admin", StorefrontController.updateStorefront);
+  // Admin routes (Protected by middleware in main router)
+  router.get("/admin", StorefrontController.getAdminStorefront);
+  router.patch("/admin", StorefrontController.updateStorefront);
 
-export default router;
+  return router;
+};

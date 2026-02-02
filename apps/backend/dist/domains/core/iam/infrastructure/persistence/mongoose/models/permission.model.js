@@ -4,7 +4,7 @@ import { Schema, model } from "mongoose";
 // Permission Schema
 // ═══════════════════════════════════════════════════════════════
 const PermissionSchema = new Schema({
-    id: { type: String, required: true, unique: true },
+    permissionId: { type: String, required: true, unique: true },
     domain: {
         type: String,
         required: true,

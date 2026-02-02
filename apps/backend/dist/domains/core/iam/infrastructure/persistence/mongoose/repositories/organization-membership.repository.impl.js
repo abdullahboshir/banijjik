@@ -3,14 +3,15 @@ import { OrganizationMembershipMapper } from "../mappers/organization-membership
 export class MongooseOrganizationMembershipRepository {
     async save(membership) {
         const data = OrganizationMembershipMapper.toPersistence(membership);
-        await OrganizationMembershipModel.findOneAndUpdate({
+        const doc = await OrganizationMembershipModel.findOneAndUpdate({
             userId: data.userId,
             organizationId: data.organizationId,
             roleId: data.roleId,
-        }, data, { upsert: true });
+        }, data, { upsert: true, new: true });
+        return OrganizationMembershipMapper.toDomain(doc);
     }
-    async findById(id) {
-        const doc = await OrganizationMembershipModel.findById(id);
+    async findById(organizationMembershipId) {
+        const doc = await OrganizationMembershipModel.findById(organizationMembershipId);
         if (!doc)
             return null;
         return OrganizationMembershipMapper.toDomain(doc);
@@ -26,8 +27,8 @@ export class MongooseOrganizationMembershipRepository {
         const docs = await OrganizationMembershipModel.find({ organizationId });
         return docs.map((doc) => OrganizationMembershipMapper.toDomain(doc));
     }
-    async delete(id) {
-        await OrganizationMembershipModel.findByIdAndDelete(id);
+    async delete(organizationMembershipId) {
+        await OrganizationMembershipModel.findByIdAndDelete(organizationMembershipId);
     }
 }
 //# sourceMappingURL=organization-membership.repository.impl.js.map

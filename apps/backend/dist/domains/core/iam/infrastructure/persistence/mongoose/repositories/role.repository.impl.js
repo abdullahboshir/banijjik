@@ -3,15 +3,15 @@ import { RoleMapper } from "../mappers/role.mapper";
 export class MongooseRoleRepository {
     async save(role) {
         const data = RoleMapper.toPersistence(role);
-        if (role.id) {
-            await RoleModel.findByIdAndUpdate(role.id, data);
+        if (role.roleId) {
+            await RoleModel.findByIdAndUpdate(role.roleId, data);
         }
         else {
             await RoleModel.create(data);
         }
     }
-    async findById(id) {
-        const doc = await RoleModel.findById(id).populate("permissions");
+    async findById(roleId) {
+        const doc = await RoleModel.findById(roleId).populate("permissions");
         if (!doc)
             return null;
         return RoleMapper.toDomain(doc);
@@ -31,8 +31,8 @@ export class MongooseRoleRepository {
         }).populate("permissions");
         return docs.map((doc) => RoleMapper.toDomain(doc));
     }
-    async delete(id) {
-        await RoleModel.findByIdAndDelete(id);
+    async delete(roleId) {
+        await RoleModel.findByIdAndDelete(roleId);
     }
 }
 //# sourceMappingURL=role.repository.impl.js.map

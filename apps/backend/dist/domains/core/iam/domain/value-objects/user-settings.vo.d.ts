@@ -9,8 +9,8 @@ export declare class UserSettings {
     }): UserSettings;
     static default(): UserSettings;
     toObject(): {
-        theme: UserThemeType;
-        tableHeight: any;
+        theme: "SYSTEM" | "LIGHT" | "DARK";
+        tableHeight: string;
     };
 }
 //# sourceMappingURL=user-settings.vo.d.ts.map

@@ -2,9 +2,8 @@ import { Storefront } from "../../domain/entities/storefront.entity";
 export class StorefrontMapper {
     static toDomain(raw) {
         return new Storefront({
-            _id: raw._id.toString(),
-            id: raw.id,
-            organizationId: raw.organizationId.toString(),
+            storefrontId: raw.storefrontId,
+            organizationId: raw.organizationId,
             slug: raw.slug,
             industry: raw.industry,
             status: raw.status,
@@ -24,7 +23,7 @@ export class StorefrontMapper {
     static toPersistence(domain) {
         const primitives = domain.toPrimitives();
         return {
-            id: primitives.id,
+            storefrontId: primitives.storefrontId,
             organizationId: primitives.organizationId,
             slug: primitives.slug,
             industry: primitives.industry,

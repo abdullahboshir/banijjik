@@ -9,7 +9,7 @@ import { Schema, model, Document, Types } from "mongoose";
 // Permission Document Interface
 // ═══════════════════════════════════════════════════════════════
 export interface IPermissionDoc extends Document {
-  id: string;
+  permissionId: string;
   domain: string; // Bounded context (iam, organization, billing) - for sidebar grouping
   resource: string;
   action: string;
@@ -26,7 +26,7 @@ export interface IPermissionDoc extends Document {
 // ═══════════════════════════════════════════════════════════════
 const PermissionSchema = new Schema<IPermissionDoc>(
   {
-    id: { type: String, required: true, unique: true },
+    permissionId: { type: String, required: true, unique: true },
     domain: {
       type: String,
       required: true,

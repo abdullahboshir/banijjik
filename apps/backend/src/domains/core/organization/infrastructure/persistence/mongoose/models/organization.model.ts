@@ -17,14 +17,14 @@ import {
 } from "@banijjik/contracts";
 
 export interface IOrganizationDocument extends Document {
-  id: string;
+  organizationId: string;
   name: string;
   slug: string;
   industry: (typeof ORGANIZATION_INDUSTRY_ENUM)[number];
   legalType: (typeof ORGANIZATION_LEGAL_TYPE_ENUM)[number];
   nature: (typeof ORGANIZATION_NATURE_ENUM)[number];
   status: (typeof ORGANIZATION_STATUS_ENUM)[number];
-  email?: string;
+  email: string;
   phone?: string;
   supportPhone?: string;
   website?: string;
@@ -56,7 +56,7 @@ export interface IOrganizationDocument extends Document {
 
 const OrganizationSchema = new Schema<IOrganizationDocument>(
   {
-    id: { type: String, required: true },
+    organizationId: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true, trim: true, index: true },
     slug: {
       type: String,
@@ -133,6 +133,8 @@ const OrganizationSchema = new Schema<IOrganizationDocument>(
   {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 );
 

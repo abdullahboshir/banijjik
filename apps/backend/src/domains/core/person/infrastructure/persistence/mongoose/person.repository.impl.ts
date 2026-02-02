@@ -7,15 +7,21 @@ export class MongoosePersonRepository implements PersonRepository {
   async save(person: Person): Promise<void> {
     const personData = PersonMapper.toPersonPersistence(person);
 
-    if (person.id) {
-      await PersonModel.findByIdAndUpdate(person.id, personData);
+    if (person.personId) {
+      await PersonModel.findOneAndUpdate(
+        { personId: person.personId },
+        personData,
+        {
+          upsert: true,
+        },
+      );
     } else {
       await PersonModel.create(personData);
     }
   }
 
-  async findById(id: string): Promise<Person | null> {
-    const doc = await PersonModel.findById(id);
+  async findById(personId: string): Promise<Person | null> {
+    const doc = await PersonModel.findOne({ personId });
     return doc ? PersonMapper.toPersonDomain(doc) : null;
   }
 

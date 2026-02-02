@@ -47,13 +47,12 @@ export const CreateUserSchema = z.object({
   status: z.nativeEnum(USER_STATUS).default(USER_STATUS.PENDING),
   isActive: z.boolean().default(true),
   isSuperAdmin: z.boolean().default(false),
-  globalRoles: z.array(z.string()).default([]),
+  systemRoles: z.array(z.string()).default([]),
   directPermissions: z.array(DirectPermissionSchema).default([]),
   organizationMembership: z.array(organizationMembershipSchema).default([]),
   settings: UserDetailSchema.optional(),
   metadata: z.record(z.string(), z.any()).default({}),
-  organization: z.string().optional(),
-  region: z.string().optional(),
+  lastActiveContext: z.any().optional(),
 });
 
 // ============================================
@@ -70,13 +69,12 @@ export const UpdateUserSchema = z.object({
   status: z.nativeEnum(USER_STATUS).optional(),
   isActive: z.boolean().optional(),
   isSuperAdmin: z.boolean().optional(),
-  globalRoles: z.array(z.string()).optional(),
+  systemRoles: z.array(z.string()).optional(),
   directPermissions: z.array(DirectPermissionSchema).optional(),
   organizationMembership: z.array(organizationMembershipSchema).optional(),
   settings: UserDetailSchema.optional(),
   metadata: z.record(z.string(), z.any()).optional(),
-  organization: z.string().optional(),
-  region: z.string().optional(),
+  lastActiveContext: z.any().optional(),
 });
 
 // ============================================

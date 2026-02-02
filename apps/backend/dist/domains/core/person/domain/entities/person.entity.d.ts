@@ -1,7 +1,6 @@
 import { UserStatus } from "../value-objects/user-status.vo";
 export interface PersonProps {
-    _id?: string;
-    id?: string;
+    personId: string;
     userId: string;
     firstName: string;
     lastName?: string;
@@ -21,13 +20,18 @@ export interface PersonProps {
     status?: UserStatus;
     createdAt?: Date;
     updatedAt?: Date;
+    /**
+     * [UNIVERSAL] Dynamic Attributes
+     * Stores global personal data valid across ALL organizations.
+     * Examples: `religion`, `hobbies`, `social_links`.
+     * NOT for context-specific data like `roll_no`.
+     */
     profileAttributes?: Record<string, any>;
 }
 export declare class Person {
     private props;
     constructor(props: PersonProps);
-    get _id(): string | undefined;
-    get id(): string | undefined;
+    get personId(): string;
     get userId(): string;
     get email(): string;
     get phone(): string | undefined;
@@ -50,8 +54,7 @@ export declare class Person {
     changeName(firstName: string, lastName?: string): void;
     private touch;
     toPrimitives(): {
-        _id: string | undefined;
-        id: string | undefined;
+        personId: string;
         userId: string;
         firstName: string;
         lastName: string | undefined;
@@ -73,5 +76,6 @@ export declare class Person {
         updatedAt: Date;
         profileAttributes: Record<string, any>;
     };
+    static create(props: PersonProps): Person;
 }
 //# sourceMappingURL=person.entity.d.ts.map

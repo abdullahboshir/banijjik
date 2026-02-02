@@ -3,18 +3,15 @@ export class Storefront {
     constructor(props) {
         this.props = {
             ...props,
-            id: props.id ?? crypto.randomUUID(),
+            storefrontId: props.storefrontId ?? crypto.randomUUID(),
             status: props.status ?? STOREFRONT_STATUS.DRAFT,
             sections: props.sections ?? [],
             createdAt: props.createdAt ?? new Date(),
             updatedAt: props.updatedAt ?? new Date(),
         };
     }
-    get _id() {
-        return this.props._id;
-    }
-    get id() {
-        return this.props.id;
+    get storefrontId() {
+        return this.props.storefrontId;
     }
     get organizationId() {
         return this.props.organizationId;

@@ -13,8 +13,8 @@ export class StorefrontRepositoryImpl implements IStorefrontRepository {
     );
   }
 
-  async findById(id: string): Promise<Storefront | null> {
-    const raw = await StorefrontModel.findOne({ id });
+  async findById(storefrontId: string): Promise<Storefront | null> {
+    const raw = await StorefrontModel.findOne({ storefrontId });
     return raw ? StorefrontMapper.toDomain(raw) : null;
   }
 
@@ -30,7 +30,7 @@ export class StorefrontRepositoryImpl implements IStorefrontRepository {
     return raw ? StorefrontMapper.toDomain(raw) : null;
   }
 
-  async delete(id: string): Promise<void> {
-    await StorefrontModel.findOneAndDelete({ id });
+  async delete(storefrontId: string): Promise<void> {
+    await StorefrontModel.findOneAndDelete({ storefrontId });
   }
 }

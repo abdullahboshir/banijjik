@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { ORGANIZATION_INDUSTRY_ENUM, ORGANIZATION_LEGAL_TYPE_ENUM, ORGANIZATION_NATURE_ENUM, ORGANIZATION_NATURE, ORGANIZATION_STATUS_ENUM, ORGANIZATION_STATUS, DEPLOYMENT_TYPE_ENUM, DEPLOYMENT_TYPE, ORGANIZATION_CURRENCY_ENUM, ORGANIZATION_CURRENCY, ORGANIZATION_LANGUAGE_ENUM, ORGANIZATION_LANGUAGE, ORGANIZATION_STORAGE_PROVIDER_ENUM, ORGANIZATION_STORAGE_PROVIDER, } from "@banijjik/contracts";
 const OrganizationSchema = new Schema({
-    id: { type: String, required: true },
+    organizationId: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true, trim: true, index: true },
     slug: {
         type: String,
@@ -77,6 +77,8 @@ const OrganizationSchema = new Schema({
 }, {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
 export const OrganizationModel = mongoose.model("Organization", OrganizationSchema);
 //# sourceMappingURL=organization.model.js.map

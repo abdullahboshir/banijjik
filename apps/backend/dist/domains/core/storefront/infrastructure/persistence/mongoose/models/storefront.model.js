@@ -1,12 +1,10 @@
 import { Schema, model } from "mongoose";
 import { STOREFRONT_STATUS_ENUM, STOREFRONT_SECTION_TYPE_ENUM, ORGANIZATION_INDUSTRY_ENUM, } from "@banijjik/contracts";
 const StorefrontSchema = new Schema({
-    id: { type: String, required: true, unique: true, index: true },
+    storefrontId: { type: String, required: true, unique: true, index: true },
     organizationId: {
-        type: Schema.Types.ObjectId,
-        ref: "Organization",
+        type: String,
         required: true,
-        unique: true,
         index: true,
     },
     slug: {
@@ -68,7 +66,7 @@ const StorefrontSchema = new Schema({
     },
     sections: [
         {
-            id: { type: String, required: true },
+            sectionId: { type: String, required: true },
             type: {
                 type: String,
                 enum: STOREFRONT_SECTION_TYPE_ENUM,
@@ -84,6 +82,17 @@ const StorefrontSchema = new Schema({
     ],
     customCss: { type: String },
     publishedAt: { type: Date },
-}, { timestamps: true });
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+});
+// Virtual for Populate Support
+StorefrontSchema.virtual("organization", {
+    ref: "Organization",
+    localField: "organizationId",
+    foreignField: "organizationId",
+    justOne: true,
+});
 export const StorefrontModel = model("Storefront", StorefrontSchema);
 //# sourceMappingURL=storefront.model.js.map

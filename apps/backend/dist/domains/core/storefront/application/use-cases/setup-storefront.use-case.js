@@ -14,9 +14,10 @@ export class SetupStorefrontUseCase {
             throw new Error("Organization not found");
         }
         const storefront = new Storefront({
+            storefrontId: crypto.randomUUID(),
             organizationId,
             slug,
-            industry: organization.industry,
+            industry: organization.industry.getValue(),
             status: STOREFRONT_STATUS.DRAFT,
             theme: {
                 primaryColor: "#000000",

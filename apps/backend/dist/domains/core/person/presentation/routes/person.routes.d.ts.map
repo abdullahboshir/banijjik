@@ -1,1 +1,1 @@
-{"version":3,"file":"person.routes.d.ts","sourceRoot":"","sources":["../../../../../../src/domains/core/person/presentation/routes/person.routes.ts"],"names":[],"mappings":"AAMA,eAAO,MAAM,kBAAkB,kDAgB9B,CAAC"}
+{"version":3,"file":"person.routes.d.ts","sourceRoot":"","sources":["../../../../../../src/domains/core/person/presentation/routes/person.routes.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,wBAAwB,EAAE,MAAM,wBAAwB,CAAC;AAElE,eAAO,MAAM,kBAAkB,GAAI,aAAa,wBAAwB,+CAcvE,CAAC"}

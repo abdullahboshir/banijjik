@@ -1,75 +1,53 @@
-import { LoginDto } from "../dto";
-import { IUserRepository, InvalidCredentialsError } from "@iam/domain";
+import { IUserRepository } from "../../domain/repositories/user.repository";
 import { IPasswordHasher, IJwtService } from "../ports";
-import {
-  IDirectPermission,
-  ILoginHistory,
-  IUserDetail,
-  LoginResponseDto,
-} from "@banijjik/contracts";
+import { ValidationError } from "@shared";
+import { LoginDto } from "../dto";
 
 export class LoginUseCase {
   constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly passwordHasher: IPasswordHasher,
+    private readonly userRepo: IUserRepository,
+    private readonly passwordService: IPasswordHasher,
     private readonly jwtService: IJwtService,
   ) {}
 
-  async execute(dto: LoginDto): Promise<LoginResponseDto> {
-    // 1. Find User
-    const user = await this.userRepository.findByEmail(dto.email);
+  async execute(request: LoginDto): Promise<any> {
+    const user = await this.userRepo.findByEmail(request.email);
     if (!user) {
-      throw new InvalidCredentialsError();
+      throw new ValidationError("Invalid credentials");
     }
 
-    // 2. Check if user is eligible to login (Domain Logic in Entity)
-    if (!user.canLogin()) {
-      throw new Error("validation.user.account_disabled");
+    if (!user.getPassword()) {
+      throw new ValidationError("Invalid credentials");
     }
 
-    // 3. Verify Password
-    const isPasswordValid = await this.passwordHasher.compare(
-      dto.password,
-      user.getPassword() || "",
+    const isMatch = await this.passwordService.compare(
+      request.password,
+      user.getPassword()!,
     );
-    if (!isPasswordValid) {
-      throw new InvalidCredentialsError();
+
+    if (!isMatch) {
+      throw new ValidationError("Password is not correct");
     }
 
-    // 4. Generate Token
-    const accessToken = this.jwtService.generateToken({
-      sub: user.id,
+    console.log(
+      "before token",
+      user?.userId,
+      user?.email.toString(),
+      user?.systemRoles[0],
+    );
+    const token = this.jwtService.generateToken({
+      userId: user.userId,
       email: user.email.toString(),
-      roles: user.globalRoles,
+      role: user.systemRoles[0] || "USER",
     });
-
-    // 5. Return Response
+    console.log("after token", token);
     return {
-      accessToken,
+      token,
       user: {
-        id: user.id,
-        name: user.name.toObject(),
+        userId: user.userId,
         email: user.email.toString(),
-        phone: user.phone ? user.phone.toString() : null,
-        isEmailVerified: user.isEmailVerified,
-        isPhoneVerified: user.isPhoneVerified,
+        name: user.name.getFullName(),
         status: user.status.getValue(),
-        isActive: user.isActive,
-        isSuperAdmin: user.isSuperAdmin,
-        globalRoles: user.globalRoles,
-        directPermissions: user.directPermissions.map(
-          (p) => p.toObject() as IDirectPermission,
-        ),
-        organizationMembership: [], // Will be queried via Membership separately
-        lastLogin: user.lastLogin,
-        loginHistory: user.loginHistory.map((h) => {
-          const obj = h.toObject();
-          return { ...obj, date: obj.timestamp } as unknown as ILoginHistory;
-        }),
-        settings: user.settings.toObject() as IUserDetail,
-        organization: user.organization,
-        region: user.region,
-        createdAt: user.createdAt,
       },
     };
   }

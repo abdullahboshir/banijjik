@@ -1,7 +1,7 @@
 import { Schema, model, Document } from "mongoose";
 
 export interface IPersonDoc extends Document {
-  id: string;
+  personId: string;
   userId: string;
   firstName: string;
   lastName?: string;
@@ -26,7 +26,7 @@ export interface IPersonDoc extends Document {
 
 const PersonSchema = new Schema<IPersonDoc>(
   {
-    id: { type: String, required: true, unique: true, index: true },
+    personId: { type: String, required: true, unique: true, index: true },
     userId: { type: String, required: true, index: true },
     firstName: { type: String, required: true },
     lastName: { type: String },

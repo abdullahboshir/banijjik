@@ -56,47 +56,46 @@ Classes and files must explicitly state their layer and domain to maintain stric
   - `IdentityController` (API/Interface Layer)
 - **Strict Rule:** Higher layers (Application) can call lower layers (Domain), never vice versa. Infrastructure must implement interfaces defined in Domain or Application.
 
-## 5. Domain vs. Business Type
+## 6. Context Anatomy (The Core 4 Folders)
 
-- **Business Type (Industry):** Coaching, Gym, Clinic. These are **DATA/CONFIG**, not folders.
-- **Domain (Capability):** Auth, Organization, Billing, People, Academic. These are **CODE MODULES**.
-- **Rule:** Folders represent **WHAT** the system does (Capability), not **WHO** uses it (Industry).
+Every domain context MUST contain precisely these four folders. No exceptions:
 
-## 6. Backend Structure (apps/backend/src/core)
+- `domain/`: Enterprise logic.
+  - **Entities:** Behavioral classes. **RULE:** MUST ONLY import enums/types/values from local `.vo` files. NO other external imports allowed.
+  - **Value Objects (.vo):** Define local constants/types here. **RULE:** MUST import from `@banijjik/contracts` to bridge global types to the domain. **STRICT:** Hardcoding values here is forbidden. Always bridge from contracts.
+  - **Repository Ports (Interfaces):** Defined here.
+- `application/`: Orchestration logic.
+  - **Use Cases / Services:** Orchestrates entities. **RULE:** Import Response DTOs from `@banijjik/contracts` and internal types from `domain/`.
+  - **DTOs:** Request/Input contracts. **RULE:** MUST be inferred from Zod schemas imported from `@banijjik/validation`.
+- `infrastructure/`: External implementations (Adapters).
+  - **Persistence (Models):** Mongoose Models. **RULE:** MUST import types/enums/values directly from `@banijjik/contracts`.
+  - **Mappers:** Bridges Model <-> Entity.
+- `presentation/`: Interface layer.
+  - **Controllers:** **RULE:** MUST use `catchAsync` wrapper for all handler methods. NO manual try-catch for standard flow.
+  - **Routing:** **RULE:** MUST use `validateRequest` middleware with Zod schemas from `packages/validation` before hitting the controller.
+  - **Transformers:** Converts Domain/Application data to Response DTOs (from `contracts`).
 
-Layered structure within each domain module:
+## 7. Central Source of Truth (SOT)
 
-- `domain/`: Enterprise logic. Contains:
-  - **Entities:** Behavioral classes.
-  - **Value Objects:** Immutable objects representing domain concepts.
-  - **Domain Services:** Logic involving multiple entities.
-  - **Repository Ports (Interfaces):** MUST be defined here to invert dependency.
-- `application/`: Application logic. Contains:
-  - **Use Cases / Services:** Orchestrates entities and repository ports.
-  - **DTOs:** Request/Input contracts (inferred from schemas).
-- `presentation/`: Interface layer. Contains:
-  - **Controllers:** Express/HTTP controllers.
-  - **Transformers/Mappers:** Converting DTOs to Domain-ready data.
-- `infrastructure/`: External implementations (Adapters). Contains:
-  - **Persistence:** Mongoose Models and Repository implementations.
-  - **External Services:** Mailers, Third-party APIs.
+The `@banijjik/contracts` package is the **Absolute Source of Truth** for the entire project.
 
-### 6.2 Contract-First Communication (DTO Standards)
+1. **Global Constants:** Every enum, status, or type-value MUST be defined in `packages/contracts/src/constants` first.
+2. **Global Interfaces:** All API Response structures MUST be defined in `packages/contracts/src/api-interface`.
+3. **Global Validation:** All business rules and request shapes MUST be defined as Zod schemas in `packages/validation`.
+4. **Global Errors & i18n:** EVERY error code or localized message key MUST be defined in `packages/contracts/src/errors` or `packages/i18n` first. **RULE:** Hardcoded error message strings in business logic are FORBIDDEN. Use keys that map to BN/EN translations.
 
-To ensure a "Single Source of Truth" and perfect alignment between Backend and Frontend:
+> [!IMPORTANT]
+> **Zero-Hardcoding Flow:** If you need an enum, type, or specific value in the Domain:
+>
+> 1. Verify if it exists in `@banijjik/contracts`.
+> 2. If it DOES NOT exist -> Add it to `contracts` first.
+> 3. Import from `contracts` into a Domain Value Object (`.vo.ts`).
+> 4. Use ONLY the `.vo` in your Entities/Services.
+> 5. **Purity Workflow:**
 
-1. **Response DTOs (Output):** MUST be defined as interfaces in `packages/contracts/src/api-interface/` and imported DIRECTLY into Use Cases and Controllers. DO NOT re-export them in local `dto.ts` files.
-2. **Request DTOs (Input):** MUST be inferred from Zod schemas (usually in `packages/validation`) and defined in a local `[domain].dto.ts` file within the `application/dto/` folder.
-   - Example: `export type CreateUserDto = z.infer<typeof CreateUserSchema>;`
-3. **Naming:** Always use the `Dto` suffix (e.g., `UserResponseDto`). Avoid `I` prefix for DTOs.
-
-### 6.1 The "Rule of Three" (Persistence Boundary)
-
-Every persisted domain concept must have:
-
-1. **Domain Entity (Class):** Holds behavior and state (in `domain/`).
-2. **Infrastructure Model (Schema):** Optimized for storage (in `infrastructure/persistence/`).
-3. **Mapper (Static Class):** Bridges Entity <-> Model (in `infrastructure/mappers/`).
+- Add to `contracts` -> Import into `VO` -> Use in `Entity`.
+- Add to `validation` -> Infer `DTO` -> Use in `UseCase`/`Controller`.
+- Add to `contracts/errors` -> Use in `Controller`/`Middleware` for responses.
 
 ## 7. Multi-tenancy & Isolation
 

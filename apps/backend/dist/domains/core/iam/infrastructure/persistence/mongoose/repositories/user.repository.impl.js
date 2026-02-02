@@ -3,10 +3,14 @@ import { UserPersistenceMapper } from "../mappers/user.mapper";
 export class MongooseUserRepository {
     async save(user) {
         const data = UserPersistenceMapper.toPersistence(user);
-        await UserModel.create(data);
+        const doc = await UserModel.findOneAndUpdate({ userId: user.userId }, data, {
+            upsert: true,
+            new: true,
+        });
+        return UserPersistenceMapper.toDomain(doc);
     }
-    async findById(id) {
-        const doc = await UserModel.findById(id);
+    async findById(userId) {
+        const doc = await UserModel.findOne({ userId });
         if (!doc)
             return null;
         return UserPersistenceMapper.toDomain(doc);
@@ -19,7 +23,7 @@ export class MongooseUserRepository {
     }
     async update(user) {
         const data = UserPersistenceMapper.toPersistence(user);
-        await UserModel.findByIdAndUpdate(user.id, data);
+        await UserModel.findOneAndUpdate({ userId: user.userId }, data);
     }
 }
 //# sourceMappingURL=user.repository.impl.js.map

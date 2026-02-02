@@ -1,9 +1,10 @@
 export * from "./iam/user-status";
-export * from "./profile-type";
+export * from "./consumer-profile-type";
 export * from "./user-theme";
 export * from "./table-height";
 export * from "./common-status";
 export * from "./organization";
+export * from "./industry-field-blueprint";
 
 // IAM subdirectory exports
 export * from "./iam/user-role";
@@ -12,3 +13,9 @@ export * from "./iam/permission-resource";
 export * from "./iam/permission-policy";
 export * from "./iam/permission-effect";
 export * from "./iam/permission-access-scope";
+export * from "./iam/permission-domain";
+export * from "./iam/portal-type";
+export * from "./iam/organization-membership";
+export * from "./storefront";
+export * from "./system";
+export * from "./ownership-status";

@@ -1,0 +1,1 @@
+{"version":3,"file":"create-organization.dto.d.ts","sourceRoot":"","sources":["../../../../../../src/domains/core/organization/application/dto/create-organization.dto.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AACxB,OAAO,EAAE,wBAAwB,EAAE,MAAM,sBAAsB,CAAC;AAEhE,MAAM,MAAM,qBAAqB,GAAG,CAAC,CAAC,KAAK,CAAC,OAAO,wBAAwB,CAAC,CAAC"}

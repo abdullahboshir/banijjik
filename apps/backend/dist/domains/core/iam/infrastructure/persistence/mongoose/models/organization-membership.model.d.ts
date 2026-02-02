@@ -1,9 +1,9 @@
 import { Document, Types } from "mongoose";
 import { MEMBERSHIP_TYPE_ENUM, MEMBERSHIP_SOURCE_ENUM } from "@banijjik/contracts";
 export interface IOrganizationMembershipDoc extends Document {
-    userId: Types.ObjectId;
-    organizationId: Types.ObjectId;
-    roleId: Types.ObjectId;
+    userId: string;
+    organizationId: string;
+    roleId: string;
     type: (typeof MEMBERSHIP_TYPE_ENUM)[number];
     designation?: string;
     memberCode?: string;

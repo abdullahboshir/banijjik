@@ -3,15 +3,15 @@ import { PersonMapper } from "./person.mapper";
 export class MongoosePersonRepository {
     async save(person) {
         const personData = PersonMapper.toPersonPersistence(person);
-        if (person.id) {
-            await PersonModel.findByIdAndUpdate(person.id, personData);
+        if (person.personId) {
+            await PersonModel.findByIdAndUpdate(person.personId, personData);
         }
         else {
             await PersonModel.create(personData);
         }
     }
-    async findById(id) {
-        const doc = await PersonModel.findById(id);
+    async findById(personId) {
+        const doc = await PersonModel.findById(personId);
         return doc ? PersonMapper.toPersonDomain(doc) : null;
     }
     async findByUserId(userId) {

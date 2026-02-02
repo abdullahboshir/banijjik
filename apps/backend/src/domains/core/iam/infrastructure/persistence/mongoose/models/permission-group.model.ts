@@ -5,10 +5,11 @@ import { model, Schema, Document, Types } from "mongoose";
 // Permission Group Document Interface
 // ═══════════════════════════════════════════════════════════════
 export interface IPermissionGroupDoc extends Document {
+  permissionGroupId: string;
   name: string;
   domain: string; // Bounded context - for sidebar grouping
   description: string;
-  permissions: Types.ObjectId[];
+  permissions: string[];
   resolver: {
     strategy: string;
     priority: number;
@@ -24,6 +25,12 @@ export interface IPermissionGroupDoc extends Document {
 // ═══════════════════════════════════════════════════════════════
 const PermissionGroupSchema = new Schema<IPermissionGroupDoc>(
   {
+    permissionGroupId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
     name: { type: String, required: true, trim: true, unique: true },
     domain: {
       type: String,
@@ -31,9 +38,7 @@ const PermissionGroupSchema = new Schema<IPermissionGroupDoc>(
       enum: PERMISSION_DOMAIN_ENUM,
     },
     description: { type: String, required: true },
-    permissions: [
-      { type: Schema.Types.ObjectId, ref: "Permission", required: true },
-    ],
+    permissions: [{ type: String, ref: "Permission", required: true }],
     resolver: {
       strategy: { type: String, required: true },
       priority: { type: Number, default: 0 },
@@ -47,8 +52,19 @@ const PermissionGroupSchema = new Schema<IPermissionGroupDoc>(
     },
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
+
+// Virtual for permissions populate support using String IDs
+PermissionGroupSchema.virtual("permissionDetails", {
+  ref: "Permission",
+  localField: "permissions",
+  foreignField: "permissionId",
+});
 
 PermissionGroupSchema.index({ domain: 1 });
 

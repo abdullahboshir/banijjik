@@ -1,0 +1,1 @@
+{"version":3,"file":"mail.templates.d.ts","sourceRoot":"","sources":["../../../../src/infrastructure/services/mail/mail.templates.ts"],"names":[],"mappings":"AAAA,eAAO,MAAM,aAAa;4BACA;QACtB,SAAS,EAAE,MAAM,CAAC;QAClB,gBAAgB,EAAE,MAAM,CAAC;QACzB,KAAK,EAAE,MAAM,CAAC;QACd,QAAQ,EAAE,MAAM,CAAC;KAClB;CA2CF,CAAC"}

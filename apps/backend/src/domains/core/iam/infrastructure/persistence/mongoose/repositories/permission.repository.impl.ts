@@ -5,15 +5,19 @@ import { PermissionMapper } from "../mappers/permission.mapper";
 export class MongoosePermissionRepository implements IPermissionRepository {
   async save(permission: Permission): Promise<void> {
     const data = PermissionMapper.toPersistence(permission);
-    if (permission.id) {
-      await PermissionModel.findByIdAndUpdate(permission.id, data);
+    if (permission.permissionId) {
+      await PermissionModel.findOneAndUpdate(
+        { permissionId: permission.permissionId },
+        data,
+        { upsert: true },
+      );
     } else {
       await PermissionModel.create(data);
     }
   }
 
-  async findById(id: string): Promise<Permission | null> {
-    const doc = await PermissionModel.findById(id);
+  async findById(permissionId: string): Promise<Permission | null> {
+    const doc = await PermissionModel.findOne({ permissionId });
     if (!doc) return null;
     return PermissionMapper.toDomain(doc as any);
   }
@@ -29,7 +33,7 @@ export class MongoosePermissionRepository implements IPermissionRepository {
     return docs.map((doc) => PermissionMapper.toDomain(doc as any));
   }
 
-  async delete(id: string): Promise<void> {
-    await PermissionModel.findByIdAndDelete(id);
+  async delete(permissionId: string): Promise<void> {
+    await PermissionModel.findOneAndDelete({ permissionId });
   }
 }

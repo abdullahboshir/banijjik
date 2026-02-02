@@ -3,13 +3,21 @@ import { UserModel } from "../models/user.model";
 import { UserPersistenceMapper } from "../mappers/user.mapper";
 
 export class MongooseUserRepository implements IUserRepository {
-  async save(user: User): Promise<void> {
+  async save(user: User): Promise<User> {
     const data = UserPersistenceMapper.toPersistence(user);
-    await UserModel.create(data);
+    const doc = await UserModel.findOneAndUpdate(
+      { userId: user.userId },
+      data,
+      {
+        upsert: true,
+        new: true,
+      },
+    );
+    return UserPersistenceMapper.toDomain(doc);
   }
 
-  async findById(id: string): Promise<User | null> {
-    const doc = await UserModel.findById(id);
+  async findById(userId: string): Promise<User | null> {
+    const doc = await UserModel.findOne({ userId });
     if (!doc) return null;
     return UserPersistenceMapper.toDomain(doc);
   }
@@ -22,6 +30,6 @@ export class MongooseUserRepository implements IUserRepository {
 
   async update(user: User): Promise<void> {
     const data = UserPersistenceMapper.toPersistence(user);
-    await UserModel.findByIdAndUpdate(user.id, data);
+    await UserModel.findOneAndUpdate({ userId: user.userId }, data);
   }
 }

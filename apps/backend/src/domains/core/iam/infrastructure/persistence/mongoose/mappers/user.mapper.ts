@@ -5,7 +5,6 @@ import {
   Phone,
   UserName,
   UserStatus,
-  OrganizationMembershipVO,
   DirectPermission,
   LoginHistory,
   UserSettings,
@@ -16,8 +15,8 @@ export class UserPersistenceMapper {
    * Domain Entity -> Mongoose Document (Persistence)
    */
   static toPersistence(user: User): any {
-    return {
-      _id: user.id,
+    const persistence: any = {
+      userId: user.userId,
       firstName: user.name.getFirstName(),
       lastName: user.name.getLastName(),
       email: user.email.toString(),
@@ -31,17 +30,18 @@ export class UserPersistenceMapper {
       isActive: user.isActive,
       isDeleted: user.isDeleted,
       isSuperAdmin: user.isSuperAdmin,
-      globalRoles: user.globalRoles,
+      systemRoles: user.systemRoles,
       directPermissions: user.directPermissions.map((p) => p.toObject()),
       lastLogin: user.lastLogin,
+      lastActiveContext: user.lastActiveContext,
       loginHistory: user.loginHistory.map((h) => h.toObject()),
       settings: user.settings.toObject(),
       metadata: user.metadata,
-      organization: user.organization,
-      region: user.region,
       createdBy: user.createdBy,
       updatedBy: user.updatedBy,
     };
+
+    return persistence;
   }
 
   /**
@@ -49,7 +49,7 @@ export class UserPersistenceMapper {
    */
   static toDomain(doc: IUserDocument): User {
     return new User(
-      doc._id,
+      doc.userId,
       UserName.create(doc.firstName, doc.lastName),
       Email.create(doc.email),
       Phone.createOptional(doc.phone),
@@ -62,17 +62,16 @@ export class UserPersistenceMapper {
       doc.isActive,
       doc.isDeleted,
       doc.isSuperAdmin,
-      doc.globalRoles,
+      doc.systemRoles || [],
       // Handle potential null/undefined for arrays coming from DB
       (doc.directPermissions || []).map((p) => DirectPermission.create(p)),
       doc.lastLogin,
+      doc.lastActiveContext || null,
       (doc.loginHistory || []).map((h) => LoginHistory.create(h)),
       UserSettings.create(
         doc.settings || { theme: "SYSTEM", tableHeight: "MEDIUM" },
       ),
       doc.metadata,
-      doc.organization,
-      doc.region,
       doc.createdBy,
       doc.updatedBy,
       doc.createdAt,

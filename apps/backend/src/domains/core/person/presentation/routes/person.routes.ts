@@ -1,23 +1,19 @@
 import { Router } from "express";
-
-import { JoinOrganizationUseCase } from "@person/application";
 import { PersonController } from "../controllers";
 import { MongoosePersonRepository } from "@person/infrastructure";
 
-export const createPersonRouter = () => {
+export const createPersonRouter = (repository?: MongoosePersonRepository) => {
   const router = Router();
 
   // 1. Repositories
-  const personRepo = new MongoosePersonRepository();
+  const personRepo = repository || new MongoosePersonRepository();
 
   // 2. Use Cases
-  const joinOrgUseCase = new JoinOrganizationUseCase(personRepo);
 
   // 3. Controller
-  const controller = new PersonController(joinOrgUseCase);
+  const controller = new PersonController();
 
   // 4. Routes
-  router.post("/join", controller.joinOrganization.bind(controller));
 
   return router;
 };

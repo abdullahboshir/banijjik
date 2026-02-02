@@ -9,10 +9,11 @@ import { PERMISSION_EFFECT, getDomainByResource } from "@banijjik/contracts";
 export async function syncPermissionGroups() {
     console.log("📦 Step 2: Syncing Permission Groups...");
     const resourceGroupsMap = {};
+    const activeGroupIds = [];
     // 1. Get all available permissions
     const allPermissions = await PermissionModel.find({});
     console.log(`   [DEBUG] Found ${allPermissions.length} permissions in DB.`);
-    // 2. Group permissions by resource
+    // 2. Group permissions by resource (using permissionId strings)
     const permissionsByResource = {};
     allPermissions.forEach((p) => {
         const resourceName = p.resource;
@@ -21,16 +22,18 @@ export async function syncPermissionGroups() {
         if (!permissionsByResource[resourceName]) {
             permissionsByResource[resourceName] = [];
         }
-        permissionsByResource[resourceName].push(p._id);
+        permissionsByResource[resourceName].push(p.permissionId);
     });
-    const allPermissionIds = allPermissions.map((p) => p._id);
+    const allPermissionIds = allPermissions.map((p) => p.permissionId);
     // 3. Create or Update Permission Groups for each resource
     for (const [resource, permIds] of Object.entries(permissionsByResource)) {
         const domain = getDomainByResource(resource);
-        const name = `${domain}.${resource}`;
+        const name = `${domain}:${resource}`;
         try {
-            const group = await PermissionGroupModel.findOneAndUpdate({ name }, {
+            const permissionGroupId = name; // Semantic ID: iam:AUTH, iam:ROLE, etc.
+            const group = await PermissionGroupModel.findOneAndUpdate({ permissionGroupId }, {
                 $set: {
+                    permissionGroupId,
                     name,
                     domain,
                     description: `Manage ${resource.toLowerCase().replace("_", " ")}`,
@@ -46,7 +49,8 @@ export async function syncPermissionGroups() {
                 },
             }, { upsert: true, new: true });
             if (group) {
-                resourceGroupsMap[resource] = group._id;
+                resourceGroupsMap[resource] = group.permissionGroupId;
+                activeGroupIds.push(group.permissionGroupId);
             }
         }
         catch (e) {
@@ -55,9 +59,11 @@ export async function syncPermissionGroups() {
     }
     // 4. Create Full Access Group (for SUPER_ADMIN)
     try {
-        const fullAccessGroup = await PermissionGroupModel.findOneAndUpdate({ name: "system.full_access" }, {
+        const fullAccessPermGroupId = "system:full_access";
+        const fullAccessGroup = await PermissionGroupModel.findOneAndUpdate({ permissionGroupId: fullAccessPermGroupId }, {
             $set: {
-                name: "system.full_access",
+                permissionGroupId: fullAccessPermGroupId,
+                name: "system:full_access",
                 domain: "system",
                 description: "All permissions (Full System Access)",
                 permissions: allPermissionIds,
@@ -72,13 +78,21 @@ export async function syncPermissionGroups() {
             },
         }, { upsert: true, new: true });
         if (fullAccessGroup) {
-            resourceGroupsMap["FULL_ACCESS"] = fullAccessGroup._id;
+            resourceGroupsMap["FULL_ACCESS"] = fullAccessGroup.permissionGroupId;
+            activeGroupIds.push(fullAccessGroup.permissionGroupId);
         }
     }
     catch (e) {
         console.error("   ❌ Failed to sync full access group:", e.message);
     }
     console.log(`   ✅ Permission Groups synced: ${Object.keys(resourceGroupsMap).length} groups.`);
+    // Cleanup: Remove stale groups (e.g. old dot notation IDs)
+    const deleteResult = await PermissionGroupModel.deleteMany({
+        permissionGroupId: { $nin: activeGroupIds },
+    });
+    if (deleteResult.deletedCount > 0) {
+        console.log(`   🗑️  Removed ${deleteResult.deletedCount} stale permission groups.`);
+    }
     return resourceGroupsMap;
 }
 /**
@@ -86,13 +100,13 @@ export async function syncPermissionGroups() {
  */
 export async function getGroupsByDomain(domainName) {
     const groups = await PermissionGroupModel.find({ domain: domainName });
-    return groups.map((g) => g._id);
+    return groups.map((g) => g.permissionGroupId);
 }
 /**
  * Helper to get all PermissionGroup IDs
  */
 export async function getAllGroupIds() {
     const groups = await PermissionGroupModel.find({});
-    return groups.map((g) => g._id);
+    return groups.map((g) => g.permissionGroupId);
 }
 //# sourceMappingURL=permission-group.seeder.js.map

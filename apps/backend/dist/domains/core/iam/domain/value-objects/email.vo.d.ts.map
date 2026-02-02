@@ -1,0 +1,1 @@
+{"version":3,"file":"email.vo.d.ts","sourceRoot":"","sources":["../../../../../../src/domains/core/iam/domain/value-objects/email.vo.ts"],"names":[],"mappings":"AAAA,qBAAa,KAAK;IAChB,OAAO,CAAC,QAAQ,CAAC,KAAK,CAAS;IAE/B,OAAO;IAIP,MAAM,CAAC,MAAM,CAAC,KAAK,EAAE,MAAM,GAAG,KAAK;IAanC,QAAQ,IAAI,MAAM;IAIlB,MAAM,CAAC,KAAK,EAAE,KAAK,GAAG,OAAO;CAG9B"}

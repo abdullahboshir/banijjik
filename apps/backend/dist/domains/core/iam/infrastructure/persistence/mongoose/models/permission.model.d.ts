@@ -1,6 +1,6 @@
 import { Document, Types } from "mongoose";
 export interface IPermissionDoc extends Document {
-    id: string;
+    permissionId: string;
     domain: string;
     resource: string;
     action: string;

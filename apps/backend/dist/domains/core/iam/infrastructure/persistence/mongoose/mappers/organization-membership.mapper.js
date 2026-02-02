@@ -3,18 +3,18 @@ import { OrganizationMembership } from "@iam/domain";
 export class OrganizationMembershipMapper {
     static toDomain(doc) {
         return OrganizationMembership.create({
-            id: doc._id.toString(),
-            userId: doc.userId.toString(),
-            organizationId: doc.organizationId.toString(),
-            roleId: doc.roleId.toString(),
+            membershipId: doc._id?.toString() ?? crypto.randomUUID(),
+            userId: doc.userId,
+            organizationId: doc.organizationId,
+            roleId: doc.roleId,
             type: doc.type,
             designation: doc.designation,
             memberCode: doc.memberCode,
             status: doc.status,
             source: doc.source,
             joinedAt: doc.joinedAt,
-            updatedAt: doc.updatedAt,
             metadata: doc.metadata,
+            updatedAt: doc.updatedAt,
         });
     }
     static toPersistence(domain) {

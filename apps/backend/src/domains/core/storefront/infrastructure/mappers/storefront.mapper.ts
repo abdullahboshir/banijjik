@@ -4,9 +4,8 @@ import { IStorefrontDoc } from "../persistence/mongoose/models/storefront.model"
 export class StorefrontMapper {
   static toDomain(raw: IStorefrontDoc): Storefront {
     return new Storefront({
-      _id: raw._id.toString(),
-      id: raw.id,
-      organizationId: raw.organizationId.toString(),
+      storefrontId: raw.storefrontId,
+      organizationId: raw.organizationId,
       slug: raw.slug,
       industry: raw.industry,
       status: raw.status,
@@ -27,7 +26,7 @@ export class StorefrontMapper {
   static toPersistence(domain: Storefront): any {
     const primitives = domain.toPrimitives();
     return {
-      id: primitives.id,
+      storefrontId: primitives.storefrontId,
       organizationId: primitives.organizationId,
       slug: primitives.slug,
       industry: primitives.industry,

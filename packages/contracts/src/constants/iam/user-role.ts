@@ -7,8 +7,7 @@ export const USER_ROLE_ENUM = [
   "ADMIN",
   "MANAGER",
   "STAFF",
-  "MEMBER",
-  "CUSTOMER",
+  "CONSUMER",
   "VIEWER",
 ] as const;
 

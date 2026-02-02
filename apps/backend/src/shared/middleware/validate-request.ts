@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodSchema, ZodType } from "zod";
-import { catchAsync } from "../utils/catch-async";
+import { catchAsync } from "@banijjik/shared-kernel";
 
 /**
  * Platinum Standard: Request Validation Middleware.

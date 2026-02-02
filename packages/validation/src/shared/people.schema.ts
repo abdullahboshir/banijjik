@@ -8,16 +8,43 @@ import {
 import { USER_PROFILE_TYPE } from "@banijjik/contracts";
 
 /**
+ * Universal Person Profile Schema
+ */
+export const PersonProfileSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().optional(),
+  email: z.string().email("Invalid email"),
+  phone: z.string().optional(),
+  gender: z.enum(["male", "female", "other"]).optional(),
+  dateOfBirth: z
+    .preprocess(
+      (arg) => (typeof arg === "string" ? new Date(arg) : arg),
+      z.date(),
+    )
+    .optional(),
+  bloodGroup: z
+    .enum(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"])
+    .optional(),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  emergencyContact: z.string().optional(),
+  nid: z.string().optional(),
+  permanentAddress: z.string().optional(),
+  currentAddress: z.string().optional(),
+  profilePicture: z.string().url().optional(),
+});
+
+/**
  * Shared Join Organization Schema
  * Platinum Standard: Shared between frontend and backend.
  * Uses discriminated validation for metadata.
  */
 const BaseJoinSchema = z.object({
-  firstName: z.string().min(1, "validation.people.first_name_required"),
+  firstName: z.string().min(1, "First name is required"),
   lastName: z.string().optional(),
-  email: z.string().email("validation.common.invalid_email"),
-  identityId: z.string().min(1, "validation.common.required"),
-  organizationId: z.string().min(1, "validation.common.required"),
+  email: z.string().email("Invalid email"),
+  userId: z.string().min(1, "User ID is required"),
+  organizationId: z.string().min(1, "Organization ID is required"),
 });
 
 export const JoinOrganizationSchema = z.discriminatedUnion("type", [

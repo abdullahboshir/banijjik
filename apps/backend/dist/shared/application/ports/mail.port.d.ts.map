@@ -1,0 +1,1 @@
+{"version":3,"file":"mail.port.d.ts","sourceRoot":"","sources":["../../../../src/shared/application/ports/mail.port.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,YAAY;IAC3B,SAAS,CAAC,EAAE,EAAE,MAAM,EAAE,OAAO,EAAE,MAAM,EAAE,IAAI,EAAE,MAAM,GAAG,OAAO,CAAC,OAAO,CAAC,CAAC;IACvE,gBAAgB,CACd,EAAE,EAAE,MAAM,EACV,SAAS,EAAE,MAAM,EACjB,QAAQ,EAAE,MAAM,GACf,OAAO,CAAC,OAAO,CAAC,CAAC;CACrB"}

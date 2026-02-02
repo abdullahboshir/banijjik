@@ -21,20 +21,22 @@ export async function syncPermissions() {
   const actions = Object.values(PERMISSION_ACTION) as PermissionActionType[];
 
   const ops = [];
+  const activePermissionIds: string[] = [];
 
   for (const resource of resources) {
     const domain = getDomainByResource(resource);
 
     for (const action of actions) {
-      const id = `${resource}:${action}`;
+      const permissionId = `${resource}:${action}`;
+      activePermissionIds.push(permissionId);
       const description = `Permission to ${action.toLowerCase()} ${resource.toLowerCase().replace("_", " ")}`;
 
       ops.push({
         updateOne: {
-          filter: { id },
+          filter: { permissionId },
           update: {
             $set: {
-              id,
+              permissionId,
               domain,
               resource,
               action,
@@ -51,9 +53,19 @@ export async function syncPermissions() {
   }
 
   if (ops.length > 0) {
-    const result = await PermissionModel.bulkWrite(ops);
+    const result = await PermissionModel.bulkWrite(ops, { ordered: false });
     console.log(
       `   ✅ Permissions synced: ${result.upsertedCount} created, ${result.modifiedCount} updated.`,
+    );
+  }
+
+  // Cleanup: Remove permissions that no longer exist in code
+  const deleteResult = await PermissionModel.deleteMany({
+    permissionId: { $nin: activePermissionIds },
+  });
+  if (deleteResult.deletedCount > 0) {
+    console.log(
+      `   🗑️  Removed ${deleteResult.deletedCount} stale permissions.`,
     );
   }
 }

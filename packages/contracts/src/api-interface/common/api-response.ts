@@ -14,6 +14,12 @@ export interface ApiResponse<T = any> {
   meta?: {
     timestamp: string;
     requestId?: string;
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
     [key: string]: any;
   };
 }

@@ -5,8 +5,8 @@ export class StorefrontRepositoryImpl {
         const raw = StorefrontMapper.toPersistence(storefront);
         await StorefrontModel.findOneAndUpdate({ organizationId: storefront.organizationId }, { $set: raw }, { upsert: true, new: true });
     }
-    async findById(id) {
-        const raw = await StorefrontModel.findOne({ id });
+    async findById(storefrontId) {
+        const raw = await StorefrontModel.findOne({ storefrontId });
         return raw ? StorefrontMapper.toDomain(raw) : null;
     }
     async findByOrganizationId(organizationId) {
@@ -17,8 +17,8 @@ export class StorefrontRepositoryImpl {
         const raw = await StorefrontModel.findOne({ slug });
         return raw ? StorefrontMapper.toDomain(raw) : null;
     }
-    async delete(id) {
-        await StorefrontModel.findOneAndDelete({ id });
+    async delete(storefrontId) {
+        await StorefrontModel.findOneAndDelete({ storefrontId });
     }
 }
 //# sourceMappingURL=storefront.repository.impl.js.map

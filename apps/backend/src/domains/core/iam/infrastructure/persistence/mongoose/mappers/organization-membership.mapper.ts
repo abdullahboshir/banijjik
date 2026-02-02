@@ -1,31 +1,30 @@
-import { Types } from "mongoose";
 import { OrganizationMembership } from "@iam/domain";
 import { IOrganizationMembershipDoc } from "../models/organization-membership.model";
 
 export class OrganizationMembershipMapper {
   static toDomain(doc: IOrganizationMembershipDoc): OrganizationMembership {
     return OrganizationMembership.create({
-      id: doc._id.toString(),
-      userId: doc.userId.toString(),
-      organizationId: doc.organizationId.toString(),
-      roleId: doc.roleId.toString(),
+      membershipId: doc._id?.toString() ?? crypto.randomUUID(),
+      userId: doc.userId,
+      organizationId: doc.organizationId,
+      roleId: doc.roleId,
       type: doc.type,
       designation: doc.designation,
       memberCode: doc.memberCode,
       status: doc.status as any,
       source: doc.source,
       joinedAt: doc.joinedAt,
-      updatedAt: (doc as any).updatedAt,
       metadata: doc.metadata,
+      updatedAt: (doc as any).updatedAt,
     });
   }
 
   static toPersistence(domain: OrganizationMembership): any {
     const props = domain.toObject();
     return {
-      userId: new Types.ObjectId(props.userId),
-      organizationId: new Types.ObjectId(props.organizationId),
-      roleId: new Types.ObjectId(props.roleId),
+      userId: props.userId,
+      organizationId: props.organizationId,
+      roleId: props.roleId,
       type: props.type,
       designation: props.designation,
       memberCode: props.memberCode,

@@ -15,7 +15,7 @@ export declare class OrganizationMembershipVO {
     toObject(): {
         role: string;
         organization: string;
-        status: CommonStatusType;
+        status: "ACTIVE" | "INACTIVE";
     };
 }
 //# sourceMappingURL=organization-membership.vo.d.ts.map

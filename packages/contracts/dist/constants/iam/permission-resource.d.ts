@@ -1,0 +1,4 @@
+export declare const PERMISSION_RESOURCE_ENUM: readonly ["AUTH", "USER", "ROLE", "PERMISSION", "ORGANIZATION", "PEOPLE", "PLATFORM_SETTINGS", "SYSTEM_SETTINGS", "ORGANIZATION_SETTINGS", "BILLING", "INVOICE", "PAYMENT", "SUBSCRIPTION", "PLAN", "ACADEMIC", "APPOINTMENT", "INVENTORY", "ACCOMMODATION", "ORDERING"];
+export type PermissionResourceType = (typeof PERMISSION_RESOURCE_ENUM)[number];
+export declare const PERMISSION_RESOURCE: any;
+//# sourceMappingURL=permission-resource.d.ts.map

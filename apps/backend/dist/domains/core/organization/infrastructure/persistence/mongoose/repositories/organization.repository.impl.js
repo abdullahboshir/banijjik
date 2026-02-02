@@ -4,15 +4,17 @@ export class MongooseOrganizationRepository {
     async save(organization) {
         const persistence = OrganizationMapper.toPersistence(organization);
         // Use the explicit business id for upsert/save
-        if (organization.id) {
-            await OrganizationModel.findOneAndUpdate({ id: organization.id }, persistence, { upsert: true, new: true });
+        let doc;
+        if (organization.organizationId) {
+            doc = await OrganizationModel.findOneAndUpdate({ organizationId: organization.organizationId }, persistence, { upsert: true, new: true });
         }
         else {
-            await OrganizationModel.create(persistence);
+            doc = await OrganizationModel.create(persistence);
         }
+        return OrganizationMapper.toDomain(doc);
     }
-    async findById(id) {
-        const doc = await OrganizationModel.findOne({ id });
+    async findById(organizationId) {
+        const doc = await OrganizationModel.findOne({ organizationId });
         return doc ? OrganizationMapper.toDomain(doc) : null;
     }
     async findBySlug(slug) {
