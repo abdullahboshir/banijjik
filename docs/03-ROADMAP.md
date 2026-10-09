@@ -81,7 +81,7 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 ## Phase 0: Clean foundation (no business features)
 
 **0.1 Archive & fresh skeleton**
-- Do: create branch `archive/v0` from current `main`. On `main`, remove the old code (`apps/*`, `packages/*`, `libs/*`, `.agent/`, `docs/architecture`, `docs/my-reminder`, committed `dist/.turbo/logs/.env`). Keep `docs/` new files, `AGENTS.md`, `CLAUDE.md`, `.cursor/`, `.gitignore`. Create the workspace skeleton from `01-ARCHITECTURE.md §1`: only `apps/api`, `packages/contracts`, `packages/ids` (`newId()` UUID v7 + branded types, with tests for v7 format and ordering), `packages/validation`, `packages/config`, `infra/`.
+- Do: create branch `archive/v0` from current `main`. On `main`, remove the old code (`apps/*`, `packages/*`, `libs/*`, `.agent/`, `docs/architecture`, `docs/my-reminder`, committed `dist/.turbo/logs/.env`). Keep `docs/` new files, `AGENTS.md`, `CLAUDE.md`, `.cursor/`, `.gitignore`. Create the workspace skeleton from `01-ARCHITECTURE.md §1`: only `packages/contracts`, `packages/ids` (`newId()` UUID v7 + branded types, with tests for v7 format and ordering), `packages/validation`, `packages/config` (`apps/api` and `infra/` are created in 0.3, owner decision 2026-10-09).
 - Done: `npm install` and `npm run build` pass. Nothing that is out of the card's scope is created.
 
 **0.2 Tooling & guardrails in CI**
@@ -102,7 +102,7 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 - Done: CI is green. Deliberate violations (a deep cross-module import, `if (industry === "GYM")`, a direct model import) each fail lint.
 
 **0.3 Config & local infra**
-- Do: `infra/docker-compose.yml` (Mongo **replica set**, Redis). `apps/api/src/config` with a Zod-validated env. `.env.example`.
+- Do: Create `apps/api` (package + `src/config`) and `infra/`. `infra/docker-compose.yml` (Mongo **replica set**, Redis). `apps/api/src/config` with a Zod-validated env. `.env.example`.
 - Done: the API refuses to start with a missing or invalid env and logs which key is wrong.
 
 **0.4 API kernel**
