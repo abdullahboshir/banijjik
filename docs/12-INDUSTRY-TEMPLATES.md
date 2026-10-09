@@ -1,6 +1,6 @@
 # Industry Templates
 
-Card D4 · Status: **draft, waiting for owner approval** · Written 2026-10-09 · Based on `main` at `dd2c9af`
+Card D4 · Status: **approved by owner 2026-10-09** · Written 2026-10-09 · Based on `main` at `dd2c9af`
 
 This doc defines the 8 seed industry templates as **data**. It also proves that none of them needs industry-specific code beyond the offering kinds and the reusable capability modules. Card 2.1 seeds these templates exactly as written here. Card 2.3 builds the field engine that reads them. Changing a template later is a platform-panel action, not a code change (ADR-046, ADR-076).
 

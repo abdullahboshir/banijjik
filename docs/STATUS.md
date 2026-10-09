@@ -28,10 +28,10 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | D1 glossary & domain model | done (2026-10-09, branch s/D1-domain-model) | approved by owner; Q1–Q4 answered in 09 §9 |
 | D2 module catalog & packages | done (2026-10-09, `f6770ed`, approved by owner) | needed by 1.6 |
 | D3 offering kinds & request lifecycles | done (2026-10-09, `7af39c5`, approved by owner) | needed by Phase 2/3 |
-| D4 industry templates (8) | doing (draft in `docs/12-INDUSTRY-TEMPLATES.md`, waiting for owner approval) | needed by Phase 2 |
+| D4 industry templates (8) | done (2026-10-09, `35582a0`, approved by owner) | needed by Phase 2 |
 | D5 bot tools & golden conversations | todo | needs P3 real chats |
 | D6 UX & design system | done (2026-10-09, `8f74698`, approved by owner) | needed by 0.5 |
-| D7 API surface | doing (draft in `docs/14-API.md`, waiting for owner approval) | |
+| D7 API surface | done (2026-10-09, `693f958`, approved by owner) | |
 | D8 manoxen port map | done (2026-10-09, `8aa24bf`, approved by owner) | needed by Phase 3 |
 
 ## Phase 0

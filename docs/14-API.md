@@ -1,6 +1,6 @@
 # API Surface
 
-Card D7 · Status: **draft, waiting for owner approval** · Written 2026-10-09 · Based on `s/D4-industry-templates` (`35582a0`)
+Card D7 · Status: **approved by owner 2026-10-09** · Written 2026-10-09 · Based on `s/D4-industry-templates` (`35582a0`)
 
 This doc fixes how the API is shaped and lists every launch endpoint per module, with its permission, idempotency and contract names. PLAN sessions copy their module's rows into the plan. An endpoint not listed here is added here first. Field-level request/response shapes are written as Zod schemas in `@banijjik/validation` and types in `@banijjik/contracts` by the card that builds the endpoint, using the contract names below.
 
