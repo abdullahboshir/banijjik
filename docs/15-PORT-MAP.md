@@ -1,6 +1,6 @@
 # Manoxen Port Map
 
-Card D8 · Status: **draft, waiting for owner approval** · Written 2026-10-09 · Based on `s/D3-offerings-requests` (`7af39c5`) and manoxen `main` at `3ebafc55`
+Card D8 · Status: **approved by owner 2026-10-09** · Written 2026-10-09 · Based on `s/D3-offerings-requests` (`7af39c5`) and manoxen `main` at `3ebafc55`
 
 This doc says, for every banijjik module, what to take from manoxen (logic, rules, tests), how to map it to the new model, and what to leave behind. PLAN sessions for Phase 0–5 cards read their row here before reading manoxen code. Nothing is ported that is not listed here. Anything not listed stays in manoxen (archive) until a future card asks for it.
 

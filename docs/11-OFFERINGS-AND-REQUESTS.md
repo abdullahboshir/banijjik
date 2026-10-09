@@ -1,6 +1,6 @@
 # Offerings & Request Lifecycles
 
-Card D3 · Status: **draft, waiting for owner approval** · Written 2026-10-09 · Based on `main` at `b596e0f`
+Card D3 · Status: **approved by owner 2026-10-09** · Written 2026-10-09 · Based on `main` at `b596e0f`
 
 This doc fixes the core schema of each offering kind and the full lifecycle of every request: states, who may move them, and what each move does to stock, money, ledgers, notifications and the bot. It is the contract for cards 3.2–3.10, 4.3 and 5.7–5.8. Any state, transition or side effect not listed here does not exist. A PLAN session that needs one adds it here first.
 
