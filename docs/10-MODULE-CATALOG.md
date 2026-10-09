@@ -209,6 +209,30 @@ Permission keys follow `<moduleKey>.<entity>.<action>` (ADR-054). Standard actio
 | `workflow` | `workflow.workflow.{read,create,update,archive}`, `workflow.run.read` | — | — | — | — | `workflow.run.completed` (consumes any allow-listed event) | `workflowRunsPerMonth` | — |
 | PLATFORM modules | platform permissions are `platform.<module>.<action>` and are granted through `PlatformOperator.platformRoles` (ADR-048), never through org Roles | | | | | | | |
 
+**Additions from D3** (`11-OFFERINGS-AND-REQUESTS.md`; cards copy them into the manifests):
+- `sales`:
+  - permissions `sales.return.{read,create,reverse*}`, `sales.approval.grant`*
+  - settings `sales.draftExpiryHours`, `sales.placedAutoCancelHours`, `sales.usePacking`, `sales.customerCanCancel`, `sales.returnWindowDays`, `sales.advance.required`, `sales.advance.value`
+  - events `sales.order.{drafted,placed,updated,packed,shipped,delivered,deliveryFailed,returnedToSender}`, `sales.return.{created,reversed}`
+  - sequence `RETURN`
+- `booking`:
+  - permissions `booking.booking.checkIn`, `booking.eventSession.{read,create,update,cancel}`
+  - settings `booking.holdMinutes`, `booking.requireApproval`, `booking.noShowAfterMinutes`, `booking.deposit.required`, `booking.deposit.value`, `booking.freeCancelHours`, `booking.lateCancelFee`, `booking.noShowFee`
+  - events `booking.booking.{held,requested,checkedIn}`
+- `enrollment`:
+  - permissions `enrollment.enrollment.{freeze,refund*}`
+  - settings `enrollment.requirePaymentToActivate`, `enrollment.blockCheckInWhenOverdue`, `enrollment.lockPriceOnRenewal`, `enrollment.refundPolicy`
+  - events `enrollment.enrollment.{activated,frozen,unfrozen,overdue,completed}`, `enrollment.period.started`
+- `payment`:
+  - permissions `payment.payment.reverse*`, `payment.storeCredit.{read,adjust*}`
+  - settings `payment.storeCreditExpiryDays`
+  - events `payment.payment.reversed`, `payment.storeCredit.changed`
+- `pricing`: settings `pricing.approval.discountPercentAbove`, `pricing.approval.discountAmountAbove`
+- `pos`: setting `pos.allowCreditSale`
+- `courier`: permission `courier.settlement.record`, event `courier.settlement.recorded`
+- `delivery`: event `delivery.cash.handedOver`
+- `accounting`: system account codes and the posting matrix (`11 §10`)
+
 Bot tool mapping follows `08 §2`. `create_request` and `get_request_status` are single tools whose handlers are contributed by `sales`, `booking` and `enrollment`, so the tool appears only with the effective request types.
 
 ## 8. Subscription status → access mode (ADR-053)

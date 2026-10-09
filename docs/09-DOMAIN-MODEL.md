@@ -215,6 +215,7 @@ Owner `core/organization` · scope org · versioned · custom fields (entityType
 | `status` | `INVITED \| ACTIVE \| SUSPENDED \| REMOVED` | REMOVED keeps history (requests reference `memberId`) |
 | `assignments` | `[{ locationId: LocationId \| "ALL", roleId }]` | ADR-005 |
 | `displayName` | string | how the org shows this staff member (may differ from `User.name`) |
+| `approvalPinHash` | string? | manager PIN for approvals, hashed, rate-limited (`11 §9`) |
 | `jobTitle` | string? | |
 | `employeeNumber` | string? | from the org sequence `MEMBER` |
 | `joinedAt` | Date | |
@@ -278,7 +279,7 @@ Owner `commerce/contact` · scope org · versioned · soft-delete · custom fiel
 | `relations` | `[{ relatedContactId, relationKey }]` | `GUARDIAN_OF`, `PARENT_OF`, `EMPLOYEE_OF` …; keys from contracts |
 | `tagKeys` | string[] | |
 | `homeLocationId` | LocationId? | for reports only; contacts are shared across locations |
-| `summary` | `{ requestCount, lifetimeValue: Money, lastActivityAt, codReturnCount }` | projection updated by events, never written by use cases |
+| `summary` | `{ requestCount, lifetimeValue: Money, lastActivityAt, codReturnCount, storeCreditBalance: Money }` | projection updated by events, never written by use cases |
 | `customFields` | map | |
 | `source`, `channelId?` | | lineage |
 | STF + `version` | | |
@@ -363,8 +364,10 @@ Three aggregates share one **request contract**: `requestType` (`ORDER \| BOOKIN
 | `orderId`, `orderNumber` | | number from sequence `ORDER` |
 | `locationId` | LocationId | selling/fulfilling location (online orders: setting `sales.fulfillmentLocationId`, default location) |
 | `contactId` | ContactId? | null only for an anonymous POS walk-in |
-| `status` | see D3 | |
-| `lines` | `[{ orderLineId, offeringId, variantId, kind, nameSnapshot, quantity, unitPrice: Money, discount: Money, tax: Money, lineTotal: Money, performedByMemberId? }]` | any kind (owner decision): a walk-in haircut + shampoo is one order |
+| `status` | `DRAFT | PLACED | CONFIRMED | PACKED | SHIPPED | DELIVERED | COMPLETED | DELIVERY_FAILED | RETURNED_TO_SENDER | CANCELLED` | lifecycle `11 §4` |
+| `returnStatus` | `NONE | PARTIAL | FULL` | derived from SalesReturns |
+| `approval` | `{ approverMemberId, approvedAt, action }?` | manager PIN (`11 §9`) |
+| `lines` | `[{ orderLineId, offeringId, variantId, kind, nameSnapshot, quantity, unitPrice: Money, lineGross: Money, lineDiscount: Money, lineTax: Money, lineNetTotal: Money, returnedQuantity, performedByMemberId? }]` (money allocation rules: `11 §3`) | any kind (owner decision): a walk-in haircut + shampoo is one order |
 | `totals` | `{ subtotal, discountTotal, taxTotal, deliveryCharge, grandTotal }` (Money) | computed server-side, never trusted from the client |
 | `fulfillment` | `{ method: INSTANT \| PICKUP \| COURIER \| OWN_RIDER, deliveryAddress?: AddressSnapshot, consignmentId?, riderMemberId? }` | |
 | `paymentStatus` | `UNPAID \| PARTIAL \| PAID \| REFUNDED` | derived from payment allocations |
@@ -379,6 +382,8 @@ Three aggregates share one **request contract**: `requestType` (`ORDER \| BOOKIN
 | `bookingId`, `bookingNumber` | | sequence `BOOKING` |
 | `locationId`, `contactId` | | contact required |
 | `offeringId`, `variantId`, `kind` | | kind ∈ `SERVICE`, `RENTAL`, `EVENT` |
+| `eventSessionId` | EventSessionId? | EVENT kind only |
+| `depositRequired` | Money | from the deposit rule at creation (`11 §5.4`) |
 | `startsAt`, `endsAt` | Date (UTC) | |
 | `resourceIds` | ResourceId[] | |
 | `providerMemberId` | MemberId? | |
@@ -396,7 +401,7 @@ Three aggregates share one **request contract**: `requestType` (`ORDER \| BOOKIN
 | `billToContactId` | ContactId? | payer when different (guardian) |
 | `offeringId`, `variantId` | | kind `PLAN` |
 | `startsOn`, `endsOn?` | business dates | |
-| `currentPeriod` | `{ periodStartsOn, periodEndsOn, fee: Money }` | |
+| `currentEnrollmentPeriodId` | EnrollmentPeriodId? | periods are `EnrollmentPeriod` records (`11 §8.2`) |
 | `autoRenew` | boolean | |
 | `sessionsRemaining` | integer? | for session-count plans |
 | `status`, `checkoutId`, `source`, `customFields`, STF + `version` | | |
@@ -412,13 +417,23 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 
 | Entity | Owner | Scope | Key fields | Invariants |
 |---|---|---|---|---|
-| **Payment** | `commerce/payment` | location | `paymentId`, `paymentNumber`, `direction` (`IN \| REFUND`), `method` (`CASH`, `BKASH`, `NAGAD`, `CARD`, `BANK`, `COD_SETTLEMENT`, `GATEWAY`), `amount: Money`, `externalReference?`, `allocations[{ requestType, requestId, amount: Money }]`, `contactId?`, `receivedByMemberId`, `businessDate`, `status` | Append-only: corrections are a REFUND or a reversal, never an edit. Sum of allocations ≤ amount. Requires `Idempotency-Key`. |
-| **StockMovement** | `commerce/inventory` | location | `stockMovementId`, `offeringId`, `variantId`, `quantityDelta` (integer, unit precision), `reason` (`PURCHASE`, `SALE`, `RETURN`, `ADJUSTMENT`, `TRANSFER_OUT`, `TRANSFER_IN`, `OPENING`), `sourceType`, `sourceId`, `reversesStockMovementId?`, `unitCost?: Money`, `occurredAt`, `businessDate` | Append-only (ADR-014). Only PRODUCT variants with `isStockTracked`. A transfer is two movements in one transaction. |
-| **InventoryLevel** | `commerce/inventory` | location | `offeringId`, `variantId`, `onHand`, `reserved`, `available`, `version` | Projection; rebuildable from movements. Unique `(organizationId, locationId, offeringId, variantId)`. |
+| **Payment** | `commerce/payment` | location | `paymentId`, `paymentNumber`, `direction` (`IN \| REFUND \| REVERSAL`), `method` (`CASH`, `BKASH`, `NAGAD`, `CARD`, `BANK`, `GATEWAY`, `STORE_CREDIT`, `COD_COURIER`, `RIDER_CASH`), `amount: Money`, `externalReference?` (unique per org + method), `reversesPaymentId?`, `posSessionId?`, `allocations[{ requestType, requestId, enrollmentPeriodId?, amount: Money }]`, `contactId?`, `receivedByMemberId`, `businessDate`, `status` | Append-only: corrections are a REFUND or a reversal, never an edit. Sum of allocations ≤ amount. Requires `Idempotency-Key`. |
+| **StockMovement** | `commerce/inventory` | location | `stockMovementId`, `offeringId`, `variantId`, `quantityDelta` (integer, unit precision), `stockState` (`SELLABLE | DAMAGED`), `reason` (`PURCHASE`, `SALE`, `RETURN`, `RETURN_DAMAGED`, `DAMAGE_WRITE_OFF`, `ADJUSTMENT`, `TRANSFER_OUT`, `TRANSFER_IN`, `OPENING`), `sourceType`, `sourceId`, `reversesStockMovementId?`, `unitCost?: Money`, `occurredAt`, `businessDate` | Append-only (ADR-014). Only PRODUCT variants with `isStockTracked`. A transfer is two movements in one transaction. |
+| **InventoryLevel** | `commerce/inventory` | location | `offeringId`, `variantId`, `onHand`, `reserved`, `damaged`, `available` (= onHand − reserved), `version` | Projection; rebuildable from movements. Unique `(organizationId, locationId, offeringId, variantId)`. |
 | **Account** | `commerce/accounting` | org | `accountId`, `accountCode`, `name`, `accountType` (`ASSET \| LIABILITY \| EQUITY \| INCOME \| EXPENSE`), `isSystem` | System accounts are seeded per org; never deleted. |
 | **JournalEntry** | `commerce/accounting` | org (+ `locationId?`) | `journalEntryId`, `entryNumber`, `businessDate`, `lines[{ accountId, debit: Money, credit: Money }]`, `sourceType`, `sourceId`, `reversesJournalEntryId?` | Debits = credits. Append-only, fixed with a reversing entry. |
 | **Expense** (D2) | `commerce/expense` | location | `expenseId`, `expenseNumber` (sequence `EXPENSE`), `expenseCategoryId`, `amount: Money`, `paidVia` (`CASH`, `BKASH`, `NAGAD`, `BANK`, `CARD`), `businessDate`, `note?`, `attachmentFileIds[]`, `status` (`POSTED \| VOIDED`), `journalEntryId`, custom fields (entityType `expense`) | Posting writes the journal entry in the same transaction (via `accounting`). Void = a reversing journal entry; the expense is never edited or deleted. |
 | **ExpenseCategory** (D2) | `commerce/expense` | org | `expenseCategoryId`, `name`, `accountId` (an EXPENSE account), `status` | Seeded per org with defaults (rent, salary, utilities, delivery, marketing, other). |
+
+### 5.6b Entities added by D3 (details and rules in `11`)
+| Entity | Owner | Scope | Key fields |
+|---|---|---|---|
+| **SalesReturn** | `commerce/sales` | location, append-only | `salesReturnId`, `salesReturnNumber`, `orderId`, `contactId?`, `lines[{ orderLineId, quantity, disposition, refundAmount }]`, `refundDeliveryCharge`, `refund { method, amount }`, `reasonKey`, `approval?`, `status` (`ACTIVE | REVERSED`), `reversedBySalesReturnId?`, `exchangeOrderId?`, `businessDate` (`11 §6`) |
+| **StoreCreditEntry** | `commerce/payment` | org, append-only | `storeCreditEntryId`, `contactId`, `amount` (±), `reason`, `sourceType`, `sourceId`, `expiresOn?`, `businessDate` (`11 §7.2`) |
+| **EnrollmentPeriod** | `commerce/enrollment` | location | `enrollmentPeriodId`, `enrollmentId`, `periodNumber`, `periodStartsOn`, `periodEndsOn`, `fee`, `sessionsAllowed?`, `sessionsUsed`, `status` (`11 §8.2`) |
+| **EventSession** | `commerce/booking` | location | `eventSessionId`, `offeringId`, `startsAt`, `endsAt`, `capacity`, `resourceIds[]`, `status` (`11 §2, §5.5`) |
+| **CourierSettlement** | `integration/courier` | org | `courierSettlementId`, `courierKey`, `paymentIds[]`, `grossAmount`, `courierCharges`, `netReceived`, `receivedVia`, `businessDate` (`11 §7.3`) |
+| **RiderCashHandover** | `commerce/delivery` | location | `riderCashHandoverId`, `riderMemberId`, `paymentIds[]`, `amount`, `receivedByMemberId`, `businessDate` (`11 §7.3`) |
 
 ### 5.7 Channels and fulfilment (Phase 5, shape only)
 | Entity | Owner (final in D2) | Scope | Key fields |
@@ -430,7 +445,7 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | **KnowledgeEntry** (D2) | `channel/bot` | org (+ `locationId?`) | `knowledgeEntryId`, `topicKey` (`DELIVERY`, `RETURNS`, `PAYMENT`, `HOURS`, `LOCATION`, `CUSTOM`), `question?`, `answer` (`{ bn?, en? }`), `status` (`ACTIVE \| ARCHIVED`). Source of the bot's `get_policy` tool together with settings. |
 
 ### 5.8 Technical records (kernel, listed so names stay fixed)
-- **Sequence** (`kernel/sequence`): `{ organizationId, sequenceKey, nextValue }`, unique `(organizationId, sequenceKey)`. Keys: `ORDER`, `BOOKING`, `ENROLLMENT`, `PAYMENT`, `INVOICE`, `JOURNAL`, `MEMBER`, `EXPENSE`, `TRANSFER`, `ZREPORT`. Format (prefix, padding, yearly reset) comes from settings.
+- **Sequence** (`kernel/sequence`): `{ organizationId, sequenceKey, nextValue }`, unique `(organizationId, sequenceKey)`. Keys: `ORDER`, `BOOKING`, `ENROLLMENT`, `PAYMENT`, `INVOICE`, `JOURNAL`, `MEMBER`, `EXPENSE`, `TRANSFER`, `ZREPORT`, `RETURN`. Format (prefix, padding, yearly reset) comes from settings.
 - **OutboxEvent** (`kernel/events`): `{ eventId, type, version, occurredAt, organizationId, actorUserId?, payload, status, attempts }` (`05` envelope).
 - **IdempotencyRecord** (`kernel/idempotency`): `{ organizationId, idempotencyKey, requestHash, responseSnapshot, expiresAt }`.
 - **AuditLog** (`core/audit`): `{ auditLogId, organizationId?, actorUserId?, actorPlatformOperatorId?, action, entityType, entityId, changes, requestId, systemReason?, occurredAt }`. Append-only. Platform-DB copy for platform actions, tenant-DB copy for business actions.
@@ -454,17 +469,17 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | `commerce/contact` | Contact, CustomerAccount, CustomerSession |
 | `commerce/catalog` | Offering, OfferingLocation, Category, SearchSynonym, OfferingSocialLink |
 | `commerce/inventory` | StockMovement, InventoryLevel |
-| `commerce/sales` | Order |
-| `commerce/booking` | Resource, ResourceTimeOff, Booking |
-| `commerce/enrollment` | Enrollment, CheckIn |
-| `commerce/payment` | Payment |
+| `commerce/sales` | Order, SalesReturn |
+| `commerce/booking` | Resource, ResourceTimeOff, Booking, EventSession |
+| `commerce/enrollment` | Enrollment, EnrollmentPeriod, CheckIn |
+| `commerce/payment` | Payment, StoreCreditEntry |
 | `commerce/accounting` | Account, JournalEntry |
 | `commerce/expense` | Expense, ExpenseCategory |
-| `commerce/delivery` | rider delivery assignments (card 5.3) |
+| `commerce/delivery` | rider delivery assignments (card 5.3), RiderCashHandover |
 | `channel/messaging` | Channel, Conversation, Message |
 | `channel/bot` | KnowledgeEntry |
 | `channel/website` | Site, Page, Theme, Domain, WebsiteTemplate (cards 4.1–4.5) |
-| `integration/courier` | Consignment |
+| `integration/courier` | Consignment, CourierSettlement |
 
 Full module list, classes and manifests: `10-MODULE-CATALOG.md`.
 
