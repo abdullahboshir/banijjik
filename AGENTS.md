@@ -94,7 +94,7 @@ Each card has a tier in `docs/03-ROADMAP.md` (T1 = risky core, T2 = standard, T3
 - Handoffs go to `docs/handoffs/<card>.md` (one file per card). In STATUS.md, edit **only your own card's row**.
 
 ## Porting from manoxen
-Source: `E:\WEB-DEVELOPMENT\PROJECTS\business-platform\manoxen`. Port **logic and tests**, never structure. Map `businessUnitId`/`outletId` → `locationId`. **Never copy:** frontend shell/layouts, `(organization)/(business-unit)/(outlet)` routes, scope-sync/active-scope code, watchdogs, SafeDom/commit-crash guards, `queryContext` scope modes, per-industry capability flags (`industry-capabilities.ts`), retail-specific or phrase-specific chatbot libs (see `08-UNIVERSAL-BOT.md §8`). The manoxen `.agent/` docs are reference only, not rules for this repo.
+Source: `E:\WEB-DEVELOPMENT\PROJECTS\business-platform\manoxen`. **Read only your card's row in `docs/15-PORT-MAP.md`**, then the files it lists (ADR-070). Port **logic and tests**, never structure. Map `businessUnitId`/`outletId` → `locationId`. **Never copy:** frontend shell/layouts, `(organization)/(business-unit)/(outlet)` routes, scope-sync/active-scope code, watchdogs, SafeDom/commit-crash guards, `queryContext` scope modes, per-industry capability flags (`industry-capabilities.ts`), retail-specific or phrase-specific chatbot libs (see `08-UNIVERSAL-BOT.md §8`). The manoxen `.agent/` docs are reference only, not rules for this repo.
 
 ## Legacy
 Anything on branch `archive/v0` and any `.agent/` folder is legacy. Do not follow its rules. `docs/PROJECT-OVERVIEW.md` is a historical analysis (2026-10-08), not current rules.
