@@ -41,7 +41,7 @@ Variant `price` means something different per kind:
 |---|---|---|
 | `PRODUCT` | `requiresShipping` (bool, default true), `weightGrams?`, `dimensionsCm? {l,w,h}` | `weightGrams` |
 | `SERVICE` | `durationMinutes` (5–1440), `bufferAfterMinutes` (default 0), `requiresResource` (bool), `resourceTypeKeys[]`, `bookingMode` (`SLOT` \| `WALK_IN_ONLY`), `maxAdvanceDays` (default 60), `depositRule?` (§5.4) | `durationMinutes` (short/long hair) |
-| `PLAN` | `billingPeriod { unit: DAY\|WEEK\|MONTH\|YEAR, count }`, `admissionFee?: Money`, `sessionLimitPerPeriod?`, `capacity?` (max ACTIVE enrollments: batch seats), `startRule` (`ANY_DATE` \| `FIXED_DATES`), `startDates?[]` (business dates, with FIXED_DATES), `fixedTermPeriods?` (course length; null = open-ended), `autoRenewDefault` (bool), `freezeAllowed` (bool), `maxFreezeDaysPerYear?` | `billingPeriod` (1-month vs 3-month), `sessionLimitPerPeriod` |
+| `PLAN` | `billingPeriod { unit: DAY\|WEEK\|MONTH\|YEAR, count }`, `admissionFee?: Money`, `sessionLimitPerPeriod?`, `capacity?` (max ACTIVE enrollments: batch seats), `startRule` (`ANY_DATE` \| `FIXED_DATES`), `startDates?[]` (business dates, with FIXED_DATES), `fixedTermPeriods?` (course length; null = open-ended), `autoRenewDefault` (bool), `freezeAllowed` (bool), `maxFreezeDaysPerYear?`, `securityDeposit?: Money` (refundable, ADR-074) | `billingPeriod` (1-month vs 3-month), `sessionLimitPerPeriod` |
 | `RENTAL` | `rateUnit` (`HOUR` \| `DAY` \| `NIGHT`), `minUnits` (default 1), `maxUnits?`, `resourceTypeKeys[]`, `checkInTime?`, `checkOutTime?` (for NIGHT), `depositAmount?: Money` | — |
 | `EVENT` | `salesCloseMinutesBefore` (default 0), `allowWaitlist` (bool, default false). Sessions are separate `EventSession` records (§5.5). | — |
 
@@ -52,7 +52,7 @@ Variant `price` means something different per kind:
 ## 3. Pricing pipeline (owned by `pricing`, used by every request)
 
 ```
-unit price = OfferingLocation.priceOverride ?? variant.price            (per location)
+unit price = (OfferingLocation.priceOverride ?? variant.price) + Σ chosen modifier priceDeltas   (per location; ADR-072)
 line gross = unit price × quantity   (quantity in unit precision → integer math, round half-up to minor units)
 line promotions  = automatic promotions in priority order (card 3.4: one best promotion per line unless stackable)
 manual discount  = line-level, then order-level; above threshold needs approval (§9)

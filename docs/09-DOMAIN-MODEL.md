@@ -254,7 +254,7 @@ All in the platform DB, all read through `resolveOrgConfig` (cached per `configV
 | **Package** (versioned) | `platform/package` | platform | `packageId`, `packageKey`, `nameKey`, `isAddOn`, `moduleKeys[]`, `limits { locations, members, offerings, ordersPerMonth, aiMessagesPerMonth }`, `prices[]`, `status` | Module keys exist in the registry. A base package and an add-on are never the same record. |
 | **PlatformSubscription** (versioned) | `platform/saas-billing` | org | `platformSubscriptionId`, `basePackageId`, `addOnPackageIds[]`, `status` (`TRIALING \| ACTIVE \| PAST_DUE \| CANCELLED`), `trialEndsAt`, `currentPeriodStart/End` | Exactly one non-cancelled subscription per org. Card 1.6 creates it; card 6.2 adds billing. |
 | **ModuleOverride** | `platform/entitlement` | org | `moduleOverrideId`, `moduleKey`, `effect` (`PLATFORM_GRANT \| PLATFORM_REVOKE \| TENANT_DISABLE`), `reason`, `expiresAt?` | Unique `(organizationId, moduleKey, effect)`. Tenant may only disable modules marked optional. Feeds `07 §3` formula. |
-| **CustomFieldDefinition** (versioned) | `core/custom-field` | platform (scope `INDUSTRY`) or org (scope `ORGANIZATION`) | `customFieldDefinitionId`, `scope`, `industryTemplateKey?`, `entityType`, `offeringKind?`, `fieldKey`, `labelKey`/`label`, `fieldType` (16 types, `01 §5`), `isRequired`, `options[]`, `validation`, `visibility { admin, storefront, bot }`, `botAsk`, `isSearchable`, `isSensitive`, `sortOrder`, `status` (`ACTIVE \| ARCHIVED`) | `fieldKey` is immutable and unique per `(scope owner, entityType, offeringKind)`. `fieldType` cannot change once values exist. Archive, never hard delete. Tenants cannot edit INDUSTRY definitions, only hide optional ones and override labels/order (`00` limits). |
+| **CustomFieldDefinition** (versioned) | `core/custom-field` | platform (scope `INDUSTRY`) or org (scope `ORGANIZATION`) | `customFieldDefinitionId`, `scope`, `industryTemplateKey?`, `entityType`, `offeringKind?`, `fieldKey`, `labelKey`/`label`, `fieldType` (16 types, `01 §5`), `referenceEntity?` + `link? { relationKey, createIfMissingByPhone, defaultBillTo }` for contact-link fields (ADR-073), `isRequired`, `options[]`, `validation`, `visibility { admin, storefront, bot }`, `botAsk`, `isSearchable`, `isSensitive`, `sortOrder`, `status` (`ACTIVE \| ARCHIVED`) | `fieldKey` is immutable and unique per `(scope owner, entityType, offeringKind)`. `fieldType` cannot change once values exist. Archive, never hard delete. Tenants cannot edit INDUSTRY definitions, only hide optional ones and override labels/order (`00` limits). |
 | **SettingValue** | `core/settings` | org (+ optional `locationId`) | `settingKey`, `value`, `locationId?`, `version` | Key must exist in the registry; `locationId` only for keys that allow a location override (ADR-016). |
 | **TermOverride** | `core/settings` | org | `termKey`, `locale`, `text` | Template terms are defaults; the org may override within the allowed term keys. |
 
@@ -316,6 +316,7 @@ Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fiel
 | `status` | `DRAFT \| ACTIVE \| ARCHIVED` | DRAFT (e.g. from a Facebook post) never reaches the bot or storefront (ADR-026) |
 | `description` | string? | |
 | `categoryIds` | CategoryId[] | |
+| `modifierGroupIds` | ModifierGroupId[] | add-on options (ADR-072) |
 | `imageFileIds` | FileId[] | |
 | `variants` | `OfferingVariant[]` (embedded, 1–100) | see below |
 | `kindDetails` | discriminated union by kind | schemas in D3 (`durationMinutes`, `billingPeriod`, `rateUnit`, `startsAt`, `capacity`, …) |
@@ -330,6 +331,7 @@ Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fiel
 - Invariants: every offering has ≥ 1 variant, so stock, order lines and bookings always reference `(offeringId, variantId)`. `sku` unique per org when present. `kind` must be in the org's resolved `kinds`. A kind-specific field on the wrong kind is a validation error. Price edits never change existing requests (they snapshot).
 - **OfferingLocation** (catalog, location scope): `offeringId`, `variantId?`, `locationId`, `isAvailable`, `priceOverride?: Money`. Unique `(organizationId, offeringId, variantId, locationId)`. No row = org defaults apply (ADR-005).
 - **Category** (catalog, org): `categoryId`, `name`, `slug`, `parentCategoryId?` (max depth 3), `sortOrder`, `imageFileId?`.
+- **ModifierGroup** (catalog, org, ADR-072): `modifierGroupId`, `name`, `selection` (`SINGLE | MULTIPLE`), `isRequired`, `minSelect`, `maxSelect`, `options[{ modifierOptionId, name, priceDelta: Money, status }]`. No stock of its own.
 - **SearchSynonym** (catalog, org): `searchSynonymId`, `term`, `synonyms[]` (`08 §4`).
 - **OfferingSocialLink** (catalog, org): `offeringSocialLinkId`, `offeringId`, `platform` (`FACEBOOK \| INSTAGRAM`), `externalPostId`, `externalAdId?`, `channelId`. Unique `(organizationId, platform, externalPostId)`.
 - Indexes: `{ organizationId, offeringId }` unique, `{ organizationId, slug }` unique, `{ organizationId, kind, status, updatedAt }`, `{ organizationId, "variants.sku" }` unique partial, `{ organizationId, "variants.barcode" }` partial, `{ organizationId, categoryIds }`.
@@ -367,7 +369,7 @@ Three aggregates share one **request contract**: `requestType` (`ORDER \| BOOKIN
 | `status` | `DRAFT | PLACED | CONFIRMED | PACKED | SHIPPED | DELIVERED | COMPLETED | DELIVERY_FAILED | RETURNED_TO_SENDER | CANCELLED` | lifecycle `11 §4` |
 | `returnStatus` | `NONE | PARTIAL | FULL` | derived from SalesReturns |
 | `approval` | `{ approverMemberId, approvedAt, action }?` | manager PIN (`11 §9`) |
-| `lines` | `[{ orderLineId, offeringId, variantId, kind, nameSnapshot, quantity, unitPrice: Money, lineGross: Money, lineDiscount: Money, lineTax: Money, lineNetTotal: Money, unitCostSnapshot?: Money, returnedQuantity, performedByMemberId? }]` (money allocation rules: `11 §3`) | any kind (owner decision): a walk-in haircut + shampoo is one order |
+| `lines` | `[{ orderLineId, offeringId, variantId, kind, nameSnapshot, quantity, unitPrice: Money, lineGross: Money, lineDiscount: Money, lineTax: Money, lineNetTotal: Money, unitCostSnapshot?: Money, modifiers?: [{ modifierGroupId, modifierOptionId, nameSnapshot, priceDelta }], returnedQuantity, performedByMemberId? }]` (money allocation rules: `11 §3`) | any kind (owner decision): a walk-in haircut + shampoo is one order |
 | `totals` | `{ subtotal, discountTotal, taxTotal, deliveryCharge, grandTotal }` (Money) | computed server-side, never trusted from the client |
 | `fulfillment` | `{ method: INSTANT \| PICKUP \| COURIER \| OWN_RIDER, deliveryAddress?: AddressSnapshot, consignmentId?, riderMemberId? }` | |
 | `paymentStatus` | `UNPAID \| PARTIAL \| PAID \| REFUNDED` | derived from payment allocations |
@@ -400,6 +402,8 @@ Three aggregates share one **request contract**: `requestType` (`ORDER \| BOOKIN
 | `locationId`, `contactId` | | `contactId` = the enrolled person |
 | `billToContactId` | ContactId? | payer when different (guardian) |
 | `offeringId`, `variantId` | | kind `PLAN` |
+| `resourceIds` | ResourceId[]? | assigned bed/locker, capacity-checked (ADR-074) |
+| `securityDepositHeld` | Money? | refundable advance (ADR-074) |
 | `startsOn`, `endsOn?` | business dates | |
 | `currentEnrollmentPeriodId` | EnrollmentPeriodId? | periods are `EnrollmentPeriod` records (`11 §8.2`) |
 | `autoRenew` | boolean | |
@@ -467,7 +471,7 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | `platform/entitlement` | ModuleOverride, `resolveOrgConfig` |
 | `platform/saas-billing` | PlatformSubscription (+ platform invoices, card 6.2) |
 | `commerce/contact` | Contact, CustomerAccount, CustomerSession |
-| `commerce/catalog` | Offering, OfferingLocation, Category, SearchSynonym, OfferingSocialLink |
+| `commerce/catalog` | Offering, OfferingLocation, Category, ModifierGroup, SearchSynonym, OfferingSocialLink |
 | `commerce/inventory` | StockMovement, InventoryLevel |
 | `commerce/sales` | Order, SalesReturn |
 | `commerce/booking` | Resource, ResourceTimeOff, Booking, EventSession |
