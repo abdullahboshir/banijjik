@@ -1,6 +1,6 @@
 # Domain Model & Glossary
 
-Card D1 · Status: **draft, waiting for owner approval** · Written 2026-10-09 · Based on commit `5750bb4`
+Card D1 · Status: **approved by owner 2026-10-09** · Written 2026-10-09 · Based on commit `5750bb4`
 
 This doc fixes the words and the core entities before any code is written. Every later plan uses these names, fields and owners. If a plan needs a field or entity that is not here, the PLAN session adds it here first (or stops and asks).
 
@@ -284,7 +284,7 @@ Owner `commerce/contact` · scope org · versioned · soft-delete · custom fiel
 | STF + `version` | | |
 
 - Invariants (adapted manoxen rule 11): one Contact per real party per org. Phone first, then email: a create or import that matches an existing contact links to it, it never creates a second one. A contact needs `name` or `phoneE164`. `relations` point to contacts of the same org. Erasure on request = anonymize (name/phone/email/addresses cleared), the record stays for ledgers.
-- Family sharing a phone (a child using a parent's phone): the parent is the contact with the phone; the child is a contact without a phone, linked by `GUARDIAN_OF`. See open question Q2.
+- Family sharing a phone (a child using a parent's phone): the parent is the contact with the phone; the child is a contact without a phone, linked by `GUARDIAN_OF` (owner answer Q2, §9).
 - Indexes: `{ organizationId, contactId }` unique, `{ organizationId, phoneE164 }` unique partial, `{ organizationId, email }` partial, `{ organizationId, contactRoles, updatedAt }`, text/search index decided in card 3.1.
 - Events: `contact.contact.created`, `.updated`, `.merged`, `.anonymized`.
 
@@ -490,8 +490,8 @@ Owner-decided (2026-10-09) and recorded as **Accepted**; the rest are **Accepted
 - `05` "Contact master": the `userId` link sentence → ADR-045.
 - `03` card 3.7 "Subscription core" → "Enrollment core"; ADR-026 "ProductSocialLink" → `OfferingSocialLink`.
 
-## 9. Open questions for the owner
-- **Q1.** Fractional quantities: are loose goods sold by weight (1.5 kg rice) at launch? The model supports it (integer in unit precision); the question is only whether POS UI needs it in Phase 3.
-- **Q2.** Shared family phone: is "guardian has the phone, child has none" acceptable for coaching/clinic, or must two contacts share one phone number (that would drop the unique phone index)?
-- **Q3.** Contact roles: is `CUSTOMER | SUPPLIER | LEAD` enough for launch, or do you want more (e.g. `EMPLOYER` for B2B, `VENDOR` vs `SUPPLIER`)?
-- **Q4.** Location types: is `STORE | WAREHOUSE` enough, or do you need an online-only location type for sellers with no physical shop? (Proposed: no; their default location is a STORE without POS use.)
+## 9. Owner answers (2026-10-09)
+- **Q1. Fractional quantities:** yes, in Phase 3. POS supports weight/volume entry (kg, litre) using integer quantities in unit precision (ADR-047).
+- **Q2. Shared family phone:** the guardian's contact holds the phone; the child is a contact without a phone, linked by `GUARDIAN_OF`. `phoneE164` stays unique per org.
+- **Q3. Contact roles:** `CUSTOMER | SUPPLIER | LEAD` is enough for launch. New roles are added to the contracts enum when needed.
+- **Q4. Location types:** `STORE | WAREHOUSE` is enough. An online-only seller's default location is a STORE that simply has no POS device.

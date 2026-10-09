@@ -25,7 +25,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 ## Phase D (design, docs only; `done` only after owner approval)
 | Card | Status | Note |
 |---|---|---|
-| D1 glossary & domain model | doing (draft in `docs/09-DOMAIN-MODEL.md`, waiting for owner approval + Q1–Q4) | unblocks Phase 0 |
+| D1 glossary & domain model | done (2026-10-09, branch s/D1-domain-model) | approved by owner; Q1–Q4 answered in 09 §9 |
 | D2 module catalog & packages | todo | needed by 1.6 |
 | D3 offering kinds & request lifecycles | todo | needed by Phase 2/3 |
 | D4 industry templates (8) | todo | needed by Phase 2 |
