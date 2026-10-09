@@ -1,1 +1,16 @@
 node_modules
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Build output & cache
+dist
+.turbo
+*.tsbuildinfo
+
+# Logs & error dumps
+*.log
+errors.txt
+compile_errors*.txt
