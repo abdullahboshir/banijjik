@@ -1,6 +1,6 @@
 # Module Catalog & Packages
 
-Card D2 · Status: **draft, waiting for owner approval** · Written 2026-10-09 · Based on commit `f80d9ef`
+Card D2 · Status: **approved by owner 2026-10-09** · Written 2026-10-09 · Based on commit `f80d9ef`
 
 This doc fixes every module the product will have, what each one declares in its manifest, how packages are built from modules, and how `resolveOrgConfig` decides what an organization gets. Card 1.6 implements the registry and resolver from this doc. Every later card adds its module's real manifest by copying its row here and filling the details. If a card needs a new module, permission, setting key, bot tool, section or event that is not here, the PLAN session adds it here first.
 
