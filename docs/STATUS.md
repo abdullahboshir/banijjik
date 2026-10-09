@@ -37,7 +37,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 ## Phase 0
 | Card | Status | Note |
 |---|---|---|
-| 0.1 archive & skeleton | planned (2026-10-09, `docs/plans/0.1.md`, Opus) | next: IMPLEMENT with Sonnet |
+| 0.1 archive & skeleton | planned (`docs/plans/0.1.md`, branch `s/0.1-archive-skeleton`) | apps/api + infra moved to 0.3 (owner) |
 | 0.2 tooling & CI | todo | |
 | 0.3 config & local infra | todo | |
 | 0.4 API kernel | todo | |
