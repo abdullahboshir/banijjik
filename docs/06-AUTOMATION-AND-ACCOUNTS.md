@@ -119,7 +119,7 @@ Single source: the banijjik catalog. Many ways in, many ways out.
 
 **In (pick the easiest per seller):**
 1. Quick-add form on mobile: photo (camera), name, price, stock. Under 30 seconds per product. Remembers last category.
-2. **Import from a Facebook post:** the dashboard lists the Page's recent posts; "Import as product" pre-fills name, price and images using text/image extraction; the seller reviews and saves. The post is then linked to the product (`ProductSocialLink`).
+2. **Import from a Facebook post:** the dashboard lists the Page's recent posts; "Import as product" pre-fills name, price and images using text/image extraction; the seller reviews and saves. The post is then linked to the offering (`OfferingSocialLink`).
    - **Automatic drafts:** when the Page publishes a new post (Page feed webhook), the system detects a product post, creates a **draft** product and sends the seller a one-tap "Approve / Edit / Ignore" notification on mobile. Drafts never reach the bot or storefront until approved, because a post can be a non-product post, a price can be mis-read, and posts usually lack stock and variants.
    - **"Import last N posts"** for onboarding (e.g. last 100): batch extraction into a review screen with approve-all / fix / skip. Most sellers fill their catalog this way on day one.
 3. Bulk: CSV/Excel template, and "photo/PDF of a price list → draft products" with review (AI-assisted, never auto-saved without review).
