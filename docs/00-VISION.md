@@ -33,11 +33,14 @@ One login, one tenant dashboard, one shared data core. Products are **sold separ
 
 | Package | Gets |
 |---|---|
-| Core (every plan) | Catalog, orders, customers, courier/rider, reports |
-| Website | + website builder, domain, online checkout |
-| Chatbot | + channel connect, unified inbox, AI bot, chat → order |
-| Bundle | Website + Chatbot (discounted) |
-| Industry/ERP add-ons | POS, inventory depth, accounting, industry packs |
+| Core (in every package) | Contacts, catalog, stock, orders, bookings, enrollments, payments, expenses, courier/rider, reports (filtered by the industry template's kinds) |
+| Store | + website builder, domain, online checkout |
+| Chat | + channel connect, unified inbox, AI bot, Facebook post import, chat → order |
+| Shop | + POS (counter sales, shifts, Z-report) |
+| Bundle | Store + Chat + Shop + automation (discounted). Also the 14-day trial. |
+| Add-ons | Bookkeeping, payment gateway, capability modules, limit packs (locations, staff, AI, SMS) |
+
+Exact module sets, limits and resolver rules: `10-MODULE-CATALOG.md` (ADR-050).
 
 - The dashboard home, menu and onboarding adapt to what the org bought. A chatbot-only seller sees an inbox-first app; a website-only seller sees a site-first app.
 - Marketing may use separate landing pages and names per package. After signup, every user lands in the same app.

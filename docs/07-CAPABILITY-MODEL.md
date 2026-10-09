@@ -9,7 +9,7 @@ Why this doc exists: in manoxen, industry behaviour was hardcoded as per-industr
 | Concept | Lives in | Owned by | Answers |
 |---|---|---|---|
 | **Module** | Code (manifest) | Developers | What can exist? |
-| **Package / Plan** | DB | Platform panel | What did this org buy? |
+| **Package** | DB | Platform panel | What did this org buy? |
 | **Industry template** | DB | Platform panel | What does this kind of business start with, and what are things called? |
 | **Org configuration** | DB | Platform panel + tenant (within limits) | What is on for this org right now? |
 
@@ -45,10 +45,10 @@ The registry auto-builds all of these from the manifests:
 
 ## 3. Packages and the resolver
 
-- A **Package** (DB) is a set of module keys + limits (locations, users, AI messages/month, orders/month). Website, Chatbot, Bundle, ERP add-ons (ADR-032) are packages.
+- A **Package** (DB) is a set of module keys + limits (locations, users, AI messages/month, orders/month). Store, Chat, Shop, Bundle and add-ons (ADR-050) are packages.
 - **Effective modules** for an org:
   `(base package ∪ add-ons) ∪ platform grants − platform revokes − tenant-disabled optional modules`
-  Then dependencies are added, and modules not allowed for the industry template are dropped.
+  Then modules not allowed for the industry template are dropped, and so is any module whose dependency is missing (a paid dependency is never auto-enabled). Exact algorithm, module classes and access modes: `10-MODULE-CATALOG.md §1–§3, §8` (ADR-049).
 - **One resolver**, `resolveOrgConfig(orgId)` → `{ modules, kinds, fields, settings, menu, botTools, sections, limits, terms }`, cached in Redis with a version, invalidated on any change. **The API, admin UI, storefront and bot all use this one result.** No surface computes its own answer.
 - **Generated contract tests (mandatory):** for every manifest, the test suite turns the module off and asserts:
   - every route returns 403

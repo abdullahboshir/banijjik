@@ -42,14 +42,16 @@ apps/api/src/
 │   ├── events/             in-process event bus + outbox + BullMQ dispatch
 │   ├── queue/  cache/  logger/  i18n/
 ├── modules/
-│   ├── platform/           industry, module-catalog, package, entitlement, tenant-admin, saas-billing
+│   ├── platform/           industry, package, entitlement, saas-billing, tenant-admin, ai
 │   ├── core/               iam, organization (org, location, member), custom-field, settings, audit, notification, file
-│   ├── commerce/           contact, catalog, inventory, pricing, sales, booking, enrollment, payment, accounting, expense, pos, report
+│   ├── commerce/           contact, catalog, inventory, pricing, sales, booking, enrollment, payment, accounting, expense, bookkeeping, pos, report, delivery
+│   ├── channel/            website, messaging (channels, inbox), bot, social                   (ADR-052)
 │   ├── capability/         academic, clinical, kitchen-display, …                          (Phase 7)
-│   ├── integration/        courier, meta, payment-gateway, sms                              (Phase 5)
-│   └── automation/         workflow engine: trigger → condition → action                    (Phase 5)
+│   ├── integration/        courier, sms, payment-gateway (third-party providers)            (Phase 5)
+│   └── automation/         workflow, risk                                                   (Phase 5)
 └── routes/v1.ts            the ONLY place that mounts module routers and global middleware
 ```
+Full module list, classes (PLATFORM / SYSTEM / CORE / OPTIONAL) and manifests: `10-MODULE-CATALOG.md`.
 
 ### Module anatomy
 ```

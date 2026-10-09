@@ -5,7 +5,7 @@
 `M:` = manoxen source to port from (`manoxen/apps/backend/src/contexts/...`). Every card's Definition of Done also includes the global DoD in `AGENTS.md`.
 
 **Tiers** (who plans/reviews, see AGENTS.md "Session types"): unless marked otherwise, cards are **T2**.
-- **T1** (Opus plan + Opus review): 0.4, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.2, 2.3, 2.4, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 4.3, 5.1, 5.7, 5.8, 5.9, 6.2, 6.3, 8.2.
+- **T1** (Opus plan + Opus review): 0.4, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.2, 2.3, 2.4, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 4.3, 5.1, 5.7, 5.8, 5.9, 5.17, 6.2, 6.3, 8.2.
 - **T3** (Sonnet may plan): 0.3, 1.7, 1.8, 2.6, 2.7, 3.10, 4.5, 5.11, 5.13, 5.16, 7.x new industry templates.
 - Phase D cards: always Opus.
 
@@ -38,7 +38,7 @@ From Phase 2 on, pairs are chosen when planning (the PLAN session lists the next
 ## Phase P: Owner preparation (non-code, run in parallel by the owner)
 These have long external lead times. Start them now.
 - **P1** Rotate every secret leaked in the public repo: DB password, JWT secrets, super-admin password, Cloudinary, SMTP. Remove `.env` from git.
-- **P2** Confirm brand "Banijjik" (ADR-021): check domain availability (.com / .com.bd / .app) and run a trademark search (BD DPDT) before launch; then decide domain and pricing per package (Website / Chatbot / Bundle / add-ons, ADR-032).
+- **P2** Confirm brand "Banijjik" (ADR-021): check domain availability (.com / .com.bd / .app) and run a trademark search (BD DPDT) before launch; then decide domain and pricing per package (Store / Chat / Shop / Bundle / add-ons, ADR-050).
 - **P3** Find 5–10 pilot sellers (mostly F-commerce/retail, plus 1–2 service businesses). Write down their top 10 daily pains and 10 real customer chats each (input for D5).
 - **P4** Meta: developer app + **Business Verification** + App Review for Messenger/Instagram (takes weeks).
 - **P5** Merchant/API accounts: Steadfast, Pathao, RedX, bKash/SSLCommerz, SMS gateway, LLM provider.
@@ -55,7 +55,7 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 
 **D2 Module catalog** → `docs/10-MODULE-CATALOG.md`
 - Every module's draft manifest (`07-CAPABILITY-MODEL.md §2`): key, dependsOn, permissions, menu, settings, custom-field entities, kinds, bot tools, storefront sections, events.
-- Package definitions (Website / Chatbot / Bundle / add-ons) as module sets + limits.
+- Package definitions (Store / Chat / Shop / Bundle / add-ons) as module sets + limits.
 
 **D3 Offering kinds & request lifecycles** → `docs/11-OFFERINGS-AND-REQUESTS.md`
 - Core schema per kind. State machine per request type (who can move each state, side effects, stock/ledger/journal effects, cancellation/refund rules).
@@ -137,8 +137,8 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 - Do: audit log module, Idempotency-Key middleware, in-process events + outbox collection + BullMQ dispatcher, worker process.
 - Done: replaying the same idempotent request returns the original response. An outbox job retries after failure.
 
-**1.6 Module registry, packages, resolver (ADR-033).** Needs D2.
-- Do: `defineModule()` + registry, manifests for modules that exist so far, Package model + limits, `resolveOrgConfig()` (cached, versioned), auto entitlement gate from manifests, `/me/config` (modules, permissions, menu, terms, limits), **generated "module off" contract tests**.
+**1.6 Module registry, packages, resolver (ADR-033, ADR-049).** Needs D2 (`10-MODULE-CATALOG.md`).
+- Do: `defineModule()` with the manifest schema of `10 §2`, registry + `registryHash`, manifests for modules that exist so far, Package + PlatformSubscription models, seed packages of `10 §9` (incl. 14-day BUNDLE trial), `resolveOrgConfig()` with the algorithm of `10 §3` (cached, versioned), access modes of `10 §8`, auto entitlement gate from manifests, `/me/config` (modules, permissions, menu, terms, limits, accessMode), system role grant templates of `10 §10`, **generated contract tests of `10 §11`**.
 - Done: turning any module off makes all its routes 403, removes it from menu and config, and the generated tests cover every manifest automatically.
 
 **1.7 Admin app: auth & org shell.**
@@ -174,7 +174,8 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **3.5 Orders** (PRODUCT requests: state machine from D3, invoice, returns/refunds, COD; one transaction for order + stock + journal). M: `modules/sales` + guides 15, 16, 21
 **3.6 Booking core** (Resources: staff/room/seat/table/vehicle; availability rules; bookings for SERVICE/RENTAL/EVENT; no double-booking under concurrency; reminders via outbox).
 **3.7 Enrollment core** (PLAN kind: enrollments, periods, renewals, dues, attendance/check-in as a generic capability). M: `modules/membership`
-**3.8 Payments & accounting** (cash/bKash/Nagad manual, dues for all request types, double-entry auto journals, expenses). M: `modules/finance`, `modules/accounting`
+**3.8 Payments, accounting engine & expenses** (cash/bKash/Nagad manual, dues for all request types; SYSTEM `accounting` posts double-entry journals from events; CORE `expense` with categories; ADR-051). M: `modules/finance`, `modules/accounting`
+**3.8b Bookkeeping add-on UI** (OPTIONAL `bookkeeping`: chart of accounts, journal view, manual entries, trial balance, P&L, balance sheet; reads the `accounting` ledger; ADR-051).
 **3.9 POS** (`/pos` PWA, device ↔ location binding, shift/register, Z-report, receipt print, fast search; sells products and services). M: `modules/pos`
 **3.10 Reports & dashboard** (daily summaries per location via events, for orders, bookings and enrollments; package-aware home). M: `modules/analytics`
 - Phase done: a product seller runs a full day (stock in → POS + online orders → returns → day close), **and** a salon and a gym from templates take bookings/enrollments and payments, with correct numbers in reports. No industry-specific code.
@@ -208,6 +209,7 @@ Before each card here: verify the provider's current docs and rules, then record
 **5.14 Workflow engine** (trigger → condition → action, tenant toggles, run history).
 **5.15 COD risk score.**
 **5.16 Website chat widget** (one-line script channel; optional).
+**5.17 Tenant payment gateway** (OPTIONAL `payment-gateway`: SSLCommerz/bKash online payment in storefront checkout, webhooks, reconciliation into `payment`; packaging decided in P2).
 - Phase done:
   - A pilot seller connects their Page in under 2 minutes without help.
   - A customer message becomes a confirmed order with a courier consignment, and the status updates on its own.
@@ -217,7 +219,7 @@ Before each card here: verify the provider's current docs and rules, then record
 ---
 
 ## Phase 6: SaaS go-live
-**6.1 Signup + onboarding wizard** (package choice: Website / Chatbot / Bundle, and industry → defaults → package-specific first steps → first sale; package-aware dashboard home, ADR-032).
+**6.1 Signup + onboarding wizard** (package choice: Store / Chat / Shop / Bundle (14-day Bundle trial by default), and industry → defaults → package-specific first steps → first sale; package-aware dashboard home, ADR-032).
 **6.2 SaaS billing** (subscriptions, trial, invoices, gateway, dunning, limits). M: platform billing, guide 45
 **6.3 Hardening** (security review, rate limits, CSP, audit viewer, impersonation audit).
 **6.4 Performance** (load test, budgets in CI, index review, report pre-aggregation check).

@@ -45,7 +45,7 @@ Inputs: `00`, `01`, `04` (ADRs), `05` (conventions), `06`, `07`, `08`. New decis
 | **Inventory level** | Projection of stock movements per variant per location. | `InventoryLevel` |
 | **Journal entry** | Double-entry accounting record, append-only. | `JournalEntry`, `journalEntryId` |
 | **Module** | Code unit with a manifest (`07 §2`). Key from contracts. | `moduleKey` |
-| **Package** | What the platform sells: a set of module keys + limits (Website, Chatbot, Bundle, add-ons). Never called "plan". | `Package`, `packageId` |
+| **Package** | What the platform sells: a set of module keys + limits (Store, Chat, Shop, Bundle, add-ons; ADR-050). Never called "plan". | `Package`, `packageId` |
 | **Platform subscription** | An org's purchase of a base package + add-ons, with trial/period/status. | `PlatformSubscription`, `platformSubscriptionId` |
 | **Module override** | A platform grant/revoke or tenant disable of one module for one org. | `ModuleOverride`, `moduleOverrideId` |
 | **Industry template** | Data: kinds, default/allowed modules, field sets, terms, settings defaults, resource types, website templates, bot defaults. | `IndustryTemplate`, `industryTemplateId`, `industryTemplateKey` |
@@ -257,7 +257,7 @@ All in the platform DB, all read through `resolveOrgConfig` (cached per `configV
 | **SettingValue** | `core/settings` | org (+ optional `locationId`) | `settingKey`, `value`, `locationId?`, `version` | Key must exist in the registry; `locationId` only for keys that allow a location override (ADR-016). |
 | **TermOverride** | `core/settings` | org | `termKey`, `locale`, `text` | Template terms are defaults; the org may override within the allowed term keys. |
 
-`ResolvedOrgConfig` (output, not stored): `{ organizationId, configVersion, modules, kinds, fields, settings, terms, menu, botTools, storefrontSections, limits }`.
+`ResolvedOrgConfig` (output, not stored): `{ organizationId, configVersion, registryHash, accessMode, modules, kinds, fields, settings, terms, menu, botTools, storefrontSections, limits }`. Algorithm: `10 §3`.
 
 ---
 
@@ -417,17 +417,20 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | **InventoryLevel** | `commerce/inventory` | location | `offeringId`, `variantId`, `onHand`, `reserved`, `available`, `version` | Projection; rebuildable from movements. Unique `(organizationId, locationId, offeringId, variantId)`. |
 | **Account** | `commerce/accounting` | org | `accountId`, `accountCode`, `name`, `accountType` (`ASSET \| LIABILITY \| EQUITY \| INCOME \| EXPENSE`), `isSystem` | System accounts are seeded per org; never deleted. |
 | **JournalEntry** | `commerce/accounting` | org (+ `locationId?`) | `journalEntryId`, `entryNumber`, `businessDate`, `lines[{ accountId, debit: Money, credit: Money }]`, `sourceType`, `sourceId`, `reversesJournalEntryId?` | Debits = credits. Append-only, fixed with a reversing entry. |
+| **Expense** (D2) | `commerce/expense` | location | `expenseId`, `expenseNumber` (sequence `EXPENSE`), `expenseCategoryId`, `amount: Money`, `paidVia` (`CASH`, `BKASH`, `NAGAD`, `BANK`, `CARD`), `businessDate`, `note?`, `attachmentFileIds[]`, `status` (`POSTED \| VOIDED`), `journalEntryId`, custom fields (entityType `expense`) | Posting writes the journal entry in the same transaction (via `accounting`). Void = a reversing journal entry; the expense is never edited or deleted. |
+| **ExpenseCategory** (D2) | `commerce/expense` | org | `expenseCategoryId`, `name`, `accountId` (an EXPENSE account), `status` | Seeded per org with defaults (rent, salary, utilities, delivery, marketing, other). |
 
 ### 5.7 Channels and fulfilment (Phase 5, shape only)
 | Entity | Owner (final in D2) | Scope | Key fields |
 |---|---|---|---|
-| **Channel** | `integration/channel` | org | `channelId`, `channelType` (`FACEBOOK_PAGE`, `INSTAGRAM`, `WHATSAPP`, `WEB_WIDGET`), `externalAccountId` (unique per platform, routes webhooks → org), `credentialRef` (encrypted), `status`, `botEnabled` |
-| **Conversation** | `integration/inbox` | org | `conversationId`, `channelId`, `contactId?`, `externalThreadId`, `assignedMemberId?`, `botState` (structured, `08 §3`), `isBotPaused`, `lastMessageAt`, `serviceWindowEndsAt` |
-| **Message** | `integration/inbox` | org | `messageId`, `conversationId`, `direction`, `externalMessageId` (dedupe), `body`, `attachments`, `sentByMemberId?`, `isFromBot`, `occurredAt` |
+| **Channel** | `channel/messaging` | org | `channelId`, `channelType` (`FACEBOOK_PAGE`, `INSTAGRAM`, `WHATSAPP`, `WEB_WIDGET`), `externalAccountId` (unique per platform, routes webhooks → org), `credentialRef` (encrypted), `status`, `botEnabled` |
+| **Conversation** | `channel/messaging` | org | `conversationId`, `channelId`, `contactId?`, `externalThreadId`, `assignedMemberId?`, `botState` (structured, `08 §3`), `isBotPaused`, `lastMessageAt`, `serviceWindowEndsAt` |
+| **Message** | `channel/messaging` | org | `messageId`, `conversationId`, `direction`, `externalMessageId` (dedupe), `body`, `attachments`, `sentByMemberId?`, `isFromBot`, `occurredAt` |
 | **Consignment** | `integration/courier` | location | `consignmentId`, `orderId`, `courierKey`, `trackingCode`, `status`, `codAmount: Money`, `charges: Money` |
+| **KnowledgeEntry** (D2) | `channel/bot` | org (+ `locationId?`) | `knowledgeEntryId`, `topicKey` (`DELIVERY`, `RETURNS`, `PAYMENT`, `HOURS`, `LOCATION`, `CUSTOM`), `question?`, `answer` (`{ bn?, en? }`), `status` (`ACTIVE \| ARCHIVED`). Source of the bot's `get_policy` tool together with settings. |
 
 ### 5.8 Technical records (kernel, listed so names stay fixed)
-- **Sequence** (`kernel/sequence`): `{ organizationId, sequenceKey, nextValue }`, unique `(organizationId, sequenceKey)`. Keys: `ORDER`, `BOOKING`, `ENROLLMENT`, `PAYMENT`, `INVOICE`, `JOURNAL`, `MEMBER`. Format (prefix, padding, yearly reset) comes from settings.
+- **Sequence** (`kernel/sequence`): `{ organizationId, sequenceKey, nextValue }`, unique `(organizationId, sequenceKey)`. Keys: `ORDER`, `BOOKING`, `ENROLLMENT`, `PAYMENT`, `INVOICE`, `JOURNAL`, `MEMBER`, `EXPENSE`, `TRANSFER`, `ZREPORT`. Format (prefix, padding, yearly reset) comes from settings.
 - **OutboxEvent** (`kernel/events`): `{ eventId, type, version, occurredAt, organizationId, actorUserId?, payload, status, attempts }` (`05` envelope).
 - **IdempotencyRecord** (`kernel/idempotency`): `{ organizationId, idempotencyKey, requestHash, responseSnapshot, expiresAt }`.
 - **AuditLog** (`core/audit`): `{ auditLogId, organizationId?, actorUserId?, actorPlatformOperatorId?, action, entityType, entityId, changes, requestId, systemReason?, occurredAt }`. Append-only. Platform-DB copy for platform actions, tenant-DB copy for business actions.
@@ -456,7 +459,14 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | `commerce/enrollment` | Enrollment, CheckIn |
 | `commerce/payment` | Payment |
 | `commerce/accounting` | Account, JournalEntry |
-| `integration/*` | Channel, Conversation, Message, Consignment |
+| `commerce/expense` | Expense, ExpenseCategory |
+| `commerce/delivery` | rider delivery assignments (card 5.3) |
+| `channel/messaging` | Channel, Conversation, Message |
+| `channel/bot` | KnowledgeEntry |
+| `channel/website` | Site, Page, Theme, Domain, WebsiteTemplate (cards 4.1–4.5) |
+| `integration/courier` | Consignment |
+
+Full module list, classes and manifests: `10-MODULE-CATALOG.md`.
 
 Other modules read these through the owner's `index.ts` or react to its events. Nobody else writes them.
 

@@ -26,7 +26,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | Card | Status | Note |
 |---|---|---|
 | D1 glossary & domain model | done (2026-10-09, branch s/D1-domain-model) | approved by owner; Q1–Q4 answered in 09 §9 |
-| D2 module catalog & packages | todo | needed by 1.6 |
+| D2 module catalog & packages | doing (draft in `docs/10-MODULE-CATALOG.md`, waiting for owner approval) | needed by 1.6 |
 | D3 offering kinds & request lifecycles | todo | needed by Phase 2/3 |
 | D4 industry templates (8) | todo | needed by Phase 2 |
 | D5 bot tools & golden conversations | todo | needs P3 real chats |
