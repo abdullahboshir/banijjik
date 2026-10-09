@@ -173,7 +173,7 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **3.4 Pricing & tax** (price resolution for all kinds, promotions as rules, tax classes; money in minor units). M: `modules/pricing`
 **3.5 Orders** (PRODUCT requests: state machine from D3, invoice, returns/refunds, COD; one transaction for order + stock + journal). M: `modules/sales` + guides 15, 16, 21
 **3.6 Booking core** (Resources: staff/room/seat/table/vehicle; availability rules; bookings for SERVICE/RENTAL/EVENT; no double-booking under concurrency; reminders via outbox).
-**3.7 Subscription core** (PLAN kind: enrollments/memberships, periods, renewals, dues, attendance/check-in as a generic capability). M: `modules/membership`
+**3.7 Enrollment core** (PLAN kind: enrollments, periods, renewals, dues, attendance/check-in as a generic capability). M: `modules/membership`
 **3.8 Payments & accounting** (cash/bKash/Nagad manual, dues for all request types, double-entry auto journals, expenses). M: `modules/finance`, `modules/accounting`
 **3.9 POS** (`/pos` PWA, device ↔ location binding, shift/register, Z-report, receipt print, fast search; sells products and services). M: `modules/pos`
 **3.10 Reports & dashboard** (daily summaries per location via events, for orders, bookings and enrollments; package-aware home). M: `modules/analytics`
@@ -201,7 +201,7 @@ Before each card here: verify the provider's current docs and rules, then record
 **5.7 Bot tool layer** (generic tools generated from `resolveOrgConfig` + kind schemas + custom fields; hybrid search with transliteration normalizer and per-org synonyms; image search). M: semantic retrieval, transliteration libs
 **5.8 Bot agent & state machine** (structured state, tool-calling turn, `create_request` for any kind with `botAsk` intake, handoff, language/tone/terms).
 **5.9 Grounding guard & cost ladder** (claim-vs-tool-fact check, rules/cache tier, small/large model routing, prompt caching, per-org quota + rules-only fallback). Phase gate: D5 golden sets pass for all 8 templates.
-**5.10 Product ↔ Facebook** (list Page posts → "import as offering" draft; feed webhook → auto draft + one-tap approve; "import last N posts"; "publish to Facebook"; `ProductSocialLink`, referral → offering in bot context).
+**5.10 Product ↔ Facebook** (list Page posts → "import as offering" draft; feed webhook → auto draft + one-tap approve; "import last N posts"; "publish to Facebook"; `OfferingSocialLink` (ADR-047 naming), referral → offering in bot context).
 **5.11 Bulk import** (CSV/Excel template; photo/PDF price list → reviewed drafts).
 **5.12 WhatsApp channel** (Cloud API + Embedded Signup, templates, service window; plugs into inbox + bot unchanged).
 **5.13 Notifications** (SMS, WhatsApp templates, email; lifecycle messages for orders, bookings, renewals).

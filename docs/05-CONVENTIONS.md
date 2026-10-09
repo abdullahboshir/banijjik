@@ -82,7 +82,7 @@ Code is written for the next human reader first and the compiler second. If a re
 - **Contact master** (adapted from manoxen rule 11):
   - One Contact per person per organization. Never module-specific customer tables.
   - Duplicate check on create/import: canonical phone first, then email. A match links to the existing Contact, it does not create a second one.
-  - A global `User` (login identity) is separate from a per-org `Contact`. A contact may link `userId` when they have a portal login.
+  - A global `User` (login identity) is separate from a per-org `Contact`. A contact never links a `userId`; a storefront/portal login is a per-org `CustomerAccount` linked to the contact (ADR-045).
 - **Business date vs timestamp:** events store UTC timestamps. Day-based reports and day close use a `businessDate` computed in the org/location timezone.
 - **Enums** are stored as the uppercase string from contracts. Never numbers, never localized text.
 - **Collections:** plural snake_case (`offerings`, `stock_movements`). **Fields:** camelCase.

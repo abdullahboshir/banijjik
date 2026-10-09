@@ -107,7 +107,7 @@ Bot behaviour:
   2. A small, cheap model handles normal product Q&A and field extraction.
   3. A larger model only on low confidence.
   - Prompt caching for the fixed system prompt. Short output limits. Per-org monthly AI message quota by plan, with a usage meter. Over quota → rules-only mode + seller notification.
-- Context from the entry point: a comment or message that comes from a specific post or ad (referral data) is linked to the product via the `ProductSocialLink` mapping, so the bot knows which product the customer means.
+- Context from the entry point: a comment or message that comes from a specific post or ad (referral data) is linked to the product via the `OfferingSocialLink` mapping, so the bot knows which product the customer means.
 - Order extraction: items, quantity, name, phone, address, delivery area → **draft order** → customer confirms inside chat → order is created (seller can require manual approval).
 - Handoff: customer asks for a human, the bot is not confident, or a risk rule fires → conversation goes to the inbox with the bot paused.
 - Bot per-seller settings: on/off per channel, tone, working hours, auto-confirm rules, language (BN/EN).
@@ -126,7 +126,7 @@ Single source: the banijjik catalog. Many ways in, many ways out.
 4. Existing website: feed/CSV import (Phase 8 connectors).
 
 **Out:**
-- "Publish to Facebook" creates a post from the product (image, text, price, link/Messenger button). Linked back via `ProductSocialLink`.
+- "Publish to Facebook" creates a post from the product (image, text, price, link/Messenger button). Linked back via `OfferingSocialLink`.
 - Storefront and POS read the same catalog.
 
 **Why not "post is the source":** posts are unstructured, editable and have no stock/variant data. **Why not "form only":** too much double entry. So the catalog is canonical, import-from-post removes the double entry, and publish-to-post covers the other direction. A seller with very many products uses bulk import once.

@@ -42,10 +42,10 @@ apps/api/src/
 │   ├── events/             in-process event bus + outbox + BullMQ dispatch
 │   ├── queue/  cache/  logger/  i18n/
 ├── modules/
-│   ├── platform/           industry, module-catalog, plan, entitlement, tenant-admin, saas-billing
-│   ├── core/               iam, organization (org, location, membership), custom-field, settings, audit, notification, file
-│   ├── commerce/           contact, catalog, inventory, pricing, sales, payment, accounting, expense, pos, report
-│   ├── capability/         appointment, membership, academic, restaurant, accommodation   (Phase 7)
+│   ├── platform/           industry, module-catalog, package, entitlement, tenant-admin, saas-billing
+│   ├── core/               iam, organization (org, location, member), custom-field, settings, audit, notification, file
+│   ├── commerce/           contact, catalog, inventory, pricing, sales, booking, enrollment, payment, accounting, expense, pos, report
+│   ├── capability/         academic, clinical, kitchen-display, …                          (Phase 7)
 │   ├── integration/        courier, meta, payment-gateway, sms                              (Phase 5)
 │   └── automation/         workflow engine: trigger → condition → action                    (Phase 5)
 └── routes/v1.ts            the ONLY place that mounts module routers and global middleware

@@ -72,7 +72,7 @@ Everything a business sells is an **Offering** with a **kind**. Kinds are a smal
 | `EVENT` | fixed date/time, seats | Ticket | workshop, class session, exam |
 
 - Each kind has a fixed core schema. Industry- and org-specific attributes come from **custom fields** (`07 §5` / ADR-015), scoped by kind and entity.
-- Core generic modules implement the kinds: `catalog` (all offerings), `sales` (orders), `booking` (services + rentals + events over **Resources** with availability), `subscription` (plans/enrollments/renewals). These are **core, not industry packs**.
+- Core generic modules implement the kinds: `catalog` (all offerings), `sales` (orders), `booking` (services + rentals + events over **Resources** with availability), `enrollment` (PLAN kind: enrollments, periods, renewals; ADR-047). These are **core, not industry packs**.
 - **Industry template** = enabled kinds + default modules + field sets + **terms** (i18n label overrides: Customer → "Student"/"Patient"/"Member"; Order → "Admission"; Resource → "Room"/"Chair"/"Trainer") + website templates + bot defaults (persona, FAQ starters, required intake fields).
 - **New industry = new template in the platform panel.** Code is needed only for a genuinely new kind of behaviour (e.g. lab results, kitchen display). That becomes a small capability module with its own manifest, reusable by any industry.
 

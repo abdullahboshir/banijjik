@@ -485,10 +485,10 @@ Owner-decided (2026-10-09) and recorded as **Accepted**; the rest are **Accepted
 | ADR-047 | Names: SaaS sells **Packages** (`platform/package`, `PlatformSubscription`); the PLAN-kind module is **`enrollment`** (not "subscription", not "membership"). Every offering has ≥ 1 variant. Quantities are integers in unit precision. | Accepted (proposed) |
 | ADR-048 | Platform panel access is a separate `PlatformOperator` record with its own cookie and audience, not a flag on User. | Accepted (proposed) |
 
-**Docs that now disagree and need a one-line fix (owner to approve, not changed in this card):**
+**Docs synced with this model (owner approved, 2026-10-09, branch `s/D1-doc-sync`):**
 - `01 §2`: `platform/plan` → `platform/package`; `capability/appointment, membership` → core `commerce/booking`, `commerce/enrollment` (ADR-034 already says they are core).
 - `05` "Contact master": the `userId` link sentence → ADR-045.
-- `03` card 3.7 "Subscription core" → "Enrollment core"; ADR-026 "ProductSocialLink" → `OfferingSocialLink`.
+- `03` card 3.7 "Subscription core" → "Enrollment core"; `ProductSocialLink` → `OfferingSocialLink` in `03` and `06`; `07 §4` module `subscription` → `enrollment`. ADR-026 text is left as history; ADR-047 sets the new name.
 
 ## 9. Owner answers (2026-10-09)
 - **Q1. Fractional quantities:** yes, in Phase 3. POS supports weight/volume entry (kg, litre) using integer quantities in unit precision (ADR-047).
