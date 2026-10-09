@@ -107,6 +107,8 @@ Tenant (org) overrides → Location overrides (settings only)
 - Backups with a tested restore (Phase 6). Sentry + structured logs.
 
 ## 7. Frontend
+Full UX rules, screen patterns, tokens and components: `13-UX.md`.
+
 - One route tree per app, for example `apps/admin/app/[org]/(app)/sales/orders`. The layout is persistent and server-rendered. Location is `?location=`.
 - The menu comes from the API's resolved config (entitlement × permission), fetched once per session.
 - TanStack Query cache + hover prefetch + optimistic updates. Lists are paginated (max 100) and virtualized when long.

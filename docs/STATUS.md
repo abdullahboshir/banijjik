@@ -30,7 +30,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | D3 offering kinds & request lifecycles | todo | needed by Phase 2/3 |
 | D4 industry templates (8) | todo | needed by Phase 2 |
 | D5 bot tools & golden conversations | todo | needs P3 real chats |
-| D6 UX & design system | todo | needed by 0.5 |
+| D6 UX & design system | doing (draft in `docs/13-UX.md`, waiting for owner approval) | needed by 0.5 |
 | D7 API surface | todo | |
 | D8 manoxen port map | todo | needed by Phase 3 |
 
