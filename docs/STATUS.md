@@ -31,7 +31,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | D4 industry templates (8) | doing (draft in `docs/12-INDUSTRY-TEMPLATES.md`, waiting for owner approval) | needed by Phase 2 |
 | D5 bot tools & golden conversations | todo | needs P3 real chats |
 | D6 UX & design system | done (2026-10-09, `8f74698`, approved by owner) | needed by 0.5 |
-| D7 API surface | todo | |
+| D7 API surface | doing (draft in `docs/14-API.md`, waiting for owner approval) | |
 | D8 manoxen port map | done (2026-10-09, `8aa24bf`, approved by owner) | needed by Phase 3 |
 
 ## Phase 0

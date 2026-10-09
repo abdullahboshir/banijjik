@@ -114,9 +114,9 @@ export const ORDER_STATUS = Object.fromEntries(ORDER_STATUS_ENUM.map(v => [v, v]
 New enum, permission key, module key, error code or event name: add it to contracts first, then use it.
 
 ## API
-- Base path `/api/v1`. Resource names are plural nouns: `/orders`, `/orders/:id/confirm` for state transitions.
+- Base path `/api/v1`. Tenant routes are `/api/v1/orgs/{organizationId}/…` (org in the path, ADR-077). Resource names are plural nouns; path params use full domain ID names: `/orders/{orderId}/confirm` for state transitions. Full surface: `14-API.md`.
 - Success: `{ data, meta? }`. Error: `{ error: { code, messageKey, details? } }`. `code` comes from contracts. `messageKey` comes from i18n.
-- List: `?page=&limit=` (limit ≤ 100, default 20), `?sort=-createdAt`, `?location=`. The response `meta` has `{ page, limit, total }`.
+- List: `?page=&limit=` (limit ≤ 100, default 20), `?sort=-createdAt`, `?location=`. The response `meta` has `{ page, limit, hasNext, total? }` (`total` only with `includeTotal=true`, ADR-079).
 - Money in JSON: `{ amount: 125050, currency: "BDT" }` in minor units.
 - Dates: ISO 8601 UTC. Display timezone comes from settings.
 - `Idempotency-Key` header is required on money/stock-creating endpoints.
