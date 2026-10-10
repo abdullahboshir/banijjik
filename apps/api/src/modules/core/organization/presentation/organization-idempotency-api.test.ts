@@ -42,6 +42,12 @@ function create(person: RegisteredPerson, body: object, idempotencyKey?: string 
   });
 }
 
+function countEventsOf(organizationId: string): Promise<number> {
+  return harness.connections.platform
+    .collection("outbox_events")
+    .countDocuments({ organizationId });
+}
+
 function countBySlug(slug: string): Promise<number> {
   return harness.connections.platform.collection("organizations").countDocuments({ slug });
 }
@@ -60,6 +66,21 @@ describe("POST /me/orgs with an Idempotency-Key", () => {
     expect(second.body).toEqual(first.body);
     expect(second.headers[REPLAYED]).toBe("true");
     expect(await countBySlug(body.slug)).toBe(1);
+  });
+
+  it("emits one set of events and no second set on a replay", async () => {
+    const person = await registerViaApi(harness.app);
+    const body = aBody();
+    const key = newId();
+
+    const first = await create(person, body, key);
+    const organizationId = first.body.data.organizationId as string;
+    const afterFirst = await countEventsOf(organizationId);
+    const second = await create(person, body, key);
+
+    expect(second.headers[REPLAYED]).toBe("true");
+    expect(afterFirst).toBe(3);
+    expect(await countEventsOf(organizationId)).toBe(3);
   });
 
   it("answers 422 IDEMPOTENCY_MISMATCH when the same key carries another body", async () => {
