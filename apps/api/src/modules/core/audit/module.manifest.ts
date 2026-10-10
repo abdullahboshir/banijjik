@@ -19,7 +19,7 @@ export const auditManifest = defineModule({
   requiresAnyKind: [],
   tenantCanDisable: false,
   permissions: [permissionDefinition(PERMISSION_KEY.AUDIT_LOG_READ, { isSensitive: true })],
-  routes: { admin: ["/orgs/:organizationId/audit-logs"] },
+  routes: { admin: ["/orgs/:organizationId/audit-logs"], platform: ["/platform/audit-logs"] },
   menu: [],
   settingKeys: [],
   customFieldEntities: [],
