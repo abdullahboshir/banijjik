@@ -13,6 +13,8 @@ const MODULE_ELEMENT = {
 const KERNEL_ELEMENT = { type: "kernel", pattern: "**/src/kernel" };
 const CONFIG_ELEMENT = { type: "config", pattern: "**/src/config" };
 const ROUTES_ELEMENT = { type: "routes", pattern: "**/src/routes" };
+// R34: entry scripts that run once (seeds). Like routes, they reach a module only through its index.ts.
+const SEEDS_ELEMENT = { type: "seeds", pattern: "**/src/seeds" };
 
 const layerFiles = LAYERS.map((layer) => ({
   category: layer,
@@ -52,7 +54,7 @@ function forbidElements(fromType, forbiddenTypes, message) {
 
 /**
  * R18 layer direction (01 section 2, ADR-011a), R19 module entry point (ADR-011),
- * R23 kernel, R24 config and R25 routes boundaries (0.2a review finding).
+ * R23 kernel, R24 config and R25 routes boundaries (0.2a review finding), R34 seeds boundary (1.1).
  * checkInternals is required: layers live inside one module element, and the plugin
  * ignores dependencies inside an element unless told otherwise.
  */
@@ -63,12 +65,19 @@ export const architectureBlock = {
     "**/src/kernel/**/*.ts",
     "**/src/config/**/*.ts",
     "**/src/routes/**/*.ts",
+    "**/src/seeds/**/*.ts",
   ],
   plugins: { boundaries },
   settings: {
     // Sources import with ".js" suffixes (NodeNext); the plain node resolver cannot map them to ".ts".
     "import/resolver": { typescript: { alwaysTryTypes: true } },
-    "boundaries/elements": [MODULE_ELEMENT, KERNEL_ELEMENT, CONFIG_ELEMENT, ROUTES_ELEMENT],
+    "boundaries/elements": [
+      MODULE_ELEMENT,
+      KERNEL_ELEMENT,
+      CONFIG_ELEMENT,
+      ROUTES_ELEMENT,
+      SEEDS_ELEMENT,
+    ],
     "boundaries/files": layerFiles,
   },
   rules: {
@@ -113,6 +122,11 @@ export const architectureBlock = {
             from: { element: { type: "routes" } },
             disallow: { to: { element: { type: "module", fileInternalPath: "!index.ts" } } },
             message: "Routes import a module only through its index.ts (R25).",
+          },
+          {
+            from: { element: { type: "seeds" } },
+            disallow: { to: { element: { type: "module", fileInternalPath: "!index.ts" } } },
+            message: "Seeds import a module only through its index.ts (R34).",
           },
           {
             from: { element: { type: "module" } },

@@ -214,6 +214,7 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   ),
   passes("R26", `${MODULE}/application/r26-run-as-system-in-tests.pass.test.ts`),
   passes("R26", "apps/api/src/kernel/context/r26-run-as-system-in-kernel.pass.ts"),
+  passes("R26", "apps/api/src/seeds/r26-run-as-system-in-seeds.pass.ts"),
 
   fails(
     "R26",
@@ -243,6 +244,7 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   passes("R28", `${MODULE}/infrastructure/r28-mongoose-in-infrastructure.pass.ts`),
   passes("R28", "apps/api/src/kernel/db/r28-mongoose-in-kernel-db.pass.ts"),
   passes("R28", "apps/api/src/kernel/sequence/r28-mongoose-in-kernel-sequence.pass.ts"),
+  passes("R28", "apps/api/src/kernel/rate-limit/r28-mongoose-in-kernel-rate-limit.pass.ts"),
   passes("R28", "apps/api/src/test-support/r28-mongoose-in-test-support.pass.ts"),
   passes("R28", "src/r28-mongoose-in-tests.pass.test.ts"),
 
@@ -260,4 +262,7 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
 
   fails("R33", "src/r33-non-null-assertion.fail.ts", "@typescript-eslint/no-non-null-assertion"),
   passes("R33", "src/r33-checked-access.pass.ts"),
+
+  fails("R34", "apps/api/src/seeds/r34-seeds-import-module-internals.fail.ts", BOUNDARIES),
+  passes("R34", "apps/api/src/seeds/r34-seeds-import-index-kernel-config.pass.ts"),
 ];

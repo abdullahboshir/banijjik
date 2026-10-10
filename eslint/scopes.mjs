@@ -18,6 +18,7 @@ export const ORM_ALLOWED_FILES = [
   "**/infrastructure/**",
   "**/kernel/db/**",
   "**/kernel/sequence/**",
+  "**/kernel/rate-limit/**",
   "**/test-support/**",
   ...TEST_FILES,
 ];
