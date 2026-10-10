@@ -113,8 +113,6 @@
   "errors.idempotency_in_progress": "This request is still being processed. Please try again in a moment.",
   "validation.idempotency_key_required": "Send an Idempotency-Key header with this request",
   "validation.idempotency_key_invalid": "The Idempotency-Key must be a valid UUID",
-  "errors.route_without_module": "This page is not available right now.",
-  "errors.trial_package_missing": "Your business could not be set up right now. Please try again in a moment.",
   "package.STORE.name": "Store (website)",
   "package.CHAT.name": "Chat (chatbot)",
   "package.SHOP.name": "Shop (POS)",

@@ -113,8 +113,6 @@
   "errors.idempotency_in_progress": "এই অনুরোধটি এখনো চলছে। একটু পরে আবার চেষ্টা করুন।",
   "validation.idempotency_key_required": "অনুরোধের সাথে একটি Idempotency-Key পাঠাতে হবে",
   "validation.idempotency_key_invalid": "Idempotency-Key একটি বৈধ UUID হতে হবে",
-  "errors.route_without_module": "এই পাতাটি এখন পাওয়া যাচ্ছে না।",
-  "errors.trial_package_missing": "আপনার ব্যবসা এখন সেটআপ করা যায়নি। একটু পরে আবার চেষ্টা করুন।",
   "package.STORE.name": "স্টোর (ওয়েবসাইট)",
   "package.CHAT.name": "চ্যাট (চ্যাটবট)",
   "package.SHOP.name": "শপ (পিওএস)",
