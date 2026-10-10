@@ -10,7 +10,17 @@ export const TOOLING_FILES = ["scripts/**", "tools/**"];
 export const CONFIG_FILES = ["**/src/config/**", "**/*.config.*", ...TOOLING_FILES];
 
 export const INFRASTRUCTURE_FILES = ["**/infrastructure/**", "**/kernel/db/**"];
-export const DOMAIN_FILES = ["**/domain/**"];
+// R22 covers the domain layer of module folders only (modules/<group>/<module>/domain).
+export const DOMAIN_FILES = ["**/modules/*/*/domain/**"];
+export const MODULE_FILES = ["**/modules/**"];
+// R28: the only places that may import the database drivers (ADR-023: business code goes through models(ctx)).
+export const ORM_ALLOWED_FILES = [
+  "**/infrastructure/**",
+  "**/kernel/db/**",
+  "**/kernel/sequence/**",
+  "**/test-support/**",
+  ...TEST_FILES,
+];
 // R26: all module layers, repositories (infrastructure) included. Platform use cases are exempt (they must write an audit entry).
 export const RUN_AS_SYSTEM_FORBIDDEN_FILES = [
   "**/modules/*/*/domain/**",
@@ -21,7 +31,12 @@ export const RUN_AS_SYSTEM_FORBIDDEN_FILES = [
 export const RUN_AS_SYSTEM_ALLOWED_FILES = ["**/modules/platform/**/application/**"];
 export const PUBLIC_INDEX_FILES = ["**/index.ts"];
 export const ID_PACKAGE_FILES = ["**/packages/ids/**"];
-export const BRAND_SCOPE_FILES = ["**/apps/*/src/**", "**/packages/ui/**", "**/packages/i18n/**"];
+// Next apps keep their pages in app/ next to src/, so both folders are in scope.
+export const BRAND_SCOPE_FILES = [
+  "**/apps/*/{src,app}/**",
+  "**/packages/ui/**",
+  "**/packages/i18n/**",
+];
 
 // ADR-033 / ADR-082: the only places allowed to read the organization's industry key.
 export const INDUSTRY_READER_FILES = [

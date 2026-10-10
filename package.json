@@ -18,7 +18,7 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "lint": "eslint . --cache --cache-location node_modules/.cache/eslint/",
+    "lint": "eslint . --max-warnings 0 --cache --cache-location node_modules/.cache/eslint/",
     "lint:fix": "npm run lint -- --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

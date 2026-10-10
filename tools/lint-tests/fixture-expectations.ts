@@ -11,7 +11,12 @@ const BOUNDARIES = "boundaries/dependencies";
 const INDUSTRY = "banijjik-guard/no-industry-branching";
 const DOMAIN_IMPORTS = "banijjik-guard/no-domain-framework-imports";
 const RUN_AS_SYSTEM = "banijjik-guard/no-run-as-system";
+const RUN_AS_SYSTEM_IMPORT = "banijjik-guard/no-run-as-system-import";
+const REQUEST_CONTEXT_IMPORT = "banijjik-guard/no-request-context-import";
+const ORM_IMPORTS = "banijjik-guard/no-orm-imports";
 const NAMING = "@typescript-eslint/naming-convention";
+const GUARD = "banijjik-guard";
+const INLINE_CONFIG_IGNORED = "inline-config-ignored";
 const READERS = [
   "apps/api/src/modules/platform/industry/application",
   "apps/api/src/modules/platform/entitlement/application",
@@ -66,6 +71,7 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   passes("R07", "src/r07-nested-ternary.pass.ts"),
 
   fails("R08", "src/r08-console.fail.ts", "no-console"),
+  fails("R08", "src/r08-console-with-disable-comment.fail.ts", "no-console", INLINE_CONFIG_IGNORED),
   passes("R08", "src/r08-console.pass.ts"),
   passes("R08", "scripts/r08-console-in-scripts.pass.ts"),
   passes("R08", "tools/r08-console-in-tools.pass.ts"),
@@ -84,15 +90,19 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R11", "src/r11-nanoid-import.fail.ts", "banijjik-guard/no-id-generator-imports"),
   fails("R11", "src/r11-crypto-import.fail.ts", "banijjik-guard/no-id-generator-imports"),
   fails("R11", "src/r11-random-uuid-call.fail.ts", "banijjik-guard/no-random-uuid-call"),
+  fails("R11", "src/r11-dynamic-import-nanoid.fail.ts", `${GUARD}/no-id-generator-dynamic-import`),
   passes("R11", "src/r11-new-id.pass.ts"),
   passes("R11", "packages/ids/src/r11-generator-in-ids-package.pass.ts"),
 
   fails("R12", "src/r12-banned-identifier.fail.ts", "id-denylist"),
   fails("R12", "src/r12-banned-property.fail.ts", "id-denylist"),
+  fails("R12", "src/r12-banned-store-id.fail.ts", "id-denylist"),
   passes("R12", "src/r12-domain-identifiers.pass.ts"),
 
   fails("R13", "src/r13-underscore-id.fail.ts", "banijjik-guard/no-underscore-id"),
   fails("R13", "src/r13-underscore-id-literal.fail.ts", "banijjik-guard/no-underscore-id"),
+  fails("R13", "src/r13-underscore-id-aggregation-path.fail.ts", `${GUARD}/no-underscore-id`),
+  fails("R13", "src/r13-underscore-id-template.fail.ts", `${GUARD}/no-underscore-id`),
   passes("R13", `${MODULE}/infrastructure/r13-underscore-id-in-infrastructure.pass.ts`),
   passes("R13", "apps/api/src/kernel/db/r13-underscore-id-in-kernel-db.pass.ts"),
   passes("R13", "src/r13-underscore-id-in-tests.pass.test.ts"),
@@ -104,10 +114,16 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
     "apps/web/src/r14-brand-name-template.fail.ts",
     "banijjik-guard/no-brand-name-literal",
   ),
+  fails("R14", "apps/web/app/r14-brand-name-app-folder.fail.ts", `${GUARD}/no-brand-name-literal`),
+  fails("R14", "apps/web/src/r14-brand-name-jsx.fail.tsx", `${GUARD}/no-brand-name-literal`),
   passes("R14", "apps/web/src/r14-brand-name-in-imports.pass.ts"),
+  passes("R14", "apps/web/src/r14-jsx-text.pass.tsx"),
   passes("R14", "packages/validation/src/r14-brand-name-outside-ui.pass.ts"),
 
   fails("R15", "src/r15-process-env.fail.ts", "banijjik-guard/no-process-env"),
+  fails("R15", "src/r15-process-env-import.fail.ts", `${GUARD}/no-process-env-import`),
+  fails("R15", "src/r15-global-this-process-env.fail.ts", `${GUARD}/no-process-env-syntax`),
+  passes("R15", "src/r15-process-import-other-name.pass.ts"),
   passes("R15", "apps/api/src/config/r15-process-env-in-config.pass.ts"),
   passes("R15", "scripts/r15-process-env-in-scripts.pass.ts"),
   passes("R15", "tools/r15-process-env-in-tools.pass.ts"),
@@ -118,6 +134,10 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R16", `${BILLING}/application/r16-industry-comparison.fail.ts`, INDUSTRY),
   fails("R16", `${BILLING}/application/r16-industry-variable-comparison.fail.ts`, INDUSTRY),
   fails("R16", `${BILLING}/application/r16-industry-switch.fail.ts`, INDUSTRY),
+  fails("R16", `${BILLING}/application/r16-industry-includes.fail.ts`, INDUSTRY),
+  fails("R16", `${BILLING}/application/r16-industry-computed-lookup.fail.ts`, INDUSTRY),
+  fails("R16", `${BILLING}/application/r16-industry-key-computed.fail.ts`, INDUSTRY),
+  passes("R16", `${BILLING}/application/r16-includes-other-value.pass.ts`),
   passes("R16", `${BILLING}/application/r16-status-comparison.pass.ts`),
   passes("R16", `${BILLING}/application/r16-industry-in-tests.pass.test.ts`),
   ...READERS.map((folder) => passes("R16", `${folder}/r16-industry-reader-allowed.pass.ts`)),
@@ -154,7 +174,10 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R22", `${MODULE}/domain/r22-node-builtin.fail.ts`, DOMAIN_IMPORTS),
   fails("R22", `${MODULE}/domain/r22-bare-node-builtin.fail.ts`, DOMAIN_IMPORTS),
   fails("R22", `${MODULE}/domain/r22-validation-package.fail.ts`, DOMAIN_IMPORTS),
+  fails("R22", `${MODULE}/domain/r22-date-library.fail.ts`, DOMAIN_IMPORTS),
   passes("R22", `${MODULE}/domain/r22-allowed-imports.pass.ts`),
+  passes("R22", `${MODULE}/domain/r22-relative-parent.pass.ts`),
+  passes("R22", `${MODULE}/domain/r22-test-imports-vitest.pass.test.ts`),
   passes("R22", `${MODULE}/application/r22-framework-allowed-outside-domain.pass.ts`),
   fails("R23", "apps/api/src/kernel/http/r23-kernel-imports-module.fail.ts", BOUNDARIES),
   passes("R23", "apps/api/src/kernel/http/r23-kernel-imports-config.pass.ts"),
@@ -166,13 +189,24 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R25", "apps/api/src/routes/r25-routes-import-module-internals.fail.ts", BOUNDARIES),
   passes("R25", "apps/api/src/routes/r25-routes-import-index-and-kernel.pass.ts"),
 
-  fails("R26", `${MODULE}/application/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
-  fails("R26", `${MODULE}/domain/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
-  fails("R26", `${MODULE}/presentation/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
+  fails(
+    "R26",
+    `${MODULE}/application/r26-run-as-system.fail.ts`,
+    RUN_AS_SYSTEM,
+    RUN_AS_SYSTEM_IMPORT,
+  ),
+  fails("R26", `${MODULE}/domain/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM, RUN_AS_SYSTEM_IMPORT),
+  fails(
+    "R26",
+    `${MODULE}/presentation/r26-run-as-system.fail.ts`,
+    RUN_AS_SYSTEM,
+    RUN_AS_SYSTEM_IMPORT,
+  ),
   fails(
     "R26",
     "apps/api/src/modules/commerce/sales/infrastructure/r26-run-as-system-in-repository.fail.ts",
     RUN_AS_SYSTEM,
+    RUN_AS_SYSTEM_IMPORT,
   ),
   passes(
     "R26",
@@ -180,4 +214,50 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   ),
   passes("R26", `${MODULE}/application/r26-run-as-system-in-tests.pass.test.ts`),
   passes("R26", "apps/api/src/kernel/context/r26-run-as-system-in-kernel.pass.ts"),
+
+  fails(
+    "R26",
+    `${MODULE}/application/r26-run-as-system-alias-import.fail.ts`,
+    RUN_AS_SYSTEM_IMPORT,
+  ),
+  fails(
+    "R26",
+    `${MODULE}/application/r26-run-as-system-namespace-import.fail.ts`,
+    // A namespace import of the kernel could use any name, so both kernel-name rules report it.
+    RUN_AS_SYSTEM_IMPORT,
+    REQUEST_CONTEXT_IMPORT,
+  ),
+  fails("R26", `${MODULE}/application/r26-run-as-system-member-call.fail.ts`, RUN_AS_SYSTEM),
+
+  fails(
+    "R27",
+    `${MODULE}/application/r27-run-with-request-context.fail.ts`,
+    REQUEST_CONTEXT_IMPORT,
+  ),
+  passes("R27", `${MODULE}/application/r27-request-context-in-tests.pass.test.ts`),
+  passes("R27", "apps/api/src/kernel/http/r27-request-context-in-kernel.pass.ts"),
+  passes("R27", "apps/api/src/test-support/r27-request-context-in-test-support.pass.ts"),
+
+  fails("R28", `${MODULE}/application/r28-mongoose-in-application.fail.ts`, ORM_IMPORTS),
+  fails("R28", `${MODULE}/presentation/r28-mongodb-type-in-presentation.fail.ts`, ORM_IMPORTS),
+  passes("R28", `${MODULE}/infrastructure/r28-mongoose-in-infrastructure.pass.ts`),
+  passes("R28", "apps/api/src/kernel/db/r28-mongoose-in-kernel-db.pass.ts"),
+  passes("R28", "apps/api/src/kernel/sequence/r28-mongoose-in-kernel-sequence.pass.ts"),
+  passes("R28", "apps/api/src/test-support/r28-mongoose-in-test-support.pass.ts"),
+  passes("R28", "src/r28-mongoose-in-tests.pass.test.ts"),
+
+  fails("R29", "src/r29-then-chain.fail.ts", `${GUARD}/no-then-chain`),
+  passes("R29", "src/r29-await.pass.ts"),
+
+  fails("R30", "src/r30-ssr-false.fail.ts", `${GUARD}/no-ssr-false`),
+  passes("R30", "src/r30-ssr-true.pass.ts"),
+
+  fails("R31", "src/r31-local-storage.fail.ts", "no-restricted-globals"),
+  passes("R31", "src/r31-storage-name-as-key.pass.ts"),
+
+  fails("R32", "src/r32-todo-comment.fail.ts", "no-warning-comments"),
+  passes("R32", "src/r32-plain-comment.pass.ts"),
+
+  fails("R33", "src/r33-non-null-assertion.fail.ts", "@typescript-eslint/no-non-null-assertion"),
+  passes("R33", "src/r33-checked-access.pass.ts"),
 ];

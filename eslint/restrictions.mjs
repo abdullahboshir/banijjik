@@ -1,4 +1,3 @@
-import { builtinModules } from "node:module";
 import {
   BRAND_SCOPE_FILES,
   CONFIG_FILES,
@@ -6,40 +5,28 @@ import {
   ID_PACKAGE_FILES,
   INDUSTRY_READER_FILES,
   INFRASTRUCTURE_FILES,
+  MODULE_FILES,
+  ORM_ALLOWED_FILES,
   PUBLIC_INDEX_FILES,
   RUN_AS_SYSTEM_ALLOWED_FILES,
   RUN_AS_SYSTEM_FORBIDDEN_FILES,
   TEST_FILES,
 } from "./scopes.mjs";
 
+import {
+  brandSelectors,
+  industrySelectors,
+  processEnvSyntax,
+  syntaxRules,
+  underscoreIdSelectors,
+} from "./selectors.mjs";
+
 const ERROR = "error";
 const RANDOM_UUID_MESSAGE =
   "Use newId() from @banijjik/ids; it is the only ID generator (ADR-036).";
-const IMPORT_SOURCE_PARENTS =
-  "ImportDeclaration, ImportExpression, ExportAllDeclaration, ExportNamedDeclaration, TSImportType, TSLiteralType";
-const COMPARISON = "BinaryExpression[operator=/^[!=]==?$/]";
-const INDUSTRY_NAME = "/^industry/";
-
-const nodeBuiltinModules = builtinModules.flatMap((name) => [name, `node:${name}`]);
-
-const industrySelectors = [
-  "Identifier[name='industryTemplateKey']",
-  `${COMPARISON} > MemberExpression[property.name=${INDUSTRY_NAME}]`,
-  `${COMPARISON} > Identifier[name=${INDUSTRY_NAME}]`,
-  `SwitchStatement > MemberExpression.discriminant[property.name=${INDUSTRY_NAME}]`,
-  `SwitchStatement > Identifier.discriminant[name=${INDUSTRY_NAME}]`,
-].map((selector) => ({
-  selector,
-  message: "Feature code must not branch on industry; ask resolveOrgConfig instead (ADR-033).",
-}));
-
-const brandSelectors = [
-  `Literal[value=/banijjik/i]:not(:matches(${IMPORT_SOURCE_PARENTS}) > Literal)`,
-  "TemplateElement[value.raw=/banijjik/i]",
-].map((selector) => ({
-  selector,
-  message: "Do not hard-code the brand name in UI strings; read it from branding config (ADR-038).",
-}));
+// runAsSystem and runWithRequestContext are exported by the kernel; whatever path or alias reaches the kernel is covered.
+// A namespace import (`import * as x`) from the kernel is reported too, because importNames cannot tell which names it uses.
+const KERNEL_MODULES = ["**/kernel", "**/kernel/**"];
 
 const deepPackagePatterns = [
   "@banijjik/*/src",
@@ -47,6 +34,14 @@ const deepPackagePatterns = [
   "@banijjik/*/dist",
   "@banijjik/*/dist/**",
 ];
+
+// Matches every import source EXCEPT @banijjik/contracts, @banijjik/ids and relative paths. The plan
+// asked for a negated group, but the `ignore` library behind `group` cannot re-include a child of an
+// ignored parent, so "!@banijjik/contracts" never worked (measured); `regex` is the same allow-list.
+const DOMAIN_FORBIDDEN_SOURCE = "^(?!@banijjik/(?:contracts|ids)$)(?!\\.{1,2}(?:/|$))";
+
+const DOMAIN_IMPORT_MESSAGE =
+  "Domain code imports only @banijjik/contracts, @banijjik/ids and files of its own domain folder (ADR-011a).";
 
 /** Rules that apply to every file of the matching scope. Each entry becomes one config block. */
 export const restrictionBlocks = [
@@ -68,6 +63,10 @@ export const restrictionBlocks = [
           ],
           patterns: [{ group: ["uuid/*", "nanoid/*"], message: RANDOM_UUID_MESSAGE }],
         },
+      ],
+      "banijjik-guard/no-id-generator-dynamic-import": [
+        ERROR,
+        ...syntaxRules(RANDOM_UUID_MESSAGE, ["ImportExpression[source.value=/^(uuid|nanoid)/]"]),
       ],
       "banijjik-guard/no-random-uuid-call": [
         ERROR,
@@ -109,25 +108,44 @@ export const restrictionBlocks = [
     },
   },
   {
+    name: "banijjik/orm-imports",
+    ignores: ORM_ALLOWED_FILES,
+    rules: {
+      "banijjik-guard/no-orm-imports": [
+        ERROR,
+        {
+          paths: ["mongoose", "mongodb"].map((name) => ({
+            name,
+            message:
+              "Only infrastructure and the kernel talk to the database driver; business code uses models(ctx) (ADR-023).",
+          })),
+          patterns: [
+            {
+              group: ["mongoose/*", "mongodb/*"],
+              message:
+                "Only infrastructure and the kernel talk to the database driver; business code uses models(ctx) (ADR-023).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     name: "banijjik/domain-purity",
     files: DOMAIN_FILES,
+    ignores: TEST_FILES,
     rules: {
+      // An allow-list (ADR-011a): every bare specifier and every Node built-in is banned except
+      // the two packages. Relative paths stay allowed; the boundaries rule keeps them inside the layer.
       "banijjik-guard/no-domain-framework-imports": [
         ERROR,
         {
-          paths: [
-            "express",
-            "mongoose",
-            "zod",
-            "ioredis",
-            "bullmq",
-            "pino",
-            "@banijjik/validation",
-            ...nodeBuiltinModules,
-          ].map((name) => ({
-            name,
-            message: "Domain code imports only @banijjik/contracts and @banijjik/ids (ADR-011a).",
-          })),
+          patterns: [
+            {
+              regex: DOMAIN_FORBIDDEN_SOURCE,
+              message: DOMAIN_IMPORT_MESSAGE,
+            },
+          ],
         },
       ],
     },
@@ -144,20 +162,23 @@ export const restrictionBlocks = [
           message: "Read the environment only in the config module (ADR-083).",
         },
       ],
+      "banijjik-guard/no-process-env-import": [
+        ERROR,
+        {
+          paths: ["process", "node:process"].map((name) => ({
+            name,
+            importNames: ["env"],
+            message: "Read the environment only in the config module (ADR-083).",
+          })),
+        },
+      ],
+      "banijjik-guard/no-process-env-syntax": [ERROR, ...processEnvSyntax],
     },
   },
   {
     name: "banijjik/underscore-id",
     ignores: [...INFRASTRUCTURE_FILES, ...TEST_FILES],
-    rules: {
-      "banijjik-guard/no-underscore-id": [
-        ERROR,
-        ...["Identifier[name='_id']", "Literal[value='_id']"].map((selector) => ({
-          selector,
-          message: "Mongo _id is infrastructure-only; use the domain ID (ADR-036).",
-        })),
-      ],
-    },
+    rules: { "banijjik-guard/no-underscore-id": [ERROR, ...underscoreIdSelectors] },
   },
   {
     name: "banijjik/brand-name",
@@ -174,12 +195,49 @@ export const restrictionBlocks = [
     files: RUN_AS_SYSTEM_FORBIDDEN_FILES,
     ignores: [...RUN_AS_SYSTEM_ALLOWED_FILES, ...TEST_FILES],
     rules: {
+      // The call is banned under any name: the import by name (aliases included) and a member call.
       "banijjik-guard/no-run-as-system": [
         ERROR,
+        ...syntaxRules(
+          "runAsSystem is for the kernel and platform use cases only; module code stays tenant-scoped (05-CONVENTIONS System access).",
+          [
+            "CallExpression[callee.name='runAsSystem']",
+            "CallExpression[callee.property.name='runAsSystem']",
+          ],
+        ),
+      ],
+      "banijjik-guard/no-run-as-system-import": [
+        ERROR,
         {
-          selector: "CallExpression[callee.name='runAsSystem']",
-          message:
-            "runAsSystem is for the kernel and platform use cases only; module code stays tenant-scoped (05-CONVENTIONS System access).",
+          patterns: [
+            {
+              group: KERNEL_MODULES,
+              importNames: ["runAsSystem"],
+              message:
+                "runAsSystem is for the kernel and platform use cases only; module code stays tenant-scoped (05-CONVENTIONS System access).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    name: "banijjik/request-context",
+    files: MODULE_FILES,
+    ignores: TEST_FILES,
+    rules: {
+      // Building a request context by hand would let module code claim any organization or user.
+      "banijjik-guard/no-request-context-import": [
+        ERROR,
+        {
+          patterns: [
+            {
+              group: KERNEL_MODULES,
+              importNames: ["runWithRequestContext"],
+              message:
+                "Only the kernel creates a request context; module code reads it with getRequestContext().",
+            },
+          ],
         },
       ],
     },
@@ -194,6 +252,30 @@ export const restrictionBlocks = [
           selector: "ExportAllDeclaration",
           message: "Export names explicitly from a public index.ts.",
         },
+      ],
+    },
+  },
+  {
+    name: "banijjik/small-syntax-bans",
+    rules: {
+      "banijjik-guard/no-then-chain": [
+        ERROR,
+        ...syntaxRules("Use async/await, not .then() chains.", [
+          "CallExpression[callee.property.name='then']",
+        ]),
+      ],
+      "banijjik-guard/no-ssr-false": [
+        ERROR,
+        ...syntaxRules("App shells must be server-rendered; do not set ssr: false (ADR-010).", [
+          "Property[key.name='ssr'][value.value=false]",
+        ]),
+      ],
+      "no-restricted-globals": [
+        ERROR,
+        ...["localStorage", "sessionStorage"].map((name) => ({
+          name,
+          message: "Auth uses httpOnly cookies; do not keep tokens or state in web storage.",
+        })),
       ],
     },
   },

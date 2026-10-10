@@ -33,9 +33,8 @@ describe("newId", () => {
 
   it("sorts strictly ascending when many IDs are made in the same millisecond", () => {
     const ids = Array.from({ length: SAMPLE_COUNT }, () => newId());
-    for (let index = 1; index < ids.length; index += 1) {
-      expect(ids[index]! > ids[index - 1]!).toBe(true);
-    }
+    const sorted = [...ids].sort();
+    expect(sorted).toEqual(ids);
   });
 
   it("never repeats an ID", () => {

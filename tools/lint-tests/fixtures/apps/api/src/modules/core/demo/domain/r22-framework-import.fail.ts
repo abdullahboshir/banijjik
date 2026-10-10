@@ -1,3 +1,3 @@
-import mongoose from "mongoose";
+import express from "express";
 
-export const leakedValue = mongoose;
+export const leakedValue = express;

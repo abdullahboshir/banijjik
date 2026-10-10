@@ -6,3 +6,12 @@ export async function runAsSystem<Result>(
   void reason;
   return work();
 }
+
+// Stand-in for the real kernel entry, so the R27 fixtures have something to import.
+export function runWithRequestContext<Result>(
+  context: { requestId: string },
+  work: () => Result,
+): Result {
+  void context;
+  return work();
+}

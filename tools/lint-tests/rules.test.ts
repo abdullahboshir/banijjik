@@ -1,11 +1,11 @@
 import { readdirSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ESLint } from "eslint";
+import { ESLint, type Linter } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
 import { FIXTURE_EXPECTATIONS } from "./fixture-expectations.js";
 
-const RULE_COUNT = 26;
+const RULE_COUNT = 33;
 const currentFolder = dirname(fileURLToPath(import.meta.url));
 const fixturesRoot = join(currentFolder, "fixtures");
 const configFile = join(currentFolder, "..", "..", "eslint.config.mjs");
@@ -19,6 +19,12 @@ const NAMED_BY_FOLDER =
 const FIXTURE_FILE = /\.(fail|pass)(\.(test|config))?\.tsx?$/;
 
 type FixtureOutcome = { ruleIds: string[]; messages: string[] };
+
+/** ESLint reports a parse error, and an ignored inline directive, without a rule id. */
+function ruleIdOf(message: Linter.LintMessage): string {
+  if (message.ruleId !== null) return message.ruleId;
+  return message.message.includes("noInlineConfig") ? "inline-config-ignored" : "parse-error";
+}
 
 function listFiles(folder: string): string[] {
   return readdirSync(folder, { withFileTypes: true }).flatMap((entry) => {
@@ -49,7 +55,7 @@ describe("lint rules fire on the fixtures", () => {
     const results = await eslint.lintFiles(paths);
     for (const result of results) {
       outcomes.set(relativeFixturePath(result.filePath), {
-        ruleIds: result.messages.map((message) => message.ruleId ?? "parse-error"),
+        ruleIds: result.messages.map(ruleIdOf),
         messages: result.messages.map((message) => `${message.ruleId}: ${message.message}`),
       });
     }
@@ -66,7 +72,7 @@ describe("lint rules fire on the fixtures", () => {
 });
 
 describe("the fixture table", () => {
-  it("has a failing and a passing fixture for every rule R01 to R26", () => {
+  it("has a failing and a passing fixture for every rule R01 to R33", () => {
     for (const rule of EXPECTED_RULES) {
       const entries = FIXTURE_EXPECTATIONS.filter((entry) => entry.rule === rule);
       expect(

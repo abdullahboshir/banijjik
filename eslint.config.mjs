@@ -22,6 +22,7 @@ const FORBIDDEN_ID_NAMES = [
   "outletId",
   "customerId",
   "supplierId",
+  "storeId",
   "studentId",
   "patientId",
   "businessUnitId",
@@ -39,6 +40,13 @@ const namingConvention = [
 ];
 
 export default defineConfig(
+  {
+    name: "banijjik/linter-options",
+    // No inline eslint-disable or eslint-enable comment can switch a rule off: a rule changes in the
+    // config or not at all (ADR-082, review finding J5e). The unused-directive report makes any
+    // leftover comment visible as an error as well.
+    linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: ERROR },
+  },
   {
     name: "banijjik/ignores",
     // Fixtures are linted only by tools/lint-tests, which uses the fixtures folder as its cwd.
@@ -68,6 +76,7 @@ export default defineConfig(
       "@typescript-eslint/no-explicit-any": ERROR,
       "@typescript-eslint/no-floating-promises": ERROR,
       "@typescript-eslint/no-misused-promises": ERROR,
+      "@typescript-eslint/no-non-null-assertion": ERROR,
       "@typescript-eslint/naming-convention": [ERROR, ...namingConvention],
     },
   },
@@ -91,6 +100,7 @@ export default defineConfig(
       "max-params": [ERROR, 3],
       "no-nested-ternary": ERROR,
       "no-console": ERROR,
+      "no-warning-comments": [ERROR, { terms: ["todo", "fixme", "hack"], location: "anywhere" }],
       "no-empty": [ERROR, { allowEmptyCatch: false }],
       "id-denylist": [ERROR, ...FORBIDDEN_ID_NAMES],
     },
