@@ -1,4 +1,4 @@
-import { AppShell, Sidebar, TopBar } from "@banijjik/ui";
+import { AppShell, Sidebar, TopBar, type SidebarGroup } from "@banijjik/ui";
 import type { ReactElement, ReactNode } from "react";
 import { env } from "../../../src/config/env";
 import { getTranslator } from "../../../src/lib/i18n/get-translator";
@@ -14,8 +14,10 @@ export default async function OrganizationShellLayout({
   const { orgSlug } = await params;
   const { t } = await getTranslator();
   // Until /me/config is wired (card 1.7) the menu is empty and the org name is its slug.
+  const menuGroups: SidebarGroup[] = [];
   return (
     <AppShell
+      hasSidebar={menuGroups.length > 0}
       topBar={
         <TopBar
           logo={
@@ -26,14 +28,14 @@ export default async function OrganizationShellLayout({
           organizationName={orgSlug}
         />
       }
-      sidebar={<Sidebar groups={[]} navLabel={t("shell.openMenu")} />}
+      sidebar={<Sidebar groups={menuGroups} navLabel={t("nav.primary")} />}
       bottomNav={
         <ShellNavigation
           menu={[]}
           orgSlug={orgSlug}
           quickCreateActions={[]}
           labels={{
-            navLabel: t("shell.openMenu"),
+            navLabel: t("nav.bottom"),
             home: t("nav.home"),
             quickCreate: t("nav.quickCreate"),
             more: t("nav.more"),
