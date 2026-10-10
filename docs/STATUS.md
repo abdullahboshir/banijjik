@@ -59,8 +59,11 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 1.4 RBAC and permission cache | merged (2026-10-10, Opus review passed; ADR-088) | branch `s/1.4-rbac`; handoff `docs/handoffs/1.4.md`; ADR-088. Gaps: no membership cache and no Redis adapter for the permission cache (1.5); archive-vs-assignment race closes with the member endpoints (1.7); organization endpoints that use the `organization.*` keys come with 1.7 |
 | 1.5a idempotency and audit log | merged (2026-10-10, Opus review passed; ADR-089) | branch `s/1.5a-idempotency-audit`; handoff `docs/handoffs/1.5a.md`; ADR-089. Idempotency-Key middleware on `POST /me/orgs`, append-only guard, `core/audit` with `GET /orgs/{organizationId}/audit-logs`. Parallel with 1.5b |
 | 1.5b events, outbox, queue, worker | merged (2026-10-10, Opus review passed; ADR-090) | branch `s/1.5b-events-queue`; handoff `docs/handoffs/1.5b.md`; ADR-090. Gaps: no dead-letter replay tool; handler gating by module effectiveness in 1.6. Redis default port is now 6380 |
-| 1.6 plans/entitlements/module gate | todo | |
-| 1.7 admin auth & org shell | todo | |
+| 1.6a module registry, packages, resolver, gate, /me/config | planned (2026-10-10, `docs/plans/1.6a.md`, Opus, T1) | parallel with 1.7a; template filter is interim until 2.1 |
+| 1.6b new-module script and generated module-off tests | todo | after 1.6a |
+| 1.7a admin sign in, sign up, business list and switcher | planned (2026-10-10, `docs/plans/1.7a.md`, Opus) | parallel with 1.6a; creating a business in the UI waits for 2.1/6.1 |
+| 1.7b organization tenant API (profile, locations, members, invitations) | todo | after 1.6a |
+| 1.7c admin menu from /me/config, home, staff and locations screens | todo | after 1.6a + 1.7b |
 | 1.8 platform skeleton | todo | |
 
 ## Phases 2–8
