@@ -32,15 +32,20 @@ export function freshIp(): string {
   return `10.0.${block}.${(issuedAddresses % ADDRESSES_PER_BLOCK) + 1}`;
 }
 
-function startRequest(app: Express, method: "get" | "post" | "patch", path: string): Test {
+function startRequest(
+  app: Express,
+  method: "get" | "post" | "patch" | "delete",
+  path: string,
+): Test {
   const agent = request(app);
   if (method === "get") return agent.get(path);
   if (method === "patch") return agent.patch(path);
+  if (method === "delete") return agent.delete(path);
   return agent.post(path);
 }
 
 export interface ApiCall extends CallOptions {
-  readonly method: "get" | "post" | "patch";
+  readonly method: "get" | "post" | "patch" | "delete";
   readonly path: string;
   readonly body?: object;
 }
