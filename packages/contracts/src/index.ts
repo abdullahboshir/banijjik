@@ -139,3 +139,33 @@ export type {
 } from "./events/event-payloads.js";
 export { OUTBOX_STATUS } from "./events/outbox-status.js";
 export type { OutboxStatus } from "./events/outbox-status.js";
+export { isModuleKey, MODULE_KEY, MODULE_KEY_VALUES } from "./modules/module-key.js";
+export type { ModuleKey } from "./modules/module-key.js";
+export { MODULE_CLASS } from "./modules/module-class.js";
+export type { ModuleClass } from "./modules/module-class.js";
+export { OFFERING_KIND } from "./modules/offering-kind.js";
+export type { OfferingKind } from "./modules/offering-kind.js";
+export type { MenuEntry, ModuleManifest, ModuleRoutes } from "./modules/module-manifest.js";
+export { ACCESS_MODE } from "./entitlement/access-mode.js";
+export type { AccessMode } from "./entitlement/access-mode.js";
+export { SUBSCRIPTION_STATUS } from "./entitlement/subscription-status.js";
+export type { SubscriptionStatus } from "./entitlement/subscription-status.js";
+export { MODULE_OVERRIDE_EFFECT } from "./entitlement/module-override-effect.js";
+export type { ModuleOverrideEffect } from "./entitlement/module-override-effect.js";
+export { PACKAGE_STATUS } from "./entitlement/package-status.js";
+export type { PackageStatus } from "./entitlement/package-status.js";
+export { PACKAGE_KEY } from "./entitlement/package-key.js";
+export type { PackageKey } from "./entitlement/package-key.js";
+export { LIMIT_KEY, LIMIT_KEY_VALUES } from "./entitlement/limit-key.js";
+export type { LimitKey, LimitMap, LimitValue } from "./entitlement/limit-key.js";
+export {
+  ME_CONFIG_PATH,
+  PAST_DUE_GRACE_DAYS,
+  TRIAL_DAYS,
+  TRIAL_PACKAGE_KEY,
+} from "./entitlement/trial-rules.js";
+export { ENTITLEMENT_MESSAGE_KEYS } from "./entitlement/entitlement-message-keys.js";
+export type {
+  CallerPermissionsResponse,
+  ResolvedOrgConfigResponse,
+} from "./entitlement/entitlement-contracts.js";

@@ -9,6 +9,9 @@ export type LocationId = Id<"Location">;
 export type MemberId = Id<"Member">;
 export type RoleId = Id<"Role">;
 export type InvitationId = Id<"Invitation">;
+export type PackageId = Id<"Package">;
+export type PlatformSubscriptionId = Id<"PlatformSubscription">;
+export type ModuleOverrideId = Id<"ModuleOverride">;
 
 export class InvalidIdError extends Error {
   constructor() {
