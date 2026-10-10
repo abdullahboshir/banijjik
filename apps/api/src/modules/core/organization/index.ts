@@ -1,5 +1,5 @@
 import type { RequestHandler, Router } from "express";
-import type { AuditRecorder } from "../../../kernel/audit/index.js";
+import type { AuditRecorder, PlatformAuditRecorder } from "../../../kernel/audit/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import type { ConfigVersionBumper, MembershipDirectory } from "../../../kernel/tenancy/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
@@ -15,6 +15,12 @@ import type { ActorProfileReader, SystemRoleProvisioner } from "./application/po
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
 import type { TrialStarter } from "./application/ports/trial-starter.js";
+import type { OrganizationDirectory } from "./application/ports/organization-directory.js";
+import {
+  ReactivateOrganizationUseCase,
+  SuspendOrganizationUseCase,
+} from "./application/use-cases/organization-status.use-cases.js";
+import { MongoOrganizationDirectory } from "./infrastructure/mongo-organization-directory.js";
 import { CreateOrganizationUseCase } from "./application/use-cases/create-organization.use-case.js";
 import {
   ListMyOrganizationsUseCase,
@@ -148,3 +154,46 @@ export type {
 export type { TrialStarter } from "./application/ports/trial-starter.js";
 export type { MyOrganizationsReader } from "./application/use-cases/list-my-organizations.use-case.js";
 export type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
+
+export interface OrganizationStatusDependencies {
+  /** The kernel port for the operator audit entry, written in the same transaction as the status. */
+  readonly platformAudit: PlatformAuditRecorder;
+  /** Runs the change as the organization it concerns, so the outbox event carries it (ADR-087); supplied by routes/v1.ts. */
+  readonly contextRunner: OrganizationContextRunner;
+}
+
+export interface OrganizationStatusUseCases {
+  readonly suspend: SuspendOrganizationUseCase;
+  readonly reactivate: ReactivateOrganizationUseCase;
+}
+
+/** Suspend and reactivate: owned here, called by the platform API through this entry point (card 1.8a). */
+export function buildOrganizationStatusUseCases(
+  dependencies: OrganizationStatusDependencies,
+): OrganizationStatusUseCases {
+  const shared = {
+    organizations: new MongoOrganizationRepository(),
+    configVersion: new MongoConfigVersionBumper(),
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+    platformAudit: dependencies.platformAudit,
+    contextRunner: dependencies.contextRunner,
+  };
+  return {
+    suspend: new SuspendOrganizationUseCase(shared),
+    reactivate: new ReactivateOrganizationUseCase(shared),
+  };
+}
+
+/** Cross-organization reads for the platform panel. Plain: the caller reads under runAsSystem(PLATFORM_ADMIN). */
+export function buildOrganizationDirectory(): OrganizationDirectory {
+  return new MongoOrganizationDirectory();
+}
+
+export type {
+  OrganizationAdminView,
+  OrganizationDirectory,
+  OrganizationDirectoryPage,
+  OrganizationDirectoryQuery,
+} from "./application/ports/organization-directory.js";
+export type { SuspendOrganizationUseCase, ReactivateOrganizationUseCase };

@@ -19,7 +19,7 @@ import {
   type PreferredLocale,
 } from "@banijjik/contracts";
 import { newId, type OrganizationId, type UserId } from "@banijjik/ids";
-import { invalidField } from "./errors.js";
+import { invalidField, invalidTransition } from "./errors.js";
 
 const DEFAULT_TIMEZONE = "Asia/Dhaka";
 const INITIAL_CONFIG_VERSION = 1;
@@ -171,6 +171,24 @@ export class Organization implements OrganizationProps {
       defaultLocale: changes.defaultLocale ?? this.defaultLocale,
       profile: { ...this.profile, ...changes.profile },
     });
+  }
+
+  /** ACTIVE to SUSPENDED: every tenant route of the organization then answers ORG_SUSPENDED. */
+  suspended(): Organization {
+    return this.withStatus([ORGANIZATION_STATUS.ACTIVE], ORGANIZATION_STATUS.SUSPENDED);
+  }
+
+  /** SUSPENDED to ACTIVE. A CLOSED organization never comes back. */
+  reactivated(): Organization {
+    return this.withStatus([ORGANIZATION_STATUS.SUSPENDED], ORGANIZATION_STATUS.ACTIVE);
+  }
+
+  private withStatus(
+    allowedFrom: readonly OrganizationStatus[],
+    next: OrganizationStatus,
+  ): Organization {
+    if (!allowedFrom.includes(this.status)) throw invalidTransition(this.status);
+    return new Organization({ ...this, status: next });
   }
 
   /** Rebuilds a stored organization. The stored data was checked when it was written. */

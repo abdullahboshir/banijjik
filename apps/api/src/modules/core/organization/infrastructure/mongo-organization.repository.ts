@@ -6,6 +6,7 @@ import {
   sessionOption,
   updateVersioned,
 } from "../../../../kernel/db/index.js";
+import type { OrganizationStatusRepository } from "../application/ports/organization-status-repository.js";
 import type { OrganizationProfileRepository } from "../application/ports/profile-and-location-repositories.js";
 import type { OrganizationRepository } from "../application/ports/repositories.js";
 import type { Organization } from "../domain/organization.entity.js";
@@ -15,7 +16,7 @@ import { ORGANIZATION_MODEL_NAME, type OrganizationDocument } from "./organizati
 
 /** Organizations are platform data: the organization IS the tenant, so there is no `organizationId` filter to forget. */
 export class MongoOrganizationRepository
-  implements OrganizationRepository, OrganizationProfileRepository
+  implements OrganizationRepository, OrganizationProfileRepository, OrganizationStatusRepository
 {
   async insert(organization: Organization): Promise<void> {
     try {
@@ -70,6 +71,20 @@ export class MongoOrganizationRepository
           updatedByUserId: actorUserId,
         },
       },
+    });
+    return toOrganization(saved);
+  }
+
+  async updateStatus(
+    organization: Organization,
+    expectedVersion: number,
+    actorUserId: UserId,
+  ): Promise<Organization> {
+    const saved = await updateVersioned<OrganizationDocument>({
+      model: this.model(),
+      filter: { organizationId: organization.organizationId },
+      expectedVersion,
+      update: { $set: { status: organization.status, updatedByUserId: actorUserId } },
     });
     return toOrganization(saved);
   }

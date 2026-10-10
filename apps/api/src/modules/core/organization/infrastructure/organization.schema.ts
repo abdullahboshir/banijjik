@@ -95,3 +95,7 @@ organizationSchema.index({ organizationId: 1 }, { unique: true });
 organizationSchema.index({ slug: 1 }, { unique: true });
 organizationSchema.index({ ownerUserId: 1 });
 organizationSchema.index({ status: 1 });
+// Back the platform tenant list: newest first, optionally by status, and a name prefix search.
+organizationSchema.index({ createdAt: -1, organizationId: -1 });
+organizationSchema.index({ status: 1, createdAt: -1, organizationId: -1 });
+organizationSchema.index({ name: 1 });
