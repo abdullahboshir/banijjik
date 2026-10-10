@@ -60,5 +60,8 @@
   "term.booking.singular": "Booking",
   "term.booking.plural": "Bookings",
   "term.enrollment.singular": "Enrollment",
-  "term.enrollment.plural": "Enrollments"
+  "term.enrollment.plural": "Enrollments",
+  "errors.network": "Could not reach the server. Check your connection and try again.",
+  "home.empty": "Nothing has been set up yet",
+  "home.title": "Home"
 }

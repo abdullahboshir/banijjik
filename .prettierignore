@@ -7,3 +7,7 @@ docs
 AGENTS.md
 CLAUDE.md
 .cursor
+
+.next
+next-env.d.ts
+.lighthouseci

@@ -60,5 +60,8 @@
   "term.booking.singular": "বুকিং",
   "term.booking.plural": "বুকিং",
   "term.enrollment.singular": "এনরোলমেন্ট",
-  "term.enrollment.plural": "এনরোলমেন্ট"
+  "term.enrollment.plural": "এনরোলমেন্ট",
+  "errors.network": "ইন্টারনেট সংযোগে সমস্যা হয়েছে। সংযোগ দেখে আবার চেষ্টা করুন।",
+  "home.empty": "এখনো কিছু চালু করা হয়নি",
+  "home.title": "হোম"
 }

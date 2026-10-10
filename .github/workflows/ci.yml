@@ -57,6 +57,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        # apps/admin validates these at build time; the values are placeholders, not secrets.
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+          NEXT_PUBLIC_BRAND_NAME: Example Brand
 
       # Production dependencies must be free of high-severity advisories.
       - name: Audit production dependencies

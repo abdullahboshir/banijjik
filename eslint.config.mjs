@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import { defineConfig } from "eslint/config";
+import nextPlugin from "@next/eslint-plugin-next";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import { architectureBlock } from "./eslint/architecture.mjs";
@@ -41,7 +42,13 @@ export default defineConfig(
   {
     name: "banijjik/ignores",
     // Fixtures are linted only by tools/lint-tests, which uses the fixtures folder as its cwd.
-    ignores: ["**/node_modules/**", "**/dist/**", "**/.turbo/**", "tools/lint-tests/fixtures/**"],
+    ignores: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.turbo/**",
+      "**/.next/**",
+      "tools/lint-tests/fixtures/**",
+    ],
   },
   {
     name: "banijjik/javascript",
@@ -117,6 +124,17 @@ export default defineConfig(
     files: ["**/kernel/http/error-handler.ts"],
     // Express identifies error middleware by exactly four parameters, so this one file may declare four.
     rules: { "max-params": [ERROR, 4] },
+  },
+  {
+    name: "banijjik/next-recommended",
+    files: ["apps/admin/**/*.{ts,tsx}"],
+    ...nextPlugin.configs.recommended,
+    settings: { next: { rootDir: "apps/admin" } },
+  },
+  {
+    name: "banijjik/next-core-web-vitals",
+    files: ["apps/admin/**/*.{ts,tsx}"],
+    ...nextPlugin.configs["core-web-vitals"],
   },
   {
     name: "banijjik/guard-plugin",
