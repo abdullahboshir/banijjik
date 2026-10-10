@@ -3,8 +3,8 @@ import type { RequestHandler } from "express";
 import { sendData } from "../../../../kernel/http/index.js";
 import type { GetMeUseCase } from "../application/use-cases/get-me.use-case.js";
 import type { UpdateMeUseCase } from "../application/use-cases/update-me.use-case.js";
-import { requireCurrentUserId } from "./current-user.js";
 import { toMeResponse } from "./me-response.transformer.js";
+import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 
 export interface MeControllerDependencies {
   readonly getMe: GetMeUseCase;

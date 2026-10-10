@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler, NextFunction, Request, Response } from "express";
-import { ERROR_CODE, type ApiErrorEnvelope } from "@banijjik/contracts";
+import { DomainRuleError, ERROR_CODE, type ApiErrorEnvelope } from "@banijjik/contracts";
 import { findRequestContext } from "../context/index.js";
 import { getLogger } from "../logger/index.js";
 import { reportError } from "../observability/report-error.js";
@@ -47,8 +47,21 @@ function isUnexpectedServerError(error: AppError): boolean {
   return error.httpStatus >= SERVER_ERROR_MIN_STATUS && error.code !== ERROR_CODE.RETRY_LATER;
 }
 
+/** A domain rule failure is answered exactly like an AppError with the same code, key and details (ADR-086). */
+function fromDomainRuleError(error: DomainRuleError): AppError {
+  return new AppError({
+    code: error.code,
+    messageKey: error.messageKey,
+    ...(error.details === undefined ? {} : { details: error.details }),
+    ...(error.retryAfterSeconds === undefined
+      ? {}
+      : { retryAfterSeconds: error.retryAfterSeconds }),
+  });
+}
+
 /** Maps body-parser failures to client errors; returns undefined for anything else. */
 function toClientError(error: unknown): AppError | undefined {
+  if (error instanceof DomainRuleError) return toClientError(fromDomainRuleError(error));
   if (error instanceof AppError) return isUnexpectedServerError(error) ? undefined : error;
   const bodyError = asBodyParserClientError(error);
   if (bodyError === undefined) return undefined;

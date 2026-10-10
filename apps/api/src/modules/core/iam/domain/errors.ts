@@ -1,32 +1,7 @@
-import { ERROR_CODE, type ErrorCode } from "@banijjik/contracts";
+import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 
-export interface DomainRuleErrorOptions {
-  readonly code: ErrorCode;
-  readonly messageKey?: string;
-  readonly details?: { readonly [key: string]: unknown };
-  readonly retryAfterSeconds?: number;
-}
-
-/**
- * A business rule of the iam module that failed. It carries a contracts error code and a message
- * key and nothing about HTTP: presentation maps it to the API error (the domain imports no kernel).
- */
-export class DomainRuleError extends Error {
-  readonly code: ErrorCode;
-  readonly messageKey: string;
-  readonly details?: { readonly [key: string]: unknown };
-  readonly retryAfterSeconds?: number;
-
-  constructor(options: DomainRuleErrorOptions) {
-    const messageKey = options.messageKey ?? `errors.${options.code.toLowerCase()}`;
-    super(`${options.code}: ${messageKey}`);
-    this.name = "DomainRuleError";
-    this.code = options.code;
-    this.messageKey = messageKey;
-    if (options.details !== undefined) this.details = options.details;
-    if (options.retryAfterSeconds !== undefined) this.retryAfterSeconds = options.retryAfterSeconds;
-  }
-}
+/** The shared base class lives in contracts (ADR-086); re-exported so module code keeps one import. */
+export { DomainRuleError };
 
 /** The same answer for an unknown identifier and a wrong password, so login reveals neither. */
 export function invalidCredentials(): DomainRuleError {

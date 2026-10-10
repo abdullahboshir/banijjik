@@ -2,7 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createTestApp, type TestApp } from "../../test-support/test-app.js";
 import { ALLOWED_ORIGIN } from "../../test-support/test-config.js";
-import { ERROR_CODE } from "@banijjik/contracts";
+import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 import { AppError, conflict, forbidden, notFound } from "./app-error.js";
 
 const FAKE_SECRET = "hunter2-do-not-leak";
@@ -27,6 +27,19 @@ function createApp(): TestApp {
     });
     router.get("/retry-later", () => {
       throw new AppError({ code: ERROR_CODE.RETRY_LATER });
+    });
+    router.get("/domain-conflict", () => {
+      throw new DomainRuleError({
+        code: ERROR_CODE.DUPLICATE,
+        messageKey: "errors.duplicate",
+        details: { field: "slug" },
+      });
+    });
+    router.get("/domain-internal", () => {
+      throw new DomainRuleError({ code: ERROR_CODE.INTERNAL, messageKey: "errors.secret_rule" });
+    });
+    router.get("/domain-rate-limited", () => {
+      throw new DomainRuleError({ code: ERROR_CODE.RATE_LIMITED, retryAfterSeconds: 42 });
     });
     router.get("/crash", () => {
       throw new Error(`db password=${FAKE_SECRET}`);
@@ -123,6 +136,40 @@ describe("error handler", () => {
     expect(response.body.error.code).toBe("RETRY_LATER");
     expect(response.body.error.messageKey).toBe("errors.retry_later");
     expect(logs.lines().some((line) => line["msg"] === "unhandled error")).toBe(false);
+  });
+
+  it("answers a 4xx DomainRuleError with its code, message key and details", async () => {
+    const { app } = createApp();
+
+    const response = await request(app).get("/api/v1/domain-conflict");
+
+    expect(response.status).toBe(409);
+    expect(response.body.error).toEqual({
+      code: "DUPLICATE",
+      messageKey: "errors.duplicate",
+      details: { field: "slug" },
+      requestId: response.headers["x-request-id"],
+    });
+  });
+
+  it("reports a 5xx DomainRuleError and answers the generic INTERNAL body", async () => {
+    const { app, logs } = createApp();
+
+    const response = await request(app).get("/api/v1/domain-internal");
+
+    expect(response.status).toBe(500);
+    expect(response.body.error.messageKey).toBe("errors.internal");
+    expect(response.text).not.toContain("secret_rule");
+    expect(logs.lines().filter((line) => line["msg"] === "unhandled error")).toHaveLength(1);
+  });
+
+  it("sends Retry-After from the retryAfterSeconds of a DomainRuleError", async () => {
+    const { app } = createApp();
+
+    const response = await request(app).get("/api/v1/domain-rate-limited");
+
+    expect(response.status).toBe(429);
+    expect(response.headers["retry-after"]).toBe("42");
   });
 
   it("rejects malformed JSON with VALIDATION_ERROR invalid_json", async () => {

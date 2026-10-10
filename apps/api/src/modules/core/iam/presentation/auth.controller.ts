@@ -11,8 +11,8 @@ import type { RefreshSessionUseCase } from "../application/use-cases/refresh-ses
 import type { RegisterUserUseCase } from "../application/use-cases/register-user.use-case.js";
 import { RefreshRaceError } from "../domain/errors.js";
 import type { AuthCookies } from "./auth-cookies.js";
-import { requireCurrentUserId } from "./current-user.js";
 import { toMeResponse } from "./me-response.transformer.js";
+import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 
 export interface AuthControllerDependencies {
   readonly registerUser: RegisterUserUseCase;

@@ -75,3 +75,5 @@ export type {
   MyOrganizationSummary,
   OrganizationCreateRequest,
 } from "./organization/organization-contracts.js";
+export { DomainRuleError } from "./errors/domain-rule-error.js";
+export type { DomainRuleErrorOptions } from "./errors/domain-rule-error.js";

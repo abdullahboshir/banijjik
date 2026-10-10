@@ -1,30 +1,7 @@
-import { ERROR_CODE, type ErrorCode } from "@banijjik/contracts";
+import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 
-export interface DomainRuleErrorOptions {
-  readonly code: ErrorCode;
-  readonly messageKey?: string;
-  readonly details?: { readonly [key: string]: unknown };
-}
-
-/**
- * A business rule of the organization module that failed. It carries a contracts error code and
- * a message key and nothing about HTTP: presentation maps it to the API error (the domain
- * imports no kernel).
- */
-export class DomainRuleError extends Error {
-  readonly code: ErrorCode;
-  readonly messageKey: string;
-  readonly details?: { readonly [key: string]: unknown };
-
-  constructor(options: DomainRuleErrorOptions) {
-    const messageKey = options.messageKey ?? `errors.${options.code.toLowerCase()}`;
-    super(`${options.code}: ${messageKey}`);
-    this.name = "DomainRuleError";
-    this.code = options.code;
-    this.messageKey = messageKey;
-    if (options.details !== undefined) this.details = options.details;
-  }
-}
+/** The shared base class lives in contracts (ADR-086); re-exported so module code keeps one import. */
+export { DomainRuleError };
 
 /** A field-level validation failure, in the same shape as the schema errors (14-API.md section 3). */
 export function invalidField(path: string, messageKey: string): DomainRuleError {

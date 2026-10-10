@@ -1,6 +1,6 @@
 import { asId, type UserId } from "@banijjik/ids";
-import { getRequestContext } from "../../../../kernel/context/index.js";
-import { unauthenticated } from "../../../../kernel/http/index.js";
+import { getRequestContext } from "../context/index.js";
+import { unauthenticated } from "../http/index.js";
 
 /** The signed-in user, put into the request context by authenticate(). */
 export function requireCurrentUserId(): UserId {

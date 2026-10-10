@@ -4,7 +4,6 @@ import { validate } from "../../../../kernel/http/index.js";
 import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
 import { AUTH_RATE_LIMIT, type AuthRateLimit } from "../domain/auth-limits.js";
 import type { AuthController } from "./auth.controller.js";
-import { translateDomainErrors } from "./translate-domain-errors.js";
 
 function limitByIp(limiter: RateLimiter, limit: AuthRateLimit): RequestHandler {
   return rateLimit({ limiter, ...limit });
@@ -20,20 +19,20 @@ export function buildAuthRouter(controller: AuthController, rateLimiter: RateLim
     "/register",
     limitByIp(rateLimiter, AUTH_RATE_LIMIT.REGISTER_PER_IP),
     validate({ body: userRegisterRequestSchema }),
-    translateDomainErrors(controller.register),
+    controller.register,
   );
   router.post(
     "/login",
     limitByIp(rateLimiter, AUTH_RATE_LIMIT.LOGIN_PER_IP),
     validate({ body: loginRequestSchema }),
-    translateDomainErrors(controller.login),
+    controller.login,
   );
   router.post(
     "/refresh",
     limitByIp(rateLimiter, AUTH_RATE_LIMIT.REFRESH_PER_IP),
-    translateDomainErrors(controller.refresh),
+    controller.refresh,
   );
-  router.post("/logout", translateDomainErrors(controller.logout));
-  router.post("/logout-all", translateDomainErrors(controller.logoutAll));
+  router.post("/logout", controller.logout);
+  router.post("/logout-all", controller.logoutAll);
   return router;
 }

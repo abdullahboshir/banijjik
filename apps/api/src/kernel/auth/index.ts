@@ -11,3 +11,4 @@ export type {
 } from "./access-token-verifier.js";
 export { authenticate } from "./authenticate.middleware.js";
 export type { AuthenticateOptions } from "./authenticate.middleware.js";
+export { requireCurrentUserId } from "./require-current-user-id.js";
