@@ -1,5 +1,6 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import { VALIDATION_MESSAGE_KEYS } from "@banijjik/contracts";
 import { z } from "zod";
 import { createTestApp, type TestApp } from "../../test-support/test-app.js";
 import { validate } from "./validate.js";
@@ -87,5 +88,58 @@ describe("validate", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error.details.fields).toHaveLength(2);
+  });
+});
+
+describe("validate message keys", () => {
+  const strictBody = z.strictObject({
+    status: z.enum(["OPEN", "CLOSED"]),
+    step: z.number().multipleOf(5),
+    either: z.union([z.string(), z.number()]),
+  });
+  const recordBody = z.object({ labels: z.record(z.string().min(3), z.number()) });
+
+  function createKeyApp(): TestApp {
+    return createTestApp((router) => {
+      router.post("/strict", validate({ body: strictBody }), (_request, response) => {
+        response.json({ data: "ok" });
+      });
+      router.post("/record", validate({ body: recordBody }), (_request, response) => {
+        response.json({ data: "ok" });
+      });
+    });
+  }
+
+  it("emits only keys that exist in the shared validation key list", async () => {
+    const { app } = createKeyApp();
+
+    const response = await request(app)
+      .post("/api/v1/strict")
+      .send({ status: "PENDING", step: 7, either: true, extra: 1 });
+
+    const messageKeys = response.body.error.details.fields.map(
+      (field: { messageKey: string }) => field.messageKey,
+    );
+    expect(messageKeys.sort()).toEqual([
+      "validation.invalid_union",
+      "validation.invalid_value",
+      "validation.not_multiple_of",
+      "validation.unrecognized_keys",
+    ]);
+    for (const messageKey of messageKeys) {
+      expect(VALIDATION_MESSAGE_KEYS).toContain(messageKey);
+    }
+  });
+
+  it("maps a Zod issue code outside the allow-list to validation.custom", async () => {
+    const { app } = createKeyApp();
+
+    const response = await request(app)
+      .post("/api/v1/record")
+      .send({ labels: { ab: 1 } });
+
+    expect(response.body.error.details.fields).toEqual([
+      { path: "labels.ab", messageKey: "validation.custom" },
+    ]);
   });
 });

@@ -1,38 +1,10 @@
+import { KERNEL_ERROR_MESSAGE_KEYS, VALIDATION_MESSAGE_KEYS } from "@banijjik/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { BUNDLED_CATALOGS } from "./bundled-catalogs.js";
 import { createTranslator } from "./create-translator.js";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./locales.js";
 
 const BRAND_FOR_TESTS = "টেস্ট ব্র্যান্ড";
-const ERROR_CODES = [
-  "VALIDATION_ERROR",
-  "UNAUTHENTICATED",
-  "FORBIDDEN",
-  "MODULE_DISABLED",
-  "ORG_READ_ONLY",
-  "ORG_SUSPENDED",
-  "LOCATION_FORBIDDEN",
-  "APPROVAL_REQUIRED",
-  "NOT_FOUND",
-  "CONFLICT",
-  "INVALID_TRANSITION",
-  "DUPLICATE",
-  "INSUFFICIENT_STOCK",
-  "SLOT_UNAVAILABLE",
-  "CAPACITY_FULL",
-  "IDEMPOTENCY_MISMATCH",
-  "LIMIT_REACHED",
-  "BUSINESS_RULE",
-  "RATE_LIMITED",
-  "INTERNAL",
-];
-const EXTRA_ERROR_KEYS = [
-  "errors.invalid_json",
-  "errors.payload_too_large",
-  "errors.not_ready",
-  "errors.dedicated_not_supported",
-];
-
 function placeholdersOf(text: string): string[] {
   return [...text.matchAll(/\{[^}]+\}/g)].map((match) => match[0]).sort();
 }
@@ -50,13 +22,10 @@ describe("bundled catalogs", () => {
     }
   });
 
-  it("have a message for every API error code and the extra transport errors", () => {
-    const expectedKeys = [
-      ...ERROR_CODES.map((code) => `errors.${code.toLowerCase()}`),
-      ...EXTRA_ERROR_KEYS,
-    ];
+  it("have a message in both languages for every key the kernel can send to a client", () => {
+    const emittedKeys = [...KERNEL_ERROR_MESSAGE_KEYS, ...VALIDATION_MESSAGE_KEYS];
     for (const locale of SUPPORTED_LOCALES) {
-      for (const key of expectedKeys) {
+      for (const key of emittedKeys) {
         expect(BUNDLED_CATALOGS[locale][key], `${locale} ${key}`).toBeTruthy();
       }
     }

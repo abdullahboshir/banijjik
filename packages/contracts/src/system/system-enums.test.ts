@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DATABASE_KIND } from "./database-kind.js";
 import { SEQUENCE_KEY } from "./sequence-key.js";
+import { SEQUENCE_KEY_MODE, SEQUENCE_MODE } from "./sequence-mode.js";
 import { SYSTEM_REASON } from "./system-reason.js";
 
 describe("system enums", () => {
@@ -35,5 +36,13 @@ describe("system enums", () => {
 
   it("has the two database kinds", () => {
     expect(Object.keys(DATABASE_KIND)).toEqual(["PLATFORM", "TENANT"]);
+  });
+
+  it("gives every sequence key a mode and makes only invoices, journals and Z-reports gapless", () => {
+    expect(Object.keys(SEQUENCE_KEY_MODE).sort()).toEqual(Object.keys(SEQUENCE_KEY).sort());
+    const gapless = Object.entries(SEQUENCE_KEY_MODE)
+      .filter(([, mode]) => mode === SEQUENCE_MODE.GAPLESS)
+      .map(([key]) => key);
+    expect(gapless.sort()).toEqual(["INVOICE", "JOURNAL", "ZREPORT"]);
   });
 });

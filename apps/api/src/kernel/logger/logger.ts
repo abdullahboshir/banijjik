@@ -26,8 +26,16 @@ export const REDACT_PATHS: readonly string[] = [
   "cookie",
   "*.phoneE164",
   "*.email",
+  // Two levels deep, for shapes such as body.contact.email and err.details.phoneE164.
+  "*.*.phoneE164",
+  "*.*.email",
+  "*.*.password",
+  "*.*.token",
   "req.headers.authorization",
   "req.headers.cookie",
+  // Defence in depth for review finding B1: the access log keeps no headers, but a future serializer might.
+  'req.headers["set-cookie"]',
+  'res.headers["set-cookie"]',
 ];
 
 export function createLogger(options: CreateLoggerOptions): Logger {

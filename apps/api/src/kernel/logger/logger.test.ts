@@ -25,4 +25,24 @@ describe("createLogger redaction", () => {
     expect(text).not.toContain("Bearer abc");
     expect(logs.lines()[0]?.["service"]).toBe("api");
   });
+
+  it("masks emails, phones and tokens nested two levels deep and Set-Cookie headers (M6, B1)", () => {
+    const logs = createLogCapture();
+    const logger = createLogger({ level: "info", destination: logs.destination });
+
+    logger.info(
+      {
+        body: { contact: { email: "deep@example.com", phoneE164: "+8801811111111" } },
+        err: { details: { token: "deep-token", password: "deep-pass" } },
+        res: { headers: { "set-cookie": "access_token=cookie-secret" } },
+      },
+      "nested",
+    );
+
+    const text = logs.text();
+    for (const secret of ["deep@example.com", "+8801811111111", "deep-token", "deep-pass"]) {
+      expect(text).not.toContain(secret);
+    }
+    expect(text).not.toContain("cookie-secret");
+  });
 });

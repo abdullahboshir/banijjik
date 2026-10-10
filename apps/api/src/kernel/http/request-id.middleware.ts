@@ -1,3 +1,4 @@
+import type { ServerResponse } from "node:http";
 import type { RequestHandler } from "express";
 import { newId } from "@banijjik/ids";
 import { runWithRequestContext } from "../context/index.js";
@@ -10,6 +11,11 @@ const UUID_ANY_VERSION = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 function readIncomingRequestId(header: string | undefined): string | undefined {
   if (header === undefined || header.length > MAX_REQUEST_ID_LENGTH) return undefined;
   return UUID_ANY_VERSION.test(header) ? header : undefined;
+}
+
+/** The id set by this middleware, read back from the response header. Empty before the middleware ran. */
+export function readRequestId(response: ServerResponse): string {
+  return String(response.getHeader(REQUEST_ID_HEADER) ?? "");
 }
 
 export const requestIdMiddleware: RequestHandler = (request, response, next) => {

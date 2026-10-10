@@ -66,6 +66,7 @@ function startWorker(logger: Logger, connections: DatabaseConnections): void {
 /** Only the error class and driver code are logged: a driver message can contain the connection URL. */
 function logConnectFailure(logger: Logger, error: unknown): void {
   const errorName = error instanceof Error ? error.name : "UnknownError";
+  // Safe: only the optional driver `code` is read, and optional chaining covers null.
   const errorCode = (error as { code?: unknown } | null)?.code;
   logger.fatal({ event: "db.connect_failed", errorName, errorCode }, "database connection failed");
 }

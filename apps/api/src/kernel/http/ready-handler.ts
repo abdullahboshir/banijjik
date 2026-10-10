@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import { ERROR_CODE } from "@banijjik/contracts";
 import { getLogger } from "../logger/index.js";
 import { sendData } from "./envelope.js";
-import { REQUEST_ID_HEADER } from "./request-id.middleware.js";
+import { readRequestId } from "./request-id.middleware.js";
 
 /**
  * GET /ready: 200 when the dependencies answer, 503 otherwise. It writes the 503 body itself
@@ -19,7 +19,7 @@ export function createReadyHandler(isReady: () => Promise<boolean>): RequestHand
       error: {
         code: ERROR_CODE.INTERNAL,
         messageKey: "errors.not_ready",
-        requestId: String(response.getHeader(REQUEST_ID_HEADER) ?? ""),
+        requestId: readRequestId(response),
       },
     });
   };

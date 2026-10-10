@@ -23,6 +23,7 @@ const DOCUMENTED_STATUS: Record<string, number> = {
   BUSINESS_RULE: 422,
   RATE_LIMITED: 429,
   INTERNAL: 500,
+  RETRY_LATER: 503,
 };
 
 describe("ERROR_CODE", () => {

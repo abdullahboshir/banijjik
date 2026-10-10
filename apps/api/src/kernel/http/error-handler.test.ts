@@ -2,7 +2,8 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createTestApp, type TestApp } from "../../test-support/test-app.js";
 import { ALLOWED_ORIGIN } from "../../test-support/test-config.js";
-import { conflict, forbidden, notFound } from "./app-error.js";
+import { ERROR_CODE } from "@banijjik/contracts";
+import { AppError, conflict, forbidden, notFound } from "./app-error.js";
 
 const FAKE_SECRET = "hunter2-do-not-leak";
 
@@ -16,6 +17,16 @@ function createApp(): TestApp {
     });
     router.get("/conflict", () => {
       throw conflict({ currentVersion: 4 });
+    });
+    router.get("/internal-app-error", () => {
+      throw new AppError({
+        code: ERROR_CODE.INTERNAL,
+        messageKey: "errors.unknown_model",
+        details: { modelName: "Order" },
+      });
+    });
+    router.get("/retry-later", () => {
+      throw new AppError({ code: ERROR_CODE.RETRY_LATER });
     });
     router.get("/crash", () => {
       throw new Error(`db password=${FAKE_SECRET}`);
@@ -78,6 +89,41 @@ describe("error handler", () => {
       expect(JSON.stringify(errorLines[0])).toContain(FAKE_SECRET);
     },
   );
+
+  it("reports an INTERNAL AppError with its stack and answers the generic body without details (J1)", async () => {
+    const { app, logs } = createApp();
+
+    const response = await request(app).get("/api/v1/internal-app-error");
+
+    expect(response.status).toBe(500);
+    expect(response.body.error).toEqual({
+      code: "INTERNAL",
+      messageKey: "errors.internal",
+      requestId: response.headers["x-request-id"],
+    });
+    expect(response.text).not.toContain("unknown_model");
+    expect(response.text).not.toContain("Order");
+    const errorLines = logs.lines().filter((line) => line["msg"] === "unhandled error");
+    expect(errorLines).toHaveLength(1);
+    expect(errorLines[0]?.["err"]).toMatchObject({
+      code: "INTERNAL",
+      messageKey: "errors.unknown_model",
+      details: { modelName: "Order" },
+      stack: expect.stringContaining("at "),
+    });
+  });
+
+  it("answers RETRY_LATER as 503 with Retry-After and keeps its own message key", async () => {
+    const { app, logs } = createApp();
+
+    const response = await request(app).get("/api/v1/retry-later");
+
+    expect(response.status).toBe(503);
+    expect(response.headers["retry-after"]).toBe("1");
+    expect(response.body.error.code).toBe("RETRY_LATER");
+    expect(response.body.error.messageKey).toBe("errors.retry_later");
+    expect(logs.lines().some((line) => line["msg"] === "unhandled error")).toBe(false);
+  });
 
   it("rejects malformed JSON with VALIDATION_ERROR invalid_json", async () => {
     const { app } = createApp();

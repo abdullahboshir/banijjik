@@ -17,6 +17,7 @@ export function createLogCapture(): LogCapture {
         .join("")
         .split("\n")
         .filter((line) => line.length > 0)
+        // Safe: pino writes exactly one JSON object per line.
         .map((line) => JSON.parse(line) as Record<string, unknown>),
     text: () => chunks.join(""),
   };

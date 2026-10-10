@@ -73,6 +73,7 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | 429 | `RATE_LIMITED` | |
 | 500 | `INTERNAL` | unexpected; `requestId` for support |
 | 503 | `INTERNAL` | only `GET /ready` when the database does not answer (`errors.not_ready`); the one deliberate exception to "`INTERNAL` is 500" |
+| 503 | `RETRY_LATER` | a transaction kept conflicting; safe to retry; sent with `Retry-After: 1` |
 
 ## 4. Auth, account and org entry
 

@@ -1,4 +1,5 @@
 import type { Request, RequestHandler } from "express";
+import { VALIDATION_FALLBACK_MESSAGE_KEY, VALIDATION_MESSAGE_KEYS } from "@banijjik/contracts";
 import type { ZodType } from "zod";
 import { validationFailed, type ValidationField } from "./app-error.js";
 
@@ -11,9 +12,17 @@ export interface ValidationSchemas {
 type RequestPart = keyof ValidationSchemas;
 const REQUEST_PARTS: readonly RequestPart[] = ["params", "query", "body"];
 
+/** A Zod issue code the catalogs cannot translate becomes validation.custom (review finding J2). */
+function toMessageKey(code: string): string {
+  const messageKey = `validation.${code}`;
+  return VALIDATION_MESSAGE_KEYS.includes(messageKey)
+    ? messageKey
+    : VALIDATION_FALLBACK_MESSAGE_KEY;
+}
+
 /** Only the issue code is used: Zod's English text can echo the submitted value. */
 function toFields(path: readonly PropertyKey[], code: string): ValidationField {
-  return { path: path.map(String).join("."), messageKey: `validation.${code}` };
+  return { path: path.map(String).join("."), messageKey: toMessageKey(code) };
 }
 
 interface PartResult {

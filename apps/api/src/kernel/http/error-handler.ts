@@ -4,7 +4,7 @@ import { findRequestContext } from "../context/index.js";
 import { getLogger } from "../logger/index.js";
 import { reportError } from "../observability/report-error.js";
 import { AppError, validationFailed } from "./app-error.js";
-import { REQUEST_ID_HEADER } from "./request-id.middleware.js";
+import { readRequestId as readRequestIdHeader } from "./request-id.middleware.js";
 
 const INVALID_JSON_FIELD = { path: "", messageKey: "errors.invalid_json" };
 const PAYLOAD_TOO_LARGE_FIELD = { path: "", messageKey: "errors.payload_too_large" };
@@ -12,6 +12,8 @@ const INVALID_BODY_FIELD = { path: "", messageKey: "errors.invalid_body" };
 
 const CLIENT_ERROR_MIN_STATUS = 400;
 const CLIENT_ERROR_MAX_STATUS = 499;
+const SERVER_ERROR_MIN_STATUS = 500;
+const RETRY_AFTER_SECONDS = "1";
 
 interface BodyParserError {
   readonly type: string;
@@ -20,6 +22,7 @@ interface BodyParserError {
 /** body-parser errors carry a string `type` and an HTTP status; both are checked so other errors stay INTERNAL. */
 function asBodyParserClientError(error: unknown): BodyParserError | undefined {
   if (typeof error !== "object" || error === null) return undefined;
+  // Safe: the object is only read for the three fields below, each checked with typeof before use.
   const { type, status, statusCode } = error as Record<string, unknown>;
   if (typeof type !== "string") return undefined;
   const httpStatus = typeof status === "number" ? status : statusCode;
@@ -35,9 +38,18 @@ function messageKeyForBodyError(type: string): string {
   return INVALID_BODY_FIELD.messageKey;
 }
 
+/**
+ * A server-side AppError is a programming fault (unknown model, missing transaction, ...). It is
+ * reported with its stack and answered as the generic INTERNAL, so no internal name reaches the
+ * client (review finding J1). RETRY_LATER is the one deliberate 5xx: the client may retry.
+ */
+function isUnexpectedServerError(error: AppError): boolean {
+  return error.httpStatus >= SERVER_ERROR_MIN_STATUS && error.code !== ERROR_CODE.RETRY_LATER;
+}
+
 /** Maps body-parser failures to client errors; returns undefined for anything else. */
 function toClientError(error: unknown): AppError | undefined {
-  if (error instanceof AppError) return error;
+  if (error instanceof AppError) return isUnexpectedServerError(error) ? undefined : error;
   const bodyError = asBodyParserClientError(error);
   if (bodyError === undefined) return undefined;
   // An aborted upload is the client's doing: a warning, not an unexpected failure.
@@ -49,7 +61,7 @@ function toClientError(error: unknown): AppError | undefined {
 function readRequestId(response: Response): string {
   const fromContext = findRequestContext()?.requestId;
   if (fromContext !== undefined) return fromContext;
-  return String(response.getHeader(REQUEST_ID_HEADER) ?? "");
+  return readRequestIdHeader(response);
 }
 
 function sendError(response: Response, error: AppError): void {
@@ -61,6 +73,7 @@ function sendError(response: Response, error: AppError): void {
       requestId: readRequestId(response),
     },
   };
+  if (error.code === ERROR_CODE.RETRY_LATER) response.setHeader("Retry-After", RETRY_AFTER_SECONDS);
   response.status(error.httpStatus).json(body);
 }
 

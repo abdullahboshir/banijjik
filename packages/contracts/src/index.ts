@@ -9,3 +9,10 @@ export { SYSTEM_REASON } from "./system/system-reason.js";
 export type { SystemReason } from "./system/system-reason.js";
 export { isErrorCode } from "./api/api-envelope.js";
 export type { ApiErrorBody, ApiErrorEnvelope, ApiSuccessEnvelope } from "./api/api-envelope.js";
+export {
+  KERNEL_ERROR_MESSAGE_KEYS,
+  VALIDATION_FALLBACK_MESSAGE_KEY,
+  VALIDATION_MESSAGE_KEYS,
+} from "./errors/message-keys.js";
+export { SEQUENCE_KEY_MODE, SEQUENCE_MODE } from "./system/sequence-mode.js";
+export type { SequenceMode } from "./system/sequence-mode.js";

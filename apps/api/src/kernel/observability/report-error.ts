@@ -1,4 +1,5 @@
 import { getLogger } from "../logger/index.js";
+import { toLoggableError } from "./to-loggable-error.js";
 
 export interface ErrorReportContext {
   readonly requestId?: string;
@@ -8,8 +9,9 @@ export interface ErrorReportContext {
 
 /**
  * The single place unexpected errors are captured. It only logs for now; the Sentry
- * transport is added here in card 6.5 so no caller changes.
+ * transport is added here in card 6.5 so no caller changes. Errors are logged through
+ * toLoggableError so driver errors cannot leak the user data inside them.
  */
 export function reportError(error: unknown, context: ErrorReportContext): void {
-  getLogger().error({ err: error, ...context }, "unhandled error");
+  getLogger().error({ err: toLoggableError(error), ...context }, "unhandled error");
 }

@@ -22,6 +22,7 @@ export const ERROR_CODE = defineEnum([
   "BUSINESS_RULE",
   "RATE_LIMITED",
   "INTERNAL",
+  "RETRY_LATER",
 ]);
 
 export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
@@ -48,4 +49,5 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = Object.fre
   BUSINESS_RULE: 422,
   RATE_LIMITED: 429,
   INTERNAL: 500,
+  RETRY_LATER: 503,
 });

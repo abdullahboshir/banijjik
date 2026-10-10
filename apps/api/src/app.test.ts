@@ -3,8 +3,18 @@ import { describe, expect, it } from "vitest";
 import { createTestApp, type TestApp } from "./test-support/test-app.js";
 import { ALLOWED_ORIGIN } from "./test-support/test-config.js";
 
+const COOKIE_SECRET = "SECRET-ACCESS-TOKEN-VALUE";
+
 function createApp(): TestApp {
-  return createTestApp(() => undefined);
+  return createTestApp((router) => {
+    router.post("/login", (_request, response) => {
+      response.cookie("access_token", COOKIE_SECRET, { httpOnly: true });
+      response.json({ data: "ok" });
+    });
+    router.get("/reset", (_request, response) => {
+      response.json({ data: "ok" });
+    });
+  });
 }
 
 describe("GET /health", () => {
@@ -70,5 +80,27 @@ describe("access log", () => {
     expect(accessLines).toHaveLength(1);
     expect(accessLines[0]?.["requestId"]).toBe(response.headers["x-request-id"]);
     expect(logs.text()).not.toContain("very-secret");
+  });
+
+  it("never logs a Set-Cookie value from the response (B1)", async () => {
+    const { app, logs } = createApp();
+
+    const response = await request(app).post("/api/v1/login");
+
+    expect(response.headers["set-cookie"]?.[0]).toContain(COOKIE_SECRET);
+    expect(logs.text()).not.toContain(COOKIE_SECRET);
+    const accessLine = logs.lines().find((line) => "responseTime" in line);
+    expect(accessLine?.["res"]).toEqual({ statusCode: 200 });
+  });
+
+  it("logs the path without the query string (B1)", async () => {
+    const { app, logs } = createApp();
+
+    await request(app).get("/api/v1/reset?token=reset-token-123&email=rahim@example.com");
+
+    expect(logs.text()).not.toContain("reset-token-123");
+    expect(logs.text()).not.toContain("rahim@example.com");
+    const accessLine = logs.lines().find((line) => "responseTime" in line);
+    expect(accessLine?.["req"]).toMatchObject({ method: "GET", url: "/api/v1/reset" });
   });
 });
