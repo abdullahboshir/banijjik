@@ -11,6 +11,8 @@ npm run config:check            # exits 1 and lists bad KEYS (never values) when
 npm test -w @banijjik/api
 ```
 
+Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) and 6379 (Redis); override with `BANIJJIK_MONGO_PORT` / `BANIJJIK_REDIS_PORT` (see `infra/README.md`).
+
 ## Rules
 
 - `process.env` is read only inside `src/config/` (and the `check-config.ts` entry). Everything else receives an `AppConfig`.

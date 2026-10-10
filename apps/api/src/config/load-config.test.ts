@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ConfigError, loadConfig, loadConfigFromProcess, loadEnvFile } from "./index.js";
 
 const validEnv = {
-  DB_PLATFORM_URL: "mongodb://127.0.0.1:27017/banijjik_platform?replicaSet=rs0&directConnection=true",
-  DB_TENANT_SHARED_URL: "mongodb://127.0.0.1:27017/banijjik_tenant_shared?replicaSet=rs0&directConnection=true",
+  DB_PLATFORM_URL: "mongodb://127.0.0.1:27018/banijjik_platform?replicaSet=rs0&directConnection=true",
+  DB_TENANT_SHARED_URL: "mongodb://127.0.0.1:27018/banijjik_tenant_shared?replicaSet=rs0&directConnection=true",
   REDIS_URL: "redis://127.0.0.1:6379",
   CORS_ALLOWED_ORIGINS: "http://localhost:3000, https://admin.example.com, http://localhost:3000",
 };
@@ -81,8 +81,8 @@ describe("loadConfig", () => {
     ["PORT", "70000"],
     ["PORT", "0"],
     ["DB_PLATFORM_URL", "http://x/db"],
-    ["DB_PLATFORM_URL", "mongodb://127.0.0.1:27017"],
-    ["DB_TENANT_SHARED_URL", "mongodb://127.0.0.1:27017/"],
+    ["DB_PLATFORM_URL", "mongodb://127.0.0.1:27018"],
+    ["DB_TENANT_SHARED_URL", "mongodb://127.0.0.1:27018/"],
     ["REDIS_URL", "foo"],
     ["LOG_LEVEL", "loud"],
     ["NODE_ENV", "staging"],
