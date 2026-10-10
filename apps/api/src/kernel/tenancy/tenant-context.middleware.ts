@@ -31,7 +31,8 @@ function assertOrganizationUsable(membership: ActiveMembership): void {
  * allowedLocationIds into the request context (ADR-022). A missing, malformed, foreign or
  * inactive organization all answer the same 404, so existence is never revealed (ADR-080).
  * Mounted once, in routes/v1.ts, after authenticate().
- * There is no cache yet: card 1.4 adds the membership cache with version invalidation.
+ * The member and role versions it reads fresh key the permission cache (card 1.4); the membership
+ * itself is not cached yet (Redis work, card 1.5).
  */
 export function tenantContext(options: TenantContextOptions): RequestHandler {
   return async (request, _response, next) => {
@@ -48,6 +49,7 @@ export function tenantContext(options: TenantContextOptions): RequestHandler {
       ...getRequestContext(),
       organizationId,
       memberId: membership.memberId,
+      accessVersion: `${membership.memberVersion}.${membership.rolesVersion}`,
       allowedLocationIds: allowedLocationsOf(membership),
     };
     runWithRequestContext(scoped, () => next());

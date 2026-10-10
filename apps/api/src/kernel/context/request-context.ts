@@ -7,6 +7,8 @@ export interface RequestContext {
   readonly userId?: string;
   readonly organizationId?: string;
   readonly memberId?: string;
+  /** `<memberVersion>.<rolesVersion>`, read fresh on every tenant request; keys the permission cache. */
+  readonly accessVersion?: string;
   readonly allowedLocationIds?: readonly string[] | "ALL";
 }
 

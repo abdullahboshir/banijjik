@@ -10,6 +10,10 @@ export interface ActiveMembership {
   readonly memberId: string;
   readonly organizationStatus: OrganizationStatus;
   readonly deployment: OrganizationDeployment;
+  /** Member.version: bumped by every member change, including assignments. */
+  readonly memberVersion: number;
+  /** Organization.rolesVersion: bumped by every role change. */
+  readonly rolesVersion: number;
   /** `locationId` is a location ID or "ALL". */
   readonly assignments: readonly MembershipAssignment[];
 }
