@@ -10,7 +10,7 @@ A platform super admin can be seeded from the environment.
 - **Endpoints** (`/api/v1`): `POST /auth/register|login|refresh|logout|logout-all`, `GET|PATCH /me`; under `/orgs/{organizationId}`: `GET|POST /roles`, `PATCH /roles/{roleId}`, `POST /roles/{roleId}/archive`.
 - **Passwords:** argon2id (OWASP parameters); length 8 to 128 (NFC), not like the name, email or phone.
 - **Tokens:** access JWT (HS256, 15 min, audience `admin`) and an opaque refresh token (30 days sliding, 90 days
-  per login family), both in httpOnly SameSite=Lax cookies. Only the refresh token hash is stored.
+  per login family), both in httpOnly SameSite=Lax cookies: the access cookie on `Path=/` (the server-rendered admin app forwards it), the refresh cookie on `Path=/api/v1/auth`. Only the refresh token hash is stored.
 - **Rotation:** a refresh token works once. Reuse after 10 seconds revokes its whole family.
 - **Rate limits:** login 5 per identifier and 30 per IP per 15 min, register 10 per IP per hour, refresh 60 per IP per 15 min.
 - **Events:** declares `iam.user.registered`; nothing is emitted until the event bus (card 1.5).

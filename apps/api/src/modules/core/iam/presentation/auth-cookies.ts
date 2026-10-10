@@ -2,8 +2,12 @@ import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from "@banijjik/c
 import type { CookieOptions, Response } from "express";
 import type { IssuedSession } from "../application/session-issuer.js";
 
-/** The access cookie is sent to the whole API; the refresh cookie only to the auth routes. */
-export const ACCESS_COOKIE_PATH = "/api";
+/**
+ * The access cookie is sent on every request to the site, not only to the API, because the admin app
+ * is server-rendered and its server components forward it to the API (plan 1.7a decision 1).
+ * The refresh cookie still goes only to the auth routes.
+ */
+export const ACCESS_COOKIE_PATH = "/";
 export const REFRESH_COOKIE_PATH = "/api/v1/auth";
 
 export interface AuthCookieSettings {

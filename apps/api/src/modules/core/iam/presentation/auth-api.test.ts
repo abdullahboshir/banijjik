@@ -101,7 +101,7 @@ describe("register, read the profile, log out", () => {
       parseSetCookies(response).find((cookie) => cookie.name === name),
     );
     expect(access?.attributes).toEqual(
-      expect.arrayContaining(["HttpOnly", "SameSite=Lax", "Path=/api", "Max-Age=900"]),
+      expect.arrayContaining(["HttpOnly", "SameSite=Lax", "Path=/", "Max-Age=900"]),
     );
     expect(refresh?.attributes).toEqual(
       expect.arrayContaining([

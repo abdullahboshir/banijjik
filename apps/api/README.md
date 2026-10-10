@@ -65,5 +65,7 @@ Run `npm run seed:packages -w @banijjik/api` once per environment before the fir
 
 In `production`, database and Redis URLs must not point to `localhost` or `127.0.0.1`.
 
+Auth cookies: `access_token` has `Path=/` (the admin app server-renders and forwards it), `refresh_token` has `Path=/api/v1/auth`; both are httpOnly, SameSite=Lax, Secure in production.
+
 `DB_TENANT_SHARED_URL` must name the same hosts, the same credentials and the same query options as `DB_PLATFORM_URL`, and a different database. One cluster client serves both databases (one transaction spans them), so only the platform URL opens a connection; a tenant URL with another login would otherwise be ignored without a word. Dedicated tenants (Phase 8) lift this.
 Later cards add their own keys here and in `.env.example`.
