@@ -79,3 +79,36 @@ export { DomainRuleError } from "./errors/domain-rule-error.js";
 export type { DomainRuleErrorOptions } from "./errors/domain-rule-error.js";
 export { MODEL_TENANCY } from "./tenancy/model-tenancy.js";
 export type { ModelTenancy } from "./tenancy/model-tenancy.js";
+export { SURFACE } from "./iam/surface.js";
+export type { Surface } from "./iam/surface.js";
+export { ROLE_STATUS } from "./iam/role-status.js";
+export type { RoleStatus } from "./iam/role-status.js";
+export {
+  isPermissionKey,
+  PERMISSION_KEY,
+  PERMISSION_KEY_PATTERN,
+  PERMISSION_LABEL_MESSAGE_KEYS,
+  permissionAction,
+  permissionLabelKey,
+  permissionModuleKey,
+} from "./iam/permission-key.js";
+export type { PermissionKey } from "./iam/permission-key.js";
+export { permissionDefinition } from "./iam/permission-definition.js";
+export type {
+  PermissionDefinition,
+  PermissionDefinitionOptions,
+} from "./iam/permission-definition.js";
+export {
+  CUSTOM_ROLE_KEY_PREFIX,
+  ROLE_NAME_MAX_LENGTH,
+  ROLE_NAME_MIN_LENGTH,
+  ROLE_RULE_KEY,
+} from "./iam/role-contracts.js";
+export type {
+  RoleArchiveRequest,
+  RoleCreateRequest,
+  RoleResponse,
+  RoleSummary,
+  RoleUpdateRequest,
+} from "./iam/role-contracts.js";
+export { ROLE_MESSAGE_KEYS } from "./iam/role-message-keys.js";
