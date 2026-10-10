@@ -45,9 +45,9 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 0.4a HTTP kernel, logger, context, app entry | merged (2026-10-10, Opus review passed after 6 fixes) | SIGTERM spawn test skipped on Windows (see handoff) |
 | 0.4b DB kernel, transactions, sequences, runAsSystem | merged (2026-10-10, Opus review passed after 3 fixes; ADR-084) | production index-sync task still needed before first deploy (see handoff) |
 | 0.5a design system and i18n packages | merged (2026-10-10, merge-checked by Opus; link context added, bottom nav at lg) | branch `s/0.5a-ui-i18n`; handoff `docs/handoffs/0.5a.md`; parallel with 0.2b/0.4a/0.4b |
-| 0.5b admin app skeleton | merged (2026-10-10, merge-checked by Opus; Lighthouse mobile performance 0.95, accessibility 1.00; no ssr:false) | known gaps: bn fonts 134 KB vs 120 KB budget and simulated LCP 2.9 s vs 2.5 s (owner decision on the Bengali font); Work/Catalog menu keys to confirm in 1.6 |
+| 0.5b admin app skeleton | merged (2026-10-10, merge-checked by Opus; Lighthouse mobile performance 0.95, accessibility 1.00; no ssr:false) | known gap: simulated LCP 2.9 s vs 2.5 s, recheck on a real phone in 6.4 (font budget set to 140 KB by the owner, 2026-10-10); Work/Catalog menu keys to confirm in 1.6 |
 | 0.6a phase 0 review fixes: API kernel and lint | planned (2026-10-10, `docs/plans/0.6a.md`, Opus, T1) | fixes B1, J1, J2, J4, J5 and 12 minors from `docs/handoffs/phase-0-review.md` |
-| 0.6b phase 0 review fixes: UI, admin, CI, docs | planned (2026-10-10, `docs/plans/0.6b.md`, Opus) | fixes J3 and 9 minors; parallel with 0.6a |
+| 0.6b phase 0 review fixes: UI, admin, CI, docs | implemented (awaiting merge check) (2026-10-10, branch `s/0.6b-review-fixes-ui`, `docs/handoffs/0.6b.md`) | J3 proven fixed in a real browser; 4 drift rows in apps/api files and the `storeId` lint entry are left to 0.6a |
 | Phase 0 review | PASS WITH FIXES (2026-10-10, independent Opus, `docs/handoffs/phase-0-review.md`: 1 blocker, 5 major, 20 minor) | Phase 1 starts after 0.6a + 0.6b are merged and re-checked |
 
 ## Phase 1
