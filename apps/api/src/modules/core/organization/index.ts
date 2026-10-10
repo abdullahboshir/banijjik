@@ -1,7 +1,7 @@
 import type { RequestHandler, Router } from "express";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
-import type { MembershipDirectory } from "../../../kernel/tenancy/index.js";
+import type { ConfigVersionBumper, MembershipDirectory } from "../../../kernel/tenancy/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import {
@@ -13,12 +13,16 @@ import {
 } from "../iam/index.js";
 import type { ActorProfileReader, SystemRoleProvisioner } from "./application/ports/iam-ports.js";
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
+import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
+import type { TrialStarter } from "./application/ports/trial-starter.js";
 import { CreateOrganizationUseCase } from "./application/use-cases/create-organization.use-case.js";
 import {
   ListMyOrganizationsUseCase,
   type MyOrganizationsReader,
 } from "./application/use-cases/list-my-organizations.use-case.js";
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
+import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
+import { MongoOrganizationConfigSource } from "./infrastructure/mongo-organization-config-source.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
 import { MongoMemberAccessReader } from "./infrastructure/mongo-member-access-reader.js";
 import { MongoMembershipDirectory } from "./infrastructure/mongo-membership-directory.js";
@@ -43,6 +47,8 @@ export interface OrganizationDependencies {
   readonly audit: AuditRecorder;
   /** The `Idempotency-Key` middleware, built once by routes/v1.ts (ADR-089). */
   readonly idempotency: RequestHandler;
+  /** Starts the trial subscription inside the create transaction; implemented by saas-billing (card 1.6a). */
+  readonly trialStarter: TrialStarter;
 }
 
 export interface OrganizationRouters {
@@ -55,7 +61,7 @@ export function buildOrganizationRouters(
   dependencies: OrganizationDependencies,
 ): OrganizationRouters {
   const { clock, rateLimiter, contextRunner, myOrganizationsReader } = dependencies;
-  const { audit, idempotency } = dependencies;
+  const { audit, idempotency, trialStarter } = dependencies;
   const organizations = new MongoOrganizationRepository();
   const provisionSystemRoles = buildProvisionSystemRolesUseCase(clock);
   const readUserProfile = buildReadUserProfileUseCase();
@@ -75,6 +81,7 @@ export function buildOrganizationRouters(
       systemRoles,
       actorProfiles,
       memberNumbers: new MongoMemberNumberSequence(),
+      trialStarter,
       unitOfWork: new MongoUnitOfWork(),
       events: kernelEventPublisher,
       contextRunner,
@@ -110,5 +117,20 @@ export function buildRolesVersionBumper(): RolesVersionBumper {
   return new MongoRolesVersionBumper();
 }
 
+/** Bumps Organization.configVersion inside the surrounding transaction when a subscription or override changes. */
+export function buildConfigVersionBumper(): ConfigVersionBumper {
+  return new MongoConfigVersionBumper();
+}
+
+/** The template key and config version of an organization, for the config resolver. */
+export function buildOrganizationConfigSource(): OrganizationConfigSource {
+  return new MongoOrganizationConfigSource();
+}
+
+export type {
+  OrganizationConfigSnapshot,
+  OrganizationConfigSource,
+} from "./application/ports/organization-config-source.js";
+export type { TrialStarter } from "./application/ports/trial-starter.js";
 export type { MyOrganizationsReader } from "./application/use-cases/list-my-organizations.use-case.js";
 export type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";

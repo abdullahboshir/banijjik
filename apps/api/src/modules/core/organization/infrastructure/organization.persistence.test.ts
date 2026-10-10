@@ -15,6 +15,14 @@ import {
 } from "../../../../test-support/test-databases.js";
 import { buildAuditRecorder, registerAuditModels } from "../../audit/index.js";
 import { buildProvisionSystemRolesUseCase, registerIamModels } from "../../iam/index.js";
+import {
+  buildEnsureSeedPackagesUseCase,
+  registerPackageModels,
+} from "../../../platform/package/index.js";
+import {
+  buildTrialStarter,
+  registerSaasBillingModels,
+} from "../../../platform/saas-billing/index.js";
 import { CreateOrganizationUseCase } from "../application/use-cases/create-organization.use-case.js";
 import type { EventPublisher } from "../application/ports/event-publisher.js";
 import type { MemberRepository } from "../application/ports/repositories.js";
@@ -34,6 +42,8 @@ registerOrganizationModels();
 registerSequenceModel();
 registerAuditModels();
 registerEventModels();
+registerPackageModels();
+registerSaasBillingModels();
 
 const NOW = new Date("2026-10-11T08:00:00.000Z");
 const organizations = new MongoOrganizationRepository();
@@ -46,6 +56,8 @@ beforeAll(async () => {
   installTestLogger();
   connections = await connectTestDatabases();
   await initializeModels();
+  // Every organization starts a trial on the BUNDLE package, so the packages must exist.
+  await buildEnsureSeedPackagesUseCase(new MutableClock()).execute();
 });
 
 afterAll(async () => {
@@ -200,6 +212,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
       },
       actorProfiles,
       memberNumbers: new MongoMemberNumberSequence(),
+      trialStarter: buildTrialStarter(clock),
       unitOfWork: new MongoUnitOfWork(),
       events,
       contextRunner: { run: runInOrganizationContext },
@@ -271,5 +284,57 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
     expect(await countIn("locations", created.organizationId)).toBe(1);
     expect(await countIn("roles", created.organizationId)).toBe(6);
     expect(await countIn("members", created.organizationId)).toBe(1);
+  });
+
+  it("leaves no trial subscription behind when a failure comes after the member insert", async () => {
+    const { useCase, actorUserId } = aUseCase(new FailingAfterInsertMemberRepository());
+    const subscriptions = connections.platform.collection("platform_subscriptions");
+    const before = await subscriptions.countDocuments();
+
+    await expect(
+      useCase.execute({
+        actorUserId,
+        name: "Trial Atomic Store",
+        slug: "trial-atomic-store",
+        industryTemplateKey: "RETAIL",
+        district: undefined,
+      }),
+    ).rejects.toThrow("injected failure");
+
+    expect(await subscriptions.countDocuments()).toBe(before);
+  });
+
+  it("starts exactly one trial subscription together with the organization", async () => {
+    const { useCase, actorUserId } = aUseCase(members);
+
+    const created = await useCase.execute({
+      actorUserId,
+      name: "Trial Store",
+      slug: "trial-store",
+      industryTemplateKey: "RETAIL",
+      district: undefined,
+    });
+
+    expect(await countIn("platform_subscriptions", created.organizationId)).toBe(1);
+  });
+
+  it("refuses to create an organization when the trial package is missing, and writes nothing", async () => {
+    const { useCase, actorUserId } = aUseCase(members);
+    const packages = connections.platform.collection("packages");
+    const seeded = await packages.find({}).toArray();
+    await packages.deleteMany({});
+
+    await expect(
+      useCase.execute({
+        actorUserId,
+        name: "No Package Store",
+        slug: "no-package-store",
+        industryTemplateKey: "RETAIL",
+        district: undefined,
+      }),
+    ).rejects.toThrow("errors.trial_package_missing");
+    await packages.insertMany(seeded);
+
+    expect(await organizations.isSlugTaken("no-package-store")).toBe(false);
   });
 });

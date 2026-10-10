@@ -38,6 +38,7 @@ function aWorld() {
     systemRoles,
     actorProfiles,
     memberNumbers,
+    trialStarter: { start: async () => undefined },
     unitOfWork: new PassThroughUnitOfWork(),
     events: new RecordingEventPublisher(),
     contextRunner: new PassThroughContextRunner(),

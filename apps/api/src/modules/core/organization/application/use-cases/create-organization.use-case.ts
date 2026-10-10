@@ -27,6 +27,7 @@ import type {
   MemberRepository,
   OrganizationRepository,
 } from "../ports/repositories.js";
+import type { TrialStarter } from "../ports/trial-starter.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
 
 export interface CreateOrganizationInput {
@@ -44,6 +45,8 @@ export interface CreateOrganizationDependencies {
   readonly systemRoles: SystemRoleProvisioner;
   readonly actorProfiles: ActorProfileReader;
   readonly memberNumbers: MemberNumberSequence;
+  /** Gives the new organization its trial subscription inside the same transaction. */
+  readonly trialStarter: TrialStarter;
   readonly unitOfWork: UnitOfWork;
   readonly events: EventPublisher;
   readonly contextRunner: OrganizationContextRunner;
@@ -109,6 +112,7 @@ export class CreateOrganizationUseCase {
     const { organizations, locations, members, systemRoles, events } = this.dependencies;
     const { ownerUserId, organizationId } = organization;
     await organizations.insert(organization);
+    await this.dependencies.trialStarter.start(organizationId);
     const { ownerRoleId } = await systemRoles.provision(organizationId, ownerUserId);
     const location = Location.createDefault({
       organizationId,
