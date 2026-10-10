@@ -2,6 +2,7 @@ import { type Router } from "express";
 import type { AppConfig } from "../../../config/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
+import type { RoleRepository } from "./application/ports/role-repository.js";
 import { SessionIssuer } from "./application/session-issuer.js";
 import { EnsurePlatformAdminUseCase } from "./application/use-cases/ensure-platform-admin.use-case.js";
 import { GetMeUseCase } from "./application/use-cases/get-me.use-case.js";
@@ -9,12 +10,15 @@ import { LoginUseCase } from "./application/use-cases/login.use-case.js";
 import { LogoutAllUseCase } from "./application/use-cases/logout-all.use-case.js";
 import { LogoutUseCase } from "./application/use-cases/logout.use-case.js";
 import { RefreshSessionUseCase } from "./application/use-cases/refresh-session.use-case.js";
+import { ProvisionSystemRolesUseCase } from "./application/use-cases/provision-system-roles.use-case.js";
+import { ReadUserProfileUseCase } from "./application/use-cases/read-user-profile.use-case.js";
 import { RegisterUserUseCase } from "./application/use-cases/register-user.use-case.js";
 import { UpdateMeUseCase } from "./application/use-cases/update-me.use-case.js";
 import { Argon2PasswordHasher } from "./infrastructure/argon2-password-hasher.js";
 import { JwtTokenIssuer } from "./infrastructure/jwt-token-issuer.js";
 import { MongoPlatformOperatorRepository } from "./infrastructure/mongo-platform-operator.repository.js";
 import { MongoRefreshSessionRepository } from "./infrastructure/mongo-refresh-session.repository.js";
+import { MongoRoleRepository } from "./infrastructure/mongo-role.repository.js";
 import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
 import { MongoUserRepository } from "./infrastructure/mongo-user.repository.js";
 import { AuthController } from "./presentation/auth.controller.js";
@@ -107,3 +111,29 @@ export function buildEnsurePlatformAdminUseCase(clock: Clock): EnsurePlatformAdm
 }
 
 export type { EnsurePlatformAdminUseCase } from "./application/use-cases/ensure-platform-admin.use-case.js";
+
+/**
+ * Creates the six system roles of a new organization. Organization creation calls it inside its
+ * own transaction; the roles are written through that transaction.
+ */
+export function buildProvisionSystemRolesUseCase(clock: Clock): ProvisionSystemRolesUseCase {
+  return new ProvisionSystemRolesUseCase({ roles: new MongoRoleRepository(), clock });
+}
+
+/** The read port other modules use to turn role IDs into role keys, in one query. */
+export type RoleKeyReader = Pick<RoleRepository, "findRoleKeysByIds">;
+
+export function buildRoleKeyReader(): RoleKeyReader {
+  return new MongoRoleRepository();
+}
+
+/** The display name and language of a user, for modules that copy them into their own records. */
+export function buildReadUserProfileUseCase(): ReadUserProfileUseCase {
+  return new ReadUserProfileUseCase({ users: new MongoUserRepository() });
+}
+
+export type { ProvisionSystemRolesUseCase } from "./application/use-cases/provision-system-roles.use-case.js";
+export type {
+  ReadUserProfileUseCase,
+  UserProfile,
+} from "./application/use-cases/read-user-profile.use-case.js";

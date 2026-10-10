@@ -1,4 +1,9 @@
-import { DATABASE_KIND, ERROR_CODE } from "@banijjik/contracts";
+import {
+  DATABASE_KIND,
+  ERROR_CODE,
+  ORGANIZATION_DEPLOYMENT,
+  type OrganizationDeployment,
+} from "@banijjik/contracts";
 import type { Connection, Model } from "mongoose";
 import { AppError } from "../http/app-error.js";
 import { getDatabaseConnections } from "./database-connections.js";
@@ -13,7 +18,7 @@ import {
 export interface ModelContext {
   readonly organizationId?: string;
   /** Missing means SHARED. */
-  readonly deployment?: "SHARED" | "DEDICATED";
+  readonly deployment?: OrganizationDeployment;
 }
 
 export interface ModelAccessor {
@@ -24,7 +29,7 @@ function resolveConnection(definition: ModelDefinition, context: ModelContext): 
   const connections = getDatabaseConnections();
   if (definition.database === DATABASE_KIND.PLATFORM) return connections.platform;
   // The single switch point for dedicated tenants (Phase 8, ADR-023).
-  if (context.deployment === "DEDICATED") {
+  if (context.deployment === ORGANIZATION_DEPLOYMENT.DEDICATED) {
     throw new AppError({
       code: ERROR_CODE.INTERNAL,
       messageKey: "errors.dedicated_not_supported",

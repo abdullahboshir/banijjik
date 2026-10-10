@@ -10,9 +10,10 @@ import {
   REFRESH_SESSION_MODEL_NAME,
   refreshSessionSchema,
 } from "./refresh-session.schema.js";
+import { ROLE_COLLECTION_NAME, ROLE_MODEL_NAME, roleSchema } from "./role.schema.js";
 import { USER_COLLECTION_NAME, USER_MODEL_NAME, userSchema } from "./user.schema.js";
 
-/** Registers the three iam models. They live in the platform database: identity is not tenant data (ADR-043). */
+/** Registers the iam models (users, sessions, operators, roles). They live in the platform database: identity is not tenant data (ADR-043). */
 export function registerIamModels(): void {
   registerModel({
     modelName: USER_MODEL_NAME,
@@ -31,5 +32,11 @@ export function registerIamModels(): void {
     collectionName: PLATFORM_OPERATOR_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: platformOperatorSchema,
+  });
+  registerModel({
+    modelName: ROLE_MODEL_NAME,
+    collectionName: ROLE_COLLECTION_NAME,
+    database: DATABASE_KIND.PLATFORM,
+    schema: roleSchema,
   });
 }
