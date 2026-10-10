@@ -1,7 +1,8 @@
-import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
+import { DATABASE_KIND, MODEL_TENANCY, PERMISSION_KEY } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
 import { Router } from "express";
 import { Schema } from "mongoose";
+import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import { getRequestContext } from "../kernel/context/index.js";
 import {
   auditFields,
@@ -90,6 +91,24 @@ export function buildTenantProbeRouter(): Router {
     const result = await notes().deleteOne({ noteId: request.params["noteId"] });
     if (result.deletedCount === 0) throw notFound();
     sendData(response, { deleted: result.deletedCount });
+  });
+  return router;
+}
+
+/**
+ * Routes guarded by `permission(iam.role.read)`: the guard narrows the request's locations, and
+ * the note write then relies on the location plugin alone (ADR-088). Used by the RBAC suite.
+ */
+export function buildPermissionProbeRouter(permission: PermissionMiddlewareFactory): Router {
+  const router = Router({ mergeParams: true });
+  const guard = permission(PERMISSION_KEY.IAM_ROLE_READ);
+  router.get("/guarded/probe", guard, (_request, response) => {
+    sendData(response, { allowedLocationIds: getRequestContext().allowedLocationIds });
+  });
+  router.post("/guarded/notes", guard, async (request, response) => {
+    const { label, locationId } = request.body as { label: string; locationId: string };
+    const created = await notes().create({ noteId: newId(), label, locationId });
+    sendData(response, { noteId: created.noteId }, { status: 201 });
   });
   return router;
 }

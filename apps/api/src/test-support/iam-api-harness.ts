@@ -1,4 +1,5 @@
 import type { Express, Router } from "express";
+import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import { buildApp } from "../app.js";
 import type { AppConfig } from "../config/index.js";
 import {
@@ -35,7 +36,12 @@ export function registerIamApiModels(): void {
 
 /** The real app on a real replica set, with a clock the test controls and the logs captured. */
 export async function startIamApi(
-  options: { readonly tenantRouters?: readonly Router[] } = {},
+  options: {
+    readonly tenantRouters?: readonly Router[];
+    readonly tenantRouterFactories?: readonly ((
+      permission: PermissionMiddlewareFactory,
+    ) => Router)[];
+  } = {},
 ): Promise<IamApiHarness> {
   const config = createDatabaseTestConfig();
   const connections = await connectDatabases(config);
@@ -45,15 +51,17 @@ export async function startIamApi(
   // The real time as the starting point: stored TTL dates must not look expired to MongoDB.
   const clock = new MutableClock(new Date());
   // Without tenant routers the app builds its own v1 router, exactly as production does.
-  const v1Router =
-    options.tenantRouters === undefined
-      ? undefined
-      : buildV1Router({
-          config,
-          clock,
-          rateLimiter: new MongoRateLimiter(clock),
-          tenantRouters: options.tenantRouters,
-        });
+  const hasTenantRouters =
+    options.tenantRouters !== undefined || options.tenantRouterFactories !== undefined;
+  const v1Router = hasTenantRouters
+    ? buildV1Router({
+        config,
+        clock,
+        rateLimiter: new MongoRateLimiter(clock),
+        tenantRouters: options.tenantRouters ?? [],
+        tenantRouterFactories: options.tenantRouterFactories ?? [],
+      })
+    : undefined;
   const app = buildApp({ config, logger, clock, ...(v1Router === undefined ? {} : { v1Router }) });
   return {
     app,
