@@ -2,9 +2,12 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { createTestDatabaseUrls } from "./test-support/test-databases.js";
 
 const PACKAGE_FOLDER = fileURLToPath(new URL("..", import.meta.url));
 const STARTUP_TIMEOUT_MS = 20_000;
+// The driver waits its full server-selection timeout (10 s) before giving up.
+const UNREACHABLE_DATABASE_TIMEOUT_MS = 40_000;
 const IS_WINDOWS = process.platform === "win32";
 
 interface RunningProcess {
@@ -29,12 +32,13 @@ async function findFreePort(): Promise<number> {
 }
 
 function validEnvironment(port: number, role: string): Record<string, string> {
+  const databases = createTestDatabaseUrls();
   return {
     NODE_ENV: "test",
     ROLE: role,
     PORT: String(port),
-    DB_PLATFORM_URL: "mongodb://127.0.0.1:27018/platform_test",
-    DB_TENANT_SHARED_URL: "mongodb://127.0.0.1:27018/tenant_test",
+    DB_PLATFORM_URL: databases.platformUrl,
+    DB_TENANT_SHARED_URL: databases.tenantSharedUrl,
     REDIS_URL: "redis://127.0.0.1:6379",
     CORS_ALLOWED_ORIGINS: "http://localhost:3000",
   };
@@ -96,6 +100,57 @@ describe("main entry", () => {
     STARTUP_TIMEOUT_MS,
   );
 
+  it(
+    "logs db.connected before api.started and never prints the connection URL",
+    async () => {
+      const port = await findFreePort();
+      const environment = validEnvironment(port, "api");
+      const running = startMain(environment);
+
+      await running.waitForText('"event":"api.started"');
+
+      const output = running.output();
+      expect(output.indexOf('"event":"db.connected"')).toBeGreaterThanOrEqual(0);
+      expect(output.indexOf('"event":"db.connected"')).toBeLessThan(
+        output.indexOf('"event":"api.started"'),
+      );
+      expect(output).not.toContain(environment["DB_PLATFORM_URL"] ?? "unset");
+    },
+    STARTUP_TIMEOUT_MS,
+  );
+
+  it(
+    "exits 1 with db.connect_failed when the database cannot be reached",
+    async () => {
+      const port = await findFreePort();
+      const environment = {
+        ...validEnvironment(port, "api"),
+        DB_PLATFORM_URL: "mongodb://127.0.0.1:1/platform_down",
+        DB_TENANT_SHARED_URL: "mongodb://127.0.0.1:1/tenant_down",
+      };
+      const running = startMain(environment);
+
+      const exitCode = await running.waitForExit();
+
+      expect(exitCode).toBe(1);
+      expect(running.output()).toContain('"event":"db.connect_failed"');
+      expect(running.output()).not.toContain("127.0.0.1:1/platform_down");
+    },
+    UNREACHABLE_DATABASE_TIMEOUT_MS,
+  );
+
+  it("exits 1 with config.invalid when the two database URLs are on different hosts", async () => {
+    const running = startMain({
+      ...validEnvironment(await findFreePort(), "api"),
+      DB_TENANT_SHARED_URL: "mongodb://other-host.example.com:27017/tenant_test",
+    });
+
+    const exitCode = await running.waitForExit();
+
+    expect(exitCode).toBe(1);
+    expect(running.output()).toContain('"event":"config.invalid"');
+    expect(running.output()).toContain("DB_TENANT_SHARED_URL");
+  });
   it(
     "starts no HTTP server on ROLE=worker",
     async () => {

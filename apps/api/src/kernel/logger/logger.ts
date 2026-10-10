@@ -1,7 +1,7 @@
 import { ERROR_CODE } from "@banijjik/contracts";
 import { pino, type DestinationStream, type Logger } from "pino";
 import type { AppConfig } from "../../config/index.js";
-import { findRequestContext } from "../context/index.js";
+import { findRequestContext } from "../context/request-context.js";
 import { AppError } from "../http/app-error.js";
 
 export type { Logger } from "pino";

@@ -1,6 +1,6 @@
 # @banijjik/api
 
-The banijjik backend package: validated config (0.3) and the HTTP kernel (0.4a). Database, transactions and `/ready` arrive in 0.4b.
+The banijjik backend package: validated config (0.3), the HTTP kernel (0.4a) and the database kernel (0.4b).
 
 ## Run
 
@@ -10,7 +10,7 @@ cp apps/api/.env.example apps/api/.env
 npm run config:check            # exits 1 and lists bad KEYS (never values) when something is wrong
 npm run dev -w @banijjik/api    # ROLE=api: HTTP server with reload; GET http://localhost:4000/health
 npm run build -w @banijjik/api && npm start -w @banijjik/api   # compiled entry
-npm test -w @banijjik/api
+npm test -w @banijjik/api       # starts an in-memory MongoDB replica set itself (see Tests)
 ```
 
 Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) and 6379 (Redis); override with `BANIJJIK_MONGO_PORT` / `BANIJJIK_REDIS_PORT` (see `infra/README.md`).
@@ -22,6 +22,15 @@ Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) 
 - `src/routes/v1.ts`: the only place that mounts module routers and global middleware.
 - `src/kernel/http`: `AppError` and its factories, `sendData`, `validate({ params, query, body })` (parsed values in `response.locals.validated`), `errorHandler`. Errors use the envelope of `docs/14-API.md`; messages and stacks never reach a response.
 - `src/kernel/context`: request context in AsyncLocalStorage. `src/kernel/logger`: pino with redaction, `getLogger()` is request-scoped. `src/kernel/observability`: `reportError`. `src/kernel/lifecycle`: `registerShutdown`.
+- `src/kernel/db`: `connectDatabases(config)` opens ONE cluster client; the tenant database is `useDb` on it, so one session spans both (ADR-043). Business code gets models only through `models(ctx).get(name)`; modules `registerModel({ modelName, collectionName, database, schema })` at startup and never compile models. Also: schema parts, `stripMongoInternals`, `updateVersioned` (409 `details.currentVersion` / 404), `withTransaction` (nested reuse, retry on `TransientTransactionError` with backoff 50/200/800 ms, `onCommitted` callbacks only after the commit), `getActiveSession`, `GET /ready` (2 s ping: 200 or 503).
+- `src/kernel/sequence`: `nextSequenceValue({ organizationId, sequenceKey })`, an atomic per-organization counter on the tenant `sequences` collection.
+- `src/kernel/context/run-as-system.ts`: `runAsSystem(reason, work)`, logged as `system_access`. Lint rule R26 keeps it out of module domain, application and presentation code (platform use cases excepted).
+
+## Tests
+
+`npm test` runs a vitest global setup (`src/test-support/replica-set.global-setup.ts`) that starts a one-member `mongodb-memory-server` replica set (MongoDB 8.0.13, wiredTiger) and shares its URI with the tests through `inject("mongoUri")`. Every test file creates its own databases. The first run downloads the server binary (about 750 MB download, 76 MB kept) into `node_modules/.cache/mongodb-memory-server` of the repository, so it needs network access and free space on the repository drive. CI should cache that folder.
+
+Startup (`main.ts`) connects before it listens or starts the worker and exits 1 with `db.connect_failed` when it cannot. In production indexes are not built at startup (`autoIndex` is off); an explicit index-sync task is a later card.
 
 ## Rules
 

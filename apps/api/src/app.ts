@@ -2,7 +2,9 @@ import cors from "cors";
 import express, { type Express, type Router } from "express";
 import type { Logger } from "pino";
 import type { AppConfig } from "./config/index.js";
+import { isDatabaseReady } from "./kernel/db/index.js";
 import {
+  createReadyHandler,
   errorHandler,
   notFoundHandler,
   requestIdMiddleware,
@@ -16,6 +18,8 @@ export interface BuildAppOptions {
   readonly logger: Logger;
   /** Replaces the /api/v1 router. Only tests pass it; production uses buildV1Router(). */
   readonly v1Router?: Router;
+  /** Replaces the dependency check behind GET /ready. Production checks the database. */
+  readonly isReady?: () => Promise<boolean>;
 }
 
 const JSON_BODY_LIMIT = "1mb";
@@ -24,7 +28,7 @@ const TRUSTED_PROXY_HOPS = 1;
 
 /** Builds the Express app. Order matters: request id first, error handlers last. */
 export function buildApp(options: BuildAppOptions): Express {
-  const { config, logger, v1Router = buildV1Router() } = options;
+  const { config, logger, v1Router = buildV1Router(), isReady = isDatabaseReady } = options;
   setRootLogger(logger);
   const app = express();
   app.disable("x-powered-by");
@@ -39,6 +43,7 @@ export function buildApp(options: BuildAppOptions): Express {
   app.get("/health", (_request, response) => {
     sendData(response, { status: "ok" });
   });
+  app.get("/ready", createReadyHandler(isReady));
   app.use("/api/v1", v1Router);
 
   app.use(notFoundHandler);

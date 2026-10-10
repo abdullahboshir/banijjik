@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --dir src",
+    "test": "vitest run --config src/test-support/vitest.config.ts",
     "config:check": "tsx src/check-config.ts",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js"
@@ -27,6 +27,7 @@
     "@banijjik/ids": "*",
     "cors": "^2.8.6",
     "express": "^5.3.0",
+    "mongoose": "^9.11.1",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
     "zod": "^4.0.0"
@@ -36,6 +37,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/supertest": "^7.2.1",
+    "mongodb-memory-server": "^11.3.0",
     "supertest": "^7.3.1",
     "tsx": "^4.0.0"
   }
