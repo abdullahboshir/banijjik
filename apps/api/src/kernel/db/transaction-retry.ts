@@ -3,8 +3,12 @@ import type { ClientSession } from "mongoose";
 export const TRANSIENT_TRANSACTION_LABEL = "TransientTransactionError";
 export const UNKNOWN_COMMIT_RESULT_LABEL = "UnknownTransactionCommitResult";
 
-export const DEFAULT_MAX_ATTEMPTS = 3;
-const BACKOFF_MS: readonly number[] = [50, 200, 800];
+export const DEFAULT_MAX_ATTEMPTS = 5;
+const BACKOFF_START_MS = 50;
+const BACKOFF_CAP_MS = 800;
+
+/** A number in [0, 1). Injected so tests are deterministic; production uses Math.random. */
+export type RandomSource = () => number;
 
 function readLabels(error: unknown): readonly string[] {
   if (typeof error !== "object" || error === null) return [];
@@ -19,10 +23,14 @@ export function hasErrorLabel(error: unknown, label: string): boolean {
   return readLabels(error).includes(label);
 }
 
-/** Wait before the next try: 50, 200, then 800 ms for every later attempt. */
-export function backoffDelayMs(failedAttempt: number): number {
-  const fallback = BACKOFF_MS[BACKOFF_MS.length - 1] ?? 0;
-  return BACKOFF_MS[failedAttempt - 1] ?? fallback;
+/**
+ * Wait before the next try (ADR-085): min(800, 50 * 2^(attempt-1)) ms, plus a random 0 to 100% of
+ * that value. The jitter spreads out transactions that conflicted on the same document, so they
+ * do not collide again at the same instant.
+ */
+export function backoffDelayMs(failedAttempt: number, random: RandomSource = Math.random): number {
+  const base = Math.min(BACKOFF_CAP_MS, BACKOFF_START_MS * 2 ** (failedAttempt - 1));
+  return base + Math.floor(random() * base);
 }
 
 export function sleep(milliseconds: number): Promise<void> {

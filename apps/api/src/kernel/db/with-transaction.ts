@@ -10,11 +10,14 @@ import {
   DEFAULT_MAX_ATTEMPTS,
   hasErrorLabel,
   sleep,
+  type RandomSource,
   TRANSIENT_TRANSACTION_LABEL,
 } from "./transaction-retry.js";
 
 export interface TransactionOptions {
   readonly maxAttempts?: number;
+  /** Source of the backoff jitter. Tests inject a fixed value. */
+  readonly random?: RandomSource;
 }
 
 type CommittedCallback = () => Promise<void>;
@@ -96,8 +99,9 @@ async function runAttempt<Result>(
 
 /**
  * All-or-nothing writes across the platform and tenant databases. A nested call joins the
- * surrounding transaction (same session). The whole attempt is repeated, with a short backoff,
- * when the server labels the failure TransientTransactionError. Idempotency is card 1.5.
+ * surrounding transaction (same session). The whole attempt is repeated, with a jittered backoff
+ * (ADR-085), when the server labels the failure TransientTransactionError. When the attempts run
+ * out the caller gets RETRY_LATER (503), not the raw driver error. Idempotency is card 1.5.
  */
 export async function withTransaction<Result>(
   work: (session: ClientSession) => Promise<Result>,
@@ -106,14 +110,20 @@ export async function withTransaction<Result>(
   const outer = transactionStorage.getStore();
   if (outer !== undefined) return work(outer.session);
 
-  const { maxAttempts = DEFAULT_MAX_ATTEMPTS } = options;
+  const { maxAttempts = DEFAULT_MAX_ATTEMPTS, random = Math.random } = options;
   for (let attempt = 1; ; attempt += 1) {
     try {
       return await runAttempt(work, maxAttempts);
     } catch (error) {
-      const canRetry = hasErrorLabel(error, TRANSIENT_TRANSACTION_LABEL) && attempt < maxAttempts;
-      if (!canRetry) throw error;
-      await sleep(backoffDelayMs(attempt));
+      if (!hasErrorLabel(error, TRANSIENT_TRANSACTION_LABEL)) throw error;
+      if (attempt >= maxAttempts) throw retryLaterError(error);
+      await sleep(backoffDelayMs(attempt, random));
     }
   }
+}
+
+/** The driver error is reported for diagnosis; the client only learns that a retry is safe. */
+function retryLaterError(cause: unknown): AppError {
+  reportError(cause, {});
+  return new AppError({ code: ERROR_CODE.RETRY_LATER });
 }

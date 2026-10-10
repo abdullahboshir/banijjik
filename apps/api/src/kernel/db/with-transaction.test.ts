@@ -1,6 +1,6 @@
 import { newId } from "@banijjik/ids";
 import type { ClientSession } from "mongoose";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LogCapture } from "../../test-support/log-capture.js";
 import {
   PLATFORM_PROBE,
@@ -123,8 +123,9 @@ describe("withTransaction", () => {
     expect(await countDocuments()).toEqual({ platform: 1, tenant: 1 });
   });
 
-  it("gives up after maxAttempts and rethrows the transient error", async () => {
+  it("gives up after maxAttempts with RETRY_LATER and reports the driver error", async () => {
     let attempts = 0;
+    const random = vi.fn(() => 0);
 
     await expect(
       withTransaction(
@@ -132,11 +133,13 @@ describe("withTransaction", () => {
           attempts += 1;
           throw transientError();
         },
-        { maxAttempts: 2 },
+        { maxAttempts: 3, random },
       ),
-    ).rejects.toThrow("simulated write conflict");
+    ).rejects.toMatchObject({ code: "RETRY_LATER", messageKey: "errors.retry_later" });
 
-    expect(attempts).toBe(2);
+    expect(attempts).toBe(3);
+    expect(random).toHaveBeenCalledTimes(2);
+    expect(logs.text()).toContain("simulated write conflict");
   });
 
   it("does not retry an error without the transient label", async () => {

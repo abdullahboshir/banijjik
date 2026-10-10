@@ -2,17 +2,31 @@ import { SEQUENCE_KEY, type SequenceKey } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  registerProbeModels,
+  TENANT_PROBE,
+  type ProbeDocument,
+} from "../../test-support/probe-models.js";
+import {
   connectTestDatabases,
   disposeTestDatabases,
   installTestLogger,
 } from "../../test-support/test-databases.js";
-import { initializeModels, withTransaction, type DatabaseConnections } from "../db/index.js";
+import {
+  initializeModels,
+  models,
+  withTransaction,
+  type DatabaseConnections,
+} from "../db/index.js";
 import { nextSequenceValue } from "./next-sequence-value.js";
 import { registerSequenceModel } from "./sequence.schema.js";
 
 const CONCURRENT_CALLS = 50;
+const CONCURRENT_TRANSACTIONS = 25;
+const GAPLESS_TRANSACTIONS = 20;
+const GAPLESS_MAX_ATTEMPTS = 8;
 
 registerSequenceModel();
+registerProbeModels();
 
 let connections: DatabaseConnections;
 
@@ -31,6 +45,10 @@ function next(
   sequenceKey: SequenceKey = SEQUENCE_KEY.ORDER,
 ): Promise<number> {
   return nextSequenceValue({ organizationId, sequenceKey });
+}
+
+function nextInTransaction(organizationId: string, sequenceKey: SequenceKey): Promise<number> {
+  return withTransaction(() => next(organizationId, sequenceKey));
 }
 
 describe("nextSequenceValue", () => {
@@ -65,11 +83,25 @@ describe("nextSequenceValue", () => {
     await next(firstOrganization);
 
     expect(await next(secondOrganization)).toBe(1);
-    expect(await next(firstOrganization, SEQUENCE_KEY.INVOICE)).toBe(1);
+    expect(await next(firstOrganization, SEQUENCE_KEY.BOOKING)).toBe(1);
     expect(await next(firstOrganization)).toBe(3);
   });
 
-  it("rolls the increment back with an aborted transaction", async () => {
+  it("rolls a GAPLESS increment back with an aborted transaction, leaving no gap", async () => {
+    const organizationId = newId();
+    await nextInTransaction(organizationId, SEQUENCE_KEY.INVOICE);
+
+    await expect(
+      withTransaction(async () => {
+        expect(await next(organizationId, SEQUENCE_KEY.INVOICE)).toBe(2);
+        throw new Error("abort");
+      }),
+    ).rejects.toThrow("abort");
+
+    expect(await nextInTransaction(organizationId, SEQUENCE_KEY.INVOICE)).toBe(2);
+  });
+
+  it("leaves a gap for a FAST number taken by an aborted transaction", async () => {
     const organizationId = newId();
     await next(organizationId);
 
@@ -80,7 +112,13 @@ describe("nextSequenceValue", () => {
       }),
     ).rejects.toThrow("abort");
 
-    expect(await next(organizationId)).toBe(2);
+    expect(await next(organizationId)).toBe(3);
+  });
+
+  it("refuses a GAPLESS number outside a transaction", async () => {
+    await expect(next(newId(), SEQUENCE_KEY.JOURNAL)).rejects.toThrow(
+      /errors.gapless_sequence_needs_transaction/,
+    );
   });
 
   it("keeps the increment when the transaction commits", async () => {
@@ -107,5 +145,39 @@ describe("nextSequenceValue", () => {
     expect(indexes?.some((index) => index.unique === true && "organizationId" in index.key)).toBe(
       true,
     );
+  });
+});
+
+describe("nextSequenceValue under concurrent transactions (J4)", () => {
+  it("lets 25 concurrent transactions take a FAST number and insert a document, all succeeding with unique numbers", async () => {
+    const organizationId = newId();
+    const Probe = models({ organizationId }).get<ProbeDocument>(TENANT_PROBE);
+
+    const numbers = await Promise.all(
+      Array.from({ length: CONCURRENT_TRANSACTIONS }, () =>
+        withTransaction(async (session) => {
+          const value = await next(organizationId, SEQUENCE_KEY.ORDER);
+          await Probe.create([{ probeId: newId(), label: String(value) }], { session });
+          return value;
+        }),
+      ),
+    );
+
+    expect(new Set(numbers).size).toBe(CONCURRENT_TRANSACTIONS);
+  });
+
+  it("lets 20 concurrent transactions take a GAPLESS number and hands out exactly 1 to 20", async () => {
+    const organizationId = newId();
+
+    const numbers = await Promise.all(
+      Array.from({ length: GAPLESS_TRANSACTIONS }, () =>
+        withTransaction(() => next(organizationId, SEQUENCE_KEY.INVOICE), {
+          maxAttempts: GAPLESS_MAX_ATTEMPTS,
+        }),
+      ),
+    );
+
+    const sorted = [...numbers].sort((first, second) => first - second);
+    expect(sorted).toEqual(Array.from({ length: GAPLESS_TRANSACTIONS }, (_, index) => index + 1));
   });
 });

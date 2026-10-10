@@ -20,8 +20,15 @@ function sessionCommitting(outcomes: readonly (Error | undefined)[]): {
 }
 
 describe("backoffDelayMs", () => {
-  it("waits 50, 200 and then 800 ms between attempts", () => {
-    expect([1, 2, 3, 4, 9].map(backoffDelayMs)).toEqual([50, 200, 800, 800, 800]);
+  it("doubles from 50 ms up to a cap of 800 ms when the jitter is zero", () => {
+    const delays = [1, 2, 3, 4, 5, 6, 9].map((attempt) => backoffDelayMs(attempt, () => 0));
+    expect(delays).toEqual([50, 100, 200, 400, 800, 800, 800]);
+  });
+
+  it("adds a random 0 to 100% of the base on top, never more", () => {
+    expect(backoffDelayMs(3, () => 0.5)).toBe(300);
+    expect(backoffDelayMs(3, () => 0.999999)).toBeLessThan(400);
+    expect(backoffDelayMs(9, () => 0.25)).toBe(1000);
   });
 });
 
