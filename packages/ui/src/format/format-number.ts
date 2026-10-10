@@ -43,9 +43,12 @@ export function formatDigitParts(
   return convertDigitScript(text, options.digitScript ?? "LATIN");
 }
 
-/** Formats a quantity or count. Money must use formatMoney, which works on integer minor units. */
+/** Formats a quantity or count (callers pass counts and quantities, never values beyond 2^53). Money must use formatMoney, which works on integer minor units. */
 export function formatNumber(value: number, options: NumberFormatOptions): string {
-  if (!Number.isFinite(value)) throw new RangeError("formatNumber needs a finite number");
+  // Beyond the safe-integer range (or with a fraction in exponent form) toString gives "1e+21".
+  if (!Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER) {
+    throw new RangeError("formatNumber needs a finite number within the safe integer range");
+  }
   const [integerDigits = "0", fractionDigits = ""] = Math.abs(value).toString().split(".");
   const formatted = formatDigitParts({ integerDigits, fractionDigits }, options);
   return value < 0 ? `-${formatted}` : formatted;

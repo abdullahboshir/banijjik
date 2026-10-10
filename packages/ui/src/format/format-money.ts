@@ -16,10 +16,13 @@ const CURRENCY_FORMATS: Readonly<Record<string, CurrencyFormat>> = {
   BDT: { symbol: "৳", fractionDigits: 2 },
 };
 
+const FALLBACK_FRACTION_DIGITS = 2;
+
+/** A currency without a known symbol shows its ISO code: a missing symbol must never crash a page. */
 function currencyFormatOf(currency: string): CurrencyFormat {
-  const format = CURRENCY_FORMATS[currency];
-  if (!format) throw new RangeError(`formatMoney does not support currency ${currency}`);
-  return format;
+  return (
+    CURRENCY_FORMATS[currency] ?? { symbol: currency, fractionDigits: FALLBACK_FRACTION_DIGITS }
+  );
 }
 
 /** Splits integer minor units into major and minor digits with integer math only (ADR-013). */

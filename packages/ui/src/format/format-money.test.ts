@@ -41,7 +41,7 @@ describe("formatMoney", () => {
     expect(() => formatMoney(bdt(10.5), english)).toThrow(RangeError);
   });
 
-  it("rejects a currency it has no format for", () => {
-    expect(() => formatMoney({ amount: 100, currency: "XYZ" }, english)).toThrow(RangeError);
+  it("falls back to the ISO code with two fraction digits for an unknown currency", () => {
+    expect(formatMoney({ amount: 1250, currency: "USD" }, english)).toBe(`USD${THIN_SPACE}12.50`);
   });
 });

@@ -21,4 +21,8 @@ describe("formatNumber", () => {
   it("rejects values that are not finite", () => {
     expect(() => formatNumber(Number.NaN, { locale: "en" })).toThrow(RangeError);
   });
+
+  it("rejects a value beyond the safe integer range instead of printing an exponent", () => {
+    expect(() => formatNumber(1e21, { locale: "en" })).toThrow(RangeError);
+  });
 });
