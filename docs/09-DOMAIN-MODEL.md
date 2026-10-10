@@ -245,7 +245,7 @@ Owner `core/iam` · scope org · versioned
 
 - Invariants: unique `(organizationId, roleKey)`. `OWNER` is immutable and has every permission. Other system roles are created from code templates at org creation; their permissions update with code releases, they are not editable by the tenant. Custom roles: editable, cannot include platform permissions. Permissions of disabled modules are kept but have no effect (the entitlement gate runs first).
 - Indexes: `{ organizationId, roleId }` unique, `{ organizationId, roleKey }` unique.
-- Events: `iam.role.created`, `.permissionsChanged`, `.deleted` (refused while assigned).
+- Events: `iam.role.created`, `.permissionsChanged`, `.archived` (refused while assigned; "deleted" became "archived" in card 1.4).
 
 ### 4.6 Configuration entities
 All in the platform DB, all read through `resolveOrgConfig` (cached per `configVersion`). Detailed schemas: D2 (manifests, packages), D4 (templates), cards 2.3/2.4.
@@ -452,7 +452,7 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 
 ### 5.8 Technical records (kernel, listed so names stay fixed)
 - **Sequence** (`kernel/sequence`): `{ organizationId, sequenceKey, nextValue }` (`nextValue` holds the **last** number handed out; the first call returns 1), unique `(organizationId, sequenceKey)`. Keys: `ORDER`, `BOOKING`, `ENROLLMENT`, `PAYMENT`, `INVOICE`, `JOURNAL`, `MEMBER`, `EXPENSE`, `TRANSFER`, `ZREPORT`, `RETURN`. Each key has a mode (ADR-085): `FAST` (default) is taken outside the transaction, never conflicts and may leave gaps when a transaction aborts; `GAPLESS` (`INVOICE`, `JOURNAL`, `ZREPORT`) rolls back with the transaction and needs one. The system-access mark is read with `getSystemReason()`, it is not a field of the request context. Format (prefix, padding, yearly reset) comes from settings.
-- **OutboxEvent** (`kernel/events`): `{ eventId, type, version, occurredAt, organizationId, actorUserId?, payload, status, attempts }` (`05` envelope).
+- **OutboxEvent** (`kernel/events`): `{ eventId, type, version, occurredAt, organizationId (null for user-level events), actorUserId, requestId, payload, status PENDING|DISPATCHED|DEAD, dispatchAttempts, nextAttemptAt, lockedUntil, dispatchedAt, lastError }` in the platform DB (`05` envelope, ADR-090). Siblings: `processed_events` `{ eventId, handlerKey }` unique, `event_dead_letters` `{ eventId, handlerKey, type, attempts, lastError, failedAt }`.
 - **IdempotencyRecord** (`kernel/idempotency`, platform DB, tenancy NONE): `{ idempotencyRecordId, scopeKind (ORGANIZATION|USER), scopeId, idempotencyKey, requestHash, status (IN_PROGRESS|COMPLETED), lockedUntil, responseStatus?, responseBody?, expiresAt }`, unique `(scopeKind, scopeId, idempotencyKey)` (ADR-089).
 - **AuditLog** (`core/audit`): `{ auditLogId, organizationId?, actorUserId?, actorPlatformOperatorId?, action, entityType, entityId, changes, requestId, systemReason?, occurredAt }`. Append-only. Platform-DB copy for platform actions, tenant-DB copy for business actions.
 - **FileAsset** (`core/file`): `{ fileId, organizationId, storageKey (org/{organizationId}/…), mimeType, byteSize, uploadedByUserId }`.

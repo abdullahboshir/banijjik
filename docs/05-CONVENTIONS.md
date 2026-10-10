@@ -86,7 +86,7 @@ Code is written for the next human reader first and the compiler second. If a re
 - **Business date vs timestamp:** events store UTC timestamps. Day-based reports and day close use a `businessDate` computed in the org/location timezone.
 - **Enums** are stored as the uppercase string from contracts. Never numbers, never localized text.
 - **Collections:** plural snake_case (`offerings`, `stock_movements`). **Fields:** camelCase.
-- **Events:** name `<module>.<entity>.<pastTenseVerb>` (`sales.order.confirmed`). Envelope `{ eventId (uuid v7), type, version, occurredAt, organizationId, actorUserId?, payload }`.
+- **Events:** name `<module>.<entity>.<pastTenseVerb>` (`sales.order.confirmed`). Envelope `{ eventId (uuid v7), type, version, occurredAt, organizationId, actorUserId, payload }`; `organizationId` and `actorUserId` are null only for user-level events such as `iam.user.registered` (card 1.5b).
 - **Tenant prefix everywhere outside the DB:** cache keys `org:{organizationId}:…`, file paths `org/{organizationId}/…`, queue job data always carries `organizationId`.
 
 ## System access (bypass), adapted from manoxen rule 9

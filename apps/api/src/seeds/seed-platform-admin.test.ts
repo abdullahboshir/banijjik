@@ -22,7 +22,7 @@ const seededConfig = (password: string) =>
     NODE_ENV: "test",
     DB_PLATFORM_URL: "mongodb://127.0.0.1:27018/platform_test",
     DB_TENANT_SHARED_URL: "mongodb://127.0.0.1:27018/tenant_test",
-    REDIS_URL: "redis://127.0.0.1:6379",
+    REDIS_URL: "redis://127.0.0.1:6380",
     CORS_ALLOWED_ORIGINS: "http://localhost:3000",
     AUTH_ACCESS_TOKEN_SECRET: baseConfig.auth.accessTokenSecret,
     PLATFORM_ADMIN_EMAIL: "Seed.Admin@Example.com",

@@ -13,7 +13,7 @@ npm run build -w @banijjik/api && npm start -w @banijjik/api   # compiled entry
 npm test -w @banijjik/api       # starts an in-memory MongoDB replica set itself (see Tests)
 ```
 
-Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) and 6379 (Redis); override with `BANIJJIK_MONGO_PORT` / `BANIJJIK_REDIS_PORT` (see `infra/README.md`).
+Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) and 6380 (Redis); override with `BANIJJIK_MONGO_PORT` / `BANIJJIK_REDIS_PORT` (see `infra/README.md`).
 
 ## Layout
 

@@ -21,6 +21,17 @@ jobs:
     name: verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # The queue and permission-cache tests need a real Redis; the suite fails without TEST_REDIS_URL on CI.
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,6 +70,8 @@ jobs:
 
       - name: Test
         run: npm test
+        env:
+          TEST_REDIS_URL: redis://localhost:6379
 
       - name: Build
         run: npm run build
