@@ -23,7 +23,7 @@ Code is written for the next human reader first and the compiler second. If a re
 - No clever one-liners, chained `reduce` puzzles or regex where plain code is clearer. Readability beats brevity.
 - Explicit return types on all exported functions, ports and use cases. No `any` (use `unknown` + narrowing). `as` casts need a one-line comment explaining why they are safe.
 - `async/await` only. No `.then` chains, no floating promises (lint).
-- Same structure everywhere: use cases look alike, controllers look alike, repositories look alike. Copy the module template; do not invent a new style.
+- Same structure everywhere: use cases look alike, controllers look alike, repositories look alike. Create modules with `npm run new-module -- <group>/<module-key>` (the module template); do not invent a new style.
 
 **Comments**
 - Comments explain **why** (business rule, edge case, link to ADR/issue). They never restate **what** the code says.
