@@ -51,6 +51,12 @@ describe("block-env-commit hook", () => {
     expect(runHook().status).toBe(1);
   });
 
+  it("rejects a differently cased .Env.local", () => {
+    stageFile("apps/api/.Env.local");
+
+    expect(runHook().status).toBe(1);
+  });
+
   it("accepts a staged apps/api/.env.example", () => {
     stageFile("apps/api/.env.example");
 

@@ -20,6 +20,10 @@ describe("claude-block-env hook", () => {
     ["Write", { file_path: ".env.local" }],
     ["Write", { file_path: "C:\\x\\.env.production" }],
     ["NotebookEdit", { notebook_path: "notebooks/.env" }],
+    ["Edit", { file_path: "apps/api/.ENV" }],
+    ["Write", { file_path: "apps/api/.Env.local" }],
+    ["Write", { file_path: "apps/api/.env." }],
+    ["Write", { file_path: "apps/api/.env " }],
   ])("blocks %s on %j with exit code 2 and the reason", (toolName, toolInput) => {
     const result = runHook(toolCall(toolName, toolInput));
 

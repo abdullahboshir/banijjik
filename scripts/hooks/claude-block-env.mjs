@@ -1,18 +1,12 @@
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { isBlockedEnvPath } from "./env-file-name.mjs";
 
-const ENV_FILE_NAME = /^\.env(\..+)?$/;
-const ALLOWED_ENV_FILE_NAME = ".env.example";
+export { isBlockedEnvPath };
+
 const BLOCK_EXIT_CODE = 2;
 const BLOCK_MESSAGE =
   "Blocked: .env files must be edited by the owner, never by an agent. Use .env.example for documentation.";
-
-/** True for ".env", ".env.local", ".env.production" and so on, but not ".env.example". */
-export function isBlockedEnvPath(filePath) {
-  // Windows paths use backslashes, and path.basename on Linux would not split them.
-  const fileName = filePath.split(/[\\/]/).pop() ?? "";
-  return ENV_FILE_NAME.test(fileName) && fileName !== ALLOWED_ENV_FILE_NAME;
-}
 
 /** Returns the file path a tool call targets, or undefined when the input is unusable. */
 export function extractTargetPath(rawInput) {

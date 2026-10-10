@@ -1,15 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { basename } from "node:path";
 import { pathToFileURL } from "node:url";
+import { isBlockedEnvPath } from "./env-file-name.mjs";
 
-const ENV_FILE_NAME = /^\.env(\..+)?$/;
-const ALLOWED_ENV_FILE_NAME = ".env.example";
-
-/** True for ".env", ".env.local", ".env.production" and so on, but not ".env.example". */
-export function isBlockedEnvPath(stagedPath) {
-  const fileName = basename(stagedPath);
-  return ENV_FILE_NAME.test(fileName) && fileName !== ALLOWED_ENV_FILE_NAME;
-}
+export { isBlockedEnvPath };
 
 function listStagedPaths() {
   // Deleted files are not filtered here on purpose: removing a committed .env is allowed,
