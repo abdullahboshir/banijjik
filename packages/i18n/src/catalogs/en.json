@@ -80,5 +80,14 @@
   "validation.password_too_short": "The password must be at least 8 characters",
   "validation.password_too_long": "The password can be at most 128 characters",
   "validation.password_too_similar": "The password must not be like your name, email or phone number",
-  "validation.identifier_required": "Enter an email or a phone number"
+  "validation.identifier_required": "Enter an email or a phone number",
+  "validation.slug_invalid": "Use 3 to 40 lowercase letters, digits or single hyphens, not at the start or end",
+  "validation.slug_reserved": "This address is reserved. Choose another one",
+  "validation.name_length": "The name must be 2 to 80 characters",
+  "role.owner": "Owner",
+  "role.manager": "Manager",
+  "role.cashier": "Cashier",
+  "role.staff": "Staff",
+  "role.rider": "Rider",
+  "role.viewer": "Viewer"
 }

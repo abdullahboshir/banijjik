@@ -9,3 +9,6 @@ export { loginRequestSchema } from "./iam/login.schema.js";
 export type { LoginBody } from "./iam/login.schema.js";
 export { meUpdateRequestSchema } from "./iam/me-update.schema.js";
 export type { MeUpdateBody } from "./iam/me-update.schema.js";
+export { organizationSlugSchema } from "./slug.js";
+export { organizationCreateRequestSchema } from "./organization/organization-create.schema.js";
+export type { OrganizationCreateBody } from "./organization/organization-create.schema.js";

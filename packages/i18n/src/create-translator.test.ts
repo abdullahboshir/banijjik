@@ -1,5 +1,7 @@
 import {
   IAM_MESSAGE_KEYS,
+  ORGANIZATION_MESSAGE_KEYS,
+  SYSTEM_ROLE_NAME_MESSAGE_KEYS,
   KERNEL_ERROR_MESSAGE_KEYS,
   VALIDATION_MESSAGE_KEYS,
 } from "@banijjik/contracts";
@@ -26,11 +28,13 @@ describe("bundled catalogs", () => {
     }
   });
 
-  it("have a message in both languages for every key the kernel and the iam module can send to a client", () => {
+  it("have a message in both languages for every key the kernel, the iam module and the organization module can send to a client", () => {
     const emittedKeys = [
       ...KERNEL_ERROR_MESSAGE_KEYS,
       ...VALIDATION_MESSAGE_KEYS,
       ...IAM_MESSAGE_KEYS,
+      ...ORGANIZATION_MESSAGE_KEYS,
+      ...SYSTEM_ROLE_NAME_MESSAGE_KEYS,
     ];
     for (const locale of SUPPORTED_LOCALES) {
       for (const key of emittedKeys) {

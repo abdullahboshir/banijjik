@@ -80,5 +80,14 @@
   "validation.password_too_short": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে",
   "validation.password_too_long": "পাসওয়ার্ড সর্বোচ্চ ১২৮ অক্ষরের হতে পারে",
   "validation.password_too_similar": "পাসওয়ার্ড আপনার নাম, ইমেইল বা ফোন নম্বরের মতো হতে পারবে না",
-  "validation.identifier_required": "ইমেইল অথবা ফোন নম্বর দিন"
+  "validation.identifier_required": "ইমেইল অথবা ফোন নম্বর দিন",
+  "validation.slug_invalid": "৩ থেকে ৪০টি ছোট হাতের ইংরেজি অক্ষর, সংখ্যা বা একটি করে হাইফেন ব্যবহার করুন; শুরুতে বা শেষে হাইফেন চলবে না",
+  "validation.slug_reserved": "এই ঠিকানাটি সংরক্ষিত। অন্য একটি বেছে নিন",
+  "validation.name_length": "নাম ২ থেকে ৮০ অক্ষরের হতে হবে",
+  "role.owner": "মালিক",
+  "role.manager": "ম্যানেজার",
+  "role.cashier": "ক্যাশিয়ার",
+  "role.staff": "স্টাফ",
+  "role.rider": "রাইডার",
+  "role.viewer": "দর্শক"
 }
