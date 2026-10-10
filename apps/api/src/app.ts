@@ -4,6 +4,7 @@ import type { Logger } from "pino";
 import type { AppConfig } from "./config/index.js";
 import { isDatabaseReady } from "./kernel/db/index.js";
 import {
+  createOriginCheck,
   createReadyHandler,
   errorHandler,
   notFoundHandler,
@@ -12,6 +13,8 @@ import {
   sendData,
 } from "./kernel/http/index.js";
 import { createAccessLog, setRootLogger } from "./kernel/logger/index.js";
+import { MongoRateLimiter } from "./kernel/rate-limit/index.js";
+import { systemClock, type Clock } from "./kernel/time/index.js";
 import { buildV1Router } from "./routes/v1.js";
 
 export interface BuildAppOptions {
@@ -21,6 +24,8 @@ export interface BuildAppOptions {
   readonly v1Router?: Router;
   /** Replaces the dependency check behind GET /ready. Production checks the database. */
   readonly isReady?: () => Promise<boolean>;
+  /** Replaces the system clock. Tests move it to expire tokens and rate-limit windows. */
+  readonly clock?: Clock;
 }
 
 const JSON_BODY_LIMIT = "1mb";
@@ -29,7 +34,9 @@ const TRUSTED_PROXY_HOPS = 1;
 
 /** Builds the Express app. Order matters: request id first, error handlers last. */
 export function buildApp(options: BuildAppOptions): Express {
-  const { config, logger, v1Router = buildV1Router(), isReady = isDatabaseReady } = options;
+  const { config, logger, isReady = isDatabaseReady, clock = systemClock } = options;
+  const v1Router =
+    options.v1Router ?? buildV1Router({ config, clock, rateLimiter: new MongoRateLimiter(clock) });
   setRootLogger(logger);
   const app = express();
   app.disable("x-powered-by");
@@ -46,6 +53,8 @@ export function buildApp(options: BuildAppOptions): Express {
       exposedHeaders: [REQUEST_ID_HEADER],
     }),
   );
+  // Right after CORS, before any body is read: a request from an unknown origin is refused early.
+  app.use(createOriginCheck(config.corsAllowedOrigins));
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
   app.get("/health", (_request, response) => {

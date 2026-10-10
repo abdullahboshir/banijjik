@@ -13,7 +13,9 @@ import {
 import { registerCrashHandlers } from "./kernel/lifecycle/crash-handlers.js";
 import { registerShutdown } from "./kernel/lifecycle/shutdown.js";
 import { createLogger, setRootLogger } from "./kernel/logger/index.js";
+import { registerRateLimitModel } from "./kernel/rate-limit/index.js";
 import { registerSequenceModel } from "./kernel/sequence/index.js";
+import { registerModuleModels } from "./routes/v1.js";
 
 const ENV_FILE_PATH = fileURLToPath(new URL("../.env", import.meta.url));
 const WORKER_KEEP_ALIVE_MS = 60 * 60 * 1000;
@@ -79,6 +81,8 @@ async function openDatabases(
   let connections: DatabaseConnections | undefined;
   try {
     registerSequenceModel();
+    registerRateLimitModel();
+    registerModuleModels();
     connections = await connectDatabases(config);
     await initializeModels();
     logger.info({ event: "db.connected" }, "databases connected");
