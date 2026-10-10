@@ -157,6 +157,15 @@ export class Role implements RoleProps {
     });
   }
 
+  /** Whether both roles grant exactly the same keys, in any order. */
+  hasSamePermissionsAs(other: Role): boolean {
+    const mine = new Set(this.permissionKeys);
+    return (
+      mine.size === other.permissionKeys.length &&
+      other.permissionKeys.every((key) => mine.has(key))
+    );
+  }
+
   archive(changes: Pick<RoleChanges, "updatedByUserId" | "now">): Role {
     this.assertEditable();
     return new Role({

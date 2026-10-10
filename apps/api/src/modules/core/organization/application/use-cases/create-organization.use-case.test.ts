@@ -10,7 +10,10 @@ import {
   InMemoryOrganizationRepository,
   PassThroughContextRunner,
 } from "../../../../../test-support/organization-fakes.js";
-import { PassThroughUnitOfWork } from "../../../../../test-support/iam-fakes.js";
+import {
+  PassThroughUnitOfWork,
+  RecordingEventPublisher,
+} from "../../../../../test-support/iam-fakes.js";
 import { MutableClock } from "../../../../../test-support/mutable-clock.js";
 import { DomainRuleError, SlugTakenError } from "../../domain/errors.js";
 import {
@@ -36,6 +39,7 @@ function aWorld() {
     actorProfiles,
     memberNumbers,
     unitOfWork: new PassThroughUnitOfWork(),
+    events: new RecordingEventPublisher(),
     contextRunner: new PassThroughContextRunner(),
     clock: new MutableClock(),
     audit,

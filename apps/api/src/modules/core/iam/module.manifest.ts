@@ -24,7 +24,15 @@ export const iamManifest = {
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],
-  events: { emits: [IAM_EVENT_TYPE.USER_REGISTERED], consumes: [] },
+  events: {
+    emits: [
+      IAM_EVENT_TYPE.USER_REGISTERED,
+      IAM_EVENT_TYPE.ROLE_CREATED,
+      IAM_EVENT_TYPE.ROLE_PERMISSIONS_CHANGED,
+      IAM_EVENT_TYPE.ROLE_ARCHIVED,
+    ],
+    consumes: [],
+  },
   limitKeys: [],
   sequenceKeys: [],
 } as const;

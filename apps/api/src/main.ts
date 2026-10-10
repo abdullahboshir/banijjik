@@ -10,16 +10,22 @@ import {
   initializeModels,
   type DatabaseConnections,
 } from "./kernel/db/index.js";
+import { registerEventModels } from "./kernel/events/index.js";
 import { registerCrashHandlers } from "./kernel/lifecycle/crash-handlers.js";
 import { registerShutdown } from "./kernel/lifecycle/shutdown.js";
 import { createLogger, setRootLogger } from "./kernel/logger/index.js";
 import { registerIdempotencyModel } from "./kernel/idempotency/index.js";
 import { registerRateLimitModel } from "./kernel/rate-limit/index.js";
+import {
+  createCacheRedisClient,
+  createCloseRedisTask,
+  type RedisClient,
+} from "./kernel/redis/index.js";
 import { registerSequenceModel } from "./kernel/sequence/index.js";
 import { registerModuleModels } from "./routes/v1.js";
+import { startWorker } from "./start-worker.js";
 
 const ENV_FILE_PATH = fileURLToPath(new URL("../.env", import.meta.url));
-const WORKER_KEEP_ALIVE_MS = 60 * 60 * 1000;
 
 function listen(app: Express, port: number): Promise<Server> {
   return new Promise((resolve, reject) => {
@@ -27,6 +33,16 @@ function listen(app: Express, port: number): Promise<Server> {
     server.once("listening", () => resolve(server));
     server.once("error", reject);
   });
+}
+
+/** A port that is taken must not leave the Redis client holding the process open. */
+async function listenOrRelease(app: Express, port: number, redis: RedisClient): Promise<Server> {
+  try {
+    return await listen(app, port);
+  } catch (error) {
+    redis.disconnect();
+    throw error;
+  }
 }
 
 function closeServer(server: Server): Promise<void> {
@@ -42,28 +58,18 @@ async function startApi(
   logger: Logger,
   connections: DatabaseConnections,
 ): Promise<void> {
-  const server = await listen(buildApp({ config, logger }), config.port);
+  // The cache client connects in the background: a Redis that is away costs a database lookup, not startup.
+  const redis = createCacheRedisClient(config.redisUrl);
+  const server = await listenOrRelease(buildApp({ config, logger, redis }), config.port, redis);
   logger.info({ event: "api.started", port: config.port }, "api started");
   registerShutdown({
     logger,
     tasks: [
       { name: "http-server", run: () => closeServer(server) },
+      createCloseRedisTask(redis),
       createCloseDatabasesTask(connections),
     ],
     onTimeout: () => server.closeAllConnections(),
-  });
-}
-
-function startWorker(logger: Logger, connections: DatabaseConnections): void {
-  // The queue consumer arrives in card 1.5; until then the process just stays alive.
-  const keepAlive = setInterval(() => undefined, WORKER_KEEP_ALIVE_MS);
-  logger.info({ event: "worker.started" }, "worker started");
-  registerShutdown({
-    logger,
-    tasks: [
-      { name: "keep-alive", run: async () => clearInterval(keepAlive) },
-      createCloseDatabasesTask(connections),
-    ],
   });
 }
 
@@ -84,6 +90,7 @@ async function openDatabases(
     registerSequenceModel();
     registerRateLimitModel();
     registerIdempotencyModel();
+    registerEventModels();
     registerModuleModels();
     connections = await connectDatabases(config);
     await initializeModels();
@@ -117,7 +124,7 @@ async function runRole(
   connections: DatabaseConnections,
 ): Promise<void> {
   if (config.role === "worker") {
-    startWorker(logger, connections);
+    registerShutdown({ logger, tasks: startWorker(config, logger, connections) });
     return;
   }
   try {

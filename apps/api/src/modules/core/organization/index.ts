@@ -1,5 +1,6 @@
 import type { RequestHandler, Router } from "express";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
+import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import type { MembershipDirectory } from "../../../kernel/tenancy/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
@@ -75,6 +76,7 @@ export function buildOrganizationRouters(
       actorProfiles,
       memberNumbers: new MongoMemberNumberSequence(),
       unitOfWork: new MongoUnitOfWork(),
+      events: kernelEventPublisher,
       contextRunner,
       clock,
       audit,

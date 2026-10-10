@@ -2,6 +2,7 @@ import {
   ALL_LOCATIONS,
   AUDIT_ACTION,
   AUDIT_ENTITY_TYPE,
+  ORGANIZATION_EVENT_TYPE,
   SYSTEM_ROLE_KEY,
   type IndustryTemplateKey,
 } from "@banijjik/contracts";
@@ -18,6 +19,7 @@ import type {
   ActorProfileReader,
   SystemRoleProvisioner,
 } from "../ports/iam-ports.js";
+import type { EventPublisher } from "../ports/event-publisher.js";
 import type { OrganizationContextRunner } from "../ports/organization-context-runner.js";
 import type { MemberNumberSequence } from "../ports/member-number-sequence.js";
 import type {
@@ -43,6 +45,7 @@ export interface CreateOrganizationDependencies {
   readonly actorProfiles: ActorProfileReader;
   readonly memberNumbers: MemberNumberSequence;
   readonly unitOfWork: UnitOfWork;
+  readonly events: EventPublisher;
   readonly contextRunner: OrganizationContextRunner;
   readonly clock: Clock;
   readonly audit: AuditRecorder;
@@ -103,7 +106,7 @@ export class CreateOrganizationUseCase {
     organization: Organization,
     extras: { actor: ActorProfile; district: string | undefined; memberNumber: number },
   ): Promise<void> {
-    const { organizations, locations, members, systemRoles } = this.dependencies;
+    const { organizations, locations, members, systemRoles, events } = this.dependencies;
     const { ownerUserId, organizationId } = organization;
     await organizations.insert(organization);
     const { ownerRoleId } = await systemRoles.provision(organizationId, ownerUserId);
@@ -123,6 +126,17 @@ export class CreateOrganizationUseCase {
       entityType: AUDIT_ENTITY_TYPE.organization,
       entityId: organizationId,
       changes: { name: { to: organization.name }, slug: { to: organization.slug } },
+    });
+    await events.publish(ORGANIZATION_EVENT_TYPE.ORGANIZATION_CREATED, {
+      organizationId,
+      organizationSlug: organization.slug,
+    });
+    await events.publish(ORGANIZATION_EVENT_TYPE.LOCATION_CREATED, {
+      locationId: location.locationId,
+    });
+    await events.publish(ORGANIZATION_EVENT_TYPE.MEMBER_JOINED, {
+      memberId: owner.memberId,
+      userId: ownerUserId,
     });
   }
 

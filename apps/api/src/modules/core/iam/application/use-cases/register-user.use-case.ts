@@ -1,8 +1,9 @@
-import type { PreferredLocale } from "@banijjik/contracts";
+import { IAM_EVENT_TYPE, type PreferredLocale } from "@banijjik/contracts";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { assertPasswordAcceptable, normalizePassword } from "../../domain/password-policy.js";
 import { assertHasIdentifier, User } from "../../domain/user.entity.js";
 import type { AuthenticationResult } from "../authentication-result.js";
+import type { EventPublisher } from "../ports/event-publisher.js";
 import type { PasswordHasher } from "../ports/password-hasher.js";
 import type { RefreshSessionRepository } from "../ports/refresh-session-repository.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
@@ -24,6 +25,7 @@ export interface RegisterUserDependencies {
   readonly hasher: PasswordHasher;
   readonly sessionIssuer: SessionIssuer;
   readonly unitOfWork: UnitOfWork;
+  readonly events: EventPublisher;
   readonly clock: Clock;
 }
 
@@ -32,7 +34,7 @@ export class RegisterUserUseCase {
   constructor(private readonly dependencies: RegisterUserDependencies) {}
 
   async execute(input: RegisterUserInput): Promise<AuthenticationResult> {
-    const { hasher, clock, sessionIssuer, unitOfWork, users, sessions } = this.dependencies;
+    const { hasher, clock, sessionIssuer, unitOfWork, users, sessions, events } = this.dependencies;
     // Cheap checks first: a bad request must not cost a password hash.
     assertHasIdentifier(input.email, input.phoneE164);
     const password = normalizePassword(input.password);
@@ -54,6 +56,7 @@ export class RegisterUserUseCase {
     await unitOfWork.run(async () => {
       await users.insert(user);
       await sessions.insert(prepared.session);
+      await events.publish(IAM_EVENT_TYPE.USER_REGISTERED, { userId: user.userId });
     });
     return { user, issued: prepared.issued };
   }

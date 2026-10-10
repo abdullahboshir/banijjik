@@ -8,6 +8,7 @@ import { asSystemPort } from "../kernel/context/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { createIdempotencyMiddleware } from "../kernel/idempotency/index.js";
 import type { RateLimiter } from "../kernel/rate-limit/index.js";
+import type { RedisClient } from "../kernel/redis/index.js";
 import {
   locationAccess,
   runInOrganizationContext,
@@ -23,6 +24,7 @@ import {
 import {
   buildIamRouters,
   buildIamTenantRouter,
+  buildPermissionCache,
   buildPermissionCatalog,
   buildPermissionGate,
   iamManifest,
@@ -42,6 +44,8 @@ export interface V1Dependencies {
   readonly config: AppConfig;
   readonly clock: Clock;
   readonly rateLimiter: RateLimiter;
+  /** Present in the API role: the permission cache then shares Redis between instances (ADR-088). */
+  readonly redis?: RedisClient;
   /**
    * Extra routers mounted behind the tenant pipeline at /orgs/:organizationId, after the module
    * routers built here. Production passes none; tests pass probe routers.
@@ -108,11 +112,16 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
  * permission, validate, controller (01 section 3). 1.6 replaces the manifest list with the registry.
  */
 function buildTenantRouters(dependencies: V1Dependencies, audit: AuditRecorder): readonly Router[] {
-  const { clock, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
+  const { clock, redis, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
   const catalog = buildPermissionCatalog([iamManifest, organizationManifest, auditManifest]);
   const memberAccess = buildMemberAccessReader();
   const permission = createPermissionMiddleware(
-    buildPermissionGate({ catalog, memberAccess, clock }),
+    buildPermissionGate({
+      catalog,
+      memberAccess,
+      clock,
+      cache: buildPermissionCache({ clock, ...(redis === undefined ? {} : { redis }) }),
+    }),
   );
   const iamRouter = buildIamTenantRouter({
     catalog,

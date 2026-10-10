@@ -3,6 +3,8 @@ import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import type { AppConfig } from "../../../config/index.js";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
+import { kernelEventPublisher } from "../../../kernel/events/index.js";
+import type { RedisClient } from "../../../kernel/redis/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import { type PermissionCatalog } from "./application/permission-catalog.js";
 import { IamPermissionGate } from "./application/permission-gate.js";
@@ -33,6 +35,8 @@ import { MongoPlatformOperatorRepository } from "./infrastructure/mongo-platform
 import { MongoRefreshSessionRepository } from "./infrastructure/mongo-refresh-session.repository.js";
 import { MongoRoleRepository } from "./infrastructure/mongo-role.repository.js";
 import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
+import { RedisPermissionCache } from "./infrastructure/redis-permission-cache.js";
+import { TwoTierPermissionCache } from "./infrastructure/two-tier-permission-cache.js";
 import { MongoUserRepository } from "./infrastructure/mongo-user.repository.js";
 import { AuthController } from "./presentation/auth.controller.js";
 import { AuthCookies } from "./presentation/auth-cookies.js";
@@ -85,6 +89,7 @@ export function buildIamRouters(dependencies: IamDependencies): IamRouters {
       hasher,
       sessionIssuer,
       unitOfWork,
+      events: kernelEventPublisher,
       clock,
     }),
     login: new LoginUseCase({ users, sessions, hasher, sessionIssuer, rateLimiter, clock }),
@@ -166,8 +171,24 @@ export interface PermissionGateDependencies {
   /** Implemented by core/organization, wired in routes/v1.ts. */
   readonly memberAccess: Pick<MemberAccessReader, "findAssignments">;
   readonly clock: Clock;
-  /** Defaults to the in-process LRU cache; the Redis adapter arrives with card 1.5. */
+  /** Defaults to the in-process LRU cache; routes/v1.ts passes the two-tier cache from `buildPermissionCache`. */
   readonly cache?: PermissionCache;
+}
+
+export interface PermissionCacheOptions {
+  readonly clock: Clock;
+  /** Present in the API role: the in-process cache then sits in front of Redis. */
+  readonly redis?: RedisClient;
+}
+
+/** Memory in front of Redis when a client is given, memory alone otherwise (ADR-088, ADR-090). */
+export function buildPermissionCache(options: PermissionCacheOptions): PermissionCache {
+  const memory = new InMemoryPermissionCache({ clock: options.clock });
+  if (options.redis === undefined) return memory;
+  return new TwoTierPermissionCache({
+    memory,
+    shared: new RedisPermissionCache({ client: options.redis }),
+  });
 }
 
 /** The kernel PermissionGate: roles and assignments resolved to locations, behind a version-keyed cache (ADR-088). */
@@ -204,6 +225,7 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
       roles,
       rolesVersion,
       unitOfWork,
+      events: kernelEventPublisher,
       catalog,
       resolver,
       clock,
@@ -213,6 +235,7 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
       roles,
       rolesVersion,
       unitOfWork,
+      events: kernelEventPublisher,
       catalog,
       resolver,
       clock,
@@ -223,6 +246,7 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
       members: memberAccess,
       rolesVersion,
       unitOfWork,
+      events: kernelEventPublisher,
       resolver,
       clock,
       audit,

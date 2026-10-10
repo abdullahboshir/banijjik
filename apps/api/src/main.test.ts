@@ -3,7 +3,17 @@ import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { TEST_ACCESS_TOKEN_SECRET } from "./test-support/test-config.js";
-import { createTestDatabaseUrls } from "./test-support/test-databases.js";
+import { outboxModel, publishTestEvent } from "./test-support/event-fixtures.js";
+import { connectDatabases, initializeModels } from "./kernel/db/index.js";
+import { registerEventModels } from "./kernel/events/index.js";
+import {
+  createDatabaseTestConfig,
+  createTestDatabaseUrls,
+  installTestLogger,
+  type TestDatabaseUrls,
+} from "./test-support/test-databases.js";
+import { describeWithRedis, redisUrlOrUnreachable } from "./test-support/test-redis.js";
+import { waitFor } from "./test-support/wait-for.js";
 
 const PACKAGE_FOLDER = fileURLToPath(new URL("..", import.meta.url));
 const STARTUP_TIMEOUT_MS = 20_000;
@@ -32,15 +42,19 @@ async function findFreePort(): Promise<number> {
   });
 }
 
-function validEnvironment(port: number, role: string): Record<string, string> {
-  const databases = createTestDatabaseUrls();
+function validEnvironment(
+  port: number,
+  role: string,
+  databases: TestDatabaseUrls = createTestDatabaseUrls(),
+): Record<string, string> {
   return {
     NODE_ENV: "test",
     ROLE: role,
     PORT: String(port),
     DB_PLATFORM_URL: databases.platformUrl,
     DB_TENANT_SHARED_URL: databases.tenantSharedUrl,
-    REDIS_URL: "redis://127.0.0.1:6379",
+    REDIS_URL: redisUrlOrUnreachable(),
+    OUTBOX_POLL_INTERVAL_MS: "50",
     CORS_ALLOWED_ORIGINS: "http://localhost:3000",
     AUTH_ACCESS_TOKEN_SECRET: TEST_ACCESS_TOKEN_SECRET,
   };
@@ -180,6 +194,40 @@ describe("main entry", () => {
 
       expect(exitCode).toBe(0);
       expect(running.output()).toContain('"event":"shutdown.completed"');
+    },
+    STARTUP_TIMEOUT_MS,
+  );
+});
+
+registerEventModels();
+
+describeWithRedis("main entry as a worker with Redis", () => {
+  it(
+    "dispatches a pending outbox event end to end and logs worker.started",
+    async () => {
+      const databases = createTestDatabaseUrls();
+      installTestLogger();
+      const connections = await connectDatabases(createDatabaseTestConfig(databases));
+      await initializeModels();
+      try {
+        const event = await publishTestEvent();
+        const running = startMain(validEnvironment(await findFreePort(), "worker", databases));
+
+        await running.waitForText('"event":"worker.started"');
+        const dispatched = await waitFor(
+          "the event to be dispatched",
+          async () =>
+            (await outboxModel()
+              .findOne({ eventId: event.eventId, status: "DISPATCHED" })
+              .lean()) ?? undefined,
+        );
+
+        expect(dispatched.dispatchedAt).toBeInstanceOf(Date);
+      } finally {
+        await connections.platform.dropDatabase();
+        await connections.tenantShared.dropDatabase();
+        await connections.close();
+      }
     },
     STARTUP_TIMEOUT_MS,
   );

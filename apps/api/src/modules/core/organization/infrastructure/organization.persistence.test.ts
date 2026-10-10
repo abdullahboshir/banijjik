@@ -1,7 +1,8 @@
-import { SEQUENCE_KEY } from "@banijjik/contracts";
+import { ORGANIZATION_EVENT_TYPE, SEQUENCE_KEY } from "@banijjik/contracts";
 import { newId, type OrganizationId, type RoleId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { initializeModels, type DatabaseConnections } from "../../../../kernel/db/index.js";
+import { kernelEventPublisher, registerEventModels } from "../../../../kernel/events/index.js";
 import { runInOrganizationContext } from "../../../../kernel/tenancy/index.js";
 import { registerSequenceModel } from "../../../../kernel/sequence/index.js";
 import { withOrganizationContext } from "../../../../test-support/organization-context.js";
@@ -15,6 +16,7 @@ import {
 import { buildAuditRecorder, registerAuditModels } from "../../audit/index.js";
 import { buildProvisionSystemRolesUseCase, registerIamModels } from "../../iam/index.js";
 import { CreateOrganizationUseCase } from "../application/use-cases/create-organization.use-case.js";
+import type { EventPublisher } from "../application/ports/event-publisher.js";
 import type { MemberRepository } from "../application/ports/repositories.js";
 import { SlugTakenError } from "../domain/errors.js";
 import { Location } from "../domain/location.entity.js";
@@ -31,6 +33,7 @@ registerIamModels();
 registerOrganizationModels();
 registerSequenceModel();
 registerAuditModels();
+registerEventModels();
 
 const NOW = new Date("2026-10-11T08:00:00.000Z");
 const organizations = new MongoOrganizationRepository();
@@ -166,8 +169,19 @@ class FailingAfterInsertMemberRepository implements MemberRepository {
   }
 }
 
+/** Publishes for real, but fails on the last of the three organization events. */
+const failingOnMemberJoined: EventPublisher = {
+  async publish(type, payload) {
+    await kernelEventPublisher.publish(type, payload);
+    if (type === ORGANIZATION_EVENT_TYPE.MEMBER_JOINED) throw new Error("injected event failure");
+  },
+};
+
 describe("CreateOrganizationUseCase on MongoDB", () => {
-  function aUseCase(memberRepository: MemberRepository): {
+  function aUseCase(
+    memberRepository: MemberRepository,
+    events: EventPublisher = kernelEventPublisher,
+  ): {
     useCase: CreateOrganizationUseCase;
     actorUserId: UserId;
   } {
@@ -187,6 +201,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
       actorProfiles,
       memberNumbers: new MongoMemberNumberSequence(),
       unitOfWork: new MongoUnitOfWork(),
+      events,
       contextRunner: { run: runInOrganizationContext },
       clock,
       audit: buildAuditRecorder(clock),
@@ -219,6 +234,26 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
         .countDocuments({ createdByUserId: actorUserId });
       expect(orphans, collectionName).toBe(0);
     }
+  });
+
+  it("leaves no outbox row when a failure comes after the events were written", async () => {
+    const { useCase, actorUserId } = aUseCase(members, failingOnMemberJoined);
+
+    await expect(
+      useCase.execute({
+        actorUserId,
+        name: "Event Store",
+        slug: "event-store",
+        industryTemplateKey: "RETAIL",
+        district: undefined,
+      }),
+    ).rejects.toThrow("injected event failure");
+
+    const outboxRows = await connections.platform
+      .collection("outbox_events")
+      .countDocuments({ "payload.organizationSlug": "event-store" });
+    expect(outboxRows).toBe(0);
+    expect(await organizations.isSlugTaken("event-store")).toBe(false);
   });
 
   it("creates the same organization afterwards, with all four kinds of record, once the failure is gone", async () => {

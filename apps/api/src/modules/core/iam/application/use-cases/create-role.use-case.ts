@@ -1,4 +1,5 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
+import { IAM_EVENT_TYPE } from "@banijjik/contracts";
 import type { OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
@@ -6,6 +7,7 @@ import { invalidField } from "../../domain/errors.js";
 import { Role } from "../../domain/role.entity.js";
 import type { PermissionCatalog } from "../permission-catalog.js";
 import type { PermissionResolver } from "../permission-resolver.js";
+import type { EventPublisher } from "../ports/event-publisher.js";
 import type { RoleManagementRepository } from "../ports/role-management-repository.js";
 import type { RolesVersionBumper } from "../ports/roles-version-bumper.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
@@ -22,6 +24,7 @@ export interface CreateRoleDependencies {
   readonly roles: RoleManagementRepository;
   readonly rolesVersion: RolesVersionBumper;
   readonly unitOfWork: UnitOfWork;
+  readonly events: EventPublisher;
   readonly catalog: PermissionCatalog;
   readonly resolver: PermissionResolver;
   readonly clock: Clock;
@@ -43,7 +46,7 @@ export class CreateRoleUseCase {
   constructor(private readonly dependencies: CreateRoleDependencies) {}
 
   async execute(input: CreateRoleInput): Promise<RoleView> {
-    const { roles, rolesVersion, unitOfWork, catalog, resolver, clock } = this.dependencies;
+    const { roles, rolesVersion, unitOfWork, events, catalog, resolver, clock } = this.dependencies;
     assertKnownPermissionKeys(catalog, input.permissionKeys);
     const role = Role.createCustom({
       organizationId: input.organizationId,
@@ -61,6 +64,7 @@ export class CreateRoleUseCase {
         entityId: role.roleId,
         changes: { name: { to: role.name }, permissionKeys: { to: [...role.permissionKeys] } },
       });
+      await events.publish(IAM_EVENT_TYPE.ROLE_CREATED, { roleId: role.roleId });
     });
     return toRoleView(role, resolver);
   }

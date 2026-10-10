@@ -1,10 +1,12 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
+import { IAM_EVENT_TYPE } from "@banijjik/contracts";
 import type { OrganizationId, RoleId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { roleNotFound } from "../../domain/errors.js";
 import type { PermissionCatalog } from "../permission-catalog.js";
 import type { PermissionResolver } from "../permission-resolver.js";
+import type { EventPublisher } from "../ports/event-publisher.js";
 import type { RoleManagementRepository } from "../ports/role-management-repository.js";
 import type { RolesVersionBumper } from "../ports/roles-version-bumper.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
@@ -25,6 +27,7 @@ export interface UpdateRoleDependencies {
   readonly roles: RoleManagementRepository;
   readonly rolesVersion: RolesVersionBumper;
   readonly unitOfWork: UnitOfWork;
+  readonly events: EventPublisher;
   readonly catalog: PermissionCatalog;
   readonly resolver: PermissionResolver;
   readonly clock: Clock;
@@ -40,7 +43,7 @@ export class UpdateRoleUseCase {
   constructor(private readonly dependencies: UpdateRoleDependencies) {}
 
   async execute(input: UpdateRoleInput): Promise<RoleView> {
-    const { roles, rolesVersion, unitOfWork, catalog, resolver, clock } = this.dependencies;
+    const { roles, rolesVersion, unitOfWork, events, catalog, resolver, clock } = this.dependencies;
     if (input.permissionKeys !== undefined) {
       assertKnownPermissionKeys(catalog, input.permissionKeys);
     }
@@ -61,6 +64,10 @@ export class UpdateRoleUseCase {
         entityId: result.roleId,
         changes: diffRoleChanges(existing, result),
       });
+      // A rename alone changes nobody's access, so it publishes nothing.
+      if (!existing.hasSamePermissionsAs(edited)) {
+        await events.publish(IAM_EVENT_TYPE.ROLE_PERMISSIONS_CHANGED, { roleId: input.roleId });
+      }
       return result;
     });
     return toRoleView(saved, resolver);
