@@ -113,7 +113,7 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 - Do: Create `apps/api` (package + `src/config`) and `infra/`. `infra/docker-compose.yml` (Mongo **replica set**, Redis). `apps/api/src/config` with a Zod-validated env. `.env.example`.
 - Done: the API refuses to start with a missing or invalid env and logs which key is wrong.
 
-**0.4 API kernel**
+**0.4 API kernel** (split for review: 0.4a = http, logger, context, app entry, shutdown; 0.4b = db, transactions, sequences, `runAsSystem`, `/ready`; see `docs/plans/0.4a.md` and `0.4b.md`)
 - Do: `kernel/http` (envelope, error handler, `validate()`), `kernel/logger` (pino + requestId), `kernel/db` (platform + tenant connections, `models(ctx)` accessor, `withTransaction()`), `kernel/context` (AsyncLocalStorage), `kernel/sequence` (per-org atomic counters), base mapper that strips `_id`, optimistic `version` helper, `runAsSystem(reason, fn)`, `/health`, `routes/v1.ts`, `main.ts` with ROLE=api|worker, graceful shutdown.
 - Done: tests for the error envelope, validation error, and transaction rollback.
 

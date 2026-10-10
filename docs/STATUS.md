@@ -40,9 +40,9 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 |---|---|---|
 | 0.1 archive & skeleton | done (2026-10-10, `b772501`, merge-checked by Opus: build/typecheck/test pass without cache) | apps/api + infra moved to 0.3 (owner); build, typecheck, test pass |
 | 0.2a lint, format, hooks | done (2026-10-10, `c823fcc`, Opus review passed) | T1; parallel with 0.3; docs/ excluded from Prettier, see handoff |
-| 0.2b CI, secret scan, PR template, Claude hook | merged (2026-10-10, `40f4f4f`, merge-checked by Opus; first GitHub CI run unverified until the owner pushes) | after 0.2a + 0.3 |
-| 0.3 API package, config & local infra | merged (2026-10-10, `5335ec5`, merge-checked by Opus; real-port Docker check pending, Docker daemon unresponsive) | branch `s/0.3-config-infra`; handoff `docs/handoffs/0.3.md`; default Mongo host port is now 27018 (owner decision); Docker daemon unresponsive, see handoff |
-| 0.4a HTTP kernel, logger, context, app entry | planned (2026-10-10, `docs/plans/0.4a.md`, Opus, T1) | after 0.3 |
+| 0.4a HTTP kernel, logger, context, app entry | implemented (awaiting Opus review) | branch `s/0.4a-http-kernel`; handoff `docs/handoffs/0.4a.md`; Windows cannot deliver SIGTERM to a child, see handoff |
+| 0.4a HTTP kernel, logger, context, app entry | implemented (awaiting Opus review) | branch `s/0.4a-http-kernel`; handoff `docs/handoffs/0.4a.md`; Windows cannot deliver SIGTERM to a child, see handoff |
+| 0.4a HTTP kernel, logger, context, app entry | implemented (awaiting Opus review) | branch `s/0.4a-http-kernel`; handoff `docs/handoffs/0.4a.md`; Windows cannot deliver SIGTERM to a child, see handoff |
 | 0.4b DB kernel, transactions, sequences, runAsSystem | planned (2026-10-10, `docs/plans/0.4b.md`, Opus, T1) | after 0.4a |
 | 0.5a design system and i18n packages | planned (2026-10-10, `docs/plans/0.5a.md`, Opus) | parallel with 0.2b/0.4a/0.4b |
 | 0.5b admin app skeleton | planned (2026-10-10, `docs/plans/0.5b.md`, Opus) | after 0.5a |
