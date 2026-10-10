@@ -4,6 +4,8 @@ import type { PermissionGate } from "../../../kernel/access/index.js";
 import type { ModuleEffectiveness } from "../../../kernel/events/index.js";
 import type { ModuleRegistry } from "../../../kernel/modules/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
+import type { LimitGuard } from "../../../kernel/access/index.js";
+import { OrgLimitGuard } from "./application/org-limit-guard.js";
 import { buildPackageReader } from "../package/index.js";
 import { buildSubscriptionReader } from "../saas-billing/index.js";
 import { OrgConfigResolver } from "./application/org-config-resolver.js";
@@ -82,4 +84,9 @@ export function buildEntitlementTenantRouter(
     getMyConfig: new GetMyConfigUseCase(dependencies),
   });
   return buildMeConfigRouter(controller);
+}
+
+/** The kernel LimitGuard: counts are checked against the resolved limits of the request's organization (10 section 9). */
+export function buildLimitGuard(orgConfig: OrgConfigService): LimitGuard {
+  return new OrgLimitGuard(orgConfig);
 }
