@@ -4,6 +4,7 @@ import { createCloseDatabasesTask, type DatabaseConnections } from "./kernel/db/
 import { eventHandlerRegistry, startEventProcessing } from "./kernel/events/index.js";
 import type { ShutdownTask } from "./kernel/lifecycle/shutdown.js";
 import { createCloseRedisTask, createQueueRedisClient } from "./kernel/redis/index.js";
+import { buildEventModuleEffectiveness } from "./routes/module-effectiveness.js";
 import { systemClock } from "./kernel/time/index.js";
 
 /**
@@ -21,6 +22,7 @@ export function startWorker(
   const processing = startEventProcessing({
     redis,
     registry: eventHandlerRegistry,
+    effectiveness: buildEventModuleEffectiveness(systemClock),
     clock: systemClock,
     ...(config.outboxPollIntervalMs === undefined
       ? {}

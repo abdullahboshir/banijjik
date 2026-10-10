@@ -1,12 +1,13 @@
-import { SYSTEM_REASON, TOKEN_AUDIENCE } from "@banijjik/contracts";
+import { SYSTEM_REASON, TOKEN_AUDIENCE, type ModuleManifest } from "@banijjik/contracts";
 import { Router } from "express";
 import type { AppConfig } from "../config/index.js";
-import { createPermissionMiddleware } from "../kernel/access/index.js";
+import { createEntitlementGate, createPermissionMiddleware } from "../kernel/access/index.js";
 import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import { authenticate, createJoseAccessTokenVerifier } from "../kernel/auth/index.js";
 import { asSystemPort } from "../kernel/context/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { createIdempotencyMiddleware } from "../kernel/idempotency/index.js";
+import type { ModuleRegistry } from "../kernel/modules/index.js";
 import type { RateLimiter } from "../kernel/rate-limit/index.js";
 import type { RedisClient } from "../kernel/redis/index.js";
 import {
@@ -16,7 +17,6 @@ import {
 } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
-  auditManifest,
   buildAuditRecorder,
   buildAuditTenantRouter,
   registerAuditModels,
@@ -27,18 +27,29 @@ import {
   buildPermissionCache,
   buildPermissionCatalog,
   buildPermissionGate,
-  iamManifest,
   registerIamModels,
 } from "../modules/core/iam/index.js";
 import {
   buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
+  buildOrganizationConfigSource,
   buildOrganizationRouters,
   buildRolesVersionBumper,
-  organizationManifest,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
+import {
+  buildEntitlementTenantRouter,
+  buildOrgConfigService,
+  registerEntitlementModels,
+  type OrgConfigService,
+} from "../modules/platform/entitlement/index.js";
+import { registerPackageModels } from "../modules/platform/package/index.js";
+import {
+  buildTrialStarter,
+  registerSaasBillingModels,
+} from "../modules/platform/saas-billing/index.js";
+import { buildModuleRegistry } from "./module-registry.js";
 
 export interface V1Dependencies {
   readonly config: AppConfig;
@@ -53,6 +64,8 @@ export interface V1Dependencies {
   readonly tenantRouters?: readonly Router[];
   /** Like `tenantRouters`, for probes that guard their routes with the `permission(key)` middleware. */
   readonly tenantRouterFactories?: readonly ((permission: PermissionMiddlewareFactory) => Router)[];
+  /** Probe modules for tests, registered through the same registry (ADR-091). Production passes none. */
+  readonly extraManifests?: readonly ModuleManifest[];
 }
 
 /** Every module registers its models here, before the databases connect (see main.ts). */
@@ -60,16 +73,26 @@ export function registerModuleModels(): void {
   registerIamModels();
   registerOrganizationModels();
   registerAuditModels();
+  registerPackageModels();
+  registerSaasBillingModels();
+  registerEntitlementModels();
 }
 
 /**
  * The only place that mounts module routers and global middleware (AGENTS.md), and the only place
  * that grants a bypass: asSystemPort and runInOrganizationContext are used here and nowhere in
  * modules (ADR-087, lint R27). The permission catalogue, gate and `permission(key)` middleware
- * are built here from the manifests (ADR-088); the entitlement middleware joins in card 1.6.
+ * are built here from the module registry (ADR-088, ADR-091); the entitlement gate sits after
+ * locationAccess and before every module router.
  */
 export function buildV1Router(dependencies: V1Dependencies): Router {
   const { config, clock } = dependencies;
+  const registry = buildModuleRegistry(dependencies.extraManifests);
+  const orgConfig = buildOrgConfigService({
+    registry,
+    clock,
+    organizations: buildOrganizationConfigSource(),
+  });
   const router = Router();
   const verifier = createJoseAccessTokenVerifier({ secret: config.auth.accessTokenSecret, clock });
   const requireAdminUser = authenticate({ audience: TOKEN_AUDIENCE.ADMIN, verifier });
@@ -87,6 +110,8 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     myOrganizationsReader: asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMyOrganizationsReader()),
     audit,
     idempotency,
+    // The trial subscription is written inside the create-organization transaction (card 1.6a).
+    trialStarter: buildTrialStarter(clock),
   });
   const membershipDirectory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
 
@@ -101,28 +126,36 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     requireAdminUser,
     tenantContext({ directory: membershipDirectory }),
     locationAccess(),
-    buildTenantRouter(buildTenantRouters(dependencies, audit)),
+    createEntitlementGate({ registry, config: orgConfig }),
+    buildTenantRouter(buildTenantRouters({ dependencies, audit, registry, orgConfig })),
   );
   return router;
 }
 
+interface TenantRoutersInput {
+  readonly dependencies: V1Dependencies;
+  readonly audit: AuditRecorder;
+  readonly registry: ModuleRegistry;
+  readonly orgConfig: OrgConfigService;
+}
+
 /**
  * The permission check is a per-route guard (`permission(key)`), built once from the catalogue of
- * every manifest. Pipeline order: authenticate, tenantContext, locationAccess, (entitlement, 1.6),
- * permission, validate, controller (01 section 3). 1.6 replaces the manifest list with the registry.
+ * every registered manifest. Pipeline order: authenticate, tenantContext, locationAccess,
+ * entitlement, permission, validate, controller (01 section 3).
  */
-function buildTenantRouters(dependencies: V1Dependencies, audit: AuditRecorder): readonly Router[] {
+function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
+  const { dependencies, audit, registry, orgConfig } = input;
   const { clock, redis, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
-  const catalog = buildPermissionCatalog([iamManifest, organizationManifest, auditManifest]);
+  const catalog = buildPermissionCatalog(registry.all());
   const memberAccess = buildMemberAccessReader();
-  const permission = createPermissionMiddleware(
-    buildPermissionGate({
-      catalog,
-      memberAccess,
-      clock,
-      cache: buildPermissionCache({ clock, ...(redis === undefined ? {} : { redis }) }),
-    }),
-  );
+  const permissionGate = buildPermissionGate({
+    catalog,
+    memberAccess,
+    clock,
+    cache: buildPermissionCache({ clock, ...(redis === undefined ? {} : { redis }) }),
+  });
+  const permission = createPermissionMiddleware(permissionGate);
   const iamRouter = buildIamTenantRouter({
     catalog,
     memberAccess,
@@ -132,9 +165,14 @@ function buildTenantRouters(dependencies: V1Dependencies, audit: AuditRecorder):
     audit,
   });
   const auditRouter = buildAuditTenantRouter({ permission });
+  const entitlementRouter = buildEntitlementTenantRouter({
+    orgConfig,
+    permissions: permissionGate,
+  });
   return [
     iamRouter,
     auditRouter,
+    entitlementRouter,
     ...tenantRouters,
     ...tenantRouterFactories.map((build) => build(permission)),
   ];

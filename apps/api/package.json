@@ -21,7 +21,8 @@
     "config:check": "tsx src/check-config.ts",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
-    "seed:platform-admin": "tsx src/seeds/run-seed-platform-admin.ts"
+    "seed:platform-admin": "tsx src/seeds/run-seed-platform-admin.ts",
+    "seed:packages": "tsx src/seeds/run-seed-packages.ts"
   },
   "dependencies": {
     "@banijjik/contracts": "*",

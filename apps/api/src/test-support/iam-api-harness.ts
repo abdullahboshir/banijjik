@@ -1,3 +1,4 @@
+import type { ModuleManifest } from "@banijjik/contracts";
 import type { Express, Router } from "express";
 import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import { buildApp } from "../app.js";
@@ -12,9 +13,11 @@ import { registerIdempotencyModel } from "../kernel/idempotency/index.js";
 import { registerEventModels } from "../kernel/events/index.js";
 import { MongoRateLimiter, registerRateLimitModel } from "../kernel/rate-limit/index.js";
 import { registerSequenceModel } from "../kernel/sequence/index.js";
+import { buildEnsureSeedPackagesUseCase } from "../modules/platform/package/index.js";
 import { buildV1Router, registerModuleModels } from "../routes/v1.js";
 import { createLogCapture, type LogCapture } from "./log-capture.js";
 import { MutableClock } from "./mutable-clock.js";
+import { KERNEL_PROBE_MANIFEST } from "./probe-manifests.js";
 import { createDatabaseTestConfig, disposeTestDatabases } from "./test-databases.js";
 
 export interface IamApiHarness {
@@ -45,6 +48,8 @@ export async function startIamApi(
     readonly tenantRouterFactories?: readonly ((
       permission: PermissionMiddlewareFactory,
     ) => Router)[];
+    /** Probe modules registered next to the kernel probe module (card 1.6a). */
+    readonly extraManifests?: readonly ModuleManifest[];
   } = {},
 ): Promise<IamApiHarness> {
   const config = createDatabaseTestConfig();
@@ -54,6 +59,8 @@ export async function startIamApi(
   const logger = createLogger({ level: "debug", destination: logs.destination });
   // The real time as the starting point: stored TTL dates must not look expired to MongoDB.
   const clock = new MutableClock(new Date());
+  // Every new organization starts a trial on the BUNDLE package, so the packages are seeded first.
+  await buildEnsureSeedPackagesUseCase(clock).execute();
   // Without tenant routers the app builds its own v1 router, exactly as production does.
   const hasTenantRouters =
     options.tenantRouters !== undefined || options.tenantRouterFactories !== undefined;
@@ -64,6 +71,7 @@ export async function startIamApi(
         rateLimiter: new MongoRateLimiter(clock),
         tenantRouters: options.tenantRouters ?? [],
         tenantRouterFactories: options.tenantRouterFactories ?? [],
+        extraManifests: [KERNEL_PROBE_MANIFEST, ...(options.extraManifests ?? [])],
       })
     : undefined;
   const app = buildApp({ config, logger, clock, ...(v1Router === undefined ? {} : { v1Router }) });
