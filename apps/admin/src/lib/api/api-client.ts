@@ -49,6 +49,7 @@ async function readJson(response: Response): Promise<unknown> {
 }
 
 function toApiError(status: number, body: unknown): ApiError {
+  // Safe: every field is optional and read defensively, so a body of any shape is handled.
   const failure = (body as ErrorEnvelope | undefined)?.error;
   return new ApiError({
     status,
@@ -77,5 +78,6 @@ export async function apiFetch<Data, Meta = Record<string, unknown>>(
   const response = await sendRequest(path, options);
   const body = await readJson(response);
   if (!response.ok) throw toApiError(response.status, body);
+  // Safe by contract: a 2xx response from this API is always the { data, meta } envelope (14 §2).
   return body as ApiResult<Data, Meta>;
 }

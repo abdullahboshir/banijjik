@@ -45,7 +45,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 0.4a HTTP kernel, logger, context, app entry | merged (2026-10-10, Opus review passed after 6 fixes) | SIGTERM spawn test skipped on Windows (see handoff) |
 | 0.4b DB kernel, transactions, sequences, runAsSystem | merged (2026-10-10, Opus review passed after 3 fixes; ADR-084) | production index-sync task still needed before first deploy (see handoff) |
 | 0.5a design system and i18n packages | merged (2026-10-10, merge-checked by Opus; link context added, bottom nav at lg) | branch `s/0.5a-ui-i18n`; handoff `docs/handoffs/0.5a.md`; parallel with 0.2b/0.4a/0.4b |
-| 0.5b admin app skeleton | implemented (awaiting merge check) | branch `s/0.5b-admin-app`; handoff `docs/handoffs/0.5b.md`; Lighthouse mobile perf 0.93, a11y 1.00; JS and font budgets exceeded, see handoff |
+| 0.5b admin app skeleton | merged (2026-10-10, merge-checked by Opus; Lighthouse mobile performance 0.95, accessibility 1.00; no ssr:false) | known gaps: bn fonts 134 KB vs 120 KB budget and simulated LCP 2.9 s vs 2.5 s (owner decision on the Bengali font); Work/Catalog menu keys to confirm in 1.6 |
 
 ## Phase 1
 | Card | Status | Note |
