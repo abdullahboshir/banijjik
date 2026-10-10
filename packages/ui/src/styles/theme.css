@@ -31,11 +31,6 @@
   --shadow-md: var(--token-shadow-md);
   --shadow-lg: var(--token-shadow-lg);
 
-  --breakpoint-sm: var(--token-breakpoint-sm);
-  --breakpoint-md: var(--token-breakpoint-md);
-  --breakpoint-lg: var(--token-breakpoint-lg);
-  --breakpoint-xl: var(--token-breakpoint-xl);
-
   --text-display: var(--token-font-size-display-mobile);
   --text-display--line-height: var(--token-line-height-display-mobile);
   --text-display-lg: var(--token-font-size-display-desktop);
@@ -111,4 +106,15 @@
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.96);
   }
+}
+
+/*
+ * Breakpoints are media-query conditions, where var() is invalid CSS, so they cannot use `inline`
+ * references. These literals must equal breakpointTokens (checked by theme.test.ts).
+ */
+@theme {
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
 }
