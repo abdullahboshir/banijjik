@@ -1,0 +1,28 @@
+@layer base {
+  body {
+    background-color: var(--color-bg-app);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans, system-ui, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif);
+    font-size: var(--token-font-size-body);
+    line-height: var(--token-line-height-body);
+  }
+
+  :lang(bn) {
+    line-height: var(--token-line-height-bangla);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

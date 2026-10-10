@@ -1,0 +1,114 @@
+/*
+ * Tailwind v4 mapping of the semantic tokens. The app imports "tailwindcss" first, then this
+ * package's styles.css, and adds an @source line for the ui sources (card 0.5b).
+ * `inline` keeps utilities pointing at the variables, so a [data-theme="dark"] switch just works.
+ */
+@theme inline {
+  --color-brand: var(--color-brand-primary);
+  --color-brand-hover: var(--color-brand-primary-hover);
+  --color-on-brand: var(--color-brand-on-primary);
+  --color-app: var(--color-bg-app);
+  --color-surface: var(--color-bg-surface);
+  --color-subtle: var(--color-bg-subtle);
+  --color-default: var(--color-border-default);
+  --color-primary: var(--color-text-primary);
+  --color-secondary: var(--color-text-secondary);
+  --color-muted: var(--color-text-muted);
+  --color-success: var(--color-status-success);
+  --color-warning: var(--color-status-warning);
+  --color-danger: var(--color-status-danger);
+  --color-info: var(--color-status-info);
+  --color-neutral: var(--color-status-neutral);
+
+  --spacing: var(--token-space-1);
+
+  --radius-sm: var(--token-radius-sm);
+  --radius-md: var(--token-radius-md);
+  --radius-lg: var(--token-radius-lg);
+  --radius-full: var(--token-radius-full);
+
+  --shadow-sm: var(--token-shadow-sm);
+  --shadow-md: var(--token-shadow-md);
+  --shadow-lg: var(--token-shadow-lg);
+
+  --breakpoint-sm: var(--token-breakpoint-sm);
+  --breakpoint-md: var(--token-breakpoint-md);
+  --breakpoint-lg: var(--token-breakpoint-lg);
+  --breakpoint-xl: var(--token-breakpoint-xl);
+
+  --text-display: var(--token-font-size-display-mobile);
+  --text-display--line-height: var(--token-line-height-display-mobile);
+  --text-display-lg: var(--token-font-size-display-desktop);
+  --text-display-lg--line-height: var(--token-line-height-display-desktop);
+  --text-title: var(--token-font-size-title);
+  --text-title--line-height: var(--token-line-height-title);
+  --text-body: var(--token-font-size-body);
+  --text-body--line-height: var(--token-line-height-body);
+  --text-small: var(--token-font-size-small);
+  --text-small--line-height: var(--token-line-height-small);
+  --text-caption: var(--token-font-size-caption);
+  --text-caption--line-height: var(--token-line-height-caption);
+
+  --font-weight-semibold: var(--token-font-weight-semibold);
+  --default-transition-duration: var(--token-motion-fast);
+  --default-transition-timing-function: var(--token-motion-easing);
+}
+
+@utility z-base {
+  z-index: var(--token-z-base);
+}
+@utility z-sticky {
+  z-index: var(--token-z-sticky);
+}
+@utility z-nav {
+  z-index: var(--token-z-nav);
+}
+@utility z-dropdown {
+  z-index: var(--token-z-dropdown);
+}
+@utility z-sheet {
+  z-index: var(--token-z-sheet);
+}
+@utility z-dialog {
+  z-index: var(--token-z-dialog);
+}
+@utility z-toast {
+  z-index: var(--token-z-toast);
+}
+
+@utility font-money {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes ui-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ui-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes ui-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes ui-slide-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes ui-zoom-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+}
+@keyframes ui-zoom-out {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+}
