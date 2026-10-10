@@ -9,6 +9,10 @@ export const SEQUENCE_KEY = defineEnum([
   "INVOICE",
   "JOURNAL",
   "MEMBER",
+  "EXPENSE",
+  "TRANSFER",
+  "ZREPORT",
+  "RETURN",
 ]);
 
 export type SequenceKey = (typeof SEQUENCE_KEY)[keyof typeof SEQUENCE_KEY];

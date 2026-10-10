@@ -169,6 +169,11 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R26", `${MODULE}/application/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
   fails("R26", `${MODULE}/domain/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
   fails("R26", `${MODULE}/presentation/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
+  fails(
+    "R26",
+    "apps/api/src/modules/commerce/sales/infrastructure/r26-run-as-system-in-repository.fail.ts",
+    RUN_AS_SYSTEM,
+  ),
   passes(
     "R26",
     "apps/api/src/modules/platform/demo/application/r26-run-as-system-in-platform-application.pass.ts",

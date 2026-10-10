@@ -8,6 +8,7 @@ const BACKOFF_MS: readonly number[] = [50, 200, 800];
 
 function readLabels(error: unknown): readonly string[] {
   if (typeof error !== "object" || error === null) return [];
+  // Safe: the driver's error classes carry an optional errorLabels; anything else yields undefined below.
   const labels = (error as { errorLabels?: unknown }).errorLabels;
   if (Array.isArray(labels)) return labels.map(String);
   if (labels instanceof Set) return [...labels].map(String);
