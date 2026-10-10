@@ -10,6 +10,7 @@ import {
   platformUrlRule,
   portRule,
   redisUrlRule,
+  roleRule,
   splitOrigins,
   tenantSharedUrlRule,
   type FieldRule,
@@ -76,6 +77,7 @@ export function loadConfig(env: Environment): AppConfig {
   const isProduction = nodeEnv.value === "production";
   const port = readField(env, portRule);
   const logLevel = readField(env, logLevelRule);
+  const role = readField(env, roleRule);
   const platformUrl = readUrl(env, platformUrlRule, isProduction);
   const tenantSharedUrl = readUrl(env, tenantSharedUrlRule, isProduction);
   const redisUrl = readUrl(env, redisUrlRule, isProduction);
@@ -85,6 +87,7 @@ export function loadConfig(env: Environment): AppConfig {
     nodeEnv,
     port,
     logLevel,
+    role,
     platformUrl,
     tenantSharedUrl,
     redisUrl,
@@ -93,6 +96,7 @@ export function loadConfig(env: Environment): AppConfig {
   const { value: nodeEnvValue } = nodeEnv;
   const { value: portValue } = port;
   const { value: logLevelValue } = logLevel;
+  const { value: roleValue } = role;
   const { value: platformUrlValue } = platformUrl;
   const { value: tenantSharedUrlValue } = tenantSharedUrl;
   const { value: redisUrlValue } = redisUrl;
@@ -102,6 +106,7 @@ export function loadConfig(env: Environment): AppConfig {
     nodeEnvValue !== undefined &&
     portValue !== undefined &&
     logLevelValue !== undefined &&
+    roleValue !== undefined &&
     platformUrlValue !== undefined &&
     tenantSharedUrlValue !== undefined &&
     redisUrlValue !== undefined &&
@@ -112,6 +117,7 @@ export function loadConfig(env: Environment): AppConfig {
     nodeEnv: nodeEnvValue,
     port: portValue,
     logLevel: logLevelValue,
+    role: roleValue,
     database: Object.freeze({
       platformUrl: platformUrlValue,
       tenantSharedUrl: tenantSharedUrlValue,

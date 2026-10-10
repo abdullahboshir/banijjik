@@ -39,6 +39,7 @@ describe("loadConfig", () => {
       nodeEnv: "test",
       port: 5000,
       logLevel: "debug",
+      role: "api",
       database: {
         platformUrl: validEnv.DB_PLATFORM_URL,
         tenantSharedUrl: validEnv.DB_TENANT_SHARED_URL,
@@ -50,12 +51,17 @@ describe("loadConfig", () => {
     expect(Object.isFrozen(config.database)).toBe(true);
   });
 
+  it("accepts ROLE=worker", () => {
+    expect(loadConfig({ ...validEnv, ROLE: "worker" }).role).toBe("worker");
+  });
+
   it("applies defaults for NODE_ENV, PORT and LOG_LEVEL", () => {
     const config = loadConfig(validEnv);
 
     expect(config.nodeEnv).toBe("development");
     expect(config.port).toBe(4000);
     expect(config.logLevel).toBe("info");
+    expect(config.role).toBe("api");
   });
 
   it.each(["DB_PLATFORM_URL", "DB_TENANT_SHARED_URL", "REDIS_URL", "CORS_ALLOWED_ORIGINS"])(
@@ -92,6 +98,7 @@ describe("loadConfig", () => {
     ["DB_TENANT_SHARED_URL", "mongodb://127.0.0.1:27018/"],
     ["REDIS_URL", "foo"],
     ["LOG_LEVEL", "loud"],
+    ["ROLE", "admin"],
     ["NODE_ENV", "staging"],
     ["CORS_ALLOWED_ORIGINS", "localhost:3000"],
     ["CORS_ALLOWED_ORIGINS", "https://a.example.com/path"],

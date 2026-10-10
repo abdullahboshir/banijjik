@@ -67,6 +67,15 @@ export const logLevelRule: FieldRule<(typeof LOG_LEVELS)[number]> = {
   defaultValue: "info",
 };
 
+export const ROLES = ["api", "worker"] as const;
+
+export const roleRule: FieldRule<(typeof ROLES)[number]> = {
+  key: "ROLE",
+  hint: "must be api or worker",
+  schema: z.enum(ROLES),
+  defaultValue: "api",
+};
+
 export const platformUrlRule: FieldRule<string> = {
   key: "DB_PLATFORM_URL",
   hint: MONGO_HINT,

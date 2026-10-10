@@ -2,6 +2,7 @@ export interface AppConfig {
   readonly nodeEnv: "development" | "test" | "production";
   readonly port: number;
   readonly logLevel: "fatal" | "error" | "warn" | "info" | "debug" | "trace";
+  readonly role: "api" | "worker";
   readonly database: {
     readonly platformUrl: string;
     readonly tenantSharedUrl: string;
