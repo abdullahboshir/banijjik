@@ -55,7 +55,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 |---|---|---|
 | 1.1 IAM auth | merged (2026-10-10, Opus review passed) | phone or email + password, 30-day sliding sessions, register included (owner); OTP and password reset wait for SMS/email sending |
 | 1.2 org, location, membership | merged (2026-10-10, Opus review passed after 1 fix; ADR-086) | branch `s/1.2-org-location`; handoff `docs/handoffs/1.2.md`. Gaps: verified identifier before public signup (6.1); template publish check and trial subscription on `POST /me/orgs` (1.6); events declared, not emitted (1.5); Idempotency-Key on `POST /me/orgs` (1.5); 1.3 must place the cross-org membership lookup (see handoff). Runs alone: 1.4 waits for Redis (Docker down) |
-| 1.3 tenant & location enforcement | todo | |
+| 1.3 tenant and location enforcement | planned (2026-10-10, `docs/plans/1.3.md`, Opus, T1) | after 1.2 |
 | 1.4 RBAC & cache | todo | |
 | 1.5 reliability kernel | todo | |
 | 1.6 plans/entitlements/module gate | todo | |
