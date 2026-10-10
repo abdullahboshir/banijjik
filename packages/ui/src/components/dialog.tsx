@@ -12,10 +12,11 @@ export const DialogClose = DialogPrimitive.Close;
 const FADE_ANIMATION =
   "data-[state=open]:animate-[ui-fade-in_var(--token-motion-medium)_ease-out] data-[state=closed]:animate-[ui-fade-out_var(--token-motion-medium)_ease-out]";
 
-export function DialogOverlay(): ReactElement {
+/** The overlay and the content of one surface must share a layer, so the content (later in the DOM) paints above it. */
+export function DialogOverlay({ className = "z-dialog" }: { className?: string }): ReactElement {
   return (
     <DialogPrimitive.Overlay
-      className={cn("fixed inset-0 z-dialog bg-primary/40", FADE_ANIMATION)}
+      className={cn("fixed inset-0 bg-primary/40", className, FADE_ANIMATION)}
     />
   );
 }

@@ -14,5 +14,12 @@
     "tsBuildInfoFile": ".next/cache/tsconfig.tsbuildinfo",
     "plugins": [{ "name": "next" }]
   },
-  "include": ["next-env.d.ts", "app", "src", "next.config.ts", "vitest.config.ts"]
+  "include": [
+    "next-env.d.ts",
+    "app",
+    "src",
+    "next.config.ts",
+    "vitest.config.ts",
+    "vitest.browser.config.ts"
+  ]
 }
