@@ -172,6 +172,7 @@ Owner `core/organization` · scope platform (it *is* the tenant) · versioned
 | `defaultLocale` | `bn \| en` | |
 | `profile` | `{ legalName?, legalType?, phoneE164?, email?, address?, logoFileId?, tradeLicenseNumber? }` | shown on invoices and storefront |
 | `configVersion` | integer | bumped on any config change; part of the resolver cache key |
+| `rolesVersion` | integer | bumped in the same transaction as every role create, update or archive; part of the permission cache key (ADR-088) |
 | `customFields` | map | custom fields (entityType `organization`) |
 | STF minus `organizationId` duplication | | `createdByUserId` = the signing-up user |
 
@@ -235,10 +236,11 @@ Owner `core/iam` · scope org · versioned
 | Field | Type | Notes |
 |---|---|---|
 | `roleId` | RoleId | |
-| `roleKey` | string | system: `OWNER`, `MANAGER`, `CASHIER`, `STAFF`, `RIDER`, `VIEWER`; custom: org-chosen |
+| `roleKey` | string | system: `OWNER`, `MANAGER`, `CASHIER`, `STAFF`, `RIDER`, `VIEWER`; custom: generated `custom.<roleId>` (the org chooses the `name`, not the key; ADR-088) |
 | `nameKey` / `name` | string | i18n key for system roles, plain name for custom roles |
 | `isSystem` | boolean | |
-| `permissionKeys` | string[] | each from contracts |
+| `status` | `ACTIVE \| ARCHIVED` | custom roles are archived, never deleted; refused while an ACTIVE member holds the role; an archived role grants nothing |
+| `permissionKeys` | string[] | each from contracts; empty for system roles (their keys come from the code template, 10 section 10) |
 | STF | | |
 
 - Invariants: unique `(organizationId, roleKey)`. `OWNER` is immutable and has every permission. Other system roles are created from code templates at org creation; their permissions update with code releases, they are not editable by the tenant. Custom roles: editable, cannot include platform permissions. Permissions of disabled modules are kept but have no effect (the entitlement gate runs first).
