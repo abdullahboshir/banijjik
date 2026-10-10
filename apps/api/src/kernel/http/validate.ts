@@ -25,7 +25,10 @@ function parsePart(schema: ZodType | undefined, raw: unknown): PartResult {
   if (schema === undefined) return { value: raw, fields: [] };
   const parsed = schema.safeParse(raw);
   if (parsed.success) return { value: parsed.data, fields: [] };
-  return { value: raw, fields: parsed.error.issues.map((i) => toFields(i.path, i.code)) };
+  return {
+    value: raw,
+    fields: parsed.error.issues.map((issue) => toFields(issue.path, issue.code)),
+  };
 }
 
 function readPart(request: Request, part: RequestPart): unknown {
@@ -50,6 +53,7 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
       fields.push(...result.fields);
     }
     if (fields.length > 0) throw validationFailed(fields);
+    // Safe: the params schema produced this value; Express only types params as strings.
     request.params = validated.params as Request["params"];
     request.body = validated.body;
     response.locals["validated"] = validated;

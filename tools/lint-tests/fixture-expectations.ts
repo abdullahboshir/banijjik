@@ -51,6 +51,12 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R06", "src/r06-complexity.fail.ts", "complexity"),
   fails("R06", "src/r06-depth.fail.ts", "max-depth"),
   fails("R06", "src/r06-params.fail.ts", "max-params"),
+  fails(
+    "R06",
+    "apps/api/src/kernel/http/r06-four-params-outside-error-handler.fail.ts",
+    "max-params",
+  ),
+  passes("R06", "apps/api/src/kernel/http/error-handler.ts"),
   passes("R06", "src/r06-complexity.pass.ts"),
   passes("R06", "src/r06-depth.pass.ts"),
   passes("R06", "src/r06-params-in-tests.pass.test.ts"),

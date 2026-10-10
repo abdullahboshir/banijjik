@@ -14,7 +14,8 @@ const EXPECTED_RULES = Array.from(
   (_, index) => `R${String(index + 1).padStart(2, "0")}`,
 );
 // Fixtures that cannot carry ".fail." / ".pass." in their name because the rule is about the name "index.ts".
-const NAMED_BY_FOLDER = /^r21-star-export\/(fail|pass)\/(index|barrel)\.ts$/;
+const NAMED_BY_FOLDER =
+  /^(r21-star-export\/(fail|pass)\/(index|barrel)|apps\/api\/src\/kernel\/http\/error-handler)\.ts$/;
 const FIXTURE_FILE = /\.(fail|pass)(\.(test|config))?\.tsx?$/;
 
 type FixtureOutcome = { ruleIds: string[]; messages: string[] };

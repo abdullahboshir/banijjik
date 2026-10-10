@@ -23,7 +23,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "test:tools": "vitest run --root tools/lint-tests",
+    "test:tools": "npm test -w @banijjik/lint-tests",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "infra:reset": "docker compose -f infra/docker-compose.yml down -v",

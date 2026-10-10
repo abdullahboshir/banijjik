@@ -41,6 +41,14 @@ export function registerShutdown(options: RegisterShutdownOptions): () => void {
   let isShuttingDown = false;
   let hasTimedOut = false;
 
+  const finishShutdown = async (timer: NodeJS.Timeout): Promise<void> => {
+    const allSucceeded = await runTasks(options);
+    clearTimeout(timer);
+    if (hasTimedOut) return;
+    process.exitCode = allSucceeded ? 0 : 1;
+    logger.info({ event: "shutdown.completed" }, "shutdown completed");
+  };
+
   const handleSignal = (signal: NodeJS.Signals): void => {
     if (isShuttingDown) {
       logger.fatal({ event: "shutdown.forced", signal }, "second signal, forcing exit");
@@ -57,12 +65,7 @@ export function registerShutdown(options: RegisterShutdownOptions): () => void {
       exit(1);
     }, timeoutMs);
     timer.unref();
-    void runTasks(options).then((allSucceeded) => {
-      clearTimeout(timer);
-      if (hasTimedOut) return;
-      process.exitCode = allSucceeded ? 0 : 1;
-      logger.info({ event: "shutdown.completed" }, "shutdown completed");
-    });
+    void finishShutdown(timer);
   };
 
   for (const signal of SIGNALS) process.on(signal, handleSignal);

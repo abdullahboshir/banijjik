@@ -1,6 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createTestApp, type TestApp } from "../../test-support/test-app.js";
+import { ALLOWED_ORIGIN } from "../../test-support/test-config.js";
 import { conflict, forbidden, notFound } from "./app-error.js";
 
 const FAKE_SECRET = "hunter2-do-not-leak";
@@ -114,5 +115,37 @@ describe("error handler", () => {
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe("NOT_FOUND");
     expect(response.body.error.requestId).toBe(response.headers["x-request-id"]);
+  });
+});
+
+describe("error handler body errors", () => {
+  it("allows CORS headers on an invalid JSON response from an allowed origin", async () => {
+    const { app } = createApp();
+
+    const response = await request(app)
+      .post("/api/v1/echo")
+      .set("Origin", ALLOWED_ORIGIN)
+      .set("Content-Type", "application/json")
+      .send("{ not json");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    expect(response.headers["access-control-allow-origin"]).toBe(ALLOWED_ORIGIN);
+  });
+
+  it("answers an unsupported content encoding with 400 invalid_body and does not report it", async () => {
+    const { app, logs } = createApp();
+
+    const response = await request(app)
+      .post("/api/v1/echo")
+      .set("Content-Type", "application/json")
+      .set("Content-Encoding", "bogus")
+      .send("{}");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.details.fields).toEqual([
+      { path: "", messageKey: "errors.invalid_body" },
+    ]);
+    expect(logs.lines().some((line) => line["msg"] === "unhandled error")).toBe(false);
   });
 });

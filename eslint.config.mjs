@@ -113,6 +113,12 @@ export default defineConfig(
     rules: { "max-params": "off" },
   },
   {
+    name: "banijjik/express-error-handler-arity",
+    files: ["**/kernel/http/error-handler.ts"],
+    // Express identifies error middleware by exactly four parameters, so this one file may declare four.
+    rules: { "max-params": [ERROR, 4] },
+  },
+  {
     name: "banijjik/guard-plugin",
     plugins: { "banijjik-guard": guardPlugin },
   },

@@ -1,25 +1,49 @@
 import type { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 import { ERROR_CODE } from "@banijjik/contracts";
 import { findRequestContext } from "../context/index.js";
+import { getLogger } from "../logger/index.js";
 import { reportError } from "../observability/report-error.js";
 import { AppError, validationFailed } from "./app-error.js";
 import { REQUEST_ID_HEADER } from "./request-id.middleware.js";
 
 const INVALID_JSON_FIELD = { path: "", messageKey: "errors.invalid_json" };
 const PAYLOAD_TOO_LARGE_FIELD = { path: "", messageKey: "errors.payload_too_large" };
+const INVALID_BODY_FIELD = { path: "", messageKey: "errors.invalid_body" };
 
-function readBodyParserErrorType(error: unknown): string | undefined {
-  if (typeof error !== "object" || error === null || !("type" in error)) return undefined;
-  return typeof error.type === "string" ? error.type : undefined;
+const CLIENT_ERROR_MIN_STATUS = 400;
+const CLIENT_ERROR_MAX_STATUS = 499;
+
+interface BodyParserError {
+  readonly type: string;
+}
+
+/** body-parser errors carry a string `type` and an HTTP status; both are checked so other errors stay INTERNAL. */
+function asBodyParserClientError(error: unknown): BodyParserError | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const { type, status, statusCode } = error as Record<string, unknown>;
+  if (typeof type !== "string") return undefined;
+  const httpStatus = typeof status === "number" ? status : statusCode;
+  if (typeof httpStatus !== "number") return undefined;
+  const isClientError =
+    httpStatus >= CLIENT_ERROR_MIN_STATUS && httpStatus <= CLIENT_ERROR_MAX_STATUS;
+  return isClientError ? { type } : undefined;
+}
+
+function messageKeyForBodyError(type: string): string {
+  if (type === "entity.parse.failed") return INVALID_JSON_FIELD.messageKey;
+  if (type === "entity.too.large") return PAYLOAD_TOO_LARGE_FIELD.messageKey;
+  return INVALID_BODY_FIELD.messageKey;
 }
 
 /** Maps body-parser failures to client errors; returns undefined for anything else. */
 function toClientError(error: unknown): AppError | undefined {
   if (error instanceof AppError) return error;
-  const bodyParserType = readBodyParserErrorType(error);
-  if (bodyParserType === "entity.parse.failed") return validationFailed([INVALID_JSON_FIELD]);
-  if (bodyParserType === "entity.too.large") return validationFailed([PAYLOAD_TOO_LARGE_FIELD]);
-  return undefined;
+  const bodyError = asBodyParserClientError(error);
+  if (bodyError === undefined) return undefined;
+  // An aborted upload is the client's doing: a warning, not an unexpected failure.
+  if (bodyError.type === "request.aborted")
+    getLogger().warn({ event: "request.aborted" }, "client aborted the request");
+  return validationFailed([{ path: "", messageKey: messageKeyForBodyError(bodyError.type) }]);
 }
 
 function readRequestId(response: Response): string {
@@ -49,11 +73,11 @@ function toInternalError(error: unknown, request: Request, response: Response): 
   return new AppError({ code: ERROR_CODE.INTERNAL, messageKey: "errors.internal" });
 }
 
-const EXPRESS_ERROR_HANDLER_ARITY = 4;
-
 function handleError(
   error: unknown,
-  ...[request, response, next]: [Request, Response, NextFunction]
+  request: Request,
+  response: Response,
+  next: NextFunction,
 ): void {
   if (response.headersSent) {
     next(error);
@@ -63,11 +87,5 @@ function handleError(
   sendError(response, clientError);
 }
 
-/**
- * Mounted last. The only code that writes an error body, and it never copies a message or stack into it.
- * Express recognises an error handler by `function.length === 4`. The lint rule max-params (3) forbids
- * declaring four parameters, so the arity is set explicitly instead of weakening the rule.
- */
-export const errorHandler: ErrorRequestHandler = Object.defineProperty(handleError, "length", {
-  value: EXPRESS_ERROR_HANDLER_ARITY,
-});
+/** Mounted last. The only code that writes an error body, and it never copies a message or stack into it. */
+export const errorHandler: ErrorRequestHandler = handleError;

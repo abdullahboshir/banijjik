@@ -32,8 +32,9 @@ export function buildApp(options: BuildAppOptions): Express {
 
   app.use(requestIdMiddleware);
   app.use(createAccessLog(logger));
-  app.use(express.json({ limit: JSON_BODY_LIMIT }));
+  // CORS comes before the body parser so body errors (400) still carry the CORS headers.
   app.use(cors({ origin: [...config.corsAllowedOrigins], credentials: true }));
+  app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
   app.get("/health", (_request, response) => {
     sendData(response, { status: "ok" });
