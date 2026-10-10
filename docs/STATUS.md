@@ -39,10 +39,11 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | Card | Status | Note |
 |---|---|---|
 | 0.1 archive & skeleton | done (2026-10-10, `b772501`, merge-checked by Opus: build/typecheck/test pass without cache) | apps/api + infra moved to 0.3 (owner); build, typecheck, test pass |
-| 0.2a lint, format, hooks | implemented (awaiting Opus review) (2026-10-10, branch `s/0.2a-lint-hooks`, `docs/handoffs/0.2a.md`) | T1; parallel with 0.3; docs/ excluded from Prettier, see handoff |
+| 0.2a lint, format, hooks | done (2026-10-10, `c823fcc`, Opus review passed) | T1; parallel with 0.3; docs/ excluded from Prettier, see handoff |
 | 0.2b CI, secret scan, PR template, Claude hook | planned (2026-10-10, `docs/plans/0.2b.md`, Opus) | after 0.2a + 0.3 |
 | 0.3 API package, config & local infra | planned (2026-10-10, `docs/plans/0.3.md`, Opus) | parallel with 0.2a |
-| 0.4 API kernel | todo | |
+| 0.4a HTTP kernel, logger, context, app entry | planned (2026-10-10, `docs/plans/0.4a.md`, Opus, T1) | after 0.3 |
+| 0.4b DB kernel, transactions, sequences, runAsSystem | planned (2026-10-10, `docs/plans/0.4b.md`, Opus, T1) | after 0.4a |
 | 0.5 admin skeleton | todo | |
 
 ## Phase 1
