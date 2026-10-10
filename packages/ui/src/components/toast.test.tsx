@@ -22,4 +22,9 @@ describe("toast", () => {
       .closest("li") as HTMLElement;
     expect(within(errorToast).queryByRole("button")).toBeNull();
   });
+
+  it("does not throw when toast() runs before the Toaster has mounted", () => {
+    // The app mounts the Toaster lazily (card 0.5b), so an early toast must be safe even if it is not shown.
+    expect(() => toast.error("সংরক্ষণ করা যায়নি")).not.toThrow();
+  });
 });

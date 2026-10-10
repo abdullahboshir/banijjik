@@ -1,13 +1,9 @@
 "use client";
 
-import {
-  BottomNav,
-  QuickCreateSheet,
-  type QuickCreateAction,
-  type SidebarGroup,
-} from "@banijjik/ui";
+import { BottomNav, type QuickCreateAction, type SidebarGroup } from "@banijjik/ui";
 import { usePathname } from "next/navigation";
 import { useState, type ReactElement } from "react";
+import { LazyQuickCreateSheet } from "./lazy-quick-create-sheet";
 import { buildBottomNavSlots, type BottomNavLabels } from "./build-bottom-nav-slots";
 
 export interface ShellNavigationLabels extends BottomNavLabels {
@@ -57,7 +53,7 @@ export function ShellNavigation({
   return (
     <>
       <BottomNav slots={slots} navLabel={labels.navLabel} />
-      <QuickCreateSheet
+      <LazyQuickCreateSheet
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         title={labels.quickCreate}
@@ -65,7 +61,7 @@ export function ShellNavigation({
         emptyText={labels.emptyText}
         closeLabel={labels.closeLabel}
       />
-      <QuickCreateSheet
+      <LazyQuickCreateSheet
         open={isMoreOpen}
         onOpenChange={setIsMoreOpen}
         title={labels.more}

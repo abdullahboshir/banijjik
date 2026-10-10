@@ -2,6 +2,12 @@
 @import "@banijjik/ui/styles.css";
 @source "../../../packages/ui/src";
 
+/* Bangla pages draw Latin text with Noto Sans Bengali (its small latin subset), so a Bangla page loads one
+   family; English pages lead with Inter. This keeps the fonts a page loads under the 120 KB budget. */
 html {
+  --font-sans: var(--font-noto-bengali), var(--font-inter), system-ui, sans-serif;
+}
+
+html[lang="en"] {
   --font-sans: var(--font-inter), var(--font-noto-bengali), system-ui, sans-serif;
 }

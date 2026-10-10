@@ -1,10 +1,11 @@
 "use client";
 
 import type { Locale } from "@banijjik/i18n";
-import { LinkComponentProvider, Toaster } from "@banijjik/ui";
+import { LinkComponentProvider } from "@banijjik/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { useState, type ReactElement, type ReactNode } from "react";
+import { LazyToaster } from "../src/shell/lazy-toaster";
 import { ShellLink } from "../src/shell/shell-link";
 import { ApiError } from "../src/lib/api/api-error";
 import { I18nProvider, useTranslator } from "../src/lib/i18n/i18n-provider";
@@ -32,7 +33,7 @@ function createQueryClient(): QueryClient {
 
 function TranslatedToaster(): ReactElement {
   const { t } = useTranslator();
-  return <Toaster label={t("shell.notifications")} />;
+  return <LazyToaster label={t("shell.notifications")} />;
 }
 
 export interface ProvidersProps {

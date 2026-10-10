@@ -6,9 +6,18 @@ import { getLocale } from "../src/lib/i18n/get-locale";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  display: "swap",
+  adjustFontFallback: true,
+  preload: false,
+  variable: "--font-inter",
+});
 const notoSansBengali = Noto_Sans_Bengali({
   subsets: ["bengali"],
+  weight: ["400", "600"],
+  adjustFontFallback: true,
   display: "swap",
   variable: "--font-noto-bengali",
 });

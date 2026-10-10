@@ -36,3 +36,7 @@ Changing the brand colour means editing three tokens in `src/tokens/color.ts` an
 ## Adding a component
 
 Add a file in `src/components`, a test with Bangla text longer than the English equivalent, and a named export in `src/index.ts`. Keep icons in `src/lib/icons.tsx` (lucide only).
+
+## Toast subpath
+
+`@banijjik/ui/toast` exports `toast`, `Toaster` and `UNDO_DURATION_MS` on their own so an app can load sonner lazily (admin mounts the Toaster after first paint). A `toast()` call before the Toaster has mounted is safe but is not shown.
