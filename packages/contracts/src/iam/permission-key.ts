@@ -18,6 +18,7 @@ export const PERMISSION_KEY = {
   ORGANIZATION_MEMBER_REMOVE: "organization.member.remove",
   ORGANIZATION_MEMBER_READ_SENSITIVE: "organization.member.readSensitive",
   ORGANIZATION_OWNERSHIP_TRANSFER: "organization.ownership.transfer",
+  AUDIT_LOG_READ: "audit.log.read",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

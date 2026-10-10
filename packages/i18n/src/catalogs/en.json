@@ -108,5 +108,9 @@
   "permission.organization.member.update": "Edit team members",
   "permission.organization.member.remove": "Remove team members",
   "permission.organization.member.readSensitive": "View sensitive team member details",
-  "permission.organization.ownership.transfer": "Transfer ownership"
+  "permission.organization.ownership.transfer": "Transfer ownership",
+  "permission.audit.log.read": "View activity log",
+  "errors.idempotency_in_progress": "This request is still being processed. Please try again in a moment.",
+  "validation.idempotency_key_required": "Send an Idempotency-Key header with this request",
+  "validation.idempotency_key_invalid": "The Idempotency-Key must be a valid UUID"
 }

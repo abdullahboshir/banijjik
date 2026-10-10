@@ -108,5 +108,9 @@
   "permission.organization.member.update": "টিম সদস্য সম্পাদনা",
   "permission.organization.member.remove": "টিম সদস্য সরানো",
   "permission.organization.member.readSensitive": "টিম সদস্যের সংবেদনশীল তথ্য দেখা",
-  "permission.organization.ownership.transfer": "মালিকানা হস্তান্তর"
+  "permission.organization.ownership.transfer": "মালিকানা হস্তান্তর",
+  "permission.audit.log.read": "কার্যকলাপের লগ দেখা",
+  "errors.idempotency_in_progress": "এই অনুরোধটি এখনো চলছে। একটু পরে আবার চেষ্টা করুন।",
+  "validation.idempotency_key_required": "অনুরোধের সাথে একটি Idempotency-Key পাঠাতে হবে",
+  "validation.idempotency_key_invalid": "Idempotency-Key একটি বৈধ UUID হতে হবে"
 }

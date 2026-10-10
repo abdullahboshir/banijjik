@@ -112,3 +112,17 @@ export type {
   RoleUpdateRequest,
 } from "./iam/role-contracts.js";
 export { ROLE_MESSAGE_KEYS } from "./iam/role-message-keys.js";
+export {
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENCY_MESSAGE_KEYS,
+  IDEMPOTENCY_REPLAYED_HEADER,
+  IDEMPOTENCY_SCOPE_KIND,
+  IDEMPOTENCY_STATUS,
+} from "./idempotency/idempotency-contracts.js";
+export type {
+  IdempotencyScopeKind,
+  IdempotencyStatus,
+} from "./idempotency/idempotency-contracts.js";
+export { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "./audit/audit-action.js";
+export type { AuditAction, AuditEntityType } from "./audit/audit-action.js";
+export type { AuditChanges, AuditLogSummary, AuditValue } from "./audit/audit-contracts.js";
