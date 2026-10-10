@@ -8,6 +8,7 @@ import {
 } from "../kernel/db/index.js";
 import { createLogger } from "../kernel/logger/index.js";
 import { registerRateLimitModel } from "../kernel/rate-limit/index.js";
+import { registerSequenceModel } from "../kernel/sequence/index.js";
 import { registerModuleModels } from "../routes/v1.js";
 import { createLogCapture, type LogCapture } from "./log-capture.js";
 import { MutableClock } from "./mutable-clock.js";
@@ -28,6 +29,7 @@ export interface IamApiHarness {
  */
 export function registerIamApiModels(): void {
   registerRateLimitModel();
+  registerSequenceModel();
   registerModuleModels();
 }
 

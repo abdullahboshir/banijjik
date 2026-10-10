@@ -5,6 +5,10 @@ import { authenticate, createJoseAccessTokenVerifier } from "../kernel/auth/inde
 import type { RateLimiter } from "../kernel/rate-limit/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildIamRouters, registerIamModels } from "../modules/core/iam/index.js";
+import {
+  buildOrganizationRouters,
+  registerOrganizationModels,
+} from "../modules/core/organization/index.js";
 
 export interface V1Dependencies {
   readonly config: AppConfig;
@@ -15,6 +19,7 @@ export interface V1Dependencies {
 /** Every module registers its models here, before the databases connect (see main.ts). */
 export function registerModuleModels(): void {
   registerIamModels();
+  registerOrganizationModels();
 }
 
 /**
@@ -27,10 +32,13 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   const verifier = createJoseAccessTokenVerifier({ secret: config.auth.accessTokenSecret, clock });
   const requireAdminUser = authenticate({ audience: TOKEN_AUDIENCE.ADMIN, verifier });
   const { authRouter, meRouter } = buildIamRouters(dependencies);
+  const { myOrganizationsRouter } = buildOrganizationRouters(dependencies);
 
   // logout-all lives in the auth router but needs a session; the rest of /auth is public.
   router.use("/auth/logout-all", requireAdminUser);
   router.use("/auth", authRouter);
+  // More specific path first, so /me/orgs never falls into the /me router.
+  router.use("/me/orgs", requireAdminUser, myOrganizationsRouter);
   router.use("/me", requireAdminUser, meRouter);
   return router;
 }
