@@ -1,4 +1,6 @@
+import { TOKEN_AUDIENCE } from "@banijjik/contracts";
 import { type Router } from "express";
+import type { PlatformOperatorLookup } from "../../../kernel/auth/index.js";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import type { AppConfig } from "../../../config/index.js";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
@@ -43,8 +45,12 @@ import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
 import { RedisPermissionCache } from "./infrastructure/redis-permission-cache.js";
 import { TwoTierPermissionCache } from "./infrastructure/two-tier-permission-cache.js";
 import { MongoUserRepository } from "./infrastructure/mongo-user.repository.js";
+import { IamPlatformOperatorLookup } from "./infrastructure/platform-operator-lookup.js";
 import { AuthController } from "./presentation/auth.controller.js";
-import { AuthCookies } from "./presentation/auth-cookies.js";
+import { AuthCookies, PLATFORM_COOKIES } from "./presentation/auth-cookies.js";
+import { PlatformAuthController } from "./presentation/platform-auth.controller.js";
+import { buildPlatformAuthRouter } from "./presentation/platform-auth.router.js";
+import { AUTH_RATE_LIMIT } from "./domain/auth-limits.js";
 import { buildAuthRouter } from "./presentation/auth.router.js";
 import { RolesController } from "./presentation/roles.controller.js";
 import { buildRolesRouter } from "./presentation/roles.router.js";
@@ -74,19 +80,7 @@ export function buildIamRouters(dependencies: IamDependencies): IamRouters {
   const sessions = new MongoRefreshSessionRepository();
   const hasher = new Argon2PasswordHasher();
   const unitOfWork = new MongoUnitOfWork();
-  const sessionIssuer = new SessionIssuer({
-    tokenIssuer: new JwtTokenIssuer({
-      secret: config.auth.accessTokenSecret,
-      ttlSeconds: config.auth.accessTokenTtlSeconds,
-      clock,
-    }),
-    clock,
-    policy: {
-      refreshTokenTtlDays: config.auth.refreshTokenTtlDays,
-      familyMaxDays: config.auth.sessionFamilyMaxDays,
-      ipHashSecret: config.auth.accessTokenSecret,
-    },
-  });
+  const sessionIssuer = buildSessionIssuer(dependencies);
   const authController = new AuthController({
     registerUser: new RegisterUserUseCase({
       users,
@@ -122,6 +116,24 @@ export function buildIamRouters(dependencies: IamDependencies): IamRouters {
     authRouter: buildAuthRouter(authController, rateLimiter),
     meRouter: buildMeRouter(meController),
   };
+}
+
+/** Builds refresh sessions and signs access tokens; shared by the admin and the platform auth routers. */
+function buildSessionIssuer(dependencies: IamDependencies): SessionIssuer {
+  const { config, clock } = dependencies;
+  return new SessionIssuer({
+    tokenIssuer: new JwtTokenIssuer({
+      secret: config.auth.accessTokenSecret,
+      ttlSeconds: config.auth.accessTokenTtlSeconds,
+      clock,
+    }),
+    clock,
+    policy: {
+      refreshTokenTtlDays: config.auth.refreshTokenTtlDays,
+      familyMaxDays: config.auth.sessionFamilyMaxDays,
+      ipHashSecret: config.auth.accessTokenSecret,
+    },
+  });
 }
 
 /** The seed use case for the platform admin. Seeds call this instead of reaching into the module. */
@@ -279,3 +291,53 @@ export type {
   UserIdentifierReader,
   UserIdentifierView,
 } from "./application/user-identifier-reader.js";
+
+/** The kernel port behind `authenticatePlatform`: the ACTIVE operator of a signed-in user. */
+export function buildPlatformOperatorLookup(): PlatformOperatorLookup {
+  return new IamPlatformOperatorLookup(new MongoPlatformOperatorRepository());
+}
+
+/**
+ * `/platform/auth`: login, refresh and logout of platform operators, on the PLATFORM audience with
+ * their own cookies and rate-limit buckets (ADR-048). The same session machinery as `/auth`; only
+ * the audience, the operator check and the cookie pair differ.
+ */
+export function buildIamPlatformAuthRouter(dependencies: IamDependencies): Router {
+  const { config, clock, rateLimiter } = dependencies;
+  const users = new MongoUserRepository();
+  const sessions = new MongoRefreshSessionRepository();
+  const operators = new MongoPlatformOperatorRepository();
+  const sessionIssuer = buildSessionIssuer(dependencies);
+  const audience = TOKEN_AUDIENCE.PLATFORM;
+  const controller = new PlatformAuthController({
+    login: new LoginUseCase({
+      users,
+      sessions,
+      hasher: new Argon2PasswordHasher(),
+      sessionIssuer,
+      rateLimiter,
+      clock,
+      audience,
+      operators,
+      identifierLimit: AUTH_RATE_LIMIT.PLATFORM_LOGIN_PER_IDENTIFIER,
+    }),
+    refreshSession: new RefreshSessionUseCase({
+      users,
+      sessions,
+      sessionIssuer,
+      unitOfWork: new MongoUnitOfWork(),
+      clock,
+      audience,
+      operators,
+    }),
+    logout: new LogoutUseCase({ sessions, clock, audience }),
+    cookies: new AuthCookies({
+      isSecure: config.nodeEnv === "production",
+      domain: config.auth.cookieDomain,
+      accessTokenTtlSeconds: config.auth.accessTokenTtlSeconds,
+      ...PLATFORM_COOKIES,
+    }),
+    clock,
+  });
+  return buildPlatformAuthRouter(controller, rateLimiter);
+}

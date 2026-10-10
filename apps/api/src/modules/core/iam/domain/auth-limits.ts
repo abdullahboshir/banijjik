@@ -18,6 +18,22 @@ export const AUTH_RATE_LIMIT = {
   LOGIN_PER_IP: { bucket: "auth.login.ip", limit: 30, windowSeconds: FIFTEEN_MINUTES_SECONDS },
   REGISTER_PER_IP: { bucket: "auth.register.ip", limit: 10, windowSeconds: ONE_HOUR_SECONDS },
   REFRESH_PER_IP: { bucket: "auth.refresh.ip", limit: 60, windowSeconds: FIFTEEN_MINUTES_SECONDS },
+  /** The platform panel counts in its own buckets, so a flood on one app never locks out the other (plan 1.8a). */
+  PLATFORM_LOGIN_PER_IDENTIFIER: {
+    bucket: "platform.login.identifier",
+    limit: 5,
+    windowSeconds: FIFTEEN_MINUTES_SECONDS,
+  },
+  PLATFORM_LOGIN_PER_IP: {
+    bucket: "platform.login.ip",
+    limit: 30,
+    windowSeconds: FIFTEEN_MINUTES_SECONDS,
+  },
+  PLATFORM_REFRESH_PER_IP: {
+    bucket: "platform.refresh.ip",
+    limit: 60,
+    windowSeconds: FIFTEEN_MINUTES_SECONDS,
+  },
 } as const satisfies Record<string, AuthRateLimit>;
 
 /**

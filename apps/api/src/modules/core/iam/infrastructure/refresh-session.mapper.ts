@@ -1,3 +1,4 @@
+import { TOKEN_AUDIENCE } from "@banijjik/contracts";
 import { asId } from "@banijjik/ids";
 import { stripMongoInternals } from "../../../../kernel/db/index.js";
 import { RefreshSession } from "../domain/refresh-session.entity.js";
@@ -7,6 +8,7 @@ export function toRefreshSessionDocument(session: RefreshSession): RefreshSessio
   return {
     refreshSessionId: session.refreshSessionId,
     userId: session.userId,
+    audience: session.audience,
     familyId: session.familyId,
     tokenHash: session.tokenHash,
     expiresAt: session.expiresAt,
@@ -28,6 +30,7 @@ export function toRefreshSession(document: RefreshSessionDocument): RefreshSessi
   return RefreshSession.restore({
     refreshSessionId: stored.refreshSessionId,
     userId: asId(stored.userId),
+    audience: stored.audience ?? TOKEN_AUDIENCE.ADMIN,
     familyId: stored.familyId,
     tokenHash: stored.tokenHash,
     expiresAt: stored.expiresAt,

@@ -1,3 +1,4 @@
+import type { TokenAudience } from "@banijjik/contracts";
 import type { UserId } from "@banijjik/ids";
 import { RefreshSession } from "../domain/refresh-session.entity.js";
 import type { Clock } from "../../../../kernel/time/index.js";
@@ -43,12 +44,17 @@ export interface SessionIssuerDependencies {
 export class SessionIssuer {
   constructor(private readonly dependencies: SessionIssuerDependencies) {}
 
-  /** The first session of a login: starts a new family. */
-  async openFamily(userId: UserId, client: ClientInfo): Promise<PreparedSession> {
+  /** The first session of a login: starts a new family. Without an audience it is an ADMIN session. */
+  async openFamily(
+    userId: UserId,
+    client: ClientInfo,
+    audience?: TokenAudience,
+  ): Promise<PreparedSession> {
     const { clock, policy } = this.dependencies;
     const refreshToken = generateRefreshToken();
     const session = RefreshSession.openFamily({
       userId,
+      ...(audience === undefined ? {} : { audience }),
       tokenHash: hashRefreshToken(refreshToken),
       now: clock.now(),
       tokenTtlDays: policy.refreshTokenTtlDays,
@@ -85,6 +91,7 @@ export class SessionIssuer {
     const accessToken = await this.dependencies.tokenIssuer.issueAccessToken({
       userId: session.userId,
       refreshSessionId: session.refreshSessionId,
+      audience: session.audience,
     });
     return {
       session,

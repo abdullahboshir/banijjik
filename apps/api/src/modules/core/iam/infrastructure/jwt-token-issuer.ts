@@ -16,7 +16,7 @@ export interface JwtTokenIssuerOptions {
 
 const MILLISECONDS_PER_SECOND = 1000;
 
-/** Short-lived HS256 access tokens for the admin audience: `sub` is the user, `sid` the refresh session. */
+/** Short-lived HS256 access tokens (admin audience unless the claims say otherwise): `sub` is the user, `sid` the refresh session. */
 export class JwtTokenIssuer implements TokenIssuer {
   private readonly key: Uint8Array;
 
@@ -29,7 +29,7 @@ export class JwtTokenIssuer implements TokenIssuer {
     return new SignJWT({ sid: claims.refreshSessionId })
       .setProtectedHeader({ alg: ACCESS_TOKEN_ALGORITHM })
       .setSubject(claims.userId)
-      .setAudience(audienceClaim(TOKEN_AUDIENCE.ADMIN))
+      .setAudience(audienceClaim(claims.audience ?? TOKEN_AUDIENCE.ADMIN))
       .setIssuedAt(issuedAt)
       .setExpirationTime(issuedAt + this.options.ttlSeconds)
       .sign(this.key);

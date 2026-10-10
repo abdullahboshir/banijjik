@@ -1,3 +1,4 @@
+import { TOKEN_AUDIENCE, type TokenAudience } from "@banijjik/contracts";
 import { newId, type UserId } from "@banijjik/ids";
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -7,6 +8,8 @@ export const USER_AGENT_MAX_LENGTH = 200;
 export interface RefreshSessionProps {
   readonly refreshSessionId: string;
   readonly userId: UserId;
+  /** The app the session belongs to; a refresh token renews only a session of its own audience (ADR-048). */
+  readonly audience: TokenAudience;
   /** All sessions that descend from one login share a family; reuse of an old token revokes the family. */
   readonly familyId: string;
   readonly tokenHash: string;
@@ -28,6 +31,8 @@ interface ClientTraits {
 
 export interface OpenFamilyInput extends ClientTraits {
   readonly userId: UserId;
+  /** Defaults to ADMIN, the audience of every session before the platform panel existed. */
+  readonly audience?: TokenAudience;
   readonly tokenHash: string;
   readonly now: Date;
   readonly tokenTtlDays: number;
@@ -52,6 +57,7 @@ function limitUserAgent(userAgent: string | undefined): string | undefined {
 export class RefreshSession implements RefreshSessionProps {
   readonly refreshSessionId: string;
   readonly userId: UserId;
+  readonly audience: TokenAudience;
   readonly familyId: string;
   readonly tokenHash: string;
   readonly expiresAt: Date;
@@ -66,6 +72,7 @@ export class RefreshSession implements RefreshSessionProps {
   private constructor(props: RefreshSessionProps) {
     this.refreshSessionId = props.refreshSessionId;
     this.userId = props.userId;
+    this.audience = props.audience;
     this.familyId = props.familyId;
     this.tokenHash = props.tokenHash;
     this.expiresAt = props.expiresAt;
@@ -83,6 +90,7 @@ export class RefreshSession implements RefreshSessionProps {
     return new RefreshSession({
       refreshSessionId: newId(),
       userId: input.userId,
+      audience: input.audience ?? TOKEN_AUDIENCE.ADMIN,
       familyId: newId(),
       tokenHash: input.tokenHash,
       expiresAt: addDays(input.now, input.tokenTtlDays),
@@ -107,6 +115,7 @@ export class RefreshSession implements RefreshSessionProps {
     return new RefreshSession({
       refreshSessionId: newId(),
       userId: this.userId,
+      audience: this.audience,
       familyId: this.familyId,
       tokenHash: input.tokenHash,
       expiresAt,

@@ -1,3 +1,4 @@
+import type { PlatformOperator } from "../domain/platform-operator.entity.js";
 import type { User } from "../domain/user.entity.js";
 import type { IssuedSession } from "./session-issuer.js";
 
@@ -5,4 +6,6 @@ import type { IssuedSession } from "./session-issuer.js";
 export interface AuthenticationResult {
   readonly user: User;
   readonly issued: IssuedSession;
+  /** Set by the platform login only. */
+  readonly operator?: PlatformOperator;
 }
