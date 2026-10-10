@@ -5,7 +5,7 @@ import { ESLint, type Linter } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
 import { FIXTURE_EXPECTATIONS } from "./fixture-expectations.js";
 
-const RULE_COUNT = 34;
+const RULE_COUNT = 35;
 const currentFolder = dirname(fileURLToPath(import.meta.url));
 const fixturesRoot = join(currentFolder, "fixtures");
 const configFile = join(currentFolder, "..", "..", "eslint.config.mjs");

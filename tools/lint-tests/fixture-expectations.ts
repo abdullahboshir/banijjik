@@ -15,6 +15,7 @@ const DOMAIN_IMPORTS = "banijjik-guard/no-domain-framework-imports";
 const RUN_AS_SYSTEM = "banijjik-guard/no-run-as-system";
 const RUN_AS_SYSTEM_IMPORT = "banijjik-guard/no-run-as-system-import";
 const REQUEST_CONTEXT_IMPORT = "banijjik-guard/no-request-context-import";
+const RAW_COLLECTION = "banijjik-guard/no-raw-collection";
 const ORM_IMPORTS = "banijjik-guard/no-orm-imports";
 const NAMING = "@typescript-eslint/naming-convention";
 const GUARD = "banijjik-guard";
@@ -245,6 +246,13 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   passes("R27", `${MODULE}/application/r27-request-context-in-tests.pass.test.ts`),
   passes("R27", "apps/api/src/kernel/http/r27-request-context-in-kernel.pass.ts"),
   passes("R27", "apps/api/src/test-support/r27-request-context-in-test-support.pass.ts"),
+  fails("R27", `${MODULE}/application/r27-as-system-port.fail.ts`, REQUEST_CONTEXT_IMPORT),
+  fails(
+    "R27",
+    `${MODULE}/application/r27-run-in-organization-context.fail.ts`,
+    REQUEST_CONTEXT_IMPORT,
+  ),
+  passes("R27", "apps/api/src/routes/r27-bypass-helpers-in-composition-root.pass.ts"),
 
   fails("R28", `${MODULE}/application/r28-mongoose-in-application.fail.ts`, ORM_IMPORTS),
   fails("R28", `${MODULE}/presentation/r28-mongodb-type-in-presentation.fail.ts`, ORM_IMPORTS),
@@ -269,6 +277,11 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
 
   fails("R33", "src/r33-non-null-assertion.fail.ts", "@typescript-eslint/no-non-null-assertion"),
   passes("R33", "src/r33-checked-access.pass.ts"),
+
+  fails("R35", `${MODULE}/infrastructure/r35-raw-collection.fail.ts`, RAW_COLLECTION),
+  fails("R35", `${MODULE}/infrastructure/r35-raw-db-collection.fail.ts`, RAW_COLLECTION),
+  passes("R35", "apps/api/src/kernel/db/r35-raw-collection-in-kernel.pass.ts"),
+  passes("R35", `${MODULE}/infrastructure/r35-raw-collection-in-tests.pass.test.ts`),
 
   fails("R34", "apps/api/src/seeds/r34-seeds-import-module-internals.fail.ts", BOUNDARIES),
   passes("R34", "apps/api/src/seeds/r34-seeds-import-index-kernel-config.pass.ts"),

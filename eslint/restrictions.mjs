@@ -243,12 +243,30 @@ export const restrictionBlocks = [
           patterns: [
             {
               group: KERNEL_MODULES,
-              importNames: ["runWithRequestContext"],
+              importNames: ["runWithRequestContext", "asSystemPort", "runInOrganizationContext"],
               message:
-                "Only the kernel creates a request context; module code reads it with getRequestContext().",
+                "Only the kernel and routes/v1.ts create a request context or grant a bypass; module code reads the context with getRequestContext() and receives a plain port (ADR-087).",
             },
           ],
         },
+      ],
+    },
+  },
+  {
+    name: "banijjik/raw-collection",
+    files: MODULE_FILES,
+    ignores: TEST_FILES,
+    rules: {
+      // Raw driver collections skip Mongoose middleware, so they would skip the tenant plugin too.
+      "banijjik-guard/no-raw-collection": [
+        ERROR,
+        ...syntaxRules(
+          "A raw driver collection bypasses the tenant plugin; use the models(ctx) accessor (ADR-087).",
+          [
+            "MemberExpression[computed=false][property.name='collection']",
+            "MemberExpression[computed=true][property.value='collection']",
+          ],
+        ),
       ],
     },
   },
