@@ -2,13 +2,13 @@ import type { OrganizationCreateBody } from "@banijjik/validation";
 import type { RequestHandler } from "express";
 import { sendData } from "../../../../kernel/http/index.js";
 import type { CreateOrganizationUseCase } from "../application/use-cases/create-organization.use-case.js";
-import type { ListMyOrganizationsUseCase } from "../application/use-cases/list-my-organizations.use-case.js";
+import type { MyOrganizationsReader } from "../application/use-cases/list-my-organizations.use-case.js";
 import { toMyOrganizationSummary } from "./my-organization.transformer.js";
 import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 
 export interface OrganizationControllerDependencies {
   readonly createOrganization: CreateOrganizationUseCase;
-  readonly listMyOrganizations: ListMyOrganizationsUseCase;
+  readonly listMyOrganizations: MyOrganizationsReader;
 }
 
 const HTTP_CREATED = 201;

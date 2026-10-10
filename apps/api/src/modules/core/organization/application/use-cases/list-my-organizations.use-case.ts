@@ -41,11 +41,16 @@ function toMyOrganization(
   };
 }
 
+/** Lists the organizations of one login. It spans organizations, so it runs as system access (see routes/v1.ts). */
+export interface MyOrganizationsReader {
+  execute(input: { readonly userId: UserId }): Promise<MyOrganization[]>;
+}
+
 /**
  * Every organization the user belongs to, for one login (ADR-022). It is three queries however
  * many organizations there are: memberships, organizations, role keys.
  */
-export class ListMyOrganizationsUseCase {
+export class ListMyOrganizationsUseCase implements MyOrganizationsReader {
   constructor(private readonly dependencies: ListMyOrganizationsDependencies) {}
 
   async execute(input: { readonly userId: UserId }): Promise<MyOrganization[]> {

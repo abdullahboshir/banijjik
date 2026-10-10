@@ -11,6 +11,7 @@ import type {
   ActorProfileReader,
   SystemRoleProvisioner,
 } from "../ports/iam-ports.js";
+import type { OrganizationContextRunner } from "../ports/organization-context-runner.js";
 import type { MemberNumberSequence } from "../ports/member-number-sequence.js";
 import type {
   LocationRepository,
@@ -35,19 +36,21 @@ export interface CreateOrganizationDependencies {
   readonly actorProfiles: ActorProfileReader;
   readonly memberNumbers: MemberNumberSequence;
   readonly unitOfWork: UnitOfWork;
+  readonly contextRunner: OrganizationContextRunner;
   readonly clock: Clock;
 }
 
 /**
  * Creates a business: the organization, its six system roles, its default location and the owner
  * member, all in one transaction (09 section 4.2). The MEMBER number is taken before the
- * transaction (FAST sequence, ADR-085): an abort loses the number, it never repeats it.
+ * transaction (FAST sequence, ADR-085): an abort loses the number, it never repeats it. Both run
+ * as the new organization (OrganizationContextRunner), because its rows are tenant-scoped.
  */
 export class CreateOrganizationUseCase {
   constructor(private readonly dependencies: CreateOrganizationDependencies) {}
 
   async execute(input: CreateOrganizationInput): Promise<MyOrganization> {
-    const { organizations, memberNumbers, clock } = this.dependencies;
+    const { organizations, clock } = this.dependencies;
     const actor = await this.readActor(input.actorUserId);
     const organization = Organization.create({
       name: input.name,
@@ -59,10 +62,7 @@ export class CreateOrganizationUseCase {
     });
     // A taken slug answers before a member number is spent; the unique index still decides races.
     if (await organizations.isSlugTaken(organization.slug)) throw new SlugTakenError();
-    const memberNumber = await memberNumbers.next(organization.organizationId);
-    await this.dependencies.unitOfWork.run(() =>
-      this.storeAll(organization, { actor, district: input.district, memberNumber }),
-    );
+    await this.persist(organization, actor, input.district);
     return {
       organizationId: organization.organizationId,
       slug: organization.slug,
@@ -70,6 +70,18 @@ export class CreateOrganizationUseCase {
       status: organization.status,
       roleKeys: [SYSTEM_ROLE_KEY.OWNER],
     };
+  }
+
+  private persist(
+    organization: Organization,
+    actor: ActorProfile,
+    district: string | undefined,
+  ): Promise<void> {
+    const { memberNumbers, unitOfWork, contextRunner } = this.dependencies;
+    return contextRunner.run(organization.organizationId, async () => {
+      const memberNumber = await memberNumbers.next(organization.organizationId);
+      await unitOfWork.run(() => this.storeAll(organization, { actor, district, memberNumber }));
+    });
   }
 
   private async readActor(userId: UserId): Promise<ActorProfile> {

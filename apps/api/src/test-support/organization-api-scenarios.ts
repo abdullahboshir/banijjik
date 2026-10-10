@@ -4,6 +4,8 @@ import type { DatabaseConnections } from "../kernel/db/index.js";
 import { Member } from "../modules/core/organization/domain/member.entity.js";
 import { MongoMemberRepository } from "../modules/core/organization/infrastructure/mongo-member.repository.js";
 
+import { withOrganizationContext } from "./organization-context.js";
+
 const MANAGER_NOT_FOUND = "the MANAGER system role was not found";
 
 /**
@@ -29,7 +31,9 @@ export async function addManagerMember(
     createdByUserId: userId,
     now: new Date(),
   });
-  await new MongoMemberRepository().insert(member);
+  await withOrganizationContext(organization.organizationId, () =>
+    new MongoMemberRepository().insert(member),
+  );
 }
 
 /** Closes an organization directly in the database; there is no close use case yet (card 1.8 and later). */

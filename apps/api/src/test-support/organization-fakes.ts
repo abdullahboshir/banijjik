@@ -6,6 +6,7 @@ import type {
   RoleKeyLookup,
   SystemRoleProvisioner,
 } from "../modules/core/organization/application/ports/iam-ports.js";
+import type { OrganizationContextRunner } from "../modules/core/organization/application/ports/organization-context-runner.js";
 import type { MemberNumberSequence } from "../modules/core/organization/application/ports/member-number-sequence.js";
 import type {
   LocationRepository,
@@ -103,5 +104,12 @@ export class FakeRoleKeyLookup implements RoleKeyLookup {
   async findRoleKeysByIds(): Promise<ReadonlyMap<RoleId, string>> {
     this.calls += 1;
     return this.keysByRoleId;
+  }
+}
+
+/** Runs the work as it is: the use case tests use in-memory repositories, which have no tenant context. */
+export class PassThroughContextRunner implements OrganizationContextRunner {
+  async run<Result>(_organizationId: OrganizationId, work: () => Promise<Result>): Promise<Result> {
+    return work();
   }
 }

@@ -1,6 +1,7 @@
-import { SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { SYSTEM_REASON, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
 import { newId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { asSystemPort } from "../../../../kernel/context/index.js";
 import {
   initializeModels,
   withTransaction,
@@ -18,7 +19,8 @@ import { registerIamModels } from "./register-iam-models.js";
 registerIamModels();
 
 const NOW = new Date("2026-10-11T08:00:00.000Z");
-const roles = new MongoRoleRepository();
+// Roles of several organizations are written and read together here, which only system access may do.
+const roles = asSystemPort(SYSTEM_REASON.SEED, new MongoRoleRepository());
 
 let connections: DatabaseConnections;
 

@@ -7,6 +7,7 @@ import {
   InMemoryMemberNumberSequence,
   InMemoryMemberRepository,
   InMemoryOrganizationRepository,
+  PassThroughContextRunner,
 } from "../../../../../test-support/organization-fakes.js";
 import { PassThroughUnitOfWork } from "../../../../../test-support/iam-fakes.js";
 import { MutableClock } from "../../../../../test-support/mutable-clock.js";
@@ -33,6 +34,7 @@ function aWorld() {
     actorProfiles,
     memberNumbers,
     unitOfWork: new PassThroughUnitOfWork(),
+    contextRunner: new PassThroughContextRunner(),
     clock: new MutableClock(),
   });
   const input: CreateOrganizationInput = {

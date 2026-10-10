@@ -2,7 +2,9 @@ import { SEQUENCE_KEY } from "@banijjik/contracts";
 import { newId, type OrganizationId, type RoleId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { initializeModels, type DatabaseConnections } from "../../../../kernel/db/index.js";
+import { runInOrganizationContext } from "../../../../kernel/tenancy/index.js";
 import { registerSequenceModel } from "../../../../kernel/sequence/index.js";
+import { withOrganizationContext } from "../../../../test-support/organization-context.js";
 import { MutableClock } from "../../../../test-support/mutable-clock.js";
 import { FakeActorProfileReader } from "../../../../test-support/organization-fakes.js";
 import {
@@ -66,6 +68,14 @@ function aDefaultLocation(organizationId: OrganizationId, name: string): Locatio
   });
 }
 
+function insertLocation(location: Location): Promise<void> {
+  return withOrganizationContext(location.organizationId, () => locations.insert(location));
+}
+
+function insertMember(member: Member): Promise<void> {
+  return withOrganizationContext(member.organizationId, () => members.insert(member));
+}
+
 function countIn(collectionName: string, organizationId: OrganizationId): Promise<number> {
   return connections.platform.collection(collectionName).countDocuments({ organizationId });
 }
@@ -82,23 +92,23 @@ describe("organization collections", () => {
 
   it("refuses a second default location in one organization but not in another", async () => {
     const organizationId = newId() as OrganizationId;
-    await locations.insert(aDefaultLocation(organizationId, "Main"));
+    await insertLocation(aDefaultLocation(organizationId, "Main"));
 
-    await expect(locations.insert(aDefaultLocation(organizationId, "Second"))).rejects.toThrow();
+    await expect(insertLocation(aDefaultLocation(organizationId, "Second"))).rejects.toThrow();
     await expect(
-      locations.insert(aDefaultLocation(newId() as OrganizationId, "Main")),
+      insertLocation(aDefaultLocation(newId() as OrganizationId, "Main")),
     ).resolves.toBeUndefined();
   });
 
   it("refuses two locations with the same name in one organization", async () => {
     const organizationId = newId() as OrganizationId;
-    await locations.insert(aDefaultLocation(organizationId, "Main"));
+    await insertLocation(aDefaultLocation(organizationId, "Main"));
     const sameName = Location.restore({
       ...aDefaultLocation(organizationId, "Main"),
       isDefault: false,
     });
 
-    await expect(locations.insert(sameName)).rejects.toThrow();
+    await expect(insertLocation(sameName)).rejects.toThrow();
   });
 
   it("turns a duplicate slug into a SlugTakenError and reports it through isSlugTaken", async () => {
@@ -124,9 +134,9 @@ describe("organization collections", () => {
         createdByUserId: userId,
         now: NOW,
       });
-    await members.insert(join());
+    await insertMember(join());
 
-    await expect(members.insert(join())).rejects.toThrow();
+    await expect(insertMember(join())).rejects.toThrow();
   });
 
   it("returns stored organizations without Mongo internals", async () => {
@@ -175,6 +185,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
       actorProfiles,
       memberNumbers: new MongoMemberNumberSequence(),
       unitOfWork: new MongoUnitOfWork(),
+      contextRunner: { run: runInOrganizationContext },
       clock,
     });
     return { useCase, actorUserId };
