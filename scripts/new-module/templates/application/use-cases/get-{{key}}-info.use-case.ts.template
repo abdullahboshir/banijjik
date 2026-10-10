@@ -1,0 +1,10 @@
+import type { {{pascal}}Info, {{pascal}}InfoSource } from "../ports/{{key}}-info.source.js";
+
+/** The smallest use case: it asks its port and returns the answer. New use cases copy this shape. */
+export class Get{{pascal}}InfoUseCase {
+  constructor(private readonly source: {{pascal}}InfoSource) {}
+
+  execute(): {{pascal}}Info {
+    return this.source.read();
+  }
+}

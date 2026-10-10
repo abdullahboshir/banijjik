@@ -8,7 +8,7 @@ import { packageManifest } from "../modules/platform/package/index.js";
 import { saasBillingManifest } from "../modules/platform/saas-billing/index.js";
 
 /** Every manifest of the application. A module joins the product by adding its manifest here. */
-const MODULE_MANIFESTS: readonly ModuleManifest[] = [
+export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   iamManifest,
   organizationManifest,
   auditManifest,

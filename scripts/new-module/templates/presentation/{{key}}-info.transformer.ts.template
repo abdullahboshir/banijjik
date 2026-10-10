@@ -1,0 +1,11 @@
+import type { {{pascal}}Info } from "../application/ports/{{key}}-info.source.js";
+
+/** The API shape of the module info. Move it to `@banijjik/contracts` when an endpoint serves it. */
+export interface {{pascal}}InfoResponse {
+  readonly moduleKey: string;
+  readonly path: string;
+}
+
+export function to{{pascal}}InfoResponse(info: {{pascal}}Info): {{pascal}}InfoResponse {
+  return { moduleKey: info.moduleKey, path: info.path };
+}

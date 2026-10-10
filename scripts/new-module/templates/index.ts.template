@@ -1,0 +1,20 @@
+import { Get{{pascal}}InfoUseCase } from "./application/use-cases/get-{{key}}-info.use-case.js";
+import { Manifest{{pascal}}InfoSource } from "./infrastructure/manifest-{{key}}-info.source.js";
+import {
+  to{{pascal}}InfoResponse,
+  type {{pascal}}InfoResponse,
+} from "./presentation/{{key}}-info.transformer.js";
+import { {{camel}}Manifest } from "./module.manifest.js";
+
+export { {{camel}}Manifest };
+
+/** Models arrive with the first entity of the module. routes/v1.ts calls this before the databases connect. */
+export function register{{pascal}}Models(): void {
+  // No entity yet, so there is no model to register.
+}
+
+/** Wires the four layers once, so a new module starts with every layer in use. */
+export function build{{pascal}}Info(): {{pascal}}InfoResponse {
+  const useCase = new Get{{pascal}}InfoUseCase(new Manifest{{pascal}}InfoSource({{camel}}Manifest));
+  return to{{pascal}}InfoResponse(useCase.execute());
+}

@@ -1,0 +1,26 @@
+import { MODULE_CLASS, MODULE_KEY } from "@banijjik/contracts";
+import { defineModule } from "../../../kernel/modules/index.js";
+
+/**
+ * The {{key}} manifest in the shape of 10-MODULE-CATALOG section 2. Routes, menu entries, settings,
+ * bot tools and storefront sections are declared here and nowhere else; add them as the module grows.
+ */
+export const {{camel}}Manifest = defineModule({
+  key: MODULE_KEY.{{constantName}},
+  path: "{{group}}/{{key}}",
+  moduleClass: MODULE_CLASS.{{moduleClass}},
+  dependsOn: [],
+  providesKinds: [],
+  requiresAnyKind: [],
+  tenantCanDisable: false,
+  permissions: [],
+  routes: {},
+  menu: [],
+  settingKeys: [],
+  customFieldEntities: [],
+  botTools: [],
+  storefrontSections: [],
+  events: { emits: [], consumes: [] },
+  limitKeys: [],
+  sequenceKeys: [],
+});

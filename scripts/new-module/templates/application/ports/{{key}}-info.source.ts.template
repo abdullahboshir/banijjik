@@ -1,0 +1,11 @@
+import type { ModuleKey } from "@banijjik/contracts";
+
+export interface {{pascal}}Info {
+  readonly moduleKey: ModuleKey;
+  readonly path: string;
+}
+
+/** Where the module reads its own identity from. The infrastructure layer implements it. */
+export interface {{pascal}}InfoSource {
+  read(): {{pascal}}Info;
+}

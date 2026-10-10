@@ -1,0 +1,9 @@
+import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
+
+/**
+ * The shape of every business rule failure of this module (ADR-086): a contracts error code and a
+ * message key, no HTTP. Domain code throws it; the kernel error handler maps it to the API answer.
+ */
+export function {{camel}}RuleViolation(messageKey: string): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.BUSINESS_RULE, messageKey });
+}

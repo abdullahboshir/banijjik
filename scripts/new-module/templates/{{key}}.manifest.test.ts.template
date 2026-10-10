@@ -1,0 +1,19 @@
+import { MODULE_KEY } from "@banijjik/contracts";
+import { describe, expect, it } from "vitest";
+import { createModuleRegistry } from "../../../kernel/modules/index.js";
+import { build{{pascal}}Info, {{camel}}Manifest } from "./index.js";
+
+describe("the {{key}} module", () => {
+  it("has a manifest that a module registry accepts", () => {
+    const registry = createModuleRegistry([{{camel}}Manifest]);
+
+    expect(registry.find(MODULE_KEY.{{constantName}})).toBe({{camel}}Manifest);
+  });
+
+  it("reports its own key and path through all four layers", () => {
+    expect(build{{pascal}}Info()).toEqual({
+      moduleKey: MODULE_KEY.{{constantName}},
+      path: "{{group}}/{{key}}",
+    });
+  });
+});

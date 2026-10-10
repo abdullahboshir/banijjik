@@ -28,6 +28,7 @@
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "infra:reset": "docker compose -f infra/docker-compose.yml down -v",
     "config:check": "npm run config:check -w @banijjik/api",
+    "new-module": "node scripts/new-module/new-module.mjs",
     "ci": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build"
   },
   "devDependencies": {
