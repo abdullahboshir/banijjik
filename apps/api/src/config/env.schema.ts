@@ -111,6 +111,12 @@ const MINIMUM_SECRET_LENGTH = 32;
 const COOKIE_DOMAIN_PATTERN =
   /^\.?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i;
 
+export const outboxPollIntervalRule: FieldRule<number> = {
+  key: "OUTBOX_POLL_INTERVAL_MS",
+  hint: "must be an integer from 1 to 60000",
+  schema: positiveInteger(60_000),
+};
+
 export const accessTokenSecretRule: FieldRule<string> = {
   key: "AUTH_ACCESS_TOKEN_SECRET",
   hint: `must be a random string of at least ${MINIMUM_SECRET_LENGTH} characters`,

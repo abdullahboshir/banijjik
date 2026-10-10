@@ -6,6 +6,7 @@ import {
   isLocalHostUrl,
   logLevelRule,
   nodeEnvRule,
+  outboxPollIntervalRule,
   platformUrlRule,
   portRule,
   redisUrlRule,
@@ -20,6 +21,7 @@ import {
   collectIssues,
   failure,
   readField,
+  readOptionalField,
   type Environment,
   type FieldResult,
 } from "./read-field.js";
@@ -118,13 +120,22 @@ export function loadConfig(env: Environment): AppConfig {
   const base = readBaseConfig(env);
   const auth = readAuthConfig(env);
   const platformAdmin = readPlatformAdmin(env);
-  const issues = [...base.issues, ...auth.issues, ...platformAdmin.issues];
+  const outboxPollInterval = readOptionalField(env, outboxPollIntervalRule);
+  const issues = [
+    ...base.issues,
+    ...auth.issues,
+    ...platformAdmin.issues,
+    ...collectIssues([outboxPollInterval]),
+  ];
   if (issues.length > 0 || base.value === undefined || auth.value === undefined) {
     throw new ConfigError(issues);
   }
   return Object.freeze({
     ...base.value,
     auth: auth.value,
+    ...(outboxPollInterval.value === undefined
+      ? {}
+      : { outboxPollIntervalMs: outboxPollInterval.value }),
     ...(platformAdmin.value === undefined ? {} : { platformAdmin: platformAdmin.value }),
   });
 }

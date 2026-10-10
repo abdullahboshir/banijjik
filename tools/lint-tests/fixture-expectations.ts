@@ -261,6 +261,7 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   passes("R28", "apps/api/src/kernel/sequence/r28-mongoose-in-kernel-sequence.pass.ts"),
   passes("R28", "apps/api/src/kernel/rate-limit/r28-mongoose-in-kernel-rate-limit.pass.ts"),
   passes("R28", "apps/api/src/kernel/idempotency/r28-mongoose-in-kernel-idempotency.pass.ts"),
+  passes("R28", "apps/api/src/kernel/events/r28-mongoose-in-kernel-events.pass.ts"),
   passes("R28", "apps/api/src/test-support/r28-mongoose-in-test-support.pass.ts"),
   passes("R28", "src/r28-mongoose-in-tests.pass.test.ts"),
 

@@ -6,6 +6,10 @@ declare module "vitest" {
   export interface ProvidedContext {
     /** Replica-set URI without a database name, e.g. mongodb://127.0.0.1:41234/?replicaSet=rs0 */
     mongoUri: string;
+    /** TEST_REDIS_URL, or an empty string when it is not set. */
+    redisUrl: string;
+    /** True on CI, where a missing TEST_REDIS_URL fails the Redis suites instead of skipping them. */
+    isCi: boolean;
   }
 }
 

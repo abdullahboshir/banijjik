@@ -1,3 +1,4 @@
+import type { EventPayloadMap, EventType } from "@banijjik/contracts";
 import type { UserId } from "@banijjik/ids";
 import type { PasswordHasher } from "../modules/core/iam/application/ports/password-hasher.js";
 import type { PlatformOperatorRepository } from "../modules/core/iam/application/ports/platform-operator-repository.js";
@@ -33,6 +34,15 @@ export class FakePasswordHasher implements PasswordHasher {
 export class FakeTokenIssuer implements TokenIssuer {
   async issueAccessToken(claims: { userId: UserId; refreshSessionId: string }): Promise<string> {
     return `access-token-for-${claims.refreshSessionId}`;
+  }
+}
+
+/** Remembers every published event, so a use case test can see what was announced. */
+export class RecordingEventPublisher {
+  readonly published: { type: EventType; payload: unknown }[] = [];
+
+  async publish<Type extends EventType>(type: Type, payload: EventPayloadMap[Type]): Promise<void> {
+    this.published.push({ type, payload });
   }
 }
 

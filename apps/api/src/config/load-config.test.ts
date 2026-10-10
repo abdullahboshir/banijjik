@@ -12,7 +12,7 @@ const validEnv = {
     "mongodb://127.0.0.1:27018/platform_database?replicaSet=rs0&directConnection=true",
   DB_TENANT_SHARED_URL:
     "mongodb://127.0.0.1:27018/tenant_shared_database?replicaSet=rs0&directConnection=true",
-  REDIS_URL: "redis://127.0.0.1:6379",
+  REDIS_URL: "redis://127.0.0.1:6380",
   CORS_ALLOWED_ORIGINS: "http://localhost:3000, https://admin.example.com, http://localhost:3000",
 };
 

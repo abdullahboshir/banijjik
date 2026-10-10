@@ -18,6 +18,7 @@ import {
   InMemoryRefreshSessionRepository,
   InMemoryUserRepository,
   PassThroughUnitOfWork,
+  RecordingEventPublisher,
 } from "./iam-fakes.js";
 import { MutableClock } from "./mutable-clock.js";
 import { installTestLogger } from "./test-databases.js";
@@ -32,6 +33,7 @@ export interface IamWorld {
   readonly operators: InMemoryPlatformOperatorRepository;
   readonly hasher: FakePasswordHasher;
   readonly rateLimiter: InMemoryRateLimiter;
+  readonly events: RecordingEventPublisher;
   readonly registerUser: RegisterUserUseCase;
   readonly login: LoginUseCase;
   readonly refreshSession: RefreshSessionUseCase;
@@ -56,7 +58,16 @@ export function createIamWorld(): IamWorld {
     clock,
     policy: { refreshTokenTtlDays: 30, familyMaxDays: 90, ipHashSecret: "test-ip-hash-secret" },
   });
-  const registerDependencies = { users, sessions, hasher, sessionIssuer, unitOfWork, clock };
+  const events = new RecordingEventPublisher();
+  const registerDependencies = {
+    users,
+    sessions,
+    hasher,
+    sessionIssuer,
+    unitOfWork,
+    events,
+    clock,
+  };
   return {
     clock,
     users,
@@ -64,6 +75,7 @@ export function createIamWorld(): IamWorld {
     operators,
     hasher,
     rateLimiter,
+    events,
     registerUser: new RegisterUserUseCase(registerDependencies),
     login: new LoginUseCase({ users, sessions, hasher, sessionIssuer, rateLimiter, clock }),
     refreshSession: new RefreshSessionUseCase({

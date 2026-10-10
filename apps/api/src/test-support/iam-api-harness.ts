@@ -9,6 +9,7 @@ import {
 } from "../kernel/db/index.js";
 import { createLogger } from "../kernel/logger/index.js";
 import { registerIdempotencyModel } from "../kernel/idempotency/index.js";
+import { registerEventModels } from "../kernel/events/index.js";
 import { MongoRateLimiter, registerRateLimitModel } from "../kernel/rate-limit/index.js";
 import { registerSequenceModel } from "../kernel/sequence/index.js";
 import { buildV1Router, registerModuleModels } from "../routes/v1.js";
@@ -33,6 +34,7 @@ export function registerIamApiModels(): void {
   registerRateLimitModel();
   registerSequenceModel();
   registerIdempotencyModel();
+  registerEventModels();
   registerModuleModels();
 }
 

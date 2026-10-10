@@ -5,6 +5,11 @@ export interface ErrorReportContext {
   readonly requestId?: string;
   readonly method?: string;
   readonly path?: string;
+  /** Set when a queue handler gives up (card 1.5b). */
+  readonly eventId?: string;
+  readonly handlerKey?: string;
+  readonly eventType?: string;
+  readonly attempts?: number;
 }
 
 /**

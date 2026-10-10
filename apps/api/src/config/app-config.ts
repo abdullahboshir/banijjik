@@ -8,6 +8,8 @@ export interface AppConfig {
     readonly tenantSharedUrl: string;
   };
   readonly redisUrl: string;
+  /** How often the worker looks for pending outbox events. Absent means the dispatcher default (500 ms). */
+  readonly outboxPollIntervalMs?: number;
   readonly corsAllowedOrigins: readonly string[];
   readonly auth: {
     /** Signs access tokens. Never logged. */
