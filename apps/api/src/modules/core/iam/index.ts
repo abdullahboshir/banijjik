@@ -1,8 +1,15 @@
 import { type Router } from "express";
 import type { AppConfig } from "../../../config/index.js";
+import type { PermissionGate, PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
+import { type PermissionCatalog } from "./application/permission-catalog.js";
+import { IamPermissionGate } from "./application/permission-gate.js";
+import { PermissionResolver } from "./application/permission-resolver.js";
+import type { MemberAccessReader } from "./application/ports/member-access-reader.js";
+import type { PermissionCache } from "./application/ports/permission-cache.js";
 import type { RoleRepository } from "./application/ports/role-repository.js";
+import type { RolesVersionBumper } from "./application/ports/roles-version-bumper.js";
 import { SessionIssuer } from "./application/session-issuer.js";
 import { EnsurePlatformAdminUseCase } from "./application/use-cases/ensure-platform-admin.use-case.js";
 import { GetMeUseCase } from "./application/use-cases/get-me.use-case.js";
@@ -14,7 +21,12 @@ import { ProvisionSystemRolesUseCase } from "./application/use-cases/provision-s
 import { ReadUserProfileUseCase } from "./application/use-cases/read-user-profile.use-case.js";
 import { RegisterUserUseCase } from "./application/use-cases/register-user.use-case.js";
 import { UpdateMeUseCase } from "./application/use-cases/update-me.use-case.js";
+import { ArchiveRoleUseCase } from "./application/use-cases/archive-role.use-case.js";
+import { CreateRoleUseCase } from "./application/use-cases/create-role.use-case.js";
+import { ListRolesUseCase } from "./application/use-cases/list-roles.use-case.js";
+import { UpdateRoleUseCase } from "./application/use-cases/update-role.use-case.js";
 import { Argon2PasswordHasher } from "./infrastructure/argon2-password-hasher.js";
+import { InMemoryPermissionCache } from "./infrastructure/in-memory-permission-cache.js";
 import { JwtTokenIssuer } from "./infrastructure/jwt-token-issuer.js";
 import { MongoPlatformOperatorRepository } from "./infrastructure/mongo-platform-operator.repository.js";
 import { MongoRefreshSessionRepository } from "./infrastructure/mongo-refresh-session.repository.js";
@@ -24,6 +36,8 @@ import { MongoUserRepository } from "./infrastructure/mongo-user.repository.js";
 import { AuthController } from "./presentation/auth.controller.js";
 import { AuthCookies } from "./presentation/auth-cookies.js";
 import { buildAuthRouter } from "./presentation/auth.router.js";
+import { RolesController } from "./presentation/roles.controller.js";
+import { buildRolesRouter } from "./presentation/roles.router.js";
 import { MeController } from "./presentation/me.controller.js";
 import { buildMeRouter } from "./presentation/me.router.js";
 
@@ -137,3 +151,76 @@ export type {
   ReadUserProfileUseCase,
   UserProfile,
 } from "./application/use-cases/read-user-profile.use-case.js";
+
+export { buildPermissionCatalog } from "./application/permission-catalog.js";
+export type { PermissionCatalog } from "./application/permission-catalog.js";
+export type {
+  MemberAccessReader,
+  MemberAssignment,
+} from "./application/ports/member-access-reader.js";
+export type { RolesVersionBumper } from "./application/ports/roles-version-bumper.js";
+
+export interface PermissionGateDependencies {
+  readonly catalog: PermissionCatalog;
+  /** Implemented by core/organization, wired in routes/v1.ts. */
+  readonly memberAccess: Pick<MemberAccessReader, "findAssignments">;
+  readonly clock: Clock;
+  /** Defaults to the in-process LRU cache; the Redis adapter arrives with card 1.5. */
+  readonly cache?: PermissionCache;
+}
+
+/** The kernel PermissionGate: roles and assignments resolved to locations, behind a version-keyed cache (ADR-088). */
+export function buildPermissionGate(dependencies: PermissionGateDependencies): PermissionGate {
+  const { catalog, memberAccess, clock } = dependencies;
+  return new IamPermissionGate({
+    catalog,
+    resolver: new PermissionResolver(catalog),
+    cache: dependencies.cache ?? new InMemoryPermissionCache({ clock }),
+    roles: new MongoRoleRepository(),
+    members: memberAccess,
+  });
+}
+
+export interface IamTenantRouterDependencies {
+  readonly catalog: PermissionCatalog;
+  readonly memberAccess: MemberAccessReader;
+  readonly rolesVersion: RolesVersionBumper;
+  readonly permission: PermissionMiddlewareFactory;
+  readonly clock: Clock;
+}
+
+/** The role endpoints of `/orgs/{organizationId}`, mounted by routes/v1.ts behind the tenant pipeline. */
+export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies): Router {
+  const { catalog, memberAccess, rolesVersion, permission, clock } = dependencies;
+  const roles = new MongoRoleRepository();
+  const resolver = new PermissionResolver(catalog);
+  const unitOfWork = new MongoUnitOfWork();
+  const controller = new RolesController({
+    listRoles: new ListRolesUseCase({ roles, members: memberAccess, resolver }),
+    createRole: new CreateRoleUseCase({
+      roles,
+      rolesVersion,
+      unitOfWork,
+      catalog,
+      resolver,
+      clock,
+    }),
+    updateRole: new UpdateRoleUseCase({
+      roles,
+      rolesVersion,
+      unitOfWork,
+      catalog,
+      resolver,
+      clock,
+    }),
+    archiveRole: new ArchiveRoleUseCase({
+      roles,
+      members: memberAccess,
+      rolesVersion,
+      unitOfWork,
+      resolver,
+      clock,
+    }),
+  });
+  return buildRolesRouter(controller, permission);
+}

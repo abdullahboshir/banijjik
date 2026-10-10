@@ -1,4 +1,4 @@
-import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
+import { DomainRuleError, ERROR_CODE, ROLE_RULE_KEY, ROLE_STATUS } from "@banijjik/contracts";
 
 /** The shared base class lives in contracts (ADR-086); re-exported so module code keeps one import. */
 export { DomainRuleError };
@@ -54,5 +54,49 @@ export class RefreshRaceError extends DomainRuleError {
   constructor() {
     super({ code: ERROR_CODE.UNAUTHENTICATED });
     this.name = "RefreshRaceError";
+  }
+}
+
+/** No role with this ID in the organization (a role of another organization looks the same, ADR-080). */
+export function roleNotFound(): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.NOT_FOUND });
+}
+
+/** The six system roles are code templates; the tenant cannot change or archive them. */
+export function systemRoleImmutable(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "errors.system_role_immutable",
+    details: { ruleKey: ROLE_RULE_KEY.SYSTEM_ROLE_IMMUTABLE },
+  });
+}
+
+/** An ACTIVE member still holds the role, so archiving it would silently remove their access. */
+export function roleInUse(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "errors.role_in_use",
+    details: { ruleKey: ROLE_RULE_KEY.ROLE_IN_USE },
+  });
+}
+
+/** An archived role is read-only history. */
+export function roleArchived(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.INVALID_TRANSITION,
+    messageKey: "errors.role_archived",
+    details: { currentStatus: ROLE_STATUS.ARCHIVED },
+  });
+}
+
+/** Another ACTIVE role of the organization already has this name. */
+export class DuplicateRoleNameError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.DUPLICATE,
+      messageKey: "errors.role_name_taken",
+      details: { field: "name" },
+    });
+    this.name = "DuplicateRoleNameError";
   }
 }

@@ -1,6 +1,8 @@
 import { SYSTEM_REASON, TOKEN_AUDIENCE } from "@banijjik/contracts";
 import { Router } from "express";
 import type { AppConfig } from "../config/index.js";
+import { createPermissionMiddleware } from "../kernel/access/index.js";
+import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import { authenticate, createJoseAccessTokenVerifier } from "../kernel/auth/index.js";
 import { asSystemPort } from "../kernel/context/index.js";
 import type { RateLimiter } from "../kernel/rate-limit/index.js";
@@ -10,11 +12,21 @@ import {
   tenantContext,
 } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
-import { buildIamRouters, registerIamModels } from "../modules/core/iam/index.js";
 import {
+  buildIamRouters,
+  buildIamTenantRouter,
+  buildPermissionCatalog,
+  buildPermissionGate,
+  iamManifest,
+  registerIamModels,
+} from "../modules/core/iam/index.js";
+import {
+  buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
   buildOrganizationRouters,
+  buildRolesVersionBumper,
+  organizationManifest,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
 
@@ -23,10 +35,12 @@ export interface V1Dependencies {
   readonly clock: Clock;
   readonly rateLimiter: RateLimiter;
   /**
-   * Routers mounted behind the tenant pipeline at /orgs/:organizationId. Module tenant routers
-   * join from card 1.4; production passes none until then, tests pass a probe router here.
+   * Extra routers mounted behind the tenant pipeline at /orgs/:organizationId, after the module
+   * routers built here. Production passes none; tests pass probe routers.
    */
   readonly tenantRouters?: readonly Router[];
+  /** Like `tenantRouters`, for probes that guard their routes with the `permission(key)` middleware. */
+  readonly tenantRouterFactories?: readonly ((permission: PermissionMiddlewareFactory) => Router)[];
 }
 
 /** Every module registers its models here, before the databases connect (see main.ts). */
@@ -38,10 +52,11 @@ export function registerModuleModels(): void {
 /**
  * The only place that mounts module routers and global middleware (AGENTS.md), and the only place
  * that grants a bypass: asSystemPort and runInOrganizationContext are used here and nowhere in
- * modules (ADR-087, lint R27). Entitlement and permission middleware join in cards 1.6 and 1.4.
+ * modules (ADR-087, lint R27). The permission catalogue, gate and `permission(key)` middleware
+ * are built here from the manifests (ADR-088); the entitlement middleware joins in card 1.6.
  */
 export function buildV1Router(dependencies: V1Dependencies): Router {
-  const { config, clock, tenantRouters = [] } = dependencies;
+  const { config, clock } = dependencies;
   const router = Router();
   const verifier = createJoseAccessTokenVerifier({ secret: config.auth.accessTokenSecret, clock });
   const requireAdminUser = authenticate({ audience: TOKEN_AUDIENCE.ADMIN, verifier });
@@ -68,9 +83,31 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     requireAdminUser,
     tenantContext({ directory: membershipDirectory }),
     locationAccess(),
-    buildTenantRouter(tenantRouters),
+    buildTenantRouter(buildTenantRouters(dependencies)),
   );
   return router;
+}
+
+/**
+ * The permission check is a per-route guard (`permission(key)`), built once from the catalogue of
+ * every manifest. Pipeline order: authenticate, tenantContext, locationAccess, (entitlement, 1.6),
+ * permission, validate, controller (01 section 3). 1.6 replaces the manifest list with the registry.
+ */
+function buildTenantRouters(dependencies: V1Dependencies): readonly Router[] {
+  const { clock, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
+  const catalog = buildPermissionCatalog([iamManifest, organizationManifest]);
+  const memberAccess = buildMemberAccessReader();
+  const permission = createPermissionMiddleware(
+    buildPermissionGate({ catalog, memberAccess, clock }),
+  );
+  const iamRouter = buildIamTenantRouter({
+    catalog,
+    memberAccess,
+    rolesVersion: buildRolesVersionBumper(),
+    permission,
+    clock,
+  });
+  return [iamRouter, ...tenantRouters, ...tenantRouterFactories.map((build) => build(permission))];
 }
 
 function buildTenantRouter(tenantRouters: readonly Router[]): Router {

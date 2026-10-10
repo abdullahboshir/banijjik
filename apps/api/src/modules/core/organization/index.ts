@@ -6,6 +6,8 @@ import {
   buildProvisionSystemRolesUseCase,
   buildReadUserProfileUseCase,
   buildRoleKeyReader,
+  type MemberAccessReader,
+  type RolesVersionBumper,
 } from "../iam/index.js";
 import type { ActorProfileReader, SystemRoleProvisioner } from "./application/ports/iam-ports.js";
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
@@ -16,9 +18,11 @@ import {
 } from "./application/use-cases/list-my-organizations.use-case.js";
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
+import { MongoMemberAccessReader } from "./infrastructure/mongo-member-access-reader.js";
 import { MongoMembershipDirectory } from "./infrastructure/mongo-membership-directory.js";
 import { MongoMemberRepository } from "./infrastructure/mongo-member.repository.js";
 import { MongoOrganizationRepository } from "./infrastructure/mongo-organization.repository.js";
+import { MongoRolesVersionBumper } from "./infrastructure/mongo-roles-version-bumper.js";
 import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
 import { OrganizationController } from "./presentation/organization.controller.js";
 import { buildOrganizationRouter } from "./presentation/organization.router.js";
@@ -85,6 +89,16 @@ export function buildMyOrganizationsReader(): MyOrganizationsReader {
 /** The kernel port behind tenantContext(); plain, wrapped as system access by routes/v1.ts. */
 export function buildMembershipDirectory(): MembershipDirectory {
   return new MongoMembershipDirectory();
+}
+
+/** Members of the active organization for iam role checks; runs in the organization context. */
+export function buildMemberAccessReader(): MemberAccessReader {
+  return new MongoMemberAccessReader();
+}
+
+/** Bumps Organization.rolesVersion inside the surrounding transaction when a role changes. */
+export function buildRolesVersionBumper(): RolesVersionBumper {
+  return new MongoRolesVersionBumper();
 }
 
 export type { MyOrganizationsReader } from "./application/use-cases/list-my-organizations.use-case.js";

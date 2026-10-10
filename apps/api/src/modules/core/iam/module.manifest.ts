@@ -1,9 +1,8 @@
-import { IAM_EVENT_TYPE } from "@banijjik/contracts";
+import { IAM_EVENT_TYPE, PERMISSION_KEY, permissionDefinition } from "@banijjik/contracts";
 
 /**
  * The iam manifest in the shape of 10-MODULE-CATALOG section 2. `defineModule` and its validation
- * arrive with card 1.6; until then this is a plain object. Permissions and settings are empty:
- * roles come with card 1.4.
+ * arrive with card 1.6; until then this is a plain object. Settings are still empty.
  */
 export const iamManifest = {
   key: "iam",
@@ -13,8 +12,13 @@ export const iamManifest = {
   providesKinds: [],
   requiresAnyKind: [],
   tenantCanDisable: false,
-  permissions: [],
-  routes: { admin: ["/auth", "/me"] },
+  permissions: [
+    permissionDefinition(PERMISSION_KEY.IAM_ROLE_READ),
+    permissionDefinition(PERMISSION_KEY.IAM_ROLE_CREATE),
+    permissionDefinition(PERMISSION_KEY.IAM_ROLE_UPDATE),
+    permissionDefinition(PERMISSION_KEY.IAM_ROLE_ARCHIVE),
+  ],
+  routes: { admin: ["/auth", "/me", "/roles"] },
   menu: [],
   settingKeys: [],
   customFieldEntities: [],

@@ -9,14 +9,20 @@ export function toRoleDocument(role: Role): RoleDocument {
     organizationId: role.organizationId,
     roleKey: role.roleKey,
     nameKey: role.nameKey,
+    name: role.name,
     isSystem: role.isSystem,
+    status: role.status,
     permissionKeys: [...role.permissionKeys],
     version: role.version,
     createdAt: role.createdAt,
     updatedAt: role.updatedAt,
     createdByUserId: role.createdByUserId,
-    updatedByUserId: null,
+    updatedByUserId: role.updatedByUserId,
   };
+}
+
+function toAuthorId(value: string | null): UserId | null {
+  return value === null ? null : asId<UserId>(value);
 }
 
 export function toRole(document: RoleDocument): Role {
@@ -26,11 +32,14 @@ export function toRole(document: RoleDocument): Role {
     organizationId: asId(stored.organizationId),
     roleKey: stored.roleKey,
     nameKey: stored.nameKey,
+    name: stored.name,
     isSystem: stored.isSystem,
+    status: stored.status,
     permissionKeys: stored.permissionKeys,
     version: stored.version,
     createdAt: stored.createdAt,
     updatedAt: stored.updatedAt,
-    createdByUserId: stored.createdByUserId === null ? null : asId<UserId>(stored.createdByUserId),
+    createdByUserId: toAuthorId(stored.createdByUserId),
+    updatedByUserId: toAuthorId(stored.updatedByUserId),
   });
 }

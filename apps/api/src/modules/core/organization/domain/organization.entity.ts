@@ -22,6 +22,7 @@ import { invalidField } from "./errors.js";
 
 const DEFAULT_TIMEZONE = "Asia/Dhaka";
 const INITIAL_CONFIG_VERSION = 1;
+const INITIAL_ROLES_VERSION = 1;
 
 export interface OrganizationProps {
   readonly organizationId: OrganizationId;
@@ -36,6 +37,8 @@ export interface OrganizationProps {
   readonly timezone: string;
   readonly defaultLocale: PreferredLocale;
   readonly configVersion: number;
+  /** Bumped by every role change; part of the permission cache key (card 1.4). */
+  readonly rolesVersion: number;
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -87,6 +90,8 @@ export class Organization implements OrganizationProps {
   readonly timezone: string;
   readonly defaultLocale: PreferredLocale;
   readonly configVersion: number;
+  /** Bumped by every role change; part of the permission cache key (card 1.4). */
+  readonly rolesVersion: number;
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -106,6 +111,7 @@ export class Organization implements OrganizationProps {
     this.timezone = props.timezone;
     this.defaultLocale = props.defaultLocale;
     this.configVersion = props.configVersion;
+    this.rolesVersion = props.rolesVersion;
     this.version = props.version;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -131,6 +137,7 @@ export class Organization implements OrganizationProps {
       timezone: DEFAULT_TIMEZONE,
       defaultLocale: input.defaultLocale,
       configVersion: INITIAL_CONFIG_VERSION,
+      rolesVersion: INITIAL_ROLES_VERSION,
       version: 1,
       createdAt: input.now,
       updatedAt: input.now,

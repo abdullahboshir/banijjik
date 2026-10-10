@@ -37,6 +37,7 @@ export interface OrganizationDocument {
   timezone: string;
   defaultLocale: PreferredLocale;
   configVersion: number;
+  rolesVersion: number;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -62,6 +63,7 @@ export const organizationSchema = new Schema<OrganizationDocument>(
     timezone: { type: String, required: true },
     defaultLocale: { type: String, required: true, enum: Object.values(PREFERRED_LOCALE) },
     configVersion: { type: Number, required: true },
+    rolesVersion: { type: Number, required: true, default: 1 },
     ...versionField,
     ...auditFields,
   },
