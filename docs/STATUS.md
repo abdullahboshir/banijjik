@@ -41,7 +41,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 0.1 archive & skeleton | done (2026-10-10, `b772501`, merge-checked by Opus: build/typecheck/test pass without cache) | apps/api + infra moved to 0.3 (owner); build, typecheck, test pass |
 | 0.2a lint, format, hooks | done (2026-10-10, `c823fcc`, Opus review passed) | T1; parallel with 0.3; docs/ excluded from Prettier, see handoff |
 | 0.2b CI, secret scan, PR template, Claude hook | merged (2026-10-10, `40f4f4f`, merge-checked by Opus; first GitHub CI run unverified until the owner pushes) | after 0.2a + 0.3 |
-| 0.3 API package, config & local infra | merged (2026-10-10, `5335ec5`, merge-checked by Opus; real-port Docker check pending, Docker daemon unresponsive) | branch `s/0.3-config-infra`; handoff `docs/handoffs/0.3.md`; default Mongo host port is now 27018 (owner decision); Docker daemon unresponsive, see handoff |
+| 0.3 API package, config & local infra | done (2026-10-10; real-port Docker check passed after a Docker Desktop restart: rs.ok 1, writable primary, transaction abort/commit, Redis PONG, MongoDB 8.0.32) | host 6379 is taken by another project on the owner machine: run with BANIJJIK_REDIS_PORT=6380 (default change planned with 1.5) |
 | 0.4a HTTP kernel, logger, context, app entry | merged (2026-10-10, Opus review passed after 6 fixes) | SIGTERM spawn test skipped on Windows (see handoff) |
 | 0.4b DB kernel, transactions, sequences, runAsSystem | merged (2026-10-10, Opus review passed after 3 fixes; ADR-084) | production index-sync task still needed before first deploy (see handoff) |
 | 0.5a design system and i18n packages | merged (2026-10-10, merge-checked by Opus; link context added, bottom nav at lg) | branch `s/0.5a-ui-i18n`; handoff `docs/handoffs/0.5a.md`; parallel with 0.2b/0.4a/0.4b |
@@ -56,7 +56,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 1.1 IAM auth | merged (2026-10-10, Opus review passed) | phone or email + password, 30-day sliding sessions, register included (owner); OTP and password reset wait for SMS/email sending |
 | 1.2 org, location, membership | merged (2026-10-10, Opus review passed after 1 fix; ADR-086) | branch `s/1.2-org-location`; handoff `docs/handoffs/1.2.md`. Gaps: verified identifier before public signup (6.1); template publish check and trial subscription on `POST /me/orgs` (1.6); events declared, not emitted (1.5); Idempotency-Key on `POST /me/orgs` (1.5); 1.3 must place the cross-org membership lookup (see handoff). Runs alone: 1.4 waits for Redis (Docker down) |
 | 1.3 tenant and location enforcement | merged (2026-10-10, Opus review passed after 2 fixes; ADR-087) | branch `s/1.3-tenant-enforcement`; handoff `docs/handoffs/1.3.md`; ADR-087. Plan amendments A/B/C from the coordinator are in the handoff. Gaps: no membership cache until 1.4 (two indexed reads per tenant request); entitlement and permission middleware slots empty (1.6/1.4); production `tenantRouters` is empty until 1.4 |
-| 1.4 RBAC & cache | todo | |
+| 1.4 RBAC and permission cache | planned (2026-10-10, `docs/plans/1.4.md`, Opus, T1) | cache behind a port, in-process adapter now, Redis adapter with 1.5 (owner) |
 | 1.5 reliability kernel | todo | |
 | 1.6 plans/entitlements/module gate | todo | |
 | 1.7 admin auth & org shell | todo | |
