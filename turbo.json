@@ -9,6 +9,9 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
+    "@banijjik/lint-tests#test": {
+      "cache": false
+    },
     "test": {
       "dependsOn": ["^build"]
     }

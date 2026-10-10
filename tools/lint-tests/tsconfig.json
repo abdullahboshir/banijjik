@@ -1,0 +1,5 @@
+{
+  "extends": "@banijjik/config/tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "lib": ["ES2023"], "types": ["node"] },
+  "include": ["*.ts"]
+}

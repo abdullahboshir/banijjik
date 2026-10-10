@@ -1,0 +1,2 @@
+node scripts/hooks/block-env-commit.mjs
+npx --no-install lint-staged

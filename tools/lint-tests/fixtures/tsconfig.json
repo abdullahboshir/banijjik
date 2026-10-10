@@ -1,0 +1,5 @@
+{
+  "extends": "@banijjik/config/tsconfig.library.json",
+  "compilerOptions": { "noEmit": true, "rootDir": ".", "lib": ["ES2022", "DOM"] },
+  "include": ["**/*.ts", "**/*.tsx"]
+}
