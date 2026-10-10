@@ -1,15 +1,14 @@
-import {
-  ERROR_CODE,
-  isErrorCode,
-  type ApiErrorBody,
-  type ApiSuccessEnvelope,
-} from "@banijjik/contracts";
-import { env } from "../../config/env";
-import { ApiError, networkError } from "./api-error";
+import { buildApiUrl } from "./api-url";
+import { isUnauthenticatedError, networkError } from "./api-error";
+import { parseApiResponse, type ApiResult } from "./parse-api-response";
+import { refreshSession } from "./refresh-session";
+import { redirectToSignIn } from "./session-redirect";
 
-const API_PREFIX = "/api/v1";
-const NO_CONTENT_STATUS = 204;
+export type { ApiResult } from "./parse-api-response";
+
 const IDEMPOTENCY_HEADER = "Idempotency-Key";
+/** Sign-in, sign-up, refresh and sign-out answer 401 for their own reasons; renewing a session cannot fix those. */
+const AUTH_PATH_PREFIX = "/auth/";
 
 export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -17,15 +16,6 @@ export interface ApiRequestOptions {
   idempotencyKey?: string;
   signal?: AbortSignal;
 }
-
-/** What `apiFetch` resolves to; the same shape the API sends (14-API.md section 2). */
-export type ApiResult<Data, Meta = Readonly<Record<string, unknown>>> = ApiSuccessEnvelope<
-  Data,
-  Meta
->;
-
-/** Every field is optional here because the wire body is untrusted until it is checked. */
-type ReceivedErrorBody = Partial<Omit<ApiErrorBody, "code">> & { code?: unknown };
 
 function buildRequestInit(options: ApiRequestOptions): RequestInit {
   const headers: Record<string, string> = { Accept: "application/json" };
@@ -42,64 +32,51 @@ function buildRequestInit(options: ApiRequestOptions): RequestInit {
   return init;
 }
 
-async function readJson(response: Response): Promise<unknown> {
+async function sendRequest<Data, Meta>(
+  path: string,
+  options: ApiRequestOptions,
+): Promise<ApiResult<Data, Meta>> {
+  let response: Response;
   try {
-    return await response.json();
-  } catch {
-    return undefined;
-  }
-}
-
-function toApiError(status: number, body: unknown): ApiError {
-  // Safe: every field is optional and read defensively, so a body of any shape is handled.
-  const failure = (body as { error?: ReceivedErrorBody } | undefined)?.error;
-  return new ApiError({
-    status,
-    code: isErrorCode(failure?.code) ? failure.code : ERROR_CODE.INTERNAL,
-    messageKey: failure?.messageKey ?? "errors.internal",
-    details: failure?.details,
-    requestId: failure?.requestId,
-  });
-}
-
-function invalidResponse(status: number): ApiError {
-  return new ApiError({
-    status,
-    code: ERROR_CODE.INTERNAL,
-    messageKey: "errors.invalid_response",
-  });
-}
-
-function hasData(body: unknown): boolean {
-  return typeof body === "object" && body !== null && "data" in body;
-}
-
-async function sendRequest(path: string, options: ApiRequestOptions): Promise<Response> {
-  const url = `${env.NEXT_PUBLIC_API_BASE_URL}${API_PREFIX}${path}`;
-  try {
-    return await fetch(url, buildRequestInit(options));
+    response = await fetch(buildApiUrl(path), buildRequestInit(options));
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw networkError();
   }
+  return parseApiResponse<Data, Meta>(response);
+}
+
+/** One renewal, then one retry. A second 401, or a renewal that fails, sends the person to sign in. */
+async function retryAfterRenewal<Data, Meta>(
+  path: string,
+  options: ApiRequestOptions,
+  firstError: unknown,
+): Promise<ApiResult<Data, Meta>> {
+  if (!(await refreshSession())) {
+    redirectToSignIn();
+    throw firstError;
+  }
+  try {
+    return await sendRequest<Data, Meta>(path, options);
+  } catch (error) {
+    if (isUnauthenticatedError(error)) redirectToSignIn();
+    throw error;
+  }
 }
 
 /**
- * Calls the API and unwraps the `{ data, meta }` envelope; any failure becomes an ApiError. A 2xx without
- * `data` is a broken response, except 204 No Content, which resolves to `{ data: undefined }` (use `apiFetch<void>`).
+ * Calls the API from the browser and unwraps the `{ data, meta }` envelope; any failure becomes an ApiError.
+ * A 401 on a non-auth path renews the session once (shared by parallel calls) and repeats the request.
  */
 export async function apiFetch<Data, Meta = Readonly<Record<string, unknown>>>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<ApiResult<Data, Meta>> {
-  const response = await sendRequest(path, options);
-  if (response.status === NO_CONTENT_STATUS) {
-    // Safe: only `apiFetch<void>` is meaningful for 204, and `undefined` is the value of `void`.
-    return { data: undefined } as ApiResult<Data, Meta>;
+  try {
+    return await sendRequest<Data, Meta>(path, options);
+  } catch (error) {
+    const canRenew = isUnauthenticatedError(error) && !path.startsWith(AUTH_PATH_PREFIX);
+    if (!canRenew) throw error;
+    return retryAfterRenewal<Data, Meta>(path, options, error);
   }
-  const body = await readJson(response);
-  if (!response.ok) throw toApiError(response.status, body);
-  if (!hasData(body)) throw invalidResponse(response.status);
-  // Safe by contract: a 2xx response from this API is always the { data, meta } envelope (14 §2).
-  return body as ApiResult<Data, Meta>;
 }

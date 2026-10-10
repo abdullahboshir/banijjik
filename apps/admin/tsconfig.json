@@ -19,7 +19,9 @@
     "app",
     "src",
     "next.config.ts",
+    "proxy.ts",
     "vitest.config.ts",
+    "vitest.setup.ts",
     "vitest.browser.config.ts"
   ]
 }
