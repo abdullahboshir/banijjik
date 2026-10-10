@@ -13,6 +13,7 @@ import {
 import { registerCrashHandlers } from "./kernel/lifecycle/crash-handlers.js";
 import { registerShutdown } from "./kernel/lifecycle/shutdown.js";
 import { createLogger, setRootLogger } from "./kernel/logger/index.js";
+import { registerIdempotencyModel } from "./kernel/idempotency/index.js";
 import { registerRateLimitModel } from "./kernel/rate-limit/index.js";
 import { registerSequenceModel } from "./kernel/sequence/index.js";
 import { registerModuleModels } from "./routes/v1.js";
@@ -82,6 +83,7 @@ async function openDatabases(
   try {
     registerSequenceModel();
     registerRateLimitModel();
+    registerIdempotencyModel();
     registerModuleModels();
     connections = await connectDatabases(config);
     await initializeModels();

@@ -1,5 +1,6 @@
 import { permissionDefinition, PERMISSION_KEY, type PermissionKey } from "@banijjik/contracts";
 import { describe, expect, it } from "vitest";
+import { auditManifest } from "../../audit/index.js";
 import { organizationManifest } from "../../organization/index.js";
 import { iamManifest } from "../index.js";
 import { buildPermissionCatalog, PermissionCatalogError } from "./permission-catalog.js";
@@ -10,8 +11,8 @@ function fakeDefinition(permissionKey: string) {
 }
 
 describe("buildPermissionCatalog", () => {
-  it("collects every key of the iam and organization manifests", () => {
-    const catalog = buildPermissionCatalog([iamManifest, organizationManifest]);
+  it("collects every key of the iam, organization and audit manifests", () => {
+    const catalog = buildPermissionCatalog([iamManifest, organizationManifest, auditManifest]);
 
     const keys = catalog.all().map((definition) => definition.permissionKey);
     expect(keys.sort()).toEqual(Object.values(PERMISSION_KEY).sort());

@@ -1,4 +1,6 @@
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import type { OrganizationId, RoleId, UserId } from "@banijjik/ids";
+import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { roleInUse, roleNotFound } from "../../domain/errors.js";
 import type { PermissionResolver } from "../permission-resolver.js";
@@ -22,6 +24,7 @@ export interface ArchiveRoleDependencies {
   readonly unitOfWork: UnitOfWork;
   readonly resolver: PermissionResolver;
   readonly clock: Clock;
+  readonly audit: AuditRecorder;
 }
 
 /**
@@ -42,6 +45,12 @@ export class ArchiveRoleUseCase {
       if ((holders.get(input.roleId) ?? 0) > 0) throw roleInUse();
       const result = await roles.update(archived, input.version);
       await rolesVersion.bump(input.organizationId);
+      await this.dependencies.audit.record({
+        action: AUDIT_ACTION.ROLE_ARCHIVED,
+        entityType: AUDIT_ENTITY_TYPE.role,
+        entityId: result.roleId,
+        changes: { status: { from: existing.status, to: result.status } },
+      });
       return result;
     });
     return toRoleView(saved, resolver);

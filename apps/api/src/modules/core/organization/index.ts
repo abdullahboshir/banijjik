@@ -1,4 +1,5 @@
-import type { Router } from "express";
+import type { RequestHandler, Router } from "express";
+import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import type { MembershipDirectory } from "../../../kernel/tenancy/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
@@ -37,6 +38,10 @@ export interface OrganizationDependencies {
   readonly contextRunner: OrganizationContextRunner;
   /** The listing of one login across organizations, already wrapped as system access by routes/v1.ts. */
   readonly myOrganizationsReader: MyOrganizationsReader;
+  /** The kernel audit port; organization creation records its entry inside its transaction. */
+  readonly audit: AuditRecorder;
+  /** The `Idempotency-Key` middleware, built once by routes/v1.ts (ADR-089). */
+  readonly idempotency: RequestHandler;
 }
 
 export interface OrganizationRouters {
@@ -49,6 +54,7 @@ export function buildOrganizationRouters(
   dependencies: OrganizationDependencies,
 ): OrganizationRouters {
   const { clock, rateLimiter, contextRunner, myOrganizationsReader } = dependencies;
+  const { audit, idempotency } = dependencies;
   const organizations = new MongoOrganizationRepository();
   const provisionSystemRoles = buildProvisionSystemRolesUseCase(clock);
   const readUserProfile = buildReadUserProfileUseCase();
@@ -71,10 +77,11 @@ export function buildOrganizationRouters(
       unitOfWork: new MongoUnitOfWork(),
       contextRunner,
       clock,
+      audit,
     }),
     listMyOrganizations: myOrganizationsReader,
   });
-  return { myOrganizationsRouter: buildOrganizationRouter(controller, rateLimiter) };
+  return { myOrganizationsRouter: buildOrganizationRouter(controller, rateLimiter, idempotency) };
 }
 
 /** Plain reader: it spans organizations, so the caller wraps it with asSystemPort (routes/v1.ts). */

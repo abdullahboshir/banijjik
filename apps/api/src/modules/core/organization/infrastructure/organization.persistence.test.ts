@@ -12,6 +12,7 @@ import {
   disposeTestDatabases,
   installTestLogger,
 } from "../../../../test-support/test-databases.js";
+import { buildAuditRecorder, registerAuditModels } from "../../audit/index.js";
 import { buildProvisionSystemRolesUseCase, registerIamModels } from "../../iam/index.js";
 import { CreateOrganizationUseCase } from "../application/use-cases/create-organization.use-case.js";
 import type { MemberRepository } from "../application/ports/repositories.js";
@@ -29,6 +30,7 @@ import { registerOrganizationModels } from "./register-organization-models.js";
 registerIamModels();
 registerOrganizationModels();
 registerSequenceModel();
+registerAuditModels();
 
 const NOW = new Date("2026-10-11T08:00:00.000Z");
 const organizations = new MongoOrganizationRepository();
@@ -187,6 +189,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
       unitOfWork: new MongoUnitOfWork(),
       contextRunner: { run: runInOrganizationContext },
       clock,
+      audit: buildAuditRecorder(clock),
     });
     return { useCase, actorUserId };
   }

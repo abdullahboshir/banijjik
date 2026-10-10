@@ -8,6 +8,7 @@ import {
   type DatabaseConnections,
 } from "../kernel/db/index.js";
 import { createLogger } from "../kernel/logger/index.js";
+import { registerIdempotencyModel } from "../kernel/idempotency/index.js";
 import { MongoRateLimiter, registerRateLimitModel } from "../kernel/rate-limit/index.js";
 import { registerSequenceModel } from "../kernel/sequence/index.js";
 import { buildV1Router, registerModuleModels } from "../routes/v1.js";
@@ -31,6 +32,7 @@ export interface IamApiHarness {
 export function registerIamApiModels(): void {
   registerRateLimitModel();
   registerSequenceModel();
+  registerIdempotencyModel();
   registerModuleModels();
 }
 

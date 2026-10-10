@@ -1,4 +1,9 @@
-import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from "@banijjik/contracts";
+import {
+  ACCESS_TOKEN_COOKIE_NAME,
+  IDEMPOTENCY_KEY_HEADER,
+  REFRESH_TOKEN_COOKIE_NAME,
+} from "@banijjik/contracts";
+import { newId } from "@banijjik/ids";
 import type { Express } from "express";
 import request, { type Response, type Test } from "supertest";
 
@@ -8,6 +13,11 @@ export interface CallOptions {
   /** The client address, sent as X-Forwarded-For (the app trusts one proxy hop). */
   readonly ip?: string;
   readonly origin?: string;
+  /**
+   * The Idempotency-Key header. A POST gets a fresh key unless one is given; `null` sends none,
+   * so a test can prove the missing-key answer.
+   */
+  readonly idempotencyKey?: string | null;
 }
 
 export interface SetCookie {
@@ -56,6 +66,10 @@ export function callApi(app: Express, call: ApiCall): Test {
     call.ip ?? freshIp(),
   );
   if (call.origin !== undefined) pending = pending.set("Origin", call.origin);
+  const idempotencyKey = call.idempotencyKey === undefined ? newId() : call.idempotencyKey;
+  if (call.method === "post" && idempotencyKey !== null) {
+    pending = pending.set(IDEMPOTENCY_KEY_HEADER, idempotencyKey);
+  }
   if (call.cookies !== undefined) {
     const header = Object.entries(call.cookies)
       .map(([name, value]) => `${name}=${value}`)

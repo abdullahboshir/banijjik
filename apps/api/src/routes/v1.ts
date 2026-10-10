@@ -5,6 +5,8 @@ import { createPermissionMiddleware } from "../kernel/access/index.js";
 import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import { authenticate, createJoseAccessTokenVerifier } from "../kernel/auth/index.js";
 import { asSystemPort } from "../kernel/context/index.js";
+import type { AuditRecorder } from "../kernel/audit/index.js";
+import { createIdempotencyMiddleware } from "../kernel/idempotency/index.js";
 import type { RateLimiter } from "../kernel/rate-limit/index.js";
 import {
   locationAccess,
@@ -12,6 +14,12 @@ import {
   tenantContext,
 } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
+import {
+  auditManifest,
+  buildAuditRecorder,
+  buildAuditTenantRouter,
+  registerAuditModels,
+} from "../modules/core/audit/index.js";
 import {
   buildIamRouters,
   buildIamTenantRouter,
@@ -47,6 +55,7 @@ export interface V1Dependencies {
 export function registerModuleModels(): void {
   registerIamModels();
   registerOrganizationModels();
+  registerAuditModels();
 }
 
 /**
@@ -61,6 +70,9 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   const verifier = createJoseAccessTokenVerifier({ secret: config.auth.accessTokenSecret, clock });
   const requireAdminUser = authenticate({ audience: TOKEN_AUDIENCE.ADMIN, verifier });
   const { authRouter, meRouter } = buildIamRouters(dependencies);
+  // Built once here: the idempotency middleware and the audit recorder are shared by the modules.
+  const audit = buildAuditRecorder(clock);
+  const idempotency = createIdempotencyMiddleware({ clock });
   const { myOrganizationsRouter } = buildOrganizationRouters({
     ...dependencies,
     // The creator becomes the owner of the organization being created, so creation runs as it.
@@ -69,6 +81,8 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     },
     // "My organizations" spans organizations before any is chosen: a deliberate AUTH_LOOKUP.
     myOrganizationsReader: asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMyOrganizationsReader()),
+    audit,
+    idempotency,
   });
   const membershipDirectory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
 
@@ -83,7 +97,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     requireAdminUser,
     tenantContext({ directory: membershipDirectory }),
     locationAccess(),
-    buildTenantRouter(buildTenantRouters(dependencies)),
+    buildTenantRouter(buildTenantRouters(dependencies, audit)),
   );
   return router;
 }
@@ -93,9 +107,9 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
  * every manifest. Pipeline order: authenticate, tenantContext, locationAccess, (entitlement, 1.6),
  * permission, validate, controller (01 section 3). 1.6 replaces the manifest list with the registry.
  */
-function buildTenantRouters(dependencies: V1Dependencies): readonly Router[] {
+function buildTenantRouters(dependencies: V1Dependencies, audit: AuditRecorder): readonly Router[] {
   const { clock, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
-  const catalog = buildPermissionCatalog([iamManifest, organizationManifest]);
+  const catalog = buildPermissionCatalog([iamManifest, organizationManifest, auditManifest]);
   const memberAccess = buildMemberAccessReader();
   const permission = createPermissionMiddleware(
     buildPermissionGate({ catalog, memberAccess, clock }),
@@ -106,8 +120,15 @@ function buildTenantRouters(dependencies: V1Dependencies): readonly Router[] {
     rolesVersion: buildRolesVersionBumper(),
     permission,
     clock,
+    audit,
   });
-  return [iamRouter, ...tenantRouters, ...tenantRouterFactories.map((build) => build(permission))];
+  const auditRouter = buildAuditTenantRouter({ permission });
+  return [
+    iamRouter,
+    auditRouter,
+    ...tenantRouters,
+    ...tenantRouterFactories.map((build) => build(permission)),
+  ];
 }
 
 function buildTenantRouter(tenantRouters: readonly Router[]): Router {

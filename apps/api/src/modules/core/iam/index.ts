@@ -1,4 +1,5 @@
 import { type Router } from "express";
+import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import type { AppConfig } from "../../../config/index.js";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
@@ -187,11 +188,13 @@ export interface IamTenantRouterDependencies {
   readonly rolesVersion: RolesVersionBumper;
   readonly permission: PermissionMiddlewareFactory;
   readonly clock: Clock;
+  readonly audit: AuditRecorder;
 }
 
 /** The role endpoints of `/orgs/{organizationId}`, mounted by routes/v1.ts behind the tenant pipeline. */
 export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies): Router {
   const { catalog, memberAccess, rolesVersion, permission, clock } = dependencies;
+  const { audit } = dependencies;
   const roles = new MongoRoleRepository();
   const resolver = new PermissionResolver(catalog);
   const unitOfWork = new MongoUnitOfWork();
@@ -204,6 +207,7 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
       catalog,
       resolver,
       clock,
+      audit,
     }),
     updateRole: new UpdateRoleUseCase({
       roles,
@@ -212,6 +216,7 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
       catalog,
       resolver,
       clock,
+      audit,
     }),
     archiveRole: new ArchiveRoleUseCase({
       roles,
@@ -220,6 +225,7 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
       unitOfWork,
       resolver,
       clock,
+      audit,
     }),
   });
   return buildRolesRouter(controller, permission);

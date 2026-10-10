@@ -1,5 +1,5 @@
 import { organizationCreateRequestSchema } from "@banijjik/validation";
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { validate } from "../../../../kernel/http/index.js";
 import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
 import { ORGANIZATION_CREATE_PER_USER } from "../domain/organization-limits.js";
@@ -10,6 +10,7 @@ import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 export function buildOrganizationRouter(
   controller: OrganizationController,
   rateLimiter: RateLimiter,
+  idempotency: RequestHandler,
 ): Router {
   const router = Router();
   router.get("/", controller.list);
@@ -21,6 +22,7 @@ export function buildOrganizationRouter(
       keyOf: () => requireCurrentUserId(),
     }),
     validate({ body: organizationCreateRequestSchema }),
+    idempotency,
     controller.create,
   );
   return router;

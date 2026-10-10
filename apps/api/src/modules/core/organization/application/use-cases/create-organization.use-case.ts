@@ -1,5 +1,12 @@
-import { ALL_LOCATIONS, SYSTEM_ROLE_KEY, type IndustryTemplateKey } from "@banijjik/contracts";
+import {
+  ALL_LOCATIONS,
+  AUDIT_ACTION,
+  AUDIT_ENTITY_TYPE,
+  SYSTEM_ROLE_KEY,
+  type IndustryTemplateKey,
+} from "@banijjik/contracts";
 import type { RoleId, UserId } from "@banijjik/ids";
+import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { sessionNotValid, SlugTakenError } from "../../domain/errors.js";
 import { Location } from "../../domain/location.entity.js";
@@ -38,6 +45,7 @@ export interface CreateOrganizationDependencies {
   readonly unitOfWork: UnitOfWork;
   readonly contextRunner: OrganizationContextRunner;
   readonly clock: Clock;
+  readonly audit: AuditRecorder;
 }
 
 /**
@@ -110,6 +118,12 @@ export class CreateOrganizationUseCase {
     const owner = this.buildOwner(organization, ownerRoleId, extras);
     owner.assertLocationsAreActive([location]);
     await members.insert(owner);
+    await this.dependencies.audit.record({
+      action: AUDIT_ACTION.ORGANIZATION_CREATED,
+      entityType: AUDIT_ENTITY_TYPE.organization,
+      entityId: organizationId,
+      changes: { name: { to: organization.name }, slug: { to: organization.slug } },
+    });
   }
 
   private buildOwner(

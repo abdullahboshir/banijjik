@@ -1,4 +1,6 @@
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import type { OrganizationId, UserId } from "@banijjik/ids";
+import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { invalidField } from "../../domain/errors.js";
 import { Role } from "../../domain/role.entity.js";
@@ -23,6 +25,7 @@ export interface CreateRoleDependencies {
   readonly catalog: PermissionCatalog;
   readonly resolver: PermissionResolver;
   readonly clock: Clock;
+  readonly audit: AuditRecorder;
 }
 
 /** Rejects a key the catalogue does not know, which also keeps platform permissions out of tenant roles. */
@@ -52,6 +55,12 @@ export class CreateRoleUseCase {
     await unitOfWork.run(async () => {
       await roles.insert(role);
       await rolesVersion.bump(input.organizationId);
+      await this.dependencies.audit.record({
+        action: AUDIT_ACTION.ROLE_CREATED,
+        entityType: AUDIT_ENTITY_TYPE.role,
+        entityId: role.roleId,
+        changes: { name: { to: role.name }, permissionKeys: { to: [...role.permissionKeys] } },
+      });
     });
     return toRoleView(role, resolver);
   }

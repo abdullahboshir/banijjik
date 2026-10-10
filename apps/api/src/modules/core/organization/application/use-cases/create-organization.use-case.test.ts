@@ -1,5 +1,6 @@
 import { newId, type UserId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
+import { InMemoryAuditRecorder } from "../../../../../test-support/audit-fakes.js";
 import {
   FakeActorProfileReader,
   FakeSystemRoleProvisioner,
@@ -24,6 +25,7 @@ function aWorld() {
   const systemRoles = new FakeSystemRoleProvisioner();
   const actorProfiles = new FakeActorProfileReader();
   const memberNumbers = new InMemoryMemberNumberSequence();
+  const audit = new InMemoryAuditRecorder();
   const actorUserId = newId() as UserId;
   actorProfiles.profiles.set(actorUserId, { name: "Rahim Uddin", preferredLocale: "en" });
   const useCase = new CreateOrganizationUseCase({
@@ -36,6 +38,7 @@ function aWorld() {
     unitOfWork: new PassThroughUnitOfWork(),
     contextRunner: new PassThroughContextRunner(),
     clock: new MutableClock(),
+    audit,
   });
   const input: CreateOrganizationInput = {
     actorUserId,
@@ -44,7 +47,7 @@ function aWorld() {
     industryTemplateKey: "RETAIL",
     district: "Dhaka",
   };
-  return { useCase, input, organizations, locations, members, systemRoles, memberNumbers };
+  return { useCase, input, organizations, locations, members, systemRoles, memberNumbers, audit };
 }
 
 describe("CreateOrganizationUseCase", () => {
