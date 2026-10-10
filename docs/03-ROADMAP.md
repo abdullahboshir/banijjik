@@ -5,8 +5,8 @@
 `M:` = manoxen source to port from (`manoxen/apps/backend/src/contexts/...`). Every card's Definition of Done also includes the global DoD in `AGENTS.md`.
 
 **Tiers** (who plans/reviews, see AGENTS.md "Session types"): unless marked otherwise, cards are **T2**.
-- **T1** (Opus plan + Opus review): 0.4, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.2, 2.3, 2.4, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 4.3, 5.1, 5.7, 5.8, 5.9, 5.17, 6.2, 6.3, 8.2.
-- **T3** (Sonnet may plan): 0.3, 1.7, 1.8, 2.6, 2.7, 3.10, 4.5, 5.11, 5.13, 5.16, 7.x new industry templates.
+- **T1** (Opus plan + Opus review): 0.2a, 0.4, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.2, 2.3, 2.4, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 4.3, 5.1, 5.7, 5.8, 5.9, 5.17, 6.2, 6.3, 8.2.
+- **T3** (Sonnet may plan): 0.3 (planned by Opus anyway), 1.7, 1.8, 2.6, 2.7, 3.10, 4.5, 5.11, 5.13, 5.16, 7.x new industry templates.
 - Phase D cards: always Opus.
 
 **Order:** P (owner, in parallel) → **D (design, docs only)** → 0 → 1 → 2 → 3 → 4/5 → 6 → 7 → 8.
@@ -24,7 +24,7 @@ Phases are sequential: a later phase depends on the earlier one, so two **phases
 | 3 | D3 offerings & lifecycles | D8 manoxen port map | |
 | 4 | D4 industry templates | D7 API surface | D7 after D2 |
 | 5 | 0.1 archive & skeleton | D5 bot goldens (needs P3 chats) | |
-| 6 | 0.2 tooling & CI | 0.3 config & local infra | Both touch root `package.json`: add-only |
+| 6 | 0.2a lint, format, hooks | 0.3 API package, config & local infra | Both touch root `package.json`/`tsconfig.json`: add-only. 0.2b follows after both. |
 | 7 | 0.4 API kernel | 0.5 admin skeleton | |
 | 8 | 1.1 IAM auth | 1.5 reliability kernel | |
 | 9 | 1.2 org/location/membership | 1.4 RBAC | 1.3 after both |
@@ -84,7 +84,15 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 - Do: create branch `archive/v0` from current `main`. On `main`, remove the old code (`apps/*`, `packages/*`, `libs/*`, `.agent/`, `docs/architecture`, `docs/my-reminder`, committed `dist/.turbo/logs/.env`). Keep `docs/` new files, `AGENTS.md`, `CLAUDE.md`, `.cursor/`, `.gitignore`. Create the workspace skeleton from `01-ARCHITECTURE.md §1`: only `packages/contracts`, `packages/ids` (`newId()` UUID v7 + branded types, with tests for v7 format and ordering), `packages/validation`, `packages/config` (`apps/api` and `infra/` are created in 0.3, owner decision 2026-10-09).
 - Done: `npm install` and `npm run build` pass. Nothing that is out of the card's scope is created.
 
-**0.2 Tooling & guardrails in CI**
+**0.2a Lint rules, formatting and local git hooks** (plan: `docs/plans/0.2a.md`)
+- Do: ESLint 10 flat config with rules R1–R22 of the plan (architecture, ID, readability, naming), each proven by pass/fail fixtures in the test suite; Prettier, `.editorconfig`, `.gitattributes` (LF); husky `pre-commit` (lint-staged + `.env` commit block) and `commit-msg` (commitlint); vitest upgrade; root `packageManager`/`engines` fixes.
+- Done: every rule has a failing and a passing fixture; both hooks reject bad input; lint/format/typecheck/test/build pass from a clean install.
+
+**0.2b CI, secret scan, PR template, Claude hook** (plan: `docs/plans/0.2b.md`; after 0.2a and 0.3)
+- Do: GitHub Actions `ci.yml` (verify + gitleaks, actions pinned by SHA), `.gitleaks.toml`, PR template with the DoD checklist, `.claude/settings.json` hook blocking `.env*` edits, `docs/ops/github-setup.md` (branch protection steps for the owner).
+- Done: local `npm run ci` passes; the hook and gitleaks config are tested; the first GitHub run is reported by the owner.
+
+**0.2 (original text, superseded by 0.2a/0.2b; the module template moved to card 1.6)**
 - Do:
   - TypeScript strict, Prettier, Vitest, husky + lint-staged, commitlint
   - ESLint with:
@@ -137,8 +145,8 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 - Do: audit log module, Idempotency-Key middleware, in-process events + outbox collection + BullMQ dispatcher, worker process.
 - Done: replaying the same idempotent request returns the original response. An outbox job retries after failure.
 
-**1.6 Module registry, packages, resolver (ADR-033, ADR-049).** Needs D2 (`10-MODULE-CATALOG.md`).
-- Do: `defineModule()` with the manifest schema of `10 §2`, registry + `registryHash`, manifests for modules that exist so far, Package + PlatformSubscription models, seed packages of `10 §9` (incl. 14-day BUNDLE trial), `resolveOrgConfig()` with the algorithm of `10 §3` (cached, versioned), access modes of `10 §8`, auto entitlement gate from manifests, `/me/config` (modules, permissions, menu, terms, limits, accessMode), system role grant templates of `10 §10`, **generated contract tests of `10 §11`**.
+**1.6 Module registry, packages, resolver (ADR-033, ADR-049) + module template script.** Needs D2 (`10-MODULE-CATALOG.md`).
+- Do: `defineModule()` with the manifest schema of `10 §2`, registry + `registryHash`, manifests for modules that exist so far, Package + PlatformSubscription models, seed packages of `10 §9` (incl. 14-day BUNDLE trial), `resolveOrgConfig()` with the algorithm of `10 §3` (cached, versioned), access modes of `10 §8`, auto entitlement gate from manifests, `/me/config` (modules, permissions, menu, terms, limits, accessMode), system role grant templates of `10 §10`, `scripts/new-module` (moved here from 0.2: generates the 4 layer folders with real starter files, `index.ts`, `module.manifest.ts` using `defineModule`, `README.md`, a sample test), **generated contract tests of `10 §11`**.
 - Done: turning any module off makes all its routes 403, removes it from menu and config, and the generated tests cover every manifest automatically.
 
 **1.7 Admin app: auth & org shell.**
