@@ -82,17 +82,30 @@ export function loadConfig(env: Environment): AppConfig {
   const cors = readOrigins(env, isProduction);
 
   const issues = collectIssues([nodeEnv, port, logLevel, platformUrl, tenantSharedUrl, redisUrl, cors]);
-  if (issues.length > 0) throw new ConfigError(issues);
+  const { value: nodeEnvValue } = nodeEnv;
+  const { value: portValue } = port;
+  const { value: logLevelValue } = logLevel;
+  const { value: platformUrlValue } = platformUrl;
+  const { value: tenantSharedUrlValue } = tenantSharedUrl;
+  const { value: redisUrlValue } = redisUrl;
+  const { value: originsValue } = cors;
+  const isComplete =
+    issues.length === 0 &&
+    nodeEnvValue !== undefined &&
+    portValue !== undefined &&
+    logLevelValue !== undefined &&
+    platformUrlValue !== undefined &&
+    tenantSharedUrlValue !== undefined &&
+    redisUrlValue !== undefined &&
+    originsValue !== undefined;
+  if (!isComplete) throw new ConfigError(issues);
 
   return Object.freeze({
-    nodeEnv: nodeEnv.value!,
-    port: port.value!,
-    logLevel: logLevel.value!,
-    database: Object.freeze({
-      platformUrl: platformUrl.value!,
-      tenantSharedUrl: tenantSharedUrl.value!,
-    }),
-    redisUrl: redisUrl.value!,
-    corsAllowedOrigins: Object.freeze(cors.value!),
+    nodeEnv: nodeEnvValue,
+    port: portValue,
+    logLevel: logLevelValue,
+    database: Object.freeze({ platformUrl: platformUrlValue, tenantSharedUrl: tenantSharedUrlValue }),
+    redisUrl: redisUrlValue,
+    corsAllowedOrigins: Object.freeze(originsValue),
   });
 }

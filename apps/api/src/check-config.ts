@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { ConfigError, loadConfig, loadEnvFile, type AppConfig } from "./config/index.js";
+import { ConfigError, loadConfigFromProcess, type AppConfig } from "./config/index.js";
 
 const ENV_FILE_PATH = fileURLToPath(new URL("../.env", import.meta.url));
 
@@ -25,8 +25,7 @@ function describeFailure(error: ConfigError): string {
 
 function run(): number {
   try {
-    loadEnvFile(ENV_FILE_PATH);
-    process.stdout.write(`${describeSuccess(loadConfig(process.env))}\n`);
+    process.stdout.write(`${describeSuccess(loadConfigFromProcess(ENV_FILE_PATH))}\n`);
     return 0;
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;

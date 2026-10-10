@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { ConfigError, loadConfig, loadEnvFile } from "./index.js";
+import { ConfigError, loadConfig, loadConfigFromProcess, loadEnvFile } from "./index.js";
 
 const validEnv = {
   DB_PLATFORM_URL: "mongodb://127.0.0.1:27017/banijjik_platform?replicaSet=rs0&directConnection=true",
@@ -156,5 +156,30 @@ describe("loadEnvFile", () => {
 
     expect(process.env.BANIJJIK_TEST_NEW).toBe("from-file");
     expect(process.env.BANIJJIK_TEST_KEPT).toBe("already-set");
+  });
+});
+
+describe("loadConfigFromProcess", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    for (const key of Object.keys(process.env)) delete process.env[key];
+    Object.assign(process.env, originalEnv);
+  });
+
+  it("builds the config from the env file while an already-set variable wins", () => {
+    const directory = mkdtempSync(join(tmpdir(), "banijjik-process-"));
+    const path = join(directory, ".env");
+    const fileLines = Object.entries(validEnv).map(([key, value]) => `${key}=${value}`);
+    writeFileSync(path, [...fileLines, "PORT=5001"].join("\n"));
+    process.env.PORT = "6000";
+    try {
+      const config = loadConfigFromProcess(path);
+
+      expect(config.port).toBe(6000);
+      expect(config.redisUrl).toBe(validEnv.REDIS_URL);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 });
