@@ -7,12 +7,12 @@ import {
   type AccountMenuLanguage,
   type AccountMenuOrganization,
 } from "@banijjik/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactElement } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, type ReactElement } from "react";
 import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { signOut } from "../auth/sign-out";
 import { ApiError } from "../lib/api/api-error";
-import { fetchMyOrganizations, MY_ORGANIZATIONS_QUERY_KEY } from "../lib/api/me-api";
+import { seedMyOrganizations } from "../lib/api/me-api";
 import { useTranslator } from "../lib/i18n/i18n-provider";
 import { initialsOf } from "./initials";
 import { LazyAccountMenu } from "./lazy-account-menu";
@@ -22,17 +22,8 @@ export interface AccountMenuContainerProps {
   userName: string;
   /** Slug of the business being viewed; absent on the page that lists businesses. */
   currentOrganizationSlug?: string;
-  /** Loaded by the server layout; seeds the TanStack Query cache so the menu needs no request. */
-  initialOrganizations: MyOrganizationSummary[];
-}
-
-function useMyOrganizations(initial: MyOrganizationSummary[]): MyOrganizationSummary[] {
-  const query = useQuery({
-    queryKey: MY_ORGANIZATIONS_QUERY_KEY,
-    queryFn: fetchMyOrganizations,
-    initialData: initial,
-  });
-  return query.data;
+  /** Loaded by the server layout; also seeds the TanStack Query cache so the menu needs no request. */
+  organizations: MyOrganizationSummary[];
 }
 
 function toMenuOrganizations(
@@ -78,7 +69,9 @@ export function AccountMenuContainer(props: AccountMenuContainerProps): ReactEle
   const translator = useTranslator();
   const { t, locale } = translator;
   const [isOpen, setIsOpen] = useState(false);
-  const organizations = useMyOrganizations(props.initialOrganizations);
+  const queryClient = useQueryClient();
+  const { organizations } = props;
+  useEffect(() => seedMyOrganizations(queryClient, organizations), [queryClient, organizations]);
   const changeLocale = useLocaleChange();
   const handleSignOut = useSignOut(translator);
   return (

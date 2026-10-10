@@ -1,35 +1,57 @@
 # @banijjik/admin
 
-Next.js (App Router) admin app. Card 0.5b builds only the persistent tenant shell under `/{orgSlug}`; login, org switching and menu data arrive in card 1.7.
+Next.js (App Router) admin app. Cards 0.5b and 1.7a: the persistent tenant shell under `/{orgSlug}`, sign-in and sign-up, silent session renewal, route protection, the business list and the account menu (business switcher, language, sign out). The menu itself comes with card 1.7c.
 
 ## Run
 
 ```
 cp apps/admin/.env.example apps/admin/.env.local   # then edit; never commit it
-npm run dev -w @banijjik/admin                      # http://localhost:3000/<orgSlug>
+npm run dev -w @banijjik/admin                      # http://localhost:3000
 ```
 
-`/` is a 404 until card 1.7 adds the login page.
+The API (`apps/api`) must run too. In development both apps are on `localhost`, so the browser shares the session cookies between ports; in production they share a parent domain (`COOKIE_DOMAIN` on the API). `/` shows the signed-in person's businesses (or goes straight into the only one) and `/sign-in`, `/sign-up` are the public pages.
+
+## How the session works
+
+- The API sets two httpOnly cookies: `access_token` (`Path=/`, 15 minutes) and `refresh_token` (`Path=/api/v1/auth`, 30 days). No token is ever kept in web storage.
+- Server components call the API with `serverApiFetch` (`src/lib/api`): it forwards only the `access_token` cookie and never caches. `requireSession` (`src/auth/session-data.ts`) turns a 401 into `redirect("/session?next=…")`; the proxy (`proxy.ts`) hands the requested path to server components in the `x-request-path` header.
+- `/session` is a small client page: it calls `POST /auth/refresh` (the only place the refresh cookie is sent) and returns to `next`, or goes to `/sign-in?next=…` when the renewal fails.
+- Browser calls use `apiFetch`: one 401 on a non-auth path triggers one shared refresh (parallel calls refresh once) and one retry; a second 401 redirects to sign-in.
+- `next` is read only through `safeNextPath` (`src/auth/safe-next-path.ts`): a single-slash same-origin path or `/`.
+- Switching business is a full page load (plain `<a>`, ADR-022). Navigation inside a business never remounts the shell.
+- Creating a business in the UI is not built yet (cards 2.1 and 6.1); a person with no business sees an empty state.
 
 ## Layout of the code
 
 - `app/layout.tsx`: root layout, fonts (Inter + Noto Sans Bengali through `next/font`, self-hosted at build time), providers.
-- `app/[orgSlug]/(app)/layout.tsx`: server component that renders the shell (`AppShell`, `TopBar`, `Sidebar`, bottom navigation). It is the layout, so navigating inside an org never remounts it. Never turn off server rendering for it (ADR-010).
-- `src/config/env.ts`: the only reader of `process.env`; validates `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_BRAND_NAME` with Zod.
-- `src/lib/api`: `apiFetch` (cookies, `Idempotency-Key`, envelope parsing; a 2xx without `data` is an `errors.invalid_response` error, 204 resolves to `{ data: undefined }`) and `ApiError` (`code` is a contracts `ErrorCode`; an unknown wire code becomes `INTERNAL`).
-- `src/lib/i18n`: `getLocale`/`getTranslator` for server components (cookie `locale`, Bangla default), `I18nProvider`/`useTranslator` for client components.
-- `src/shell`: `buildBottomNavSlots` (pure), `ShellNavigation` (bottom nav and its two sheets), `ShellLink` (Next `Link` adapted to the ui link contract).
+- `app/(auth)`: sign-in and sign-up pages. `app/session`: the renewal page. `app/page.tsx`: the business list.
+- `app/[orgSlug]/(app)/layout.tsx`: server layout; loads `/me` and `/me/orgs` and renders `OrganizationShell` (an unknown slug is a 404, a suspended business shows its explanation). Never turn off server rendering for it (ADR-010).
+- `src/config/env.ts`: the only reader of `process.env` for validated values (Zod; server side). `src/config/api-base-url.ts` reads the one value the browser needs without Zod, so the schema library stays out of the first page load.
+- `src/lib/api`: `apiFetch` (browser: cookies, renewal, `Idempotency-Key`, envelope parsing), `serverApiFetch`, `ApiError` (`code` is a contracts `ErrorCode`; `retryAfterSeconds` from a 429), `auth-api`, `me-api`.
+- `src/auth`: the forms (`SignInForm`, `SignUpForm`, built on the ui Form primitives, validated with the same Zod schemas as the API, API field errors mapped by path in `map-api-error.ts`), `safeNextPath`, `signOut`, `SessionRenewal`.
+- `src/lib/i18n`: `getLocale`/`getTranslator` for server components (cookie `locale`, Bangla default), `I18nProvider`/`useTranslator` for client components, `setLocaleAction` (server action: cookie, then `PATCH /me`).
+- `src/shell`: `OrganizationShell`, `AccountMenuContainer` (trigger plus the lazily loaded sheet), `ShellNavigation`, `ShellLink`, `LanguageSwitch`.
+- `src/orgs`: the business list (`BusinessHome`, `BusinessList`).
 
 ## Rules
 
 - Pages use `@banijjik/ui` components and tokens only: no hex colours, no px font sizes, no literal user-facing text (use i18n keys).
 - Imports inside this app have no `.js` extension (Next bundles with the Bundler resolver; the workspace packages use NodeNext).
 - Server components call `getTranslator()`; client components get text as props or use `useTranslator()`.
+- Do not import `src/config/env.ts` or a Zod schema from code the first page load needs (initial JS budget 170 KB gzip, 13-UX section 11).
 
 ## Lighthouse
 
-`npm run lighthouse -w @banijjik/admin` builds nothing: run `npm run build -w @banijjik/admin` first (with the two env variables set). It starts `next start` on port 3100 and audits `/test-org` three times with Lighthouse's default mobile emulation, asserting performance and accessibility at 0.9 or more. It needs Chrome (set `CHROME_PATH` if it is not found). Not in CI yet.
+`npm run lighthouse -w @banijjik/admin` builds nothing: run `npm run build -w @banijjik/admin` first (with the two env variables set). It starts `next start` on port 3100 and audits `/sign-in` three times with Lighthouse's default mobile emulation, asserting performance and accessibility at 0.9 or more. Since card 1.7a the shell pages need a signed-in person, so the audit uses the public sign-in page. Not in CI.
 
-## Browser test (sheet stacking)
+## Browser tests
 
-`npm run test:browser -w @banijjik/admin` opens `/test-org` at 375 px in headless Chrome (puppeteer-core, no browser download), opens the Quick create and More sheets and checks with `document.elementFromPoint` that the sheet, not its overlay, is on top at its centre and at its close button (review J3). Build first with the two env variables set, and set `CHROME_PATH` to a Chrome executable. It starts `next start` on port 3101. It is not part of `npm test`.
+`npm run test:browser -w @banijjik/admin` runs real-browser checks against the real stack, nothing mocked: an in-memory MongoDB replica set, the built API (`apps/api/dist`) on port 4000, the built admin app (`next start`) on port 3101 and headless Chrome (puppeteer-core, no browser download).
+
+Before running: build the API and the admin app (`NEXT_PUBLIC_API_BASE_URL=http://localhost:4000 NEXT_PUBLIC_BRAND_NAME=Example npm run build -w @banijjik/admin`), start the compose Redis (`redis://127.0.0.1:6380`), and set `CHROME_PATH` to a Chrome executable. Without internet, also set `MONGOMS_SYSTEM_BINARY` to a local `mongod` and `MONGOMS_VERSION_CHECK=false`.
+
+- `src/auth/auth-flow.browser.test.ts`: sign up, sign out, wrong password, `next` safety, redirect to sign-in and back, silent renewal of an expired access cookie, the shell with real data, a full reload when switching business, language switch.
+- `src/shell/sheet-stacking.browser.test.ts`: the Quick create and More sheets are on top at 375 px (review J3).
+- `src/auth/screenshots.browser.test.ts`: only runs when `SCREENSHOT_DIR` is set; saves the 375 px and 1280 px screenshots of the handoff.
+
+The files run one after another because each starts the whole stack on the same ports. They are not part of `npm test`.

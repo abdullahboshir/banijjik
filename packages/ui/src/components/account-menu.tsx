@@ -102,28 +102,3 @@ export function AccountMenu(props: AccountMenuProps): ReactElement {
     </Sheet>
   );
 }
-
-export interface AccountMenuTriggerProps {
-  initials: string;
-  label: string;
-  onClick: () => void;
-}
-
-/** The round button in the top bar that opens the account sheet. */
-export function AccountMenuTrigger({
-  initials,
-  label,
-  onClick,
-}: AccountMenuTriggerProps): ReactElement {
-  return (
-    <Button
-      variant="ghost"
-      aria-label={label}
-      aria-haspopup="dialog"
-      className="rounded-full bg-subtle px-0"
-      onClick={onClick}
-    >
-      <span aria-hidden="true">{initials}</span>
-    </Button>
-  );
-}

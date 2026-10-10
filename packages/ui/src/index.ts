@@ -69,10 +69,11 @@ export {
 export type { ColorTheme, ColorValue, FlatColorToken, FontSize } from "./tokens/index.js";
 export { LinkComponentProvider, useLinkComponent } from "./lib/link.js";
 export type { LinkComponent, LinkProps } from "./lib/link.js";
-export { AccountMenu, AccountMenuTrigger } from "./components/account-menu.js";
+export { AccountMenu } from "./components/account-menu.js";
 export type {
   AccountMenuLanguage,
   AccountMenuOrganization,
   AccountMenuProps,
-  AccountMenuTriggerProps,
 } from "./components/account-menu.js";
+export { AccountMenuTrigger } from "./components/account-menu-trigger.js";
+export type { AccountMenuTriggerProps } from "./components/account-menu-trigger.js";

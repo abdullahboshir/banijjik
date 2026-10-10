@@ -1,7 +1,7 @@
-import { env } from "../../config/env";
+import { API_BASE_URL } from "../../config/api-base-url";
 
 const API_PREFIX = "/api/v1";
 
 export function buildApiUrl(path: string): string {
-  return `${env.NEXT_PUBLIC_API_BASE_URL}${API_PREFIX}${path}`;
+  return `${API_BASE_URL}${API_PREFIX}${path}`;
 }

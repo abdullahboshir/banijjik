@@ -3,7 +3,6 @@ import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import {
   AccountMenu,
-  AccountMenuTrigger,
   type AccountMenuOrganization,
   type AccountMenuProps,
 } from "./account-menu.js";
@@ -84,14 +83,5 @@ describe("AccountMenu", () => {
     });
     expect(screen.getByRole("button", { name: "সাইন আউট" })).not.toBeNull();
     expect(screen.getByRole("button", { name: "English" })).not.toBeNull();
-  });
-});
-
-describe("AccountMenuTrigger", () => {
-  it("is named by its label, not by the initials", async () => {
-    const onClick = vi.fn();
-    render(<AccountMenuTrigger initials="রউ" label="অ্যাকাউন্ট" onClick={onClick} />);
-    await userEvent.click(screen.getByRole("button", { name: "অ্যাকাউন্ট" }));
-    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

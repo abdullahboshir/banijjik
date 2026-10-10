@@ -56,7 +56,7 @@ export async function OrganizationShell(props: OrganizationShellProps): Promise<
         <AccountMenuContainer
           userName={me.name}
           currentOrganizationSlug={orgSlug}
-          initialOrganizations={organizations}
+          organizations={organizations}
         />
       }
     />

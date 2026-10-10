@@ -44,7 +44,7 @@ export async function BusinessHome({
       <TopBar
         logo={<BrandLogo />}
         organizationName=""
-        actions={<AccountMenuContainer userName={me.name} initialOrganizations={organizations} />}
+        actions={<AccountMenuContainer userName={me.name} organizations={organizations} />}
       />
       <main className="mx-auto w-full max-w-3xl p-4 md:p-6">
         <PageHeader title={t("orgs.title")} />

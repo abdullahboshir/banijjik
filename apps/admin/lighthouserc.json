@@ -3,7 +3,7 @@
     "collect": {
       "startServerCommand": "npx next start -p 3100",
       "startServerReadyPattern": "Ready",
-      "url": ["http://localhost:3100/test-org"],
+      "url": ["http://localhost:3100/sign-in"],
       "numberOfRuns": 3
     },
     "assert": {

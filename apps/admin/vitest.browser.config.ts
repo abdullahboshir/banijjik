@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.browser.test.ts"],
+    // Every file starts the whole stack on fixed ports (the build bakes in the API address), so files run one by one.
+    fileParallelism: false,
     testTimeout: 60_000,
     hookTimeout: 60_000,
     env: {
