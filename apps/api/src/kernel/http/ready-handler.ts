@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { ERROR_CODE } from "@banijjik/contracts";
+import { ERROR_CODE, type ApiErrorEnvelope } from "@banijjik/contracts";
 import { getLogger } from "../logger/index.js";
 import { sendData } from "./envelope.js";
 import { readRequestId } from "./request-id.middleware.js";
@@ -15,12 +15,13 @@ export function createReadyHandler(isReady: () => Promise<boolean>): RequestHand
       return;
     }
     getLogger().warn({ event: "ready.failed" }, "dependencies are not ready");
-    response.status(503).json({
+    const body: ApiErrorEnvelope = {
       error: {
         code: ERROR_CODE.INTERNAL,
         messageKey: "errors.not_ready",
         requestId: readRequestId(response),
       },
-    });
+    };
+    response.status(503).json(body);
   };
 }

@@ -18,13 +18,13 @@ Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) 
 ## Layout
 
 - `src/main.ts`: loads config, then starts the API (`ROLE=api`) or the worker (`ROLE=worker`, no HTTP, waits for shutdown). SIGTERM/SIGINT run the shutdown tasks in order, then end the process with exit 0 (exit 1 when a task failed, on timeout or on a second signal). A stray rejection or uncaught exception is reported through `reportError` and exits 1.
-- `src/app.ts`: `buildApp({ config, logger })`. Middleware order: request id, access log, JSON body (1 MB), CORS, `/health`, `/api/v1`, not-found, error handler.
+- `src/app.ts`: `buildApp({ config, logger })`. Middleware order: request id, access log, CORS, JSON body (1 MB), `/health`, `/api/v1`, not-found, error handler.
 - `src/routes/v1.ts`: the only place that mounts module routers and global middleware.
 - `src/kernel/http`: `AppError` and its factories, `sendData`, `validate({ params, query, body })` (parsed values in `response.locals.validated`), `errorHandler`. Errors use the envelope of `docs/14-API.md`; messages and stacks never reach a response.
 - `src/kernel/context`: request context in AsyncLocalStorage. `src/kernel/logger`: pino with redaction, `getLogger()` is request-scoped. `src/kernel/observability`: `reportError`. `src/kernel/lifecycle`: `registerShutdown`.
 - `src/kernel/db`: `connectDatabases(config)` opens ONE cluster client; the tenant database is `useDb` on it, so one session spans both (ADR-043). Business code gets models only through `models(ctx).get(name)`; modules `registerModel({ modelName, collectionName, database, schema })` at startup and never compile models. Also: schema parts, `stripMongoInternals`, `updateVersioned` (409 `details.currentVersion` / 404), `withTransaction` (nested reuse, up to 5 attempts on `TransientTransactionError` with a jittered backoff (50 ms doubling to 800 ms, plus 0 to 100% random), then `RETRY_LATER` (503), `onCommitted` callbacks only after the commit), `getActiveSession`, `GET /ready` (2 s ping: 200 or 503).
 - `src/kernel/sequence`: `nextSequenceValue({ organizationId, sequenceKey })`, an atomic per-organization counter on the tenant `sequences` collection. Two modes per key (`SEQUENCE_KEY_MODE`, ADR-085): FAST keys run outside the transaction (no conflicts, gaps allowed); GAPLESS keys (INVOICE, JOURNAL, ZREPORT) join the transaction and throw without one.
-- `src/kernel/context/run-as-system.ts`: `runAsSystem(reason, work)`, logged as `system_access`. The system mark lives in its own storage (`getSystemReason()`), not in `RequestContext`. Lint rules R26 (runAsSystem) and R27 (`runWithRequestContext`) keep both out of module code (platform use cases excepted for R26).
+- `src/kernel/context/run-as-system.ts`: `runAsSystem(reason, work)`, logged as `system_access`. The system mark lives in its own storage (`getSystemReason()`), not in `RequestContext`. Lint rules R26 (runAsSystem, also in `infrastructure`) and R27 (`runWithRequestContext`) keep both out of module code (platform use cases excepted for R26).
 
 ## Build
 
@@ -38,7 +38,7 @@ Startup (`main.ts`) connects before it listens or starts the worker and exits 1 
 
 ## Rules
 
-- `process.env` is read only inside `src/config/` (and the `check-config.ts` entry). Everything else receives an `AppConfig`.
+- `process.env` is read only inside `src/config/` (`load-config-from-process.ts` is the only reader). Everything else receives an `AppConfig`.
 - `loadConfig(env)` reports every bad key at once. Error messages hold keys and fixed hints, never values.
 - A missing `.env` file is fine: CI and production set real environment variables.
 

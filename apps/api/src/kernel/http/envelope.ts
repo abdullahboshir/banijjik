@@ -1,3 +1,4 @@
+import type { ApiSuccessEnvelope } from "@banijjik/contracts";
 import type { Response } from "express";
 
 export interface SendDataOptions {
@@ -12,6 +13,6 @@ export function sendData<Data>(
   options: SendDataOptions = {},
 ): void {
   const { meta, status = 200 } = options;
-  const body = meta === undefined ? { data } : { data, meta };
+  const body: ApiSuccessEnvelope<Data, object> = meta === undefined ? { data } : { data, meta };
   response.status(status).json(body);
 }

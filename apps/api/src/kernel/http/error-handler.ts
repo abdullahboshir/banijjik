@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler, NextFunction, Request, Response } from "express";
-import { ERROR_CODE } from "@banijjik/contracts";
+import { ERROR_CODE, type ApiErrorEnvelope } from "@banijjik/contracts";
 import { findRequestContext } from "../context/index.js";
 import { getLogger } from "../logger/index.js";
 import { reportError } from "../observability/report-error.js";
@@ -65,7 +65,7 @@ function readRequestId(response: Response): string {
 }
 
 function sendError(response: Response, error: AppError): void {
-  const body = {
+  const body: ApiErrorEnvelope = {
     error: {
       code: error.code,
       messageKey: error.messageKey,
