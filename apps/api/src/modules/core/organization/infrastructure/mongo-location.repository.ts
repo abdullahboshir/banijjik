@@ -36,16 +36,15 @@ export class MongoLocationRepository implements LocationRepository, LocationMana
     return document === null ? undefined : toLocation(document);
   }
 
-  async findActiveByIds(locationIds: readonly LocationId[]): Promise<readonly Location[]> {
-    if (locationIds.length === 0) return [];
-    const documents = await this.model()
-      .find(
-        { locationId: { $in: locationIds }, status: LOCATION_STATUS.ACTIVE },
-        null,
-        sessionOption(getActiveSession()),
-      )
-      .lean<LocationDocument[]>();
-    return documents.map(toLocation);
+  async touchActive(locationIds: readonly LocationId[]): Promise<number> {
+    if (locationIds.length === 0) return 0;
+    const result = await this.model().updateMany(
+      { locationId: { $in: locationIds }, status: LOCATION_STATUS.ACTIVE },
+      { $inc: { referenceVersion: 1 } },
+      // The counter is a guard, not a change of the location: its updatedAt stays.
+      { ...sessionOption(getActiveSession()), timestamps: false },
+    );
+    return result.matchedCount;
   }
 
   async list(request: LocationListRequest): Promise<Page<Location>> {

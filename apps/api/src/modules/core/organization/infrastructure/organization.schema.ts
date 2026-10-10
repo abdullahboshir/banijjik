@@ -43,6 +43,8 @@ export interface OrganizationDocument {
   profile?: OrganizationProfileFields;
   configVersion: number;
   rolesVersion: number;
+  /** Guard counter that serializes limit-checked creates, see OrganizationLimitLock. Not part of any cache key. */
+  limitWriteVersion?: number;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -82,6 +84,7 @@ export const organizationSchema = new Schema<OrganizationDocument>(
     profile: { type: profileSchema },
     configVersion: { type: Number, required: true },
     rolesVersion: { type: Number, required: true, default: 1 },
+    limitWriteVersion: { type: Number, default: 0 },
     ...versionField,
     ...auditFields,
   },

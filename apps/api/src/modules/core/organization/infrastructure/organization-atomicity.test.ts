@@ -35,6 +35,7 @@ import { MongoInvitationRepository } from "./mongo-invitation.repository.js";
 import { MongoLocationRepository } from "./mongo-location.repository.js";
 import { MongoMemberNumberSequence } from "./mongo-member-number-sequence.js";
 import { MongoMemberRepository } from "./mongo-member.repository.js";
+import { MongoOrganizationLimitLock } from "./mongo-organization-limit-lock.js";
 import { MongoOrganizationRepository } from "./mongo-organization.repository.js";
 import { MongoUnitOfWork } from "./mongo-unit-of-work.js";
 import { RandomInvitationTokens } from "./random-invitation-tokens.js";
@@ -135,6 +136,7 @@ describe("a change whose event cannot be written", () => {
     const useCase = new CreateLocationUseCase({
       locations: new MongoLocationRepository(),
       limits: { assertBelow: async () => undefined },
+      limitLock: new MongoOrganizationLimitLock(),
       unitOfWork: new MongoUnitOfWork(),
       events: failingEvents,
       audit: audit(),
@@ -217,6 +219,7 @@ describe("a change whose event cannot be written", () => {
       users: { findUserIdByIdentifier: async () => undefined },
       guard: openGuard(),
       limits: { assertBelow: async () => undefined },
+      limitLock: new MongoOrganizationLimitLock(),
       tokens: new RandomInvitationTokens(),
       unitOfWork: new MongoUnitOfWork(),
       events: failingEvents,
@@ -277,6 +280,7 @@ describe("a change whose event cannot be written", () => {
       invitations: new MongoInvitationRepository(),
       members: new MongoMemberRepository(),
       guard: openGuard(),
+      limitLock: new MongoOrganizationLimitLock(),
       memberNumbers: new MongoMemberNumberSequence(),
       myOrganizations: { execute: async () => [] },
       contextRunner: {

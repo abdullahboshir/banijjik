@@ -27,6 +27,8 @@ export interface LocationDocument {
   address?: PostalAddress;
   phoneE164?: string;
   timezone?: string;
+  /** Guard counter, see LocationManagementRepository.touchActive. */
+  referenceVersion?: number;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +58,7 @@ export const locationSchema = new Schema<LocationDocument>(
     address: { type: addressSchema },
     phoneE164: { type: String },
     timezone: { type: String },
+    referenceVersion: { type: Number, default: 0 },
     ...versionField,
     ...auditFields,
   },

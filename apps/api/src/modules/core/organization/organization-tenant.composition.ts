@@ -1,4 +1,5 @@
 import { LIMIT_KEY } from "@banijjik/contracts";
+import type { OrganizationId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type {
   LimitGuard,
@@ -45,6 +46,7 @@ import { MongoInvitationRepository } from "./infrastructure/mongo-invitation.rep
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
 import { MongoMemberRepository } from "./infrastructure/mongo-member.repository.js";
+import { MongoOrganizationLimitLock } from "./infrastructure/mongo-organization-limit-lock.js";
 import { MongoOrganizationRepository } from "./infrastructure/mongo-organization.repository.js";
 import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
 import { RandomInvitationTokens } from "./infrastructure/random-invitation-tokens.js";
@@ -100,6 +102,7 @@ interface SharedParts {
   readonly audit: AuditRecorder;
   readonly clock: Clock;
   readonly limits: LimitGuard;
+  readonly limitLock: MongoOrganizationLimitLock;
 }
 
 function buildSharedParts(dependencies: OrganizationTenantDependencies): SharedParts {
@@ -116,12 +119,13 @@ function buildSharedParts(dependencies: OrganizationTenantDependencies): SharedP
     audit,
     clock,
     limits,
+    limitLock: new MongoOrganizationLimitLock(),
   };
 }
 
 function buildProfileAndLocationController(shared: SharedParts): ProfileAndLocationController {
   const { organizations, locations, members, invitations } = shared;
-  const { unitOfWork, events, audit, clock, limits } = shared;
+  const { unitOfWork, events, audit, clock, limits, limitLock } = shared;
   return new ProfileAndLocationController({
     getProfile: new GetProfileUseCase(organizations),
     updateProfile: new UpdateProfileUseCase({ organizations, unitOfWork, events, audit }),
@@ -129,6 +133,7 @@ function buildProfileAndLocationController(shared: SharedParts): ProfileAndLocat
     createLocation: new CreateLocationUseCase({
       locations,
       limits,
+      limitLock,
       unitOfWork,
       events,
       audit,
@@ -151,7 +156,8 @@ function buildMemberController(shared: SharedParts): MemberController {
   const { organizations, members, invitations, guard, unitOfWork, events, audit } = shared;
   const memberDependencies = { members, organizations, guard, unitOfWork, events, audit };
   // Reactivating adds an ACTIVE member: the limit counts ACTIVE members plus pending invitations.
-  const assertRoomForOneMore = async (): Promise<void> => {
+  const assertRoomForOneMore = async (organizationId: OrganizationId): Promise<void> => {
+    await shared.limitLock.acquire(organizationId);
     const active = await members.countActive();
     const pending = await invitations.countPending(shared.clock.now());
     await shared.limits.assertBelow(LIMIT_KEY.MEMBERS, active + pending);
@@ -168,7 +174,8 @@ function buildInvitationController(
   shared: SharedParts,
   dependencies: OrganizationTenantDependencies,
 ): InvitationController {
-  const { members, invitations, guard, limits, unitOfWork, events, audit, clock } = shared;
+  const { members, invitations, guard, limits, limitLock } = shared;
+  const { unitOfWork, events, audit, clock } = shared;
   const users = buildUserIdentifierReader();
   const tokens = new RandomInvitationTokens();
   const lookup = dependencies.invitationTokenLookup;
@@ -180,6 +187,7 @@ function buildInvitationController(
       users,
       guard,
       limits,
+      limitLock,
       tokens,
       unitOfWork,
       events,
@@ -202,6 +210,7 @@ function buildInvitationController(
       invitations,
       members,
       guard,
+      limitLock,
       memberNumbers: new MongoMemberNumberSequence(),
       myOrganizations: dependencies.myOrganizationsReader,
       contextRunner: dependencies.contextRunner,

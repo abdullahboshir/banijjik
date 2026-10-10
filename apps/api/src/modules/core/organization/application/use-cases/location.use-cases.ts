@@ -21,6 +21,7 @@ import type {
 } from "../ports/member-and-invitation-repositories.js";
 import type {
   LocationManagementRepository,
+  OrganizationLimitLock,
   Page,
   PageRequest,
 } from "../ports/profile-and-location-repositories.js";
@@ -77,6 +78,7 @@ export interface CreateLocationInput extends ActorInput {
 
 export interface CreateLocationDependencies extends LocationDependencies {
   readonly limits: LimitGuard;
+  readonly limitLock: OrganizationLimitLock;
   readonly clock: Clock;
 }
 
@@ -85,7 +87,7 @@ export class CreateLocationUseCase {
   constructor(private readonly dependencies: CreateLocationDependencies) {}
 
   execute(input: CreateLocationInput): Promise<Location> {
-    const { locations, limits, unitOfWork, events, audit, clock } = this.dependencies;
+    const { locations, limits, limitLock, unitOfWork, events, audit, clock } = this.dependencies;
     const location = Location.create({
       organizationId: input.organizationId,
       name: input.name,
@@ -97,6 +99,7 @@ export class CreateLocationUseCase {
       now: clock.now(),
     });
     return unitOfWork.run(async () => {
+      await limitLock.acquire(input.organizationId);
       await limits.assertBelow(LIMIT_KEY.LOCATIONS, await locations.countActive());
       await locations.insert(location);
       await audit.record({

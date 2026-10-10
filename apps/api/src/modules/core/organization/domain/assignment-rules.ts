@@ -1,7 +1,6 @@
 import { ALL_LOCATIONS } from "@banijjik/contracts";
 import type { RoleId } from "@banijjik/ids";
 import { invalidField, roleNotGrantable } from "./errors.js";
-import type { Location } from "./location.entity.js";
 import { assertAssignmentsAreConsistent, type Assignment } from "./member.entity.js";
 
 /** What the organization module needs to know about a role before it is handed to someone. */
@@ -22,17 +21,9 @@ export interface CallerKeys {
 
 export type RoleGrants = ReadonlyMap<RoleId, RoleGrant>;
 
-/** Every location named must be an ACTIVE location of the organization. "ALL" names none. */
-export function assertLocationsAreActive(
-  assignments: readonly Assignment[],
-  activeLocations: readonly Location[],
-): void {
-  const activeIds = new Set(activeLocations.map((location) => location.locationId));
-  for (const { locationId } of assignments) {
-    if (locationId !== ALL_LOCATIONS && !activeIds.has(locationId)) {
-      throw invalidField("assignments", "validation.invalid_value");
-    }
-  }
+/** The number of ACTIVE locations found must equal the number of distinct locations named. */
+export function assertEveryLocationIsActive(named: number, found: number): void {
+  if (found !== named) throw invalidField("assignments", "validation.invalid_value");
 }
 
 /**

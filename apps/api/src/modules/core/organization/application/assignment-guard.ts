@@ -4,7 +4,7 @@ import type { PermissionGate } from "../../../../kernel/access/index.js";
 import {
   assertAssignmentsAreConsistent,
   assertCallerHoldsEveryKey,
-  assertLocationsAreActive,
+  assertEveryLocationIsActive,
   assertRolesAreAssignable,
   type RoleGrants,
 } from "../domain/assignment-rules.js";
@@ -14,7 +14,7 @@ import type { LocationManagementRepository } from "./ports/profile-and-location-
 
 export interface AssignmentGuardDependencies {
   readonly roles: RoleGrantLookup;
-  readonly locations: Pick<LocationManagementRepository, "findActiveByIds">;
+  readonly locations: Pick<LocationManagementRepository, "touchActive">;
   /** The caller's own grants of the current request, from the kernel permission gate. */
   readonly permissions: Pick<PermissionGate, "describeCaller">;
 }
@@ -38,10 +38,13 @@ export class AssignmentGuard {
   async assertAssignable(assignments: readonly Assignment[]): Promise<void> {
     const { locations } = this.dependencies;
     assertAssignmentsAreConsistent(assignments);
-    const locationIds = assignments.flatMap(({ locationId }) =>
-      locationId === ALL_LOCATIONS ? [] : [locationId],
-    );
-    assertLocationsAreActive(assignments, await locations.findActiveByIds(locationIds));
+    const locationIds = [
+      ...new Set(
+        assignments.flatMap(({ locationId }) => (locationId === ALL_LOCATIONS ? [] : [locationId])),
+      ),
+    ];
+    // Touching the locations is what serializes this change against an archive of the same location.
+    assertEveryLocationIsActive(locationIds.length, await locations.touchActive(locationIds));
     assertRolesAreAssignable(assignments, await this.grantsOf(assignments));
   }
 

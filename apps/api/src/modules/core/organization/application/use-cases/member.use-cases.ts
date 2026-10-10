@@ -147,7 +147,7 @@ function nextStatusOf(member: Member, action: MemberStatusAction): Member {
 
 export interface ChangeMemberStatusDependencies extends MemberDependencies {
   /** Reactivating adds an ACTIVE member, so the `members` limit is checked (ACTIVE + pending invitations). */
-  readonly assertRoomForOneMore: () => Promise<void>;
+  readonly assertRoomForOneMore: (organizationId: OrganizationId) => Promise<void>;
 }
 
 /**
@@ -170,7 +170,8 @@ export class ChangeMemberStatusUseCase {
       });
       const next = nextStatusOf(existing, input.action);
       await this.dependencies.guard.assertCallerHolds(existing.assignments);
-      if (input.action === "REACTIVATE") await this.dependencies.assertRoomForOneMore();
+      if (input.action === "REACTIVATE")
+        await this.dependencies.assertRoomForOneMore(input.organizationId);
       const saved = await members.update(next, input.version, input.actorUserId);
       await audit.record({
         action: ACTION_AUDIT[input.action],

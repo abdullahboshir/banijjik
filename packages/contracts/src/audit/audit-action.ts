@@ -25,5 +25,11 @@ export const AUDIT_ACTION = {
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
 
 /** The kind of record an audit entry is about. Add-only. */
-export const AUDIT_ENTITY_TYPE = defineEnum(["organization", "location", "member", "role"]);
+export const AUDIT_ENTITY_TYPE = defineEnum([
+  "organization",
+  "location",
+  "member",
+  "invitation",
+  "role",
+]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];

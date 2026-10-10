@@ -24,6 +24,15 @@ export interface OrganizationProfileRepository {
   ): Promise<Organization>;
 }
 
+/**
+ * Serializes every create that is checked against a package limit: it writes a counter on the
+ * organization, so two concurrent creates conflict and the retry counts again (ADR-092). Call it
+ * inside the transaction, before counting.
+ */
+export interface OrganizationLimitLock {
+  acquire(organizationId: OrganizationId): Promise<void>;
+}
+
 export interface LocationListRequest extends PageRequest {
   readonly status?: LocationStatus;
   /** The locations the caller may see; "ALL" shows every location (plan 1.7b decision 5). */
@@ -35,8 +44,13 @@ export interface LocationManagementRepository {
   /** Throws DuplicateFieldError("name") when an ACTIVE location has the name. Joins the unit of work. */
   insert(location: Location): Promise<void>;
   findById(locationId: LocationId): Promise<Location | undefined>;
-  /** The ACTIVE ones among the given IDs, in one query. */
-  findActiveByIds(locationIds: readonly LocationId[]): Promise<readonly Location[]>;
+  /**
+   * Writes a guard counter on each of the given ACTIVE locations and returns how many it found.
+   * Anyone who gives a member or an invitation a role at a location calls this inside their
+   * transaction; archiving writes the same document, so a concurrent pair conflicts and one of
+   * them is retried and sees the other's result (ADR-092).
+   */
+  touchActive(locationIds: readonly LocationId[]): Promise<number>;
   list(request: LocationListRequest): Promise<Page<Location>>;
   countActive(): Promise<number>;
   /** Throws DuplicateFieldError("name") on a name clash; a stale version is a 409. */

@@ -14,6 +14,12 @@ describe("audit vocabulary", () => {
   });
 
   it("lists the entity types of the modules that exist", () => {
-    expect(Object.keys(AUDIT_ENTITY_TYPE)).toEqual(["organization", "location", "member", "role"]);
+    expect(Object.keys(AUDIT_ENTITY_TYPE)).toEqual([
+      "organization",
+      "location",
+      "member",
+      "invitation",
+      "role",
+    ]);
   });
 });

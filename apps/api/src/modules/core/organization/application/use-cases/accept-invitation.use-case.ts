@@ -29,6 +29,7 @@ import type {
   MemberManagementRepository,
 } from "../ports/member-and-invitation-repositories.js";
 import type { OrganizationContextRunner } from "../ports/organization-context-runner.js";
+import type { OrganizationLimitLock } from "../ports/profile-and-location-repositories.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
 import type { MyOrganizationsReader } from "./list-my-organizations.use-case.js";
 
@@ -74,6 +75,8 @@ export interface AcceptInvitationDependencies {
   readonly invitations: InvitationRepository;
   readonly members: MemberManagementRepository;
   readonly guard: AssignmentGuard;
+  /** Accepting turns a counted pending invitation into a member, so it takes the same lock as the creates. */
+  readonly limitLock: OrganizationLimitLock;
   readonly memberNumbers: MemberNumberSequence;
   readonly myOrganizations: MyOrganizationsReader;
   readonly contextRunner: OrganizationContextRunner;
@@ -135,8 +138,9 @@ export class AcceptInvitationUseCase {
   }
 
   private async store(input: JoinInput): Promise<void> {
-    const { invitations, members, guard, clock, audit, events } = this.dependencies;
+    const { invitations, members, guard, limitLock, clock, audit, events } = this.dependencies;
     const { userId } = input;
+    await limitLock.acquire(input.invitation.organizationId);
     const current = await invitations.findById(input.invitation.invitationId);
     if (current === undefined || !current.isPendingAt(clock.now())) throw recordNotFound();
     await guard.assertAssignable(current.assignments);
