@@ -6,6 +6,7 @@ export interface RequestContext {
   readonly requestId: string;
   readonly userId?: string;
   readonly organizationId?: string;
+  readonly memberId?: string;
   readonly allowedLocationIds?: readonly string[] | "ALL";
 }
 

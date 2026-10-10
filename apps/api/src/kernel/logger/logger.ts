@@ -66,5 +66,6 @@ export function getLogger(): Logger {
     requestId: context.requestId,
     ...(context.organizationId === undefined ? {} : { organizationId: context.organizationId }),
     ...(context.userId === undefined ? {} : { userId: context.userId }),
+    ...(context.memberId === undefined ? {} : { memberId: context.memberId }),
   });
 }
