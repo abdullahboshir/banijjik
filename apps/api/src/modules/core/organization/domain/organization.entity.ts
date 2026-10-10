@@ -14,6 +14,7 @@ import {
   type CurrencyCode,
   type IndustryTemplateKey,
   type OrganizationDeployment,
+  type OrganizationProfileFields,
   type OrganizationStatus,
   type PreferredLocale,
 } from "@banijjik/contracts";
@@ -36,6 +37,8 @@ export interface OrganizationProps {
   readonly currencyCode: CurrencyCode;
   readonly timezone: string;
   readonly defaultLocale: PreferredLocale;
+  /** Shown on invoices and the storefront; empty until the owner fills it in. */
+  readonly profile: OrganizationProfileFields;
   readonly configVersion: number;
   /** Bumped by every role change; part of the permission cache key (card 1.4). */
   readonly rolesVersion: number;
@@ -44,6 +47,13 @@ export interface OrganizationProps {
   readonly updatedAt: Date;
   /** Null when the system created it. */
   readonly createdByUserId: UserId | null;
+}
+
+/** The fields the profile endpoint may change (plan 1.7b decision 3). */
+export interface OrganizationProfileChanges {
+  readonly name?: string;
+  readonly defaultLocale?: PreferredLocale;
+  readonly profile?: OrganizationProfileFields;
 }
 
 export interface NewOrganizationInput {
@@ -89,6 +99,7 @@ export class Organization implements OrganizationProps {
   readonly currencyCode: CurrencyCode;
   readonly timezone: string;
   readonly defaultLocale: PreferredLocale;
+  readonly profile: OrganizationProfileFields;
   readonly configVersion: number;
   /** Bumped by every role change; part of the permission cache key (card 1.4). */
   readonly rolesVersion: number;
@@ -110,6 +121,7 @@ export class Organization implements OrganizationProps {
     this.currencyCode = props.currencyCode;
     this.timezone = props.timezone;
     this.defaultLocale = props.defaultLocale;
+    this.profile = props.profile;
     this.configVersion = props.configVersion;
     this.rolesVersion = props.rolesVersion;
     this.version = props.version;
@@ -136,12 +148,28 @@ export class Organization implements OrganizationProps {
       currencyCode: CURRENCY_CODE.BDT,
       timezone: DEFAULT_TIMEZONE,
       defaultLocale: input.defaultLocale,
+      profile: {},
       configVersion: INITIAL_CONFIG_VERSION,
       rolesVersion: INITIAL_ROLES_VERSION,
       version: 1,
       createdAt: input.now,
       updatedAt: input.now,
       createdByUserId: input.ownerUserId,
+    });
+  }
+
+  /**
+   * The organization with the given profile changes applied. Profile fields given are merged over
+   * the stored ones; an address replaces the stored address as a whole.
+   */
+  withProfileChanges(changes: OrganizationProfileChanges): Organization {
+    const name = changes.name === undefined ? this.name : changes.name.trim();
+    assertNameLength(name);
+    return new Organization({
+      ...this,
+      name,
+      defaultLocale: changes.defaultLocale ?? this.defaultLocale,
+      profile: { ...this.profile, ...changes.profile },
     });
   }
 

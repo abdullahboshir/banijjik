@@ -20,6 +20,8 @@ import {
   ListMyOrganizationsUseCase,
   type MyOrganizationsReader,
 } from "./application/use-cases/list-my-organizations.use-case.js";
+import type { InvitationTokenLookup } from "./application/ports/member-and-invitation-repositories.js";
+import { MongoInvitationTokenLookup } from "./infrastructure/mongo-invitation-token-lookup.js";
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
 import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
 import { MongoOrganizationConfigSource } from "./infrastructure/mongo-organization-config-source.js";
@@ -127,6 +129,18 @@ export function buildOrganizationConfigSource(): OrganizationConfigSource {
   return new MongoOrganizationConfigSource();
 }
 
+export { buildOrganizationTenantRouters } from "./organization-tenant.composition.js";
+export type {
+  OrganizationTenantDependencies,
+  OrganizationTenantRouters,
+} from "./organization-tenant.composition.js";
+
+/** Plain lookup of an invitation by token hash; spans organizations, so routes/v1.ts wraps it as system access (AUTH_LOOKUP). */
+export function buildInvitationTokenLookup(): InvitationTokenLookup {
+  return new MongoInvitationTokenLookup();
+}
+
+export type { InvitationTokenLookup } from "./application/ports/member-and-invitation-repositories.js";
 export type {
   OrganizationConfigSnapshot,
   OrganizationConfigSource,

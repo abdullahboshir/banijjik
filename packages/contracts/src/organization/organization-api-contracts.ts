@@ -9,12 +9,12 @@ import type { MemberStatus } from "./member-status.js";
 
 /** The fields shown on invoices and the storefront (09-DOMAIN-MODEL section 4.2). */
 export interface OrganizationProfileFields {
-  legalName?: string;
-  legalType?: string;
-  phoneE164?: string;
-  email?: string;
-  address?: PostalAddress;
-  tradeLicenseNumber?: string;
+  legalName?: string | undefined;
+  legalType?: string | undefined;
+  phoneE164?: string | undefined;
+  email?: string | undefined;
+  address?: PostalAddress | undefined;
+  tradeLicenseNumber?: string | undefined;
 }
 
 /** `GET /orgs/{organizationId}/profile` and the body of `PATCH /profile`. */

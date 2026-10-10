@@ -19,11 +19,17 @@ export class ApiActor {
   ) {}
 
   call(method: ApiCall["method"], path: string, body?: object): Promise<Response> {
+    return this.callWith({ method, path, ...(body === undefined ? {} : { body }) });
+  }
+
+  /** Like `call`, with the Idempotency-Key header or the client address chosen by the test. */
+  callWith(
+    call: Pick<ApiCall, "method" | "path" | "body" | "idempotencyKey" | "ip">,
+  ): Promise<Response> {
     return callApi(this.app, {
-      method,
-      path: `/api/v1${path}`,
+      ...call,
+      path: `/api/v1${call.path}`,
       cookies: asCookies(this.person.session),
-      ...(body === undefined ? {} : { body }),
     });
   }
 

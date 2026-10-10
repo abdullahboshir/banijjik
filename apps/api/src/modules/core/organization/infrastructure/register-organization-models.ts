@@ -1,6 +1,11 @@
 import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { registerModel } from "../../../../kernel/db/index.js";
 import {
+  INVITATION_COLLECTION_NAME,
+  INVITATION_MODEL_NAME,
+  invitationSchema,
+} from "./invitation.schema.js";
+import {
   LOCATION_COLLECTION_NAME,
   LOCATION_MODEL_NAME,
   locationSchema,
@@ -13,7 +18,7 @@ import {
 } from "./organization.schema.js";
 
 /**
- * Registers the three organization models. All live in the platform database: they decide who may
+ * Registers the four organization models. All live in the platform database: they decide who may
  * do what where, and "list my organizations" must never fan out to dedicated databases (ADR-043).
  */
 export function registerOrganizationModels(): void {
@@ -36,6 +41,13 @@ export function registerOrganizationModels(): void {
     collectionName: MEMBER_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: memberSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    modelName: INVITATION_MODEL_NAME,
+    collectionName: INVITATION_COLLECTION_NAME,
+    database: DATABASE_KIND.PLATFORM,
+    schema: invitationSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

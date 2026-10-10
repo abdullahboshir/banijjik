@@ -8,6 +8,7 @@ import {
   type CurrencyCode,
   type IndustryTemplateKey,
   type OrganizationDeployment,
+  type OrganizationProfileFields,
   type OrganizationStatus,
   type PreferredLocale,
   INDUSTRY_TEMPLATE_KEY,
@@ -17,8 +18,10 @@ import {
   auditFields,
   domainIdField,
   SCHEMA_OPTIONS,
+  SUB_SCHEMA_OPTIONS,
   versionField,
 } from "../../../../kernel/db/index.js";
+import { addressSchema } from "./location.schema.js";
 
 export const ORGANIZATION_MODEL_NAME = "Organization";
 export const ORGANIZATION_COLLECTION_NAME = "organizations";
@@ -36,6 +39,8 @@ export interface OrganizationDocument {
   currencyCode: CurrencyCode;
   timezone: string;
   defaultLocale: PreferredLocale;
+  /** Missing on organizations created before card 1.7b: read as an empty profile. */
+  profile?: OrganizationProfileFields;
   configVersion: number;
   rolesVersion: number;
   version: number;
@@ -44,6 +49,18 @@ export interface OrganizationDocument {
   createdByUserId: string | null;
   updatedByUserId: string | null;
 }
+
+const profileSchema = new Schema<OrganizationProfileFields>(
+  {
+    legalName: { type: String },
+    legalType: { type: String },
+    phoneE164: { type: String },
+    email: { type: String },
+    address: { type: addressSchema },
+    tradeLicenseNumber: { type: String },
+  },
+  SUB_SCHEMA_OPTIONS,
+);
 
 export const organizationSchema = new Schema<OrganizationDocument>(
   {
@@ -62,6 +79,7 @@ export const organizationSchema = new Schema<OrganizationDocument>(
     currencyCode: { type: String, required: true, enum: Object.values(CURRENCY_CODE) },
     timezone: { type: String, required: true },
     defaultLocale: { type: String, required: true, enum: Object.values(PREFERRED_LOCALE) },
+    profile: { type: profileSchema },
     configVersion: { type: Number, required: true },
     rolesVersion: { type: Number, required: true, default: 1 },
     ...versionField,

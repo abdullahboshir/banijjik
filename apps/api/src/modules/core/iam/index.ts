@@ -13,7 +13,12 @@ import type { MemberAccessReader } from "./application/ports/member-access-reade
 import type { PermissionCache } from "./application/ports/permission-cache.js";
 import type { RoleRepository } from "./application/ports/role-repository.js";
 import type { RolesVersionBumper } from "./application/ports/roles-version-bumper.js";
+import { IamRoleGrantReader, type RoleGrantReader } from "./application/role-grant-reader.js";
 import { SessionIssuer } from "./application/session-issuer.js";
+import {
+  IamUserIdentifierReader,
+  type UserIdentifierReader,
+} from "./application/user-identifier-reader.js";
 import { EnsurePlatformAdminUseCase } from "./application/use-cases/ensure-platform-admin.use-case.js";
 import { GetMeUseCase } from "./application/use-cases/get-me.use-case.js";
 import { LoginUseCase } from "./application/use-cases/login.use-case.js";
@@ -254,3 +259,23 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
   });
   return buildRolesRouter(controller, permission);
 }
+
+/** Role lookups for the member and invitation endpoints: exists, ACTIVE, owner role, effective keys (ADR-092). */
+export function buildRoleGrantReader(catalog: PermissionCatalog): RoleGrantReader {
+  return new IamRoleGrantReader({
+    roles: new MongoRoleRepository(),
+    resolver: new PermissionResolver(catalog),
+  });
+}
+
+/** The email and phone number of a user, for matching an invitation. Nothing else of the user is exposed. */
+export function buildUserIdentifierReader(): UserIdentifierReader {
+  return new IamUserIdentifierReader(new MongoUserRepository());
+}
+
+export type { RoleGrantInfo, RoleGrantReader } from "./application/role-grant-reader.js";
+export type {
+  IdentifierQuery,
+  UserIdentifierReader,
+  UserIdentifierView,
+} from "./application/user-identifier-reader.js";

@@ -12,11 +12,11 @@ import { Member, type Assignment } from "../domain/member.entity.js";
 import { toAuthorId } from "./author-id.js";
 import type { AssignmentDocument, MemberDocument } from "./member.schema.js";
 
-function toAssignmentDocument(assignment: Assignment): AssignmentDocument {
+export function toAssignmentDocument(assignment: Assignment): AssignmentDocument {
   return { locationId: assignment.locationId, roleId: assignment.roleId };
 }
 
-function toAssignment(document: AssignmentDocument): Assignment {
+export function toAssignment(document: AssignmentDocument): Assignment {
   return {
     locationId:
       document.locationId === ALL_LOCATIONS ? ALL_LOCATIONS : asId<LocationId>(document.locationId),
@@ -39,6 +39,7 @@ export function toMemberDocument(member: Member): MemberDocument {
     updatedAt: member.updatedAt,
     createdByUserId: member.createdByUserId,
     updatedByUserId: null,
+    ...(member.jobTitle === undefined ? {} : { jobTitle: member.jobTitle }),
     ...(member.employeeNumber === undefined ? {} : { employeeNumber: member.employeeNumber }),
   };
 }
@@ -52,6 +53,7 @@ export function toMember(document: MemberDocument): Member {
     status: stored.status,
     assignments: stored.assignments.map(toAssignment),
     displayName: stored.displayName,
+    jobTitle: stored.jobTitle,
     employeeNumber: stored.employeeNumber,
     joinedAt: stored.joinedAt,
     version: stored.version,

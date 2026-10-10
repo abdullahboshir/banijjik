@@ -23,6 +23,7 @@ export interface MemberDocument {
   status: MemberStatus;
   assignments: AssignmentDocument[];
   displayName: string;
+  jobTitle?: string;
   employeeNumber?: string;
   joinedAt: Date;
   version: number;
@@ -48,6 +49,7 @@ export const memberSchema = new Schema<MemberDocument>(
     status: { type: String, required: true, enum: Object.values(MEMBER_STATUS) },
     assignments: { type: [assignmentSchema], default: [] },
     displayName: { type: String, required: true },
+    jobTitle: { type: String },
     employeeNumber: { type: String },
     joinedAt: { type: Date, required: true },
     ...versionField,
@@ -58,5 +60,8 @@ export const memberSchema = new Schema<MemberDocument>(
 
 memberSchema.index({ organizationId: 1, memberId: 1 }, { unique: true });
 memberSchema.index({ organizationId: 1, userId: 1 }, { unique: true });
+// "Is any ACTIVE member assigned to this location?" (location archive) and the member list.
+memberSchema.index({ organizationId: 1, status: 1, "assignments.locationId": 1 });
+memberSchema.index({ organizationId: 1, status: 1, displayName: 1 });
 // Lists the organizations of one user (GET /me/orgs).
 memberSchema.index({ userId: 1, status: 1 });

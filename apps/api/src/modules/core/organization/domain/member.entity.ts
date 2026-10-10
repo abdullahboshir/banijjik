@@ -12,7 +12,7 @@ import {
   type RoleId,
   type UserId,
 } from "@banijjik/ids";
-import { invalidField } from "./errors.js";
+import { invalidField, invalidTransition } from "./errors.js";
 import type { Location } from "./location.entity.js";
 
 /** "This member has this role at this location, or at ALL locations" (ADR-005). */
@@ -28,6 +28,7 @@ export interface MemberProps {
   readonly status: MemberStatus;
   readonly assignments: readonly Assignment[];
   readonly displayName: string;
+  readonly jobTitle: string | undefined;
   /** From the organization's MEMBER sequence; formatting is a settings concern (card 2.4). */
   readonly employeeNumber: string | undefined;
   readonly joinedAt: Date;
@@ -49,7 +50,21 @@ export interface NewActiveMemberInput {
   readonly now: Date;
 }
 
-function assertAssignmentsAreConsistent(assignments: readonly Assignment[]): void {
+/** The fields `PATCH /members/{memberId}` may change. */
+export interface MemberChanges {
+  readonly displayName?: string;
+  readonly jobTitle?: string;
+  readonly assignments?: readonly Assignment[];
+}
+
+export interface RejoinInput {
+  readonly displayName: string;
+  readonly assignments: readonly Assignment[];
+  readonly now: Date;
+}
+
+/** At least one assignment, none twice, and "ALL" never next to a specific location. */
+export function assertAssignmentsAreConsistent(assignments: readonly Assignment[]): void {
   if (assignments.length === 0) throw invalidField("assignments", "validation.too_small");
   const locationIds = assignments.map((assignment) => assignment.locationId);
   const hasDuplicate = new Set(locationIds).size !== locationIds.length;
@@ -60,6 +75,12 @@ function assertAssignmentsAreConsistent(assignments: readonly Assignment[]): voi
   }
 }
 
+function trimmedDisplayName(displayName: string): string {
+  const trimmed = displayName.trim();
+  if (trimmed.length === 0) throw invalidField("displayName", "validation.too_small");
+  return trimmed;
+}
+
 /** A user's staff membership in one organization (09 section 4.4). */
 export class Member implements MemberProps {
   readonly memberId: MemberId;
@@ -68,6 +89,7 @@ export class Member implements MemberProps {
   readonly status: MemberStatus;
   readonly assignments: readonly Assignment[];
   readonly displayName: string;
+  readonly jobTitle: string | undefined;
   readonly employeeNumber: string | undefined;
   readonly joinedAt: Date;
   readonly version: number;
@@ -83,6 +105,7 @@ export class Member implements MemberProps {
     this.status = props.status;
     this.assignments = props.assignments;
     this.displayName = props.displayName;
+    this.jobTitle = props.jobTitle;
     this.employeeNumber = props.employeeNumber;
     this.joinedAt = props.joinedAt;
     this.version = props.version;
@@ -93,8 +116,7 @@ export class Member implements MemberProps {
 
   /** A member who is active from the start, as the owner of a new organization is. */
   static joinActive(input: NewActiveMemberInput): Member {
-    const displayName = input.displayName.trim();
-    if (displayName.length === 0) throw invalidField("displayName", "validation.too_small");
+    const displayName = trimmedDisplayName(input.displayName);
     assertAssignmentsAreConsistent(input.assignments);
     return new Member({
       memberId: newId(),
@@ -103,6 +125,7 @@ export class Member implements MemberProps {
       status: MEMBER_STATUS.ACTIVE,
       assignments: input.assignments,
       displayName,
+      jobTitle: undefined,
       employeeNumber: input.employeeNumber,
       joinedAt: input.now,
       version: 1,
@@ -115,6 +138,53 @@ export class Member implements MemberProps {
   /** Rebuilds a stored member. The stored data was checked when it was written. */
   static restore(props: MemberProps): Member {
     return new Member(props);
+  }
+
+  /** The member with the given changes. A removed member is history and cannot be edited. */
+  withChanges(changes: MemberChanges): Member {
+    if (this.status === MEMBER_STATUS.REMOVED) throw invalidTransition(this.status);
+    const assignments = changes.assignments ?? this.assignments;
+    assertAssignmentsAreConsistent(assignments);
+    return new Member({
+      ...this,
+      displayName:
+        changes.displayName === undefined
+          ? this.displayName
+          : trimmedDisplayName(changes.displayName),
+      jobTitle: changes.jobTitle ?? this.jobTitle,
+      assignments,
+    });
+  }
+
+  suspend(): Member {
+    return this.transition([MEMBER_STATUS.ACTIVE], MEMBER_STATUS.SUSPENDED);
+  }
+
+  reactivate(): Member {
+    return this.transition([MEMBER_STATUS.SUSPENDED], MEMBER_STATUS.ACTIVE);
+  }
+
+  /** The record stays (REMOVED), because requests reference `memberId`. */
+  remove(): Member {
+    return this.transition([MEMBER_STATUS.ACTIVE, MEMBER_STATUS.SUSPENDED], MEMBER_STATUS.REMOVED);
+  }
+
+  /** A removed member who accepts a new invitation comes back as the same record. */
+  rejoin(input: RejoinInput): Member {
+    if (this.status !== MEMBER_STATUS.REMOVED) throw invalidTransition(this.status);
+    assertAssignmentsAreConsistent(input.assignments);
+    return new Member({
+      ...this,
+      status: MEMBER_STATUS.ACTIVE,
+      displayName: trimmedDisplayName(input.displayName),
+      assignments: input.assignments,
+      joinedAt: input.now,
+    });
+  }
+
+  private transition(allowedFrom: readonly MemberStatus[], to: MemberStatus): Member {
+    if (!allowedFrom.includes(this.status)) throw invalidTransition(this.status);
+    return new Member({ ...this, status: to });
   }
 
   /**

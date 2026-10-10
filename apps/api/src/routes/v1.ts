@@ -1,8 +1,8 @@
 import { SYSTEM_REASON, TOKEN_AUDIENCE, type ModuleManifest } from "@banijjik/contracts";
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { AppConfig } from "../config/index.js";
 import { createEntitlementGate, createPermissionMiddleware } from "../kernel/access/index.js";
-import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
+import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import { authenticate, createJoseAccessTokenVerifier } from "../kernel/auth/index.js";
 import { asSystemPort } from "../kernel/context/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
@@ -21,25 +21,31 @@ import {
   buildAuditTenantRouter,
   registerAuditModels,
 } from "../modules/core/audit/index.js";
+import type { MemberAccessReader, PermissionCatalog } from "../modules/core/iam/index.js";
 import {
   buildIamRouters,
   buildIamTenantRouter,
   buildPermissionCache,
   buildPermissionCatalog,
   buildPermissionGate,
+  buildRoleGrantReader,
   registerIamModels,
 } from "../modules/core/iam/index.js";
 import {
+  buildInvitationTokenLookup,
   buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
   buildOrganizationConfigSource,
   buildOrganizationRouters,
+  buildOrganizationTenantRouters,
   buildRolesVersionBumper,
+  type OrganizationTenantRouters,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
 import {
   buildEntitlementTenantRouter,
+  buildLimitGuard,
   buildOrgConfigService,
   registerEntitlementModels,
   type IndustryTemplateReader,
@@ -120,6 +126,15 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     trialStarter: buildTrialStarter(clock),
   });
   const membershipDirectory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
+  const access = buildAccessParts({ clock, redis: dependencies.redis, registry });
+  const organizationTenant = buildOrganizationTenant({
+    dependencies,
+    audit,
+    idempotency,
+    access,
+    orgConfig,
+    requireUser: requireAdminUser,
+  });
 
   // logout-all lives in the auth router but needs a session; the rest of /auth is public.
   router.use("/auth/logout-all", requireAdminUser);
@@ -127,32 +142,73 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   // More specific path first, so /me/orgs never falls into the /me router.
   router.use("/me/orgs", requireAdminUser, myOrganizationsRouter);
   router.use("/me", requireAdminUser, meRouter);
+  // The invitation link: public preview, signed-in accept. Outside the tenant pipeline.
+  router.use("/invitations", organizationTenant.invitationLinkRouter);
   router.use(
     "/orgs/:organizationId",
     requireAdminUser,
     tenantContext({ directory: membershipDirectory }),
     locationAccess(),
     createEntitlementGate({ registry, config: orgConfig }),
-    buildTenantRouter(buildTenantRouters({ dependencies, audit, registry, orgConfig })),
+    buildTenantRouter(
+      buildTenantRouters({
+        dependencies,
+        audit,
+        orgConfig,
+        access,
+        organizationRouter: organizationTenant.tenantRouter,
+      }),
+    ),
   );
   return router;
 }
 
-interface TenantRoutersInput {
+interface OrganizationTenantInput {
   readonly dependencies: V1Dependencies;
   readonly audit: AuditRecorder;
-  readonly registry: ModuleRegistry;
+  readonly idempotency: RequestHandler;
+  readonly access: AccessParts;
   readonly orgConfig: OrgConfigService;
+  readonly requireUser: RequestHandler;
 }
 
-/**
- * The permission check is a per-route guard (`permission(key)`), built once from the catalogue of
- * every registered manifest. Pipeline order: authenticate, tenantContext, locationAccess,
- * entitlement, permission, validate, controller (01 section 3).
- */
-function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
-  const { dependencies, audit, registry, orgConfig } = input;
-  const { clock, redis, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
+/** The card 1.7b routers: profile, locations, members and invitations, plus the invitation link. */
+function buildOrganizationTenant(input: OrganizationTenantInput): OrganizationTenantRouters {
+  const { dependencies, access } = input;
+  return buildOrganizationTenantRouters({
+    clock: dependencies.clock,
+    rateLimiter: dependencies.rateLimiter,
+    audit: input.audit,
+    idempotency: input.idempotency,
+    permission: access.permission,
+    permissions: access.permissionGate,
+    roleGrants: buildRoleGrantReader(access.catalog),
+    limits: buildLimitGuard(input.orgConfig),
+    // Accepting an invitation runs as the inviting organization (ADR-087).
+    contextRunner: {
+      run: (organizationId, work) => runInOrganizationContext(organizationId, work),
+    },
+    myOrganizationsReader: asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMyOrganizationsReader()),
+    // The token is looked up before any organization is known: a deliberate AUTH_LOOKUP.
+    invitationTokenLookup: asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildInvitationTokenLookup()),
+    requireUser: input.requireUser,
+  });
+}
+
+interface AccessParts {
+  readonly catalog: PermissionCatalog;
+  readonly memberAccess: MemberAccessReader;
+  readonly permissionGate: PermissionGate;
+  readonly permission: PermissionMiddlewareFactory;
+}
+
+/** The permission catalogue, gate and `permission(key)` guard, built once from the registry (ADR-088, ADR-091). */
+function buildAccessParts(options: {
+  readonly clock: Clock;
+  readonly redis: RedisClient | undefined;
+  readonly registry: ModuleRegistry;
+}): AccessParts {
+  const { clock, redis, registry } = options;
   const catalog = buildPermissionCatalog(registry.all());
   const memberAccess = buildMemberAccessReader();
   const permissionGate = buildPermissionGate({
@@ -161,7 +217,31 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     clock,
     cache: buildPermissionCache({ clock, ...(redis === undefined ? {} : { redis }) }),
   });
-  const permission = createPermissionMiddleware(permissionGate);
+  return {
+    catalog,
+    memberAccess,
+    permissionGate,
+    permission: createPermissionMiddleware(permissionGate),
+  };
+}
+
+interface TenantRoutersInput {
+  readonly dependencies: V1Dependencies;
+  readonly audit: AuditRecorder;
+  readonly orgConfig: OrgConfigService;
+  readonly access: AccessParts;
+  readonly organizationRouter: Router;
+}
+
+/**
+ * The permission check is a per-route guard (`permission(key)`), built once from the catalogue of
+ * every registered manifest. Pipeline order: authenticate, tenantContext, locationAccess,
+ * entitlement, permission, validate, controller (01 section 3).
+ */
+function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
+  const { dependencies, audit, orgConfig, access } = input;
+  const { catalog, memberAccess, permissionGate, permission } = access;
+  const { clock, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
   const iamRouter = buildIamTenantRouter({
     catalog,
     memberAccess,
@@ -177,6 +257,7 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
   });
   return [
     iamRouter,
+    input.organizationRouter,
     auditRouter,
     entitlementRouter,
     ...tenantRouters,

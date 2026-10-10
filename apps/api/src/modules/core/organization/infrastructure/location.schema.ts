@@ -34,7 +34,7 @@ export interface LocationDocument {
   updatedByUserId: string | null;
 }
 
-const addressSchema = new Schema<PostalAddress>(
+export const addressSchema = new Schema<PostalAddress>(
   {
     line1: { type: String },
     area: { type: String },
@@ -63,7 +63,13 @@ export const locationSchema = new Schema<LocationDocument>(
 );
 
 locationSchema.index({ organizationId: 1, locationId: 1 }, { unique: true });
-locationSchema.index({ organizationId: 1, name: 1 }, { unique: true });
+// Unique among ACTIVE locations: an archived location frees its name (plan 1.7b decision 4).
+locationSchema.index(
+  { organizationId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { status: LOCATION_STATUS.ACTIVE } },
+);
+// The list endpoint filters by status and sorts by name.
+locationSchema.index({ organizationId: 1, status: 1, name: 1 });
 // Exactly one default location per organization (09 section 4.3).
 locationSchema.index(
   { organizationId: 1 },

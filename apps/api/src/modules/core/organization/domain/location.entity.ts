@@ -6,7 +6,7 @@ import {
   type PostalAddress,
 } from "@banijjik/contracts";
 import { newId, type LocationId, type OrganizationId, type UserId } from "@banijjik/ids";
-import { invalidField } from "./errors.js";
+import { invalidField, invalidTransition, locationIsDefault } from "./errors.js";
 
 const NAME_MIN_LENGTH = 1;
 const NAME_MAX_LENGTH = 80;
@@ -36,6 +36,26 @@ export interface NewDefaultLocationInput {
   /** Null when the system created it. */
   readonly createdByUserId: UserId | null;
   readonly now: Date;
+}
+
+export interface NewLocationInput {
+  readonly organizationId: OrganizationId;
+  readonly name: string;
+  readonly locationType: LocationType;
+  readonly address: PostalAddress | undefined;
+  readonly phoneE164: string | undefined;
+  readonly timezone: string | undefined;
+  readonly createdByUserId: UserId;
+  readonly now: Date;
+}
+
+/** The fields `PATCH /locations/{locationId}` may change. */
+export interface LocationChanges {
+  readonly name?: string | undefined;
+  readonly locationType?: LocationType | undefined;
+  readonly address?: PostalAddress | undefined;
+  readonly phoneE164?: string | undefined;
+  readonly timezone?: string | undefined;
 }
 
 function assertNameLength(name: string): void {
@@ -97,9 +117,56 @@ export class Location implements LocationProps {
     });
   }
 
+  /** An additional, non-default location (09 section 4.3). */
+  static create(input: NewLocationInput): Location {
+    const name = input.name.trim();
+    assertNameLength(name);
+    return new Location({
+      locationId: newId(),
+      organizationId: input.organizationId,
+      name,
+      locationType: input.locationType,
+      isDefault: false,
+      status: LOCATION_STATUS.ACTIVE,
+      address: input.address,
+      phoneE164: input.phoneE164,
+      timezone: input.timezone,
+      version: 1,
+      createdAt: input.now,
+      updatedAt: input.now,
+      createdByUserId: input.createdByUserId,
+    });
+  }
+
+  /** The location with the given changes applied; an archived location is read-only history. */
+  withChanges(changes: LocationChanges): Location {
+    this.assertActive();
+    const name = changes.name === undefined ? this.name : changes.name.trim();
+    assertNameLength(name);
+    return new Location({
+      ...this,
+      name,
+      locationType: changes.locationType ?? this.locationType,
+      address: changes.address ?? this.address,
+      phoneE164: changes.phoneE164 ?? this.phoneE164,
+      timezone: changes.timezone ?? this.timezone,
+    });
+  }
+
+  /** The archived location. The default location can never be archived (09 section 4.3). */
+  archive(): Location {
+    this.assertActive();
+    if (this.isDefault) throw locationIsDefault();
+    return new Location({ ...this, status: LOCATION_STATUS.ARCHIVED });
+  }
+
   /** Rebuilds a stored location. The stored data was checked when it was written. */
   static restore(props: LocationProps): Location {
     return new Location(props);
+  }
+
+  private assertActive(): void {
+    if (!this.isActive()) throw invalidTransition(this.status);
   }
 
   isActive(): boolean {
