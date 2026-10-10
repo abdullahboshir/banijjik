@@ -148,4 +148,13 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R22", `${MODULE}/domain/r22-validation-package.fail.ts`, DOMAIN_IMPORTS),
   passes("R22", `${MODULE}/domain/r22-allowed-imports.pass.ts`),
   passes("R22", `${MODULE}/application/r22-framework-allowed-outside-domain.pass.ts`),
+  fails("R23", "apps/api/src/kernel/http/r23-kernel-imports-module.fail.ts", BOUNDARIES),
+  passes("R23", "apps/api/src/kernel/http/r23-kernel-imports-config.pass.ts"),
+
+  fails("R24", "apps/api/src/config/r24-config-imports-kernel.fail.ts", BOUNDARIES),
+  fails("R24", "apps/api/src/config/r24-config-imports-module.fail.ts", BOUNDARIES),
+  passes("R24", "apps/api/src/config/r24-config-imports-config.pass.ts"),
+
+  fails("R25", "apps/api/src/routes/r25-routes-import-module-internals.fail.ts", BOUNDARIES),
+  passes("R25", "apps/api/src/routes/r25-routes-import-index-and-kernel.pass.ts"),
 ];

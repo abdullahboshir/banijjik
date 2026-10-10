@@ -9,6 +9,11 @@ const MODULE_ELEMENT = {
   capture: ["pathPrefix", "group", "module"],
 };
 
+// Elements outside modules (R23 to R25). Folder mode: every file below the folder belongs to it.
+const KERNEL_ELEMENT = { type: "kernel", pattern: "**/src/kernel" };
+const CONFIG_ELEMENT = { type: "config", pattern: "**/src/config" };
+const ROUTES_ELEMENT = { type: "routes", pattern: "**/src/routes" };
+
 const layerFiles = LAYERS.map((layer) => ({
   category: layer,
   pattern: `**/modules/*/*/${layer}/**`,
@@ -37,19 +42,33 @@ function otherModuleTargets(extraSelector) {
   return [inOtherModule("module", extraSelector), inOtherModule("group", extraSelector)];
 }
 
+function forbidElements(fromType, forbiddenTypes, message) {
+  return {
+    from: { element: { type: fromType } },
+    disallow: { to: { element: { types: { anyOf: forbiddenTypes } } } },
+    message,
+  };
+}
+
 /**
- * R18 layer direction (01 section 2, ADR-011a) and R19 module entry point (ADR-011).
+ * R18 layer direction (01 section 2, ADR-011a), R19 module entry point (ADR-011),
+ * R23 kernel, R24 config and R25 routes boundaries (0.2a review finding).
  * checkInternals is required: layers live inside one module element, and the plugin
  * ignores dependencies inside an element unless told otherwise.
  */
 export const architectureBlock = {
   name: "banijjik/architecture-boundaries",
-  files: ["**/modules/**/*.ts"],
+  files: [
+    "**/modules/**/*.ts",
+    "**/src/kernel/**/*.ts",
+    "**/src/config/**/*.ts",
+    "**/src/routes/**/*.ts",
+  ],
   plugins: { boundaries },
   settings: {
     // Sources import with ".js" suffixes (NodeNext); the plain node resolver cannot map them to ".ts".
     "import/resolver": { typescript: { alwaysTryTypes: true } },
-    "boundaries/elements": [MODULE_ELEMENT],
+    "boundaries/elements": [MODULE_ELEMENT, KERNEL_ELEMENT, CONFIG_ELEMENT, ROUTES_ELEMENT],
     "boundaries/files": layerFiles,
   },
   rules: {
@@ -83,6 +102,17 @@ export const architectureBlock = {
             from: { file: { categories: "domain" } },
             disallow: { to: otherModuleTargets({}) },
             message: "Domain code does not import other modules (ADR-011a).",
+          },
+          forbidElements("kernel", ["module"], "Kernel never imports feature modules (R23)."),
+          forbidElements(
+            "config",
+            ["kernel", "routes", "module"],
+            "Config imports only config and packages (R24).",
+          ),
+          {
+            from: { element: { type: "routes" } },
+            disallow: { to: { element: { type: "module", fileInternalPath: "!index.ts" } } },
+            message: "Routes import a module only through its index.ts (R25).",
           },
           {
             from: { element: { type: "module" } },

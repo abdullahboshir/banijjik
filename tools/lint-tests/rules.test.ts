@@ -5,7 +5,7 @@ import { ESLint } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
 import { FIXTURE_EXPECTATIONS } from "./fixture-expectations.js";
 
-const RULE_COUNT = 22;
+const RULE_COUNT = 25;
 const currentFolder = dirname(fileURLToPath(import.meta.url));
 const fixturesRoot = join(currentFolder, "fixtures");
 const configFile = join(currentFolder, "..", "..", "eslint.config.mjs");
@@ -65,7 +65,7 @@ describe("lint rules fire on the fixtures", () => {
 });
 
 describe("the fixture table", () => {
-  it("has a failing and a passing fixture for every rule R01 to R22", () => {
+  it("has a failing and a passing fixture for every rule R01 to R25", () => {
     for (const rule of EXPECTED_RULES) {
       const entries = FIXTURE_EXPECTATIONS.filter((entry) => entry.rule === rule);
       expect(
