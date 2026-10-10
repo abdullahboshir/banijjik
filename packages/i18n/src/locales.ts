@@ -5,5 +5,6 @@ export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "bn";
 
 export function isSupportedLocale(value: string): value is Locale {
+  // Safe: widening the tuple to string[] only lets `includes` accept an arbitrary string; nothing is written.
   return (SUPPORTED_LOCALES as readonly string[]).includes(value);
 }
