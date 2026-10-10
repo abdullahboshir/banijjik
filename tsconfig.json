@@ -4,6 +4,8 @@
     { "path": "./packages/ids" },
     { "path": "./packages/contracts" },
     { "path": "./packages/validation" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/i18n" },
     { "path": "./apps/api" }
   ]
 }
