@@ -1,0 +1,9 @@
+node_modules
+dist
+.turbo
+package-lock.json
+# Owner-authored design docs and agent rules: reformatting them would conflict with every parallel branch.
+docs
+AGENTS.md
+CLAUDE.md
+.cursor

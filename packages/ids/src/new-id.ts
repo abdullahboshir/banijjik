@@ -46,7 +46,13 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 function formatUuid(hex: string): string {
-  return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join("-");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join("-");
 }
 
 /** Creates a new lowercase UUID v7. The only ID generator in the codebase (ADR-036). */
