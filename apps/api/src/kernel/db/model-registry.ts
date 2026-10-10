@@ -2,6 +2,7 @@ import { ERROR_CODE, type DatabaseKind, type ModelTenancy } from "@banijjik/cont
 import type { Schema } from "mongoose";
 import { AppError } from "../http/app-error.js";
 import { applyTenancyPlugins } from "../tenancy/apply-tenancy-plugins.js";
+import { appendOnlyPlugin } from "./append-only-plugin.js";
 import { assertTenancyDefinition } from "./model-tenancy-checks.js";
 
 export interface ModelDefinition {
@@ -13,6 +14,8 @@ export interface ModelDefinition {
   readonly tenancy: ModelTenancy;
   /** The location path of an ORGANIZATION_AND_LOCATION model. Defaults to "locationId". */
   readonly locationField?: string;
+  /** Inserts only: updates, replaces and deletes throw (ADR-014, ADR-089). For ledgers and logs. */
+  readonly appendOnly?: boolean;
 }
 
 export type SchemaPlugin = (schema: Schema, definition: ModelDefinition) => void;
@@ -88,6 +91,7 @@ export function listModelDefinitions(): readonly ModelDefinition[] {
 export function buildSchemaForCompile(definition: ModelDefinition): Schema {
   const schema = definition.schema.clone();
   applyTenancyPlugins(schema, definition);
+  if (definition.appendOnly === true) appendOnlyPlugin(schema);
   for (const entry of globalPlugins) {
     if (matchesFilter(entry.filter, definition)) entry.plugin(schema, definition);
   }

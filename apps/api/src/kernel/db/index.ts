@@ -2,6 +2,7 @@ export { connectDatabases } from "./connect-databases.js";
 export { getDatabaseConnections } from "./database-connections.js";
 export type { DatabaseConnections } from "./database-connections.js";
 export { stripMongoInternals } from "./mapper.js";
+export { hasAppendOnlyPlugin } from "./append-only-plugin.js";
 export { addGlobalSchemaPlugin, registerModel } from "./model-registry.js";
 export type { GlobalPluginFilter, ModelDefinition, SchemaPlugin } from "./model-registry.js";
 export { initializeModels, models } from "./models.js";

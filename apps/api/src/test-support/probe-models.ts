@@ -59,3 +59,17 @@ export function registerProbeModels(): void {
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }
+
+export const APPEND_ONLY_PROBE = "AppendOnlyProbe";
+
+/** A platform model that only accepts inserts, to prove the append-only guard. Call once per test file. */
+export function registerAppendOnlyProbeModel(): void {
+  registerModel({
+    modelName: APPEND_ONLY_PROBE,
+    collectionName: "append_only_probes",
+    database: DATABASE_KIND.PLATFORM,
+    schema: buildProbeSchema({ organizationOwned: false }),
+    tenancy: MODEL_TENANCY.NONE,
+    appendOnly: true,
+  });
+}
