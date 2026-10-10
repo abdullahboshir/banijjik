@@ -265,6 +265,8 @@ export const restrictionBlocks = [
           [
             "MemberExpression[computed=false][property.name='collection']",
             "MemberExpression[computed=true][property.value='collection']",
+            // Change streams have no Mongoose middleware: Model.watch() would stream every organization.
+            "CallExpression[callee.property.name='watch']",
           ],
         ),
       ],

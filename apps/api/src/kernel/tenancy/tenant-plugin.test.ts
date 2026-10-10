@@ -365,3 +365,46 @@ describe("tenant plugin: context", () => {
     expect(after.at(-1)).toMatchObject({ reason: "MIGRATION" });
   });
 });
+
+describe("tenant plugin: document-level writes on a document of another organization", () => {
+  async function foreignDocument(world: World) {
+    const found = await runAsSystem(SYSTEM_REASON.MIGRATION, () =>
+      things().findOne({ thingId: world.firstOfB }),
+    );
+    if (found === null) throw new Error("the foreign row should exist");
+    return found;
+  }
+
+  it("doc.deleteOne() matches nothing and leaves the row intact", async () => {
+    const world = await aWorld();
+    const document = await foreignDocument(world);
+
+    const result = await world.inA(() => document.deleteOne());
+
+    expect(result.deletedCount).toBe(0);
+    expect(await countOfB(world)).toBe(2);
+  });
+
+  it("doc.updateOne() matches nothing and leaves the row intact", async () => {
+    const world = await aWorld();
+    const document = await foreignDocument(world);
+
+    const result = await world.inA(() => document.updateOne({ $set: { label: "x" } }));
+
+    expect(result.matchedCount).toBe(0);
+    const stored = await world.inB(() => things().findOne({ thingId: world.firstOfB }).lean());
+    expect(stored?.label).toBe("b-one");
+  });
+
+  it("doc.save() after changing a field throws errors.cross_organization_access", async () => {
+    const world = await aWorld();
+    const document = await foreignDocument(world);
+    document.label = "changed";
+
+    await expect(world.inA(() => document.save())).rejects.toThrow(
+      /errors\.cross_organization_access/,
+    );
+    const stored = await world.inB(() => things().findOne({ thingId: world.firstOfB }).lean());
+    expect(stored?.label).toBe("b-one");
+  });
+});

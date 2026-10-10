@@ -280,6 +280,7 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
 
   fails("R35", `${MODULE}/infrastructure/r35-raw-collection.fail.ts`, RAW_COLLECTION),
   fails("R35", `${MODULE}/infrastructure/r35-raw-db-collection.fail.ts`, RAW_COLLECTION),
+  fails("R35", `${MODULE}/infrastructure/r35-change-stream.fail.ts`, RAW_COLLECTION),
   passes("R35", "apps/api/src/kernel/db/r35-raw-collection-in-kernel.pass.ts"),
   passes("R35", `${MODULE}/infrastructure/r35-raw-collection-in-tests.pass.test.ts`),
 
