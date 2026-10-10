@@ -1,5 +1,6 @@
 export { BUNDLED_CATALOGS } from "./bundled-catalogs.js";
 export type { Catalog } from "./bundled-catalogs.js";
+export { SCREEN_CATALOGS } from "./screen-catalogs.js";
 export { createTranslator } from "./create-translator.js";
 export type { TranslationValues, Translator, TranslatorOptions } from "./create-translator.js";
 export { DEFAULT_LOCALE, SUPPORTED_LOCALES, isSupportedLocale } from "./locales.js";

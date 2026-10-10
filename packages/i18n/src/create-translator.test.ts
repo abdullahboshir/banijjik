@@ -12,6 +12,7 @@ import {
 import { describe, expect, it, vi } from "vitest";
 import { BUNDLED_CATALOGS } from "./bundled-catalogs.js";
 import { createTranslator } from "./create-translator.js";
+import { SCREEN_CATALOGS } from "./screen-catalogs.js";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./locales.js";
 
 const BRAND_FOR_TESTS = "টেস্ট ব্র্যান্ড";
@@ -116,5 +117,35 @@ describe("createTranslator", () => {
     const translator = createTranslator({ locale: "bn", brandName: BRAND_FOR_TESTS, onMissingKey });
     expect(translator.t("no.such.key")).toBe("no.such.key");
     expect(onMissingKey).toHaveBeenCalledWith("no.such.key", "bn");
+  });
+});
+
+describe("screen catalogs", () => {
+  it("have exactly the same key set and placeholders in bn and en", () => {
+    expect(Object.keys(SCREEN_CATALOGS.bn).sort()).toEqual(Object.keys(SCREEN_CATALOGS.en).sort());
+    for (const [key, text] of Object.entries(SCREEN_CATALOGS.bn)) {
+      expect(placeholdersOf(text), key).toEqual(placeholdersOf(SCREEN_CATALOGS.en[key] ?? ""));
+    }
+  });
+
+  it("share no key with the bundled catalogs, so the browser bundle never carries them", () => {
+    const bundledKeys = new Set(Object.keys(BUNDLED_CATALOGS.bn));
+    const shared = Object.keys(SCREEN_CATALOGS.bn).filter((key) => bundledKeys.has(key));
+    expect(shared).toEqual([]);
+  });
+
+  it("are used by a translator that is given them through the catalogs option", () => {
+    const translator = createTranslator({
+      locale: "bn",
+      brandName: BRAND_FOR_TESTS,
+      catalogs: SCREEN_CATALOGS,
+    });
+    expect(translator.t("banner.trial.days", { days: 3 })).toBe(
+      "আপনার ফ্রি ট্রায়াল শেষ হতে আর 3 দিন বাকি।",
+    );
+  });
+
+  it("never contain the brand name, which comes from config (ADR-038)", () => {
+    expect(JSON.stringify(SCREEN_CATALOGS)).not.toMatch(/banijjik/i);
   });
 });

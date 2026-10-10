@@ -22,6 +22,7 @@ t("state.empty.contact"); // "এখনো কোনো ছাত্র নে�
 
 - Catalogs are flat dotted keys in `src/catalogs/{bn,en}.json`. Both files must have the same keys and the same placeholders (tested).
 - `{name}` is filled from the values passed to `t`. `{brand}` comes from `brandName`. `{term:contact.plural}` resolves from `terms` first, then the catalog's own `term.contact.plural`.
+- `src/catalogs/screens/{bn,en}.json` (`SCREEN_CATALOGS`) hold text that only server components render. They are not part of `BUNDLED_CATALOGS`, so they stay out of the browser bundle; server code passes them to `createTranslator` through `catalogs`, and client components receive such text as props. The same key and placeholder rules apply.
 - Catalogs never contain the brand name.
 - A missing key returns the key itself and calls `onMissingKey`.
 - Every API error code has `errors.<code lowercased>` (`docs/14-API.md` section 3), and Zod issue codes have `validation.*` keys.

@@ -62,7 +62,7 @@ export const organizationManifest = defineModule({
       groupKey: "settings",
       labelTermKey: "menu.organization.locations",
       path: "settings/locations",
-      iconKey: "map-pin",
+      iconKey: "globe",
       permissionKey: PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
       order: 20,
       visibility: MENU_VISIBILITY.MULTIPLE_ACTIVE_LOCATIONS,
