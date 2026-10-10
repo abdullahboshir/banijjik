@@ -13,6 +13,8 @@ export interface AppErrorOptions {
   readonly code: ErrorCode;
   readonly messageKey?: string;
   readonly details?: ErrorDetails;
+  /** Sent as the Retry-After header, for 429 answers. */
+  readonly retryAfterSeconds?: number;
 }
 
 /** The only error type that reaches a client with its code. Anything else becomes INTERNAL. */
@@ -20,6 +22,7 @@ export class AppError extends Error {
   readonly code: ErrorCode;
   readonly messageKey: string;
   readonly details?: ErrorDetails;
+  readonly retryAfterSeconds?: number;
 
   constructor(options: AppErrorOptions) {
     const messageKey = options.messageKey ?? `errors.${options.code.toLowerCase()}`;
@@ -29,6 +32,7 @@ export class AppError extends Error {
     this.code = options.code;
     this.messageKey = messageKey;
     if (options.details !== undefined) this.details = options.details;
+    if (options.retryAfterSeconds !== undefined) this.retryAfterSeconds = options.retryAfterSeconds;
   }
 
   get httpStatus(): number {
@@ -38,6 +42,10 @@ export class AppError extends Error {
 
 export function notFound(): AppError {
   return new AppError({ code: ERROR_CODE.NOT_FOUND });
+}
+
+export function unauthenticated(): AppError {
+  return new AppError({ code: ERROR_CODE.UNAUTHENTICATED });
 }
 
 export function forbidden(): AppError {

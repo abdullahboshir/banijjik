@@ -9,6 +9,16 @@ export interface AppConfig {
   };
   readonly redisUrl: string;
   readonly corsAllowedOrigins: readonly string[];
+  readonly auth: {
+    /** Signs access tokens. Never logged. */
+    readonly accessTokenSecret: string;
+    readonly accessTokenTtlSeconds: number;
+    readonly refreshTokenTtlDays: number;
+    readonly sessionFamilyMaxDays: number;
+    readonly cookieDomain?: string;
+  };
+  /** Present only when both PLATFORM_ADMIN_* keys are set; read by the seed script alone. */
+  readonly platformAdmin?: { readonly email: string; readonly password: string };
 }
 
 export interface ConfigIssue {

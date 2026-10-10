@@ -20,13 +20,18 @@
     "test": "vitest run --config src/test-support/vitest.config.ts",
     "config:check": "tsx src/check-config.ts",
     "dev": "tsx watch src/main.ts",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "seed:platform-admin": "tsx src/seeds/run-seed-platform-admin.ts"
   },
   "dependencies": {
     "@banijjik/contracts": "*",
     "@banijjik/ids": "*",
+    "@banijjik/validation": "*",
+    "@node-rs/argon2": "^2.2.2",
+    "cookie": "^2.0.1",
     "cors": "^2.8.6",
     "express": "^5.3.0",
+    "jose": "^6.2.12",
     "mongoose": "^9.11.1",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",

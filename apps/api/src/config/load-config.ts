@@ -15,31 +15,14 @@ import {
   WILDCARD_ORIGIN_HINT,
   type FieldRule,
 } from "./env.schema.js";
-
-type Environment = Readonly<Record<string, string | undefined>>;
-
-interface FieldResult<Output> {
-  readonly value?: Output;
-  readonly issue?: ConfigIssue;
-}
-
-function failure(
-  rule: FieldRule<unknown>,
-  problem: ConfigIssue["problem"],
-  hint: string = rule.hint,
-): FieldResult<never> {
-  return { issue: { key: rule.key, problem, hint } };
-}
-
-/** Reads one key. Zod's own messages are ignored because they can echo the value. */
-function readField<Output>(env: Environment, rule: FieldRule<Output>): FieldResult<Output> {
-  const raw = env[rule.key]?.trim();
-  const text = raw === undefined || raw === "" ? rule.defaultValue : raw;
-  if (text === undefined) return failure(rule, "MISSING");
-  const parsed = rule.schema.safeParse(text);
-  if (!parsed.success) return failure(rule, "INVALID");
-  return { value: parsed.data };
-}
+import { readAuthConfig, readPlatformAdmin } from "./read-auth-config.js";
+import {
+  collectIssues,
+  failure,
+  readField,
+  type Environment,
+  type FieldResult,
+} from "./read-field.js";
 
 function readOrigins(env: Environment): FieldResult<readonly string[]> {
   const field = readField(env, corsRule);
@@ -64,12 +47,14 @@ function readUrl(
   return failure(rule, "INVALID", PRODUCTION_LOCAL_HOST_HINT);
 }
 
-function collectIssues(results: readonly FieldResult<unknown>[]): ConfigIssue[] {
-  return results.flatMap((result) => (result.issue ? [result.issue] : []));
+type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin">;
+
+interface BaseConfigResult {
+  readonly value?: BaseConfig;
+  readonly issues: readonly ConfigIssue[];
 }
 
-/** Validates an environment object. Returns a frozen config or throws ConfigError. Never includes values in messages. */
-export function loadConfig(env: Environment): AppConfig {
+function readBaseConfig(env: Environment): BaseConfigResult {
   const nodeEnv = readField(env, nodeEnvRule);
   // An invalid NODE_ENV is reported on its own; production rules then do not apply.
   const isProduction = nodeEnv.value === "production";
@@ -109,18 +94,37 @@ export function loadConfig(env: Environment): AppConfig {
     tenantSharedUrlValue !== undefined &&
     redisUrlValue !== undefined &&
     originsValue !== undefined;
-  if (!isComplete) throw new ConfigError(issues);
+  if (!isComplete) return { issues };
 
+  return {
+    issues,
+    value: {
+      nodeEnv: nodeEnvValue,
+      port: portValue,
+      logLevel: logLevelValue,
+      role: roleValue,
+      database: Object.freeze({
+        platformUrl: platformUrlValue,
+        tenantSharedUrl: tenantSharedUrlValue,
+      }),
+      redisUrl: redisUrlValue,
+      corsAllowedOrigins: Object.freeze(originsValue),
+    },
+  };
+}
+
+/** Validates an environment object. Returns a frozen config or throws ConfigError. Never includes values in messages. */
+export function loadConfig(env: Environment): AppConfig {
+  const base = readBaseConfig(env);
+  const auth = readAuthConfig(env);
+  const platformAdmin = readPlatformAdmin(env);
+  const issues = [...base.issues, ...auth.issues, ...platformAdmin.issues];
+  if (issues.length > 0 || base.value === undefined || auth.value === undefined) {
+    throw new ConfigError(issues);
+  }
   return Object.freeze({
-    nodeEnv: nodeEnvValue,
-    port: portValue,
-    logLevel: logLevelValue,
-    role: roleValue,
-    database: Object.freeze({
-      platformUrl: platformUrlValue,
-      tenantSharedUrl: tenantSharedUrlValue,
-    }),
-    redisUrl: redisUrlValue,
-    corsAllowedOrigins: Object.freeze(originsValue),
+    ...base.value,
+    auth: auth.value,
+    ...(platformAdmin.value === undefined ? {} : { platformAdmin: platformAdmin.value }),
   });
 }

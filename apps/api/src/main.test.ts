@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { TEST_ACCESS_TOKEN_SECRET } from "./test-support/test-config.js";
 import { createTestDatabaseUrls } from "./test-support/test-databases.js";
 
 const PACKAGE_FOLDER = fileURLToPath(new URL("..", import.meta.url));
@@ -41,6 +42,7 @@ function validEnvironment(port: number, role: string): Record<string, string> {
     DB_TENANT_SHARED_URL: databases.tenantSharedUrl,
     REDIS_URL: "redis://127.0.0.1:6379",
     CORS_ALLOWED_ORIGINS: "http://localhost:3000",
+    AUTH_ACCESS_TOKEN_SECRET: TEST_ACCESS_TOKEN_SECRET,
   };
 }
 

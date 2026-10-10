@@ -64,6 +64,12 @@ function readRequestId(response: Response): string {
   return readRequestIdHeader(response);
 }
 
+/** RETRY_LATER always asks for one second; other errors (429) name their own wait. */
+function readRetryAfter(error: AppError): string | undefined {
+  if (error.retryAfterSeconds !== undefined) return String(error.retryAfterSeconds);
+  return error.code === ERROR_CODE.RETRY_LATER ? RETRY_AFTER_SECONDS : undefined;
+}
+
 function sendError(response: Response, error: AppError): void {
   const body: ApiErrorEnvelope = {
     error: {
@@ -73,7 +79,8 @@ function sendError(response: Response, error: AppError): void {
       requestId: readRequestId(response),
     },
   };
-  if (error.code === ERROR_CODE.RETRY_LATER) response.setHeader("Retry-After", RETRY_AFTER_SECONDS);
+  const retryAfter = readRetryAfter(error);
+  if (retryAfter !== undefined) response.setHeader("Retry-After", retryAfter);
   response.status(error.httpStatus).json(body);
 }
 

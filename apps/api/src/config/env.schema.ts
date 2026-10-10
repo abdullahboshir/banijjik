@@ -103,3 +103,58 @@ export const corsRule: FieldRule<string> = {
 export const PRODUCTION_LOCAL_HOST_HINT = "must not point to localhost in production";
 /** Credentials mode cannot use a wildcard, and the cors package would not match it anyway. */
 export const WILDCARD_ORIGIN_HINT = "must not contain a wildcard; list explicit origins";
+
+const positiveInteger = (maximum: number): z.ZodType<number, string> =>
+  z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(maximum));
+
+const MINIMUM_SECRET_LENGTH = 32;
+const COOKIE_DOMAIN_PATTERN =
+  /^\.?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i;
+
+export const accessTokenSecretRule: FieldRule<string> = {
+  key: "AUTH_ACCESS_TOKEN_SECRET",
+  hint: `must be a random string of at least ${MINIMUM_SECRET_LENGTH} characters`,
+  schema: z.string().min(MINIMUM_SECRET_LENGTH),
+};
+
+export const accessTokenTtlRule: FieldRule<number> = {
+  key: "AUTH_ACCESS_TOKEN_TTL_SECONDS",
+  hint: "must be an integer from 1 to 86400",
+  schema: positiveInteger(86_400),
+  defaultValue: "900",
+};
+
+export const refreshTokenTtlRule: FieldRule<number> = {
+  key: "AUTH_REFRESH_TOKEN_TTL_DAYS",
+  hint: "must be an integer from 1 to 365",
+  schema: positiveInteger(365),
+  defaultValue: "30",
+};
+
+export const sessionFamilyMaxRule: FieldRule<number> = {
+  key: "AUTH_SESSION_FAMILY_MAX_DAYS",
+  hint: "must be an integer from 1 to 730",
+  schema: positiveInteger(730),
+  defaultValue: "90",
+};
+
+export const cookieDomainRule: FieldRule<string> = {
+  key: "COOKIE_DOMAIN",
+  hint: "must be a host name such as .example.com",
+  schema: z.string().regex(COOKIE_DOMAIN_PATTERN),
+};
+
+export const platformAdminEmailRule: FieldRule<string> = {
+  key: "PLATFORM_ADMIN_EMAIL",
+  hint: "must be an email address, and PLATFORM_ADMIN_PASSWORD must be set with it",
+  schema: z
+    .string()
+    .max(254)
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/),
+};
+
+export const platformAdminPasswordRule: FieldRule<string> = {
+  key: "PLATFORM_ADMIN_PASSWORD",
+  hint: "must be set together with PLATFORM_ADMIN_EMAIL",
+  schema: z.string().min(1),
+};

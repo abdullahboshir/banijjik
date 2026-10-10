@@ -4,7 +4,10 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { ConfigError, loadConfig, loadConfigFromProcess, loadEnvFile } from "./index.js";
 
+const FAKE_ACCESS_SECRET = "test-only-access-secret-0123456789abcdef";
+
 const validEnv = {
+  AUTH_ACCESS_TOKEN_SECRET: FAKE_ACCESS_SECRET,
   DB_PLATFORM_URL:
     "mongodb://127.0.0.1:27018/platform_database?replicaSet=rs0&directConnection=true",
   DB_TENANT_SHARED_URL:
@@ -14,6 +17,7 @@ const validEnv = {
 };
 
 const productionEnv = {
+  AUTH_ACCESS_TOKEN_SECRET: FAKE_ACCESS_SECRET,
   NODE_ENV: "production",
   DB_PLATFORM_URL: "mongodb+srv://user:pw@cluster.example.com/platform",
   DB_TENANT_SHARED_URL: "mongodb+srv://user:pw@cluster.example.com/tenant",
@@ -46,9 +50,16 @@ describe("loadConfig", () => {
       },
       redisUrl: validEnv.REDIS_URL,
       corsAllowedOrigins: ["http://localhost:3000", "https://admin.example.com"],
+      auth: {
+        accessTokenSecret: FAKE_ACCESS_SECRET,
+        accessTokenTtlSeconds: 900,
+        refreshTokenTtlDays: 30,
+        sessionFamilyMaxDays: 90,
+      },
     });
     expect(Object.isFrozen(config)).toBe(true);
     expect(Object.isFrozen(config.database)).toBe(true);
+    expect(Object.isFrozen(config.auth)).toBe(true);
   });
 
   it("accepts ROLE=worker", () => {
@@ -64,22 +75,26 @@ describe("loadConfig", () => {
     expect(config.role).toBe("api");
   });
 
-  it.each(["DB_PLATFORM_URL", "DB_TENANT_SHARED_URL", "REDIS_URL", "CORS_ALLOWED_ORIGINS"])(
-    "reports %s as MISSING when it is absent",
-    (key) => {
-      const env: Record<string, string | undefined> = { ...validEnv };
-      delete env[key];
+  it.each([
+    "DB_PLATFORM_URL",
+    "DB_TENANT_SHARED_URL",
+    "REDIS_URL",
+    "CORS_ALLOWED_ORIGINS",
+    "AUTH_ACCESS_TOKEN_SECRET",
+  ])("reports %s as MISSING when it is absent", (key) => {
+    const env: Record<string, string | undefined> = { ...validEnv };
+    delete env[key];
 
-      expect(catchConfigError(env).issues).toEqual([
-        expect.objectContaining({ key, problem: "MISSING" }),
-      ]);
-    },
-  );
+    expect(catchConfigError(env).issues).toEqual([
+      expect.objectContaining({ key, problem: "MISSING" }),
+    ]);
+  });
 
   it("lists every problem in one error, not just the first", () => {
     const error = catchConfigError({ PORT: "abc", LOG_LEVEL: "loud" });
 
     expect(error.issues.map((issue) => issue.key).sort()).toEqual([
+      "AUTH_ACCESS_TOKEN_SECRET",
       "CORS_ALLOWED_ORIGINS",
       "DB_PLATFORM_URL",
       "DB_TENANT_SHARED_URL",
@@ -102,6 +117,12 @@ describe("loadConfig", () => {
     ["NODE_ENV", "staging"],
     ["CORS_ALLOWED_ORIGINS", "localhost:3000"],
     ["CORS_ALLOWED_ORIGINS", "https://a.example.com/path"],
+    ["AUTH_ACCESS_TOKEN_SECRET", "too-short"],
+    ["AUTH_ACCESS_TOKEN_TTL_SECONDS", "0"],
+    ["AUTH_REFRESH_TOKEN_TTL_DAYS", "400"],
+    ["AUTH_SESSION_FAMILY_MAX_DAYS", "abc"],
+    ["COOKIE_DOMAIN", "not a domain"],
+    ["PLATFORM_ADMIN_EMAIL", "nobody"],
   ])("reports %s=%s as INVALID", (key, value) => {
     const error = catchConfigError({ ...validEnv, [key]: value });
 
@@ -156,6 +177,61 @@ describe("loadConfig", () => {
     expect(error.message).not.toContain("SuperSecret");
     expect(JSON.stringify(error.issues)).not.toContain("SuperSecret");
     expect(error.stack ?? "").not.toContain("SuperSecret");
+  });
+});
+
+describe("loadConfig auth settings", () => {
+  it("reads the optional overrides and the cookie domain", () => {
+    const config = loadConfig({
+      ...validEnv,
+      AUTH_ACCESS_TOKEN_TTL_SECONDS: "600",
+      AUTH_REFRESH_TOKEN_TTL_DAYS: "14",
+      AUTH_SESSION_FAMILY_MAX_DAYS: "60",
+      COOKIE_DOMAIN: ".example.com",
+    });
+
+    expect(config.auth).toEqual({
+      accessTokenSecret: FAKE_ACCESS_SECRET,
+      accessTokenTtlSeconds: 600,
+      refreshTokenTtlDays: 14,
+      sessionFamilyMaxDays: 60,
+      cookieDomain: ".example.com",
+    });
+  });
+
+  it("has no platform admin unless both keys are set", () => {
+    expect(loadConfig(validEnv).platformAdmin).toBeUndefined();
+    expect(
+      loadConfig({
+        ...validEnv,
+        PLATFORM_ADMIN_EMAIL: "admin@example.com",
+        PLATFORM_ADMIN_PASSWORD: "a-long-seed-password",
+      }).platformAdmin,
+    ).toEqual({ email: "admin@example.com", password: "a-long-seed-password" });
+  });
+
+  it.each([
+    ["PLATFORM_ADMIN_EMAIL", "PLATFORM_ADMIN_PASSWORD", "admin@example.com"],
+    ["PLATFORM_ADMIN_PASSWORD", "PLATFORM_ADMIN_EMAIL", "a-long-seed-password"],
+  ])("reports %s alone as a missing %s", (presentKey, missingKey, value) => {
+    const error = catchConfigError({ ...validEnv, [presentKey]: value });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: missingKey, problem: "MISSING" }),
+    ]);
+  });
+
+  it("never echoes the secret or the seed password in an error", () => {
+    const error = catchConfigError({
+      ...validEnv,
+      AUTH_ACCESS_TOKEN_SECRET: "short-secret-value",
+      PLATFORM_ADMIN_EMAIL: "SeedPasswordLeak",
+      PLATFORM_ADMIN_PASSWORD: "SeedPasswordLeak",
+    });
+
+    expect(JSON.stringify(error.issues) + String(error)).not.toMatch(
+      /short-secret-value|SeedPasswordLeak/,
+    );
   });
 });
 

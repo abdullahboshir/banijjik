@@ -1,4 +1,11 @@
-export { AppError, conflict, forbidden, notFound, validationFailed } from "./app-error.js";
+export {
+  AppError,
+  conflict,
+  forbidden,
+  notFound,
+  unauthenticated,
+  validationFailed,
+} from "./app-error.js";
 export type { AppErrorOptions, ErrorDetails, ValidationField } from "./app-error.js";
 export { sendData } from "./envelope.js";
 export type { SendDataOptions } from "./envelope.js";
@@ -8,3 +15,5 @@ export { readRequestId, REQUEST_ID_HEADER, requestIdMiddleware } from "./request
 export { validate } from "./validate.js";
 export type { ValidationSchemas } from "./validate.js";
 export { createReadyHandler } from "./ready-handler.js";
+export { readCookie } from "./read-cookie.js";
+export { createOriginCheck } from "./origin-check.middleware.js";
