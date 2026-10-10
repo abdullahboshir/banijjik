@@ -10,23 +10,33 @@ export function syntaxRules(message, selectors) {
   return selectors.map((selector) => ({ selector, message }));
 }
 
-export const industrySelectors = syntaxRules(
-  "Feature code must not branch on industry; ask resolveOrgConfig instead (ADR-033).",
-  [
-    "Identifier[name='industryTemplateKey']",
-    `${COMPARISON} > MemberExpression[property.name=${INDUSTRY_NAME}]`,
-    `${COMPARISON} > Identifier[name=${INDUSTRY_NAME}]`,
-    `SwitchStatement > MemberExpression.discriminant[property.name=${INDUSTRY_NAME}]`,
-    `SwitchStatement > Identifier.discriminant[name=${INDUSTRY_NAME}]`,
-    // A computed key such as organization["industryTemplateKey"] or TABLE[organization.industry].
-    `${COMPUTED_MEMBER} > Literal.property[value='industryTemplateKey']`,
-    `${COMPUTED_MEMBER} > MemberExpression.property[property.name=${INDUSTRY_NAME}]`,
-    `${COMPUTED_MEMBER} > Identifier.property[name=${INDUSTRY_NAME}]`,
-    // A list lookup such as ["a", "b"].includes(organization.industry).
-    `${INCLUDES_CALL} > MemberExpression[property.name=${INDUSTRY_NAME}]`,
-    `${INCLUDES_CALL} > Identifier[name=${INDUSTRY_NAME}]`,
-  ],
-);
+const INDUSTRY_MESSAGE =
+  "Feature code must not branch on industry; ask resolveOrgConfig instead (ADR-033).";
+
+/**
+ * Comparisons, switches, list lookups and computed keys on an industry value. The module that owns
+ * the key (core/organization, 09 section 4.2) is held to these only, because it must carry the
+ * field through its layers (ADR-082).
+ */
+export const industryComparisonSelectors = syntaxRules(INDUSTRY_MESSAGE, [
+  `${COMPARISON} > MemberExpression[property.name=${INDUSTRY_NAME}]`,
+  `${COMPARISON} > Identifier[name=${INDUSTRY_NAME}]`,
+  `SwitchStatement > MemberExpression.discriminant[property.name=${INDUSTRY_NAME}]`,
+  `SwitchStatement > Identifier.discriminant[name=${INDUSTRY_NAME}]`,
+  // A computed key such as organization["industryTemplateKey"] or TABLE[organization.industry].
+  `${COMPUTED_MEMBER} > Literal.property[value='industryTemplateKey']`,
+  `${COMPUTED_MEMBER} > MemberExpression.property[property.name=${INDUSTRY_NAME}]`,
+  `${COMPUTED_MEMBER} > Identifier.property[name=${INDUSTRY_NAME}]`,
+  // A list lookup such as ["a", "b"].includes(organization.industry).
+  `${INCLUDES_CALL} > MemberExpression[property.name=${INDUSTRY_NAME}]`,
+  `${INCLUDES_CALL} > Identifier[name=${INDUSTRY_NAME}]`,
+]);
+
+/** Everywhere else even the bare identifier `industryTemplateKey` is reported. */
+export const industrySelectors = [
+  ...syntaxRules(INDUSTRY_MESSAGE, ["Identifier[name='industryTemplateKey']"]),
+  ...industryComparisonSelectors,
+];
 
 export const brandSelectors = syntaxRules(
   "Do not hard-code the brand name in UI strings; read it from branding config (ADR-038).",

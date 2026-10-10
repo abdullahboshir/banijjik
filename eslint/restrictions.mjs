@@ -3,6 +3,7 @@ import {
   CONFIG_FILES,
   DOMAIN_FILES,
   ID_PACKAGE_FILES,
+  INDUSTRY_KEY_OWNER_FILES,
   INDUSTRY_READER_FILES,
   INFRASTRUCTURE_FILES,
   MODULE_FILES,
@@ -15,6 +16,7 @@ import {
 
 import {
   brandSelectors,
+  industryComparisonSelectors,
   industrySelectors,
   processEnvSyntax,
   syntaxRules,
@@ -189,6 +191,14 @@ export const restrictionBlocks = [
     name: "banijjik/industry-branching",
     ignores: INDUSTRY_READER_FILES,
     rules: { "banijjik-guard/no-industry-branching": [ERROR, ...industrySelectors] },
+  },
+  {
+    // Later blocks win per rule, so inside core/organization this replaces the list above with the
+    // comparison selectors only. The module's infrastructure and tests stay full readers (ignores).
+    name: "banijjik/industry-branching-key-owner",
+    files: INDUSTRY_KEY_OWNER_FILES,
+    ignores: INDUSTRY_READER_FILES,
+    rules: { "banijjik-guard/no-industry-branching": [ERROR, ...industryComparisonSelectors] },
   },
   {
     name: "banijjik/run-as-system",

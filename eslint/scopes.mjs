@@ -39,6 +39,9 @@ export const BRAND_SCOPE_FILES = [
   "**/packages/i18n/**",
 ];
 
+// ADR-082: core/organization owns the industry key (09 section 4.2), so it may name the field but not branch on it.
+export const INDUSTRY_KEY_OWNER_FILES = ["**/modules/core/organization/**"];
+
 // ADR-033 / ADR-082: the only places allowed to read the organization's industry key.
 export const INDUSTRY_READER_FILES = [
   "**/modules/platform/industry/**",

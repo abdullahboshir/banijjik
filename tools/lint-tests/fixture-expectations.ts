@@ -7,6 +7,8 @@ export type FixtureExpectation = {
 
 const MODULE = "apps/api/src/modules/core/demo";
 const BILLING = "apps/api/src/modules/core/billing";
+const ORGANIZATION = "apps/api/src/modules/core/organization";
+const SALES = "apps/api/src/modules/commerce/sales";
 const BOUNDARIES = "boundaries/dependencies";
 const INDUSTRY = "banijjik-guard/no-industry-branching";
 const DOMAIN_IMPORTS = "banijjik-guard/no-domain-framework-imports";
@@ -140,6 +142,11 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   passes("R16", `${BILLING}/application/r16-includes-other-value.pass.ts`),
   passes("R16", `${BILLING}/application/r16-status-comparison.pass.ts`),
   passes("R16", `${BILLING}/application/r16-industry-in-tests.pass.test.ts`),
+  // core/organization owns the key: it may carry the field, but not compare or switch on it.
+  passes("R16", `${ORGANIZATION}/domain/r16-industry-key-stored.pass.ts`),
+  fails("R16", `${ORGANIZATION}/domain/r16-industry-key-compared.fail.ts`, INDUSTRY),
+  fails("R16", `${ORGANIZATION}/application/r16-industry-key-switch.fail.ts`, INDUSTRY),
+  fails("R16", `${SALES}/application/r16-industry-key-outside-organization.fail.ts`, INDUSTRY),
   ...READERS.map((folder) => passes("R16", `${folder}/r16-industry-reader-allowed.pass.ts`)),
 
   fails("R17", "src/r17-model-import.fail.ts", "banijjik-guard/no-model-imports"),
