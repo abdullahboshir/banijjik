@@ -1,0 +1,10 @@
+# Extends the built-in gitleaks rules. CI scans only commits after the baseline
+# (see .github/workflows/ci.yml); old history still holds secrets (owner task P1).
+title = "banijjik gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Placeholder values documented in .env.example files"
+paths = ['''(^|/)\.env\.example$''']
