@@ -1,0 +1,28 @@
+{
+  "name": "@banijjik/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/config/index.js",
+  "types": "./dist/config/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/config/index.d.ts",
+      "default": "./dist/config/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --dir src",
+    "config:check": "tsx src/check-config.ts"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0"
+  }
+}

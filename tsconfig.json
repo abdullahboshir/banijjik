@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/ids" },
     { "path": "./packages/contracts" },
-    { "path": "./packages/validation" }
+    { "path": "./packages/validation" },
+    { "path": "./apps/api" }
   ]
 }

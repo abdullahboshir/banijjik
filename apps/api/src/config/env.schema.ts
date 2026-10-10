@@ -1,0 +1,95 @@
+import { z } from "zod";
+
+export const NODE_ENVIRONMENTS = ["development", "test", "production"] as const;
+export const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace"] as const;
+
+const LOCAL_HOST_PATTERN = /(^|[@,/])(localhost|127\.0\.0\.1)(?=[:,/?]|$)/i;
+const MONGO_URL_PATTERN = /^mongodb(\+srv)?:\/\/[^/\s]+\/[^/?\s]+/;
+const REDIS_URL_PATTERN = /^rediss?:\/\/\S+$/;
+
+export function isLocalHostUrl(value: string): boolean {
+  return LOCAL_HOST_PATTERN.test(value);
+}
+
+const portSchema = z
+  .string()
+  .regex(/^\d+$/)
+  .transform(Number)
+  .pipe(z.number().int().min(1).max(65535));
+
+/** Splits, trims and de-duplicates a comma-separated list. Empty entries are dropped. */
+export function splitOrigins(value: string): string[] {
+  const entries = value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  return [...new Set(entries)];
+}
+
+export function isHttpOrigin(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    const isHttp = parsed.protocol === "http:" || parsed.protocol === "https:";
+    return isHttp && parsed.origin === value;
+  } catch {
+    return false;
+  }
+}
+
+export interface FieldRule<Output> {
+  readonly key: string;
+  /** A fixed sentence per rule. It is never derived from the value. */
+  readonly hint: string;
+  readonly schema: z.ZodType<Output, string>;
+  readonly defaultValue?: string;
+}
+
+const MONGO_HINT = "must be a mongodb:// or mongodb+srv:// URL with a database name";
+
+export const nodeEnvRule: FieldRule<(typeof NODE_ENVIRONMENTS)[number]> = {
+  key: "NODE_ENV",
+  hint: "must be development, test or production",
+  schema: z.enum(NODE_ENVIRONMENTS),
+  defaultValue: "development",
+};
+
+export const portRule: FieldRule<number> = {
+  key: "PORT",
+  hint: "must be an integer from 1 to 65535",
+  schema: portSchema,
+  defaultValue: "4000",
+};
+
+export const logLevelRule: FieldRule<(typeof LOG_LEVELS)[number]> = {
+  key: "LOG_LEVEL",
+  hint: "must be one of fatal, error, warn, info, debug, trace",
+  schema: z.enum(LOG_LEVELS),
+  defaultValue: "info",
+};
+
+export const platformUrlRule: FieldRule<string> = {
+  key: "DB_PLATFORM_URL",
+  hint: MONGO_HINT,
+  schema: z.string().regex(MONGO_URL_PATTERN),
+};
+
+export const tenantSharedUrlRule: FieldRule<string> = {
+  key: "DB_TENANT_SHARED_URL",
+  hint: MONGO_HINT,
+  schema: z.string().regex(MONGO_URL_PATTERN),
+};
+
+export const redisUrlRule: FieldRule<string> = {
+  key: "REDIS_URL",
+  hint: "must be a redis:// or rediss:// URL",
+  schema: z.string().regex(REDIS_URL_PATTERN),
+};
+
+export const corsRule: FieldRule<string> = {
+  key: "CORS_ALLOWED_ORIGINS",
+  hint: "must be a comma-separated list of absolute http(s) origins without a path",
+  schema: z.string(),
+};
+
+export const PRODUCTION_LOCAL_HOST_HINT = "must not point to localhost in production";
+export const PRODUCTION_WILDCARD_HINT = "must not contain a wildcard in production";
