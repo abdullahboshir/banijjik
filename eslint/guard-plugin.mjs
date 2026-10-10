@@ -28,5 +28,6 @@ export const guardPlugin = {
     "no-brand-name-literal": alias("no-restricted-syntax"),
     "no-industry-branching": alias("no-restricted-syntax"),
     "no-export-star": alias("no-restricted-syntax"),
+    "no-run-as-system": alias("no-restricted-syntax"),
   },
 };

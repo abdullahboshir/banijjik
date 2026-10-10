@@ -10,6 +10,7 @@ const BILLING = "apps/api/src/modules/core/billing";
 const BOUNDARIES = "boundaries/dependencies";
 const INDUSTRY = "banijjik-guard/no-industry-branching";
 const DOMAIN_IMPORTS = "banijjik-guard/no-domain-framework-imports";
+const RUN_AS_SYSTEM = "banijjik-guard/no-run-as-system";
 const NAMING = "@typescript-eslint/naming-convention";
 const READERS = [
   "apps/api/src/modules/platform/industry/application",
@@ -93,6 +94,7 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R13", "src/r13-underscore-id.fail.ts", "banijjik-guard/no-underscore-id"),
   fails("R13", "src/r13-underscore-id-literal.fail.ts", "banijjik-guard/no-underscore-id"),
   passes("R13", `${MODULE}/infrastructure/r13-underscore-id-in-infrastructure.pass.ts`),
+  passes("R13", "apps/api/src/kernel/db/r13-underscore-id-in-kernel-db.pass.ts"),
   passes("R13", "src/r13-underscore-id-in-tests.pass.test.ts"),
   passes("R13", "src/r13-domain-id.pass.ts"),
 
@@ -163,4 +165,14 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
 
   fails("R25", "apps/api/src/routes/r25-routes-import-module-internals.fail.ts", BOUNDARIES),
   passes("R25", "apps/api/src/routes/r25-routes-import-index-and-kernel.pass.ts"),
+
+  fails("R26", `${MODULE}/application/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
+  fails("R26", `${MODULE}/domain/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
+  fails("R26", `${MODULE}/presentation/r26-run-as-system.fail.ts`, RUN_AS_SYSTEM),
+  passes(
+    "R26",
+    "apps/api/src/modules/platform/demo/application/r26-run-as-system-in-platform-application.pass.ts",
+  ),
+  passes("R26", `${MODULE}/application/r26-run-as-system-in-tests.pass.test.ts`),
+  passes("R26", "apps/api/src/kernel/context/r26-run-as-system-in-kernel.pass.ts"),
 ];

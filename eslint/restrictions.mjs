@@ -7,6 +7,8 @@ import {
   INDUSTRY_READER_FILES,
   INFRASTRUCTURE_FILES,
   PUBLIC_INDEX_FILES,
+  RUN_AS_SYSTEM_ALLOWED_FILES,
+  RUN_AS_SYSTEM_FORBIDDEN_FILES,
   TEST_FILES,
 } from "./scopes.mjs";
 
@@ -166,6 +168,21 @@ export const restrictionBlocks = [
     name: "banijjik/industry-branching",
     ignores: INDUSTRY_READER_FILES,
     rules: { "banijjik-guard/no-industry-branching": [ERROR, ...industrySelectors] },
+  },
+  {
+    name: "banijjik/run-as-system",
+    files: RUN_AS_SYSTEM_FORBIDDEN_FILES,
+    ignores: [...RUN_AS_SYSTEM_ALLOWED_FILES, ...TEST_FILES],
+    rules: {
+      "banijjik-guard/no-run-as-system": [
+        ERROR,
+        {
+          selector: "CallExpression[callee.name='runAsSystem']",
+          message:
+            "runAsSystem is for the kernel and platform use cases only; module code stays tenant-scoped (05-CONVENTIONS System access).",
+        },
+      ],
+    },
   },
   {
     name: "banijjik/public-index-exports",

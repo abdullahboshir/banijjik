@@ -11,6 +11,13 @@ export const CONFIG_FILES = ["**/src/config/**", "**/*.config.*", ...TOOLING_FIL
 
 export const INFRASTRUCTURE_FILES = ["**/infrastructure/**", "**/kernel/db/**"];
 export const DOMAIN_FILES = ["**/domain/**"];
+// R26: module code above the repository layer. Platform use cases are exempt (they must write an audit entry).
+export const RUN_AS_SYSTEM_FORBIDDEN_FILES = [
+  "**/modules/*/*/domain/**",
+  "**/modules/*/*/application/**",
+  "**/modules/*/*/presentation/**",
+];
+export const RUN_AS_SYSTEM_ALLOWED_FILES = ["**/modules/platform/*/application/**"];
 export const PUBLIC_INDEX_FILES = ["**/index.ts"];
 export const ID_PACKAGE_FILES = ["**/packages/ids/**"];
 export const BRAND_SCOPE_FILES = ["**/apps/*/src/**", "**/packages/ui/**", "**/packages/i18n/**"];
