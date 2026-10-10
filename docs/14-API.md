@@ -90,7 +90,7 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | `GET /orgs/{organizationId}/me/config` | member | | `ResolvedOrgConfigResponse` (modules, kinds, menu, terms, settings subset, limits, accessMode, permissions at each location) |
 | `POST /orgs/{organizationId}/me/approval-pin` | member with `sales.approval.grant` | | set/change own PIN |
 | `POST /orgs/{organizationId}/approvals` | member with `sales.approval.grant` (PIN on the same device) | | `ApprovalGrantRequest { action, requestId, amount, pin }` → `{ approvalToken, expiresAt }` |
-| `GET /invitations/{token}` · `POST /invitations/{token}/accept` | public / user | | accept invitation (random token, not an ID) |
+| `GET /invitations/{token}` · `POST /invitations/{token}/accept` | public (rate limited per IP) / user | | the preview returns `InvitationPreviewResponse` (organization name, inviter, masked identifier); accept answers `MyOrganizationSummary`. The token is a random secret, masked in logs. An unknown, expired, revoked or used token is 404; a signed-in user whose email or phone differs from the invited one gets 403 `errors.invitation_identifier_mismatch` (ADR-092) |
 
 ## 5. Tenant endpoints (prefix `/api/v1/orgs/{organizationId}`)
 
@@ -101,8 +101,8 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 |---|---|---|---|
 | `GET /profile` · `PATCH /profile` | `organization.profile.update` (PATCH) | | `OrganizationProfile…` |
 | `GET /locations` · `POST /locations` · `PATCH /locations/{locationId}` · `POST /locations/{locationId}/archive` | `organization.location.*` | I (POST) | archive refused with stock/open requests (`BUSINESS_RULE`) |
-| `GET /members` · `GET /members/{memberId}` · `PATCH /members/{memberId}` · `POST /members/{memberId}/suspend` · `POST /members/{memberId}/remove` | `organization.member.*` | | assignments edit via PATCH; sensitive custom fields need `readSensitive` |
-| `POST /invitations` · `GET /invitations` · `POST /invitations/{invitationId}/revoke` | `organization.member.invite` | I | |
+| `GET /members` · `GET /members/{memberId}` · `PATCH /members/{memberId}` · `POST /members/{memberId}/suspend` · `POST /members/{memberId}/reactivate` · `POST /members/{memberId}/remove` | `organization.member.*` (`remove` for remove, `update` for the rest) | | assignments edit via PATCH under the rules of ADR-092; sensitive custom fields need `readSensitive` (card 2.3) |
+| `POST /invitations` · `GET /invitations` · `POST /invitations/{invitationId}/revoke` | `organization.member.invite` | I (POST) | the create response carries `inviteUrlPath` once; a replay of the same key returns the invitation without it (ADR-092) |
 | `POST /ownership/transfer` | `organization.ownership.transfer` | A | target must be an active member |
 | `GET /roles` · `POST /roles` · `PATCH /roles/{roleId}` · `POST /roles/{roleId}/archive` | `iam.role.*` | | system roles read-only |
 | `GET /settings?keys=` · `PATCH /settings` | `settings.setting.*` | | batch update `{ key, value, locationId? }[]` with versions |

@@ -192,7 +192,7 @@ Owner `core/organization` · scope org · versioned
 | Field | Type | Notes |
 |---|---|---|
 | `locationId` | LocationId | |
-| `name` | string | unique per org |
+| `name` | string | unique per org among ACTIVE locations (an archived location frees its name, ADR-092) |
 | `locationType` | `STORE \| WAREHOUSE` | WAREHOUSE holds stock only: no POS, no bookings, no walk-in sales |
 | `isDefault` | boolean | exactly one per org |
 | `status` | `ACTIVE \| ARCHIVED` | |
@@ -229,7 +229,7 @@ Owner `core/organization` · scope org · versioned · custom fields (entityType
 - Indexes: `{ organizationId, memberId }` unique, `{ organizationId, userId }` unique, `{ userId, status }` (list a user's orgs, `runAsSystem(AUTH_LOOKUP)`).
 - Events: `organization.member.invited`, `.joined`, `.assignmentsChanged`, `.suspended`, `.removed`. Each bumps the permission cache version (card 1.4).
 
-**Invitation** (`core/organization`, org): `invitationId`, `email?` / `phoneE164?`, `assignments`, `invitedByUserId`, `tokenHash` (random secret, not the UUID), `expiresAt`, `status` (`PENDING \| ACCEPTED \| REVOKED \| EXPIRED`). Accepting creates or links a User and activates the Member. Index `{ organizationId, status }`, `{ tokenHash }` unique.
+**Invitation** (`core/organization`, org): `invitationId`, `email?` / `phoneE164?`, `assignments`, `invitedByUserId`, `tokenHash` (random secret, not the UUID), `expiresAt`, `status` (`PENDING \| ACCEPTED \| REVOKED \| EXPIRED`). Accepting activates the Member for the signed-in User whose email or phone equals the invited one (ADR-092); status EXPIRED is derived from `expiresAt`. Index `{ organizationId, status }`, `{ tokenHash }` unique.
 
 ### 4.5 Role
 Owner `core/iam` · scope org · versioned
