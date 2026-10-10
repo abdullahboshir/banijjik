@@ -53,7 +53,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 ## Phase 1
 | Card | Status | Note |
 |---|---|---|
-| 1.1 IAM auth | implemented (awaiting Opus review) (`docs/handoffs/1.1.md`, branch `s/1.1-iam-auth`) | phone or email + password, 30-day sliding sessions, register included (owner); OTP and password reset wait for SMS/email sending |
+| 1.1 IAM auth | merged (2026-10-10, Opus review passed) | phone or email + password, 30-day sliding sessions, register included (owner); OTP and password reset wait for SMS/email sending |
 | 1.2 org/location/membership | todo | |
 | 1.3 tenant & location enforcement | todo | |
 | 1.4 RBAC & cache | todo | |
