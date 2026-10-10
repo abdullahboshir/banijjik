@@ -1,3 +1,4 @@
+import { IDEMPOTENCY_REPLAYED_HEADER } from "@banijjik/contracts";
 import cors from "cors";
 import express, { type Express, type Router } from "express";
 import type { Logger } from "pino";
@@ -61,7 +62,8 @@ export function buildApp(options: BuildAppOptions): Express {
       origin: [...config.corsAllowedOrigins],
       credentials: true,
       // Browser code reads the id from success responses to quote it to support.
-      exposedHeaders: [REQUEST_ID_HEADER],
+      // Retry-After shows the rate-limit wait; Idempotency-Replayed tells a replayed answer.
+      exposedHeaders: [REQUEST_ID_HEADER, "Retry-After", IDEMPOTENCY_REPLAYED_HEADER],
     }),
   );
   // Right after CORS, before any body is read: a request from an unknown origin is refused early.

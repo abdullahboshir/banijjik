@@ -117,6 +117,36 @@ describe("main entry", () => {
   );
 
   it(
+    "seeds the packages at startup and a second start changes nothing",
+    async () => {
+      const databases = createTestDatabaseUrls();
+      installTestLogger();
+      const connections = await connectDatabases(createDatabaseTestConfig(databases));
+      const packages = () => connections.platform.collection("packages");
+      try {
+        const first = startMain(validEnvironment(await findFreePort(), "api", databases));
+        await first.waitForText('"event":"api.started"');
+        const afterFirst = await packages().find({}).sort({ packageKey: 1 }).toArray();
+        first.child.kill();
+        await first.waitForExit();
+
+        const second = startMain(validEnvironment(await findFreePort(), "worker", databases));
+        await second.waitForText('"event":"worker.started"');
+        const afterSecond = await packages().find({}).sort({ packageKey: 1 }).toArray();
+
+        expect(afterFirst).toHaveLength(17);
+        expect(afterSecond).toEqual(afterFirst);
+        expect(second.output()).toContain('"createdCount":0');
+      } finally {
+        await connections.platform.dropDatabase();
+        await connections.tenantShared.dropDatabase();
+        await connections.close();
+      }
+    },
+    STARTUP_TIMEOUT_MS * 2,
+  );
+
+  it(
     "logs db.connected before api.started and never prints the connection URL",
     async () => {
       const port = await findFreePort();

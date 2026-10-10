@@ -78,13 +78,13 @@ describe("entitlement gate", () => {
     expect(response.body.error.code).toBe("ORG_READ_ONLY");
   });
 
-  it("fails closed with 500 for a tenant path that no manifest owns", async () => {
+  it("fails closed with 404 for a tenant path that no manifest owns", async () => {
     const app = gatedApp(ACCESS_MODE.FULL, [MODULE_KEY.IAM, MODULE_KEY.WORKFLOW]);
 
     const response = await request(app).get(path("/forgotten"));
 
-    expect(response.status).toBe(500);
-    expect(response.body.error.code).toBe("INTERNAL");
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe("NOT_FOUND");
   });
 
   it("allows only the exact me/config path without an owner module", async () => {
@@ -95,7 +95,7 @@ describe("entitlement gate", () => {
     const sibling = await request(app).get(path("/me/other"));
 
     expect(allowed.status).toBe(200);
-    expect(deeper.status).toBe(500);
-    expect(sibling.status).toBe(500);
+    expect(deeper.status).toBe(404);
+    expect(sibling.status).toBe(404);
   });
 });

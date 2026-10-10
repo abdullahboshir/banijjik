@@ -1,5 +1,7 @@
+import { ERROR_CODE } from "@banijjik/contracts";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import { AppError } from "./kernel/http/index.js";
 import { createTestApp, type TestApp } from "./test-support/test-app.js";
 import { ALLOWED_ORIGIN } from "./test-support/test-config.js";
 
@@ -10,6 +12,9 @@ function createApp(): TestApp {
     router.post("/login", (_request, response) => {
       response.cookie("access_token", COOKIE_SECRET, { httpOnly: true });
       response.json({ data: "ok" });
+    });
+    router.get("/limited", () => {
+      throw new AppError({ code: ERROR_CODE.RATE_LIMITED, retryAfterSeconds: 30 });
     });
     router.get("/reset", (_request, response) => {
       response.json({ data: "ok" });
@@ -51,7 +56,19 @@ describe("CORS", () => {
 
     const response = await request(app).get("/health").set("Origin", ALLOWED_ORIGIN);
 
-    expect(response.headers["access-control-expose-headers"]).toBe("X-Request-Id");
+    expect(response.headers["access-control-expose-headers"]).toBe(
+      "X-Request-Id,Retry-After,Idempotency-Replayed",
+    );
+  });
+
+  it("exposes Retry-After on a cross-origin 429 so the client can show the wait", async () => {
+    const { app } = createApp();
+
+    const response = await request(app).get("/api/v1/limited").set("Origin", ALLOWED_ORIGIN);
+
+    expect(response.status).toBe(429);
+    expect(response.headers["retry-after"]).toBe("30");
+    expect(response.headers["access-control-expose-headers"]).toContain("Retry-After");
   });
 
   it("sends no allow header to an unknown origin", async () => {

@@ -225,14 +225,17 @@ describe("the entitlement gate", () => {
     expect(afterExpiry.status).toBe(200);
   });
 
-  it("fails closed with 500 for a tenant router that has no manifest", async () => {
+  it("fails closed with 404 and a warn line for a tenant router that has no manifest", async () => {
     const { owner, organizationId } = await createTrialOrganization();
 
     const response = await owner.call("get", `/orgs/${organizationId}/forgotten`);
 
-    expect(response.status).toBe(500);
-    expect(response.body.error.code).toBe("INTERNAL");
-    expect(harness.logs.text()).toContain("errors.route_without_module");
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe("NOT_FOUND");
+    const warning = harness.logs
+      .lines()
+      .find((line) => line["event"] === "entitlement.route_without_module");
+    expect(warning).toMatchObject({ level: 40, path: "/orgs/*/forgotten" });
   });
 });
 

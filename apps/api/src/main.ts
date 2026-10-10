@@ -22,7 +22,9 @@ import {
   type RedisClient,
 } from "./kernel/redis/index.js";
 import { registerSequenceModel } from "./kernel/sequence/index.js";
+import { systemClock } from "./kernel/time/index.js";
 import { registerModuleModels } from "./routes/v1.js";
+import { seedPackages } from "./seeds/seed-packages.js";
 import { startWorker } from "./start-worker.js";
 
 const ENV_FILE_PATH = fileURLToPath(new URL("../.env", import.meta.url));
@@ -94,6 +96,9 @@ async function openDatabases(
     registerModuleModels();
     connections = await connectDatabases(config);
     await initializeModels();
+    // Idempotent: inserts only the missing packages, so a fresh environment can create its first organization.
+    const seeded = await seedPackages(systemClock);
+    logger.info({ event: "packages.seeded", ...seeded }, "seed packages ensured");
     logger.info({ event: "db.connected" }, "databases connected");
     return connections;
   } catch (error) {
