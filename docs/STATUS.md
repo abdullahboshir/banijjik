@@ -63,8 +63,10 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 1.6b new-module script and generated module-off tests | merged (2026-10-10, merge-checked by Opus) | follow-up before the first real CORE/OPTIONAL module: record model ownership (`moduleKey` on `registerModel`) so the "data untouched" check needs no hand-kept map; contracts registries for settings, bot tools and sections |
 | 1.7a admin sign in, sign up, business list and switcher | merged (2026-10-10, merge-checked by Opus; redirect loop guard added) | parallel with 1.6a; creating a business in the UI waits for 2.1/6.1 |
 | 1.7b organization tenant API (profile, locations, members, invitations) | merged (2026-10-10, Opus review passed after 3 fixes; ADR-092) | branch `s/1.7b-org-tenant-api`; handoff `docs/handoffs/1.7b.md`; ADR-092. Gaps: the admin menu entries of decision 12 move to card 1.7c (it designs the "only with 2 or more locations" flag and updates the three menu assertions in `entitlement-api.test.ts`); invitation links are shared by hand until SMS/email sending exists (5.13); the identifier match is the only binding until identifiers are verified; existing databases keep the old full unique index on `locations.name` until the index-sync task exists |
-| 1.7c admin menu from /me/config, home, staff and locations screens | todo | after 1.6a + 1.7b; also the menu entries of 1.7b decision 12 and the locations-visible flag |
-| 1.8 platform skeleton | todo | |
+| 1.7c admin menu, home banners, staff and invitations | planned (2026-10-10, `docs/plans/1.7c.md`, Opus) | parallel with 1.8a; includes the deferred settings menu entries |
+| 1.7d admin business profile, locations and roles screens | todo | after 1.7c |
+| 1.8a platform API: operator sign-in, tenants, packages, module grants | planned (2026-10-10, `docs/plans/1.8a.md`, Opus, T1) | parallel with 1.7c; platform role mapping is a proposal (ADR-093) |
+| 1.8b platform web app | todo | after 1.8a |
 
 ## Phases 2–8
 Track here once Phase 1 is done (copy the cards from the roadmap).
