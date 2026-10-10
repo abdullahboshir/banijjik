@@ -45,3 +45,7 @@ Add a file in `src/components`, a test with Bangla text longer than the English 
 ## Account menu
 
 `AccountMenu` is the sheet behind the top bar's account button: the person's name, their businesses, the language switch and sign out. `AccountMenuTrigger` is the small button that opens it. Text and items arrive as props (the package stays text-agnostic), and apps load `AccountMenu` lazily like the other sheets. The business links are plain `<a>` elements on purpose, not `useLinkComponent()`: switching business is a full page load (ADR-022), so a client-side navigation would be wrong here.
+
+## Button loading state
+
+`Button` takes `isLoading`: it disables the button, sets `aria-busy` and shows an inline spinner before the label (13-UX section 5). Use it for submit buttons so a second press cannot send the form twice.
