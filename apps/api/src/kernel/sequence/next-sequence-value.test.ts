@@ -11,6 +11,7 @@ import {
   disposeTestDatabases,
   installTestLogger,
 } from "../../test-support/test-databases.js";
+import { withOrganizationContext } from "../../test-support/organization-context.js";
 import {
   initializeModels,
   models,
@@ -44,7 +45,9 @@ function next(
   organizationId: string,
   sequenceKey: SequenceKey = SEQUENCE_KEY.ORDER,
 ): Promise<number> {
-  return nextSequenceValue({ organizationId, sequenceKey });
+  return withOrganizationContext(organizationId, () =>
+    nextSequenceValue({ organizationId, sequenceKey }),
+  );
 }
 
 function nextInTransaction(organizationId: string, sequenceKey: SequenceKey): Promise<number> {
@@ -157,7 +160,9 @@ describe("nextSequenceValue under concurrent transactions (J4)", () => {
       Array.from({ length: CONCURRENT_TRANSACTIONS }, () =>
         withTransaction(async (session) => {
           const value = await next(organizationId, SEQUENCE_KEY.ORDER);
-          await Probe.create([{ probeId: newId(), label: String(value) }], { session });
+          await withOrganizationContext(organizationId, () =>
+            Probe.create([{ probeId: newId(), label: String(value) }], { session }),
+          );
           return value;
         }),
       ),

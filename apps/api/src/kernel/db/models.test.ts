@@ -1,4 +1,4 @@
-import { DATABASE_KIND } from "@banijjik/contracts";
+import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
 import { Schema } from "mongoose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -13,6 +13,7 @@ import {
   disposeTestDatabases,
   installTestLogger,
 } from "../../test-support/test-databases.js";
+import { withOrganizationContext } from "../../test-support/organization-context.js";
 import { AppError } from "../http/app-error.js";
 import type { DatabaseConnections } from "./database-connections.js";
 import { addGlobalSchemaPlugin, registerModel } from "./model-registry.js";
@@ -52,7 +53,9 @@ describe("models(context)", () => {
     const organizationId = newId();
     const Tenant = models({ organizationId }).get<ProbeDocument>(TENANT_PROBE);
 
-    await Tenant.create({ probeId: newId(), label: "tenant" });
+    await withOrganizationContext(organizationId, () =>
+      Tenant.create({ probeId: newId(), label: "tenant" }),
+    );
 
     expect(Tenant.db.db?.databaseName).toBe(connections.tenantShared.db?.databaseName);
     expect(await connections.tenantShared.db?.collection("tenant_probes").countDocuments()).toBe(1);
@@ -86,6 +89,7 @@ describe("registerModel", () => {
         collectionName: "other",
         database: DATABASE_KIND.PLATFORM,
         schema: new Schema({}),
+        tenancy: MODEL_TENANCY.NONE,
       });
 
     expect(duplicate).toThrow(/errors\.duplicate_model/);
@@ -120,6 +124,7 @@ describe("model registry sealing (J5c)", () => {
         collectionName: "late_models",
         database: DATABASE_KIND.TENANT,
         schema: new Schema({}),
+        tenancy: MODEL_TENANCY.ORGANIZATION,
       });
 
     expect(lateModel).toThrow(/errors.model_registry_sealed/);
@@ -128,22 +133,28 @@ describe("model registry sealing (J5c)", () => {
 
 describe("schema options", () => {
   it("rejects a field the schema does not declare (strict throw)", async () => {
-    const Tenant = models({ organizationId: newId() }).get<ProbeDocument>(TENANT_PROBE);
+    const organizationId = newId();
+    const Tenant = models({ organizationId }).get<ProbeDocument>(TENANT_PROBE);
     const withUnknownField: Record<string, unknown> = {
       probeId: newId(),
       label: "x",
       surprise: true,
     };
 
-    await expect(Tenant.create(withUnknownField)).rejects.toThrow(/surprise/);
+    await expect(
+      withOrganizationContext(organizationId, () => Tenant.create(withUnknownField)),
+    ).rejects.toThrow(/surprise/);
   });
 
   it("stores the explicit version and no __v", async () => {
-    const Tenant = models({ organizationId: newId() }).get<ProbeDocument>(TENANT_PROBE);
+    const organizationId = newId();
+    const Tenant = models({ organizationId }).get<ProbeDocument>(TENANT_PROBE);
     const probeId = newId();
 
-    await Tenant.create({ probeId, label: "v" });
-    const stored = await Tenant.findOne({ probeId }).lean<Record<string, unknown>>();
+    const stored = await withOrganizationContext(organizationId, async () => {
+      await Tenant.create({ probeId, label: "v" });
+      return Tenant.findOne({ probeId }).lean<Record<string, unknown>>();
+    });
 
     expect(stored?.["version"]).toBe(1);
     expect(stored).not.toHaveProperty("__v");

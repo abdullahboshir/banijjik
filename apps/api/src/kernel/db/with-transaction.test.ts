@@ -13,12 +13,15 @@ import {
   disposeTestDatabases,
   installTestLogger,
 } from "../../test-support/test-databases.js";
+import { withOrganizationContext } from "../../test-support/organization-context.js";
 import { AppError } from "../http/app-error.js";
 import type { DatabaseConnections } from "./database-connections.js";
 import { initializeModels, models } from "./models.js";
 import { getActiveSession, onCommitted, withTransaction } from "./with-transaction.js";
 
 registerProbeModels();
+
+const PROBE_ORGANIZATION_ID = newId();
 
 let connections: DatabaseConnections;
 let logs: LogCapture;
@@ -33,10 +36,12 @@ afterAll(async () => {
   await disposeTestDatabases(connections);
 });
 
-beforeEach(async () => {
-  await models({}).get(PLATFORM_PROBE).deleteMany({});
-  await models({}).get(TENANT_PROBE).deleteMany({});
-});
+beforeEach(() =>
+  withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+    await models({}).get(PLATFORM_PROBE).deleteMany({});
+    await models({}).get(TENANT_PROBE).deleteMany({});
+  }),
+);
 
 async function insertInBothDatabases(session: ClientSession): Promise<void> {
   const platform = models({}).get<ProbeDocument>(PLATFORM_PROBE);
@@ -59,192 +64,205 @@ function transientError(): Error {
 }
 
 describe("withTransaction", () => {
-  it("rolls back a platform write and a tenant write together when the work throws", async () => {
-    await expect(
-      withTransaction(async (session) => {
+  it("rolls back a platform write and a tenant write together when the work throws", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      await expect(
+        withTransaction(async (session) => {
+          await insertInBothDatabases(session);
+          throw new Error("intentional abort");
+        }),
+      ).rejects.toThrow("intentional abort");
+
+      expect(await countDocuments()).toEqual({ platform: 0, tenant: 0 });
+    }));
+
+  it("commits writes to both databases when the work succeeds", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      const result = await withTransaction(async (session) => {
         await insertInBothDatabases(session);
-        throw new Error("intentional abort");
-      }),
-    ).rejects.toThrow("intentional abort");
-
-    expect(await countDocuments()).toEqual({ platform: 0, tenant: 0 });
-  });
-
-  it("commits writes to both databases when the work succeeds", async () => {
-    const result = await withTransaction(async (session) => {
-      await insertInBothDatabases(session);
-      return "done";
-    });
-
-    expect(result).toBe("done");
-    expect(await countDocuments()).toEqual({ platform: 1, tenant: 1 });
-  });
-
-  it("reuses the outer session in a nested call", async () => {
-    const sessionIds: unknown[] = [];
-
-    await withTransaction(async (outer) => {
-      sessionIds.push(outer.id);
-      await withTransaction(async (inner) => {
-        sessionIds.push(inner.id);
-        sessionIds.push(getActiveSession()?.id);
+        return "done";
       });
-    });
 
-    expect(sessionIds[1]).toEqual(sessionIds[0]);
-    expect(sessionIds[2]).toEqual(sessionIds[0]);
-  });
+      expect(result).toBe("done");
+      expect(await countDocuments()).toEqual({ platform: 1, tenant: 1 });
+    }));
 
-  it("rolls the outer writes back when a nested call throws", async () => {
-    await expect(
-      withTransaction(async (outer) => {
-        await insertInBothDatabases(outer);
-        await withTransaction(async () => {
-          throw new Error("inner abort");
+  it("reuses the outer session in a nested call", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      const sessionIds: unknown[] = [];
+
+      await withTransaction(async (outer) => {
+        sessionIds.push(outer.id);
+        await withTransaction(async (inner) => {
+          sessionIds.push(inner.id);
+          sessionIds.push(getActiveSession()?.id);
         });
-      }),
-    ).rejects.toThrow("inner abort");
-
-    expect(await countDocuments()).toEqual({ platform: 0, tenant: 0 });
-  });
-
-  it("retries an error labelled TransientTransactionError and returns the third attempt's result", async () => {
-    let attempts = 0;
-
-    const result = await withTransaction(async (session) => {
-      attempts += 1;
-      if (attempts <= 2) throw transientError();
-      await insertInBothDatabases(session);
-      return attempts;
-    });
-
-    expect(result).toBe(3);
-    expect(attempts).toBe(3);
-    expect(await countDocuments()).toEqual({ platform: 1, tenant: 1 });
-  });
-
-  it("gives up after maxAttempts with RETRY_LATER and reports the driver error", async () => {
-    let attempts = 0;
-    const random = vi.fn(() => 0);
-
-    await expect(
-      withTransaction(
-        async () => {
-          attempts += 1;
-          throw transientError();
-        },
-        { maxAttempts: 3, random },
-      ),
-    ).rejects.toMatchObject({ code: "RETRY_LATER", messageKey: "errors.retry_later" });
-
-    expect(attempts).toBe(3);
-    expect(random).toHaveBeenCalledTimes(2);
-    expect(logs.text()).toContain("simulated write conflict");
-  });
-
-  it("does not retry an error without the transient label", async () => {
-    let attempts = 0;
-
-    await expect(
-      withTransaction(async () => {
-        attempts += 1;
-        throw new Error("plain failure");
-      }),
-    ).rejects.toThrow("plain failure");
-
-    expect(attempts).toBe(1);
-  });
-
-  it("detects a real write conflict between two transactions and retries the loser", async () => {
-    const platform = models({}).get<ProbeDocument>(PLATFORM_PROBE);
-    const probeId = newId();
-    await platform.create({ probeId, label: "0" });
-    let attempts = 0;
-    const bump = (): Promise<void> =>
-      withTransaction(async (session) => {
-        attempts += 1;
-        await platform.updateOne({ probeId }, { $inc: { version: 1 } }, { session });
-        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-    await Promise.all([bump(), bump()]);
+      expect(sessionIds[1]).toEqual(sessionIds[0]);
+      expect(sessionIds[2]).toEqual(sessionIds[0]);
+    }));
 
-    const stored = await platform.findOne({ probeId }).lean<ProbeDocument>();
-    expect(stored?.version).toBe(3);
-    expect(attempts).toBeGreaterThanOrEqual(3);
-  });
+  it("rolls the outer writes back when a nested call throws", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      await expect(
+        withTransaction(async (outer) => {
+          await insertInBothDatabases(outer);
+          await withTransaction(async () => {
+            throw new Error("inner abort");
+          });
+        }),
+      ).rejects.toThrow("inner abort");
+
+      expect(await countDocuments()).toEqual({ platform: 0, tenant: 0 });
+    }));
+
+  it("retries an error labelled TransientTransactionError and returns the third attempt's result", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      let attempts = 0;
+
+      const result = await withTransaction(async (session) => {
+        attempts += 1;
+        if (attempts <= 2) throw transientError();
+        await insertInBothDatabases(session);
+        return attempts;
+      });
+
+      expect(result).toBe(3);
+      expect(attempts).toBe(3);
+      expect(await countDocuments()).toEqual({ platform: 1, tenant: 1 });
+    }));
+
+  it("gives up after maxAttempts with RETRY_LATER and reports the driver error", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      let attempts = 0;
+      const random = vi.fn(() => 0);
+
+      await expect(
+        withTransaction(
+          async () => {
+            attempts += 1;
+            throw transientError();
+          },
+          { maxAttempts: 3, random },
+        ),
+      ).rejects.toMatchObject({ code: "RETRY_LATER", messageKey: "errors.retry_later" });
+
+      expect(attempts).toBe(3);
+      expect(random).toHaveBeenCalledTimes(2);
+      expect(logs.text()).toContain("simulated write conflict");
+    }));
+
+  it("does not retry an error without the transient label", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      let attempts = 0;
+
+      await expect(
+        withTransaction(async () => {
+          attempts += 1;
+          throw new Error("plain failure");
+        }),
+      ).rejects.toThrow("plain failure");
+
+      expect(attempts).toBe(1);
+    }));
+
+  it("detects a real write conflict between two transactions and retries the loser", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      const platform = models({}).get<ProbeDocument>(PLATFORM_PROBE);
+      const probeId = newId();
+      await platform.create({ probeId, label: "0" });
+      let attempts = 0;
+      const bump = (): Promise<void> =>
+        withTransaction(async (session) => {
+          attempts += 1;
+          await platform.updateOne({ probeId }, { $inc: { version: 1 } }, { session });
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        });
+
+      await Promise.all([bump(), bump()]);
+
+      const stored = await platform.findOne({ probeId }).lean<ProbeDocument>();
+      expect(stored?.version).toBe(3);
+      expect(attempts).toBeGreaterThanOrEqual(3);
+    }));
 });
 
 describe("getActiveSession", () => {
-  it("is undefined outside a transaction and set inside one", async () => {
-    expect(getActiveSession()).toBeUndefined();
+  it("is undefined outside a transaction and set inside one", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      expect(getActiveSession()).toBeUndefined();
 
-    await withTransaction(async (session) => {
-      expect(getActiveSession()).toBe(session);
-    });
+      await withTransaction(async (session) => {
+        expect(getActiveSession()).toBe(session);
+      });
 
-    expect(getActiveSession()).toBeUndefined();
-  });
+      expect(getActiveSession()).toBeUndefined();
+    }));
 });
 
 describe("onCommitted", () => {
-  it("runs the callbacks once, in order, only after the commit", async () => {
-    const events: string[] = [];
+  it("runs the callbacks once, in order, only after the commit", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      const events: string[] = [];
 
-    await withTransaction(async (session) => {
-      onCommitted(async () => void events.push(`first:${String(session.inTransaction())}`));
-      onCommitted(async () => void events.push("second"));
-      events.push("work");
-    });
+      await withTransaction(async (session) => {
+        onCommitted(async () => void events.push(`first:${String(session.inTransaction())}`));
+        onCommitted(async () => void events.push("second"));
+        events.push("work");
+      });
 
-    expect(events).toEqual(["work", "first:false", "second"]);
-  });
+      expect(events).toEqual(["work", "first:false", "second"]);
+    }));
 
-  it("does not run the callbacks when the transaction aborts", async () => {
-    let called = false;
+  it("does not run the callbacks when the transaction aborts", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      let called = false;
 
-    await expect(
-      withTransaction(async () => {
+      await expect(
+        withTransaction(async () => {
+          onCommitted(async () => {
+            called = true;
+          });
+          throw new Error("abort");
+        }),
+      ).rejects.toThrow("abort");
+
+      expect(called).toBe(false);
+    }));
+
+  it("drops callbacks registered by an attempt that was retried", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      let attempts = 0;
+      let calls = 0;
+
+      await withTransaction(async () => {
+        attempts += 1;
+        onCommitted(async () => void (calls += 1));
+        if (attempts === 1) throw transientError();
+      });
+
+      expect(calls).toBe(1);
+    }));
+
+  it("reports a failing callback, keeps the result and still runs the next callback", () =>
+    withOrganizationContext(PROBE_ORGANIZATION_ID, async () => {
+      let secondRan = false;
+
+      const result = await withTransaction(async () => {
         onCommitted(async () => {
-          called = true;
+          throw new Error("cache invalidation failed");
         });
-        throw new Error("abort");
-      }),
-    ).rejects.toThrow("abort");
-
-    expect(called).toBe(false);
-  });
-
-  it("drops callbacks registered by an attempt that was retried", async () => {
-    let attempts = 0;
-    let calls = 0;
-
-    await withTransaction(async () => {
-      attempts += 1;
-      onCommitted(async () => void (calls += 1));
-      if (attempts === 1) throw transientError();
-    });
-
-    expect(calls).toBe(1);
-  });
-
-  it("reports a failing callback, keeps the result and still runs the next callback", async () => {
-    let secondRan = false;
-
-    const result = await withTransaction(async () => {
-      onCommitted(async () => {
-        throw new Error("cache invalidation failed");
+        onCommitted(async () => {
+          secondRan = true;
+        });
+        return "committed";
       });
-      onCommitted(async () => {
-        secondRan = true;
-      });
-      return "committed";
-    });
 
-    expect(result).toBe("committed");
-    expect(secondRan).toBe(true);
-    expect(logs.text()).toContain("cache invalidation failed");
-  });
+      expect(result).toBe("committed");
+      expect(secondRan).toBe(true);
+      expect(logs.text()).toContain("cache invalidation failed");
+    }));
 
   it("throws outside a transaction instead of running silently", () => {
     const register = (): void => onCommitted(async () => undefined);

@@ -1,4 +1,4 @@
-import { DATABASE_KIND } from "@banijjik/contracts";
+import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { Schema } from "mongoose";
 import {
   auditFields,
@@ -15,6 +15,8 @@ export const TENANT_PROBE = "TenantProbe";
 export interface ProbeDocument {
   probeId: string;
   label: string;
+  /** Set on TENANT_PROBE only: the tenant plugin stamps it from the request context. */
+  organizationId?: string;
   /** Limited to PROBE_KINDS by the schema, so tests can prove update validators run. */
   kind?: string;
   version: number;
@@ -22,10 +24,13 @@ export interface ProbeDocument {
 
 export const PROBE_KINDS = ["STANDARD", "SPECIAL"] as const;
 
-function buildProbeSchema(): Schema {
-  return new Schema(
+function buildProbeSchema(options: { organizationOwned: boolean }): Schema {
+  const schema = new Schema(
     {
       ...domainIdField("probeId"),
+      ...(options.organizationOwned
+        ? { organizationId: { type: String, required: true, immutable: true } }
+        : {}),
       label: { type: String, required: true },
       kind: { type: String, enum: PROBE_KINDS },
       ...versionField,
@@ -33,6 +38,8 @@ function buildProbeSchema(): Schema {
     },
     SCHEMA_OPTIONS,
   );
+  if (options.organizationOwned) schema.index({ organizationId: 1, probeId: 1 });
+  return schema;
 }
 
 /** One probe model per database, so one transaction can touch both. Call once per test file. */
@@ -41,12 +48,14 @@ export function registerProbeModels(): void {
     modelName: PLATFORM_PROBE,
     collectionName: "platform_probes",
     database: DATABASE_KIND.PLATFORM,
-    schema: buildProbeSchema(),
+    schema: buildProbeSchema({ organizationOwned: false }),
+    tenancy: MODEL_TENANCY.NONE,
   });
   registerModel({
     modelName: TENANT_PROBE,
     collectionName: "tenant_probes",
     database: DATABASE_KIND.TENANT,
-    schema: buildProbeSchema(),
+    schema: buildProbeSchema({ organizationOwned: true }),
+    tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }
