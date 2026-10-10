@@ -1,4 +1,4 @@
-import { EVENT_TYPE, type EventType } from "@banijjik/contracts";
+import { EVENT_TYPE, MODULE_KEY, type EventType } from "@banijjik/contracts";
 import { describe, expect, it } from "vitest";
 import { AppError } from "../http/app-error.js";
 import { EventHandlerRegistry, type EventHandler } from "./event-handler-registry.js";
@@ -7,7 +7,7 @@ function aHandler(
   handlerKey: string,
   eventType: EventType = EVENT_TYPE.USER_REGISTERED,
 ): EventHandler {
-  return { handlerKey, eventType, handle: async () => undefined };
+  return { handlerKey, moduleKey: MODULE_KEY.IAM, eventType, handle: async () => undefined };
 }
 
 describe("EventHandlerRegistry", () => {

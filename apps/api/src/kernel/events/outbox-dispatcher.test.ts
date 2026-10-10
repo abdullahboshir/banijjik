@@ -1,4 +1,4 @@
-import { EVENT_TYPE, OUTBOX_STATUS } from "@banijjik/contracts";
+import { EVENT_TYPE, MODULE_KEY, OUTBOX_STATUS } from "@banijjik/contracts";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { outboxModel, publishTestEvent } from "../../test-support/event-fixtures.js";
 import { MutableClock } from "../../test-support/mutable-clock.js";
@@ -51,6 +51,7 @@ function registryWith(...handlerKeys: string[]): EventHandlerRegistry {
   for (const handlerKey of handlerKeys) {
     registry.register({
       handlerKey,
+      moduleKey: MODULE_KEY.IAM,
       eventType: EVENT_TYPE.USER_REGISTERED,
       handle: async () => undefined,
     });

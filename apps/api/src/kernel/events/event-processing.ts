@@ -6,11 +6,14 @@ import type { EventHandlerRegistry } from "./event-handler-registry.js";
 import type { EventJobData } from "./event-job.js";
 import { BullMqEventJobQueue, createEventQueue } from "./event-queue.js";
 import { createEventWorker } from "./event-worker.js";
+import type { ModuleEffectiveness } from "./module-effectiveness.js";
 import { OutboxDispatcher } from "./outbox-dispatcher.js";
 
 export interface EventProcessingOptions {
   readonly redis: RedisClient;
   readonly registry: EventHandlerRegistry;
+  /** A handler runs only while its module is effective for the event's organization. */
+  readonly effectiveness: ModuleEffectiveness;
   readonly clock: Clock;
   readonly pollIntervalMs?: number;
   /** Redis key prefix of the queue. Tests use their own; production uses the BullMQ default. */
@@ -36,7 +39,12 @@ export function startEventProcessing(options: EventProcessingOptions): EventProc
   const prefix = options.queuePrefix === undefined ? {} : { prefix: options.queuePrefix };
   registry.seal();
   const queue = createEventQueue({ connection: redis, ...prefix });
-  const worker = createEventWorker({ connection: redis, registry, ...prefix });
+  const worker = createEventWorker({
+    connection: redis,
+    registry,
+    effectiveness: options.effectiveness,
+    ...prefix,
+  });
   const dispatcher = new OutboxDispatcher({
     queue: new BullMqEventJobQueue({
       queue,

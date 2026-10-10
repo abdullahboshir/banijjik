@@ -1,4 +1,4 @@
-import { EVENT_TYPE } from "@banijjik/contracts";
+import { EVENT_TYPE, MODULE_KEY } from "@banijjik/contracts";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { outboxModel, publishTestEvent } from "../../test-support/event-fixtures.js";
 import { MutableClock } from "../../test-support/mutable-clock.js";
@@ -55,7 +55,7 @@ function handlerOf(
   handlerKey: string,
   handle: EventHandler["handle"],
 ): EventHandler<typeof EVENT_TYPE.USER_REGISTERED> {
-  return { handlerKey, eventType: EVENT_TYPE.USER_REGISTERED, handle };
+  return { handlerKey, moduleKey: MODULE_KEY.IAM, eventType: EVENT_TYPE.USER_REGISTERED, handle };
 }
 
 function countMarkers(eventId: string, handlerKey: string): Promise<number> {
@@ -83,6 +83,7 @@ describeWithRedis("event worker", (redisUrl) => {
     processing = startEventProcessing({
       redis: scope.client,
       registry,
+      effectiveness: { isEffective: async () => true },
       clock: new MutableClock(new Date()),
       pollIntervalMs: 50,
       queuePrefix: scope.prefix,

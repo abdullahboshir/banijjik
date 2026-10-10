@@ -4,6 +4,7 @@ export {
   registerEventHandler,
 } from "./event-handler-registry.js";
 export type { EventHandler } from "./event-handler-registry.js";
+export type { ModuleEffectiveness } from "./module-effectiveness.js";
 export { startEventProcessing } from "./event-processing.js";
 export type { EventProcessing, EventProcessingOptions } from "./event-processing.js";
 export { kernelEventPublisher, publishEvent } from "./publish-event.js";

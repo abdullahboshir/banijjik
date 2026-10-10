@@ -5,7 +5,10 @@ import { MEMBER_MODEL_NAME, type MemberDocument } from "./member.schema.js";
 import { ORGANIZATION_MODEL_NAME, type OrganizationDocument } from "./organization.schema.js";
 
 type MembershipRow = Pick<MemberDocument, "memberId" | "assignments" | "version">;
-type OrganizationRow = Pick<OrganizationDocument, "status" | "deployment" | "rolesVersion">;
+type OrganizationRow = Pick<
+  OrganizationDocument,
+  "status" | "deployment" | "rolesVersion" | "configVersion"
+>;
 
 /**
  * "Is this user an active member of this organization?" for a request that has no organization
@@ -28,7 +31,10 @@ export class MongoMembershipDirectory implements MembershipDirectory {
     if (member === null) return undefined;
     const organization = await models({})
       .get<OrganizationDocument>(ORGANIZATION_MODEL_NAME)
-      .findOne({ organizationId }, { status: 1, deployment: 1, rolesVersion: 1, _id: 0 })
+      .findOne(
+        { organizationId },
+        { status: 1, deployment: 1, rolesVersion: 1, configVersion: 1, _id: 0 },
+      )
       .lean<OrganizationRow>();
     if (organization === null) return undefined;
     return {
@@ -37,6 +43,7 @@ export class MongoMembershipDirectory implements MembershipDirectory {
       deployment: organization.deployment,
       memberVersion: member.version,
       rolesVersion: organization.rolesVersion,
+      configVersion: organization.configVersion,
       assignments: member.assignments.map(({ locationId, roleId }) => ({ locationId, roleId })),
     };
   }

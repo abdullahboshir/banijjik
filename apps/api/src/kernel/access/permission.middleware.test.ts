@@ -14,7 +14,10 @@ interface ProbeSetup {
 }
 
 function probeApp(setup: ProbeSetup) {
-  const permission = createPermissionMiddleware({ locationsWith: async () => setup.granted });
+  const permission = createPermissionMiddleware({
+    locationsWith: async () => setup.granted,
+    describeCaller: async () => ({ allLocations: [], byLocation: {} }),
+  });
   return createTestApp((router) => {
     router.get(
       "/probe",

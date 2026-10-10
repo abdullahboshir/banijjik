@@ -1,6 +1,6 @@
 import { ERROR_CODE } from "@banijjik/contracts";
 import { asId, type RoleId } from "@banijjik/ids";
-import type { PermissionGate } from "../../../../kernel/access/index.js";
+import type { CallerGrants, PermissionGate } from "../../../../kernel/access/index.js";
 import { getRequestContext } from "../../../../kernel/context/index.js";
 import { AppError } from "../../../../kernel/http/index.js";
 import { locationsGranting, type GrantMap } from "../domain/grant-map.js";
@@ -43,6 +43,16 @@ export class IamPermissionGate implements PermissionGate {
   async locationsWith(permissionKey: string): Promise<readonly string[] | "ALL"> {
     const grantMap = await this.grantMapOfCaller();
     return locationsGranting(grantMap, permissionKey);
+  }
+
+  async describeCaller(): Promise<CallerGrants> {
+    const grantMap = await this.grantMapOfCaller();
+    return {
+      allLocations: [...grantMap.allLocations],
+      byLocation: Object.fromEntries(
+        [...grantMap.byLocation].map(([locationId, keys]) => [locationId, [...keys]]),
+      ),
+    };
   }
 
   private async grantMapOfCaller(): Promise<GrantMap> {

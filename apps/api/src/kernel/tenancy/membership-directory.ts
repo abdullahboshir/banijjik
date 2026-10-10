@@ -12,6 +12,8 @@ export interface ActiveMembership {
   readonly deployment: OrganizationDeployment;
   /** Member.version: bumped by every member change, including assignments. */
   readonly memberVersion: number;
+  /** Organization.configVersion: bumped by every subscription, package-assignment or override change (card 1.6a). */
+  readonly configVersion: number;
   /** Organization.rolesVersion: bumped by every role change. */
   readonly rolesVersion: number;
   /** `locationId` is a location ID or "ALL". */

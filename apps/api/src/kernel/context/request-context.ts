@@ -9,6 +9,8 @@ export interface RequestContext {
   readonly memberId?: string;
   /** `<memberVersion>.<rolesVersion>`, read fresh on every tenant request; keys the permission cache. */
   readonly accessVersion?: string;
+  /** Organization.configVersion, read fresh on every tenant request; keys the resolved-config cache. */
+  readonly configVersion?: number;
   readonly allowedLocationIds?: readonly string[] | "ALL";
 }
 

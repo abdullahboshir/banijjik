@@ -50,6 +50,7 @@ export function tenantContext(options: TenantContextOptions): RequestHandler {
       organizationId,
       memberId: membership.memberId,
       accessVersion: `${membership.memberVersion}.${membership.rolesVersion}`,
+      configVersion: membership.configVersion,
       allowedLocationIds: allowedLocationsOf(membership),
     };
     runWithRequestContext(scoped, () => next());

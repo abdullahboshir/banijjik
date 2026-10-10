@@ -3,12 +3,15 @@ import {
   type EventEnvelope,
   type EventPayloadMap,
   type EventType,
+  type ModuleKey,
 } from "@banijjik/contracts";
 import { AppError } from "../http/app-error.js";
 
 export interface EventHandler<Type extends EventType = EventType> {
   /** `<module>.<purpose>`, unique across the application. It names the job, so it has no ":" (BullMQ job ids). */
   readonly handlerKey: string;
+  /** The module that owns the handler: it runs for an organization only while this module is effective there. */
+  readonly moduleKey: ModuleKey;
   readonly eventType: Type;
   handle(envelope: EventEnvelope<EventPayloadMap[Type]>): Promise<void>;
 }

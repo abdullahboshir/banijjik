@@ -7,17 +7,19 @@ import {
 import { newId } from "@banijjik/ids";
 import { runAsSystem, runWithRequestContext } from "../context/index.js";
 import { getActiveSession, models, sessionOption, withTransaction } from "../db/index.js";
+import { getLogger } from "../logger/index.js";
 import { runInOrganizationContext } from "../tenancy/index.js";
 import { systemClock } from "../time/index.js";
 import type { EventHandler, EventHandlerRegistry } from "./event-handler-registry.js";
 import type { EventJobData } from "./event-job.js";
+import type { ModuleEffectiveness } from "./module-effectiveness.js";
 import { OUTBOX_EVENT_MODEL_NAME, type OutboxEventDocument } from "./outbox-event.schema.js";
 import {
   PROCESSED_EVENT_MODEL_NAME,
   type ProcessedEventDocument,
 } from "./processed-event.schema.js";
 
-export type HandlerRunResult = "HANDLED" | "ALREADY_PROCESSED";
+export type HandlerRunResult = "HANDLED" | "ALREADY_PROCESSED" | "SKIPPED_MODULE_OFF";
 
 function toEnvelope(event: OutboxEventDocument): EventEnvelope<EventPayloadMap[EventType]> {
   return {
@@ -89,6 +91,29 @@ async function runOnce(
 }
 
 /**
+ * A handler of a module that is off for the event's organization is skipped and its job completes
+ * (no marker, no retry). User-level events have no organization, so they always run.
+ */
+async function isHandlerAllowed(
+  handler: EventHandler,
+  event: OutboxEventDocument,
+  effectiveness: ModuleEffectiveness,
+): Promise<boolean> {
+  if (event.organizationId === null) return true;
+  if (await effectiveness.isEffective(event.organizationId, handler.moduleKey)) return true;
+  getLogger().info(
+    {
+      event: "events.handler_skipped_module_off",
+      eventId: event.eventId,
+      handlerKey: handler.handlerKey,
+      moduleKey: handler.moduleKey,
+    },
+    "event handler skipped, its module is off",
+  );
+  return false;
+}
+
+/**
  * Runs one handler for one event with exactly-once effect (ADR-090): the marker and the
  * handler's own writes share one transaction, so they commit together or not at all. A failure
  * throws, and the job's retry policy decides what happens next.
@@ -96,9 +121,13 @@ async function runOnce(
 export async function runEventHandler(
   data: EventJobData,
   registry: EventHandlerRegistry,
+  effectiveness: ModuleEffectiveness,
 ): Promise<HandlerRunResult> {
   const handler = registry.find(data.handlerKey);
   if (handler === undefined) throw new Error(`no handler registered for ${data.handlerKey}`);
   const event = await loadEvent(data.eventId);
-  return runInEventContext(event, () => runOnce(handler, event));
+  return runInEventContext(event, async () => {
+    if (!(await isHandlerAllowed(handler, event, effectiveness))) return "SKIPPED_MODULE_OFF";
+    return runOnce(handler, event);
+  });
 }
