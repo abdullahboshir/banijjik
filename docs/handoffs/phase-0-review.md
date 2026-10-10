@@ -182,3 +182,28 @@ New from this review:
 - Suggested Phase 0 follow-up order: **B1 → J1 → J2** (all small, all in `apps/api` + catalogs, needed by 1.1), then **J5** (lint + kernel, needed by 1.3), **J3** (ui, needed by 1.7), and **J4** after the owner decides.
 - `docs/STATUS.md` still shows 0.2b–0.5b as `merged`. Per the card flow a phase is done only after this review passes; the lead should update the rows after the blocker and the 1.1-gating majors are fixed.
 - To run the API tests without the 750 MB download on this machine: `MONGOMS_SYSTEM_BINARY=<path to mongod 8.x> MONGOMS_SYSTEM_BINARY_VERSION_CHECK=false`, and `--env-mode=loose` when going through turbo.
+
+## Follow-up · 2026-10-11 · banijjik-7b (Opus, lead)
+All BLOCKER and MAJOR findings and the MINORs are closed by cards 0.6a (`docs/handoffs/0.6a.md`) and 0.6b (`docs/handoffs/0.6b.md`). Each handoff has a finding → commit → test table.
+
+Owner decisions taken on 2026-10-10:
+- sequences have two modes (ADR-085)
+- Noto Sans Bengali stays, with a 140 KB font budget
+
+Re-verified on the merged tree without cache:
+- lint (`--max-warnings 0`) clean
+- format clean
+- `turbo run build typecheck test --force` 23/23
+- no test files in any `dist`
+
+Not closed by code, for the owner:
+- the real-port Docker check of `infra/docker-compose.yml`
+- the first GitHub Actions run (it also runs the SIGTERM test and MongoDB 8.0.13)
+- P1 secret rotation
+
+Carried to later cards:
+- LCP 2.9 s simulated vs the 2.5 s target (6.4)
+- Lighthouse and the browser test in CI
+- a production index-sync task
+- branded ID types in kernel signatures (1.2)
+- bottom-nav menu keys (1.6)
