@@ -18,6 +18,7 @@ import {
   type StoredIdempotencyRecord,
 } from "./idempotency-store.js";
 import { computeRequestHash } from "./request-hash.js";
+import { bodyToStore } from "./replay-redaction.js";
 import { captureJsonResponse, type CapturedResponse } from "./response-capture.js";
 
 export interface IdempotencyOptions {
@@ -127,13 +128,17 @@ function isSuccess(status: number): boolean {
 function settleOutcome(
   store: IdempotencyStore,
   claim: ClaimRequest,
+  response: Response,
 ): (captured: CapturedResponse) => Promise<void> {
   return async ({ status, body }) => {
     if (!isSuccess(status)) {
       await store.release(claim.ref, claim.requestHash);
       return;
     }
-    await store.complete(claim.ref, { status, body: JSON.stringify(body ?? null) });
+    await store.complete(claim.ref, {
+      status,
+      body: JSON.stringify(bodyToStore(response, body) ?? null),
+    });
   };
 }
 
@@ -158,7 +163,7 @@ export function createIdempotencyMiddleware(options: IdempotencyOptions): Reques
       return;
     }
     captureJsonResponse(response, {
-      settle: settleOutcome(store, claim),
+      settle: settleOutcome(store, claim, response),
       fail: next,
       report: (error) => reportError(error, requestErrorContext(request)),
     });

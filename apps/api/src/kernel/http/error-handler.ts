@@ -1,7 +1,7 @@
 import type { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 import { DomainRuleError, ERROR_CODE, type ApiErrorEnvelope } from "@banijjik/contracts";
 import { findRequestContext } from "../context/index.js";
-import { getLogger } from "../logger/index.js";
+import { getLogger, maskSecretPathSegments } from "../logger/index.js";
 import { reportError } from "../observability/report-error.js";
 import { AppError, validationFailed } from "./app-error.js";
 import { readRequestId as readRequestIdHeader } from "./request-id.middleware.js";
@@ -101,7 +101,7 @@ function toInternalError(error: unknown, request: Request, response: Response): 
   reportError(error, {
     requestId: readRequestId(response),
     method: request.method,
-    path: request.path,
+    path: maskSecretPathSegments(request.path),
   });
   return new AppError({ code: ERROR_CODE.INTERNAL, messageKey: "errors.internal" });
 }

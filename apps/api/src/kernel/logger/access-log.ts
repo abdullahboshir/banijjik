@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import type { Logger } from "pino";
 import { pinoHttp } from "pino-http";
 import { readRequestId } from "../http/request-id.middleware.js";
+import { maskSecretPathSegments } from "./mask-secret-path.js";
 
 interface SerializedRequest {
   readonly method?: string;
@@ -13,9 +14,13 @@ interface SerializedResponse {
   readonly statusCode?: number;
 }
 
-/** The query string is dropped because it can carry tokens and emails (review finding B1). */
+/**
+ * The query string is dropped because it can carry tokens and emails (review finding B1); a secret
+ * in the path, the invitation token, is masked.
+ */
 function stripQueryString(url: string | undefined): string | undefined {
-  return url?.split("?")[0];
+  const path = url?.split("?")[0];
+  return path === undefined ? undefined : maskSecretPathSegments(path);
 }
 
 /** Headers carry cookies and tokens, so only the user agent is kept. */
