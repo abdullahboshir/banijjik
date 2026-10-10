@@ -1,0 +1,38 @@
+import { describe, expect, it } from "vitest";
+import { ERROR_CODE, ERROR_HTTP_STATUS } from "./error-code.js";
+
+// The table of 14-API.md section 3, written out so a drift in either place fails.
+const DOCUMENTED_STATUS: Record<string, number> = {
+  VALIDATION_ERROR: 400,
+  UNAUTHENTICATED: 401,
+  FORBIDDEN: 403,
+  MODULE_DISABLED: 403,
+  ORG_READ_ONLY: 403,
+  ORG_SUSPENDED: 403,
+  LOCATION_FORBIDDEN: 403,
+  APPROVAL_REQUIRED: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INVALID_TRANSITION: 409,
+  DUPLICATE: 409,
+  INSUFFICIENT_STOCK: 409,
+  SLOT_UNAVAILABLE: 409,
+  CAPACITY_FULL: 409,
+  IDEMPOTENCY_MISMATCH: 422,
+  LIMIT_REACHED: 422,
+  BUSINESS_RULE: 422,
+  RATE_LIMITED: 429,
+  INTERNAL: 500,
+};
+
+describe("ERROR_CODE", () => {
+  it("lists exactly the codes documented in 14-API.md section 3", () => {
+    expect(Object.keys(ERROR_CODE).sort()).toEqual(Object.keys(DOCUMENTED_STATUS).sort());
+  });
+
+  it("gives every code the documented HTTP status", () => {
+    for (const code of Object.values(ERROR_CODE)) {
+      expect(ERROR_HTTP_STATUS[code], code).toBe(DOCUMENTED_STATUS[code]);
+    }
+  });
+});

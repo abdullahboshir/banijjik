@@ -1,0 +1,51 @@
+import { defineEnum } from "../define-enum.js";
+
+/** Every error code the API can return (14-API.md section 3). Add a code here before using it. */
+export const ERROR_CODE = defineEnum([
+  "VALIDATION_ERROR",
+  "UNAUTHENTICATED",
+  "FORBIDDEN",
+  "MODULE_DISABLED",
+  "ORG_READ_ONLY",
+  "ORG_SUSPENDED",
+  "LOCATION_FORBIDDEN",
+  "APPROVAL_REQUIRED",
+  "NOT_FOUND",
+  "CONFLICT",
+  "INVALID_TRANSITION",
+  "DUPLICATE",
+  "INSUFFICIENT_STOCK",
+  "SLOT_UNAVAILABLE",
+  "CAPACITY_FULL",
+  "IDEMPOTENCY_MISMATCH",
+  "LIMIT_REACHED",
+  "BUSINESS_RULE",
+  "RATE_LIMITED",
+  "INTERNAL",
+]);
+
+export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
+
+/** The HTTP status of each error code. The one place that maps a code to a status. */
+export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = Object.freeze({
+  VALIDATION_ERROR: 400,
+  UNAUTHENTICATED: 401,
+  FORBIDDEN: 403,
+  MODULE_DISABLED: 403,
+  ORG_READ_ONLY: 403,
+  ORG_SUSPENDED: 403,
+  LOCATION_FORBIDDEN: 403,
+  APPROVAL_REQUIRED: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INVALID_TRANSITION: 409,
+  DUPLICATE: 409,
+  INSUFFICIENT_STOCK: 409,
+  SLOT_UNAVAILABLE: 409,
+  CAPACITY_FULL: 409,
+  IDEMPOTENCY_MISMATCH: 422,
+  LIMIT_REACHED: 422,
+  BUSINESS_RULE: 422,
+  RATE_LIMITED: 429,
+  INTERNAL: 500,
+});
