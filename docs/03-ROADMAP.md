@@ -118,6 +118,7 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 - Done: tests for the error envelope, validation error, and transaction rollback.
 
 **0.5 Frontend skeleton (`apps/admin`)**
+- Split into **0.5a** (`packages/ui` + `packages/i18n`) and **0.5b** (`apps/admin` shell); see `docs/plans/0.5a.md` and `docs/plans/0.5b.md`.
 - Do: Next.js App Router, Tailwind + shadcn in `packages/ui` with the tokens of `13-UX.md §8` (light + dark values, light only exposed) and the ★ components of `13 §9`, fonts per `13 §7`, `packages/i18n` (BN/EN + `terms` overrides), persistent server-rendered shell per `13 §3` (sidebar on desktop, 5-slot bottom nav + Quick create on mobile), TanStack Query provider, API client with cookie credentials.
 - Done: Lighthouse mobile ≥ 90 on an empty page. No `ssr:false` on the shell.
 

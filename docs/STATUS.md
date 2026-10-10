@@ -44,7 +44,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 0.3 API package, config & local infra | merged (2026-10-10, `5335ec5`, merge-checked by Opus; real-port Docker check pending, Docker daemon unresponsive) | branch `s/0.3-config-infra`; handoff `docs/handoffs/0.3.md`; default Mongo host port is now 27018 (owner decision); Docker daemon unresponsive, see handoff |
 | 0.4a HTTP kernel, logger, context, app entry | merged (2026-10-10, Opus review passed after 6 fixes) | SIGTERM spawn test skipped on Windows (see handoff) |
 | 0.4b DB kernel, transactions, sequences, runAsSystem | planned (2026-10-10, `docs/plans/0.4b.md`, Opus, T1) | after 0.4a |
-| 0.5a design system and i18n packages | planned (2026-10-10, `docs/plans/0.5a.md`, Opus) | parallel with 0.2b/0.4a/0.4b |
+| 0.5a design system and i18n packages | implemented (awaiting merge check) | branch `s/0.5a-ui-i18n`; handoff `docs/handoffs/0.5a.md`; parallel with 0.2b/0.4a/0.4b |
 | 0.5b admin app skeleton | planned (2026-10-10, `docs/plans/0.5b.md`, Opus) | after 0.5a |
 
 ## Phase 1
