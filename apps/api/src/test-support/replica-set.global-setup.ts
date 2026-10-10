@@ -9,9 +9,9 @@ declare module "vitest" {
   }
 }
 
-// Matches the `mongo:8` image of infra/docker-compose.yml. Pinned so every machine runs the same server.
+// Same minor version (8.0) as the `mongo:8.0` image of infra/docker-compose.yml. Pinned so every machine runs the same server.
 const MONGODB_BINARY_VERSION = "8.0.13";
-// On the repository drive, shared by every worktree, so the ~300 MB binary is downloaded once.
+// Inside this worktree's node_modules, so each worktree downloads the binary once (about 750 MB, see the README).
 const BINARY_DOWNLOAD_DIR = fileURLToPath(
   new URL("../../../../node_modules/.cache/mongodb-memory-server", import.meta.url),
 );

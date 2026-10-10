@@ -10,6 +10,7 @@ import {
   initializeModels,
   type DatabaseConnections,
 } from "./kernel/db/index.js";
+import { registerCrashHandlers } from "./kernel/lifecycle/crash-handlers.js";
 import { registerShutdown } from "./kernel/lifecycle/shutdown.js";
 import { createLogger, setRootLogger } from "./kernel/logger/index.js";
 import { registerSequenceModel } from "./kernel/sequence/index.js";
@@ -132,6 +133,7 @@ async function main(): Promise<void> {
   const logger = createLogger({ level: config.logLevel });
   // buildApp sets this too; the worker has no app, but its code still logs through getLogger().
   setRootLogger(logger);
+  registerCrashHandlers();
   const connections = await openDatabases(config, logger);
   if (connections === undefined) {
     process.exitCode = 1;

@@ -46,6 +46,14 @@ describe("CORS", () => {
     expect(response.headers["access-control-allow-credentials"]).toBe("true");
   });
 
+  it("lets browser code read X-Request-Id (M3)", async () => {
+    const { app } = createApp();
+
+    const response = await request(app).get("/health").set("Origin", ALLOWED_ORIGIN);
+
+    expect(response.headers["access-control-expose-headers"]).toBe("X-Request-Id");
+  });
+
   it("sends no allow header to an unknown origin", async () => {
     const { app } = createApp();
 

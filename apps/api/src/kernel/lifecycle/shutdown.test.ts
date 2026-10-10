@@ -24,7 +24,9 @@ describe("registerShutdown", () => {
 
   it("runs the tasks in order on SIGTERM and exits with code 0", async () => {
     const order: string[] = [];
+    const exit = vi.fn();
     removeListeners = registerShutdown({
+      exit,
       logger: createLogger({ level: "info", destination: logs.destination }),
       tasks: [
         { name: "first", run: async () => void order.push("first") },
@@ -37,6 +39,7 @@ describe("registerShutdown", () => {
 
     expect(order).toEqual(["first", "second"]);
     expect(process.exitCode).toBe(0);
+    expect(exit).toHaveBeenCalledExactlyOnceWith(0);
   });
 
   it("sets exit code 1 and calls onTimeout when a task exceeds the timeout", async () => {
@@ -76,7 +79,9 @@ describe("registerShutdown", () => {
 
   it("keeps running later tasks and exits 1 when a task fails", async () => {
     const laterTask = vi.fn(async () => undefined);
+    const exit = vi.fn();
     removeListeners = registerShutdown({
+      exit,
       logger: createLogger({ level: "info", destination: logs.destination }),
       tasks: [
         { name: "fails", run: () => Promise.reject(new Error("boom")) },
@@ -89,5 +94,6 @@ describe("registerShutdown", () => {
 
     expect(laterTask).toHaveBeenCalledOnce();
     expect(process.exitCode).toBe(1);
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1);
   });
 });

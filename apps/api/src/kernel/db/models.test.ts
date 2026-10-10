@@ -102,6 +102,30 @@ describe("global schema plugins", () => {
   });
 });
 
+describe("model registry sealing (J5c)", () => {
+  it("throws when a global plugin is added after the first model compiled", () => {
+    const lateRegistration = (): void =>
+      addGlobalSchemaPlugin((schema) => schema.add({ late: String }), {
+        database: DATABASE_KIND.TENANT,
+      });
+
+    expect(lateRegistration).toThrow(AppError);
+    expect(lateRegistration).toThrow(/errors.model_registry_sealed/);
+  });
+
+  it("throws when a new model is registered after the first model compiled", () => {
+    const lateModel = (): void =>
+      registerModel({
+        modelName: "LateModel",
+        collectionName: "late_models",
+        database: DATABASE_KIND.TENANT,
+        schema: new Schema({}),
+      });
+
+    expect(lateModel).toThrow(/errors.model_registry_sealed/);
+  });
+});
+
 describe("schema options", () => {
   it("rejects a field the schema does not declare (strict throw)", async () => {
     const Tenant = models({ organizationId: newId() }).get<ProbeDocument>(TENANT_PROBE);

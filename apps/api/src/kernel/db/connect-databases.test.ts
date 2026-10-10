@@ -1,23 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { parseMongoUrl } from "../../config/index.js";
 import { createTestConfig } from "../../test-support/test-config.js";
 import { createDatabaseTestConfig } from "../../test-support/test-databases.js";
 import { connectDatabases } from "./connect-databases.js";
 import { getDatabaseConnections } from "./database-connections.js";
-import { parseMongoUrl } from "./parse-mongo-url.js";
-
-describe("parseMongoUrl", () => {
-  it("returns the sorted lower-case hosts and the database name", () => {
-    const parts = parseMongoUrl(
-      "mongodb://user:secret@Host-B:27017,host-a:27018/orders?replicaSet=rs0",
-    );
-
-    expect(parts).toEqual({ hosts: ["host-a:27018", "host-b:27017"], databaseName: "orders" });
-  });
-
-  it("returns undefined for a URL without a database name", () => {
-    expect(parseMongoUrl("mongodb://localhost:27017")).toBeUndefined();
-  });
-});
 
 describe("connectDatabases", () => {
   it("rejects URLs on different hosts with the documented issue and no connection attempt", async () => {
@@ -30,6 +16,23 @@ describe("connectDatabases", () => {
       "DB_TENANT_SHARED_URL: INVALID (must be on the same cluster as DB_PLATFORM_URL until dedicated tenants exist)",
     );
   });
+
+  it.each([
+    ["credentials", "mongodb://user:one@db.example.com:27017/tenant"],
+    ["options", "mongodb://db.example.com:27017/tenant?replicaSet=other"],
+  ])(
+    "rejects a tenant URL whose %s differ from the platform URL (M16)",
+    async (_name, tenantUrl) => {
+      const config = createTestConfig({
+        DB_PLATFORM_URL: "mongodb://user:two@db.example.com:27017/platform",
+        DB_TENANT_SHARED_URL: tenantUrl,
+      });
+
+      await expect(connectDatabases(config)).rejects.toThrow(
+        "DB_TENANT_SHARED_URL: INVALID (must use the same credentials and options as DB_PLATFORM_URL until dedicated tenants exist)",
+      );
+    },
+  );
 
   it("rejects two URLs that name the same database", async () => {
     const config = createTestConfig({

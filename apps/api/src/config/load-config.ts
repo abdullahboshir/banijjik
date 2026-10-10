@@ -1,7 +1,6 @@
 import { ConfigError, type AppConfig, type ConfigIssue } from "./app-config.js";
 import {
   PRODUCTION_LOCAL_HOST_HINT,
-  PRODUCTION_WILDCARD_HINT,
   corsRule,
   isHttpOrigin,
   isLocalHostUrl,
@@ -13,6 +12,7 @@ import {
   roleRule,
   splitOrigins,
   tenantSharedUrlRule,
+  WILDCARD_ORIGIN_HINT,
   type FieldRule,
 } from "./env.schema.js";
 
@@ -41,16 +41,14 @@ function readField<Output>(env: Environment, rule: FieldRule<Output>): FieldResu
   return { value: parsed.data };
 }
 
-function readOrigins(env: Environment, isProduction: boolean): FieldResult<readonly string[]> {
+function readOrigins(env: Environment): FieldResult<readonly string[]> {
   const field = readField(env, corsRule);
   if (field.issue) return { issue: field.issue };
   if (field.value === undefined) return failure(corsRule, "MISSING");
   const origins = splitOrigins(field.value);
   if (origins.length === 0) return failure(corsRule, "MISSING");
-  if (isProduction && origins.includes("*")) {
-    return failure(corsRule, "INVALID", PRODUCTION_WILDCARD_HINT);
-  }
-  const allValid = origins.every((origin) => origin === "*" || isHttpOrigin(origin));
+  if (origins.includes("*")) return failure(corsRule, "INVALID", WILDCARD_ORIGIN_HINT);
+  const allValid = origins.every(isHttpOrigin);
   if (!allValid) return failure(corsRule, "INVALID");
   return { value: origins };
 }
@@ -81,7 +79,7 @@ export function loadConfig(env: Environment): AppConfig {
   const platformUrl = readUrl(env, platformUrlRule, isProduction);
   const tenantSharedUrl = readUrl(env, tenantSharedUrlRule, isProduction);
   const redisUrl = readUrl(env, redisUrlRule, isProduction);
-  const cors = readOrigins(env, isProduction);
+  const cors = readOrigins(env);
 
   const issues = collectIssues([
     nodeEnv,

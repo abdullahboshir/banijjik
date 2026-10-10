@@ -40,16 +40,18 @@ Startup (`main.ts`) connects before it listens or starts the worker and exits 1 
 
 ## Config keys
 
-| Key                    | Rule                                                                      | Default       |
-| ---------------------- | ------------------------------------------------------------------------- | ------------- |
-| `NODE_ENV`             | `development`, `test` or `production`                                     | `development` |
-| `PORT`                 | integer 1 to 65535                                                        | `4000`        |
-| `LOG_LEVEL`            | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                        | `info`        |
-| `ROLE`                 | `api` (HTTP server) or `worker` (no HTTP, waits for shutdown)             | `api`         |
-| `DB_PLATFORM_URL`      | `mongodb://` or `mongodb+srv://` URL with a database name                 | required      |
-| `DB_TENANT_SHARED_URL` | same                                                                      | required      |
-| `REDIS_URL`            | `redis://` or `rediss://` URL                                             | required      |
-| `CORS_ALLOWED_ORIGINS` | comma-separated absolute `http(s)` origins; `*` is rejected in production | required      |
+| Key                    | Rule                                                               | Default       |
+| ---------------------- | ------------------------------------------------------------------ | ------------- |
+| `NODE_ENV`             | `development`, `test` or `production`                              | `development` |
+| `PORT`                 | integer 1 to 65535                                                 | `4000`        |
+| `LOG_LEVEL`            | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                 | `info`        |
+| `ROLE`                 | `api` (HTTP server) or `worker` (no HTTP, waits for shutdown)      | `api`         |
+| `DB_PLATFORM_URL`      | `mongodb://` or `mongodb+srv://` URL with a database name          | required      |
+| `DB_TENANT_SHARED_URL` | same                                                               | required      |
+| `REDIS_URL`            | `redis://` or `rediss://` URL                                      | required      |
+| `CORS_ALLOWED_ORIGINS` | comma-separated absolute `http(s)` origins; `*` is always rejected | required      |
 
 In `production`, database and Redis URLs must not point to `localhost` or `127.0.0.1`.
+
+`DB_TENANT_SHARED_URL` must name the same hosts, the same credentials and the same query options as `DB_PLATFORM_URL`, and a different database. One cluster client serves both databases (one transaction spans them), so only the platform URL opens a connection; a tenant URL with another login would otherwise be ignored without a word. Dedicated tenants (Phase 8) lift this.
 Later cards add their own keys here and in `.env.example`.

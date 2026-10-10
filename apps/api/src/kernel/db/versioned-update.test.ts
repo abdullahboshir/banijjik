@@ -47,6 +47,24 @@ async function captureError(attempt: Promise<unknown>): Promise<AppError> {
 }
 
 describe("updateVersioned", () => {
+  it("rejects a value outside the schema enum instead of writing it (M5)", async () => {
+    const probeId = await createProbe("enum");
+    const model = models({}).get<ProbeDocument>(TENANT_PROBE);
+
+    await expect(
+      updateVersioned({
+        model,
+        filter: { probeId },
+        expectedVersion: 1,
+        update: { $set: { kind: "NOT_A_KIND" } },
+      }),
+    ).rejects.toThrow(/kind/);
+
+    const stored = await model.findOne({ probeId }).lean<ProbeDocument>();
+    expect(stored?.kind).toBeUndefined();
+    expect(stored?.version).toBe(1);
+  });
+
   it("applies the update, bumps the version and returns the document without _id", async () => {
     const probeId = await createProbe("before");
     const model = models({}).get<ProbeDocument>(TENANT_PROBE);

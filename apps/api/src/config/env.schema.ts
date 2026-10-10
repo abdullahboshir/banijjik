@@ -101,4 +101,5 @@ export const corsRule: FieldRule<string> = {
 };
 
 export const PRODUCTION_LOCAL_HOST_HINT = "must not point to localhost in production";
-export const PRODUCTION_WILDCARD_HINT = "must not contain a wildcard in production";
+/** Credentials mode cannot use a wildcard, and the cors package would not match it anyway. */
+export const WILDCARD_ORIGIN_HINT = "must not contain a wildcard; list explicit origins";

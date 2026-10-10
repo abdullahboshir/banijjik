@@ -12,7 +12,7 @@ export interface RegisterShutdownOptions {
   readonly timeoutMs?: number;
   /** Called before the forced exit when tasks hang, e.g. HTTP server closeAllConnections(). */
   readonly onTimeout?: () => void;
-  /** Injected so tests do not end the test runner. */
+  /** Ends the process once the tasks finish, and on a forced exit. Injected so tests do not end the test runner. */
   readonly exit?: (code: number) => void;
 }
 
@@ -45,8 +45,11 @@ export function registerShutdown(options: RegisterShutdownOptions): () => void {
     const allSucceeded = await runTasks(options);
     clearTimeout(timer);
     if (hasTimedOut) return;
-    process.exitCode = allSucceeded ? 0 : 1;
+    const exitCode = allSucceeded ? 0 : 1;
+    process.exitCode = exitCode;
     logger.info({ event: "shutdown.completed" }, "shutdown completed");
+    // An open handle (a queue or cache client added later) must not keep a finished shutdown alive.
+    exit(exitCode);
   };
 
   const handleSignal = (signal: NodeJS.Signals): void => {

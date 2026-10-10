@@ -1,16 +1,17 @@
 import mongoose, { type ConnectOptions } from "mongoose";
-import { ConfigError, type AppConfig } from "../../config/index.js";
+import { ConfigError, parseMongoUrl, type AppConfig } from "../../config/index.js";
 import {
   clearDatabaseConnections,
   setDatabaseConnections,
   type DatabaseConnections,
 } from "./database-connections.js";
-import { parseMongoUrl } from "./parse-mongo-url.js";
 
 const SERVER_SELECTION_TIMEOUT_MS = 10_000;
 const TENANT_URL_KEY = "DB_TENANT_SHARED_URL";
 const SAME_CLUSTER_HINT =
   "must be on the same cluster as DB_PLATFORM_URL until dedicated tenants exist";
+const SAME_CREDENTIALS_HINT =
+  "must use the same credentials and options as DB_PLATFORM_URL until dedicated tenants exist";
 const DIFFERENT_DATABASE_HINT = "must name a different database than DB_PLATFORM_URL";
 
 function invalidTenantUrl(hint: string): ConfigError {
@@ -26,6 +27,11 @@ function resolveTenantDatabaseName(config: AppConfig): string {
   }
   if (platform.hosts.join(",") !== tenant.hosts.join(",")) {
     throw invalidTenantUrl(SAME_CLUSTER_HINT);
+  }
+  // Only the platform URL opens a connection (one client for one transaction), so a different login
+  // or option in the tenant URL would be ignored without a word (review finding M16).
+  if (platform.credentials !== tenant.credentials || platform.options !== tenant.options) {
+    throw invalidTenantUrl(SAME_CREDENTIALS_HINT);
   }
   if (platform.databaseName === tenant.databaseName) {
     throw invalidTenantUrl(DIFFERENT_DATABASE_HINT);

@@ -7,6 +7,7 @@ import {
   createReadyHandler,
   errorHandler,
   notFoundHandler,
+  REQUEST_ID_HEADER,
   requestIdMiddleware,
   sendData,
 } from "./kernel/http/index.js";
@@ -37,7 +38,14 @@ export function buildApp(options: BuildAppOptions): Express {
   app.use(requestIdMiddleware);
   app.use(createAccessLog(logger));
   // CORS comes before the body parser so body errors (400) still carry the CORS headers.
-  app.use(cors({ origin: [...config.corsAllowedOrigins], credentials: true }));
+  app.use(
+    cors({
+      origin: [...config.corsAllowedOrigins],
+      credentials: true,
+      // Browser code reads the id from success responses to quote it to support.
+      exposedHeaders: [REQUEST_ID_HEADER],
+    }),
+  );
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
   app.get("/health", (_request, response) => {

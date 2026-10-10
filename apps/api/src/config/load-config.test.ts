@@ -112,16 +112,20 @@ describe("loadConfig", () => {
     expect(loadConfig(productionEnv).nodeEnv).toBe("production");
   });
 
-  it("rejects a wildcard origin in production but accepts it in development", () => {
-    const error = catchConfigError({ ...productionEnv, CORS_ALLOWED_ORIGINS: "*" });
+  it.each([productionEnv, validEnv])(
+    "rejects a wildcard origin in every environment (M3)",
+    (env) => {
+      const error = catchConfigError({ ...env, CORS_ALLOWED_ORIGINS: "*" });
 
-    expect(error.issues).toEqual([
-      expect.objectContaining({ key: "CORS_ALLOWED_ORIGINS", problem: "INVALID" }),
-    ]);
-    expect(loadConfig({ ...validEnv, CORS_ALLOWED_ORIGINS: "*" }).corsAllowedOrigins).toEqual([
-      "*",
-    ]);
-  });
+      expect(error.issues).toEqual([
+        {
+          key: "CORS_ALLOWED_ORIGINS",
+          problem: "INVALID",
+          hint: "must not contain a wildcard; list explicit origins",
+        },
+      ]);
+    },
+  );
 
   it("rejects localhost database and Redis URLs in production but accepts them in development", () => {
     const error = catchConfigError({

@@ -15,14 +15,19 @@ export const TENANT_PROBE = "TenantProbe";
 export interface ProbeDocument {
   probeId: string;
   label: string;
+  /** Limited to PROBE_KINDS by the schema, so tests can prove update validators run. */
+  kind?: string;
   version: number;
 }
+
+export const PROBE_KINDS = ["STANDARD", "SPECIAL"] as const;
 
 function buildProbeSchema(): Schema {
   return new Schema(
     {
       ...domainIdField("probeId"),
       label: { type: String, required: true },
+      kind: { type: String, enum: PROBE_KINDS },
       ...versionField,
       ...auditFields,
     },

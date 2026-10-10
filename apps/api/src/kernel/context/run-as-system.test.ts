@@ -2,7 +2,12 @@ import { SYSTEM_REASON } from "@banijjik/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { installTestLogger } from "../../test-support/test-databases.js";
 import type { LogCapture } from "../../test-support/log-capture.js";
-import { findRequestContext, runAsSystem, runWithRequestContext } from "./index.js";
+import {
+  findRequestContext,
+  getSystemReason,
+  runAsSystem,
+  runWithRequestContext,
+} from "./index.js";
 
 let logs: LogCapture;
 
@@ -15,14 +20,25 @@ function systemAccessLines(): Record<string, unknown>[] {
 }
 
 describe("runAsSystem", () => {
-  it("runs the work in a context that carries the reason and keeps the request data", async () => {
+  it("marks the reason for the work and keeps the request data unchanged", async () => {
     const outer = { requestId: "request-1", organizationId: "org-1" };
 
     const inside = await runWithRequestContext(outer, () =>
-      runAsSystem(SYSTEM_REASON.AUTH_LOOKUP, async () => findRequestContext()),
+      runAsSystem(SYSTEM_REASON.AUTH_LOOKUP, async () => ({
+        context: findRequestContext(),
+        reason: getSystemReason(),
+      })),
     );
 
-    expect(inside).toEqual({ ...outer, systemReason: "AUTH_LOOKUP" });
+    expect(inside).toEqual({ context: outer, reason: "AUTH_LOOKUP" });
+  });
+
+  it("cannot be faked by building a request context with a systemReason field (J5b)", async () => {
+    const forged = { requestId: "request-forged", systemReason: "SEED" };
+
+    const reason = await runWithRequestContext(forged, async () => getSystemReason());
+
+    expect(reason).toBeUndefined();
   });
 
   it("leaves the outer context unchanged afterwards", async () => {
@@ -31,7 +47,7 @@ describe("runAsSystem", () => {
     await runWithRequestContext(outer, async () => {
       await runAsSystem(SYSTEM_REASON.SEED, async () => undefined);
       expect(findRequestContext()).toEqual(outer);
-      expect(findRequestContext()).not.toHaveProperty("systemReason");
+      expect(getSystemReason()).toBeUndefined();
     });
   });
 
@@ -50,12 +66,15 @@ describe("runAsSystem", () => {
   });
 
   it("creates its own request id when called outside a request", async () => {
-    const inside = await runAsSystem(SYSTEM_REASON.SCHEDULED_JOB, async () => findRequestContext());
+    const inside = await runAsSystem(SYSTEM_REASON.SCHEDULED_JOB, async () => ({
+      context: findRequestContext(),
+      reason: getSystemReason(),
+    }));
 
-    expect(inside?.systemReason).toBe("SCHEDULED_JOB");
-    expect(inside?.requestId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(inside.reason).toBe("SCHEDULED_JOB");
+    expect(inside.context?.requestId).toMatch(/^[0-9a-f-]{36}$/);
     expect(findRequestContext()).toBeUndefined();
-    expect(systemAccessLines()[0]?.["requestId"]).toBe(inside?.requestId);
+    expect(systemAccessLines()[0]?.["requestId"]).toBe(inside.context?.requestId);
   });
 
   it("returns the value of the work and passes its error through", async () => {

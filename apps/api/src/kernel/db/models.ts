@@ -6,6 +6,7 @@ import {
   buildSchemaForCompile,
   findModelDefinition,
   listModelDefinitions,
+  sealModelRegistry,
   type ModelDefinition,
 } from "./model-registry.js";
 
@@ -36,6 +37,7 @@ function compileOnce<Document>(
   connection: Connection,
   definition: ModelDefinition,
 ): Model<Document> {
+  sealModelRegistry();
   const compiled =
     connection.models[definition.modelName] ??
     connection.model(

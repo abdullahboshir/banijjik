@@ -27,9 +27,10 @@ async function throwConflictOrNotFound<Document extends { version: number }>(
 }
 
 /**
- * Optimistic concurrency (ADR-014): the update applies only if the stored `version` is still
- * the one the caller read, and it bumps `version` by one. A stale version is a 409 CONFLICT
- * carrying `details.currentVersion`; no document at all is a 404.
+ * Optimistic concurrency (ADR-036, 05-CONVENTIONS "Common fields"): the update applies only if the
+ * stored `version` is still the one the caller read, and it bumps `version` by one. A stale version
+ * is a 409 CONFLICT carrying `details.currentVersion`; no document at all is a 404. Schema validators
+ * run on the update, so a value outside an enum is rejected like it would be on create.
  */
 export async function updateVersioned<Document extends { version: number }>(
   options: VersionedUpdateOptions<Document>,
@@ -43,7 +44,11 @@ export async function updateVersioned<Document extends { version: number }>(
   const update = { ...options.update, $inc: { ...options.update.$inc, version: 1 } };
 
   const updated = await options.model
-    .findOneAndUpdate(guardedFilter, update, { returnDocument: "after", ...sessionOption(session) })
+    .findOneAndUpdate(guardedFilter, update, {
+      returnDocument: "after",
+      runValidators: true,
+      ...sessionOption(session),
+    })
     .lean<Document>();
   if (updated === null) return throwConflictOrNotFound(options, session);
   return stripMongoInternals(updated);

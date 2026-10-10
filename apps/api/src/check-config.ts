@@ -1,12 +1,16 @@
 import { fileURLToPath } from "node:url";
-import { ConfigError, loadConfigFromProcess, type AppConfig } from "./config/index.js";
+import {
+  ConfigError,
+  loadConfigFromProcess,
+  parseMongoUrl,
+  type AppConfig,
+} from "./config/index.js";
 
 const ENV_FILE_PATH = fileURLToPath(new URL("../.env", import.meta.url));
 
-/** The database name is the last path segment of the URL; credentials and hosts are never printed. */
+/** The database name only; credentials and hosts are never printed. */
 function databaseName(url: string): string {
-  const withoutQuery = url.split("?")[0] ?? "";
-  return withoutQuery.split("/").pop() ?? "";
+  return parseMongoUrl(url)?.databaseName ?? "(unreadable)";
 }
 
 function describeSuccess(config: AppConfig): string {

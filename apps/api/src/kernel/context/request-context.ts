@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { ERROR_CODE, type SystemReason } from "@banijjik/contracts";
+import { ERROR_CODE } from "@banijjik/contracts";
 import { AppError } from "../http/app-error.js";
 
 export interface RequestContext {
@@ -7,8 +7,6 @@ export interface RequestContext {
   readonly userId?: string;
   readonly organizationId?: string;
   readonly allowedLocationIds?: readonly string[] | "ALL";
-  /** Set only by runAsSystem. The tenant plugin (card 1.3) skips its filter when this is present. */
-  readonly systemReason?: SystemReason;
 }
 
 const storage = new AsyncLocalStorage<RequestContext>();
