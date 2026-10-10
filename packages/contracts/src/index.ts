@@ -7,3 +7,5 @@ export { SEQUENCE_KEY } from "./system/sequence-key.js";
 export type { SequenceKey } from "./system/sequence-key.js";
 export { SYSTEM_REASON } from "./system/system-reason.js";
 export type { SystemReason } from "./system/system-reason.js";
+export { isErrorCode } from "./api/api-envelope.js";
+export type { ApiErrorBody, ApiErrorEnvelope, ApiSuccessEnvelope } from "./api/api-envelope.js";

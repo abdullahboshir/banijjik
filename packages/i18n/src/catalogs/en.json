@@ -2,6 +2,8 @@
   "nav.home": "Home",
   "nav.more": "More",
   "nav.quickCreate": "Create new",
+  "nav.primary": "Main navigation",
+  "nav.bottom": "Bottom navigation",
   "shell.search": "Search",
   "shell.notifications": "Notifications",
   "shell.account": "Account",
@@ -62,6 +64,7 @@
   "term.enrollment.singular": "Enrollment",
   "term.enrollment.plural": "Enrollments",
   "errors.network": "Could not reach the server. Check your connection and try again.",
+  "errors.invalid_response": "The server sent an unexpected response. Please try again in a moment.",
   "home.empty": "Nothing has been set up yet",
   "home.title": "Home"
 }

@@ -2,6 +2,8 @@
   "nav.home": "হোম",
   "nav.more": "আরও",
   "nav.quickCreate": "নতুন তৈরি করুন",
+  "nav.primary": "মূল নেভিগেশন",
+  "nav.bottom": "নিচের নেভিগেশন",
   "shell.search": "খুঁজুন",
   "shell.notifications": "বিজ্ঞপ্তি",
   "shell.account": "অ্যাকাউন্ট",
@@ -62,6 +64,7 @@
   "term.enrollment.singular": "এনরোলমেন্ট",
   "term.enrollment.plural": "এনরোলমেন্ট",
   "errors.network": "ইন্টারনেট সংযোগে সমস্যা হয়েছে। সংযোগ দেখে আবার চেষ্টা করুন।",
+  "errors.invalid_response": "সার্ভার থেকে সঠিক উত্তর পাওয়া যায়নি। একটু পরে আবার চেষ্টা করুন।",
   "home.empty": "এখনো কিছু চালু করা হয়নি",
   "home.title": "হোম"
 }

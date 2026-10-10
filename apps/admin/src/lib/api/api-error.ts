@@ -1,6 +1,8 @@
+import { ERROR_CODE, type ErrorCode } from "@banijjik/contracts";
+
 export interface ApiErrorFields {
   status: number;
-  code: string;
+  code: ErrorCode;
   messageKey: string;
   details?: Readonly<Record<string, unknown>> | undefined;
   requestId?: string | undefined;
@@ -9,7 +11,7 @@ export interface ApiErrorFields {
 /** A failed API call, built from the error envelope of 14-API.md section 2. */
 export class ApiError extends Error {
   readonly status: number;
-  readonly code: string;
+  readonly code: ErrorCode;
   readonly messageKey: string;
   readonly details: Readonly<Record<string, unknown>> | undefined;
   readonly requestId: string | undefined;
@@ -31,7 +33,7 @@ export const NETWORK_ERROR_STATUS = 0;
 export function networkError(): ApiError {
   return new ApiError({
     status: NETWORK_ERROR_STATUS,
-    code: "INTERNAL",
+    code: ERROR_CODE.INTERNAL,
     messageKey: "errors.network",
   });
 }

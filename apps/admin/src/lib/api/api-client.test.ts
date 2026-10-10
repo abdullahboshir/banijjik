@@ -77,6 +77,40 @@ describe("apiFetch", () => {
     });
   });
 
+  it("maps a code that is not in ERROR_CODE to INTERNAL", async () => {
+    stubFetch(
+      jsonResponse({ error: { code: "TEAPOT", messageKey: "errors.teapot", requestId: "r" } }, 418),
+    );
+    await expect(apiFetch("/things")).rejects.toMatchObject({
+      status: 418,
+      code: "INTERNAL",
+      messageKey: "errors.teapot",
+    });
+  });
+
+  it("throws errors.invalid_response for a 2xx with an empty body", async () => {
+    stubFetch(new Response("", { status: 200 }));
+    await expect(apiFetch("/things")).rejects.toMatchObject({
+      status: 200,
+      code: "INTERNAL",
+      messageKey: "errors.invalid_response",
+    });
+  });
+
+  it("throws errors.invalid_response for a 2xx whose JSON has no data property", async () => {
+    stubFetch(jsonResponse({ ok: true }));
+    await expect(apiFetch("/things")).rejects.toMatchObject({
+      messageKey: "errors.invalid_response",
+    });
+  });
+
+  it("resolves a 204 No Content to an undefined data", async () => {
+    stubFetch(new Response(null, { status: 204 }));
+    await expect(apiFetch<void>("/things/1", { method: "DELETE" })).resolves.toEqual({
+      data: undefined,
+    });
+  });
+
   it("maps a network failure to errors.network", async () => {
     stubFetch(new TypeError("Failed to fetch"));
     await expect(apiFetch("/things")).rejects.toMatchObject({

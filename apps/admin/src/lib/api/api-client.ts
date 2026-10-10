@@ -1,7 +1,14 @@
+import {
+  ERROR_CODE,
+  isErrorCode,
+  type ApiErrorBody,
+  type ApiSuccessEnvelope,
+} from "@banijjik/contracts";
 import { env } from "../../config/env";
 import { ApiError, networkError } from "./api-error";
 
 const API_PREFIX = "/api/v1";
+const NO_CONTENT_STATUS = 204;
 const IDEMPOTENCY_HEADER = "Idempotency-Key";
 
 export interface ApiRequestOptions {
@@ -11,19 +18,14 @@ export interface ApiRequestOptions {
   signal?: AbortSignal;
 }
 
-export interface ApiResult<Data, Meta = Record<string, unknown>> {
-  data: Data;
-  meta?: Meta;
-}
+/** What `apiFetch` resolves to; the same shape the API sends (14-API.md section 2). */
+export type ApiResult<Data, Meta = Readonly<Record<string, unknown>>> = ApiSuccessEnvelope<
+  Data,
+  Meta
+>;
 
-interface ErrorEnvelope {
-  error?: {
-    code?: string;
-    messageKey?: string;
-    details?: Record<string, unknown>;
-    requestId?: string;
-  };
-}
+/** Every field is optional here because the wire body is untrusted until it is checked. */
+type ReceivedErrorBody = Partial<Omit<ApiErrorBody, "code">> & { code?: unknown };
 
 function buildRequestInit(options: ApiRequestOptions): RequestInit {
   const headers: Record<string, string> = { Accept: "application/json" };
@@ -50,14 +52,26 @@ async function readJson(response: Response): Promise<unknown> {
 
 function toApiError(status: number, body: unknown): ApiError {
   // Safe: every field is optional and read defensively, so a body of any shape is handled.
-  const failure = (body as ErrorEnvelope | undefined)?.error;
+  const failure = (body as { error?: ReceivedErrorBody } | undefined)?.error;
   return new ApiError({
     status,
-    code: failure?.code ?? "INTERNAL",
+    code: isErrorCode(failure?.code) ? failure.code : ERROR_CODE.INTERNAL,
     messageKey: failure?.messageKey ?? "errors.internal",
     details: failure?.details,
     requestId: failure?.requestId,
   });
+}
+
+function invalidResponse(status: number): ApiError {
+  return new ApiError({
+    status,
+    code: ERROR_CODE.INTERNAL,
+    messageKey: "errors.invalid_response",
+  });
+}
+
+function hasData(body: unknown): boolean {
+  return typeof body === "object" && body !== null && "data" in body;
 }
 
 async function sendRequest(path: string, options: ApiRequestOptions): Promise<Response> {
@@ -70,14 +84,22 @@ async function sendRequest(path: string, options: ApiRequestOptions): Promise<Re
   }
 }
 
-/** Calls the API and unwraps the `{ data, meta }` envelope; any failure becomes an ApiError. */
-export async function apiFetch<Data, Meta = Record<string, unknown>>(
+/**
+ * Calls the API and unwraps the `{ data, meta }` envelope; any failure becomes an ApiError. A 2xx without
+ * `data` is a broken response, except 204 No Content, which resolves to `{ data: undefined }` (use `apiFetch<void>`).
+ */
+export async function apiFetch<Data, Meta = Readonly<Record<string, unknown>>>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<ApiResult<Data, Meta>> {
   const response = await sendRequest(path, options);
+  if (response.status === NO_CONTENT_STATUS) {
+    // Safe: only `apiFetch<void>` is meaningful for 204, and `undefined` is the value of `void`.
+    return { data: undefined } as ApiResult<Data, Meta>;
+  }
   const body = await readJson(response);
   if (!response.ok) throw toApiError(response.status, body);
+  if (!hasData(body)) throw invalidResponse(response.status);
   // Safe by contract: a 2xx response from this API is always the { data, meta } envelope (14 §2).
   return body as ApiResult<Data, Meta>;
 }
