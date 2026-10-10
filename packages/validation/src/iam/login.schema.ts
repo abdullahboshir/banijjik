@@ -7,3 +7,5 @@ export const loginRequestSchema = z.strictObject({
   identifier: loginIdentifierSchema,
   password: z.string().min(1).max(PASSWORD_INPUT_MAX_LENGTH),
 });
+
+export type LoginBody = z.output<typeof loginRequestSchema>;

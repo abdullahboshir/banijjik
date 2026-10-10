@@ -18,3 +18,5 @@ export const userRegisterRequestSchema = z.strictObject({
   password: z.string().max(PASSWORD_INPUT_MAX_LENGTH),
   preferredLocale: z.enum(PREFERRED_LOCALE).optional(),
 });
+
+export type UserRegisterBody = z.output<typeof userRegisterRequestSchema>;

@@ -9,3 +9,5 @@ export const meUpdateRequestSchema = z.strictObject({
   preferredLocale: z.enum(PREFERRED_LOCALE).optional(),
   version: z.number().int().min(1),
 });
+
+export type MeUpdateBody = z.output<typeof meUpdateRequestSchema>;
