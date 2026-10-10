@@ -1,14 +1,20 @@
-import { ORGANIZATION_EVENT_TYPE, PERMISSION_KEY, permissionDefinition } from "@banijjik/contracts";
+import {
+  MODULE_CLASS,
+  MODULE_KEY,
+  ORGANIZATION_EVENT_TYPE,
+  PERMISSION_KEY,
+  permissionDefinition,
+} from "@banijjik/contracts";
+import { defineModule } from "../../../kernel/modules/index.js";
 
 /**
- * The organization manifest in the shape of 10-MODULE-CATALOG section 2. `defineModule` and its
- * validation arrive with card 1.6; until then this is a plain object.
+ * The organization manifest in the shape of 10-MODULE-CATALOG section 2.
  */
-export const organizationManifest = {
-  key: "organization",
+export const organizationManifest = defineModule({
+  key: MODULE_KEY.ORGANIZATION,
   path: "core/organization",
-  moduleClass: "SYSTEM",
-  dependsOn: ["iam"],
+  moduleClass: MODULE_CLASS.SYSTEM,
+  dependsOn: [MODULE_KEY.IAM],
   providesKinds: [],
   requiresAnyKind: [],
   tenantCanDisable: false,
@@ -41,4 +47,4 @@ export const organizationManifest = {
   },
   limitKeys: [],
   sequenceKeys: ["MEMBER"],
-} as const;
+});

@@ -1,13 +1,17 @@
-import { IAM_EVENT_TYPE, PERMISSION_KEY, permissionDefinition } from "@banijjik/contracts";
+import {
+  IAM_EVENT_TYPE,
+  MODULE_CLASS,
+  MODULE_KEY,
+  PERMISSION_KEY,
+  permissionDefinition,
+} from "@banijjik/contracts";
+import { defineModule } from "../../../kernel/modules/index.js";
 
-/**
- * The iam manifest in the shape of 10-MODULE-CATALOG section 2. `defineModule` and its validation
- * arrive with card 1.6; until then this is a plain object. Settings are still empty.
- */
-export const iamManifest = {
-  key: "iam",
+/** The iam manifest in the shape of 10-MODULE-CATALOG section 2. Settings are still empty. */
+export const iamManifest = defineModule({
+  key: MODULE_KEY.IAM,
   path: "core/iam",
-  moduleClass: "SYSTEM",
+  moduleClass: MODULE_CLASS.SYSTEM,
   dependsOn: [],
   providesKinds: [],
   requiresAnyKind: [],
@@ -18,7 +22,7 @@ export const iamManifest = {
     permissionDefinition(PERMISSION_KEY.IAM_ROLE_UPDATE),
     permissionDefinition(PERMISSION_KEY.IAM_ROLE_ARCHIVE),
   ],
-  routes: { admin: ["/auth", "/me", "/roles"] },
+  routes: { admin: ["/auth", "/me", "/orgs/:organizationId/roles"] },
   menu: [],
   settingKeys: [],
   customFieldEntities: [],
@@ -35,4 +39,4 @@ export const iamManifest = {
   },
   limitKeys: [],
   sequenceKeys: [],
-} as const;
+});

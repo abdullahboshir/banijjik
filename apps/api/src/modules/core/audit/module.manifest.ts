@@ -1,20 +1,25 @@
-import { PERMISSION_KEY, permissionDefinition } from "@banijjik/contracts";
+import {
+  MODULE_CLASS,
+  MODULE_KEY,
+  PERMISSION_KEY,
+  permissionDefinition,
+} from "@banijjik/contracts";
+import { defineModule } from "../../../kernel/modules/index.js";
 
 /**
- * The audit manifest in the shape of 10-MODULE-CATALOG section 2. `defineModule` and its
- * validation arrive with card 1.6; until then this is a plain object. The `audit.retentionDays`
+ * The audit manifest in the shape of 10-MODULE-CATALOG section 2. The `audit.retentionDays`
  * setting arrives with the settings module (card 2.x).
  */
-export const auditManifest = {
-  key: "audit",
+export const auditManifest = defineModule({
+  key: MODULE_KEY.AUDIT,
   path: "core/audit",
-  moduleClass: "SYSTEM",
+  moduleClass: MODULE_CLASS.SYSTEM,
   dependsOn: [],
   providesKinds: [],
   requiresAnyKind: [],
   tenantCanDisable: false,
   permissions: [permissionDefinition(PERMISSION_KEY.AUDIT_LOG_READ, { isSensitive: true })],
-  routes: { admin: ["/audit-logs"] },
+  routes: { admin: ["/orgs/:organizationId/audit-logs"] },
   menu: [],
   settingKeys: [],
   customFieldEntities: [],
@@ -23,4 +28,4 @@ export const auditManifest = {
   events: { emits: [], consumes: [] },
   limitKeys: [],
   sequenceKeys: [],
-} as const;
+});
