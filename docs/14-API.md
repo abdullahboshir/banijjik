@@ -82,6 +82,7 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | `POST /auth/register` | public | | `UserRegisterRequest` (phone/email + password or OTP) |
 | `POST /auth/otp/send` · `POST /auth/otp/verify` | public | | `OtpSendRequest`, `OtpVerifyRequest` |
 | `POST /auth/login` · `POST /auth/logout` · `POST /auth/refresh` | public / session | | `LoginRequest` → sets cookies |
+| `POST /auth/logout-all` | user | | revokes every session of the user, clears cookies, `204` (card 1.1) |
 | `POST /auth/password/forgot` · `POST /auth/password/reset` | public | | token from email/SMS (random secret) |
 | `GET /me` · `PATCH /me` | user | | `MeResponse` (user, preferredLocale) |
 | `GET /me/orgs` | user | | `MyOrganizationSummary[]` (id, slug, name, role keys, status) |

@@ -44,16 +44,22 @@ Startup (`main.ts`) connects before it listens or starts the worker and exits 1 
 
 ## Config keys
 
-| Key                    | Rule                                                               | Default       |
-| ---------------------- | ------------------------------------------------------------------ | ------------- |
-| `NODE_ENV`             | `development`, `test` or `production`                              | `development` |
-| `PORT`                 | integer 1 to 65535                                                 | `4000`        |
-| `LOG_LEVEL`            | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                 | `info`        |
-| `ROLE`                 | `api` (HTTP server) or `worker` (no HTTP, waits for shutdown)      | `api`         |
-| `DB_PLATFORM_URL`      | `mongodb://` or `mongodb+srv://` URL with a database name          | required      |
-| `DB_TENANT_SHARED_URL` | same                                                               | required      |
-| `REDIS_URL`            | `redis://` or `rediss://` URL                                      | required      |
-| `CORS_ALLOWED_ORIGINS` | comma-separated absolute `http(s)` origins; `*` is always rejected | required      |
+| Key                                               | Rule                                                                    | Default       |
+| ------------------------------------------------- | ----------------------------------------------------------------------- | ------------- |
+| `NODE_ENV`                                        | `development`, `test` or `production`                                   | `development` |
+| `PORT`                                            | integer 1 to 65535                                                      | `4000`        |
+| `LOG_LEVEL`                                       | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                      | `info`        |
+| `ROLE`                                            | `api` (HTTP server) or `worker` (no HTTP, waits for shutdown)           | `api`         |
+| `DB_PLATFORM_URL`                                 | `mongodb://` or `mongodb+srv://` URL with a database name               | required      |
+| `DB_TENANT_SHARED_URL`                            | same                                                                    | required      |
+| `REDIS_URL`                                       | `redis://` or `rediss://` URL                                           | required      |
+| `CORS_ALLOWED_ORIGINS`                            | comma-separated absolute `http(s)` origins; `*` is always rejected      | required      |
+| `AUTH_ACCESS_TOKEN_SECRET`                        | random string, at least 32 characters; signs access tokens              | required      |
+| `AUTH_ACCESS_TOKEN_TTL_SECONDS`                   | access token lifetime                                                   | `900`         |
+| `AUTH_REFRESH_TOKEN_TTL_DAYS`                     | sliding refresh session lifetime                                        | `30`          |
+| `AUTH_SESSION_FAMILY_MAX_DAYS`                    | hard limit of one login family                                          | `90`          |
+| `COOKIE_DOMAIN`                                   | optional cookie domain, e.g. `.example.com`                             | unset         |
+| `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD` | both or neither; used by `npm run seed:platform-admin -w @banijjik/api` | unset         |
 
 In `production`, database and Redis URLs must not point to `localhost` or `127.0.0.1`.
 
