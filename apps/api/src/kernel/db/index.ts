@@ -3,7 +3,7 @@ export { getDatabaseConnections } from "./database-connections.js";
 export type { DatabaseConnections } from "./database-connections.js";
 export { stripMongoInternals } from "./mapper.js";
 export { addGlobalSchemaPlugin, registerModel } from "./model-registry.js";
-export type { ModelDefinition, SchemaPlugin } from "./model-registry.js";
+export type { GlobalPluginFilter, ModelDefinition, SchemaPlugin } from "./model-registry.js";
 export { initializeModels, models } from "./models.js";
 export type { ModelAccessor, ModelContext } from "./models.js";
 export { isDatabaseReady } from "./ready.js";
@@ -20,3 +20,9 @@ export { updateVersioned } from "./versioned-update.js";
 export type { VersionedUpdateOptions } from "./versioned-update.js";
 export { sessionOption } from "./session-option.js";
 export { createCloseDatabasesTask } from "./close-databases-task.js";
+export type {
+  MongooseAggregate,
+  MongooseQuery,
+  MongooseSchema,
+  MongooseSchemaOptions,
+} from "./mongoose-types.js";

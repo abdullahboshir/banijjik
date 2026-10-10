@@ -1,19 +1,32 @@
-import { ERROR_CODE, type DatabaseKind } from "@banijjik/contracts";
+import { ERROR_CODE, type DatabaseKind, type ModelTenancy } from "@banijjik/contracts";
 import type { Schema } from "mongoose";
 import { AppError } from "../http/app-error.js";
+import { applyTenancyPlugins } from "../tenancy/apply-tenancy-plugins.js";
+import { assertTenancyDefinition } from "./model-tenancy-checks.js";
 
 export interface ModelDefinition {
   readonly modelName: string;
   readonly collectionName: string;
   readonly database: DatabaseKind;
   readonly schema: Schema;
+  /** Required, no default: see MODEL_TENANCY (ADR-087). */
+  readonly tenancy: ModelTenancy;
+  /** The location path of an ORGANIZATION_AND_LOCATION model. Defaults to "locationId". */
+  readonly locationField?: string;
 }
 
-export type SchemaPlugin = (schema: Schema) => void;
+export type SchemaPlugin = (schema: Schema, definition: ModelDefinition) => void;
+
+export interface GlobalPluginFilter {
+  /** Omitted means every database. */
+  readonly database?: DatabaseKind;
+  /** Omitted means every tenancy. */
+  readonly tenancy?: readonly ModelTenancy[];
+}
 
 interface GlobalSchemaPlugin {
   readonly plugin: SchemaPlugin;
-  readonly database: DatabaseKind;
+  readonly filter: GlobalPluginFilter;
 }
 
 const definitions = new Map<string, ModelDefinition>();
@@ -22,7 +35,7 @@ let isSealed = false;
 
 /**
  * Called by the first model compile. A model compiled before a global plugin was added would
- * silently run without it (the tenant filter, for one), so late changes throw instead (finding J5c).
+ * silently run without it, so late changes throw instead (finding J5c).
  */
 export function sealModelRegistry(): void {
   isSealed = true;
@@ -43,20 +56,24 @@ export function registerModel(definition: ModelDefinition): void {
     });
   }
   assertNotSealed();
+  assertTenancyDefinition(definition);
   definitions.set(definition.modelName, definition);
 }
 
 /**
- * Plugins added here are applied to every schema of that database before it is compiled. The
- * tenant plugin (card 1.3) attaches here, so no module can forget it. Add plugins at startup,
+ * Plugins added here are applied to every schema that matches the filter before it is compiled.
+ * The tenant and location plugins do not go through here: buildSchemaForCompile always applies
+ * them by tenancy, so no startup order can leave a model unfiltered. Add plugins at startup,
  * before the first models(ctx).get(): after it the registry is sealed and this throws.
  */
-export function addGlobalSchemaPlugin(
-  plugin: SchemaPlugin,
-  options: { database: DatabaseKind },
-): void {
+export function addGlobalSchemaPlugin(plugin: SchemaPlugin, filter: GlobalPluginFilter): void {
   assertNotSealed();
-  globalPlugins.push({ plugin, database: options.database });
+  globalPlugins.push({ plugin, filter });
+}
+
+function matchesFilter(filter: GlobalPluginFilter, definition: ModelDefinition): boolean {
+  if (filter.database !== undefined && filter.database !== definition.database) return false;
+  return filter.tenancy === undefined || filter.tenancy.includes(definition.tenancy);
 }
 
 export function findModelDefinition(modelName: string): ModelDefinition | undefined {
@@ -70,8 +87,9 @@ export function listModelDefinitions(): readonly ModelDefinition[] {
 /** A clone, so the registered schema stays untouched and plugins are never applied twice to one object. */
 export function buildSchemaForCompile(definition: ModelDefinition): Schema {
   const schema = definition.schema.clone();
+  applyTenancyPlugins(schema, definition);
   for (const entry of globalPlugins) {
-    if (entry.database === definition.database) entry.plugin(schema);
+    if (matchesFilter(entry.filter, definition)) entry.plugin(schema, definition);
   }
   return schema;
 }

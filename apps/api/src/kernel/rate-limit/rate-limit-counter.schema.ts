@@ -1,4 +1,4 @@
-import { DATABASE_KIND } from "@banijjik/contracts";
+import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { Schema } from "mongoose";
 import { auditFields, domainIdField, registerModel, SCHEMA_OPTIONS } from "../db/index.js";
 
@@ -45,5 +45,6 @@ export function registerRateLimitModel(): void {
     collectionName: RATE_LIMIT_COUNTER_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: rateLimitCounterSchema,
+    tenancy: MODEL_TENANCY.NONE,
   });
 }

@@ -77,3 +77,5 @@ export type {
 } from "./organization/organization-contracts.js";
 export { DomainRuleError } from "./errors/domain-rule-error.js";
 export type { DomainRuleErrorOptions } from "./errors/domain-rule-error.js";
+export { MODEL_TENANCY } from "./tenancy/model-tenancy.js";
+export type { ModelTenancy } from "./tenancy/model-tenancy.js";

@@ -43,7 +43,7 @@ const assignmentSchema = new Schema<AssignmentDocument>(
 export const memberSchema = new Schema<MemberDocument>(
   {
     ...domainIdField("memberId"),
-    organizationId: { type: String, required: true },
+    organizationId: { type: String, required: true, immutable: true },
     userId: { type: String, required: true },
     status: { type: String, required: true, enum: Object.values(MEMBER_STATUS) },
     assignments: { type: [assignmentSchema], default: [] },

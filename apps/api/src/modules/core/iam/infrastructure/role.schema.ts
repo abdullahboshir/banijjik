@@ -26,7 +26,7 @@ export interface RoleDocument {
 export const roleSchema = new Schema<RoleDocument>(
   {
     ...domainIdField("roleId"),
-    organizationId: { type: String, required: true },
+    organizationId: { type: String, required: true, immutable: true },
     roleKey: { type: String, required: true },
     nameKey: { type: String, required: true },
     isSystem: { type: Boolean, required: true },

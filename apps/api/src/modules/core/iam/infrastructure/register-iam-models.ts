@@ -1,4 +1,4 @@
-import { DATABASE_KIND } from "@banijjik/contracts";
+import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { registerModel } from "../../../../kernel/db/index.js";
 import {
   PLATFORM_OPERATOR_COLLECTION_NAME,
@@ -20,23 +20,27 @@ export function registerIamModels(): void {
     collectionName: USER_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: userSchema,
+    tenancy: MODEL_TENANCY.NONE,
   });
   registerModel({
     modelName: REFRESH_SESSION_MODEL_NAME,
     collectionName: REFRESH_SESSION_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: refreshSessionSchema,
+    tenancy: MODEL_TENANCY.NONE,
   });
   registerModel({
     modelName: PLATFORM_OPERATOR_MODEL_NAME,
     collectionName: PLATFORM_OPERATOR_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: platformOperatorSchema,
+    tenancy: MODEL_TENANCY.NONE,
   });
   registerModel({
     modelName: ROLE_MODEL_NAME,
     collectionName: ROLE_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: roleSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

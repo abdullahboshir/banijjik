@@ -1,4 +1,4 @@
-import { DATABASE_KIND, SEQUENCE_KEY, type SequenceKey } from "@banijjik/contracts";
+import { DATABASE_KIND, MODEL_TENANCY, SEQUENCE_KEY, type SequenceKey } from "@banijjik/contracts";
 import { Schema } from "mongoose";
 import { auditFields, domainIdField, registerModel, SCHEMA_OPTIONS } from "../db/index.js";
 
@@ -20,7 +20,7 @@ export interface SequenceDocument {
 const sequenceSchema = new Schema<SequenceDocument>(
   {
     ...domainIdField("sequenceId"),
-    organizationId: { type: String, required: true },
+    organizationId: { type: String, required: true, immutable: true },
     sequenceKey: { type: String, required: true, enum: Object.values(SEQUENCE_KEY) },
     nextValue: { type: Number, required: true, default: 0 },
     ...auditFields,
@@ -39,5 +39,6 @@ export function registerSequenceModel(): void {
     collectionName: SEQUENCE_COLLECTION_NAME,
     database: DATABASE_KIND.TENANT,
     schema: sequenceSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

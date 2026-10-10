@@ -48,7 +48,7 @@ const addressSchema = new Schema<PostalAddress>(
 export const locationSchema = new Schema<LocationDocument>(
   {
     ...domainIdField("locationId"),
-    organizationId: { type: String, required: true },
+    organizationId: { type: String, required: true, immutable: true },
     name: { type: String, required: true },
     locationType: { type: String, required: true, enum: Object.values(LOCATION_TYPE) },
     isDefault: { type: Boolean, required: true },
