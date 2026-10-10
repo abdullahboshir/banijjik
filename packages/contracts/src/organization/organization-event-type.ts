@@ -1,4 +1,4 @@
-/** Events of the organization module (`<module>.<entity>.<pastTenseVerb>`). Emitted from card 1.5 on. */
+/** Events of the organization module (`<module>.<entity>.<pastTenseVerb>`). Emitted since card 1.5b. */
 export const ORGANIZATION_EVENT_TYPE = Object.freeze({
   ORGANIZATION_CREATED: "organization.organization.created",
   LOCATION_CREATED: "organization.location.created",

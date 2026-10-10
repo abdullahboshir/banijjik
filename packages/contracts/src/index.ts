@@ -126,3 +126,16 @@ export type {
 export { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "./audit/audit-action.js";
 export type { AuditAction, AuditEntityType } from "./audit/audit-action.js";
 export type { AuditChanges, AuditLogSummary, AuditValue } from "./audit/audit-contracts.js";
+export { EVENT_TYPE } from "./events/event-type.js";
+export type { EventType } from "./events/event-type.js";
+export type { EventEnvelope } from "./events/event-envelope.js";
+export type {
+  EventPayloadMap,
+  LocationCreatedPayload,
+  MemberJoinedPayload,
+  OrganizationCreatedPayload,
+  RolePayload,
+  UserRegisteredPayload,
+} from "./events/event-payloads.js";
+export { OUTBOX_STATUS } from "./events/outbox-status.js";
+export type { OutboxStatus } from "./events/outbox-status.js";
