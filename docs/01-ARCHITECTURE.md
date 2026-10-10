@@ -18,7 +18,9 @@ banijjik/
 │   ├── validation/   Zod schemas (+ runtime custom-field schema builder)
 │   ├── i18n/         BN/EN message catalogs, keys only in code
 │   ├── ui/           shared React components (shadcn-based), created in Phase 0.5
-│   └── config/       shared tsconfig / eslint presets
+│   └── config/       shared tsconfig presets (the ESLint config is `eslint.config.mjs` + `eslint/*.mjs` at the root)
+├── tools/            repo tooling, e.g. `lint-tests/` (fixtures that prove each custom lint rule)
+├── scripts/          git and agent hooks (`scripts/hooks/`)
 ├── infra/            docker-compose (mongo replica set, redis), deploy files
 └── docs/             00-VISION, 01-ARCHITECTURE, 02-FEATURES, 03-ROADMAP, 04-DECISIONS, 05-CONVENTIONS, STATUS
 ```
@@ -41,6 +43,8 @@ apps/api/src/
 │   ├── sequence/           per-org atomic document numbers (INV-…, ORD-…)
 │   ├── events/             in-process event bus + outbox + BullMQ dispatch
 │   ├── queue/  cache/  logger/  i18n/
+│   ├── observability/      reportError (central error capture)
+│   ├── lifecycle/          registerShutdown (ordered shutdown tasks)
 ├── modules/
 │   ├── platform/           industry, package, entitlement, saas-billing, tenant-admin, ai
 │   ├── core/               iam, organization (org, location, member), custom-field, settings, audit, notification, file
@@ -49,7 +53,7 @@ apps/api/src/
 │   ├── capability/         academic, clinical, kitchen-display, …                          (Phase 7)
 │   ├── integration/        courier, sms, payment-gateway (third-party providers)            (Phase 5)
 │   └── automation/         workflow, risk                                                   (Phase 5)
-└── routes/v1.ts            the ONLY place that mounts module routers and global middleware
+└── routes/v1.ts            the ONLY place that mounts module routers and auth/tenant/permission middleware (transport middleware is in app.ts)
 ```
 Full module list, classes (PLATFORM / SYSTEM / CORE / OPTIONAL) and manifests: `10-MODULE-CATALOG.md`.
 
@@ -76,7 +80,7 @@ requestId → logger → rateLimit → authenticate (cookie) → tenantContext (
 Public routes (`/public/*`, storefront, webhooks) use their own small pipelines: webhook signature verification, slug → org resolution.
 
 ## 4. Tenancy & location
-- Session is per user. The active org comes from the URL `/[org]` (validated against memberships, cached). One login covers all of a user's organizations (ADR-022).
+- Session is per user. The active org comes from the URL `/[orgSlug]` (validated against memberships, cached). One login covers all of a user's organizations (ADR-022).
 - Models are obtained via `models(ctx)` so a dedicated-DB tenant can be added later without touching business code (ADR-023, `06-AUTOMATION-AND-ACCOUNTS.md §3`).
 - `organizationId` on every tenant-owned document. A Mongoose plugin injects it into every query and write from the request context and **throws** when the context is missing. Cross-tenant jobs must opt out explicitly via `runAsSystem()`.
 - Location-scoped collections also get `locationId`. Queries are filtered to `allowedLocationIds` (ALL for owners). Writes are rejected when the location is outside the user's assignments.
@@ -109,7 +113,7 @@ Tenant (org) overrides → Location overrides (settings only)
 ## 7. Frontend
 Full UX rules, screen patterns, tokens and components: `13-UX.md`.
 
-- One route tree per app, for example `apps/admin/app/[org]/(app)/sales/orders`. The layout is persistent and server-rendered. Location is `?location=`.
+- One route tree per app, for example `apps/admin/app/[orgSlug]/(app)/sales/orders`. The layout is persistent and server-rendered. Location is `?location=`.
 - The menu comes from the API's resolved config (entitlement × permission), fetched once per session.
 - TanStack Query cache + hover prefetch + optimistic updates. Lists are paginated (max 100) and virtualized when long.
 - Mobile-first: on small screens tables become cards, filters move to a bottom sheet, navigation moves to a bottom nav, touch targets are at least 44 px.

@@ -54,7 +54,7 @@ Code is written for the next human reader first and the compiler second. If a re
 
 **Types**
 - Branded types in `@banijjik/ids` (`type OfferingId = Brand<string, "OfferingId">`) so a `contactId` cannot be passed where an `offeringId` is expected.
-- Zod `uuidV7()` validator for every ID in request schemas.
+- Zod `uuidV7Schema` (`@banijjik/validation`) for every ID in request schemas.
 
 **Mongo `_id` (the hybrid part)**
 - `_id` stays Mongo's internal `ObjectId`, used only for Mongo's own needs: the default clustered order, internal tooling, and the cursor tiebreak where a repository needs it.
@@ -107,9 +107,8 @@ Code is written for the next human reader first and the compiler second. If a re
 ## Contracts (single source of truth)
 Constant pattern in `packages/contracts`:
 ```ts
-export const ORDER_STATUS_ENUM = ["DRAFT", "CONFIRMED", "SHIPPED"] as const;
-export type OrderStatus = (typeof ORDER_STATUS_ENUM)[number];
-export const ORDER_STATUS = Object.fromEntries(ORDER_STATUS_ENUM.map(v => [v, v])) as { [K in OrderStatus]: K };
+export const ORDER_STATUS = defineEnum(["DRAFT", "CONFIRMED", "SHIPPED"]);
+export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 ```
 New enum, permission key, module key, error code or event name: add it to contracts first, then use it.
 

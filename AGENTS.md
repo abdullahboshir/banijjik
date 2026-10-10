@@ -55,11 +55,11 @@ Each card has a tier in `docs/03-ROADMAP.md` (T1 = risky core, T2 = standard, T3
 - Mutable aggregates carry `version` (optimistic concurrency). Audit fields `createdAt/updatedAt/createdByUserId/updatedByUserId` on every tenant document. Phones are stored as E.164.
 - Tenant filtering is skipped only via `runAsSystem(reason, fn)` with an enum reason. Never inside module repositories, use cases or controllers.
 - No empty `catch`, no `console.*`. Use the logger and the central error capture.
-- Global middleware is mounted once, in `routes/v1.ts`. Module routers never re-mount `authenticate`/tenant middleware.
+- Transport middleware (request id, access log, CORS, body parser) is mounted once in `app.ts`. Auth, tenant, entitlement and permission middleware are mounted once in `routes/v1.ts`. Module routers never re-mount them.
 - No empty folders, packages or placeholder files. Add a new dependency, package or app only when the card requires it.
 
 **Tenancy & security**
-- Every tenant-owned model uses the tenant plugin. Never accept `organizationId` from the request body or query. The active org comes from the URL path `/[org]` and is validated against the user's memberships (ADR-022). Business code gets models through the kernel `models(ctx)` accessor, never by direct import (ADR-023).
+- Every tenant-owned model uses the tenant plugin. Never accept `organizationId` from the request body or query. The active org comes from the URL path `/[orgSlug]` and is validated against the user's memberships (ADR-022). Business code gets models through the kernel `models(ctx)` accessor, never by direct import (ADR-023).
 - Location-scoped writes validate `locationId` against the user's assignments.
 - Secrets only via validated config. Never commit `.env`. Never log tokens, passwords or credentials.
 - Auth uses httpOnly cookies. No tokens in localStorage. No `ssr:false` on app shells (ADR-010).

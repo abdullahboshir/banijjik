@@ -15,8 +15,9 @@ Design tokens, the foundation components of `docs/13-UX.md` section 9, and the o
 Shell components (`Sidebar`, `BottomNav`, `QuickCreateSheet`) render links through `useLinkComponent()`. The default is a plain `<a>`. An app wraps its root once so navigation stays client-side:
 
 ```tsx
-import Link from "next/link";
-<LinkComponentProvider component={Link}>{children}</LinkComponentProvider>;
+// Next's Link does not typecheck under exactOptionalPropertyTypes; wrap it once (see ShellLink in apps/admin).
+import { ShellLink } from "./shell-link";
+<LinkComponentProvider component={ShellLink}>{children}</LinkComponentProvider>;
 ```
 
 Any component that renders an `href` must use `useLinkComponent()`, never a bare `<a>`. The component receives `href`, `className`, `children`, `aria-current` and `onClick`.

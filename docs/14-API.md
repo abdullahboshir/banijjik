@@ -72,6 +72,7 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | 422 | `BUSINESS_RULE` | a named domain rule failed; `details.ruleKey` (e.g. `RETURN_WINDOW_EXPIRED`) |
 | 429 | `RATE_LIMITED` | |
 | 500 | `INTERNAL` | unexpected; `requestId` for support |
+| 503 | `INTERNAL` | only `GET /ready` when the database does not answer (`errors.not_ready`); the one deliberate exception to "`INTERNAL` is 500" |
 
 ## 4. Auth, account and org entry
 
