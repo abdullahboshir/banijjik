@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { ERROR_CODE } from "@banijjik/contracts";
+import { ERROR_CODE, type PlatformRole } from "@banijjik/contracts";
 import { AppError } from "../http/app-error.js";
 
 export interface RequestContext {
@@ -12,6 +12,9 @@ export interface RequestContext {
   /** Organization.configVersion, read fresh on every tenant request; keys the resolved-config cache. */
   readonly configVersion?: number;
   readonly allowedLocationIds?: readonly string[] | "ALL";
+  /** Set by authenticatePlatform() on /platform routes only; never together with a tenant context. */
+  readonly platformOperatorId?: string;
+  readonly platformRoles?: readonly PlatformRole[];
 }
 
 const storage = new AsyncLocalStorage<RequestContext>();
