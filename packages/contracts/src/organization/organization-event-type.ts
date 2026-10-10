@@ -12,6 +12,8 @@ export const ORGANIZATION_EVENT_TYPE = Object.freeze({
   MEMBER_REACTIVATED: "organization.member.reactivated",
   MEMBER_REMOVED: "organization.member.removed",
   INVITATION_REVOKED: "organization.invitation.revoked",
+  ORGANIZATION_SUSPENDED: "organization.organization.suspended",
+  ORGANIZATION_REACTIVATED: "organization.organization.reactivated",
 } as const);
 
 export type OrganizationEventType =

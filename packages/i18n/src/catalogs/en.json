@@ -162,5 +162,12 @@
   "errors.owner_is_protected": "The business owner cannot be changed, suspended or removed here.",
   "errors.cannot_change_self": "You cannot change your own access.",
   "errors.role_not_grantable": "You cannot give this role. It is the owner role, archived, or has permissions you do not have.",
-  "errors.invitation_identifier_mismatch": "This invitation was sent to a different phone number or email."
+  "errors.invitation_identifier_mismatch": "This invitation was sent to a different phone number or email.",
+  "errors.package_in_use": "This package is used by a running subscription and cannot be archived.",
+  "errors.package_not_closed": "A module of this package needs another module that the package does not contain.",
+  "errors.module_not_registered": "This module is not available in the product yet.",
+  "errors.module_class_fixed": "This module is always on or platform-only and cannot be granted or revoked.",
+  "errors.trial_not_active": "The trial can be extended only while the subscription is in its trial.",
+  "errors.package_kind_mismatch": "The base package must be a base package and the add-ons must be add-ons, none of them archived.",
+  "errors.package_archived": "An archived package cannot be changed."
 }

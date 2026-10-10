@@ -136,6 +136,7 @@ export type {
   InvitationPayload,
   OrganizationCreatedPayload,
   OrganizationRenamedPayload,
+  OrganizationStatusPayload,
   RolePayload,
   UserRegisteredPayload,
 } from "./events/event-payloads.js";
@@ -197,3 +198,35 @@ export type {
   VersionedTransitionRequest,
 } from "./organization/organization-api-contracts.js";
 export { ORGANIZATION_API_MESSAGE_KEYS } from "./organization/organization-api-message-keys.js";
+export {
+  PLATFORM_PERMISSION_KEY,
+  PLATFORM_ROLE_PERMISSIONS,
+  platformPermissionsOf,
+} from "./platform/platform-permission.js";
+export type { PlatformPermissionKey } from "./platform/platform-permission.js";
+export { PLATFORM_AUDIT_ACTION, PLATFORM_AUDIT_TARGET_TYPE } from "./platform/platform-audit.js";
+export type {
+  PlatformAuditAction,
+  PlatformAuditLogSummary,
+  PlatformAuditTargetType,
+} from "./platform/platform-audit.js";
+export { PLATFORM_MESSAGE_KEYS, PLATFORM_RULE_KEY } from "./platform/platform-message-keys.js";
+export type { PlatformRuleKey } from "./platform/platform-message-keys.js";
+export type {
+  PlatformChangePackageRequest,
+  PlatformExtendTrialRequest,
+  PlatformModuleOverrideCreateRequest,
+  PlatformModuleOverrideResponse,
+  PlatformOrganizationDetail,
+  PlatformOrganizationSummary,
+  PlatformPackageCreateRequest,
+  PlatformPackageResponse,
+  PlatformPackageUpdateRequest,
+  PlatformReasonRequest,
+  PlatformSessionResponse,
+  PlatformSubscriptionResponse,
+} from "./platform/platform-api-contracts.js";
+export {
+  PLATFORM_ACCESS_TOKEN_COOKIE_NAME,
+  PLATFORM_REFRESH_TOKEN_COOKIE_NAME,
+} from "./iam/auth-cookie-names.js";

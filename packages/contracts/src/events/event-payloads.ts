@@ -28,6 +28,11 @@ export interface OrganizationRenamedPayload {
   readonly organizationId: string;
 }
 
+/** An organization changed its status (suspended or reactivated); the reason stays in the platform audit log. */
+export interface OrganizationStatusPayload {
+  readonly organizationId: string;
+}
+
 /** Ids only: the invitation token and the invitee's phone or email never travel in an event. */
 export interface InvitationPayload {
   readonly invitationId: string;
@@ -51,4 +56,6 @@ export interface EventPayloadMap {
   readonly [ORGANIZATION_EVENT_TYPE.MEMBER_REACTIVATED]: MemberJoinedPayload;
   readonly [ORGANIZATION_EVENT_TYPE.MEMBER_REMOVED]: MemberJoinedPayload;
   readonly [ORGANIZATION_EVENT_TYPE.INVITATION_REVOKED]: InvitationPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_SUSPENDED]: OrganizationStatusPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_REACTIVATED]: OrganizationStatusPayload;
 }
