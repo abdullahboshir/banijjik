@@ -1,6 +1,6 @@
 # @banijjik/api
 
-The banijjik backend package. Card 0.3 adds only the validated environment loader; the HTTP kernel arrives in card 0.4.
+The banijjik backend package: validated config (0.3) and the HTTP kernel (0.4a). Database, transactions and `/ready` arrive in 0.4b.
 
 ## Run
 
@@ -8,10 +8,20 @@ The banijjik backend package. Card 0.3 adds only the validated environment loade
 npm run infra:up                # local MongoDB replica set + Redis (see infra/README.md)
 cp apps/api/.env.example apps/api/.env
 npm run config:check            # exits 1 and lists bad KEYS (never values) when something is wrong
+npm run dev -w @banijjik/api    # ROLE=api: HTTP server with reload; GET http://localhost:4000/health
+npm run build -w @banijjik/api && npm start -w @banijjik/api   # compiled entry
 npm test -w @banijjik/api
 ```
 
 Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) and 6379 (Redis); override with `BANIJJIK_MONGO_PORT` / `BANIJJIK_REDIS_PORT` (see `infra/README.md`).
+
+## Layout
+
+- `src/main.ts`: loads config, then starts the API (`ROLE=api`) or the worker (`ROLE=worker`, no HTTP, waits for shutdown). SIGTERM/SIGINT run the shutdown tasks in order, then exit 0 (exit 1 on timeout or a second signal).
+- `src/app.ts`: `buildApp({ config, logger })`. Middleware order: request id, access log, JSON body (1 MB), CORS, `/health`, `/api/v1`, not-found, error handler.
+- `src/routes/v1.ts`: the only place that mounts module routers and global middleware.
+- `src/kernel/http`: `AppError` and its factories, `sendData`, `validate({ params, query, body })` (parsed values in `response.locals.validated`), `errorHandler`. Errors use the envelope of `docs/14-API.md`; messages and stacks never reach a response.
+- `src/kernel/context`: request context in AsyncLocalStorage. `src/kernel/logger`: pino with redaction, `getLogger()` is request-scoped. `src/kernel/observability`: `reportError`. `src/kernel/lifecycle`: `registerShutdown`.
 
 ## Rules
 
@@ -26,6 +36,7 @@ Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) 
 | `NODE_ENV`             | `development`, `test` or `production`                                     | `development` |
 | `PORT`                 | integer 1 to 65535                                                        | `4000`        |
 | `LOG_LEVEL`            | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                        | `info`        |
+| `ROLE`                 | `api` (HTTP server) or `worker` (no HTTP, waits for shutdown)             | `api`         |
 | `DB_PLATFORM_URL`      | `mongodb://` or `mongodb+srv://` URL with a database name                 | required      |
 | `DB_TENANT_SHARED_URL` | same                                                                      | required      |
 | `REDIS_URL`            | `redis://` or `rediss://` URL                                             | required      |
