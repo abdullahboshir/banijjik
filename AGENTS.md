@@ -18,11 +18,14 @@ Each card has a tier in `docs/03-ROADMAP.md` (T1 = risky core, T2 = standard, T3
 | **PLAN** | Opus for T1/T2; Sonnet allowed for T3 | `docs/plans/<card>.md` from `docs/plans/_TEMPLATE.md`. No application code. |
 | **IMPLEMENT** | Sonnet | Code + tests exactly as the plan says, then a STATUS.md handoff |
 | **REVIEW** | Opus, mandatory for T1 | Review of the branch against plan, AGENTS.md and DoD; findings fixed before merge |
+| **MERGE CHECK** | The planner or the owner, every T2/T3 card | Before merge: rerun typecheck/lint/test/build without cache, read the diff against the plan, check deviations in the handoff |
+| **PHASE REVIEW** | Opus, at the end of every phase | Whole-phase review: cross-card consistency (names, contracts, ports), the roadmap "Phase done" criteria, doc vs code drift, open gaps in STATUS.md. The next phase starts only after it passes. Written to `docs/handoffs/phase-<n>-review.md` |
 
 - Plans are written **just in time** (rolling wave): only for the next few cards, based on the code as it is now. Never plan a whole phase in advance.
 - An implementer who finds a gap, contradiction or missing decision in the plan **stops and asks**. They do not invent design. Small mechanical choices (local variable names, private helpers) are fine.
 - A plan older than the code it depends on (code changed since `Based on commit`) must be refreshed by a PLAN session before implementing.
 - Design phase (D cards) is always Opus.
+- Foundation first: a card that later cards build on (kernel, tenancy, auth, RBAC, module registry, ledgers) is never merged with a known defect. Fix it before the next card starts, because every defect there spreads into all later code.
 
 ## Definition of Done (a feature is not done until all of these hold)
 - API + validation + permission + entitlement + tenant/location enforcement.

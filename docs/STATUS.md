@@ -6,9 +6,10 @@ The agent updates this file at the **end of every session**. It is the only prog
 - **PLAN** (Opus): `Read AGENTS.md and docs/STATUS.md. PLAN session for card <id>: write docs/plans/<id>.md from docs/plans/_TEMPLATE.md. No application code. Ask me about any product decision.`
 - **IMPLEMENT** (Sonnet): `Read AGENTS.md, docs/STATUS.md and docs/plans/<id>.md. IMPLEMENT card <id> exactly as planned. Stop and ask if the plan has a gap. Verify, then update STATUS.md.`
 - **REVIEW** (Opus, T1 cards): `Read AGENTS.md and docs/plans/<id>.md. REVIEW branch s/<id>-… against the plan, AGENTS.md and the DoD. List findings by severity, fix confirmed ones, update STATUS.md.`
+- **PHASE REVIEW** (Opus, end of each phase): `Read AGENTS.md, docs/STATUS.md, docs/03-ROADMAP.md and all handoffs of phase <n>. PHASE REVIEW for phase <n>: check cross-card consistency, the "Phase done" criteria and doc/code drift; run all checks without cache; list findings by severity; fix confirmed ones; write docs/handoffs/phase-<n>-review.md and update STATUS.md.`
 - **DESIGN** (Opus, D cards): `Read AGENTS.md and docs/STATUS.md. Do card <id> from docs/03-ROADMAP.md: write the design doc only. Ask me about product decisions.`
 
-Card flow: `todo → planned → implemented → reviewed (T1) → done`.
+Card flow: `todo → planned → implemented → reviewed (T1) / merge-checked (T2, T3) → done`. A phase is done only after its PHASE REVIEW passes.
 
 Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/commit>)`
 
@@ -37,7 +38,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 ## Phase 0
 | Card | Status | Note |
 |---|---|---|
-| 0.1 archive & skeleton | implemented (branch `s/0.1-archive-skeleton`, `docs/handoffs/0.1.md`; awaiting review/merge) | apps/api + infra moved to 0.3 (owner); build, typecheck, test pass |
+| 0.1 archive & skeleton | done (2026-10-10, `b772501`, merge-checked by Opus: build/typecheck/test pass without cache) | apps/api + infra moved to 0.3 (owner); build, typecheck, test pass |
 | 0.2 tooling & CI | todo | |
 | 0.3 config & local infra | todo | |
 | 0.4 API kernel | todo | |
