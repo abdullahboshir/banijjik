@@ -81,7 +81,15 @@ export function loadConfig(env: Environment): AppConfig {
   const redisUrl = readUrl(env, redisUrlRule, isProduction);
   const cors = readOrigins(env, isProduction);
 
-  const issues = collectIssues([nodeEnv, port, logLevel, platformUrl, tenantSharedUrl, redisUrl, cors]);
+  const issues = collectIssues([
+    nodeEnv,
+    port,
+    logLevel,
+    platformUrl,
+    tenantSharedUrl,
+    redisUrl,
+    cors,
+  ]);
   const { value: nodeEnvValue } = nodeEnv;
   const { value: portValue } = port;
   const { value: logLevelValue } = logLevel;
@@ -104,7 +112,10 @@ export function loadConfig(env: Environment): AppConfig {
     nodeEnv: nodeEnvValue,
     port: portValue,
     logLevel: logLevelValue,
-    database: Object.freeze({ platformUrl: platformUrlValue, tenantSharedUrl: tenantSharedUrlValue }),
+    database: Object.freeze({
+      platformUrl: platformUrlValue,
+      tenantSharedUrl: tenantSharedUrlValue,
+    }),
     redisUrl: redisUrlValue,
     corsAllowedOrigins: Object.freeze(originsValue),
   });

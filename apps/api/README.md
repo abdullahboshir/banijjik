@@ -21,15 +21,15 @@ Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) 
 
 ## Config keys
 
-| Key | Rule | Default |
-|---|---|---|
-| `NODE_ENV` | `development`, `test` or `production` | `development` |
-| `PORT` | integer 1 to 65535 | `4000` |
-| `LOG_LEVEL` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` | `info` |
-| `DB_PLATFORM_URL` | `mongodb://` or `mongodb+srv://` URL with a database name | required |
-| `DB_TENANT_SHARED_URL` | same | required |
-| `REDIS_URL` | `redis://` or `rediss://` URL | required |
-| `CORS_ALLOWED_ORIGINS` | comma-separated absolute `http(s)` origins; `*` is rejected in production | required |
+| Key                    | Rule                                                                      | Default       |
+| ---------------------- | ------------------------------------------------------------------------- | ------------- |
+| `NODE_ENV`             | `development`, `test` or `production`                                     | `development` |
+| `PORT`                 | integer 1 to 65535                                                        | `4000`        |
+| `LOG_LEVEL`            | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                        | `info`        |
+| `DB_PLATFORM_URL`      | `mongodb://` or `mongodb+srv://` URL with a database name                 | required      |
+| `DB_TENANT_SHARED_URL` | same                                                                      | required      |
+| `REDIS_URL`            | `redis://` or `rediss://` URL                                             | required      |
+| `CORS_ALLOWED_ORIGINS` | comma-separated absolute `http(s)` origins; `*` is rejected in production | required      |
 
 In `production`, database and Redis URLs must not point to `localhost` or `127.0.0.1`.
 Later cards add their own keys here and in `.env.example`.

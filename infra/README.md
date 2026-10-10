@@ -2,10 +2,10 @@
 
 Local development services through Docker Compose (project name `banijjik`). Both ports are bound to `127.0.0.1` only.
 
-| Service | Image | Host port | Notes |
-|---|---|---|---|
-| `mongo` | `mongo:8` | 27018 | Single-node replica set `rs0`, so transactions work. Initiated by the health check on first start. |
-| `redis` | `redis:7` | 6379 | Append-only persistence. |
+| Service | Image     | Host port | Notes                                                                                              |
+| ------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
+| `mongo` | `mongo:8` | 27018     | Single-node replica set `rs0`, so transactions work. Initiated by the health check on first start. |
+| `redis` | `redis:7` | 6379      | Append-only persistence.                                                                           |
 
 ## Commands (from the repo root)
 

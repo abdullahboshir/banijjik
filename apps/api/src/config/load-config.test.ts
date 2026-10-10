@@ -5,8 +5,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ConfigError, loadConfig, loadConfigFromProcess, loadEnvFile } from "./index.js";
 
 const validEnv = {
-  DB_PLATFORM_URL: "mongodb://127.0.0.1:27018/banijjik_platform?replicaSet=rs0&directConnection=true",
-  DB_TENANT_SHARED_URL: "mongodb://127.0.0.1:27018/banijjik_tenant_shared?replicaSet=rs0&directConnection=true",
+  DB_PLATFORM_URL:
+    "mongodb://127.0.0.1:27018/platform_database?replicaSet=rs0&directConnection=true",
+  DB_TENANT_SHARED_URL:
+    "mongodb://127.0.0.1:27018/tenant_shared_database?replicaSet=rs0&directConnection=true",
   REDIS_URL: "redis://127.0.0.1:6379",
   CORS_ALLOWED_ORIGINS: "http://localhost:3000, https://admin.example.com, http://localhost:3000",
 };
@@ -37,7 +39,10 @@ describe("loadConfig", () => {
       nodeEnv: "test",
       port: 5000,
       logLevel: "debug",
-      database: { platformUrl: validEnv.DB_PLATFORM_URL, tenantSharedUrl: validEnv.DB_TENANT_SHARED_URL },
+      database: {
+        platformUrl: validEnv.DB_PLATFORM_URL,
+        tenantSharedUrl: validEnv.DB_TENANT_SHARED_URL,
+      },
       redisUrl: validEnv.REDIS_URL,
       corsAllowedOrigins: ["http://localhost:3000", "https://admin.example.com"],
     });
@@ -59,7 +64,9 @@ describe("loadConfig", () => {
       const env: Record<string, string | undefined> = { ...validEnv };
       delete env[key];
 
-      expect(catchConfigError(env).issues).toEqual([expect.objectContaining({ key, problem: "MISSING" })]);
+      expect(catchConfigError(env).issues).toEqual([
+        expect.objectContaining({ key, problem: "MISSING" }),
+      ]);
     },
   );
 
@@ -101,12 +108,21 @@ describe("loadConfig", () => {
   it("rejects a wildcard origin in production but accepts it in development", () => {
     const error = catchConfigError({ ...productionEnv, CORS_ALLOWED_ORIGINS: "*" });
 
-    expect(error.issues).toEqual([expect.objectContaining({ key: "CORS_ALLOWED_ORIGINS", problem: "INVALID" })]);
-    expect(loadConfig({ ...validEnv, CORS_ALLOWED_ORIGINS: "*" }).corsAllowedOrigins).toEqual(["*"]);
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "CORS_ALLOWED_ORIGINS", problem: "INVALID" }),
+    ]);
+    expect(loadConfig({ ...validEnv, CORS_ALLOWED_ORIGINS: "*" }).corsAllowedOrigins).toEqual([
+      "*",
+    ]);
   });
 
   it("rejects localhost database and Redis URLs in production but accepts them in development", () => {
-    const error = catchConfigError({ ...productionEnv, ...validEnv, NODE_ENV: "production", CORS_ALLOWED_ORIGINS: "https://a.example.com" });
+    const error = catchConfigError({
+      ...productionEnv,
+      ...validEnv,
+      NODE_ENV: "production",
+      CORS_ALLOWED_ORIGINS: "https://a.example.com",
+    });
 
     expect(error.issues.map((issue) => issue.key).sort()).toEqual([
       "DB_PLATFORM_URL",
@@ -136,26 +152,27 @@ describe("loadEnvFile", () => {
   const directories: string[] = [];
 
   afterEach(() => {
-    delete process.env.BANIJJIK_TEST_NEW;
-    delete process.env.BANIJJIK_TEST_KEPT;
-    for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true });
+    delete process.env.CONFIG_TEST_NEW;
+    delete process.env.CONFIG_TEST_KEPT;
+    for (const directory of directories.splice(0))
+      rmSync(directory, { recursive: true, force: true });
   });
 
   it("does not throw when the file is missing", () => {
-    expect(() => loadEnvFile(join(tmpdir(), "banijjik-missing-dir", ".env"))).not.toThrow();
+    expect(() => loadEnvFile(join(tmpdir(), "test-missing-dir", ".env"))).not.toThrow();
   });
 
   it("sets variables from the file without overriding ones already set", () => {
-    const directory = mkdtempSync(join(tmpdir(), "banijjik-env-"));
+    const directory = mkdtempSync(join(tmpdir(), "test-env-"));
     directories.push(directory);
     const path = join(directory, ".env");
-    writeFileSync(path, "BANIJJIK_TEST_NEW=from-file\nBANIJJIK_TEST_KEPT=from-file\n");
-    process.env.BANIJJIK_TEST_KEPT = "already-set";
+    writeFileSync(path, "CONFIG_TEST_NEW=from-file\nCONFIG_TEST_KEPT=from-file\n");
+    process.env.CONFIG_TEST_KEPT = "already-set";
 
     loadEnvFile(path);
 
-    expect(process.env.BANIJJIK_TEST_NEW).toBe("from-file");
-    expect(process.env.BANIJJIK_TEST_KEPT).toBe("already-set");
+    expect(process.env.CONFIG_TEST_NEW).toBe("from-file");
+    expect(process.env.CONFIG_TEST_KEPT).toBe("already-set");
   });
 });
 
@@ -168,7 +185,7 @@ describe("loadConfigFromProcess", () => {
   });
 
   it("builds the config from the env file while an already-set variable wins", () => {
-    const directory = mkdtempSync(join(tmpdir(), "banijjik-process-"));
+    const directory = mkdtempSync(join(tmpdir(), "test-process-"));
     const path = join(directory, ".env");
     const fileLines = Object.entries(validEnv).map(([key, value]) => `${key}=${value}`);
     writeFileSync(path, [...fileLines, "PORT=5001"].join("\n"));
