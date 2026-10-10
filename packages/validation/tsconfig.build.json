@@ -7,6 +7,9 @@
   "references": [
     {
       "path": "../ids"
+    },
+    {
+      "path": "../contracts"
     }
   ]
 }

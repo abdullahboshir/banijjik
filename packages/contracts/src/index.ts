@@ -16,3 +16,21 @@ export {
 } from "./errors/message-keys.js";
 export { SEQUENCE_KEY_MODE, SEQUENCE_MODE } from "./system/sequence-mode.js";
 export type { SequenceMode } from "./system/sequence-mode.js";
+export { USER_STATUS } from "./iam/user-status.js";
+export type { UserStatus } from "./iam/user-status.js";
+export { PLATFORM_ROLE } from "./iam/platform-role.js";
+export type { PlatformRole } from "./iam/platform-role.js";
+export { TOKEN_AUDIENCE } from "./iam/token-audience.js";
+export type { TokenAudience } from "./iam/token-audience.js";
+export { PREFERRED_LOCALE } from "./iam/preferred-locale.js";
+export type { PreferredLocale } from "./iam/preferred-locale.js";
+export { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from "./iam/auth-cookie-names.js";
+export { IAM_MESSAGE_KEYS } from "./iam/iam-message-keys.js";
+export { IAM_EVENT_TYPE } from "./iam/iam-event-type.js";
+export type { IamEventType } from "./iam/iam-event-type.js";
+export type {
+  LoginRequest,
+  MeResponse,
+  MeUpdateRequest,
+  UserRegisterRequest,
+} from "./iam/auth-contracts.js";

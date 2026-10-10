@@ -20,6 +20,7 @@
     "test": "vitest run --dir src"
   },
   "dependencies": {
+    "@banijjik/contracts": "*",
     "@banijjik/ids": "*",
     "zod": "^4.0.0"
   }

@@ -72,5 +72,13 @@
   "errors.network": "ইন্টারনেট সংযোগে সমস্যা হয়েছে। সংযোগ দেখে আবার চেষ্টা করুন।",
   "errors.invalid_response": "সার্ভার থেকে সঠিক উত্তর পাওয়া যায়নি। একটু পরে আবার চেষ্টা করুন।",
   "home.empty": "এখনো কিছু চালু করা হয়নি",
-  "home.title": "হোম"
+  "home.title": "হোম",
+  "errors.invalid_credentials": "ফোন নম্বর, ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।",
+  "errors.account_locked": "আপনার অ্যাকাউন্ট এখন বন্ধ আছে। সাহায্যের জন্য {brand} সাপোর্টের সাথে যোগাযোগ করুন।",
+  "errors.account_disabled": "আপনার অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে। সাহায্যের জন্য {brand} সাপোর্টের সাথে যোগাযোগ করুন।",
+  "errors.origin_not_allowed": "এই ঠিকানা থেকে পাঠানো অনুরোধ গ্রহণ করা হয় না।",
+  "validation.password_too_short": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে",
+  "validation.password_too_long": "পাসওয়ার্ড সর্বোচ্চ ১২৮ অক্ষরের হতে পারে",
+  "validation.password_too_similar": "পাসওয়ার্ড আপনার নাম, ইমেইল বা ফোন নম্বরের মতো হতে পারবে না",
+  "validation.identifier_required": "ইমেইল অথবা ফোন নম্বর দিন"
 }

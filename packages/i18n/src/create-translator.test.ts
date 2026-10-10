@@ -1,4 +1,8 @@
-import { KERNEL_ERROR_MESSAGE_KEYS, VALIDATION_MESSAGE_KEYS } from "@banijjik/contracts";
+import {
+  IAM_MESSAGE_KEYS,
+  KERNEL_ERROR_MESSAGE_KEYS,
+  VALIDATION_MESSAGE_KEYS,
+} from "@banijjik/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { BUNDLED_CATALOGS } from "./bundled-catalogs.js";
 import { createTranslator } from "./create-translator.js";
@@ -22,8 +26,12 @@ describe("bundled catalogs", () => {
     }
   });
 
-  it("have a message in both languages for every key the kernel can send to a client", () => {
-    const emittedKeys = [...KERNEL_ERROR_MESSAGE_KEYS, ...VALIDATION_MESSAGE_KEYS];
+  it("have a message in both languages for every key the kernel and the iam module can send to a client", () => {
+    const emittedKeys = [
+      ...KERNEL_ERROR_MESSAGE_KEYS,
+      ...VALIDATION_MESSAGE_KEYS,
+      ...IAM_MESSAGE_KEYS,
+    ];
     for (const locale of SUPPORTED_LOCALES) {
       for (const key of emittedKeys) {
         expect(BUNDLED_CATALOGS[locale][key], `${locale} ${key}`).toBeTruthy();

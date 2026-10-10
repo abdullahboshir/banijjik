@@ -72,5 +72,13 @@
   "errors.network": "Could not reach the server. Check your connection and try again.",
   "errors.invalid_response": "The server sent an unexpected response. Please try again in a moment.",
   "home.empty": "Nothing has been set up yet",
-  "home.title": "Home"
+  "home.title": "Home",
+  "errors.invalid_credentials": "The phone number, email or password is not correct.",
+  "errors.account_locked": "Your account is locked right now. Contact {brand} support for help.",
+  "errors.account_disabled": "Your account has been disabled. Contact {brand} support for help.",
+  "errors.origin_not_allowed": "Requests from this address are not accepted.",
+  "validation.password_too_short": "The password must be at least 8 characters",
+  "validation.password_too_long": "The password can be at most 128 characters",
+  "validation.password_too_similar": "The password must not be like your name, email or phone number",
+  "validation.identifier_required": "Enter an email or a phone number"
 }
