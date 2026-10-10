@@ -148,6 +148,8 @@ export { MODULE_CLASS } from "./modules/module-class.js";
 export type { ModuleClass } from "./modules/module-class.js";
 export { OFFERING_KIND } from "./modules/offering-kind.js";
 export type { OfferingKind } from "./modules/offering-kind.js";
+export { MENU_VISIBILITY } from "./modules/menu-visibility.js";
+export type { MenuVisibility } from "./modules/menu-visibility.js";
 export type { MenuEntry, ModuleManifest, ModuleRoutes } from "./modules/module-manifest.js";
 export { ACCESS_MODE } from "./entitlement/access-mode.js";
 export type { AccessMode } from "./entitlement/access-mode.js";
@@ -171,6 +173,7 @@ export { ENTITLEMENT_MESSAGE_KEYS } from "./entitlement/entitlement-message-keys
 export type {
   CallerPermissionsResponse,
   ResolvedOrgConfigResponse,
+  SubscriptionSummaryResponse,
 } from "./entitlement/entitlement-contracts.js";
 export {
   INVITATION_STATUS,

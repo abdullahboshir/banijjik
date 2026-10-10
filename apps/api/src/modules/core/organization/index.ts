@@ -29,6 +29,8 @@ import {
 import type { InvitationTokenLookup } from "./application/ports/member-and-invitation-repositories.js";
 import { MongoInvitationTokenLookup } from "./infrastructure/mongo-invitation-token-lookup.js";
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
+import type { ActiveLocationCounter } from "./application/ports/active-location-counter.js";
+import { MongoActiveLocationCounter } from "./infrastructure/mongo-active-location-counter.js";
 import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
 import { MongoOrganizationConfigSource } from "./infrastructure/mongo-organization-config-source.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
@@ -130,6 +132,11 @@ export function buildConfigVersionBumper(): ConfigVersionBumper {
   return new MongoConfigVersionBumper();
 }
 
+/** Counts ACTIVE locations in the current tenant context, for the menu visibility rule of the config. */
+export function buildActiveLocationCounter(): ActiveLocationCounter {
+  return new MongoActiveLocationCounter();
+}
+
 /** The template key and config version of an organization, for the config resolver. */
 export function buildOrganizationConfigSource(): OrganizationConfigSource {
   return new MongoOrganizationConfigSource();
@@ -147,6 +154,7 @@ export function buildInvitationTokenLookup(): InvitationTokenLookup {
 }
 
 export type { InvitationTokenLookup } from "./application/ports/member-and-invitation-repositories.js";
+export type { ActiveLocationCounter };
 export type {
   OrganizationConfigSnapshot,
   OrganizationConfigSource,

@@ -11,10 +11,12 @@ import type { OrgConfigReader } from "../../../../kernel/access/index.js";
 import type { ModuleRegistry } from "../../../../kernel/modules/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
 import { accessModeOf, type AccessState } from "../../saas-billing/index.js";
+import { applyMenuVisibility, needsLocationCount } from "../domain/config-sections.js";
 import type { ResolvedOrgConfig } from "../domain/resolved-org-config.js";
 import type { OrgConfigResolver } from "./org-config-resolver.js";
 import type { PackageCatalogVersion } from "./package-catalog-version.js";
 import type {
+  ActiveLocationCounter,
   IndustryTemplateReader,
   OrganizationConfigSource,
 } from "./ports/entitlement-ports.js";
@@ -29,6 +31,8 @@ export interface OrgConfigServiceDependencies {
   readonly registry: ModuleRegistry;
   readonly resolver: OrgConfigResolver;
   readonly organizations: OrganizationConfigSource;
+  /** Decides the menu entries that need two or more locations; the count is part of the cached config. */
+  readonly activeLocations: ActiveLocationCounter;
   readonly templates: IndustryTemplateReader;
   readonly catalogVersion: PackageCatalogVersion;
   readonly configCache: InMemoryLruCache<ResolvedOrgConfig>;
@@ -103,9 +107,20 @@ export class OrgConfigService implements OrgConfigReader {
     const cached = configCache.get(cacheKey);
     // An expired override changes the module set without any version bump, so the copy carries its own deadline.
     if (cached !== undefined && !isPastDeadline(cached, clock.now())) return cached;
-    const resolved = await resolver.resolve({ organizationId, configVersion, template });
+    const unfiltered = await resolver.resolve({ organizationId, configVersion, template });
+    const resolved = await this.withVisibleMenu(unfiltered);
     configCache.set(cacheKey, resolved);
     return resolved;
+  }
+
+  /**
+   * Location create and archive bump `configVersion`, which is part of the cache key, so the count
+   * read here stays right for as long as this copy lives.
+   */
+  private async withVisibleMenu(config: ResolvedOrgConfig): Promise<ResolvedOrgConfig> {
+    if (!needsLocationCount(config.menu)) return config;
+    const count = await this.dependencies.activeLocations.countActive(config.organizationId);
+    return { ...config, menu: applyMenuVisibility(config.menu, count) };
   }
 
   private async templateKeyOf(

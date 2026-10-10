@@ -5,8 +5,10 @@ import {
   type MenuEntry,
   type PermissionKey,
   type ResolvedOrgConfigResponse,
+  type SubscriptionSummaryResponse,
 } from "@banijjik/contracts";
 import type { CallerGrants, PermissionGate } from "../../../../../kernel/access/index.js";
+import type { ResolvedOrgConfig } from "../../domain/resolved-org-config.js";
 import type { EffectiveOrgConfig } from "../org-config.service.js";
 
 export interface GetMyConfigDependencies {
@@ -45,6 +47,19 @@ function holdsAnywhere(permissions: CallerPermissionsResponse, key: PermissionKe
   return Object.values(permissions.byLocation).some((keys) => keys.includes(key));
 }
 
+function summarizeSubscription(
+  config: ResolvedOrgConfig,
+  isPastDue: boolean,
+): SubscriptionSummaryResponse | null {
+  const { subscription } = config;
+  if (subscription === undefined) return null;
+  return {
+    status: subscription.status,
+    trialEndsAt: subscription.trialEndsAt?.toISOString() ?? null,
+    isPastDue,
+  };
+}
+
 /**
  * `GET /orgs/{organizationId}/me/config`: the resolved config for the caller. The menu keeps the
  * entries whose permission the caller holds at some location; the permissions are limited to
@@ -67,6 +82,7 @@ export class GetMyConfigUseCase {
       registryHash: config.registryHash,
       accessMode: effective.accessMode,
       isPastDue: effective.isPastDue,
+      subscription: summarizeSubscription(config, effective.isPastDue),
       modules: config.modules,
       kinds: config.kinds,
       limits: config.limits,

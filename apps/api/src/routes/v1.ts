@@ -36,7 +36,6 @@ import {
   buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
-  buildOrganizationConfigSource,
   buildOrganizationRouters,
   buildOrganizationTenantRouters,
   buildRolesVersionBumper,
@@ -56,6 +55,7 @@ import {
   buildTrialStarter,
   registerSaasBillingModels,
 } from "../modules/platform/saas-billing/index.js";
+import { buildOrganizationConfigPorts } from "./organization-config-ports.js";
 import { buildModuleRegistry } from "./module-registry.js";
 import { mountPlatformApi } from "./platform.js";
 
@@ -165,7 +165,7 @@ function buildResolvedConfigService(
   return buildOrgConfigService({
     registry,
     clock: dependencies.clock,
-    organizations: buildOrganizationConfigSource(),
+    ...buildOrganizationConfigPorts(),
     ...(dependencies.templateReader === undefined
       ? {}
       : { templates: dependencies.templateReader }),

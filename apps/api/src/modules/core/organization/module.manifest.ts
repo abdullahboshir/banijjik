@@ -1,9 +1,11 @@
 import {
   LIMIT_KEY,
+  MENU_VISIBILITY,
   MODULE_CLASS,
   MODULE_KEY,
   ORGANIZATION_EVENT_TYPE,
   PERMISSION_KEY,
+  SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
 import { defineModule } from "../../../kernel/modules/index.js";
@@ -42,7 +44,40 @@ export const organizationManifest = defineModule({
       "/invitations",
     ],
   },
-  menu: [],
+  // Order 10 to 30 leaves room before and after in the settings group (10 section 6).
+  menu: [
+    {
+      menuKey: "organization.profile",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.organization.profile",
+      path: "settings/profile",
+      iconKey: "settings",
+      permissionKey: PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
+      order: 10,
+    },
+    {
+      menuKey: "organization.locations",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.organization.locations",
+      path: "settings/locations",
+      iconKey: "map-pin",
+      permissionKey: PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
+      order: 20,
+      visibility: MENU_VISIBILITY.MULTIPLE_ACTIVE_LOCATIONS,
+    },
+    {
+      menuKey: "organization.staff",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.organization.staff",
+      path: "settings/staff",
+      iconKey: "users",
+      permissionKey: PERMISSION_KEY.ORGANIZATION_MEMBER_READ,
+      order: 30,
+    },
+  ],
   settingKeys: [],
   customFieldEntities: [],
   botTools: [],

@@ -1,6 +1,6 @@
 import type { ModuleEffectiveness } from "../kernel/events/index.js";
 import type { Clock } from "../kernel/time/index.js";
-import { buildOrganizationConfigSource } from "../modules/core/organization/index.js";
+import { buildOrganizationConfigPorts } from "./organization-config-ports.js";
 import {
   buildModuleEffectiveness,
   buildOrgConfigService,
@@ -15,7 +15,7 @@ export function buildEventModuleEffectiveness(clock: Clock): ModuleEffectiveness
   const service = buildOrgConfigService({
     registry: buildModuleRegistry(),
     clock,
-    organizations: buildOrganizationConfigSource(),
+    ...buildOrganizationConfigPorts(),
   });
   return buildModuleEffectiveness(service);
 }

@@ -30,3 +30,12 @@ export interface OrganizationConfigSnapshot {
 export interface OrganizationConfigSource {
   find(organizationId: string): Promise<OrganizationConfigSnapshot | undefined>;
 }
+
+/**
+ * Port to core/organization: the number of ACTIVE locations, for menu entries that show only with
+ * two or more (`MenuEntry.visibility`). Adapted in routes, because the count runs in the
+ * organization's tenant context.
+ */
+export interface ActiveLocationCounter {
+  countActive(organizationId: string): Promise<number>;
+}

@@ -8,15 +8,13 @@ import {
 import { newId } from "@banijjik/ids";
 import { withTransaction } from "../../kernel/db/index.js";
 import type { ModuleRegistry } from "../../kernel/modules/index.js";
-import {
-  buildConfigVersionBumper,
-  buildOrganizationConfigSource,
-} from "../../modules/core/organization/index.js";
+import { buildConfigVersionBumper } from "../../modules/core/organization/index.js";
 import {
   buildOrgConfigService,
   type EffectiveOrgConfig,
   type OrgConfigService,
 } from "../../modules/platform/entitlement/index.js";
+import { buildOrganizationConfigPorts } from "../../routes/organization-config-ports.js";
 import { registerViaApi } from "../auth-api-scenarios.js";
 import { writeModuleOverride } from "../entitlement-world.js";
 import type { IamApiHarness } from "../iam-api-harness.js";
@@ -63,7 +61,7 @@ export class ContractWorld {
     this.orgConfig = buildOrgConfigService({
       registry,
       clock: harness.clock,
-      organizations: buildOrganizationConfigSource(),
+      ...buildOrganizationConfigPorts(),
       templates: templateReader,
     });
   }

@@ -10,6 +10,7 @@ import {
 import type { LocationId, OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { LimitGuard } from "../../../../../kernel/access/index.js";
+import type { ConfigVersionBumper } from "../../../../../kernel/tenancy/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { locationInUse, recordNotFound } from "../../domain/errors.js";
 import { Location, type LocationChanges } from "../../domain/location.entity.js";
@@ -77,6 +78,7 @@ export interface CreateLocationInput extends ActorInput {
 }
 
 export interface CreateLocationDependencies extends LocationDependencies {
+  readonly configVersion: ConfigVersionBumper;
   readonly limits: LimitGuard;
   readonly limitLock: OrganizationLimitLock;
   readonly clock: Clock;
@@ -88,6 +90,7 @@ export class CreateLocationUseCase {
 
   execute(input: CreateLocationInput): Promise<Location> {
     const { locations, limits, limitLock, unitOfWork, events, audit, clock } = this.dependencies;
+    const { configVersion } = this.dependencies;
     const location = Location.create({
       organizationId: input.organizationId,
       name: input.name,
@@ -102,6 +105,8 @@ export class CreateLocationUseCase {
       await limitLock.acquire(input.organizationId);
       await limits.assertBelow(LIMIT_KEY.LOCATIONS, await locations.countActive());
       await locations.insert(location);
+      // The menu shows "Locations" from the second active location, so the cached config must be rebuilt.
+      await configVersion.bump(input.organizationId);
       await audit.record({
         action: AUDIT_ACTION.LOCATION_CREATED,
         entityType: AUDIT_ENTITY_TYPE.location,
@@ -153,6 +158,7 @@ export interface ArchiveLocationInput extends ActorInput {
 }
 
 export interface ArchiveLocationDependencies extends LocationDependencies {
+  readonly configVersion: ConfigVersionBumper;
   readonly members: Pick<MemberManagementRepository, "existsActiveAssignedTo">;
   readonly invitations: Pick<InvitationRepository, "existsPendingNaming">;
   readonly clock: Clock;
@@ -174,6 +180,7 @@ export class ArchiveLocationUseCase {
       const archived = existing.archive();
       await this.assertNotInUse(input.locationId);
       const saved = await locations.update(archived, input.version, input.actorUserId);
+      await this.dependencies.configVersion.bump(input.organizationId);
       await audit.record({
         action: AUDIT_ACTION.LOCATION_ARCHIVED,
         entityType: AUDIT_ENTITY_TYPE.location,

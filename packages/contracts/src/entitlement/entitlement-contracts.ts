@@ -4,6 +4,7 @@ import type { OfferingKind } from "../modules/offering-kind.js";
 import type { PermissionKey } from "../iam/permission-key.js";
 import type { AccessMode } from "./access-mode.js";
 import type { LimitMap } from "./limit-key.js";
+import type { SubscriptionStatus } from "./subscription-status.js";
 
 /** The permissions of the caller in the shape the admin app reads (14-API section 4). */
 export interface CallerPermissionsResponse {
@@ -11,6 +12,14 @@ export interface CallerPermissionsResponse {
   readonly allLocations: readonly PermissionKey[];
   /** Keys granted at one specific location, by location ID. */
   readonly byLocation: Readonly<Record<string, readonly PermissionKey[]>>;
+}
+
+/** What the admin banners need from the subscription (13-UX section 5). No new data: these fields already exist. */
+export interface SubscriptionSummaryResponse {
+  readonly status: SubscriptionStatus;
+  /** ISO 8601 UTC; null when the subscription has no trial end. */
+  readonly trialEndsAt: string | null;
+  readonly isPastDue: boolean;
 }
 
 /**
@@ -24,6 +33,8 @@ export interface ResolvedOrgConfigResponse {
   readonly accessMode: AccessMode;
   /** True while a PAST_DUE organization is still inside its grace period: show the banner. */
   readonly isPastDue: boolean;
+  /** Null when the organization has no open subscription. */
+  readonly subscription: SubscriptionSummaryResponse | null;
   readonly modules: readonly ModuleKey[];
   readonly kinds: readonly OfferingKind[];
   readonly limits: LimitMap;

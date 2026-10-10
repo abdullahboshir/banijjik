@@ -1,4 +1,12 @@
-import type { MenuEntry, ModuleKey, ModuleManifest, OfferingKind } from "@banijjik/contracts";
+import {
+  MENU_VISIBILITY,
+  type MenuEntry,
+  type ModuleKey,
+  type ModuleManifest,
+  type OfferingKind,
+} from "@banijjik/contracts";
+
+const MINIMUM_LOCATIONS_FOR_MULTIPLE = 2;
 
 function manifestsOf(
   manifests: readonly ModuleManifest[],
@@ -41,4 +49,17 @@ export function storefrontSectionsOf(
   return unique(
     manifestsOf(manifests, moduleKeys).flatMap((manifest) => manifest.storefrontSections),
   );
+}
+
+/** Drops the entries that need two or more active locations while the organization has fewer. */
+export function applyMenuVisibility(
+  menu: readonly MenuEntry[],
+  activeLocationCount: number,
+): readonly MenuEntry[] {
+  if (activeLocationCount >= MINIMUM_LOCATIONS_FOR_MULTIPLE) return menu;
+  return menu.filter((entry) => entry.visibility !== MENU_VISIBILITY.MULTIPLE_ACTIVE_LOCATIONS);
+}
+
+export function needsLocationCount(menu: readonly MenuEntry[]): boolean {
+  return menu.some((entry) => entry.visibility === MENU_VISIBILITY.MULTIPLE_ACTIVE_LOCATIONS);
 }

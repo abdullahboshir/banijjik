@@ -15,6 +15,7 @@ import { OrgConfigResolver } from "./application/org-config-resolver.js";
 import { OrgConfigService } from "./application/org-config.service.js";
 import { PackageCatalogVersion } from "./application/package-catalog-version.js";
 import type {
+  ActiveLocationCounter,
   IndustryTemplateReader,
   OrganizationConfigSource,
 } from "./application/ports/entitlement-ports.js";
@@ -42,6 +43,7 @@ import { buildMeConfigRouter } from "./presentation/me-config.router.js";
 export { registerEntitlementModels } from "./infrastructure/register-entitlement-models.js";
 export { entitlementManifest } from "./module.manifest.js";
 export type {
+  ActiveLocationCounter,
   IndustryTemplateReader,
   IndustryTemplateView,
   OrganizationConfigSnapshot,
@@ -54,6 +56,8 @@ export interface OrgConfigServiceOptions {
   readonly clock: Clock;
   /** Implemented by core/organization, adapted in routes/v1.ts. */
   readonly organizations: OrganizationConfigSource;
+  /** Implemented by core/organization, adapted in routes/active-location-counter.ts. */
+  readonly activeLocations: ActiveLocationCounter;
   /** Defaults to the interim reader (all modules, all kinds) until card 2.1. */
   readonly templates?: IndustryTemplateReader;
 }
@@ -72,6 +76,7 @@ export function buildOrgConfigService(options: OrgConfigServiceOptions): OrgConf
       clock,
     }),
     organizations: options.organizations,
+    activeLocations: options.activeLocations,
     templates: options.templates ?? new InterimIndustryTemplateReader(),
     catalogVersion: new PackageCatalogVersion(packages, clock),
     configCache: new InMemoryLruCache<ResolvedOrgConfig>({ clock }),

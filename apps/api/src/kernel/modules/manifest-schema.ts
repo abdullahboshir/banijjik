@@ -2,6 +2,7 @@ import {
   isModuleKey,
   LIMIT_KEY_VALUES,
   MODULE_CLASS,
+  MENU_VISIBILITY,
   OFFERING_KIND,
   SEQUENCE_KEY,
   SURFACE,
@@ -45,6 +46,7 @@ const menuEntrySchema = z
     permissionKey: z.string().min(1),
     order: z.number().int(),
     requiresKind: offeringKindSchema.optional(),
+    visibility: z.enum(Object.values(MENU_VISIBILITY)).optional(),
   })
   .strict();
 

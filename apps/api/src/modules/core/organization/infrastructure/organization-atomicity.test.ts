@@ -31,6 +31,7 @@ import { CreateInvitationUseCase } from "../application/use-cases/invitation.use
 import { CreateLocationUseCase } from "../application/use-cases/location.use-cases.js";
 import { UpdateMemberUseCase } from "../application/use-cases/member.use-cases.js";
 import { UpdateProfileUseCase } from "../application/use-cases/profile.use-cases.js";
+import { MongoConfigVersionBumper } from "./mongo-config-version-bumper.js";
 import { MongoInvitationRepository } from "./mongo-invitation.repository.js";
 import { MongoLocationRepository } from "./mongo-location.repository.js";
 import { MongoMemberNumberSequence } from "./mongo-member-number-sequence.js";
@@ -134,6 +135,7 @@ describe("a change whose event cannot be written", () => {
     const world = await aWorld();
     const organizationId = world.organizationB;
     const useCase = new CreateLocationUseCase({
+      configVersion: new MongoConfigVersionBumper(),
       locations: new MongoLocationRepository(),
       limits: { assertBelow: async () => undefined },
       limitLock: new MongoOrganizationLimitLock(),

@@ -42,6 +42,7 @@ import {
   GetProfileUseCase,
   UpdateProfileUseCase,
 } from "./application/use-cases/profile.use-cases.js";
+import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
 import { MongoInvitationRepository } from "./infrastructure/mongo-invitation.repository.js";
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
@@ -126,11 +127,13 @@ function buildSharedParts(dependencies: OrganizationTenantDependencies): SharedP
 function buildProfileAndLocationController(shared: SharedParts): ProfileAndLocationController {
   const { organizations, locations, members, invitations } = shared;
   const { unitOfWork, events, audit, clock, limits, limitLock } = shared;
+  const configVersion = new MongoConfigVersionBumper();
   return new ProfileAndLocationController({
     getProfile: new GetProfileUseCase(organizations),
     updateProfile: new UpdateProfileUseCase({ organizations, unitOfWork, events, audit }),
     listLocations: new ListLocationsUseCase(locations),
     createLocation: new CreateLocationUseCase({
+      configVersion,
       locations,
       limits,
       limitLock,
@@ -141,6 +144,7 @@ function buildProfileAndLocationController(shared: SharedParts): ProfileAndLocat
     }),
     updateLocation: new UpdateLocationUseCase({ locations, unitOfWork, events, audit }),
     archiveLocation: new ArchiveLocationUseCase({
+      configVersion,
       locations,
       members,
       invitations,

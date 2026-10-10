@@ -143,7 +143,7 @@ Notes:
 
 ## 6. Menu, surfaces and labels
 
-`MenuEntry = { menuKey, surface, groupKey, labelTermKey, path, iconKey, permissionKey, order, requiresKind? }`
+`MenuEntry = { menuKey, surface, groupKey, labelTermKey, path, iconKey, permissionKey, order, requiresKind?, visibility? }`. `visibility` is `ALWAYS` (default) or `MULTIPLE_ACTIVE_LOCATIONS`; `/me/config` evaluates it on the server (the location create and archive use cases bump `configVersion`), so the app never counts locations.
 
 Admin groups (order): `home`, `sales`, `bookings`, `enrollments`, `catalog`, `contacts`, `inbox`, `website`, `money`, `reports`, `settings`. Labels come from terms (`term.contact.plural` → "Customers" / "Students" / "Patients"), never literals.
 
