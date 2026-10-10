@@ -24,3 +24,34 @@ export type { RoleArchiveBody, RoleCreateBody, RoleUpdateBody } from "./iam/role
 export { auditLogListQuerySchema } from "./audit/audit-log-list.schema.js";
 export type { AuditLogListQuery } from "./audit/audit-log-list.schema.js";
 export { idempotencyKeySchema } from "./idempotency/idempotency-key.schema.js";
+export { profileUpdateRequestSchema } from "./organization/profile.schema.js";
+export type { ProfileUpdateBody } from "./organization/profile.schema.js";
+export {
+  locationCreateRequestSchema,
+  locationIdParamsSchema,
+  locationListQuerySchema,
+  locationUpdateRequestSchema,
+  versionedTransitionRequestSchema,
+} from "./organization/location.schema.js";
+export type {
+  LocationCreateBody,
+  LocationListQuery,
+  LocationUpdateBody,
+  VersionedTransitionBody,
+} from "./organization/location.schema.js";
+export {
+  assignmentsSchema,
+  invitationCreateRequestSchema,
+  invitationIdParamsSchema,
+  invitationListQuerySchema,
+  invitationTokenParamsSchema,
+  memberIdParamsSchema,
+  memberListQuerySchema,
+  memberUpdateRequestSchema,
+} from "./organization/member.schema.js";
+export type {
+  InvitationCreateBody,
+  InvitationListQuery,
+  MemberListQuery,
+  MemberUpdateBody,
+} from "./organization/member.schema.js";

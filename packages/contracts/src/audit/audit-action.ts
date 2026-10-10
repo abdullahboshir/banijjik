@@ -6,6 +6,17 @@ import { defineEnum } from "../define-enum.js";
  */
 export const AUDIT_ACTION = {
   ORGANIZATION_CREATED: "organization.organization.created",
+  ORGANIZATION_UPDATED: "organization.organization.updated",
+  LOCATION_CREATED: "organization.location.created",
+  LOCATION_UPDATED: "organization.location.updated",
+  LOCATION_ARCHIVED: "organization.location.archived",
+  MEMBER_UPDATED: "organization.member.updated",
+  MEMBER_SUSPENDED: "organization.member.suspended",
+  MEMBER_REACTIVATED: "organization.member.reactivated",
+  MEMBER_REMOVED: "organization.member.removed",
+  MEMBER_JOINED: "organization.member.joined",
+  INVITATION_CREATED: "organization.invitation.created",
+  INVITATION_REVOKED: "organization.invitation.revoked",
   ROLE_CREATED: "iam.role.created",
   ROLE_UPDATED: "iam.role.updated",
   ROLE_ARCHIVED: "iam.role.archived",

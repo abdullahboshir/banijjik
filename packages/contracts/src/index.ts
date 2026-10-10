@@ -133,7 +133,9 @@ export type {
   EventPayloadMap,
   LocationCreatedPayload,
   MemberJoinedPayload,
+  InvitationPayload,
   OrganizationCreatedPayload,
+  OrganizationRenamedPayload,
   RolePayload,
   UserRegisteredPayload,
 } from "./events/event-payloads.js";
@@ -169,3 +171,29 @@ export type {
   CallerPermissionsResponse,
   ResolvedOrgConfigResponse,
 } from "./entitlement/entitlement-contracts.js";
+export {
+  INVITATION_STATUS,
+  INVITATION_TOKEN_BYTES,
+  INVITATION_TOKEN_LENGTH,
+  INVITATION_VALIDITY_DAYS,
+} from "./organization/invitation-status.js";
+export type { InvitationStatus } from "./organization/invitation-status.js";
+export { ORGANIZATION_RULE_KEY } from "./organization/organization-rule-keys.js";
+export type { OrganizationRuleKey } from "./organization/organization-rule-keys.js";
+export type {
+  AssignmentRequest,
+  InvitationCreatedResponse,
+  InvitationCreateRequest,
+  InvitationPreviewResponse,
+  InvitationResponse,
+  LocationCreateRequest,
+  LocationResponse,
+  LocationUpdateRequest,
+  MemberResponse,
+  MemberUpdateRequest,
+  OrganizationProfileFields,
+  OrganizationProfileResponse,
+  OrganizationProfileUpdateRequest,
+  VersionedTransitionRequest,
+} from "./organization/organization-api-contracts.js";
+export { ORGANIZATION_API_MESSAGE_KEYS } from "./organization/organization-api-message-keys.js";

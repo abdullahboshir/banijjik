@@ -1,0 +1,11 @@
+/** Business rule keys of the organization endpoints (`details.ruleKey` of a `422 BUSINESS_RULE`). */
+export const ORGANIZATION_RULE_KEY = {
+  LOCATION_IN_USE: "LOCATION_IN_USE",
+  LOCATION_IS_DEFAULT: "LOCATION_IS_DEFAULT",
+  OWNER_IS_PROTECTED: "OWNER_IS_PROTECTED",
+  CANNOT_CHANGE_SELF: "CANNOT_CHANGE_SELF",
+  ROLE_NOT_GRANTABLE: "ROLE_NOT_GRANTABLE",
+} as const;
+
+export type OrganizationRuleKey =
+  (typeof ORGANIZATION_RULE_KEY)[keyof typeof ORGANIZATION_RULE_KEY];

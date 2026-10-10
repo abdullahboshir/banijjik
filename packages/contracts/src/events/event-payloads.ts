@@ -24,6 +24,15 @@ export interface MemberJoinedPayload {
   readonly userId: string;
 }
 
+export interface OrganizationRenamedPayload {
+  readonly organizationId: string;
+}
+
+/** Ids only: the invitation token and the invitee's phone or email never travel in an event. */
+export interface InvitationPayload {
+  readonly invitationId: string;
+}
+
 /** The payload of each event type. `publishEvent` takes its payload type from this map. */
 export interface EventPayloadMap {
   readonly [IAM_EVENT_TYPE.USER_REGISTERED]: UserRegisteredPayload;
@@ -33,4 +42,13 @@ export interface EventPayloadMap {
   readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_CREATED]: OrganizationCreatedPayload;
   readonly [ORGANIZATION_EVENT_TYPE.LOCATION_CREATED]: LocationCreatedPayload;
   readonly [ORGANIZATION_EVENT_TYPE.MEMBER_JOINED]: MemberJoinedPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_RENAMED]: OrganizationRenamedPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.LOCATION_UPDATED]: LocationCreatedPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.LOCATION_ARCHIVED]: LocationCreatedPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.MEMBER_INVITED]: InvitationPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.MEMBER_ASSIGNMENTS_CHANGED]: MemberJoinedPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.MEMBER_SUSPENDED]: MemberJoinedPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.MEMBER_REACTIVATED]: MemberJoinedPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.MEMBER_REMOVED]: MemberJoinedPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.INVITATION_REVOKED]: InvitationPayload;
 }
