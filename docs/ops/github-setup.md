@@ -15,9 +15,9 @@ Settings > Branches > Add branch ruleset (or classic branch protection rule) for
 5. Optional: **Require linear history**.
 
 ## 3. What CI checks
-- `verify`: `npm ci`, lint, format check, typecheck, test, build, then the audit gate.
+- `verify`: `npm ci`, build of the workspace packages (so type-aware lint sees real types), lint, format check, typecheck, test, build, then the audit gate.
   - `npm audit --omit=dev --audit-level=high` **fails** the job (production dependencies).
-  - `npm audit --audit-level=high || true` only reports dev-only findings. Card 0.2a found 5 dev-only findings under `eslint-plugin-boundaries` with no non-breaking fix, so they must not block merges.
+  - `npm audit --audit-level=high || true` only reports dev-only findings, which do not block merges. The gate is `npm audit --omit=dev --audit-level=high`; dev-only advisories (mostly from `@lhci/cli` and `eslint-plugin-boundaries`, with no non-breaking fix) are reviewed in card 6.3, so this doc keeps no count.
 - `secrets`: gitleaks CLI (pinned version and SHA-256) scans only commits **after** baseline `b772501`. Config: `.gitleaks.toml`.
 
 ## 4. Owner task P1: old history still holds real secrets

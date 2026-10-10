@@ -31,17 +31,22 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      # Card 0.4b tests download a MongoDB binary; cache it between runs.
+      - name: Install dependencies
+        run: npm ci
+
+      # Card 0.4b tests download a MongoDB binary. The cache sits after `npm ci` because `npm ci` deletes
+      # node_modules. The key is the pinned binary version (MONGODB_BINARY_VERSION in
+      # apps/api/src/test-support/replica-set.global-setup.ts: change both together), not the lockfile hash,
+      # so dependency updates do not throw the binary away.
       - name: Cache the in-memory MongoDB binary
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.cache/mongodb-memory-server
-          key: ${{ runner.os }}-mongodb-memory-server-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-mongodb-memory-server-
+          key: ${{ runner.os }}-mongodb-binary-8.0.13
 
-      - name: Install dependencies
-        run: npm ci
+      # Type-aware lint needs the built types of the workspace packages (review M2).
+      - name: Build workspace packages
+        run: npx turbo run build --filter="./packages/*"
 
       - name: Lint
         run: npm run lint
