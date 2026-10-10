@@ -73,3 +73,27 @@ export async function clickByName(page: Page, name: string): Promise<void> {
     document.querySelector(`[${attribute}]`)?.removeAttribute(attribute);
   }, CLICK_TARGET_ATTRIBUTE);
 }
+
+/**
+ * Removes one cookie from every page (document) request, as if the browser never delivered it to the
+ * server. Returns the paths of the page requests seen, so a test can count rounds and detect a loop.
+ */
+export async function stripCookieFromPageRequests(
+  page: Page,
+  cookieName: string,
+): Promise<string[]> {
+  const requestedPaths: string[] = [];
+  await page.setRequestInterception(true);
+  page.on("request", (request) => {
+    if (request.resourceType() !== "document") {
+      void request.continue();
+      return;
+    }
+    requestedPaths.push(new URL(request.url()).pathname);
+    const kept = (request.headers()["cookie"] ?? "")
+      .split("; ")
+      .filter((pair) => pair !== "" && !pair.startsWith(`${cookieName}=`));
+    void request.continue({ headers: { ...request.headers(), cookie: kept.join("; ") } });
+  });
+  return requestedPaths;
+}

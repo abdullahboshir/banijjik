@@ -17,6 +17,7 @@ import {
   openPage,
   PHONE_VIEWPORT,
   signInWithCookies,
+  stripCookieFromPageRequests,
   waitForDialogSettled,
   waitForHydration,
 } from "../test-support/browser-page";
@@ -137,6 +138,54 @@ describe("protected pages and session renewal", () => {
     await closePage(page);
     expect(businessName).toBe(NAME_OF_ACME);
     expect(cookieNames).toContain("access_token");
+  });
+});
+
+describe("a browser that never delivers the access cookie", () => {
+  it("ends on sign-in with an explanation after one renewal round, without looping", async () => {
+    // A person of their own: the renewal test above already rotated the refresh token of the shared one.
+    const renewable = await seedPerson("সালমা খাতুন");
+    const page = await openPage(stack.browser, PHONE_VIEWPORT);
+    await signInWithCookies(page, renewable);
+    const requestedPaths = await stripCookieFromPageRequests(page, "access_token");
+    await page.goto(`${ADMIN_ORIGIN}/acme`, { waitUntil: "networkidle0" });
+    await waitForPath(page, "/sign-in");
+    await waitForHydration(page, SUBMIT_BUTTON);
+    const alert = await readText(page, "main > [role=alert]");
+    const reason = await page.evaluate(() => new URLSearchParams(location.search).get("reason"));
+    const cookieNames = (await page.cookies(ADMIN_ORIGIN)).map((cookie) => cookie.name);
+    await closePage(page);
+    expect(alert).toBe(message("auth.session_unavailable"));
+    expect(reason).toBe("session");
+    expect(requestedPaths.filter((path) => path === "/session")).toHaveLength(1);
+    expect(cookieNames).not.toContain("session_renewed");
+  });
+});
+
+describe("the rate limit of sign-in across origins", () => {
+  it("shows how long to wait, read from the Retry-After header of the API", async () => {
+    const attemptsBeforeLimit = 5;
+    const page = await openPage(stack.browser, PHONE_VIEWPORT);
+    await gotoHydrated(page, "/sign-in", SUBMIT_BUTTON);
+    await page.type("#identifier", `nobody-${Date.now()}@example.com`);
+    await page.type("#password", "not-the-password");
+    for (let attempt = 0; attempt <= attemptsBeforeLimit; attempt += 1) {
+      await page.click(SUBMIT_BUTTON);
+      // The button is busy while the request runs; a click on a busy button would not count as an attempt.
+      await page.waitForSelector(`${SUBMIT_BUTTON}:not([aria-busy=true]):not([disabled])`);
+    }
+    // The wait is whatever the limiter reports; the point is that the number came from the Retry-After header.
+    const [before, after] = message("auth.rateLimited").split("{minutes}");
+    await page.waitForFunction(
+      (start, end) => {
+        const shown = document.querySelector("form [role=alert]")?.textContent ?? "";
+        return shown.startsWith(start) && shown.endsWith(end);
+      },
+      {},
+      before ?? "",
+      after ?? "",
+    );
+    await closePage(page);
   });
 });
 

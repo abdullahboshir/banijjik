@@ -4,12 +4,13 @@ import {
   type MeResponse,
   type MyOrganizationSummary,
 } from "@banijjik/contracts";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ApiError } from "../lib/api/api-error";
 import { serverApiFetch } from "../lib/api/server-api-fetch";
 import { REQUEST_PATH_HEADER } from "./request-path";
-import { buildSessionRenewalPath, safeNextPath } from "./safe-next-path";
+import { sessionGuardTarget } from "./session-guard-target";
+import { SESSION_RENEWED_COOKIE } from "./session-renewed-marker";
 
 export interface SessionData {
   me: MeResponse;
@@ -18,7 +19,8 @@ export interface SessionData {
 
 async function redirectToSessionRenewal(): Promise<never> {
   const requestedPath = (await headers()).get(REQUEST_PATH_HEADER);
-  return redirect(buildSessionRenewalPath(safeNextPath(requestedPath)));
+  const hasRenewedMarker = (await cookies()).has(SESSION_RENEWED_COOKIE);
+  return redirect(sessionGuardTarget(requestedPath, hasRenewedMarker));
 }
 
 /**

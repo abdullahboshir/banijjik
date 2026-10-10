@@ -26,3 +26,11 @@ export function buildSignInPath(nextPath: string): string {
 export function buildSessionRenewalPath(nextPath: string): string {
   return `/session?next=${encodeURIComponent(safeNextPath(nextPath))}`;
 }
+
+/** The sign-in `reason` value for "a renewal worked but the server still sees no session". */
+export const SESSION_UNAVAILABLE_REASON = "session";
+
+/** `/sign-in?next=...&reason=session`: where the loop guard ends the renewal round. */
+export function buildSessionUnavailablePath(nextPath: string): string {
+  return `${buildSignInPath(nextPath)}&reason=${SESSION_UNAVAILABLE_REASON}`;
+}

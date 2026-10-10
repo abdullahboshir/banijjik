@@ -146,6 +146,7 @@
   "auth.password.hide": "Hide password",
   "auth.rateLimited": "Too many attempts. Try again in {minutes} minutes.",
   "auth.session.renewing": "Renewing your session",
+  "auth.session_unavailable": "We could not keep you signed in. Please sign in again.",
   "language.bn": "বাংলা",
   "language.en": "English",
   "orgs.title": "Your businesses",

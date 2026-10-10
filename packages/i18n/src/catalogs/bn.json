@@ -146,6 +146,7 @@
   "auth.password.hide": "পাসওয়ার্ড লুকান",
   "auth.rateLimited": "অনেকবার চেষ্টা হয়েছে। {minutes} মিনিট পরে আবার চেষ্টা করুন।",
   "auth.session.renewing": "আপনার সেশন নবায়ন করা হচ্ছে",
+  "auth.session_unavailable": "আপনাকে সাইন-ইন অবস্থায় রাখা যায়নি। অনুগ্রহ করে আবার সাইন ইন করুন।",
   "language.bn": "বাংলা",
   "language.en": "English",
   "orgs.title": "আপনার ব্যবসা",

@@ -5,6 +5,7 @@ import { useEffect, type ReactElement } from "react";
 import { refreshSession } from "../lib/api/refresh-session";
 import { useTranslator } from "../lib/i18n/i18n-provider";
 import { buildSignInPath, safeNextPath } from "./safe-next-path";
+import { buildSessionRenewedCookie } from "./session-renewed-marker";
 
 /** A renewal that cannot even reach the API counts as failed: the sign-in page can explain more than this one. */
 async function tryRenewal(): Promise<boolean> {
@@ -17,8 +18,9 @@ async function tryRenewal(): Promise<boolean> {
 
 /**
  * The silent renewal step between "the server found no valid session" and the sign-in page. The refresh
- * cookie is only sent to the API, so this has to run in the browser. A renewal that works returns to the
- * page that was asked for; one that fails goes to sign-in with the same destination.
+ * cookie is only sent to the API, so this has to run in the browser. A renewal that works leaves a
+ * short-lived marker (the loop guard, see session-renewed-marker) and returns to the page that was asked
+ * for; one that fails goes to sign-in with the same destination.
  */
 export function SessionRenewal({ nextPath }: { nextPath: string }): ReactElement {
   const { t } = useTranslator();
@@ -27,7 +29,12 @@ export function SessionRenewal({ nextPath }: { nextPath: string }): ReactElement
     async function renew(): Promise<void> {
       const destination = safeNextPath(nextPath);
       const isRenewed = await tryRenewal();
-      window.location.replace(isRenewed ? destination : buildSignInPath(destination));
+      if (!isRenewed) {
+        window.location.replace(buildSignInPath(destination));
+        return;
+      }
+      document.cookie = buildSessionRenewedCookie();
+      window.location.replace(destination);
     }
     void renew();
   }, [nextPath]);
