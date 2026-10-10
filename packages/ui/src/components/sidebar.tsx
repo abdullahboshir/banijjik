@@ -1,6 +1,9 @@
+"use client";
+
 import type { ReactElement } from "react";
 import { cn } from "../lib/cn.js";
 import { Icon } from "../lib/icons.js";
+import { useLinkComponent } from "../lib/link.js";
 
 export interface SidebarEntry {
   menuKey: string;
@@ -31,12 +34,12 @@ function SidebarEntryLink({
   entry: SidebarEntry;
   isCollapsible: boolean;
 }): ReactElement {
+  const Link = useLinkComponent();
   const labelClass = isCollapsible ? "lg:sr-only xl:not-sr-only" : undefined;
   return (
-    <a
+    <Link
       href={entry.href}
       aria-current={entry.isActive ? "page" : undefined}
-      title={entry.label}
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-md px-3 text-body text-primary transition-colors hover:bg-subtle",
         entry.isActive && "bg-subtle font-semibold text-brand",
@@ -44,7 +47,7 @@ function SidebarEntryLink({
     >
       <Icon iconKey={entry.iconKey} className="size-5 shrink-0" />
       <span className={labelClass}>{entry.label}</span>
-    </a>
+    </Link>
   );
 }
 

@@ -67,3 +67,5 @@ export {
   zIndexTokens,
 } from "./tokens/index.js";
 export type { ColorTheme, ColorValue, FlatColorToken, FontSize } from "./tokens/index.js";
+export { LinkComponentProvider, useLinkComponent } from "./lib/link.js";
+export type { LinkComponent, LinkProps } from "./lib/link.js";

@@ -2,6 +2,7 @@
 
 import type { ReactElement } from "react";
 import { Icon } from "../lib/icons.js";
+import { useLinkComponent } from "../lib/link.js";
 import { Sheet, SheetContent } from "./sheet.js";
 
 export interface QuickCreateAction {
@@ -28,6 +29,7 @@ export function QuickCreateSheet({
   emptyText,
   closeLabel,
 }: QuickCreateSheetProps): ReactElement {
+  const Link = useLinkComponent();
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent title={title} closeLabel={closeLabel}>
@@ -37,13 +39,13 @@ export function QuickCreateSheet({
           <ul className="flex flex-col gap-1">
             {actions.map((action) => (
               <li key={action.actionKey}>
-                <a
+                <Link
                   href={action.href}
                   className="flex min-h-11 items-center gap-3 rounded-md px-3 text-body text-primary transition-colors hover:bg-subtle"
                 >
                   <Icon iconKey={action.iconKey} className="size-5 shrink-0 text-brand" />
                   <span>{action.label}</span>
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

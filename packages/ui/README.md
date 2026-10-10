@@ -7,8 +7,19 @@ Design tokens, the foundation components of `docs/13-UX.md` section 9, and the o
 - Components are presentational and text-agnostic. This package never imports `@banijjik/i18n`: every visible string, including accessible names (`navLabel`, `closeLabel`), is a prop that the app has already translated.
 - Responsiveness is CSS only (no breakpoint checks in JS, no `window` access at module level), so server and client render the same tree.
 - Components use semantic tokens only. No hex colours and no px font sizes in `src/components` (checked by grep in the card handoff).
-- Only named exports from `src/index.ts`. Files that hold state or Radix primitives start with `"use client"`.
+- Only named exports from `src/index.ts`. Files that hold state, context or Radix primitives start with `"use client"`.
 - Pages never format money or phones by hand: use `MoneyText`, `formatMoney`, `formatNumber`, `formatPhoneForDisplay`.
+
+## Links
+
+Shell components (`Sidebar`, `BottomNav`, `QuickCreateSheet`) render links through `useLinkComponent()`. The default is a plain `<a>`. An app wraps its root once so navigation stays client-side:
+
+```tsx
+import Link from "next/link";
+<LinkComponentProvider component={Link}>{children}</LinkComponentProvider>;
+```
+
+Any component that renders an `href` must use `useLinkComponent()`, never a bare `<a>`. The component receives `href`, `className`, `children`, `aria-current` and `onClick`.
 
 ## Tokens
 

@@ -3,6 +3,7 @@
 import type { ReactElement } from "react";
 import { cn } from "../lib/cn.js";
 import { Icon } from "../lib/icons.js";
+import { useLinkComponent } from "../lib/link.js";
 
 export const QUICK_CREATE_SLOT_KEY = "quickCreate";
 export const MAX_BOTTOM_NAV_SLOTS = 5;
@@ -50,6 +51,7 @@ function QuickCreateButton({ slot }: { slot: BottomNavSlot }): ReactElement {
 }
 
 function NavSlot({ slot }: { slot: BottomNavSlot }): ReactElement {
+  const Link = useLinkComponent();
   const content = (
     <>
       <Icon iconKey={slot.iconKey} className="size-6" />
@@ -60,9 +62,13 @@ function NavSlot({ slot }: { slot: BottomNavSlot }): ReactElement {
   const className = cn(SLOT_CLASS, slot.isActive && "font-semibold text-brand");
   if (slot.href && !slot.onSelect) {
     return (
-      <a href={slot.href} aria-current={slot.isActive ? "page" : undefined} className={className}>
+      <Link
+        href={slot.href}
+        aria-current={slot.isActive ? "page" : undefined}
+        className={className}
+      >
         {content}
-      </a>
+      </Link>
     );
   }
   return (
