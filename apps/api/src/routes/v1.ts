@@ -42,6 +42,7 @@ import {
   buildEntitlementTenantRouter,
   buildOrgConfigService,
   registerEntitlementModels,
+  type IndustryTemplateReader,
   type OrgConfigService,
 } from "../modules/platform/entitlement/index.js";
 import { registerPackageModels } from "../modules/platform/package/index.js";
@@ -66,6 +67,8 @@ export interface V1Dependencies {
   readonly tenantRouterFactories?: readonly ((permission: PermissionMiddlewareFactory) => Router)[];
   /** Probe modules for tests, registered through the same registry (ADR-091). Production passes none. */
   readonly extraManifests?: readonly ModuleManifest[];
+  /** Replaces the interim industry template reader so tests can turn modules off by template (card 1.6b). Production passes none. */
+  readonly templateReader?: IndustryTemplateReader;
 }
 
 /** Every module registers its models here, before the databases connect (see main.ts). */
@@ -92,6 +95,9 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     registry,
     clock,
     organizations: buildOrganizationConfigSource(),
+    ...(dependencies.templateReader === undefined
+      ? {}
+      : { templates: dependencies.templateReader }),
   });
   const router = Router();
   const verifier = createJoseAccessTokenVerifier({ secret: config.auth.accessTokenSecret, clock });

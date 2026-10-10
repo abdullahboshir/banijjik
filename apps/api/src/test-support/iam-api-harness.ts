@@ -1,6 +1,7 @@
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { Express, Router } from "express";
 import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
+import type { IndustryTemplateReader } from "../modules/platform/entitlement/index.js";
 import { buildApp } from "../app.js";
 import type { AppConfig } from "../config/index.js";
 import {
@@ -50,6 +51,8 @@ export async function startIamApi(
     ) => Router)[];
     /** Probe modules registered next to the kernel probe module (card 1.6a). */
     readonly extraManifests?: readonly ModuleManifest[];
+    /** Lets a test choose which modules and kinds the industry template allows (card 1.6b). */
+    readonly templateReader?: IndustryTemplateReader;
   } = {},
 ): Promise<IamApiHarness> {
   const config = createDatabaseTestConfig();
@@ -72,6 +75,7 @@ export async function startIamApi(
         tenantRouters: options.tenantRouters ?? [],
         tenantRouterFactories: options.tenantRouterFactories ?? [],
         extraManifests: [KERNEL_PROBE_MANIFEST, ...(options.extraManifests ?? [])],
+        ...(options.templateReader === undefined ? {} : { templateReader: options.templateReader }),
       })
     : undefined;
   const app = buildApp({ config, logger, clock, ...(v1Router === undefined ? {} : { v1Router }) });
