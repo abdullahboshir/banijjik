@@ -53,6 +53,7 @@ Rules:
 - `registryHash` = hash of all manifests. It is part of the resolver cache key, so a deploy that changes a manifest invalidates every cached config.
 - Event consumers of a module run for an org only when the module is effective for that org. SYSTEM modules always consume. This is why ledger posting lives in the SYSTEM module `accounting` (ADR-051).
 - PLATFORM modules declare only `platform` routes and `PLATFORM` menu entries.
+- `routes.*` entries are full v1 paths (`/orgs/:organizationId/roles`, `/me/orgs`); a `:param` matches one path segment and the longest matching prefix owns a request path (ADR-091).
 
 ## 3. Resolver (`resolveOrgConfig`, owned by `platform/entitlement`)
 

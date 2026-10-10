@@ -61,6 +61,8 @@ Startup (`main.ts`) connects before it listens or starts the worker and exits 1 
 | `COOKIE_DOMAIN`                                   | optional cookie domain, e.g. `.example.com`                             | unset         |
 | `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD` | both or neither; used by `npm run seed:platform-admin -w @banijjik/api` | unset         |
 
+Run `npm run seed:packages -w @banijjik/api` once per environment before the first business is created: every new organization starts a trial on the seeded BUNDLE package (it inserts only the missing packages and never overwrites an edited one).
+
 In `production`, database and Redis URLs must not point to `localhost` or `127.0.0.1`.
 
 `DB_TENANT_SHARED_URL` must name the same hosts, the same credentials and the same query options as `DB_PLATFORM_URL`, and a different database. One cluster client serves both databases (one transaction spans them), so only the platform URL opens a connection; a tenant URL with another login would otherwise be ignored without a word. Dedicated tenants (Phase 8) lift this.
