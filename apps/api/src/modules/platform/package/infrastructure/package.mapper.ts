@@ -1,10 +1,11 @@
-import { asId, type PackageId } from "@banijjik/ids";
+import { asId, type PackageId, type UserId } from "@banijjik/ids";
 import { stripMongoInternals } from "../../../../kernel/db/index.js";
 import type { PackageVersionStamp, PackageView } from "../application/package-view.js";
 import { Package } from "../domain/package.entity.js";
 import type { PackageDocument } from "./package.schema.js";
 
-export function toPackageDocument(entity: Package): PackageDocument {
+/** `actorUserId` is the operator who created the package; the seed writes it as the system (null). */
+export function toPackageDocument(entity: Package, actorUserId?: UserId): PackageDocument {
   return {
     packageId: entity.packageId,
     packageKey: entity.packageKey,
@@ -17,7 +18,7 @@ export function toPackageDocument(entity: Package): PackageDocument {
     version: entity.version,
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,
-    createdByUserId: null,
+    createdByUserId: actorUserId ?? null,
     updatedByUserId: null,
   };
 }

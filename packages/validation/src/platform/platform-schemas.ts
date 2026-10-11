@@ -1,8 +1,9 @@
 import {
-  LIMIT_KEY_VALUES,
+  LIMIT_KEY,
   MODULE_KEY,
   MODULE_OVERRIDE_EFFECT,
   ORGANIZATION_STATUS,
+  PACKAGE_STATUS,
   PLATFORM_AUDIT_TARGET_TYPE,
 } from "@banijjik/contracts";
 import { z } from "zod";
@@ -39,16 +40,36 @@ export const platformOrganizationListQuerySchema = paginationQuerySchema.extend(
 });
 export type PlatformOrganizationListQuery = z.output<typeof platformOrganizationListQuerySchema>;
 
+/** `?status=&page=&limit=` of `GET /platform/packages`. */
+export const platformPackageListQuerySchema = paginationQuerySchema.extend({
+  status: z.enum(PACKAGE_STATUS).optional(),
+});
+export type PlatformPackageListQuery = z.output<typeof platformPackageListQuerySchema>;
+
 const countOrUnlimitedSchema = z.number().int().min(0).nullable();
 const countSchema = z.number().int().min(0);
 
 /** Every limit key must be present: `null` means unlimited, so a missing key would be ambiguous. */
-const limitsSchema = z.strictObject(
-  Object.fromEntries(LIMIT_KEY_VALUES.map((key) => [key, countOrUnlimitedSchema])),
-);
-const limitIncrementsSchema = z.strictObject(
-  Object.fromEntries(LIMIT_KEY_VALUES.map((key) => [key, countSchema.optional()])),
-);
+const limitsSchema = z.strictObject({
+  [LIMIT_KEY.LOCATIONS]: countOrUnlimitedSchema,
+  [LIMIT_KEY.MEMBERS]: countOrUnlimitedSchema,
+  [LIMIT_KEY.OFFERINGS]: countOrUnlimitedSchema,
+  [LIMIT_KEY.ORDERS_PER_MONTH]: countOrUnlimitedSchema,
+  [LIMIT_KEY.AI_MESSAGES_PER_MONTH]: countOrUnlimitedSchema,
+  [LIMIT_KEY.SMS_PER_MONTH]: countOrUnlimitedSchema,
+  [LIMIT_KEY.CHANNELS]: countOrUnlimitedSchema,
+  [LIMIT_KEY.POS_DEVICES]: countOrUnlimitedSchema,
+});
+const limitIncrementsSchema = z.strictObject({
+  [LIMIT_KEY.LOCATIONS]: countSchema.optional(),
+  [LIMIT_KEY.MEMBERS]: countSchema.optional(),
+  [LIMIT_KEY.OFFERINGS]: countSchema.optional(),
+  [LIMIT_KEY.ORDERS_PER_MONTH]: countSchema.optional(),
+  [LIMIT_KEY.AI_MESSAGES_PER_MONTH]: countSchema.optional(),
+  [LIMIT_KEY.SMS_PER_MONTH]: countSchema.optional(),
+  [LIMIT_KEY.CHANNELS]: countSchema.optional(),
+  [LIMIT_KEY.POS_DEVICES]: countSchema.optional(),
+});
 const moduleKeysSchema = z.array(z.enum(MODULE_KEY));
 
 /** Body of `POST /platform/packages`. */

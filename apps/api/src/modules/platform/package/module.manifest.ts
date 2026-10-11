@@ -3,7 +3,7 @@ import { defineModule } from "../../../kernel/modules/index.js";
 
 /**
  * The package manifest. A PLATFORM module: packages are edited in the platform panel (card 1.8),
- * so it declares no route yet. It never appears in the configuration of an organization.
+ * so it declares platform routes only. It never appears in the configuration of an organization.
  */
 export const packageManifest = defineModule({
   key: MODULE_KEY.PACKAGE,
@@ -14,7 +14,7 @@ export const packageManifest = defineModule({
   requiresAnyKind: [],
   tenantCanDisable: false,
   permissions: [],
-  routes: {},
+  routes: { platform: ["/platform/packages"] },
   menu: [],
   settingKeys: [],
   customFieldEntities: [],

@@ -64,6 +64,7 @@ export {
   platformOrganizationListQuerySchema,
   platformOrganizationParamsSchema,
   platformPackageCreateRequestSchema,
+  platformPackageListQuerySchema,
   platformPackageParamsSchema,
   platformPackageUpdateRequestSchema,
   platformReasonRequestSchema,
@@ -75,6 +76,7 @@ export type {
   PlatformModuleOverrideCreateBody,
   PlatformOrganizationListQuery,
   PlatformPackageCreateBody,
+  PlatformPackageListQuery,
   PlatformPackageUpdateBody,
   PlatformReasonBody,
 } from "./platform/platform-schemas.js";

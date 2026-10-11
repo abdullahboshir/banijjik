@@ -9,7 +9,7 @@ import {
   type PackageStatus,
 } from "@banijjik/contracts";
 import { newId, type PackageId } from "@banijjik/ids";
-import { invalidPackageField } from "./errors.js";
+import { invalidPackageField, packageArchived } from "./errors.js";
 
 const PACKAGE_KEY_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 const INITIAL_VERSION = 1;
@@ -29,6 +29,13 @@ export interface PackageProps {
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+}
+
+/** The fields an operator may change; `packageKey` and `isAddOn` never change. */
+export interface PackageChanges {
+  readonly moduleKeys?: readonly string[];
+  readonly limits?: LimitMap;
+  readonly limitIncrements?: LimitIncrements;
 }
 
 export interface NewPackageInput {
@@ -127,6 +134,31 @@ export class Package implements PackageProps {
       createdAt: input.now,
       updatedAt: input.now,
     });
+  }
+
+  /**
+   * The package with the given changes, checked like a new one. The version and the dates are set
+   * by the repository when it saves (`updateVersioned`); an archived package is read-only.
+   */
+  withChanges(changes: PackageChanges): Package {
+    if (this.status === PACKAGE_STATUS.ARCHIVED) throw packageArchived();
+    const moduleKeys = changes.moduleKeys ?? this.moduleKeys;
+    const limits = changes.limits ?? this.limits;
+    const limitIncrements = changes.limitIncrements ?? this.limitIncrements;
+    assertLimitsAreCounts(limits);
+    assertIncrementsFitTheKind(this.isAddOn, limitIncrements);
+    return new Package({
+      ...this,
+      moduleKeys: assertModuleKeysAreCatalogued(moduleKeys),
+      limits,
+      limitIncrements,
+    });
+  }
+
+  /** Takes the package out of sale. Running subscriptions are checked by the use case, not here. */
+  archived(): Package {
+    if (this.status === PACKAGE_STATUS.ARCHIVED) throw packageArchived();
+    return new Package({ ...this, status: PACKAGE_STATUS.ARCHIVED });
   }
 
   /** Rebuilds a stored package. The data was validated when it was written. */
