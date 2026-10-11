@@ -55,9 +55,12 @@ const CLICK_TARGET_ATTRIBUTE = "data-click-target";
 export async function clickByName(page: Page, name: string): Promise<void> {
   await page.waitForFunction(
     (wanted, attribute) => {
+      // Only visible elements: the sidebar and the bottom nav both have a Home link, one is hidden per width.
       const target = Array.from(document.querySelectorAll("button, a")).find(
         (element) =>
-          element.textContent?.trim() === wanted || element.getAttribute("aria-label") === wanted,
+          (element.textContent?.trim() === wanted ||
+            element.getAttribute("aria-label") === wanted) &&
+          element.getClientRects().length > 0,
       );
       target?.setAttribute(attribute, "true");
       return target !== undefined;
