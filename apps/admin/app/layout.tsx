@@ -1,3 +1,4 @@
+import { BUNDLED_CATALOGS } from "@banijjik/i18n";
 import { Inter, Noto_Sans_Bengali } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactElement, ReactNode } from "react";
@@ -33,7 +34,11 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${inter.variable} ${notoSansBengali.variable}`}>
       <body>
-        <Providers locale={locale} brandName={env.NEXT_PUBLIC_BRAND_NAME}>
+        <Providers
+          locale={locale}
+          catalog={BUNDLED_CATALOGS[locale]}
+          brandName={env.NEXT_PUBLIC_BRAND_NAME}
+        >
           {children}
         </Providers>
       </body>

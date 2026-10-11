@@ -17,16 +17,30 @@ export interface TranslatorOptions {
 export interface Translator {
   locale: Locale;
   t: (key: string, values?: TranslationValues) => string;
+  /** True when the catalog has a text for the key (no missing-key report). */
+  has: (key: string) => boolean;
 }
 
 const PLACEHOLDER_PATTERN = /\{(term:)?([\w.]+)\}/g;
 const BRAND_PLACEHOLDER = "brand";
 const TERM_KEY_PREFIX = "term.";
 
-/** Placeholders are replaced in one pass, so inserted values are never scanned again. */
+/** The bundled catalog of the locale, then the options' own catalogs on top. */
 export function createTranslator(options: TranslatorOptions): Translator {
+  return createCatalogTranslator(BUNDLED_CATALOGS[options.locale], options);
+}
+
+/**
+ * Like createTranslator, but the base catalog is given, so a browser bundle that calls only this function
+ * carries no bundled catalog at all: the server hands the page the catalog of the one active locale.
+ * Placeholders are replaced in one pass, so inserted values are never scanned again.
+ */
+export function createCatalogTranslator(
+  baseCatalog: Catalog,
+  options: TranslatorOptions,
+): Translator {
   const { locale, brandName, onMissingKey } = options;
-  const catalog: Catalog = { ...BUNDLED_CATALOGS[locale], ...options.catalogs?.[locale] };
+  const catalog: Catalog = { ...baseCatalog, ...options.catalogs?.[locale] };
 
   function lookup(key: string): string | undefined {
     const text = catalog[key];
@@ -49,5 +63,5 @@ export function createTranslator(options: TranslatorOptions): Translator {
     });
   }
 
-  return { locale, t };
+  return { locale, t, has: (key) => catalog[key] !== undefined };
 }

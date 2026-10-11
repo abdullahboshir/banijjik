@@ -49,9 +49,7 @@ function columnsOf(
     columnKey: "status",
     header: labels.status,
     isPrimary: true,
-    cell: (row) => (
-      <StatusBadge requestType="ENROLLMENT" status={row.status} label={row.statusLabel} />
-    ),
+    cell: (row) => <StatusBadge requestType="MEMBER" status={row.status} label={row.statusLabel} />,
   });
   return columns;
 }

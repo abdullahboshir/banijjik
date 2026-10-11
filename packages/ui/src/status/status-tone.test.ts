@@ -39,6 +39,10 @@ const DOC_ROWS: [StatusRequestType, StatusTone, string][] = [
   ["PAYMENT", "neutral", "PARTIALLY_REFUNDED"],
   ["SALES_RETURN", "info", "ACTIVE"],
   ["SALES_RETURN", "neutral", "REVERSED"],
+  ["MEMBER", "success", "ACTIVE"],
+  ["MEMBER", "info", "INVITED"],
+  ["MEMBER", "warning", "SUSPENDED"],
+  ["MEMBER", "neutral", "REMOVED"],
 ];
 
 describe("statusTone", () => {

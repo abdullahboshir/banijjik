@@ -17,7 +17,7 @@ export function banglaText(messageKey: string): string {
 
 export function renderInBangla(element: ReactElement): void {
   render(
-    <I18nProvider locale="bn" brandName="Example">
+    <I18nProvider locale="bn" catalog={BUNDLED_CATALOGS.bn} brandName="Example">
       {element}
     </I18nProvider>,
   );

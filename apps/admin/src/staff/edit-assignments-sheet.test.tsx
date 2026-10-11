@@ -5,6 +5,7 @@ import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { banglaText } from "../auth/test-helpers";
 import { ApiError } from "../lib/api/api-error";
+import { BUNDLED_CATALOGS } from "@banijjik/i18n";
 import { I18nProvider } from "../lib/i18n/i18n-provider";
 
 const refresh = vi.fn();
@@ -37,7 +38,7 @@ const member = {
 
 function renderSheet(options = MULTI_LOCATION_OPTIONS, onClose = vi.fn()) {
   render(
-    <I18nProvider locale="bn" brandName="Example">
+    <I18nProvider locale="bn" catalog={BUNDLED_CATALOGS.bn} brandName="Example">
       <EditAssignmentsSheet
         organizationId="org-1"
         member={member}

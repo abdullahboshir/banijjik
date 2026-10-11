@@ -1,5 +1,4 @@
 import { VALIDATION_FALLBACK_MESSAGE_KEY, VALIDATION_MESSAGE_KEYS } from "@banijjik/contracts";
-import { BUNDLED_CATALOGS } from "@banijjik/i18n";
 import type { z } from "zod";
 
 /** Message key per form field; a field without an entry has no error. */
@@ -11,8 +10,18 @@ const IDENTIFIER_REQUIRED_KEY = "validation.identifier_required";
 /** The API names the identifier by what it turned out to be; the form has one field for both. */
 const IDENTIFIER_API_PATHS: readonly string[] = ["email", "phone"];
 
+let hasMessage: (messageKey: string) => boolean = () => true;
+
+/**
+ * The provider registers the check of the active catalog. Every locale has the same keys (tested in
+ * packages/i18n), so one check serves any render; before registration every key counts as known.
+ */
+export function registerMessageCheck(check: (messageKey: string) => boolean): void {
+  hasMessage = check;
+}
+
 export function isKnownMessageKey(messageKey: string): boolean {
-  return messageKey in BUNDLED_CATALOGS.bn;
+  return hasMessage(messageKey);
 }
 
 /** An unknown key from the server would show as raw text; the generic error is the safe fallback. */

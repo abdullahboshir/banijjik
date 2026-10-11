@@ -2,6 +2,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BUNDLED_CATALOGS } from "@banijjik/i18n";
 import { I18nProvider } from "../lib/i18n/i18n-provider";
 
 const refresh = vi.fn();
@@ -21,7 +22,7 @@ const member = { memberId: "m1", version: 2, assignments: [] };
 
 function renderActions(actions: ("editAssignments" | "suspend" | "reactivate" | "remove")[]) {
   render(
-    <I18nProvider locale="bn" brandName="Example">
+    <I18nProvider locale="bn" catalog={BUNDLED_CATALOGS.bn} brandName="Example">
       <MemberActions
         organizationId="org-1"
         member={member}

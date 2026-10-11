@@ -244,6 +244,8 @@ describe("initial JavaScript of the staff routes (13-UX section 11)", () => {
     const page = await openPage(stack.browser, PHONE_VIEWPORT);
     await signInWithCookies(page, owner);
     const size = await measureInitialJs(page, route);
+    process.stdout.write(`initial JS ${route}: ${size.gzipBytes} B = ${toKiB(size.gzipBytes)} KiB
+`);
     await closePage(page);
     expect(toKiB(size.gzipBytes), route).toBeLessThanOrEqual(INITIAL_JS_BUDGET_KIB);
   });
@@ -252,6 +254,9 @@ describe("initial JavaScript of the staff routes (13-UX section 11)", () => {
     const page = await openPage(stack.browser, PHONE_VIEWPORT);
     await signInWithCookies(page, owner);
     const size = await measureInitialJs(page, memberDetailPath);
+    process.stdout
+      .write(`initial JS member detail: ${size.gzipBytes} B = ${toKiB(size.gzipBytes)} KiB
+`);
     await closePage(page);
     expect(toKiB(size.gzipBytes)).toBeLessThanOrEqual(INITIAL_JS_BUDGET_KIB);
   });

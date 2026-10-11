@@ -1,6 +1,6 @@
 "use client";
 
-import type { Locale } from "@banijjik/i18n";
+import type { Catalog, Locale } from "@banijjik/i18n";
 import { LinkComponentProvider } from "@banijjik/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -38,14 +38,15 @@ function TranslatedToaster(): ReactElement {
 
 export interface ProvidersProps {
   locale: Locale;
+  catalog: Catalog;
   brandName: string;
   children: ReactNode;
 }
 
-export function Providers({ locale, brandName, children }: ProvidersProps): ReactElement {
+export function Providers({ locale, catalog, brandName, children }: ProvidersProps): ReactElement {
   const [queryClient] = useState(createQueryClient);
   return (
-    <I18nProvider locale={locale} brandName={brandName}>
+    <I18nProvider locale={locale} catalog={catalog} brandName={brandName}>
       <QueryClientProvider client={queryClient}>
         <LinkComponentProvider component={ShellLink}>
           {children}

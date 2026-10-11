@@ -83,7 +83,7 @@ function MemberOverview({
         backLabel={t("staff.detail.back")}
         status={
           <StatusBadge
-            requestType="ENROLLMENT"
+            requestType="MEMBER"
             status={member.status}
             label={memberStatusLabel(member.status, t)}
           />
