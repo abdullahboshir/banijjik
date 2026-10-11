@@ -2,9 +2,11 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import { IAM_EVENT_TYPE } from "@banijjik/contracts";
 import type { OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
+import type { PermissionGate } from "../../../../../kernel/access/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { invalidField } from "../../domain/errors.js";
 import { Role } from "../../domain/role.entity.js";
+import { assertCallerMayChangeKeys } from "../role-escalation.js";
 import type { PermissionCatalog } from "../permission-catalog.js";
 import type { PermissionResolver } from "../permission-resolver.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
@@ -29,6 +31,8 @@ export interface CreateRoleDependencies {
   readonly resolver: PermissionResolver;
   readonly clock: Clock;
   readonly audit: AuditRecorder;
+  /** The caller's grants of the current request, for the anti-escalation rule (ADR-092). */
+  readonly permissions: Pick<PermissionGate, "describeCaller">;
 }
 
 /** Rejects a key the catalogue does not know, which also keeps platform permissions out of tenant roles. */
@@ -48,6 +52,7 @@ export class CreateRoleUseCase {
   async execute(input: CreateRoleInput): Promise<RoleView> {
     const { roles, rolesVersion, unitOfWork, events, catalog, resolver, clock } = this.dependencies;
     assertKnownPermissionKeys(catalog, input.permissionKeys);
+    await assertCallerMayChangeKeys(this.dependencies.permissions, [], input.permissionKeys);
     const role = Role.createCustom({
       organizationId: input.organizationId,
       name: input.name,

@@ -14,9 +14,11 @@ import {
   versionedTransitionRequestSchema,
 } from "@banijjik/validation";
 import { Router, type RequestHandler } from "express";
-import type { PermissionMiddlewareFactory } from "../../../../kernel/access/index.js";
-import { getRequestContext } from "../../../../kernel/context/index.js";
-import { forbidden, validate } from "../../../../kernel/http/index.js";
+import {
+  requireAllLocations,
+  type PermissionMiddlewareFactory,
+} from "../../../../kernel/access/index.js";
+import { validate } from "../../../../kernel/http/index.js";
 import type { InvitationController } from "./invitation.controller.js";
 import type { MemberController } from "./member.controller.js";
 import type { ProfileAndLocationController } from "./profile-and-location.controller.js";
@@ -29,16 +31,6 @@ export interface OrganizationTenantRouterDependencies {
   /** The `Idempotency-Key` middleware, built once by routes/v1.ts (ADR-089). */
   readonly idempotency: RequestHandler;
 }
-
-/**
- * Location writes need the permission at every location (plan 1.7b decision 5): after the
- * permission guard narrowed the request's locations, anything but "ALL" means the caller holds
- * the permission only at some locations, or is assigned to only some.
- */
-const requireAllLocations: RequestHandler = (_request, _response, next) => {
-  if (getRequestContext().allowedLocationIds !== "ALL") throw forbidden();
-  next();
-};
 
 function addProfileRoutes(router: Router, input: OrganizationTenantRouterDependencies): void {
   const { profileAndLocations: controller, permission } = input;
@@ -63,7 +55,7 @@ function addLocationRoutes(router: Router, input: OrganizationTenantRouterDepend
   router.post(
     "/locations",
     permission(PERMISSION_KEY.ORGANIZATION_LOCATION_CREATE),
-    requireAllLocations,
+    requireAllLocations(),
     validate({ body: locationCreateRequestSchema }),
     idempotency,
     controller.createLocation,
@@ -71,14 +63,14 @@ function addLocationRoutes(router: Router, input: OrganizationTenantRouterDepend
   router.patch(
     "/locations/:locationId",
     permission(PERMISSION_KEY.ORGANIZATION_LOCATION_UPDATE),
-    requireAllLocations,
+    requireAllLocations(),
     validate({ params: locationIdParamsSchema, body: locationUpdateRequestSchema }),
     controller.updateLocation,
   );
   router.post(
     "/locations/:locationId/archive",
     permission(PERMISSION_KEY.ORGANIZATION_LOCATION_ARCHIVE),
-    requireAllLocations,
+    requireAllLocations(),
     validate({ params: locationIdParamsSchema, body: versionedTransitionRequestSchema }),
     controller.archiveLocation,
   );

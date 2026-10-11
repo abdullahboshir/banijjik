@@ -104,7 +104,7 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 | `GET /members` · `GET /members/{memberId}` · `PATCH /members/{memberId}` · `POST /members/{memberId}/suspend` · `POST /members/{memberId}/reactivate` · `POST /members/{memberId}/remove` | `organization.member.*` (`remove` for remove, `update` for the rest) | | assignments edit via PATCH under the rules of ADR-092; sensitive custom fields need `readSensitive` (card 2.3) |
 | `POST /invitations` · `GET /invitations` · `POST /invitations/{invitationId}/revoke` | `organization.member.invite` | I (POST) | the create response carries `inviteUrlPath` once; a replay of the same key returns the invitation without it (ADR-092) |
 | `POST /ownership/transfer` | `organization.ownership.transfer` | A | target must be an active member |
-| `GET /roles` · `POST /roles` · `PATCH /roles/{roleId}` · `POST /roles/{roleId}/archive` | `iam.role.*` | | system roles read-only |
+| `GET /roles` · `POST /roles` · `PATCH /roles/{roleId}` · `POST /roles/{roleId}/archive` | `iam.role.*` | | system roles read-only; writes need the permission at ALL locations and every key added or removed held by the caller at ALL (`422 ROLE_NOT_GRANTABLE`, `details.permissionKeys`) |
 | `GET /settings?keys=` · `PATCH /settings` | `settings.setting.*` | | batch update `{ key, value, locationId? }[]` with versions |
 | `GET /terms` · `PATCH /terms` | `settings.term.update` | | |
 | `GET /custom-fields?entityType=` · `POST /custom-fields` · `PATCH /custom-fields/{customFieldDefinitionId}` · `POST /custom-fields/{customFieldDefinitionId}/archive` | `custom-field.definition.*` | | org-scope definitions only; industry ones read-only |

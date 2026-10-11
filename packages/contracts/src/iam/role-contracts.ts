@@ -4,6 +4,7 @@ import type { RoleStatus } from "./role-status.js";
 export const ROLE_RULE_KEY = {
   SYSTEM_ROLE_IMMUTABLE: "SYSTEM_ROLE_IMMUTABLE",
   ROLE_IN_USE: "ROLE_IN_USE",
+  ROLE_NOT_GRANTABLE: "ROLE_NOT_GRANTABLE",
 } as const;
 
 export const ROLE_NAME_MIN_LENGTH = 2;

@@ -216,6 +216,8 @@ export interface IamTenantRouterDependencies {
   readonly memberAccess: MemberAccessReader;
   readonly rolesVersion: RolesVersionBumper;
   readonly permission: PermissionMiddlewareFactory;
+  /** The gate of the same request: role writes check the caller's grants (ADR-092). */
+  readonly permissions: PermissionGate;
   readonly clock: Clock;
   readonly audit: AuditRecorder;
 }
@@ -223,7 +225,7 @@ export interface IamTenantRouterDependencies {
 /** The role endpoints of `/orgs/{organizationId}`, mounted by routes/v1.ts behind the tenant pipeline. */
 export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies): Router {
   const { catalog, memberAccess, rolesVersion, permission, clock } = dependencies;
-  const { audit } = dependencies;
+  const { audit, permissions } = dependencies;
   const roles = new MongoRoleRepository();
   const resolver = new PermissionResolver(catalog);
   const unitOfWork = new MongoUnitOfWork();
@@ -238,6 +240,7 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
       resolver,
       clock,
       audit,
+      permissions,
     }),
     updateRole: new UpdateRoleUseCase({
       roles,
@@ -248,6 +251,7 @@ export function buildIamTenantRouter(dependencies: IamTenantRouterDependencies):
       resolver,
       clock,
       audit,
+      permissions,
     }),
     archiveRole: new ArchiveRoleUseCase({
       roles,

@@ -100,3 +100,12 @@ export class DuplicateRoleNameError extends DomainRuleError {
     this.name = "DuplicateRoleNameError";
   }
 }
+
+/** The caller does not hold, at every location, some keys a role write would add or remove (ADR-092). */
+export function rolePermissionsNotGrantable(permissionKeys: readonly string[]): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "errors.role_permissions_not_grantable",
+    details: { ruleKey: ROLE_RULE_KEY.ROLE_NOT_GRANTABLE, permissionKeys: [...permissionKeys] },
+  });
+}

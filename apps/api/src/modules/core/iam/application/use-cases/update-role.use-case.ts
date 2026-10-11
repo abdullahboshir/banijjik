@@ -2,8 +2,10 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import { IAM_EVENT_TYPE } from "@banijjik/contracts";
 import type { OrganizationId, RoleId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
+import type { PermissionGate } from "../../../../../kernel/access/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { roleNotFound } from "../../domain/errors.js";
+import { assertCallerMayChangeKeys } from "../role-escalation.js";
 import type { PermissionCatalog } from "../permission-catalog.js";
 import type { PermissionResolver } from "../permission-resolver.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
@@ -32,6 +34,8 @@ export interface UpdateRoleDependencies {
   readonly resolver: PermissionResolver;
   readonly clock: Clock;
   readonly audit: AuditRecorder;
+  /** The caller's grants of the current request, for the anti-escalation rule (ADR-092). */
+  readonly permissions: Pick<PermissionGate, "describeCaller">;
 }
 
 /**
@@ -55,6 +59,11 @@ export class UpdateRoleUseCase {
       updatedByUserId: input.actorUserId,
       now: clock.now(),
     });
+    await assertCallerMayChangeKeys(
+      this.dependencies.permissions,
+      existing.permissionKeys,
+      edited.permissionKeys,
+    );
     const saved = await unitOfWork.run(async () => {
       const result = await roles.update(edited, input.version);
       await rolesVersion.bump(input.organizationId);

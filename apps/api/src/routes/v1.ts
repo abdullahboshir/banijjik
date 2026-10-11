@@ -256,6 +256,7 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     memberAccess,
     rolesVersion: buildRolesVersionBumper(),
     permission,
+    permissions: permissionGate,
     clock,
     audit,
   });
