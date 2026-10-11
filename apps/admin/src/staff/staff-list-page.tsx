@@ -12,7 +12,7 @@ import { getTranslator } from "../lib/i18n/get-translator";
 import type { PageMeta } from "../lib/api/page-meta";
 import { fetchBusinessResource } from "../lib/api/server-resource";
 import { holdsPermission } from "../shell/permissions";
-import { requireOrgAccess } from "../shell/org-access";
+import { requireOrgAccess, type OrgAccess } from "../shell/org-access";
 import { locationNamesOfMember, memberStatusLabel, roleNamesOfMember } from "./member-view";
 import { StaffList, type StaffRowView } from "./staff-list";
 import { loadStaffLookups, type StaffLookups } from "./staff-lookups";
@@ -132,6 +132,36 @@ function Pager({
   );
 }
 
+function StaffHeaderActions({
+  access,
+  orgSlug,
+  t,
+}: {
+  access: OrgAccess;
+  orgSlug: string;
+  t: Translator["t"];
+}): ReactElement {
+  const { permissions } = access.config;
+  const basePath = `/${orgSlug}/settings/staff`;
+  return (
+    <>
+      {holdsPermission(permissions, PERMISSION_KEY.IAM_ROLE_READ) ? (
+        <Link
+          href={`/${orgSlug}/settings/roles`}
+          className={buttonVariants({ variant: "secondary" })}
+        >
+          {t("roles.link")}
+        </Link>
+      ) : null}
+      {holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_MEMBER_INVITE) ? (
+        <Link href={`${basePath}/invitations`} className={buttonVariants({ variant: "primary" })}>
+          {access.canWrite ? t("staff.invite") : t("staff.invitations")}
+        </Link>
+      ) : null}
+    </>
+  );
+}
+
 /** `/{orgSlug}/settings/staff`: the team of the business (13-UX section 4.1). */
 export async function StaffListPage({
   orgSlug,
@@ -152,21 +182,11 @@ export async function StaffListPage({
     loadStaffLookups(access, t),
   ]);
   const basePath = `/${orgSlug}/settings/staff`;
-  const canInvite = holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_MEMBER_INVITE);
   return (
     <>
       <PageHeader
         title={t("menu.organization.staff")}
-        actions={
-          canInvite ? (
-            <Link
-              href={`${basePath}/invitations`}
-              className={buttonVariants({ variant: "primary" })}
-            >
-              {access.canWrite ? t("staff.invite") : t("staff.invitations")}
-            </Link>
-          ) : null
-        }
+        actions={<StaffHeaderActions access={access} orgSlug={orgSlug} t={t} />}
         filters={
           <>
             <StatusChips basePath={basePath} query={query} t={t} />
