@@ -66,7 +66,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 1.7c admin menu, home banners, staff and invitations | merged (2026-10-11, merge-checked by Opus; all routes ≤ 170 KiB after trimming) | branch `s/1.7c-admin-menu-staff`; handoff `docs/handoffs/1.7c.md`. Browser round trip works; all five routes fit the 170 KiB budget after trimming. Gaps: audit-log history link not shown; profile and locations menu entries lead to 1.7d routes; suspended-business shell unit tested only |
 | 1.7d admin business profile, locations and roles screens | merged (2026-10-11, merge-checked by Opus) | gap: optional profile and location fields cannot be cleared (the PATCH API has no way to unset a field); roles and locations lists show the first 100 without paging UI |
 | 1.8a platform API: operator sign-in, tenants, packages, module grants | merged (2026-10-11, Opus review passed after 4 fixes; ADR-093 proposed, owner confirmation pending) | T1; branch `s/1.8a-platform-api`; handoff `docs/handoffs/1.8a.md`; ADR-093 (role mapping is a proposal). Opus fixes applied (handoff "Review fixes"); api tests need `VITEST_MAX_WORKERS=2` on a low-memory machine |
-| 1.8b platform web app | planned (2026-10-11, `docs/plans/1.8b.md`, Opus) | parallel with 1.7d; moves the generic client auth code into `packages/web-client` |
+| 1.8b platform web app | implemented (awaiting merge check) | branch `s/1.8b-platform-app`; handoff `docs/handoffs/1.8b.md`; generic client code moved into `packages/web-client`; admin unchanged (units pass, route sizes +0.1 KiB). Gaps: no module classes endpoint (contracts constant added), browser test uses a probe module |
 
 ## Phases 2–8
 Track here once Phase 1 is done (copy the cards from the roadmap).
