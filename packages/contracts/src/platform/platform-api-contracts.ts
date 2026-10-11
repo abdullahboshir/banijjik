@@ -23,7 +23,7 @@ export interface PlatformOrganizationSummary {
   slug: string;
   name: string;
   status: OrganizationStatus;
-  industryTemplateKey: IndustryTemplateKey;
+  templateKey: IndustryTemplateKey;
   /** Null when the organization has no open subscription. */
   subscriptionStatus: SubscriptionStatus | null;
   memberCount: number;

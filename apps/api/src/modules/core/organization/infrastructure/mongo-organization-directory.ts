@@ -33,7 +33,7 @@ function toView(document: OrganizationDocument): OrganizationAdminView {
     slug: document.slug,
     name: document.name,
     status: document.status,
-    industryTemplateKey: document.industryTemplateKey,
+    templateKey: document.industryTemplateKey,
     ownerUserId: document.ownerUserId,
     version: document.version,
     createdAt: document.createdAt,

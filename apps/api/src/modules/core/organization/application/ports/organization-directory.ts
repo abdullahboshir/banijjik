@@ -6,7 +6,8 @@ export interface OrganizationAdminView {
   readonly slug: string;
   readonly name: string;
   readonly status: OrganizationStatus;
-  readonly industryTemplateKey: IndustryTemplateKey;
+  /** The industry template of the organization, shown as is; nothing branches on it (ADR-033). */
+  readonly templateKey: IndustryTemplateKey;
   readonly ownerUserId: string;
   readonly version: number;
   readonly createdAt: Date;

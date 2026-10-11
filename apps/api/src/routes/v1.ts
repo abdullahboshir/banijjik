@@ -57,6 +57,7 @@ import {
   registerSaasBillingModels,
 } from "../modules/platform/saas-billing/index.js";
 import { buildModuleRegistry } from "./module-registry.js";
+import { mountPlatformApi } from "./platform.js";
 
 export interface V1Dependencies {
   readonly config: AppConfig;
@@ -97,14 +98,7 @@ export function registerModuleModels(): void {
 export function buildV1Router(dependencies: V1Dependencies): Router {
   const { config, clock } = dependencies;
   const registry = buildModuleRegistry(dependencies.extraManifests);
-  const orgConfig = buildOrgConfigService({
-    registry,
-    clock,
-    organizations: buildOrganizationConfigSource(),
-    ...(dependencies.templateReader === undefined
-      ? {}
-      : { templates: dependencies.templateReader }),
-  });
+  const orgConfig = buildResolvedConfigService(dependencies, registry);
   const router = Router();
   const verifier = createJoseAccessTokenVerifier({ secret: config.auth.accessTokenSecret, clock });
   const requireAdminUser = authenticate({ audience: TOKEN_AUDIENCE.ADMIN, verifier });
@@ -135,7 +129,6 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     orgConfig,
     requireUser: requireAdminUser,
   });
-
   // logout-all lives in the auth router but needs a session; the rest of /auth is public.
   router.use("/auth/logout-all", requireAdminUser);
   router.use("/auth", authRouter);
@@ -144,6 +137,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   router.use("/me", requireAdminUser, meRouter);
   // The invitation link: public preview, signed-in accept. Outside the tenant pipeline.
   router.use("/invitations", organizationTenant.invitationLinkRouter);
+  mountPlatformApi(router, { dependencies, verifier, registry });
   router.use(
     "/orgs/:organizationId",
     requireAdminUser,
@@ -161,6 +155,21 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     ),
   );
   return router;
+}
+
+/** The resolver behind its cache: the entitlement gate and the config endpoint read through it. */
+function buildResolvedConfigService(
+  dependencies: V1Dependencies,
+  registry: ModuleRegistry,
+): OrgConfigService {
+  return buildOrgConfigService({
+    registry,
+    clock: dependencies.clock,
+    organizations: buildOrganizationConfigSource(),
+    ...(dependencies.templateReader === undefined
+      ? {}
+      : { templates: dependencies.templateReader }),
+  });
 }
 
 interface OrganizationTenantInput {
