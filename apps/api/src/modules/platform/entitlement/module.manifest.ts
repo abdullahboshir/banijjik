@@ -4,7 +4,7 @@ import { defineModule } from "../../../kernel/modules/index.js";
 /**
  * The entitlement manifest. A PLATFORM module that owns ModuleOverride and the resolver. Its one
  * tenant route, `GET /orgs/{organizationId}/me/config`, is the single path the entitlement gate
- * allows without an owner module, so the manifest declares no route.
+ * allows without an owner module, so the manifest declares only the platform route of the overrides.
  */
 export const entitlementManifest = defineModule({
   key: MODULE_KEY.ENTITLEMENT,
@@ -15,7 +15,7 @@ export const entitlementManifest = defineModule({
   requiresAnyKind: [],
   tenantCanDisable: false,
   permissions: [],
-  routes: {},
+  routes: { platform: ["/platform/organizations/:organizationId/module-overrides"] },
   menu: [],
   settingKeys: [],
   customFieldEntities: [],
