@@ -67,6 +67,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 1.7d admin business profile, locations and roles screens | merged (2026-10-11, merge-checked by Opus) | gap: optional profile and location fields cannot be cleared (the PATCH API has no way to unset a field); roles and locations lists show the first 100 without paging UI |
 | 1.8a platform API: operator sign-in, tenants, packages, module grants | merged (2026-10-11, Opus review passed after 4 fixes; ADR-093 proposed, owner confirmation pending) | T1; branch `s/1.8a-platform-api`; handoff `docs/handoffs/1.8a.md`; ADR-093 (role mapping is a proposal). Opus fixes applied (handoff "Review fixes"); api tests need `VITEST_MAX_WORKERS=2` on a low-memory machine |
 | 1.8b platform web app | merged (2026-10-11, merge-checked by Opus) | role mapping (ADR-093) still a proposal; no browser test with SUPPORT or BILLING operators; Lighthouse not run for the platform app |
+| Phase 1 review | PASS WITH FIXES (2026-10-11, independent Opus, `docs/handoffs/phase-1-review.md`: 2 blockers, 5 majors, 24 minors) | Phase 2 does not start until B1, B2, J1, J2, J3 and J5 are fixed and re-verified; J4 (no indexes in production) is a release blocker; several planner decisions await the owner (review point 8, incl. the Redis port, which contradicts the 6379 recorded in the 0.3 handoff) |
 
 ## Phases 2–8
 Track here once Phase 1 is done (copy the cards from the roadmap).
