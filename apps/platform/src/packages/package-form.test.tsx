@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { ApiError } from "@banijjik/web-client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -68,15 +68,17 @@ describe("PackageForm to create", () => {
     );
     await fillNewBasePackage();
     await userEvent.click(submit());
-    expect(createPackage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        packageKey: "GOLD",
-        name: "Gold",
-        isAddOn: false,
-        moduleKeys: ["pos"],
-      }),
+    await waitFor(() =>
+      expect(createPackage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          packageKey: "GOLD",
+          name: "Gold",
+          isAddOn: false,
+          moduleKeys: ["pos"],
+        }),
+      ),
     );
-    expect(replace).toHaveBeenCalledWith("/packages");
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/packages"));
   });
 
   it("shows which dependency is missing when the API says the package is not closed", async () => {
@@ -142,11 +144,13 @@ describe("PackageForm to edit", () => {
     const existing = packageResponse({ version: 7 });
     renderInBangla(<PackageForm existing={existing} seedName={undefined} canWrite texts={texts} />);
     await userEvent.click(submit());
-    expect(updatePackage).toHaveBeenCalledWith(
-      existing.packageId,
-      expect.objectContaining({ version: 7 }),
+    await waitFor(() =>
+      expect(updatePackage).toHaveBeenCalledWith(
+        existing.packageId,
+        expect.objectContaining({ version: 7 }),
+      ),
     );
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
   it("is read-only without write access: no save and no archive", () => {

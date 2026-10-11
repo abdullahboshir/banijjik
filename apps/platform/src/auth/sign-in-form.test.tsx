@@ -33,8 +33,9 @@ describe("SignInForm", () => {
   it("asks for both fields and does not call the API when they are empty", async () => {
     renderInBangla(<SignInForm nextPath="/" />);
     await userEvent.click(screen.getByRole("button", { name: banglaText("auth.signIn.submit") }));
-    expect(screen.getByText(banglaText("validation.identifier_required"))).not.toBeNull();
-    expect(screen.getByText(banglaText("validation.required"))).not.toBeNull();
+    // The schema loads on the first submit, so the messages arrive a moment later.
+    expect(await screen.findByText(banglaText("validation.identifier_required"))).not.toBeNull();
+    expect(await screen.findByText(banglaText("validation.required"))).not.toBeNull();
     expect(login).not.toHaveBeenCalled();
   });
 
