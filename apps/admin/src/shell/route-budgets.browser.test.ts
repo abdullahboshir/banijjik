@@ -36,6 +36,14 @@ describe("initial JavaScript per route (13-UX section 11)", () => {
     const size = await measureInitialJs(page, route);
     await closePage(page);
     process.stdout.write(
+      size.files
+        .map(
+          (file) => `  ${file.source} ${file.gzipBytes}
+`,
+        )
+        .join(""),
+    );
+    process.stdout.write(
       `initial JS ${route}: ${size.gzipBytes} B = ${toKiB(size.gzipBytes)} KiB in ${size.fileCount} files\n`,
     );
     expect(toKiB(size.gzipBytes)).toBeLessThanOrEqual(INITIAL_JS_BUDGET_KIB);

@@ -12,6 +12,8 @@ const NO_MODULE_ATTRIBUTE = /\snomodule\b/i;
 export interface InitialJsSize {
   gzipBytes: number;
   fileCount: number;
+  /** Each script with its gzip size, for a breakdown when a budget is missed. */
+  files: { source: string; gzipBytes: number }[];
 }
 
 function scriptSources(html: string): string[] {
@@ -37,7 +39,11 @@ export async function measureInitialJs(page: Page, path: string): Promise<Initia
   const response = await page.goto(`${ADMIN_ORIGIN}${path}`, { waitUntil: "networkidle0" });
   const sources = scriptSources((await response?.text()) ?? "");
   const sizes = await Promise.all(sources.map(gzipSizeOf));
-  return { gzipBytes: sizes.reduce((sum, size) => sum + size, 0), fileCount: sources.length };
+  return {
+    gzipBytes: sizes.reduce((sum, size) => sum + size, 0),
+    fileCount: sources.length,
+    files: sources.map((source, index) => ({ source, gzipBytes: sizes[index] ?? 0 })),
+  };
 }
 
 export function toKiB(bytes: number): number {
