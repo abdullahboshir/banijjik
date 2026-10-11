@@ -59,3 +59,23 @@ describe("RefreshSession", () => {
     expect(session.userAgent).toHaveLength(USER_AGENT_MAX_LENGTH);
   });
 });
+
+describe("RefreshSession audience", () => {
+  it("is an ADMIN session unless the audience is named, and the family keeps it", () => {
+    const admin = openFamily();
+    const platform = RefreshSession.openFamily({
+      userId: newId() as UserId,
+      audience: "PLATFORM",
+      tokenHash: "hash-p",
+      now: NOW,
+      tokenTtlDays: 30,
+      familyMaxDays: 90,
+    });
+
+    const next = platform.continueFamily({ tokenHash: "hash-p2", now: NOW, tokenTtlDays: 30 });
+
+    expect(admin.audience).toBe("ADMIN");
+    expect(platform.audience).toBe("PLATFORM");
+    expect(next.audience).toBe("PLATFORM");
+  });
+});
