@@ -12,6 +12,7 @@ export const PLATFORM_AUDIT_ACTION = {
   MODULE_OVERRIDE_DELETED: "platform.moduleOverride.deleted",
   SUBSCRIPTION_TRIAL_EXTENDED: "platform.subscription.trialExtended",
   SUBSCRIPTION_PACKAGE_CHANGED: "platform.subscription.packageChanged",
+  OPERATOR_SEEDED: "platform.operator.seeded",
 } as const;
 
 export type PlatformAuditAction =
@@ -23,6 +24,7 @@ export const PLATFORM_AUDIT_TARGET_TYPE = defineEnum([
   "package",
   "subscription",
   "module_override",
+  "platform_operator",
 ]);
 export type PlatformAuditTargetType =
   (typeof PLATFORM_AUDIT_TARGET_TYPE)[keyof typeof PLATFORM_AUDIT_TARGET_TYPE];

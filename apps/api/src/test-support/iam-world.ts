@@ -19,6 +19,7 @@ import {
   InMemoryUserRepository,
   PassThroughUnitOfWork,
   RecordingEventPublisher,
+  RecordingSeededOperatorAudit,
 } from "./iam-fakes.js";
 import { MutableClock } from "./mutable-clock.js";
 import { installTestLogger } from "./test-databases.js";
@@ -31,6 +32,7 @@ export interface IamWorld {
   readonly users: InMemoryUserRepository;
   readonly sessions: InMemoryRefreshSessionRepository;
   readonly operators: InMemoryPlatformOperatorRepository;
+  readonly seededOperatorAudit: RecordingSeededOperatorAudit;
   readonly hasher: FakePasswordHasher;
   readonly rateLimiter: InMemoryRateLimiter;
   readonly events: RecordingEventPublisher;
@@ -50,6 +52,7 @@ export function createIamWorld(): IamWorld {
   const users = new InMemoryUserRepository();
   const sessions = new InMemoryRefreshSessionRepository();
   const operators = new InMemoryPlatformOperatorRepository();
+  const seededOperatorAudit = new RecordingSeededOperatorAudit();
   const hasher = new FakePasswordHasher();
   const rateLimiter = new InMemoryRateLimiter();
   const unitOfWork = new PassThroughUnitOfWork();
@@ -73,6 +76,7 @@ export function createIamWorld(): IamWorld {
     users,
     sessions,
     operators,
+    seededOperatorAudit,
     hasher,
     rateLimiter,
     events,
@@ -94,6 +98,7 @@ export function createIamWorld(): IamWorld {
       operators,
       hasher,
       unitOfWork,
+      seededOperatorAudit,
       clock,
     }),
   };

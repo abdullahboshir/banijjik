@@ -21,7 +21,6 @@ import {
   IamUserIdentifierReader,
   type UserIdentifierReader,
 } from "./application/user-identifier-reader.js";
-import { EnsurePlatformAdminUseCase } from "./application/use-cases/ensure-platform-admin.use-case.js";
 import { GetMeUseCase } from "./application/use-cases/get-me.use-case.js";
 import { LoginUseCase } from "./application/use-cases/login.use-case.js";
 import { LogoutAllUseCase } from "./application/use-cases/logout-all.use-case.js";
@@ -137,17 +136,8 @@ function buildSessionIssuer(dependencies: IamDependencies): SessionIssuer {
   });
 }
 
-/** The seed use case for the platform admin. Seeds call this instead of reaching into the module. */
-export function buildEnsurePlatformAdminUseCase(clock: Clock): EnsurePlatformAdminUseCase {
-  return new EnsurePlatformAdminUseCase({
-    users: new MongoUserRepository(),
-    operators: new MongoPlatformOperatorRepository(),
-    hasher: new Argon2PasswordHasher(),
-    unitOfWork: new MongoUnitOfWork(),
-    clock,
-  });
-}
-
+export { buildEnsurePlatformAdminUseCase } from "./ensure-platform-admin.composition.js";
+export type { SeededOperatorAudit } from "./ensure-platform-admin.composition.js";
 export type { EnsurePlatformAdminUseCase } from "./application/use-cases/ensure-platform-admin.use-case.js";
 
 /**

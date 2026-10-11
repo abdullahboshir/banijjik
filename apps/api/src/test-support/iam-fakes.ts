@@ -2,6 +2,7 @@ import type { EventPayloadMap, EventType } from "@banijjik/contracts";
 import type { UserId } from "@banijjik/ids";
 import type { PasswordHasher } from "../modules/core/iam/application/ports/password-hasher.js";
 import type { PlatformOperatorRepository } from "../modules/core/iam/application/ports/platform-operator-repository.js";
+import type { SeededOperatorAudit } from "../modules/core/iam/application/ports/seeded-operator-audit.js";
 import type { RefreshSessionRepository } from "../modules/core/iam/application/ports/refresh-session-repository.js";
 import type { TokenIssuer } from "../modules/core/iam/application/ports/token-issuer.js";
 import type { UnitOfWork } from "../modules/core/iam/application/ports/unit-of-work.js";
@@ -162,5 +163,14 @@ export class InMemoryRateLimiter implements RateLimiter {
 
   async reset(subject: RateLimitSubject): Promise<void> {
     this.counts.delete(`${subject.bucket}:${subject.key}`);
+  }
+}
+
+/** Remembers which operators the seed audited, for unit tests that have no database. */
+export class RecordingSeededOperatorAudit implements SeededOperatorAudit {
+  readonly seededOperatorIds: string[] = [];
+
+  async recordSeeded(operator: { readonly platformOperatorId: string }): Promise<void> {
+    this.seededOperatorIds.push(operator.platformOperatorId);
   }
 }

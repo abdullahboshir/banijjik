@@ -9,7 +9,7 @@ import {
   disposeTestDatabases,
   installTestLogger,
 } from "../test-support/test-databases.js";
-import { seedPlatformAdmin } from "./seed-platform-admin.js";
+import { seedExitCode, seedPlatformAdmin } from "./seed-platform-admin.js";
 
 registerModuleModels();
 
@@ -72,5 +72,13 @@ describe("seedPlatformAdmin", () => {
     const user = await connections.platform.collection("users").findOne({});
     expect(user?.["passwordHash"]).toBe(hashBefore);
     expect(user?.["email"]).toBe("seed.admin@example.com");
+  });
+});
+
+describe("seedExitCode", () => {
+  it("fails the process only when the seed was refused", () => {
+    expect(seedExitCode({ status: "REFUSED", reason: "PASSWORD_MISMATCH" })).toBe(1);
+    expect(seedExitCode({ status: "SKIPPED" })).toBe(0);
+    expect(seedExitCode({ status: "DONE", isUserCreated: true, isOperatorCreated: true })).toBe(0);
   });
 });

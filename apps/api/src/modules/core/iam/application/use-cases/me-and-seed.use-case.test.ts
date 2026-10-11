@@ -1,6 +1,10 @@
 import { newId, type UserId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
-import { aRegistration, createIamWorld } from "../../../../../test-support/iam-world.js";
+import {
+  aRegistration,
+  createIamWorld,
+  TEST_PASSWORD,
+} from "../../../../../test-support/iam-world.js";
 import { DomainRuleError } from "../../domain/errors.js";
 
 describe("GetMeUseCase and UpdateMeUseCase", () => {
@@ -66,15 +70,36 @@ describe("EnsurePlatformAdminUseCase", () => {
     expect([...world.users.users.values()][0]?.passwordHash).toBe(before);
   });
 
-  it("adds the missing operator to an existing user without touching the password", async () => {
+  it("adds the missing operator to an existing user whose own password was given, without touching it", async () => {
     const world = createIamWorld();
     await world.registerUser.execute(aRegistration({ email: "admin@example.com" }));
     const before = [...world.users.users.values()][0]?.passwordHash;
 
-    const result = await world.ensurePlatformAdmin.execute(seed);
+    const result = await world.ensurePlatformAdmin.execute({ ...seed, password: TEST_PASSWORD });
 
     expect(result).toEqual({ isUserCreated: false, isOperatorCreated: true });
     expect([...world.users.users.values()][0]?.passwordHash).toBe(before);
+  });
+
+  it("creates no operator for an existing account the seed password does not open", async () => {
+    const world = createIamWorld();
+    await world.registerUser.execute(aRegistration({ email: "admin@example.com" }));
+
+    const result = await world.ensurePlatformAdmin.execute(seed);
+
+    expect(result).toEqual({ refusal: "PASSWORD_MISMATCH" });
+    expect(world.operators.operators.size).toBe(0);
+    expect(world.seededOperatorAudit.seededOperatorIds).toEqual([]);
+  });
+
+  it("audits the operator it creates, and only that one", async () => {
+    const world = createIamWorld();
+
+    await world.ensurePlatformAdmin.execute(seed);
+    await world.ensurePlatformAdmin.execute(seed);
+
+    const [operator] = [...world.operators.operators.values()];
+    expect(world.seededOperatorAudit.seededOperatorIds).toEqual([operator?.platformOperatorId]);
   });
 
   it("refuses a seed password that breaks the password policy", async () => {
