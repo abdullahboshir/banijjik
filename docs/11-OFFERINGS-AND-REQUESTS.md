@@ -306,6 +306,9 @@ System accounts are seeded per org with fixed `accountCode`s (contracts enum `SY
 | Payment status | PAID | — | PARTIAL, UNPAID | — | REFUNDED, PARTIALLY_REFUNDED |
 | SalesReturn | — | ACTIVE | — | — | REVERSED |
 | Member (staff) | ACTIVE | INVITED | SUSPENDED | — | REMOVED |
+| Invitation | ACCEPTED | PENDING | — | — | REVOKED, EXPIRED |
+| Location | ACTIVE | — | — | — | ARCHIVED |
+| Role | ACTIVE | — | — | — | ARCHIVED |
 
 ## 13. Bot behaviour per request type (`08` tools)
 - `create_request(ORDER)` creates a DRAFT, then PLACED after the customer says yes in chat (explicit confirmation message with items, total, delivery charge, address). When an advance is required, the bot gives payment instructions and records the trxID as "pending verification" (a note on the order). It never records a payment itself.

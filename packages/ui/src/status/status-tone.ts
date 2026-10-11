@@ -1,6 +1,14 @@
 export type StatusTone = "success" | "info" | "warning" | "danger" | "neutral";
 export type StatusRequestType =
-  "ORDER" | "BOOKING" | "ENROLLMENT" | "PAYMENT" | "SALES_RETURN" | "MEMBER";
+  | "ORDER"
+  | "BOOKING"
+  | "ENROLLMENT"
+  | "PAYMENT"
+  | "SALES_RETURN"
+  | "MEMBER"
+  | "INVITATION"
+  | "LOCATION"
+  | "ROLE";
 
 type ToneTable = Record<StatusRequestType, Readonly<Record<StatusTone, readonly string[]>>>;
 
@@ -50,6 +58,27 @@ export const STATUS_TONE_TABLE: ToneTable = {
     warning: ["SUSPENDED"],
     danger: [],
     neutral: ["REMOVED"],
+  },
+  INVITATION: {
+    success: ["ACCEPTED"],
+    info: ["PENDING"],
+    warning: [],
+    danger: [],
+    neutral: ["REVOKED", "EXPIRED"],
+  },
+  LOCATION: {
+    success: ["ACTIVE"],
+    info: [],
+    warning: [],
+    danger: [],
+    neutral: ["ARCHIVED"],
+  },
+  ROLE: {
+    success: ["ACTIVE"],
+    info: [],
+    warning: [],
+    danger: [],
+    neutral: ["ARCHIVED"],
   },
 };
 

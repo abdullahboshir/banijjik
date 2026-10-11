@@ -54,7 +54,7 @@ function columnsOf(
       header: labels.status,
       isPrimary: true,
       cell: (row) => (
-        <StatusBadge requestType="ENROLLMENT" status={row.status} label={row.statusLabel} />
+        <StatusBadge requestType="INVITATION" status={row.status} label={row.statusLabel} />
       ),
     },
     {
