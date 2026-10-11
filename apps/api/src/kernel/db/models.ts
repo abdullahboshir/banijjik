@@ -1,12 +1,14 @@
 import {
   DATABASE_KIND,
   ERROR_CODE,
+  MODEL_TENANCY,
   ORGANIZATION_DEPLOYMENT,
   type OrganizationDeployment,
 } from "@banijjik/contracts";
 import type { Connection, Model } from "mongoose";
 import { AppError } from "../http/app-error.js";
 import { getDatabaseConnections } from "./database-connections.js";
+import { guardAgainstMiddlewareBypass } from "./guarded-model.js";
 import {
   buildSchemaForCompile,
   findModelDefinition,
@@ -38,20 +40,26 @@ function resolveConnection(definition: ModelDefinition, context: ModelContext): 
   return connections.tenantShared;
 }
 
+/** Tenant-scoped and append-only models rely on hooks, so they must not accept `middleware: false` (finding J2). */
+function reliesOnHooks(definition: ModelDefinition): boolean {
+  return definition.tenancy !== MODEL_TENANCY.NONE || definition.appendOnly === true;
+}
+
 function compileOnce<Document>(
   connection: Connection,
   definition: ModelDefinition,
 ): Model<Document> {
   sealModelRegistry();
-  const compiled =
-    connection.models[definition.modelName] ??
-    connection.model(
-      definition.modelName,
-      buildSchemaForCompile(definition),
-      definition.collectionName,
-    );
+  const existing = connection.models[definition.modelName];
   // Safe: the registry stores untyped schemas, so the caller names the document type.
   // Going through unknown also keeps tsc from expanding Mongoose's generic Model type.
+  if (existing !== undefined) return existing as unknown as Model<Document>;
+  const compiled = connection.model(
+    definition.modelName,
+    buildSchemaForCompile(definition),
+    definition.collectionName,
+  );
+  if (reliesOnHooks(definition)) guardAgainstMiddlewareBypass(compiled);
   return compiled as unknown as Model<Document>;
 }
 

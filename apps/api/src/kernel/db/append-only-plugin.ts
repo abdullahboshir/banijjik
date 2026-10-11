@@ -1,6 +1,7 @@
 import { ERROR_CODE, SYSTEM_REASON } from "@banijjik/contracts";
 import { getSystemReason } from "../context/index.js";
 import { AppError } from "../http/app-error.js";
+import { markUnskippable } from "./unskippable-hook.js";
 import type {
   MongooseSchema as Schema,
   MongooseSchemaOptions as SchemaOptions,
@@ -55,17 +56,17 @@ export function appendOnlyPlugin(schema: Schema): void {
   // Safe: Schema.set stores unknown keys in schema.options unchanged.
   schema.set(APPEND_ONLY_PLUGIN_MARKER as keyof SchemaOptions, true);
   // Safe: Mongoose types the hook's operation names as a closed union; these are all valid names.
-  schema.pre(REFUSED_QUERY_OPERATIONS as never, assertWriteAllowed);
-  schema.pre(
-    REFUSED_DOCUMENT_OPERATIONS as never,
-    { document: true, query: false },
-    assertWriteAllowed,
-  );
-  schema.pre("save", function () {
+  // Marked unskippable: `middleware: false` must not lift the guard (finding J2).
+  const refuseWrite = markUnskippable(() => assertWriteAllowed());
+  schema.pre(REFUSED_QUERY_OPERATIONS as never, refuseWrite);
+  schema.pre(REFUSED_DOCUMENT_OPERATIONS as never, { document: true, query: false }, refuseWrite);
+  const refuseSaveOfExisting = markUnskippable(function (this: { readonly isNew: boolean }) {
     if (!this.isNew) assertWriteAllowed();
   });
-  schema.pre("bulkWrite", function (operations: unknown) {
+  schema.pre("save", refuseSaveOfExisting);
+  const refuseUpdatingBulk = markUnskippable(function (operations: unknown): void {
     if (Array.isArray(operations) && operations.every(isInsertOnly)) return;
     assertWriteAllowed();
   });
+  schema.pre("bulkWrite", refuseUpdatingBulk);
 }
