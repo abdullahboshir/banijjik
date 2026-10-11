@@ -6,11 +6,8 @@ import {
   INDUSTRY_KEY_OWNER_FILES,
   INDUSTRY_READER_FILES,
   INFRASTRUCTURE_FILES,
-  MODULE_FILES,
   ORM_ALLOWED_FILES,
   PUBLIC_INDEX_FILES,
-  RUN_AS_SYSTEM_ALLOWED_FILES,
-  RUN_AS_SYSTEM_FORBIDDEN_FILES,
   TEST_FILES,
 } from "./scopes.mjs";
 
@@ -26,9 +23,6 @@ import {
 const ERROR = "error";
 const RANDOM_UUID_MESSAGE =
   "Use newId() from @banijjik/ids; it is the only ID generator (ADR-036).";
-// runAsSystem and runWithRequestContext are exported by the kernel; whatever path or alias reaches the kernel is covered.
-// A namespace import (`import * as x`) from the kernel is reported too, because importNames cannot tell which names it uses.
-const KERNEL_MODULES = ["**/kernel", "**/kernel/**"];
 
 const deepPackagePatterns = [
   "@banijjik/*/src",
@@ -199,78 +193,6 @@ export const restrictionBlocks = [
     files: INDUSTRY_KEY_OWNER_FILES,
     ignores: INDUSTRY_READER_FILES,
     rules: { "banijjik-guard/no-industry-branching": [ERROR, ...industryComparisonSelectors] },
-  },
-  {
-    name: "banijjik/run-as-system",
-    files: RUN_AS_SYSTEM_FORBIDDEN_FILES,
-    ignores: [...RUN_AS_SYSTEM_ALLOWED_FILES, ...TEST_FILES],
-    rules: {
-      // The call is banned under any name: the import by name (aliases included) and a member call.
-      "banijjik-guard/no-run-as-system": [
-        ERROR,
-        ...syntaxRules(
-          "runAsSystem is for the kernel and platform use cases only; module code stays tenant-scoped (05-CONVENTIONS System access).",
-          [
-            "CallExpression[callee.name='runAsSystem']",
-            "CallExpression[callee.property.name='runAsSystem']",
-          ],
-        ),
-      ],
-      "banijjik-guard/no-run-as-system-import": [
-        ERROR,
-        {
-          patterns: [
-            {
-              group: KERNEL_MODULES,
-              importNames: ["runAsSystem"],
-              message:
-                "runAsSystem is for the kernel and platform use cases only; module code stays tenant-scoped (05-CONVENTIONS System access).",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    name: "banijjik/request-context",
-    files: MODULE_FILES,
-    ignores: TEST_FILES,
-    rules: {
-      // Building a request context by hand would let module code claim any organization or user.
-      "banijjik-guard/no-request-context-import": [
-        ERROR,
-        {
-          patterns: [
-            {
-              group: KERNEL_MODULES,
-              importNames: ["runWithRequestContext", "asSystemPort", "runInOrganizationContext"],
-              message:
-                "Only the kernel and routes/v1.ts create a request context or grant a bypass; module code reads the context with getRequestContext() and receives a plain port (ADR-087).",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    name: "banijjik/raw-collection",
-    files: MODULE_FILES,
-    ignores: TEST_FILES,
-    rules: {
-      // Raw driver collections skip Mongoose middleware, so they would skip the tenant plugin too.
-      "banijjik-guard/no-raw-collection": [
-        ERROR,
-        ...syntaxRules(
-          "A raw driver collection bypasses the tenant plugin; use the models(ctx) accessor (ADR-087).",
-          [
-            "MemberExpression[computed=false][property.name='collection']",
-            "MemberExpression[computed=true][property.value='collection']",
-            // Change streams have no Mongoose middleware: Model.watch() would stream every organization.
-            "CallExpression[callee.property.name='watch']",
-          ],
-        ),
-      ],
-    },
   },
   {
     name: "banijjik/public-index-exports",

@@ -1,4 +1,4 @@
-// Selector lists for the no-restricted-syntax based rules (R13 to R16, R26 to R30).
+// Selector lists for the no-restricted-syntax based rules (R13 to R16, R26 to R30, R36).
 const IMPORT_SOURCE_PARENTS =
   "ImportDeclaration, ImportExpression, ExportAllDeclaration, ExportNamedDeclaration, TSImportType, TSLiteralType";
 const COMPARISON = "BinaryExpression[operator=/^[!=]==?$/]";
@@ -63,3 +63,14 @@ export const processEnvSyntax = syntaxRules(
     "MemberExpression[object.object.name='globalThis'][object.property.name='process'][property.name='env']",
   ],
 );
+
+const MIDDLEWARE_OPTION_NAMES = "/^(middleware|skipMiddlewareFunction)$/";
+
+/** R36: every spelling of the Mongoose option that skips hooks: an object key, an assignment or a setOptions argument. */
+export const middlewareBypassSelectors = [
+  `Property[key.name=${MIDDLEWARE_OPTION_NAMES}]`,
+  `Property[key.value=${MIDDLEWARE_OPTION_NAMES}]`,
+  `MemberExpression[property.name=${MIDDLEWARE_OPTION_NAMES}]`,
+  `MemberExpression[computed=true][property.value=${MIDDLEWARE_OPTION_NAMES}]`,
+  "CallExpression[callee.property.name='setOptions'] Identifier[name='middleware']",
+];

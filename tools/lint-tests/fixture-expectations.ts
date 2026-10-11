@@ -15,6 +15,7 @@ const DOMAIN_IMPORTS = "banijjik-guard/no-domain-framework-imports";
 const RUN_AS_SYSTEM = "banijjik-guard/no-run-as-system";
 const RUN_AS_SYSTEM_IMPORT = "banijjik-guard/no-run-as-system-import";
 const REQUEST_CONTEXT_IMPORT = "banijjik-guard/no-request-context-import";
+const MIDDLEWARE_BYPASS = "banijjik-guard/no-middleware-bypass";
 const RAW_COLLECTION = "banijjik-guard/no-raw-collection";
 const ORM_IMPORTS = "banijjik-guard/no-orm-imports";
 const NAMING = "@typescript-eslint/naming-convention";
@@ -216,9 +217,24 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
     RUN_AS_SYSTEM,
     RUN_AS_SYSTEM_IMPORT,
   ),
+  fails(
+    "R26",
+    "apps/api/src/modules/platform/demo/application/r26-run-as-system-in-unlisted-platform-application.fail.ts",
+    RUN_AS_SYSTEM,
+    RUN_AS_SYSTEM_IMPORT,
+  ),
+  // Finding J3: module root files and composition files are module code too.
+  fails("R26", `${ORGANIZATION}/index.ts`, RUN_AS_SYSTEM, RUN_AS_SYSTEM_IMPORT),
+  fails(
+    "R26",
+    `${ORGANIZATION}/r26-run-as-system.composition.fail.ts`,
+    RUN_AS_SYSTEM,
+    RUN_AS_SYSTEM_IMPORT,
+  ),
+  // A file on the explicit SYSTEM_ACCESS_FILES list (eslint/scopes.mjs) may call it.
   passes(
     "R26",
-    "apps/api/src/modules/platform/demo/application/r26-run-as-system-in-platform-application.pass.ts",
+    "apps/api/src/modules/platform/tenant-admin/application/use-cases/tenant-admin.use-cases.ts",
   ),
   passes("R26", `${MODULE}/application/r26-run-as-system-in-tests.pass.test.ts`),
   passes("R26", "apps/api/src/kernel/context/r26-run-as-system-in-kernel.pass.ts"),
@@ -285,6 +301,14 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   fails("R35", `${MODULE}/infrastructure/r35-change-stream.fail.ts`, RAW_COLLECTION),
   passes("R35", "apps/api/src/kernel/db/r35-raw-collection-in-kernel.pass.ts"),
   passes("R35", `${MODULE}/infrastructure/r35-raw-collection-in-tests.pass.test.ts`),
+
+  fails("R36", `${SALES}/infrastructure/r36-middleware-option.fail.ts`, MIDDLEWARE_BYPASS),
+  fails("R36", `${SALES}/infrastructure/r36-set-options.fail.ts`, MIDDLEWARE_BYPASS),
+  fails("R36", `${SALES}/infrastructure/r36-skip-middleware-function.fail.ts`, MIDDLEWARE_BYPASS),
+  fails("R36", `${SALES}/infrastructure/r36-option-assigned.fail.ts`, MIDDLEWARE_BYPASS),
+  passes("R36", `${SALES}/infrastructure/r36-ordinary-options.pass.ts`),
+  passes("R36", `${SALES}/infrastructure/r36-middleware-option-in-tests.pass.test.ts`),
+  passes("R36", "apps/api/src/kernel/db/r36-middleware-option-in-kernel.pass.ts"),
 
   fails("R34", "apps/api/src/seeds/r34-seeds-import-module-internals.fail.ts", BOUNDARIES),
   passes("R34", "apps/api/src/seeds/r34-seeds-import-index-kernel-config.pass.ts"),

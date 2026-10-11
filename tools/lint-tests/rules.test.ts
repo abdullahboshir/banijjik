@@ -5,7 +5,7 @@ import { ESLint, type Linter } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
 import { FIXTURE_EXPECTATIONS } from "./fixture-expectations.js";
 
-const RULE_COUNT = 35;
+const RULE_COUNT = 36;
 const currentFolder = dirname(fileURLToPath(import.meta.url));
 const fixturesRoot = join(currentFolder, "fixtures");
 const configFile = join(currentFolder, "..", "..", "eslint.config.mjs");
@@ -13,9 +13,9 @@ const EXPECTED_RULES = Array.from(
   { length: RULE_COUNT },
   (_, index) => `R${String(index + 1).padStart(2, "0")}`,
 );
-// Fixtures that cannot carry ".fail." / ".pass." in their name because the rule is about the name "index.ts".
+// Fixtures that cannot carry ".fail." / ".pass." in their name because the rule is about the real file name.
 const NAMED_BY_FOLDER =
-  /^(r21-star-export\/(fail|pass)\/(index|barrel)|apps\/api\/src\/kernel\/http\/error-handler)\.ts$/;
+  /^(r21-star-export\/(fail|pass)\/(index|barrel)|apps\/api\/src\/kernel\/http\/error-handler|apps\/api\/src\/modules\/core\/organization\/index|apps\/api\/src\/modules\/platform\/tenant-admin\/application\/use-cases\/tenant-admin\.use-cases)\.ts$/;
 const FIXTURE_FILE = /\.(fail|pass)(\.(test|config))?\.tsx?$/;
 
 type FixtureOutcome = { ruleIds: string[]; messages: string[] };
@@ -42,7 +42,12 @@ function isFixtureFile(path: string): boolean {
 }
 
 function isNamedAsFailing(path: string): boolean {
-  return path.includes(".fail.") || path.startsWith("r21-star-export/fail/");
+  return (
+    path.includes(".fail.") ||
+    path.startsWith("r21-star-export/fail/") ||
+    // The probe of finding J3 is a module root file, which cannot be renamed to .fail.ts.
+    path === "apps/api/src/modules/core/organization/index.ts"
+  );
 }
 
 describe("lint rules fire on the fixtures", () => {
@@ -72,7 +77,7 @@ describe("lint rules fire on the fixtures", () => {
 });
 
 describe("the fixture table", () => {
-  it("has a failing and a passing fixture for every rule R01 to R34", () => {
+  it("has a failing and a passing fixture for every rule R01 to R36", () => {
     for (const rule of EXPECTED_RULES) {
       const entries = FIXTURE_EXPECTATIONS.filter((entry) => entry.rule === rule);
       expect(

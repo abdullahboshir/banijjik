@@ -5,6 +5,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import { architectureBlock } from "./eslint/architecture.mjs";
 import { guardPlugin } from "./eslint/guard-plugin.mjs";
+import { bypassBlocks } from "./eslint/bypass-restrictions.mjs";
 import { restrictionBlocks } from "./eslint/restrictions.mjs";
 import {
   SCRIPT_FILES,
@@ -151,5 +152,6 @@ export default defineConfig(
     plugins: { "banijjik-guard": guardPlugin },
   },
   ...restrictionBlocks,
+  ...bypassBlocks,
   architectureBlock,
 );

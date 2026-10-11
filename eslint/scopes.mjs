@@ -24,14 +24,16 @@ export const ORM_ALLOWED_FILES = [
   "**/test-support/**",
   ...TEST_FILES,
 ];
-// R26: all module layers, repositories (infrastructure) included. Platform use cases are exempt (they must write an audit entry).
-export const RUN_AS_SYSTEM_FORBIDDEN_FILES = [
-  "**/modules/*/*/domain/**",
-  "**/modules/*/*/application/**",
-  "**/modules/*/*/infrastructure/**",
-  "**/modules/*/*/presentation/**",
+// R26 and R27: every file under modules/, root files (index.ts, *.composition.ts) included. Only the
+// files below may call runAsSystem. Each is a platform admin use case that writes an audit entry.
+// A new platform use case that needs system access is added here in the same commit, so the bypass
+// shows up in review (plan 1.9b, ADR-087). Patterns start with `**/` like the rest of this file.
+export const SYSTEM_ACCESS_FILES = [
+  "**/modules/platform/entitlement/application/use-cases/module-override-admin.use-cases.ts",
+  "**/modules/platform/package/application/use-cases/package-admin.use-cases.ts",
+  "**/modules/platform/saas-billing/application/use-cases/subscription-admin.use-cases.ts",
+  "**/modules/platform/tenant-admin/application/use-cases/tenant-admin.use-cases.ts",
 ];
-export const RUN_AS_SYSTEM_ALLOWED_FILES = ["**/modules/platform/**/application/**"];
 export const PUBLIC_INDEX_FILES = ["**/index.ts"];
 export const ID_PACKAGE_FILES = ["**/packages/ids/**"];
 // Next apps keep their pages in app/ next to src/, so both folders are in scope.
