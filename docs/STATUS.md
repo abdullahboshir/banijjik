@@ -65,7 +65,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `done (<date>, <PR/comm
 | 1.7b organization tenant API (profile, locations, members, invitations) | merged (2026-10-10, Opus review passed after 3 fixes; ADR-092) | branch `s/1.7b-org-tenant-api`; handoff `docs/handoffs/1.7b.md`; ADR-092. Gaps: the admin menu entries of decision 12 move to card 1.7c (it designs the "only with 2 or more locations" flag and updates the three menu assertions in `entitlement-api.test.ts`); invitation links are shared by hand until SMS/email sending exists (5.13); the identifier match is the only binding until identifiers are verified; existing databases keep the old full unique index on `locations.name` until the index-sync task exists |
 | 1.7c admin menu, home banners, staff and invitations | planned (2026-10-10, `docs/plans/1.7c.md`, Opus) | parallel with 1.8a; includes the deferred settings menu entries |
 | 1.7d admin business profile, locations and roles screens | todo | after 1.7c |
-| 1.8a platform API: operator sign-in, tenants, packages, module grants | implemented (awaiting Opus review) | T1; branch `s/1.8a-platform-api`; handoff `docs/handoffs/1.8a.md`; ADR-093 (role mapping is a proposal). Opus fixes applied (handoff "Review fixes"); api tests need `VITEST_MAX_WORKERS=2` on a low-memory machine |
+| 1.8a platform API: operator sign-in, tenants, packages, module grants | merged (2026-10-11, Opus review passed after 4 fixes; ADR-093 proposed, owner confirmation pending) | T1; branch `s/1.8a-platform-api`; handoff `docs/handoffs/1.8a.md`; ADR-093 (role mapping is a proposal). Opus fixes applied (handoff "Review fixes"); api tests need `VITEST_MAX_WORKERS=2` on a low-memory machine |
 | 1.8b platform web app | todo | after 1.8a |
 
 ## Phases 2–8
