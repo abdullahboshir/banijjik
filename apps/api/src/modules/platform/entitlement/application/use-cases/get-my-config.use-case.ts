@@ -3,6 +3,8 @@ import {
   permissionModuleKey,
   type CallerPermissionsResponse,
   type MenuEntry,
+  type PermissionDefinition,
+  type PermissionDefinitionResponse,
   type PermissionKey,
   type ResolvedOrgConfigResponse,
   type SubscriptionSummaryResponse,
@@ -14,6 +16,8 @@ import type { EffectiveOrgConfig } from "../org-config.service.js";
 export interface GetMyConfigDependencies {
   readonly orgConfig: { current(): Promise<EffectiveOrgConfig> };
   readonly permissions: Pick<PermissionGate, "describeCaller">;
+  /** Every permission of the registered manifests (the permission catalogue). */
+  readonly permissionDefinitions: readonly PermissionDefinition[];
 }
 
 /** Permissions of modules that are off have no effect (10-MODULE-CATALOG section 10), so they are left out. */
@@ -40,6 +44,20 @@ function describePermissions(
     allLocations: restrictToEffectiveModules(grants.allLocations, effectiveModules),
     byLocation,
   };
+}
+
+function describeDefinitions(
+  definitions: readonly PermissionDefinition[],
+  effectiveModules: ReadonlySet<string>,
+): PermissionDefinitionResponse[] {
+  return definitions
+    .filter((definition) => effectiveModules.has(permissionModuleKey(definition.permissionKey)))
+    .map((definition) => ({
+      permissionKey: definition.permissionKey,
+      labelKey: definition.labelKey,
+      isSensitive: definition.isSensitive,
+      moduleKey: permissionModuleKey(definition.permissionKey),
+    }));
 }
 
 function holdsAnywhere(permissions: CallerPermissionsResponse, key: PermissionKey): boolean {
@@ -72,7 +90,8 @@ export class GetMyConfigUseCase {
     const effective = await this.dependencies.orgConfig.current();
     const grants = await this.dependencies.permissions.describeCaller();
     const { config } = effective;
-    const permissions = describePermissions(grants, new Set(config.modules));
+    const effectiveModules = new Set<string>(config.modules);
+    const permissions = describePermissions(grants, effectiveModules);
     const menu: readonly MenuEntry[] = config.menu.filter((entry) =>
       holdsAnywhere(permissions, entry.permissionKey),
     );
@@ -90,6 +109,10 @@ export class GetMyConfigUseCase {
       terms: config.terms,
       settings: config.settings,
       permissions,
+      permissionDefinitions: describeDefinitions(
+        this.dependencies.permissionDefinitions,
+        effectiveModules,
+      ),
     };
   }
 }

@@ -172,6 +172,7 @@ export {
 export { ENTITLEMENT_MESSAGE_KEYS } from "./entitlement/entitlement-message-keys.js";
 export type {
   CallerPermissionsResponse,
+  PermissionDefinitionResponse,
   ResolvedOrgConfigResponse,
   SubscriptionSummaryResponse,
 } from "./entitlement/entitlement-contracts.js";

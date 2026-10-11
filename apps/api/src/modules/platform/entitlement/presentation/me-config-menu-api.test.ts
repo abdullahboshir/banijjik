@@ -95,3 +95,31 @@ describe("the subscription summary of the config", () => {
     expect(trialEndsAt - harness.clock.now().getTime()).toBeGreaterThan(0);
   });
 });
+
+describe("the permission definitions of the config", () => {
+  it("lists every permission of the effective modules with its module and sensitivity", async () => {
+    const world = await aWorld();
+
+    const response = await world.bob.call("get", `/orgs/${world.organizationB}/me/config`);
+
+    const definitions: { permissionKey: string; isSensitive: boolean; moduleKey: string }[] =
+      response.body.data.permissionDefinitions;
+    const ownershipTransfer = definitions.find(
+      (definition) => definition.permissionKey === "organization.ownership.transfer",
+    );
+    const profileUpdate = definitions.find(
+      (definition) => definition.permissionKey === "organization.profile.update",
+    );
+    expect(ownershipTransfer).toMatchObject({ isSensitive: true, moduleKey: "organization" });
+    expect(profileUpdate).toMatchObject({ isSensitive: false, moduleKey: "organization" });
+    expect(profileUpdate).toHaveProperty("labelKey", "permission.organization.profile.update");
+  });
+
+  it("gives a staff member the same definitions, which carry no grant", async () => {
+    const world = await aWorld();
+
+    const response = await world.sam.call("get", `/orgs/${world.organizationA}/me/config`);
+
+    expect(response.body.data.permissionDefinitions.length).toBeGreaterThan(0);
+  });
+});

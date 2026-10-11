@@ -263,6 +263,7 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
   const entitlementRouter = buildEntitlementTenantRouter({
     orgConfig,
     permissions: permissionGate,
+    permissionDefinitions: catalog.all(),
   });
   return [
     iamRouter,

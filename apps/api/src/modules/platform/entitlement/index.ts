@@ -1,3 +1,4 @@
+import type { PermissionDefinition } from "@banijjik/contracts";
 import type { Router } from "express";
 import type { PlatformAuditRecorder } from "../../../kernel/audit/index.js";
 import type { PlatformPermissionMiddlewareFactory } from "../../../kernel/auth/index.js";
@@ -96,6 +97,7 @@ export function buildModuleEffectiveness(service: OrgConfigService): ModuleEffec
 export interface EntitlementTenantRouterDependencies {
   readonly orgConfig: OrgConfigService;
   readonly permissions: Pick<PermissionGate, "describeCaller">;
+  readonly permissionDefinitions: readonly PermissionDefinition[];
 }
 
 /** `GET /orgs/{organizationId}/me/config`, mounted by routes/v1.ts behind the tenant pipeline. */

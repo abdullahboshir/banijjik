@@ -22,6 +22,14 @@ export interface SubscriptionSummaryResponse {
   readonly isPastDue: boolean;
 }
 
+/** One permission of an effective module, as its manifest declares it: the role editor groups and marks by it. */
+export interface PermissionDefinitionResponse {
+  readonly permissionKey: PermissionKey;
+  readonly labelKey: string;
+  readonly isSensitive: boolean;
+  readonly moduleKey: string;
+}
+
 /**
  * Response of `GET /orgs/{organizationId}/me/config`: what the admin app needs to draw itself.
  * `settings` and `terms` stay empty objects until the settings module (card 2.4).
@@ -42,4 +50,6 @@ export interface ResolvedOrgConfigResponse {
   readonly terms: Readonly<Record<string, string>>;
   readonly settings: Readonly<Record<string, unknown>>;
   readonly permissions: CallerPermissionsResponse;
+  /** Every permission of the effective modules, so a client never hard-codes which ones are sensitive. */
+  readonly permissionDefinitions: readonly PermissionDefinitionResponse[];
 }
