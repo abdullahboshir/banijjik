@@ -109,3 +109,10 @@ export interface PlatformChangePackageRequest {
   basePackageId: string;
   addOnPackageIds: string[];
 }
+
+/** Answer of the suspend and reactivate endpoints. */
+export interface PlatformOrganizationStatusResponse {
+  organizationId: string;
+  status: OrganizationStatus;
+  version: number;
+}

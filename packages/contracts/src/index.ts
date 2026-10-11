@@ -218,6 +218,7 @@ export type {
   PlatformModuleOverrideCreateRequest,
   PlatformModuleOverrideResponse,
   PlatformOrganizationDetail,
+  PlatformOrganizationStatusResponse,
   PlatformOrganizationSummary,
   PlatformPackageCreateRequest,
   PlatformPackageResponse,

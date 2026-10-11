@@ -1,5 +1,12 @@
+import {
+  asId,
+  type OrganizationId,
+  type PackageId,
+  type PlatformSubscriptionId,
+} from "@banijjik/ids";
+import { stripMongoInternals } from "../../../../kernel/db/index.js";
 import type { SubscriptionView } from "../application/subscription-view.js";
-import type { PlatformSubscription } from "../domain/platform-subscription.entity.js";
+import { PlatformSubscription } from "../domain/platform-subscription.entity.js";
 import type { PlatformSubscriptionDocument } from "./platform-subscription.schema.js";
 
 export function toSubscriptionDocument(
@@ -31,4 +38,22 @@ export function toSubscriptionView(document: PlatformSubscriptionDocument): Subs
     trialEndsAt: document.trialEndsAt,
     currentPeriodEnd: document.currentPeriodEnd,
   };
+}
+
+/** Rebuilds the entity the platform use cases change. */
+export function toSubscription(document: PlatformSubscriptionDocument): PlatformSubscription {
+  const stored = stripMongoInternals(document);
+  return PlatformSubscription.restore({
+    platformSubscriptionId: asId<PlatformSubscriptionId>(stored.platformSubscriptionId),
+    organizationId: asId<OrganizationId>(stored.organizationId),
+    basePackageId: asId<PackageId>(stored.basePackageId),
+    addOnPackageIds: stored.addOnPackageIds.map((packageId) => asId<PackageId>(packageId)),
+    status: stored.status,
+    trialEndsAt: stored.trialEndsAt,
+    currentPeriodStart: stored.currentPeriodStart,
+    currentPeriodEnd: stored.currentPeriodEnd,
+    version: stored.version,
+    createdAt: stored.createdAt,
+    updatedAt: stored.updatedAt,
+  });
 }

@@ -1,7 +1,23 @@
+import { PACKAGE_STATUS } from "@banijjik/contracts";
 import type { OrganizationId } from "@banijjik/ids";
+import type { Router } from "express";
+import type { PlatformAuditRecorder } from "../../../kernel/audit/index.js";
+import type { PlatformPermissionMiddlewareFactory } from "../../../kernel/auth/index.js";
+import type { ConfigVersionBumper } from "../../../kernel/tenancy/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import { buildPackageReader } from "../package/index.js";
 import type { SubscriptionReader } from "./application/ports/subscription-repository.js";
+import type { PackageKindLookup } from "./application/ports/subscription-admin-ports.js";
+import {
+  ChangePackageUseCase,
+  ExtendTrialUseCase,
+  GetSubscriptionUseCase,
+  type SubscriptionAdminDependencies,
+} from "./application/use-cases/subscription-admin.use-cases.js";
+import { MongoSubscriptionAdminRepository } from "./infrastructure/mongo-subscription-admin.repository.js";
+import { MongoSubscriptionUnitOfWork } from "./infrastructure/mongo-subscription-unit-of-work.js";
+import { SubscriptionController } from "./presentation/subscription.controller.js";
+import { buildSubscriptionRouter } from "./presentation/subscription.router.js";
 import { StartTrialUseCase } from "./application/use-cases/start-trial.use-case.js";
 import { MongoSubscriptionRepository } from "./infrastructure/mongo-subscription.repository.js";
 
@@ -33,4 +49,67 @@ export function buildTrialStarter(clock: Clock): TrialStarter {
 /** The read side for entitlement. */
 export function buildSubscriptionReader(): SubscriptionReader {
   return new MongoSubscriptionRepository();
+}
+
+export type { SubscriptionDetail } from "./application/use-cases/subscription-admin.use-cases.js";
+
+export interface SubscriptionPlatformDependencies {
+  readonly clock: Clock;
+  readonly platformAudit: PlatformAuditRecorder;
+  /** Implemented by core/organization, wired in routes/v1.ts. */
+  readonly configVersion: ConfigVersionBumper;
+}
+
+function buildPackageKindLookup(): PackageKindLookup {
+  const packages = buildPackageReader();
+  return {
+    findByIds: async (packageIds) =>
+      (await packages.findByIds(packageIds)).map((entry) => ({
+        packageId: entry.packageId,
+        packageKey: entry.packageKey,
+        isAddOn: entry.isAddOn,
+        isActive: entry.status === PACKAGE_STATUS.ACTIVE,
+      })),
+  };
+}
+
+function buildAdminDependencies(
+  dependencies: SubscriptionPlatformDependencies,
+): SubscriptionAdminDependencies {
+  return {
+    subscriptions: new MongoSubscriptionAdminRepository(),
+    packages: buildPackageKindLookup(),
+    configVersion: dependencies.configVersion,
+    unitOfWork: new MongoSubscriptionUnitOfWork(),
+    platformAudit: dependencies.platformAudit,
+    clock: dependencies.clock,
+  };
+}
+
+/** `/platform/organizations/{organizationId}/subscription`, mounted by routes/v1.ts behind `authenticatePlatform`. */
+export function buildSubscriptionPlatformRouter(
+  dependencies: SubscriptionPlatformDependencies & {
+    readonly permission: PlatformPermissionMiddlewareFactory;
+  },
+): Router {
+  const shared = buildAdminDependencies(dependencies);
+  const controller = new SubscriptionController({
+    getSubscription: new GetSubscriptionUseCase(shared),
+    extendTrial: new ExtendTrialUseCase(shared),
+    changePackage: new ChangePackageUseCase(shared),
+  });
+  return buildSubscriptionRouter(controller, dependencies.permission);
+}
+
+/** The reads of the tenant list and detail. They run as system access themselves (PLATFORM_ADMIN). */
+export function buildSubscriptionAdminReader(
+  dependencies: SubscriptionPlatformDependencies,
+): GetSubscriptionUseCase {
+  return new GetSubscriptionUseCase(buildAdminDependencies(dependencies));
+}
+
+/** Is a package the base or an add-on of a running subscription? Wired into the package module by routes/v1.ts. */
+export function buildPackageUsage(): { isInUse(packageId: string): Promise<boolean> } {
+  const subscriptions = new MongoSubscriptionAdminRepository();
+  return { isInUse: (packageId) => subscriptions.isPackageInUse(packageId) };
 }

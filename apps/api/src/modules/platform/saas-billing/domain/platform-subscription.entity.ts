@@ -1,4 +1,5 @@
 import { SUBSCRIPTION_STATUS, TRIAL_DAYS, type SubscriptionStatus } from "@banijjik/contracts";
+import { trialNotActive } from "./errors.js";
 import {
   newId,
   type OrganizationId,
@@ -75,6 +76,27 @@ export class PlatformSubscription implements PlatformSubscriptionProps {
       createdAt: input.now,
       updatedAt: input.now,
     });
+  }
+
+  /**
+   * Adds days to the trial, counted from the later of the current end and now, so a trial that
+   * already ended gets `days` full days from today. Only a trial can be extended.
+   */
+  withTrialExtended(days: number, now: Date): PlatformSubscription {
+    if (this.status !== SUBSCRIPTION_STATUS.TRIALING || this.trialEndsAt === null) {
+      throw trialNotActive();
+    }
+    const startMilliseconds = Math.max(this.trialEndsAt.getTime(), now.getTime());
+    const trialEndsAt = new Date(startMilliseconds + days * MILLISECONDS_PER_DAY);
+    return new PlatformSubscription({ ...this, trialEndsAt });
+  }
+
+  /** The same subscription on other packages; the status and the dates stay. */
+  withPackages(
+    basePackageId: PackageId,
+    addOnPackageIds: readonly PackageId[],
+  ): PlatformSubscription {
+    return new PlatformSubscription({ ...this, basePackageId, addOnPackageIds });
   }
 
   /** Rebuilds a stored subscription. */
