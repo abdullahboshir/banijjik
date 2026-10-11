@@ -1,3 +1,4 @@
+import { isOnPath } from "./active-path";
 import { QUICK_CREATE_SLOT_KEY, type BottomNavSlot, type SidebarGroup } from "@banijjik/ui";
 
 /**
@@ -27,11 +28,6 @@ type MenuEntry = SidebarGroup["entries"][number];
 
 function findEntry(menu: readonly SidebarGroup[], menuKey: string): MenuEntry | undefined {
   return menu.flatMap((group) => group.entries).find((entry) => entry.menuKey === menuKey);
-}
-
-function isOnPath(activePath: string | undefined, href: string): boolean {
-  if (activePath === undefined) return false;
-  return activePath === href || activePath.startsWith(`${href}/`);
 }
 
 function entrySlot(entry: MenuEntry, activePath: string | undefined): BottomNavSlot {

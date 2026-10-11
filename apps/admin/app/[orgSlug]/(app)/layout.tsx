@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
-import { loadSessionData } from "../../../src/auth/session-data";
+import { loadOrgContext } from "../../../src/shell/org-access";
 import { OrganizationShell } from "../../../src/shell/organization-shell";
 
 export default async function OrganizationShellLayout({
@@ -9,9 +9,17 @@ export default async function OrganizationShellLayout({
   children: ReactNode;
   params: Promise<{ orgSlug: string }>;
 }): Promise<ReactElement> {
-  const [{ orgSlug }, { me, organizations }] = await Promise.all([params, loadSessionData()]);
+  const { orgSlug } = await params;
+  // The business id comes from /me/orgs, so the config call cannot run in parallel with it.
+  const { me, organizations, config, timeZone } = await loadOrgContext(orgSlug);
   return (
-    <OrganizationShell orgSlug={orgSlug} me={me} organizations={organizations}>
+    <OrganizationShell
+      orgSlug={orgSlug}
+      me={me}
+      organizations={organizations}
+      config={config}
+      timeZone={timeZone}
+    >
       {children}
     </OrganizationShell>
   );

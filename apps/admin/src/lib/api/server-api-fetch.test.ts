@@ -13,7 +13,7 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
-const { serverApiFetch } = await import("./server-api-fetch");
+const { serverApiFetch, serverPublicApiFetch } = await import("./server-api-fetch");
 
 function stubFetch(response: Response): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn(() => Promise.resolve(response));
@@ -88,5 +88,21 @@ describe("serverApiFetch", () => {
     expect(init.method).toBe("PATCH");
     expect(init.body).toBe(JSON.stringify({ version: 2 }));
     expect((init.headers as Record<string, string>)["Content-Type"]).toBe("application/json");
+  });
+});
+
+describe("serverPublicApiFetch", () => {
+  it("sends no cookie at all, even when the visitor has one", async () => {
+    cookieValues.set("access_token", "access-jwt");
+    const fetchMock = stubFetch(
+      new Response(JSON.stringify({ data: { organizationName: "আকমি" } }), { status: 200 }),
+    );
+
+    const result = await serverPublicApiFetch("/invitations/some-token");
+
+    const [url, init] = lastRequest(fetchMock);
+    expect(url).toBe("http://localhost:4000/api/v1/invitations/some-token");
+    expect(init.headers).toEqual({ Accept: "application/json" });
+    expect(result.data).toEqual({ organizationName: "আকমি" });
   });
 });

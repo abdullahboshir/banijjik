@@ -28,6 +28,19 @@ function buildHeaders(accessToken: string, hasBody: boolean): Record<string, str
   return headers;
 }
 
+async function sendServerRequest<Data, Meta>(
+  path: string,
+  init: RequestInit,
+): Promise<ApiResult<Data, Meta>> {
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl(path), init);
+  } catch {
+    throw networkError();
+  }
+  return parseApiResponse<Data, Meta>(response);
+}
+
 /**
  * Server components and server actions call the API with the visitor's access cookie, never cached
  * (the answer depends on who is asking). Without the cookie it fails as 401 without a request.
@@ -45,11 +58,16 @@ export async function serverApiFetch<Data, Meta = Readonly<Record<string, unknow
     cache: "no-store",
   };
   if (options.body !== undefined) init.body = JSON.stringify(options.body);
-  let response: Response;
-  try {
-    response = await fetch(buildApiUrl(path), init);
-  } catch {
-    throw networkError();
-  }
-  return parseApiResponse<Data, Meta>(response);
+  return sendServerRequest<Data, Meta>(path, init);
+}
+
+/** For public endpoints, such as the preview of an invitation link: no cookie is sent, none is needed. */
+export function serverPublicApiFetch<Data, Meta = Readonly<Record<string, unknown>>>(
+  path: string,
+): Promise<ApiResult<Data, Meta>> {
+  return sendServerRequest<Data, Meta>(path, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
 }
