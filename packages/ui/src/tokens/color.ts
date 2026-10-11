@@ -49,3 +49,15 @@ export function flattenColorTokens(): FlatColorToken[] {
     Object.entries(members).map(([member, value]) => ({ name: `${group}.${member}`, value })),
   );
 }
+
+/**
+ * The platform panel's own accent (13-UX section 12): it replaces the three brand tokens in apps/platform
+ * only, so operators always know they are not in a tenant's dashboard. Every other token is shared.
+ * The values are copied into apps/platform/app/globals.css; a test there keeps both in step, and
+ * color.test.ts checks every pair for WCAG AA.
+ */
+export const platformAccentTokens = {
+  primary: { light: "#4338CA", dark: "#A5B4FC" },
+  primaryHover: { light: "#3730A3", dark: "#C7D2FE" },
+  onPrimary: { light: "#FFFFFF", dark: "#1E1B4B" },
+} as const satisfies Record<string, ColorValue>;

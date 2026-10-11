@@ -61,6 +61,7 @@ export {
   BANGLA_LINE_HEIGHT,
   breakpointTokens,
   colorTokens,
+  platformAccentTokens,
   flattenColorTokens,
   fontSizeTokens,
   fontWeightTokens,

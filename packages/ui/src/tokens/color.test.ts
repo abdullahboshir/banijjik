@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { colorTokens, type ColorTheme } from "./color.js";
+import { colorTokens, platformAccentTokens, type ColorTheme } from "./color.js";
 
 const AA_BODY_TEXT = 4.5;
 const THEMES: ColorTheme[] = ["light", "dark"];
@@ -67,6 +67,29 @@ describe.each(THEMES)("%s theme contrast (WCAG AA 4.5:1)", (theme) => {
 
   it.each(statusColors)("status %s is readable on the surface colour", (_name, color) => {
     expect(contrastRatio(color[theme], colorTokens.bg.surface[theme])).toBeGreaterThanOrEqual(
+      AA_BODY_TEXT,
+    );
+  });
+});
+
+describe.each(THEMES)("%s theme contrast of the platform accent (WCAG AA 4.5:1)", (theme) => {
+  const { primary, primaryHover, onPrimary } = platformAccentTokens;
+  const accentBackgrounds = [
+    ["bg.app", colorTokens.bg.app],
+    ["bg.surface", colorTokens.bg.surface],
+    ["bg.subtle", colorTokens.bg.subtle],
+  ] as const;
+
+  it("text on the accent button is readable in rest and hover states", () => {
+    expect(contrastRatio(onPrimary[theme], primary[theme])).toBeGreaterThanOrEqual(AA_BODY_TEXT);
+    expect(contrastRatio(onPrimary[theme], primaryHover[theme])).toBeGreaterThanOrEqual(
+      AA_BODY_TEXT,
+    );
+  });
+
+  it.each(accentBackgrounds)("the accent is readable as link text on %s", (_name, background) => {
+    expect(contrastRatio(primary[theme], background[theme])).toBeGreaterThanOrEqual(AA_BODY_TEXT);
+    expect(contrastRatio(primaryHover[theme], background[theme])).toBeGreaterThanOrEqual(
       AA_BODY_TEXT,
     );
   });

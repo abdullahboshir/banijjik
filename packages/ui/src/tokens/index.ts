@@ -1,5 +1,5 @@
 export { breakpointTokens } from "./breakpoints.js";
-export { colorTokens, flattenColorTokens } from "./color.js";
+export { colorTokens, flattenColorTokens, platformAccentTokens } from "./color.js";
 export type { ColorTheme, ColorValue, FlatColorToken } from "./color.js";
 export { motionTokens } from "./motion.js";
 export { radiusTokens } from "./radius.js";

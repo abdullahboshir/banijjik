@@ -146,6 +146,7 @@ export { isModuleKey, MODULE_KEY, MODULE_KEY_VALUES } from "./modules/module-key
 export type { ModuleKey } from "./modules/module-key.js";
 export { MODULE_CLASS } from "./modules/module-class.js";
 export type { ModuleClass } from "./modules/module-class.js";
+export { MODULE_CLASS_BY_KEY } from "./modules/module-class-by-key.js";
 export { OFFERING_KIND } from "./modules/offering-kind.js";
 export type { OfferingKind } from "./modules/offering-kind.js";
 export { MENU_VISIBILITY } from "./modules/menu-visibility.js";
