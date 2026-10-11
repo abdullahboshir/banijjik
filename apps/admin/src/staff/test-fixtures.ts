@@ -10,22 +10,24 @@ export const SECOND_LOCATION_ID = "location-2";
 
 export const { t: translate } = banglaTranslator();
 
-export function role(
-  roleId: string,
-  roleKey: string,
-  overrides: Partial<RoleSummary> = {},
-): RoleSummary {
-  return {
+interface RoleOverrides {
+  /** A custom role has a name of its own and no catalog key. */
+  name?: string;
+  status?: RoleSummary["status"];
+}
+
+export function role(roleId: string, roleKey: string, overrides: RoleOverrides = {}): RoleSummary {
+  const base = {
     roleId,
     roleKey,
     isSystem: true,
-    status: "ACTIVE",
+    status: overrides.status ?? "ACTIVE",
     permissionKeys: [],
     memberCount: 0,
     version: 1,
-    nameKey: `role.${roleKey.toLowerCase()}`,
-    ...overrides,
   };
+  if (overrides.name !== undefined) return { ...base, name: overrides.name };
+  return { ...base, nameKey: `role.${roleKey.toLowerCase()}` };
 }
 
 export const ROLES: RoleSummary[] = [

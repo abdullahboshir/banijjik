@@ -33,10 +33,7 @@ describe("buildAssignmentOptions", () => {
 
   it("names a system role from the catalog and a custom role by its own name", () => {
     const options = buildAssignmentOptions({
-      roles: [
-        role("r1", "MANAGER"),
-        role("r2", "custom.r2", { nameKey: undefined, name: "ডেলিভারি" }),
-      ],
+      roles: [role("r1", "MANAGER"), role("r2", "custom.r2", { name: "ডেলিভারি" })],
       locations: [],
       permissions: EVERYWHERE,
       t: translate,

@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { IDEMPOTENCY_KEY_HEADER, type MeResponse } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
+import { MongoClient } from "mongodb";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 // The industry template of the seeded business lives in a data file: test code only needs a valid one.
 import industryFixture from "./industry-fixture.json" with { type: "json" };
@@ -31,6 +32,8 @@ export const TEST_PASSWORD = "correct-horse-battery";
 
 export interface BrowserStack {
   browser: Browser;
+  /** The replica set URI, for test setup that no API can do yet (a trial close to its end). */
+  mongoUri: string;
   stop: () => Promise<void>;
 }
 
@@ -115,6 +118,7 @@ export async function startBrowserStack(): Promise<BrowserStack> {
   const browser = await puppeteer.launch({ executablePath: chromePath(), headless: true });
   return {
     browser,
+    mongoUri: replicaSet.getUri(),
     stop: async () => {
       await browser.close();
       admin.kill();
@@ -182,4 +186,33 @@ export async function seedOrganization(
     body: { name, slug, ...industryFixture },
     cookies: person.cookies,
   });
+}
+
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Moves the end of a business's trial to `days` from now, and bumps its config version so the API
+ * rebuilds the cached config. Used for the trial banner screenshot: no API changes a trial yet.
+ */
+export async function setTrialEndsInDays(
+  stack: BrowserStack,
+  slug: string,
+  days: number,
+): Promise<void> {
+  const client = await MongoClient.connect(stack.mongoUri);
+  try {
+    const platform = client.db("browser_platform");
+    const organization = await platform
+      .collection("organizations")
+      .findOneAndUpdate({ slug }, { $inc: { configVersion: 1 } });
+    if (!organization) throw new Error(`No business with slug ${slug}`);
+    await platform
+      .collection("platform_subscriptions")
+      .updateOne(
+        { organizationId: organization["organizationId"] },
+        { $set: { trialEndsAt: new Date(Date.now() + days * MILLISECONDS_PER_DAY) } },
+      );
+  } finally {
+    await client.close();
+  }
 }

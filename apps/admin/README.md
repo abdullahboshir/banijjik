@@ -1,6 +1,6 @@
 # @banijjik/admin
 
-Next.js (App Router) admin app. Cards 0.5b and 1.7a: the persistent tenant shell under `/{orgSlug}`, sign-in and sign-up, silent session renewal, route protection, the business list and the account menu (business switcher, language, sign out). The menu itself comes with card 1.7c.
+Next.js (App Router) admin app. Cards 0.5b and 1.7a: the persistent tenant shell under `/{orgSlug}`, sign-in and sign-up, silent session renewal, route protection, the business list and the account menu (business switcher, language, sign out). Card 1.7c adds the menu from `/me/config`, the subscription banners, the home page, staff management (list, detail, assignments, suspend, reactivate, remove), invitations and the invitation accept page.
 
 ## Run
 
@@ -32,6 +32,10 @@ The API (`apps/api`) must run too. In development both apps are on `localhost`, 
 - `src/lib/i18n`: `getLocale`/`getTranslator` for server components (cookie `locale`, Bangla default), `I18nProvider`/`useTranslator` for client components, `setLocaleAction` (server action: cookie, then `PATCH /me`).
 - `src/shell`: `OrganizationShell`, `AccountMenuContainer` (trigger plus the lazily loaded sheet), `ShellNavigation`, `ShellLink`, `LanguageSwitch`.
 - `src/orgs`: the business list (`BusinessHome`, `BusinessList`).
+- `src/shell/org-access.ts`: one cached load per request of `/me`, `/me/orgs`, `/me/config` and the profile (time zone); the layout and the pages share it. `menu-groups.ts` builds the sidebar and bottom-nav groups, `banner-state.ts` decides the banners, `permissions.ts` reads the caller's grants.
+- `src/staff`: the staff screens (list, detail), the assignments form and the member actions. `src/invitations`: the invitation list, the form with the one-time link, and the accept page.
+- Text: screen text that only server components render lives in `SCREEN_CATALOGS` (`packages/i18n`), not in the bundled catalogs, so it stays out of the browser bundle. Server pages translate it and pass it to client components as props (`*-labels.ts`).
+- Sheets, dialogs and forms load on first use through `useLazyComponent` (`src/lib`), so they are not part of the first load of a route.
 
 ## Rules
 
@@ -51,6 +55,7 @@ The API (`apps/api`) must run too. In development both apps are on `localhost`, 
 Before running: build the API and the admin app (`NEXT_PUBLIC_API_BASE_URL=http://localhost:4000 NEXT_PUBLIC_BRAND_NAME=Example npm run build -w @banijjik/admin`), start the compose Redis (`redis://127.0.0.1:6380`), and set `CHROME_PATH` to a Chrome executable. Without internet, also set `MONGOMS_SYSTEM_BINARY` to a local `mongod` and `MONGOMS_VERSION_CHECK=false`.
 
 - `src/auth/auth-flow.browser.test.ts`: sign up, sign out, wrong password, `next` safety, redirect to sign-in and back, silent renewal of an expired access cookie, the shell with real data, a full reload when switching business, language switch.
+- `src/staff/staff-invitations.browser.test.ts`: invite, sign up as the invitee, accept, suspend and reactivate; the route size budgets; screenshots when `SCREENSHOT_DIR` is set.
 - `src/shell/sheet-stacking.browser.test.ts`: the Quick create and More sheets are on top at 375 px (review J3).
 - `src/auth/screenshots.browser.test.ts`: only runs when `SCREENSHOT_DIR` is set; saves the 375 px and 1280 px screenshots of the handoff.
 
