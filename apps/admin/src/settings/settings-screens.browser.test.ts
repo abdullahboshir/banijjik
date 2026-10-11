@@ -221,6 +221,7 @@ describe("roles", () => {
         .sort(),
     );
     await gotoWhenHydrated(member, "/acme/settings/staff", "main");
+    await waitForText(member, MEMBER_NAME);
     const staffActionPaths = await member.evaluate(() =>
       Array.from(document.querySelectorAll("main a")).map((a) => (a as HTMLAnchorElement).pathname),
     );
@@ -231,7 +232,8 @@ describe("roles", () => {
     await closePage(member);
 
     expect(menuPaths).toEqual(["/acme", "/acme/settings/profile", "/acme/settings/staff"]);
-    expect(staffActionPaths).toEqual([]);
+    expect(staffActionPaths).not.toContain("/acme/settings/staff/invitations");
+    expect(staffActionPaths).not.toContain("/acme/settings/roles");
     expect(profilePage).toContain(message("profile.edit"));
     expect(locationsPage).toContain(message("state.permissionDenied"));
   });

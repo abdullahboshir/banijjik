@@ -1,6 +1,6 @@
 # @banijjik/admin
 
-Next.js (App Router) admin app. Cards 0.5b and 1.7a: the persistent tenant shell under `/{orgSlug}`, sign-in and sign-up, silent session renewal, route protection, the business list and the account menu (business switcher, language, sign out). Card 1.7c adds the menu from `/me/config`, the subscription banners, the home page, staff management (list, detail, assignments, suspend, reactivate, remove), invitations and the invitation accept page.
+Next.js (App Router) admin app. Cards 0.5b and 1.7a: the persistent tenant shell under `/{orgSlug}`, sign-in and sign-up, silent session renewal, route protection, the business list and the account menu (business switcher, language, sign out). Card 1.7c adds the menu from `/me/config`, the subscription banners, the home page, staff management (list, detail, assignments, suspend, reactivate, remove), invitations and the invitation accept page. Card 1.7d adds the business profile (with its Locations section), the locations list with add, edit and archive, and the roles list and detail with the custom-role form; the role form reads which permissions are sensitive from `permissionDefinitions` in `/me/config`, never from a list in the app.
 
 ## Run
 

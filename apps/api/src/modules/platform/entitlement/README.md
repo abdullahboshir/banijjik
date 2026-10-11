@@ -1,6 +1,6 @@
 # platform/entitlement: what an organization may use
 
-`resolveOrgConfig`, the entitlement gate and `GET /orgs/{organizationId}/me/config` (10-MODULE-CATALOG sections 3, 6, 8; ADR-091).
+`resolveOrgConfig`, the entitlement gate and `GET /orgs/{organizationId}/me/config` (10-MODULE-CATALOG sections 3, 6, 8; ADR-091). The config answer also carries `permissionDefinitions` (key, label key, `isSensitive`, module) of the effective modules, taken from the permission catalogue, so the role editor never hard-codes the sensitive list.
 
 - **Entity:** `ModuleOverride` (platform database, tenancy ORGANIZATION): `moduleKey`, `effect` (PLATFORM_GRANT, PLATFORM_REVOKE, TENANT_DISABLE), `reason`, `expiresAt?`; unique per `(organizationId, moduleKey, effect)`. An expired override is ignored at resolve time. Platform grants and revokes are written by the platform API below; tenant disable arrives with settings. Every writer must bump `Organization.configVersion` in the same transaction through the `ConfigVersionBumper` port.
 - **Resolver:** `domain/module-resolution.ts` (steps 1 to 5), `domain/limits.ts` (step 6), `domain/config-sections.ts` (step 8), orchestrated by `application/org-config-resolver.ts`. PLATFORM modules never appear in a config. A package key without a registered manifest is ignored. Step 5 logs `config.module.droppedMissingDependency` and never enables a paid module.
