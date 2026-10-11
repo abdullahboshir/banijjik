@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@import "@banijjik/ui/styles.css";
+@source "../../../packages/ui/src";
+
+/* The platform panel's own accent (13-UX section 12): only the three brand tokens change, so operators always
+   know they are not in a tenant's dashboard. The values are @banijjik/ui platformAccentTokens, whose contrast
+   test runs in packages/ui; accent.test.ts keeps this file and that constant in step. */
+:root {
+  --color-brand-primary: #4338ca;
+  --color-brand-primary-hover: #3730a3;
+  --color-brand-on-primary: #ffffff;
+}
+
+[data-theme="dark"] {
+  --color-brand-primary: #a5b4fc;
+  --color-brand-primary-hover: #c7d2fe;
+  --color-brand-on-primary: #1e1b4b;
+}
+
+/* Bangla pages draw Latin text with Noto Sans Bengali (its small latin subset), so a Bangla page loads one
+   family; English pages lead with Inter. This keeps the fonts a page loads under the 120 KB budget. */
+html {
+  --font-sans: var(--font-noto-bengali), var(--font-inter), system-ui, sans-serif;
+}
+
+html[lang="en"] {
+  --font-sans: var(--font-inter), var(--font-noto-bengali), system-ui, sans-serif;
+}

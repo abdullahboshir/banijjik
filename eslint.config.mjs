@@ -137,13 +137,13 @@ export default defineConfig(
   },
   {
     name: "banijjik/next-recommended",
-    files: ["apps/admin/**/*.{ts,tsx}"],
+    files: ["apps/admin/**/*.{ts,tsx}", "apps/platform/**/*.{ts,tsx}"],
     ...nextPlugin.configs.recommended,
-    settings: { next: { rootDir: "apps/admin" } },
+    settings: { next: { rootDir: ["apps/admin", "apps/platform"] } },
   },
   {
     name: "banijjik/next-core-web-vitals",
-    files: ["apps/admin/**/*.{ts,tsx}"],
+    files: ["apps/admin/**/*.{ts,tsx}", "apps/platform/**/*.{ts,tsx}"],
     ...nextPlugin.configs["core-web-vitals"],
   },
   {
