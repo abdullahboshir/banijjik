@@ -16,4 +16,5 @@ transaction as the change, so an entry exists exactly when its change does.
 - **Endpoint:** `GET /api/v1/orgs/{organizationId}/audit-logs`, permission `audit.log.read` (sensitive).
   Filters `entityType`, `entityId`, `actorUserId`, `from`, `to`; `?page&limit` (limit at most 100); newest first.
   OWNER holds it, MANAGER holds it (READ row of the `audit` module in 10 section 10), the other roles do not.
-- **Not here:** the platform-database copy for operator actions (card 1.8), the `audit.retentionDays` setting (settings module, 2.x), a UI (Phase 2).
+- **Platform copy (card 1.8a):** `PlatformAuditLog` (platform database, tenancy NONE, `appendOnly`) records every operator write; the kernel port `PlatformAuditRecorder` reads the operator, user and request id from the context and needs a transaction. `GET /api/v1/platform/audit-logs` needs `platform.audit.read` (SUPER_ADMIN only).
+- **Not here:** the `audit.retentionDays` setting (settings module, 2.x), a UI (Phase 2).

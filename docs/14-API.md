@@ -249,6 +249,11 @@ Permissions `platform.<module>.<action>` from `PlatformOperator.platformRoles` (
 | Operators | CRUD `/platform/operators[/{platformOperatorId}]` (SUPER_ADMIN only) |
 | Health & ops | `GET /platform/system/health`, `GET /platform/system/queues`, `GET /platform/system/errors` |
 
+Details built in card 1.8a (ADR-093):
+- Cookies `platform_access_token` and `platform_refresh_token`; login gives the same `401 errors.invalid_credentials` to a non-operator. `GET /platform/audit-logs?targetType=&organizationId=&actorPlatformOperatorId=&from=&to=` (permission `platform.audit.read`, SUPER_ADMIN only).
+- `suspend`, `reactivate`, `extend-trial` take a mandatory `reason`; module overrides take `{ moduleKey, effect PLATFORM_GRANT|PLATFORM_REVOKE, reason, expiresAt? }`; package `PATCH` and `…/archive` carry `version` (409 when stale).
+- Business-rule keys (`422 BUSINESS_RULE` `details.ruleKey`): `PACKAGE_NOT_CLOSED`, `PACKAGE_IN_USE`, `MODULE_NOT_REGISTERED`, `MODULE_CLASS_FIXED`, `TRIAL_NOT_ACTIVE`, `PACKAGE_KIND_MISMATCH`. The tenant list rows carry `templateKey`, `subscriptionStatus` and `memberCount`; the detail masks the owner identifier.
+
 ## 8. Webhooks (`/api/v1/webhooks`)
 
 | Path | Provider check | Routes to |
