@@ -70,11 +70,13 @@ const limitIncrementsSchema = z.strictObject({
   [LIMIT_KEY.CHANNELS]: countSchema.optional(),
   [LIMIT_KEY.POS_DEVICES]: countSchema.optional(),
 });
+const packageNameSchema = z.string().trim().min(2).max(60);
 const moduleKeysSchema = z.array(z.enum(MODULE_KEY));
 
 /** Body of `POST /platform/packages`. */
 export const platformPackageCreateRequestSchema = z.strictObject({
   packageKey: z.string().min(2).max(PACKAGE_KEY_MAX_LENGTH).regex(PACKAGE_KEY_PATTERN),
+  name: packageNameSchema,
   isAddOn: z.boolean(),
   moduleKeys: moduleKeysSchema,
   limits: limitsSchema,
@@ -86,6 +88,7 @@ export type PlatformPackageCreateBody = z.output<typeof platformPackageCreateReq
 export const platformPackageUpdateRequestSchema = z
   .strictObject({
     version: versionSchema,
+    name: packageNameSchema.optional(),
     moduleKeys: moduleKeysSchema.optional(),
     limits: limitsSchema.optional(),
     limitIncrements: limitIncrementsSchema.optional(),

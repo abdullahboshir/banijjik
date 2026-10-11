@@ -33,6 +33,13 @@ export function buildPackageReader(): PackageReader {
   return new MongoPackageRepository();
 }
 
+/** Guard for whoever attaches packages to a subscription: see `PackageAdminRepository.touchActive` (ADR-093). */
+export function buildPackageReferenceGuard(): {
+  touchActive(packageIds: readonly string[]): Promise<number>;
+} {
+  return new MongoPackageRepository();
+}
+
 /** The seed use case; src/seeds/seed-packages.ts runs it. */
 export function buildEnsureSeedPackagesUseCase(clock: Clock): EnsureSeedPackagesUseCase {
   return new EnsureSeedPackagesUseCase({

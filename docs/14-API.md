@@ -239,7 +239,7 @@ Permissions `platform.<module>.<action>` from `PlatformOperator.platformRoles` (
 
 | Area | Endpoints |
 |---|---|
-| Auth | `POST /platform/auth/login` · `/logout` · `/refresh` (separate cookie) |
+| Auth | `POST /platform/auth/login` · `/logout` · `/refresh` (separate cookie), `GET /platform/me` (`{ platformOperatorId, userId, name, platformRoles, permissions }`, for the panel after a reload) |
 | Tenants | `GET /platform/organizations?status=&q=`, `GET /platform/organizations/{organizationId}`, `POST …/{organizationId}/suspend` · `/reactivate` · `/change-industry-template` (additive, ADR-046), `POST …/{organizationId}/impersonate` (time-boxed, reason required, audited) |
 | Entitlements | `GET/POST /platform/organizations/{organizationId}/module-overrides`, `DELETE …/module-overrides/{moduleOverrideId}` |
 | Packages | CRUD `/platform/packages[/{packageId}]` (save-time closure validation, `10 §3`) |
@@ -251,6 +251,7 @@ Permissions `platform.<module>.<action>` from `PlatformOperator.platformRoles` (
 
 Details built in card 1.8a (ADR-093):
 - Cookies `platform_access_token` and `platform_refresh_token`; login gives the same `401 errors.invalid_credentials` to a non-operator. `GET /platform/audit-logs?targetType=&organizationId=&actorPlatformOperatorId=&from=&to=` (permission `platform.audit.read`, SUPER_ADMIN only).
+- Packages carry `nameKey` (seed) or `name` (operator-made, 2 to 60 characters, required on create, changeable only for operator-made ones); the response has both, one null.
 - `suspend`, `reactivate`, `extend-trial` take a mandatory `reason`; module overrides take `{ moduleKey, effect PLATFORM_GRANT|PLATFORM_REVOKE, reason, expiresAt? }`; package `PATCH` and `…/archive` carry `version` (409 when stale).
 - Business-rule keys (`422 BUSINESS_RULE` `details.ruleKey`): `PACKAGE_NOT_CLOSED`, `PACKAGE_IN_USE`, `MODULE_NOT_REGISTERED`, `MODULE_CLASS_FIXED`, `TRIAL_NOT_ACTIVE`, `PACKAGE_KIND_MISMATCH`. The tenant list rows carry `templateKey`, `subscriptionStatus` and `memberCount`; the detail masks the owner identifier.
 

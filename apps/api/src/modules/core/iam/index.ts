@@ -50,6 +50,7 @@ import { AuthController } from "./presentation/auth.controller.js";
 import { AuthCookies, PLATFORM_COOKIES } from "./presentation/auth-cookies.js";
 import { PlatformAuthController } from "./presentation/platform-auth.controller.js";
 import { buildPlatformAuthRouter } from "./presentation/platform-auth.router.js";
+import { buildPlatformMeRouter } from "./presentation/platform-me.router.js";
 import { AUTH_RATE_LIMIT } from "./domain/auth-limits.js";
 import { buildAuthRouter } from "./presentation/auth.router.js";
 import { RolesController } from "./presentation/roles.controller.js";
@@ -340,4 +341,9 @@ export function buildIamPlatformAuthRouter(dependencies: IamDependencies): Route
     clock,
   });
   return buildPlatformAuthRouter(controller, rateLimiter);
+}
+
+/** `GET /platform/me`, mounted by routes/platform.ts behind `authenticatePlatform`. */
+export function buildIamPlatformMeRouter(): Router {
+  return buildPlatformMeRouter(new GetMeUseCase({ users: new MongoUserRepository() }));
 }

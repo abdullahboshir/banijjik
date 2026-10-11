@@ -13,7 +13,7 @@ import type { LimitGuard } from "../../../../../kernel/access/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { locationInUse, recordNotFound } from "../../domain/errors.js";
 import { Location, type LocationChanges } from "../../domain/location.entity.js";
-import { diffAuditFields, type AuditFields } from "../audit-diff.js";
+import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
 import type {
   InvitationRepository,

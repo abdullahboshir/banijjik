@@ -45,6 +45,7 @@ export interface PackagePageDetail {
 function auditFieldsOf(subject: Package): AuditFields {
   const fields: Record<string, AuditFields[string]> = {
     packageKey: subject.packageKey,
+    name: subject.name,
     isAddOn: subject.isAddOn,
     status: subject.status,
     moduleKeys: [...subject.moduleKeys],
@@ -98,6 +99,7 @@ export class GetPackageUseCase extends PackageAdminSupport {
 export interface CreatePackageInput {
   readonly actorUserId: UserId;
   readonly packageKey: string;
+  readonly name: string;
   readonly isAddOn: boolean;
   readonly moduleKeys: readonly string[];
   readonly limits: LimitMap;
@@ -110,7 +112,7 @@ export class CreatePackageUseCase extends PackageAdminSupport {
     const { packages, unitOfWork, platformAudit, clock } = this.dependencies;
     const created = Package.create({
       packageKey: input.packageKey,
-      nameKey: `package.${input.packageKey}.name`,
+      name: input.name,
       isAddOn: input.isAddOn,
       moduleKeys: input.moduleKeys,
       limits: input.limits,
@@ -135,6 +137,7 @@ export interface UpdatePackageInput {
   readonly actorUserId: UserId;
   readonly packageId: string;
   readonly version: number;
+  readonly name?: string;
   readonly moduleKeys?: readonly string[];
   readonly limits?: LimitMap;
   readonly limitIncrements?: LimitIncrements;
@@ -149,6 +152,7 @@ export class UpdatePackageUseCase extends PackageAdminSupport {
     const { packages, unitOfWork, platformAudit } = this.dependencies;
     const existing = await this.requirePackage(input.packageId);
     const edited = existing.withChanges({
+      ...(input.name === undefined ? {} : { name: input.name }),
       ...(input.moduleKeys === undefined ? {} : { moduleKeys: input.moduleKeys }),
       ...(input.limits === undefined ? {} : { limits: input.limits }),
       ...(input.limitIncrements === undefined ? {} : { limitIncrements: input.limitIncrements }),
@@ -180,12 +184,14 @@ export class ArchivePackageUseCase extends PackageAdminSupport {
     const { packages, usage, unitOfWork, platformAudit } = this.dependencies;
     const existing = await this.requirePackage(input.packageId);
     const archived = existing.archived();
-    // Subscriptions are tenant data: this read is the one system access of the platform package module.
-    const isInUse = await runAsSystem(SYSTEM_REASON.PLATFORM_ADMIN, () =>
-      usage.isInUse(input.packageId),
-    );
-    if (isInUse) throw packageInUse();
     const saved = await unitOfWork.run(async () => {
+      // The usage check runs inside the transaction: archive writes the package document, and so does
+      // change-package (the guard counter), so a concurrent pair conflicts and the retry checks again (ADR-093).
+      // Subscriptions are tenant data: this read is the one system access of the platform package module.
+      const isInUse = await runAsSystem(SYSTEM_REASON.PLATFORM_ADMIN, () =>
+        usage.isInUse(input.packageId),
+      );
+      if (isInUse) throw packageInUse();
       const result = await packages.update(archived, input.version, input.actorUserId);
       await platformAudit.record({
         action: PLATFORM_AUDIT_ACTION.PACKAGE_ARCHIVED,

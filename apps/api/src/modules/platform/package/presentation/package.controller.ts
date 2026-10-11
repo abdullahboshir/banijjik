@@ -61,6 +61,7 @@ export class PackageController {
     const detail = await this.dependencies.createPackage.execute({
       actorUserId: requireCurrentUserId(),
       packageKey: body.packageKey,
+      name: body.name,
       isAddOn: body.isAddOn,
       moduleKeys: body.moduleKeys,
       limits: body.limits,
@@ -76,6 +77,7 @@ export class PackageController {
       actorUserId: requireCurrentUserId(),
       packageId: validatedPackageId(response),
       version: body.version,
+      ...(body.name === undefined ? {} : { name: body.name }),
       ...(body.moduleKeys === undefined ? {} : { moduleKeys: body.moduleKeys }),
       ...(body.limits === undefined ? {} : { limits: body.limits }),
       ...(body.limitIncrements === undefined

@@ -5,7 +5,7 @@ import type { PlatformAuditRecorder } from "../../../kernel/audit/index.js";
 import type { PlatformPermissionMiddlewareFactory } from "../../../kernel/auth/index.js";
 import type { ConfigVersionBumper } from "../../../kernel/tenancy/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
-import { buildPackageReader } from "../package/index.js";
+import { buildPackageReader, buildPackageReferenceGuard } from "../package/index.js";
 import type { SubscriptionReader } from "./application/ports/subscription-repository.js";
 import type { PackageKindLookup } from "./application/ports/subscription-admin-ports.js";
 import {
@@ -62,7 +62,9 @@ export interface SubscriptionPlatformDependencies {
 
 function buildPackageKindLookup(): PackageKindLookup {
   const packages = buildPackageReader();
+  const guard = buildPackageReferenceGuard();
   return {
+    touchActive: (packageIds) => guard.touchActive(packageIds),
     findByIds: async (packageIds) =>
       (await packages.findByIds(packageIds)).map((entry) => ({
         packageId: entry.packageId,

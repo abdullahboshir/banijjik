@@ -16,7 +16,8 @@ import {
 } from "../../domain/errors.js";
 import type { Invitation } from "../../domain/invitation.entity.js";
 import { Member } from "../../domain/member.entity.js";
-import { assignmentsAuditValue, diffAuditFields } from "../audit-diff.js";
+import { diffAuditFields } from "../../../../../kernel/audit/index.js";
+import { assignmentsAuditValue } from "../audit-diff.js";
 import type { AssignmentGuard } from "../assignment-guard.js";
 import type { MyOrganization } from "../my-organization.js";
 import type { EventPublisher } from "../ports/event-publisher.js";

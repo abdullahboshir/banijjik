@@ -15,6 +15,7 @@ import {
 } from "../modules/core/audit/index.js";
 import {
   buildIamPlatformAuthRouter,
+  buildIamPlatformMeRouter,
   buildPlatformOperatorLookup,
   buildUserIdentifierReader,
   type IamDependencies,
@@ -142,5 +143,6 @@ function buildPlatformRouter(input: PlatformRouterInput): Router {
     }),
   );
   router.use(buildPlatformAuditRouter({ permission: platformPermission }));
+  router.use(buildIamPlatformMeRouter());
   return router;
 }

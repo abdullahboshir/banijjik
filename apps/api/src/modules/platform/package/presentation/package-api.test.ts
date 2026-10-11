@@ -57,6 +57,7 @@ function uniquePackageKey(): string {
 function createPackage(overrides: object = {}) {
   return operator.call("post", "/packages", {
     packageKey: uniquePackageKey(),
+    name: "Try package",
     isAddOn: false,
     moduleKeys: [MODULE_KEY.SALES, MODULE_KEY.CATALOG],
     limits: LIMITS,
@@ -132,6 +133,43 @@ describe("creating a package", () => {
     const response = await createPackage({ limitIncrements: { [LIMIT_KEY.MEMBERS]: 1 } });
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe("the display name of a package", () => {
+  it("is required on create, 2 to 60 characters, and comes back next to a null nameKey", async () => {
+    const created = await createPackage({ name: "  Shop Plus  " });
+    const missing = await operator.call("post", "/packages", {
+      packageKey: uniquePackageKey(),
+      isAddOn: false,
+      moduleKeys: [],
+      limits: LIMITS,
+    });
+    const tooShort = await createPackage({ name: "A" });
+    const tooLong = await createPackage({ name: "x".repeat(61) });
+
+    expect(created.body.data).toMatchObject({ name: "Shop Plus", nameKey: null });
+    expect([missing.status, tooShort.status, tooLong.status]).toEqual([400, 400, 400]);
+  });
+
+  it("can be changed on an operator-made package but not on a seed package", async () => {
+    const created = await createPackage();
+    const renamed = await operator.call("patch", `/packages/${created.body.data.packageId}`, {
+      version: 1,
+      name: "Renamed",
+    });
+    const list = await operator.call("get", "/packages?limit=100");
+    const bundle = list.body.data.find(
+      (row: { packageKey: string }) => row.packageKey === PACKAGE_KEY.BUNDLE,
+    );
+    const seedRename = await operator.call("patch", `/packages/${bundle.packageId}`, {
+      version: bundle.version,
+      name: "Nope",
+    });
+
+    expect(renamed.body.data.name).toBe("Renamed");
+    expect(bundle).toMatchObject({ name: null, nameKey: "package.BUNDLE.name" });
+    expect(seedRename.status).toBe(400);
   });
 });
 

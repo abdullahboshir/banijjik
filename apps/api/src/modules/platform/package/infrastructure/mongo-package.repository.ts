@@ -52,6 +52,15 @@ export class MongoPackageRepository
     return { items: rows.slice(0, query.limit).map(toPackage), hasNext: rows.length > query.limit };
   }
 
+  async touchActive(packageIds: readonly string[]): Promise<number> {
+    const result = await this.model().updateMany(
+      { packageId: { $in: [...packageIds] }, status: PACKAGE_STATUS.ACTIVE },
+      { $inc: { referenceVersion: 1 } },
+      { ...sessionOption(getActiveSession()), timestamps: false },
+    );
+    return result.matchedCount;
+  }
+
   async update(updated: Package, expectedVersion: number, actorUserId: UserId): Promise<Package> {
     const saved = await updateVersioned<PackageDocument>({
       model: this.model(),
@@ -59,6 +68,7 @@ export class MongoPackageRepository
       expectedVersion,
       update: {
         $set: {
+          name: updated.name,
           moduleKeys: [...updated.moduleKeys],
           limits: { ...updated.limits },
           limitIncrements: { ...updated.limitIncrements },

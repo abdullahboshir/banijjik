@@ -136,6 +136,32 @@ describe("platform sign-in", () => {
   });
 });
 
+describe("GET /platform/me", () => {
+  it("answers the signed-in operator with the roles and permissions", async () => {
+    const operator = await createPlatformActor(harness.app, harness.connections, [
+      PLATFORM_ROLE.BILLING,
+    ]);
+
+    const response = await operator.call("get", "/me");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({
+      platformOperatorId: operator.platformOperatorId,
+      userId: operator.userId,
+      name: "Rahim Uddin",
+      platformRoles: [PLATFORM_ROLE.BILLING],
+    });
+    expect(response.body.data.permissions).toContain(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE);
+    expect(response.body.data.permissions).not.toContain(PLATFORM_PERMISSION_KEY.TENANT_SUSPEND);
+  });
+
+  it("is refused without a platform session", async () => {
+    const response = await callApi(harness.app, { method: "get", path: "/api/v1/platform/me" });
+
+    expect(response.status).toBe(401);
+  });
+});
+
 describe("audiences", () => {
   it("refuses a platform access token on tenant and user routes", async () => {
     const operator = await createPlatformActor(harness.app, harness.connections, [

@@ -8,6 +8,7 @@ export function toPackageResponse(detail: PackageDetail): PlatformPackageRespons
     packageId: subject.packageId,
     packageKey: subject.packageKey,
     nameKey: subject.nameKey,
+    name: subject.name,
     isAddOn: subject.isAddOn,
     moduleKeys: [...subject.moduleKeys],
     limits: { ...subject.limits },

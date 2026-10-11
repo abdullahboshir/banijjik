@@ -19,7 +19,10 @@ export type LimitIncrements = Readonly<Partial<Record<LimitKey, number>>>;
 export interface PackageProps {
   readonly packageId: PackageId;
   readonly packageKey: string;
-  readonly nameKey: string;
+  /** The i18n key of a seed package. Exactly one of `nameKey` and `name` is set. */
+  readonly nameKey: string | null;
+  /** The plain name of an operator-made package (2 to 60 characters). */
+  readonly name: string | null;
   readonly isAddOn: boolean;
   readonly moduleKeys: readonly ModuleKey[];
   /** `null` is unlimited. Meaningful for base packages; an add-on adds through `limitIncrements`. */
@@ -33,6 +36,8 @@ export interface PackageProps {
 
 /** The fields an operator may change; `packageKey` and `isAddOn` never change. */
 export interface PackageChanges {
+  /** Only an operator-made package (one with a `name`) can be renamed. */
+  readonly name?: string;
   readonly moduleKeys?: readonly string[];
   readonly limits?: LimitMap;
   readonly limitIncrements?: LimitIncrements;
@@ -40,12 +45,39 @@ export interface PackageChanges {
 
 export interface NewPackageInput {
   readonly packageKey: string;
-  readonly nameKey: string;
+  /** Seed packages pass a `nameKey`, operator-made packages a `name`; never both, never neither. */
+  readonly nameKey?: string;
+  readonly name?: string;
   readonly isAddOn: boolean;
   readonly moduleKeys: readonly string[];
   readonly limits: LimitMap;
   readonly limitIncrements: LimitIncrements;
   readonly now: Date;
+}
+
+const NAME_MIN_LENGTH = 2;
+const NAME_MAX_LENGTH = 60;
+
+function assertNameLength(rawName: string): string {
+  const name = rawName.trim();
+  if (name.length < NAME_MIN_LENGTH || name.length > NAME_MAX_LENGTH) {
+    throw invalidPackageField("name", "validation.name_length");
+  }
+  return name;
+}
+
+/** Exactly one of `nameKey` and `name`. */
+function resolveNaming(input: {
+  readonly nameKey?: string | undefined;
+  readonly name?: string | undefined;
+}): { nameKey: string | null; name: string | null } {
+  const hasKey = input.nameKey !== undefined;
+  const hasName = input.name !== undefined;
+  if (hasKey === hasName) throw invalidPackageField("name", "validation.invalid_value");
+  return {
+    nameKey: input.nameKey ?? null,
+    name: input.name === undefined ? null : assertNameLength(input.name),
+  };
 }
 
 function isCount(value: number): boolean {
@@ -90,7 +122,8 @@ function assertIncrementsFitTheKind(isAddOn: boolean, increments: LimitIncrement
 export class Package implements PackageProps {
   readonly packageId: PackageId;
   readonly packageKey: string;
-  readonly nameKey: string;
+  readonly nameKey: string | null;
+  readonly name: string | null;
   readonly isAddOn: boolean;
   readonly moduleKeys: readonly ModuleKey[];
   readonly limits: LimitMap;
@@ -104,6 +137,7 @@ export class Package implements PackageProps {
     this.packageId = props.packageId;
     this.packageKey = props.packageKey;
     this.nameKey = props.nameKey;
+    this.name = props.name;
     this.isAddOn = props.isAddOn;
     this.moduleKeys = props.moduleKeys;
     this.limits = props.limits;
@@ -124,7 +158,7 @@ export class Package implements PackageProps {
     return new Package({
       packageId: newId<PackageId>(),
       packageKey: input.packageKey,
-      nameKey: input.nameKey,
+      ...resolveNaming(input),
       isAddOn: input.isAddOn,
       moduleKeys,
       limits: input.limits,
@@ -149,10 +183,18 @@ export class Package implements PackageProps {
     assertIncrementsFitTheKind(this.isAddOn, limitIncrements);
     return new Package({
       ...this,
+      name: this.renamed(changes.name),
       moduleKeys: assertModuleKeysAreCatalogued(moduleKeys),
       limits,
       limitIncrements,
     });
+  }
+
+  private renamed(name: string | undefined): string | null {
+    if (name === undefined) return this.name;
+    // A seed package is named by its i18n key, so a plain name would make it have both.
+    if (this.name === null) throw invalidPackageField("name", "validation.invalid_value");
+    return assertNameLength(name);
   }
 
   /** Takes the package out of sale. Running subscriptions are checked by the use case, not here. */

@@ -27,6 +27,7 @@ describe("platform request schemas", () => {
   it("accepts a package with every limit and refuses one that misses a limit", () => {
     const body = {
       packageKey: "STORE_PLUS",
+      name: "Store Plus",
       isAddOn: false,
       moduleKeys: ["sales"],
       limits: FULL_LIMITS,
@@ -37,7 +38,13 @@ describe("platform request schemas", () => {
   });
 
   it("refuses a package key that is not upper snake case and an unknown module key", () => {
-    const body = { packageKey: "store", isAddOn: false, moduleKeys: [], limits: FULL_LIMITS };
+    const body = {
+      packageKey: "store",
+      name: "Store",
+      isAddOn: false,
+      moduleKeys: [],
+      limits: FULL_LIMITS,
+    };
     expect(platformPackageCreateRequestSchema.safeParse(body).success).toBe(false);
     const unknown = { ...body, packageKey: "STORE", moduleKeys: ["no-such-module"] };
     expect(platformPackageCreateRequestSchema.safeParse(unknown).success).toBe(false);

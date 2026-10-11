@@ -10,6 +10,7 @@ export function toPackageDocument(entity: Package, actorUserId?: UserId): Packag
     packageId: entity.packageId,
     packageKey: entity.packageKey,
     nameKey: entity.nameKey,
+    name: entity.name,
     isAddOn: entity.isAddOn,
     moduleKeys: [...entity.moduleKeys],
     limits: { ...entity.limits },
@@ -28,7 +29,8 @@ export function toPackage(document: PackageDocument): Package {
   return Package.restore({
     packageId: asId<PackageId>(stored.packageId),
     packageKey: stored.packageKey,
-    nameKey: stored.nameKey,
+    nameKey: stored.nameKey ?? null,
+    name: stored.name ?? null,
     isAddOn: stored.isAddOn,
     moduleKeys: stored.moduleKeys,
     limits: stored.limits,

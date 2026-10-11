@@ -17,6 +17,9 @@ export interface PlatformSessionResponse {
   permissions: PlatformPermissionKey[];
 }
 
+/** Answer of `GET /platform/me`: the same shape as the login answer, so the panel can draw itself after a reload. */
+export type PlatformMeResponse = PlatformSessionResponse;
+
 /** One row of `GET /platform/organizations`. */
 export interface PlatformOrganizationSummary {
   organizationId: string;
@@ -67,7 +70,10 @@ export interface PlatformReasonRequest {
 export interface PlatformPackageResponse {
   packageId: string;
   packageKey: string;
-  nameKey: string;
+  /** The i18n key of a seed package; null for an operator-made package. */
+  nameKey: string | null;
+  /** The plain name of an operator-made package; null for a seed package. */
+  name: string | null;
   isAddOn: boolean;
   moduleKeys: ModuleKey[];
   limits: LimitMap;
@@ -80,6 +86,8 @@ export interface PlatformPackageResponse {
 
 export interface PlatformPackageCreateRequest {
   packageKey: string;
+  /** 2 to 60 characters. */
+  name: string;
   isAddOn: boolean;
   moduleKeys: ModuleKey[];
   limits: LimitMap;
@@ -88,6 +96,8 @@ export interface PlatformPackageCreateRequest {
 
 export interface PlatformPackageUpdateRequest {
   version: number;
+  /** Only for an operator-made package. */
+  name?: string;
   moduleKeys?: ModuleKey[];
   limits?: LimitMap;
   limitIncrements?: Partial<Record<LimitKey, number>>;

@@ -33,6 +33,12 @@ export interface PackageAdminRepository {
   insert(newPackage: Package, actorUserId: UserId): Promise<void>;
   findById(packageId: string): Promise<Package | undefined>;
   list(query: PackageListQuery): Promise<PackagePage>;
+  /**
+   * Guard counter for "this ACTIVE package is attached to a subscription": writes the package
+   * documents so a concurrent archive conflicts (ADR-093). Returns how many were ACTIVE. It leaves
+   * `version` and `updatedAt` alone, so the catalogue version does not move.
+   */
+  touchActive(packageIds: readonly string[]): Promise<number>;
   /** Saves the changed fields and moves `version` if the stored version is still `expectedVersion`, else a 409. */
   update(updated: Package, expectedVersion: number, actorUserId: UserId): Promise<Package>;
 }

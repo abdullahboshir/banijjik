@@ -4,7 +4,8 @@ import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import { diffAssignments } from "../../domain/assignment-rules.js";
 import { recordNotFound } from "../../domain/errors.js";
 import type { Member, MemberChanges } from "../../domain/member.entity.js";
-import { assignmentsAuditValue, diffAuditFields, type AuditFields } from "../audit-diff.js";
+import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
+import { assignmentsAuditValue } from "../audit-diff.js";
 import type { AssignmentGuard } from "../assignment-guard.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
 import type {

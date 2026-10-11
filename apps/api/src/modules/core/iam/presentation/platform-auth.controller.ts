@@ -1,8 +1,4 @@
-import {
-  ERROR_CODE,
-  platformPermissionsOf,
-  type PlatformSessionResponse,
-} from "@banijjik/contracts";
+import { ERROR_CODE } from "@banijjik/contracts";
 import type { LoginBody } from "@banijjik/validation";
 import type { Request, RequestHandler } from "express";
 import { AppError, readCookie, sendData } from "../../../../kernel/http/index.js";
@@ -12,9 +8,8 @@ import type { LoginUseCase } from "../application/use-cases/login.use-case.js";
 import type { LogoutUseCase } from "../application/use-cases/logout.use-case.js";
 import type { RefreshSessionUseCase } from "../application/use-cases/refresh-session.use-case.js";
 import { RefreshRaceError } from "../domain/errors.js";
-import type { PlatformOperator } from "../domain/platform-operator.entity.js";
-import type { User } from "../domain/user.entity.js";
 import type { AuthCookies } from "./auth-cookies.js";
+import { toPlatformSessionResponse } from "./platform-session.transformer.js";
 
 export interface PlatformAuthControllerDependencies {
   readonly login: LoginUseCase;
@@ -27,16 +22,6 @@ export interface PlatformAuthControllerDependencies {
 
 function clientOf(request: Request): ClientInfo {
   return { userAgent: request.get("user-agent"), ipAddress: request.ip };
-}
-
-function toSessionResponse(user: User, operator: PlatformOperator): PlatformSessionResponse {
-  return {
-    userId: user.userId,
-    platformOperatorId: operator.platformOperatorId,
-    name: user.name,
-    platformRoles: [...operator.platformRoles],
-    permissions: [...platformPermissionsOf(operator.platformRoles)],
-  };
 }
 
 /** The platform counterpart of AuthController: same use cases with the PLATFORM audience, other cookies. */
@@ -60,7 +45,7 @@ export class PlatformAuthController {
       });
     }
     cookies.set(response, result.issued, clock.now());
-    sendData(response, toSessionResponse(result.user, result.operator));
+    sendData(response, toPlatformSessionResponse(result.user, result.operator));
   };
 
   readonly refresh: RequestHandler = async (request, response) => {

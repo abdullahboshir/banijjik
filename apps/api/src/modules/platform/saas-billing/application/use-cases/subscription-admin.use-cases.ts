@@ -73,6 +73,7 @@ abstract class SubscriptionSupport {
     const { updated, before, actorUserId, audit } = change;
     const { subscriptions, configVersion, unitOfWork, platformAudit } = this.dependencies;
     return unitOfWork.run(async () => {
+      await change.guard?.();
       const saved = await subscriptions.update(updated, before.version, actorUserId);
       await configVersion.bump(before.organizationId);
       await platformAudit.record({
@@ -89,6 +90,8 @@ abstract class SubscriptionSupport {
 }
 
 interface SubscriptionChange {
+  /** Runs first inside the transaction, e.g. to touch the packages the change attaches. */
+  readonly guard?: () => Promise<void>;
   readonly updated: PlatformSubscription;
   readonly before: PlatformSubscription;
   readonly actorUserId: UserId;
@@ -184,6 +187,7 @@ export class ChangePackageUseCase extends SubscriptionSupport {
         updated: changed,
         before,
         actorUserId: input.actorUserId,
+        guard: () => this.touchPackages(input),
         audit: {
           action: PLATFORM_AUDIT_ACTION.SUBSCRIPTION_PACKAGE_CHANGED,
           changes: {
@@ -194,6 +198,17 @@ export class ChangePackageUseCase extends SubscriptionSupport {
       });
       return this.detailOf(saved);
     });
+  }
+
+  /**
+   * Writes every named package inside the transaction (guard counter), so a concurrent archive of
+   * one of them conflicts and the retry sees it archived (ADR-093). A package that is no longer
+   * ACTIVE is the same error as any other unusable package.
+   */
+  private async touchPackages(input: ChangePackageInput): Promise<void> {
+    const distinct = [...new Set([input.basePackageId, ...input.addOnPackageIds])];
+    const matched = await this.dependencies.packages.touchActive(distinct);
+    if (matched < distinct.length) throw packageKindMismatch();
   }
 
   /** The base must be an ACTIVE base package and each add-on an ACTIVE add-on. */

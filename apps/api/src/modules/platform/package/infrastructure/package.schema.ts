@@ -21,7 +21,10 @@ export const PACKAGE_COLLECTION_NAME = "packages";
 export interface PackageDocument {
   packageId: string;
   packageKey: string;
-  nameKey: string;
+  nameKey: string | null;
+  name?: string | null;
+  /** Guard counter: written by whoever attaches the package to a subscription, and by archive (ADR-093). */
+  referenceVersion?: number;
   isAddOn: boolean;
   moduleKeys: ModuleKey[];
   limits: Record<LimitKey, LimitValue>;
@@ -46,7 +49,9 @@ export const packageSchema = new Schema<PackageDocument>(
   {
     ...domainIdField("packageId"),
     packageKey: { type: String, required: true },
-    nameKey: { type: String, required: true },
+    nameKey: { type: String, default: null },
+    name: { type: String, default: null },
+    referenceVersion: { type: Number, default: 0 },
     isAddOn: { type: Boolean, required: true },
     moduleKeys: [{ type: String, required: true }],
     limits: { type: new Schema(limitFields(), SUB_SCHEMA_OPTIONS), required: true },

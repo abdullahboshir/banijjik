@@ -9,7 +9,7 @@ import type { OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import { recordNotFound } from "../../domain/errors.js";
 import type { Organization } from "../../domain/organization.entity.js";
-import { diffAuditFields, type AuditFields } from "../audit-diff.js";
+import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
 import type { OrganizationProfileRepository } from "../ports/profile-and-location-repositories.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";

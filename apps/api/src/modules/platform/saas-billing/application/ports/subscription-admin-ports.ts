@@ -13,6 +13,8 @@ export interface PackageKindView {
 /** Implemented from platform/package in index.ts. */
 export interface PackageKindLookup {
   findByIds(packageIds: readonly string[]): Promise<readonly PackageKindView[]>;
+  /** Writes the ACTIVE packages among the given ones (guard counter) and returns how many there were. */
+  touchActive(packageIds: readonly string[]): Promise<number>;
 }
 
 /** Subscriptions are tenant-scoped rows: the callers run these under runAsSystem(PLATFORM_ADMIN). */

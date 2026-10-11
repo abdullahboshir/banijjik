@@ -215,6 +215,7 @@ export type { PlatformRuleKey } from "./platform/platform-message-keys.js";
 export type {
   PlatformChangePackageRequest,
   PlatformExtendTrialRequest,
+  PlatformMeResponse,
   PlatformModuleOverrideCreateRequest,
   PlatformModuleOverrideResponse,
   PlatformOrganizationDetail,
