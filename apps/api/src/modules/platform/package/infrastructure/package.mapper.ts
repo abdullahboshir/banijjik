@@ -32,7 +32,8 @@ export function toPackage(document: PackageDocument): Package {
     isAddOn: stored.isAddOn,
     moduleKeys: stored.moduleKeys,
     limits: stored.limits,
-    limitIncrements: stored.limitIncrements,
+    // Missing on a package saved without increments: Mongoose drops an empty sub-document.
+    limitIncrements: stored.limitIncrements ?? {},
     status: stored.status,
     version: stored.version,
     createdAt: stored.createdAt,

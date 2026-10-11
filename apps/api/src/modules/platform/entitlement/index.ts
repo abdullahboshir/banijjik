@@ -146,3 +146,5 @@ export function buildEntitlementPlatformRouter(
 export function buildModuleOverrideLister(): Pick<ModuleOverrideAdminRepository, "list"> {
   return new MongoModuleOverrideAdminRepository();
 }
+
+export { PACKAGE_CATALOG_REFRESH_MILLISECONDS } from "./application/package-catalog-version.js";
