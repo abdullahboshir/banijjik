@@ -17,7 +17,7 @@ export function LanguageSwitch(): ReactElement {
           key={localeKey}
           variant="ghost"
           aria-pressed={localeKey === locale}
-          className={localeKey === locale ? "bg-subtle" : undefined}
+          className={localeKey === locale ? "bg-subtle px-2 sm:px-4" : "px-2 sm:px-4"}
           onClick={() => changeLocale(localeKey)}
         >
           {t(`language.${localeKey}`)}

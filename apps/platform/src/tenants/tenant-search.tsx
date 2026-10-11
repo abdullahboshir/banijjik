@@ -40,6 +40,7 @@ export function TenantSearch({ initialText, status, label }: TenantSearchProps):
         name="q"
         value={text}
         aria-label={label}
+        placeholder={label}
         onChange={(event) => setText(event.target.value)}
       />
     </div>

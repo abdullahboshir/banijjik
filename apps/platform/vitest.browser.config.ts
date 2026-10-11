@@ -8,7 +8,8 @@ export default defineConfig({
     // Every file starts the whole stack on fixed ports (the build bakes in the API address), so files run one by one.
     fileParallelism: false,
     testTimeout: 60_000,
-    hookTimeout: 60_000,
+    // The hook that starts the stack first waits for the fixed ports to be free (another suite may hold them).
+    hookTimeout: 660_000,
     env: {
       NEXT_PUBLIC_API_BASE_URL: "http://localhost:4000",
       NEXT_PUBLIC_BRAND_NAME: "Test Brand",

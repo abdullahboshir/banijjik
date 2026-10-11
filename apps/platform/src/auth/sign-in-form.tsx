@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@banijjik/ui";
-import { loginRequestSchema } from "@banijjik/validation";
 import { safeNextPath } from "@banijjik/web-client";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactElement } from "react";
@@ -13,7 +12,9 @@ import { useTranslator } from "../i18n/i18n-provider";
 
 const INITIAL_VALUES = { identifier: "", password: "" };
 
-function validate(values: typeof INITIAL_VALUES): FieldErrors {
+/** The schema library loads on the first submit, so it is not part of the first load of the page. */
+async function validate(values: typeof INITIAL_VALUES): Promise<FieldErrors> {
+  const { loginRequestSchema } = await import("@banijjik/validation");
   const result = loginRequestSchema.safeParse(values);
   return result.success ? {} : issuesToFieldErrors(result.error.issues, values);
 }
@@ -28,7 +29,7 @@ export function SignInForm({ nextPath }: { nextPath: string }): ReactElement {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const found = validate(values);
+    const found = await validate(values);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
     if (await submit.run(() => login(values))) router.replace(safeNextPath(nextPath));

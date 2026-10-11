@@ -90,6 +90,11 @@ export function LimitFields(props: LimitFieldsProps): ReactElement {
         {props.labels["platform.package.limits"]}
       </legend>
       <p className="text-small text-secondary">{props.labels["platform.package.limitsHint"]}</p>
+      {props.draft.isAddOn ? (
+        <p className="text-small text-secondary">
+          {props.labels["platform.package.incrementsHint"]}
+        </p>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {LIMIT_KEY_VALUES.map((limitKey) => (
           <LimitRow key={limitKey} {...props} limitKey={limitKey} />

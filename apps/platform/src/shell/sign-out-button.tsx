@@ -23,7 +23,12 @@ export function SignOutButton(): ReactElement {
   }
 
   return (
-    <Button variant="ghost" isLoading={isSigningOut} onClick={() => void handleClick()}>
+    <Button
+      variant="ghost"
+      className="px-2 sm:px-4"
+      isLoading={isSigningOut}
+      onClick={() => void handleClick()}
+    >
       {t("account.signOut")}
     </Button>
   );
