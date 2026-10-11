@@ -6,6 +6,7 @@
     { "path": "./packages/validation" },
     { "path": "./packages/ui" },
     { "path": "./packages/i18n" },
+    { "path": "./packages/web-client" },
     { "path": "./apps/api" }
   ]
 }
