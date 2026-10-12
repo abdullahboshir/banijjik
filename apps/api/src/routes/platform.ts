@@ -54,6 +54,11 @@ export interface PlatformApiInput {
  */
 export function mountPlatformApi(router: Router, input: PlatformApiInput): void {
   const { clock } = input.dependencies;
+  // logout-all lives in the platform auth router but needs a session; the rest of it is public.
+  router.use(
+    "/platform/auth/logout-all",
+    authenticatePlatform({ verifier: input.verifier, operators: buildPlatformOperatorLookup() }),
+  );
   router.use("/platform/auth", buildIamPlatformAuthRouter(input.dependencies));
   router.use(
     "/platform",

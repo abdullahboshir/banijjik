@@ -26,5 +26,7 @@ export function buildPlatformAuthRouter(
     controller.refresh,
   );
   router.post("/logout", controller.logout);
+  // Needs a session: routes/platform.ts authenticates this one path before the rest of /platform/auth.
+  router.post("/logout-all", controller.logoutAll);
   return router;
 }

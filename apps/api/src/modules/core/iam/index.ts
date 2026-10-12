@@ -326,6 +326,7 @@ export function buildIamPlatformAuthRouter(dependencies: IamDependencies): Route
       operators,
     }),
     logout: new LogoutUseCase({ sessions, clock, audience }),
+    logoutAll: new LogoutAllUseCase({ sessions, clock, audience }),
     cookies: new AuthCookies({
       isSecure: config.nodeEnv === "production",
       domain: config.auth.cookieDomain,

@@ -1,4 +1,4 @@
-import type { EventPayloadMap, EventType } from "@banijjik/contracts";
+import type { EventPayloadMap, EventType, TokenAudience } from "@banijjik/contracts";
 import type { UserId } from "@banijjik/ids";
 import type { PasswordHasher } from "../modules/core/iam/application/ports/password-hasher.js";
 import type { PlatformOperatorRepository } from "../modules/core/iam/application/ports/platform-operator-repository.js";
@@ -121,9 +121,9 @@ export class InMemoryRefreshSessionRepository implements RefreshSessionRepositor
     }
   }
 
-  async revokeAllForUser(userId: UserId, at: Date): Promise<void> {
+  async revokeAllForUser(userId: UserId, audience: TokenAudience, at: Date): Promise<void> {
     for (const session of this.sessions.values()) {
-      if (session.userId === userId && !session.isRevoked())
+      if (session.userId === userId && session.audience === audience && !session.isRevoked())
         this.update(session, { revokedAt: at });
     }
   }

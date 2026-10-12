@@ -1,10 +1,12 @@
 import { ERROR_CODE } from "@banijjik/contracts";
 import type { LoginBody } from "@banijjik/validation";
 import type { Request, RequestHandler } from "express";
+import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 import { AppError, readCookie, sendData } from "../../../../kernel/http/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
 import type { ClientInfo } from "../application/session-issuer.js";
 import type { LoginUseCase } from "../application/use-cases/login.use-case.js";
+import type { LogoutAllUseCase } from "../application/use-cases/logout-all.use-case.js";
 import type { LogoutUseCase } from "../application/use-cases/logout.use-case.js";
 import type { RefreshSessionUseCase } from "../application/use-cases/refresh-session.use-case.js";
 import { RefreshRaceError } from "../domain/errors.js";
@@ -15,6 +17,7 @@ export interface PlatformAuthControllerDependencies {
   readonly login: LoginUseCase;
   readonly refreshSession: RefreshSessionUseCase;
   readonly logout: LogoutUseCase;
+  readonly logoutAll: LogoutAllUseCase;
   /** Writes and reads the platform cookie pair (platform_access_token, platform_refresh_token). */
   readonly cookies: AuthCookies;
   readonly clock: Clock;
@@ -67,6 +70,14 @@ export class PlatformAuthController {
   readonly logout: RequestHandler = async (request, response) => {
     const { logout, cookies } = this.dependencies;
     await logout.execute({ refreshToken: readCookie(request, cookies.refreshName()) });
+    cookies.clear(response);
+    response.status(204).end();
+  };
+
+  /** Needs a platform session: routes/platform.ts puts authenticatePlatform() in front of it. */
+  readonly logoutAll: RequestHandler = async (_request, response) => {
+    const { logoutAll, cookies } = this.dependencies;
+    await logoutAll.execute({ userId: requireCurrentUserId() });
     cookies.clear(response);
     response.status(204).end();
   };

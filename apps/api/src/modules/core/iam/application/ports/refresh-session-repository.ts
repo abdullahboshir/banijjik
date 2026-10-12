@@ -1,3 +1,4 @@
+import type { TokenAudience } from "@banijjik/contracts";
 import type { UserId } from "@banijjik/ids";
 import type { RefreshSession } from "../../domain/refresh-session.entity.js";
 
@@ -14,6 +15,7 @@ export interface RefreshSessionRepository {
     at: Date,
   ): Promise<boolean>;
   revokeFamily(familyId: string, at: Date): Promise<void>;
-  revokeAllForUser(userId: UserId, at: Date): Promise<void>;
+  /** Ends the user's sessions of one audience only; the other app stays signed in (ADR-093). */
+  revokeAllForUser(userId: UserId, audience: TokenAudience, at: Date): Promise<void>;
   revoke(refreshSessionId: string, at: Date): Promise<void>;
 }

@@ -1,3 +1,4 @@
+import { TOKEN_AUDIENCE } from "@banijjik/contracts";
 import { newId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -213,7 +214,7 @@ describe("MongoRefreshSessionRepository", () => {
     await sessions.insert(aSession(userId, "user-b"));
     await sessions.insert(aSession(someoneElse, "else-a"));
 
-    await sessions.revokeAllForUser(userId, NOW);
+    await sessions.revokeAllForUser(userId, TOKEN_AUDIENCE.ADMIN, NOW);
 
     expect((await sessions.findByTokenHash("user-a"))?.isRevoked()).toBe(true);
     expect((await sessions.findByTokenHash("user-b"))?.isRevoked()).toBe(true);

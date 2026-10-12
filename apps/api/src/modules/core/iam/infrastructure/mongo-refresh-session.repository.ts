@@ -1,3 +1,4 @@
+import { TOKEN_AUDIENCE, type TokenAudience } from "@banijjik/contracts";
 import type { UserId } from "@banijjik/ids";
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
 import type { RefreshSessionRepository } from "../application/ports/refresh-session-repository.js";
@@ -45,9 +46,11 @@ export class MongoRefreshSessionRepository implements RefreshSessionRepository {
     );
   }
 
-  async revokeAllForUser(userId: UserId, at: Date): Promise<void> {
+  async revokeAllForUser(userId: UserId, audience: TokenAudience, at: Date): Promise<void> {
+    // A row without an audience is an ADMIN session (the mapper reads it the same way).
+    const audiences = audience === TOKEN_AUDIENCE.ADMIN ? [audience, null] : [audience];
     await this.model().updateMany(
-      { userId, revokedAt: null },
+      { userId, revokedAt: null, audience: { $in: audiences } },
       { $set: { revokedAt: at } },
       sessionOption(getActiveSession()),
     );
