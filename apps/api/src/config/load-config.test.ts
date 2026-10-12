@@ -23,6 +23,7 @@ const productionEnv = {
   DB_TENANT_SHARED_URL: "mongodb+srv://user:pw@cluster.example.com/tenant",
   REDIS_URL: "rediss://cache.example.com:6380",
   CORS_ALLOWED_ORIGINS: "https://app.example.com",
+  TRUSTED_PROXY_HOPS: "1",
 };
 
 function catchConfigError(env: Record<string, string | undefined>): ConfigError {
@@ -49,6 +50,7 @@ describe("loadConfig", () => {
         tenantSharedUrl: validEnv.DB_TENANT_SHARED_URL,
       },
       redisUrl: validEnv.REDIS_URL,
+      trustedProxyHops: 0,
       corsAllowedOrigins: ["http://localhost:3000", "https://admin.example.com"],
       auth: {
         accessTokenSecret: FAKE_ACCESS_SECRET,
@@ -177,6 +179,39 @@ describe("loadConfig", () => {
     expect(error.message).not.toContain("SuperSecret");
     expect(JSON.stringify(error.issues)).not.toContain("SuperSecret");
     expect(error.stack ?? "").not.toContain("SuperSecret");
+  });
+});
+
+describe("loadConfig TRUSTED_PROXY_HOPS (1.9d, review M7)", () => {
+  it("defaults to 0 outside production, so a forwarded address is never believed by accident", () => {
+    expect(loadConfig(validEnv).trustedProxyHops).toBe(0);
+  });
+
+  it.each(["0", "1", "5"])("accepts TRUSTED_PROXY_HOPS=%s", (value) => {
+    expect(loadConfig({ ...validEnv, TRUSTED_PROXY_HOPS: value }).trustedProxyHops).toBe(
+      Number(value),
+    );
+  });
+
+  it.each(["6", "-1", "1.5", "one", "05"])("reports TRUSTED_PROXY_HOPS=%s as INVALID", (value) => {
+    const error = catchConfigError({ ...validEnv, TRUSTED_PROXY_HOPS: value });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "TRUSTED_PROXY_HOPS", problem: "INVALID" }),
+    ]);
+  });
+
+  it("requires it in production, with no default", () => {
+    const withoutHops: Record<string, string | undefined> = { ...productionEnv };
+    delete withoutHops["TRUSTED_PROXY_HOPS"];
+
+    expect(catchConfigError(withoutHops).issues).toEqual([
+      expect.objectContaining({ key: "TRUSTED_PROXY_HOPS", problem: "MISSING" }),
+    ]);
+  });
+
+  it("accepts 0 in production when the API faces the internet directly", () => {
+    expect(loadConfig({ ...productionEnv, TRUSTED_PROXY_HOPS: "0" }).trustedProxyHops).toBe(0);
   });
 });
 

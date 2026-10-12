@@ -1,4 +1,4 @@
-import { ConfigError, type AppConfig, type ConfigIssue } from "./app-config.js";
+import { ConfigError, type AppConfig } from "./app-config.js";
 import {
   PRODUCTION_LOCAL_HOST_HINT,
   corsRule,
@@ -13,10 +13,11 @@ import {
   roleRule,
   splitOrigins,
   tenantSharedUrlRule,
+  trustedProxyHopsRule,
   WILDCARD_ORIGIN_HINT,
   type FieldRule,
 } from "./env.schema.js";
-import { readAuthConfig, readPlatformAdmin } from "./read-auth-config.js";
+import { readAuthConfig, readPlatformAdmin, type ConfigSection } from "./read-auth-config.js";
 import {
   collectIssues,
   failure,
@@ -49,72 +50,93 @@ function readUrl(
   return failure(rule, "INVALID", PRODUCTION_LOCAL_HOST_HINT);
 }
 
-type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin">;
-
-interface BaseConfigResult {
-  readonly value?: BaseConfig;
-  readonly issues: readonly ConfigIssue[];
+/** Production must say how many proxies it has (no default); elsewhere 0 is the safe answer. */
+function readTrustedProxyHops(env: Environment, isProduction: boolean): FieldResult<number> {
+  const rule = isProduction ? trustedProxyHopsRule : { ...trustedProxyHopsRule, defaultValue: "0" };
+  return readField(env, rule);
 }
 
-function readBaseConfig(env: Environment): BaseConfigResult {
-  const nodeEnv = readField(env, nodeEnvRule);
-  // An invalid NODE_ENV is reported on its own; production rules then do not apply.
-  const isProduction = nodeEnv.value === "production";
+type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin">;
+type ServerSettings = Pick<
+  AppConfig,
+  "port" | "logLevel" | "role" | "trustedProxyHops" | "corsAllowedOrigins"
+>;
+type DataStores = Pick<AppConfig, "database" | "redisUrl">;
+
+function readServerSettings(
+  env: Environment,
+  isProduction: boolean,
+): ConfigSection<ServerSettings> {
   const port = readField(env, portRule);
   const logLevel = readField(env, logLevelRule);
   const role = readField(env, roleRule);
-  const platformUrl = readUrl(env, platformUrlRule, isProduction);
-  const tenantSharedUrl = readUrl(env, tenantSharedUrlRule, isProduction);
-  const redisUrl = readUrl(env, redisUrlRule, isProduction);
+  const trustedProxyHops = readTrustedProxyHops(env, isProduction);
   const cors = readOrigins(env);
-
-  const issues = collectIssues([
-    nodeEnv,
-    port,
-    logLevel,
-    role,
-    platformUrl,
-    tenantSharedUrl,
-    redisUrl,
-    cors,
-  ]);
-  const { value: nodeEnvValue } = nodeEnv;
-  const { value: portValue } = port;
-  const { value: logLevelValue } = logLevel;
-  const { value: roleValue } = role;
-  const { value: platformUrlValue } = platformUrl;
-  const { value: tenantSharedUrlValue } = tenantSharedUrl;
-  const { value: redisUrlValue } = redisUrl;
-  const { value: originsValue } = cors;
-  const isComplete =
-    issues.length === 0 &&
-    nodeEnvValue !== undefined &&
-    portValue !== undefined &&
-    logLevelValue !== undefined &&
-    roleValue !== undefined &&
-    platformUrlValue !== undefined &&
-    tenantSharedUrlValue !== undefined &&
-    redisUrlValue !== undefined &&
-    originsValue !== undefined;
-  if (!isComplete) return { issues };
-
+  const issues = collectIssues([port, logLevel, role, trustedProxyHops, cors]);
+  if (
+    issues.length > 0 ||
+    port.value === undefined ||
+    logLevel.value === undefined ||
+    role.value === undefined ||
+    trustedProxyHops.value === undefined ||
+    cors.value === undefined
+  ) {
+    return { issues };
+  }
   return {
     issues,
     value: {
-      nodeEnv: nodeEnvValue,
-      port: portValue,
-      logLevel: logLevelValue,
-      role: roleValue,
-      database: Object.freeze({
-        platformUrl: platformUrlValue,
-        tenantSharedUrl: tenantSharedUrlValue,
-      }),
-      redisUrl: redisUrlValue,
-      corsAllowedOrigins: Object.freeze(originsValue),
+      port: port.value,
+      logLevel: logLevel.value,
+      role: role.value,
+      trustedProxyHops: trustedProxyHops.value,
+      corsAllowedOrigins: Object.freeze(cors.value),
     },
   };
 }
 
+function readDataStores(env: Environment, isProduction: boolean): ConfigSection<DataStores> {
+  const platformUrl = readUrl(env, platformUrlRule, isProduction);
+  const tenantSharedUrl = readUrl(env, tenantSharedUrlRule, isProduction);
+  const redisUrl = readUrl(env, redisUrlRule, isProduction);
+  const issues = collectIssues([platformUrl, tenantSharedUrl, redisUrl]);
+  if (
+    issues.length > 0 ||
+    platformUrl.value === undefined ||
+    tenantSharedUrl.value === undefined ||
+    redisUrl.value === undefined
+  ) {
+    return { issues };
+  }
+  return {
+    issues,
+    value: {
+      database: Object.freeze({
+        platformUrl: platformUrl.value,
+        tenantSharedUrl: tenantSharedUrl.value,
+      }),
+      redisUrl: redisUrl.value,
+    },
+  };
+}
+
+function readBaseConfig(env: Environment): ConfigSection<BaseConfig> {
+  const nodeEnv = readField(env, nodeEnvRule);
+  // An invalid NODE_ENV is reported on its own; production rules then do not apply.
+  const isProduction = nodeEnv.value === "production";
+  const server = readServerSettings(env, isProduction);
+  const stores = readDataStores(env, isProduction);
+  const issues = [...collectIssues([nodeEnv]), ...server.issues, ...stores.issues];
+  if (
+    issues.length > 0 ||
+    nodeEnv.value === undefined ||
+    server.value === undefined ||
+    stores.value === undefined
+  ) {
+    return { issues };
+  }
+  return { issues, value: { nodeEnv: nodeEnv.value, ...server.value, ...stores.value } };
+}
 /** Validates an environment object. Returns a frozen config or throws ConfigError. Never includes values in messages. */
 export function loadConfig(env: Environment): AppConfig {
   const base = readBaseConfig(env);

@@ -8,6 +8,11 @@ export interface AppConfig {
     readonly tenantSharedUrl: string;
   };
   readonly redisUrl: string;
+  /**
+   * How many reverse proxies stand in front of the API; Express believes that many `X-Forwarded-For`
+   * entries and no more. 0 means the socket address is the client (review M7).
+   */
+  readonly trustedProxyHops: number;
   /** How often the worker looks for pending outbox events. Absent means the dispatcher default (500 ms). */
   readonly outboxPollIntervalMs?: number;
   readonly corsAllowedOrigins: readonly string[];

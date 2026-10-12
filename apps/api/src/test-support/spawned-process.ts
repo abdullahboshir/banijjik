@@ -82,5 +82,6 @@ export function productionEnvironment(
     REDIS_URL: useFullyQualifiedLoopback(redisUrlOrUnreachable()),
     CORS_ALLOWED_ORIGINS: "http://localhost:3000",
     AUTH_ACCESS_TOKEN_SECRET: TEST_ACCESS_TOKEN_SECRET,
+    TRUSTED_PROXY_HOPS: "1",
   };
 }

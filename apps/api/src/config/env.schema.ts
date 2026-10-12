@@ -111,6 +111,16 @@ const MINIMUM_SECRET_LENGTH = 32;
 const COOKIE_DOMAIN_PATTERN =
   /^\.?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i;
 
+/** A single digit 0 to 5: how many reverse proxies sit between the internet and the API. */
+export const trustedProxyHopsRule: FieldRule<number> = {
+  key: "TRUSTED_PROXY_HOPS",
+  hint: "must be an integer from 0 to 5: the number of reverse proxies in front of the API",
+  schema: z
+    .string()
+    .regex(/^[0-5]$/)
+    .transform(Number),
+};
+
 export const outboxPollIntervalRule: FieldRule<number> = {
   key: "OUTBOX_POLL_INTERVAL_MS",
   hint: "must be an integer from 1 to 60000",

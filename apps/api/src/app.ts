@@ -33,8 +33,6 @@ export interface BuildAppOptions {
 }
 
 const JSON_BODY_LIMIT = "1mb";
-// One reverse proxy sits in front in production, so its X-Forwarded-For is the client address.
-const TRUSTED_PROXY_HOPS = 1;
 
 /** Builds the Express app. Order matters: request id first, error handlers last. */
 export function buildApp(options: BuildAppOptions): Express {
@@ -52,7 +50,8 @@ export function buildApp(options: BuildAppOptions): Express {
   setRootLogger(logger);
   const app = express();
   app.disable("x-powered-by");
-  app.set("trust proxy", TRUSTED_PROXY_HOPS);
+  // Believes only as many X-Forwarded-For entries as there are proxies we run (review M7); 0 ignores the header.
+  app.set("trust proxy", config.trustedProxyHops);
 
   app.use(requestIdMiddleware);
   app.use(createAccessLog(logger));

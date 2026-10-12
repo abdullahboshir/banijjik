@@ -13,6 +13,8 @@ export function createTestConfig(overrides: Record<string, string> = {}): AppCon
     REDIS_URL: "redis://127.0.0.1:6380",
     CORS_ALLOWED_ORIGINS: ALLOWED_ORIGIN,
     AUTH_ACCESS_TOKEN_SECRET: TEST_ACCESS_TOKEN_SECRET,
+    // The test client plays the one proxy in front of the API: it sends X-Forwarded-For to pick its address.
+    TRUSTED_PROXY_HOPS: "1",
     ...overrides,
   });
 }

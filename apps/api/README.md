@@ -44,26 +44,29 @@ Startup (`main.ts`) connects before it listens or starts the worker and exits 1 
 
 ## Config keys
 
-| Key                                               | Rule                                                                    | Default       |
-| ------------------------------------------------- | ----------------------------------------------------------------------- | ------------- |
-| `NODE_ENV`                                        | `development`, `test` or `production`                                   | `development` |
-| `PORT`                                            | integer 1 to 65535                                                      | `4000`        |
-| `LOG_LEVEL`                                       | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                      | `info`        |
-| `ROLE`                                            | `api` (HTTP server) or `worker` (no HTTP, waits for shutdown)           | `api`         |
-| `DB_PLATFORM_URL`                                 | `mongodb://` or `mongodb+srv://` URL with a database name               | required      |
-| `DB_TENANT_SHARED_URL`                            | same                                                                    | required      |
-| `REDIS_URL`                                       | `redis://` or `rediss://` URL                                           | required      |
-| `CORS_ALLOWED_ORIGINS`                            | comma-separated absolute `http(s)` origins; `*` is always rejected      | required      |
-| `AUTH_ACCESS_TOKEN_SECRET`                        | random string, at least 32 characters; signs access tokens              | required      |
-| `AUTH_ACCESS_TOKEN_TTL_SECONDS`                   | access token lifetime                                                   | `900`         |
-| `AUTH_REFRESH_TOKEN_TTL_DAYS`                     | sliding refresh session lifetime                                        | `30`          |
-| `AUTH_SESSION_FAMILY_MAX_DAYS`                    | hard limit of one login family                                          | `90`          |
-| `COOKIE_DOMAIN`                                   | optional cookie domain, e.g. `.example.com`                             | unset         |
-| `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD` | both or neither; used by `npm run seed:platform-admin -w @banijjik/api` | unset         |
+| Key                                               | Rule                                                                    | Default                     |
+| ------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------- |
+| `NODE_ENV`                                        | `development`, `test` or `production`                                   | `development`               |
+| `PORT`                                            | integer 1 to 65535                                                      | `4000`                      |
+| `LOG_LEVEL`                                       | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                      | `info`                      |
+| `ROLE`                                            | `api` (HTTP server) or `worker` (no HTTP, waits for shutdown)           | `api`                       |
+| `DB_PLATFORM_URL`                                 | `mongodb://` or `mongodb+srv://` URL with a database name               | required                    |
+| `DB_TENANT_SHARED_URL`                            | same                                                                    | required                    |
+| `REDIS_URL`                                       | `redis://` or `rediss://` URL                                           | required                    |
+| `CORS_ALLOWED_ORIGINS`                            | comma-separated absolute `http(s)` origins; `*` is always rejected      | required                    |
+| `TRUSTED_PROXY_HOPS`                              | integer 0 to 5: reverse proxies in front of the API (see below)         | `0`; required in production |
+| `AUTH_ACCESS_TOKEN_SECRET`                        | random string, at least 32 characters; signs access tokens              | required                    |
+| `AUTH_ACCESS_TOKEN_TTL_SECONDS`                   | access token lifetime                                                   | `900`                       |
+| `AUTH_REFRESH_TOKEN_TTL_DAYS`                     | sliding refresh session lifetime                                        | `30`                        |
+| `AUTH_SESSION_FAMILY_MAX_DAYS`                    | hard limit of one login family                                          | `90`                        |
+| `COOKIE_DOMAIN`                                   | optional cookie domain, e.g. `.example.com`                             | unset                       |
+| `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD` | both or neither; used by `npm run seed:platform-admin -w @banijjik/api` | unset                       |
 
 Run `npm run seed:packages -w @banijjik/api` once per environment before the first business is created: every new organization starts a trial on the seeded BUNDLE package (it inserts only the missing packages and never overwrites an edited one).
 
 In `production`, database and Redis URLs must not point to `localhost` or `127.0.0.1`.
+
+`TRUSTED_PROXY_HOPS` is how many reverse proxies you run between the internet and the API. Every per-address rate limit (login, register, refresh, invitation preview) keys on the client address, and `X-Forwarded-For` is a header the caller can write. Express believes exactly that many entries, counted from the right, and ignores the rest: set `1` behind a single load balancer, `0` when the API faces the internet directly (the header is then ignored). Too high a number lets a caller forge its address and dodge the limits; too low shares one address across all clients. Production refuses to start without it, so the choice is always made on purpose.
 
 Auth cookies: `access_token` has `Path=/` (the admin app server-renders and forwards it), `refresh_token` has `Path=/api/v1/auth`; both are httpOnly, SameSite=Lax, Secure in production.
 
