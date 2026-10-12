@@ -12,7 +12,12 @@ import {
 import { createLogger } from "../kernel/logger/index.js";
 import { registerIdempotencyModel } from "../kernel/idempotency/index.js";
 import { registerEventModels } from "../kernel/events/index.js";
-import { MongoRateLimiter, registerRateLimitModel } from "../kernel/rate-limit/index.js";
+import {
+  MongoRateLimiter,
+  registerRateLimitModel,
+  type RateLimiter,
+} from "../kernel/rate-limit/index.js";
+import type { RedisClient } from "../kernel/redis/index.js";
 import { registerSequenceModel } from "../kernel/sequence/index.js";
 import { buildEnsureSeedPackagesUseCase } from "../modules/platform/package/index.js";
 import { buildV1Router, registerModuleModels } from "../routes/v1.js";
@@ -42,6 +47,34 @@ export function registerIamApiModels(): void {
   registerModuleModels();
 }
 
+type StartIamApiOptions = NonNullable<Parameters<typeof startIamApi>[0]>;
+
+/**
+ * Without probe routers or a replaced limiter the app builds its own v1 router, exactly as
+ * production does (it then has no Redis, so no per-user limit); with them, the same router plus
+ * what the test asked for.
+ */
+function buildProbeV1Router(
+  options: StartIamApiOptions,
+  config: AppConfig,
+  clock: MutableClock,
+): Router | undefined {
+  const needsOwnRouter =
+    options.tenantRouters !== undefined ||
+    options.tenantRouterFactories !== undefined ||
+    options.userRateLimiter !== undefined;
+  if (!needsOwnRouter) return undefined;
+  return buildV1Router({
+    config,
+    clock,
+    rateLimiter: new MongoRateLimiter(clock),
+    tenantRouters: options.tenantRouters ?? [],
+    tenantRouterFactories: options.tenantRouterFactories ?? [],
+    extraManifests: [KERNEL_PROBE_MANIFEST, ...(options.extraManifests ?? [])],
+    ...(options.templateReader === undefined ? {} : { templateReader: options.templateReader }),
+    ...(options.userRateLimiter === undefined ? {} : { userRateLimiter: options.userRateLimiter }),
+  });
+}
 /** The real app on a real replica set, with a clock the test controls and the logs captured. */
 export async function startIamApi(
   options: {
@@ -53,6 +86,10 @@ export async function startIamApi(
     readonly extraManifests?: readonly ModuleManifest[];
     /** Lets a test choose which modules and kinds the industry template allows (card 1.6b). */
     readonly templateReader?: IndustryTemplateReader;
+    /** Replaces the Redis-backed per-user limiter, which the harness has no Redis for (card 1.9d). */
+    readonly userRateLimiter?: RateLimiter;
+    /** The API role's cache client: with it the app builds the real Redis per-user limiter, as production does. */
+    readonly redis?: RedisClient;
   } = {},
 ): Promise<IamApiHarness> {
   const config = createDatabaseTestConfig();
@@ -64,21 +101,14 @@ export async function startIamApi(
   const clock = new MutableClock(new Date());
   // Every new organization starts a trial on the BUNDLE package, so the packages are seeded first.
   await buildEnsureSeedPackagesUseCase(clock).execute();
-  // Without tenant routers the app builds its own v1 router, exactly as production does.
-  const hasTenantRouters =
-    options.tenantRouters !== undefined || options.tenantRouterFactories !== undefined;
-  const v1Router = hasTenantRouters
-    ? buildV1Router({
-        config,
-        clock,
-        rateLimiter: new MongoRateLimiter(clock),
-        tenantRouters: options.tenantRouters ?? [],
-        tenantRouterFactories: options.tenantRouterFactories ?? [],
-        extraManifests: [KERNEL_PROBE_MANIFEST, ...(options.extraManifests ?? [])],
-        ...(options.templateReader === undefined ? {} : { templateReader: options.templateReader }),
-      })
-    : undefined;
-  const app = buildApp({ config, logger, clock, ...(v1Router === undefined ? {} : { v1Router }) });
+  const v1Router = buildProbeV1Router(options, config, clock);
+  const app = buildApp({
+    config,
+    logger,
+    clock,
+    ...(v1Router === undefined ? {} : { v1Router }),
+    ...(options.redis === undefined ? {} : { redis: options.redis }),
+  });
   return {
     app,
     config,

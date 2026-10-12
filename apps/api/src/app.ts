@@ -14,7 +14,7 @@ import {
   sendData,
 } from "./kernel/http/index.js";
 import { createAccessLog, setRootLogger } from "./kernel/logger/index.js";
-import { MongoRateLimiter } from "./kernel/rate-limit/index.js";
+import { MongoRateLimiter, RedisRateLimiter } from "./kernel/rate-limit/index.js";
 import { createApiReadinessCheck, type RedisClient } from "./kernel/redis/index.js";
 import { systemClock, type Clock } from "./kernel/time/index.js";
 import { buildV1Router } from "./routes/v1.js";
@@ -45,7 +45,9 @@ export function buildApp(options: BuildAppOptions): Express {
       config,
       clock,
       rateLimiter: new MongoRateLimiter(clock),
-      ...(redis === undefined ? {} : { redis }),
+      ...(redis === undefined
+        ? {}
+        : { redis, userRateLimiter: new RedisRateLimiter({ client: redis }) }),
     });
   setRootLogger(logger);
   const app = express();

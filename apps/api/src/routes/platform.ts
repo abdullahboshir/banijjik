@@ -1,12 +1,14 @@
 import { asId, type OrganizationId, type UserId } from "@banijjik/ids";
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { PlatformAuditRecorder } from "../kernel/audit/index.js";
 import {
   authenticatePlatform,
   platformPermission,
+  requirePlatformOperatorId,
   type AccessTokenVerifier,
 } from "../kernel/auth/index.js";
 import type { ModuleRegistry } from "../kernel/modules/index.js";
+import { PER_USER_LIMIT, perUserLimit, type RateLimiter } from "../kernel/rate-limit/index.js";
 import { runInOrganizationContext } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
@@ -44,6 +46,8 @@ export interface PlatformApiInput {
   readonly dependencies: IamDependencies;
   readonly verifier: AccessTokenVerifier;
   readonly registry: ModuleRegistry;
+  /** Counts every authenticated platform request against its operator; absent in tests that do not need it. */
+  readonly userRateLimiter?: RateLimiter | undefined;
 }
 
 /**
@@ -63,12 +67,25 @@ export function mountPlatformApi(router: Router, input: PlatformApiInput): void 
   router.use(
     "/platform",
     authenticatePlatform({ verifier: input.verifier, operators: buildPlatformOperatorLookup() }),
+    ...buildOperatorLimit(input),
     buildPlatformRouter({
       clock,
       registry: input.registry,
       platformAudit: buildPlatformAuditRecorder(clock),
     }),
   );
+}
+
+function buildOperatorLimit(input: PlatformApiInput): readonly RequestHandler[] {
+  if (input.userRateLimiter === undefined) return [];
+  return [
+    perUserLimit({
+      limiter: input.userRateLimiter,
+      clock: input.dependencies.clock,
+      ...PER_USER_LIMIT.PLATFORM_OPERATOR,
+      userKeyOf: requirePlatformOperatorId,
+    }),
+  ];
 }
 
 interface PlatformRouterInput {

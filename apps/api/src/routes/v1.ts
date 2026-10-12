@@ -3,12 +3,16 @@ import { Router, type RequestHandler } from "express";
 import type { AppConfig } from "../config/index.js";
 import { createEntitlementGate, createPermissionMiddleware } from "../kernel/access/index.js";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
-import { authenticate, createJoseAccessTokenVerifier } from "../kernel/auth/index.js";
+import {
+  authenticate,
+  createJoseAccessTokenVerifier,
+  requireCurrentUserId,
+} from "../kernel/auth/index.js";
 import { asSystemPort } from "../kernel/context/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { createIdempotencyMiddleware } from "../kernel/idempotency/index.js";
 import type { ModuleRegistry } from "../kernel/modules/index.js";
-import type { RateLimiter } from "../kernel/rate-limit/index.js";
+import { PER_USER_LIMIT, perUserLimit, type RateLimiter } from "../kernel/rate-limit/index.js";
 import type { RedisClient } from "../kernel/redis/index.js";
 import {
   locationAccess,
@@ -63,6 +67,11 @@ export interface V1Dependencies {
   readonly config: AppConfig;
   readonly clock: Clock;
   readonly rateLimiter: RateLimiter;
+  /**
+   * The per-user limiter of the authenticated API, Redis-backed. Present in the API role; without
+   * it the per-user limit is not mounted (tests that do not need it).
+   */
+  readonly userRateLimiter?: RateLimiter;
   /** Present in the API role: the permission cache then shares Redis between instances (ADR-088). */
   readonly redis?: RedisClient;
   /**
@@ -102,6 +111,8 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   const router = Router();
   const verifier = createJoseAccessTokenVerifier({ secret: config.auth.accessTokenSecret, clock });
   const requireAdminUser = authenticate({ audience: TOKEN_AUDIENCE.ADMIN, verifier });
+  // Sign in first, then count the request against that user, before any database work (review M8).
+  const adminGuards = [requireAdminUser, ...buildAdminUserLimit(dependencies)];
   const { authRouter, meRouter } = buildIamRouters(dependencies);
   // Built once here: the idempotency middleware and the audit recorder are shared by the modules.
   const audit = buildAuditRecorder(clock);
@@ -133,14 +144,19 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   router.use("/auth/logout-all", requireAdminUser);
   router.use("/auth", authRouter);
   // More specific path first, so /me/orgs never falls into the /me router.
-  router.use("/me/orgs", requireAdminUser, myOrganizationsRouter);
-  router.use("/me", requireAdminUser, meRouter);
+  router.use("/me/orgs", adminGuards, myOrganizationsRouter);
+  router.use("/me", adminGuards, meRouter);
   // The invitation link: public preview, signed-in accept. Outside the tenant pipeline.
   router.use("/invitations", organizationTenant.invitationLinkRouter);
-  mountPlatformApi(router, { dependencies, verifier, registry });
+  mountPlatformApi(router, {
+    dependencies,
+    verifier,
+    registry,
+    userRateLimiter: dependencies.userRateLimiter,
+  });
   router.use(
     "/orgs/:organizationId",
-    requireAdminUser,
+    adminGuards,
     tenantContext({ directory: membershipDirectory }),
     locationAccess(),
     createEntitlementGate({ registry, config: orgConfig }),
@@ -155,6 +171,20 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     ),
   );
   return router;
+}
+
+/** The per-user limit of business users: none without a limiter, otherwise one handler. */
+function buildAdminUserLimit(dependencies: V1Dependencies): readonly RequestHandler[] {
+  const { userRateLimiter, clock } = dependencies;
+  if (userRateLimiter === undefined) return [];
+  return [
+    perUserLimit({
+      limiter: userRateLimiter,
+      clock,
+      ...PER_USER_LIMIT.ADMIN_USER,
+      userKeyOf: requireCurrentUserId,
+    }),
+  ];
 }
 
 /** The resolver behind its cache: the entitlement gate and the config endpoint read through it. */
