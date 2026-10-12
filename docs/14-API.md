@@ -99,16 +99,16 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 ### 5.1 organization, iam, settings, custom-field, audit, file
 | Method & path | Permission | Flags | Contract / notes |
 |---|---|---|---|
-| `GET /profile` · `PATCH /profile` | `organization.profile.update` (PATCH) | | `OrganizationProfile…` |
-| `GET /locations` · `POST /locations` · `PATCH /locations/{locationId}` · `POST /locations/{locationId}/archive` | `organization.location.*` | I (POST) | archive refused with stock/open requests (`BUSINESS_RULE`) |
-| `GET /members` · `GET /members/{memberId}` · `PATCH /members/{memberId}` · `POST /members/{memberId}/suspend` · `POST /members/{memberId}/reactivate` · `POST /members/{memberId}/remove` | `organization.member.*` (`remove` for remove, `update` for the rest) | | assignments edit via PATCH under the rules of ADR-092; sensitive custom fields need `readSensitive` (card 2.3) |
+| `GET /profile` · `PATCH /profile` | `organization.profile.update` (PATCH) | | `OrganizationProfile…`; PATCH needs the permission at ALL locations (else `403`); optional fields: a value sets, `null` clears, an absent key leaves it unchanged, required fields reject `null` (`400`) |
+| `GET /locations` · `POST /locations` · `PATCH /locations/{locationId}` · `POST /locations/{locationId}/archive` | `organization.location.*` | I (POST) | archive refused with stock/open requests (`BUSINESS_RULE`); PATCH: optional fields (address, phone, timezone) take `null` to clear, required ones reject it (`400`) |
+| `GET /members` · `GET /members/{memberId}` · `PATCH /members/{memberId}` · `POST /members/{memberId}/suspend` · `POST /members/{memberId}/reactivate` · `POST /members/{memberId}/remove` | `organization.member.*` (`remove` for remove, `update` for the rest) | | list, read and every change are limited to members whose assignments all lie within the caller's locations for that permission (outside: `404`), and new assignments must lie within them too (`422 ROLE_NOT_GRANTABLE`); assignments edit via PATCH under the rules of ADR-092; sensitive custom fields need `readSensitive` (card 2.3) |
 | `POST /invitations` · `GET /invitations` · `POST /invitations/{invitationId}/revoke` | `organization.member.invite` | I (POST) | lists and revokes only invitations within the caller's locations (outside: 404; roles above the caller: `422 ROLE_NOT_GRANTABLE`); a member who loses access (suspend, remove, assignments changed) takes their pending invitations with them; the create response carries `inviteUrlPath` once; a replay of the same key returns the invitation without it (ADR-092) |
 | `POST /ownership/transfer` | `organization.ownership.transfer` | A | target must be an active member |
 | `GET /roles` · `POST /roles` · `PATCH /roles/{roleId}` · `POST /roles/{roleId}/archive` | `iam.role.*` | | system roles read-only; writes need the permission at ALL locations and every key added or removed held by the caller at ALL (`422 ROLE_NOT_GRANTABLE`, `details.permissionKeys`) |
 | `GET /settings?keys=` · `PATCH /settings` | `settings.setting.*` | | batch update `{ key, value, locationId? }[]` with versions |
 | `GET /terms` · `PATCH /terms` | `settings.term.update` | | |
 | `GET /custom-fields?entityType=` · `POST /custom-fields` · `PATCH /custom-fields/{customFieldDefinitionId}` · `POST /custom-fields/{customFieldDefinitionId}/archive` | `custom-field.definition.*` | | org-scope definitions only; industry ones read-only |
-| `GET /audit-logs` | `audit.log.read` | | filters: entityType, entityId, actor, date |
+| `GET /audit-logs` | `audit.log.read` | | needs the permission at ALL locations (else `403`); filters: entityType, entityId, actor, date |
 | `POST /files` (multipart or signed upload) · `GET /files/{fileId}` | any member with a write permission on the owner entity | I | returns `FileResponse`; storage path `org/{organizationId}/…` |
 
 ### 5.2 contact

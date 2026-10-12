@@ -34,12 +34,12 @@ const INITIAL = {
   tradeLicenseNumber: "",
 };
 
-function renderSheet(onClose = vi.fn()) {
+function renderSheet(onClose = vi.fn(), saved: Partial<typeof INITIAL> = {}) {
   render(
     <I18nProvider locale="bn" catalog={BUNDLED_CATALOGS.bn} brandName="Example">
       <ProfileFormSheet
         organizationId="org-1"
-        initial={INITIAL}
+        initial={{ ...INITIAL, ...saved }}
         version={4}
         labels={labels}
         onClose={onClose}
@@ -110,5 +110,21 @@ describe("ProfileFormSheet", () => {
     expect((await screen.findByText(labels.conflict)).textContent).toBe(labels.conflict);
     await userEvent.click(screen.getByRole("button", { name: labels.reload }));
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it("sends null for a saved field the person emptied", async () => {
+    updateProfile.mockResolvedValue({});
+    renderSheet(vi.fn(), { legalName: "রহিম ট্রেডার্স লিমিটেড" });
+
+    await userEvent.clear(field(labels.fields.legalName));
+    await userEvent.click(screen.getByRole("button", { name: labels.submit }));
+
+    await waitFor(() => expect(updateProfile).toHaveBeenCalled());
+    expect(updateProfile.mock.calls[0]?.[1]).toEqual({
+      name: INITIAL.name,
+      defaultLocale: "bn",
+      profile: { legalName: null },
+      version: 4,
+    });
   });
 });

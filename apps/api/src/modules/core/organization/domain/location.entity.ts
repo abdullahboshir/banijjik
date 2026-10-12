@@ -6,6 +6,7 @@ import {
   type PostalAddress,
 } from "@banijjik/contracts";
 import { newId, type LocationId, type OrganizationId, type UserId } from "@banijjik/ids";
+import { applyClearableChange, type ClearableChange } from "./clearable.js";
 import { invalidField, invalidTransition, locationIsDefault } from "./errors.js";
 
 const NAME_MIN_LENGTH = 1;
@@ -53,9 +54,10 @@ export interface NewLocationInput {
 export interface LocationChanges {
   readonly name?: string | undefined;
   readonly locationType?: LocationType | undefined;
-  readonly address?: PostalAddress | undefined;
-  readonly phoneE164?: string | undefined;
-  readonly timezone?: string | undefined;
+  /** `null` clears the field; an absent key leaves it. */
+  readonly address?: ClearableChange<PostalAddress>;
+  readonly phoneE164?: ClearableChange<string>;
+  readonly timezone?: ClearableChange<string>;
 }
 
 function assertNameLength(name: string): void {
@@ -147,9 +149,9 @@ export class Location implements LocationProps {
       ...this,
       name,
       locationType: changes.locationType ?? this.locationType,
-      address: changes.address ?? this.address,
-      phoneE164: changes.phoneE164 ?? this.phoneE164,
-      timezone: changes.timezone ?? this.timezone,
+      address: applyClearableChange(this.address, changes.address),
+      phoneE164: applyClearableChange(this.phoneE164, changes.phoneE164),
+      timezone: applyClearableChange(this.timezone, changes.timezone),
     });
   }
 

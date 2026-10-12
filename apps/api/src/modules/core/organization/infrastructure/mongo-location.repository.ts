@@ -19,6 +19,15 @@ import { LOCATION_MODEL_NAME, type LocationDocument } from "./location.schema.js
 
 const LIST_SORT = { name: 1, locationId: 1 } as const;
 
+/** The optional fields the location no longer has, as an `$unset` document. */
+function clearedOptionalFields(location: Location): Record<string, true> {
+  return {
+    ...(location.address === undefined ? { address: true as const } : {}),
+    ...(location.phoneE164 === undefined ? { phoneE164: true as const } : {}),
+    ...(location.timezone === undefined ? { timezone: true as const } : {}),
+  };
+}
+
 /** Locations are tenant data: the tenant plugin adds the organization filter to every query (ADR-087). */
 export class MongoLocationRepository implements LocationRepository, LocationManagementRepository {
   async insert(location: Location): Promise<void> {
@@ -90,6 +99,8 @@ export class MongoLocationRepository implements LocationRepository, LocationMana
             ...(location.phoneE164 === undefined ? {} : { phoneE164: location.phoneE164 }),
             ...(location.timezone === undefined ? {} : { timezone: location.timezone }),
           },
+          // A cleared optional field is removed, not stored as an empty value (14-API.md section 5.1).
+          $unset: clearedOptionalFields(location),
         },
       });
       return toLocation(saved);

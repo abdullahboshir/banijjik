@@ -19,6 +19,7 @@ import {
   type PreferredLocale,
 } from "@banijjik/contracts";
 import { newId, type OrganizationId, type UserId } from "@banijjik/ids";
+import { applyClearableChanges, type ClearableChanges } from "./clearable.js";
 import { invalidField, invalidTransition } from "./errors.js";
 
 const DEFAULT_TIMEZONE = "Asia/Dhaka";
@@ -53,7 +54,8 @@ export interface OrganizationProps {
 export interface OrganizationProfileChanges {
   readonly name?: string;
   readonly defaultLocale?: PreferredLocale;
-  readonly profile?: OrganizationProfileFields;
+  /** Per optional field: a value sets it, `null` clears it, an absent key leaves it. */
+  readonly profile?: ClearableChanges<OrganizationProfileFields>;
 }
 
 export interface NewOrganizationInput {
@@ -160,7 +162,7 @@ export class Organization implements OrganizationProps {
 
   /**
    * The organization with the given profile changes applied. Profile fields given are merged over
-   * the stored ones; an address replaces the stored address as a whole.
+   * the stored ones, `null` removes a field, and an address replaces the stored address as a whole.
    */
   withProfileChanges(changes: OrganizationProfileChanges): Organization {
     const name = changes.name === undefined ? this.name : changes.name.trim();
@@ -169,7 +171,7 @@ export class Organization implements OrganizationProps {
       ...this,
       name,
       defaultLocale: changes.defaultLocale ?? this.defaultLocale,
-      profile: { ...this.profile, ...changes.profile },
+      profile: applyClearableChanges(this.profile, changes.profile ?? {}),
     });
   }
 

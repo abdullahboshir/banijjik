@@ -110,7 +110,7 @@ function useLocationSubmit(props: LocationFormSheetProps, form: LocationFormStat
 
   async function send(): Promise<boolean> {
     if (location) {
-      const update = buildLocationUpdate(form, location.version);
+      const update = buildLocationUpdate(form, location.version, props.initial);
       if (!update.ok) return rejectForm(update.fieldErrors);
       await updateLocation(organizationId, location.locationId, update.body);
       return true;

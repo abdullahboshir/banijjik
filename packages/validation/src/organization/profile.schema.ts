@@ -12,13 +12,18 @@ const LEGAL_NAME_MAX_LENGTH = 120;
 const LEGAL_TYPE_MAX_LENGTH = 60;
 const TRADE_LICENSE_MAX_LENGTH = 60;
 
+/**
+ * Optional profile fields: a value sets the field, `null` clears it and an absent key leaves it
+ * alone (14-API.md section 5.1). The address is cleared as a whole; to drop a part of it, send the
+ * address again without that part.
+ */
 const profileFieldsSchema = z.strictObject({
-  legalName: z.string().trim().min(1).max(LEGAL_NAME_MAX_LENGTH).optional(),
-  legalType: z.string().trim().min(1).max(LEGAL_TYPE_MAX_LENGTH).optional(),
-  phoneE164: phoneE164Schema.optional(),
-  email: emailSchema.optional(),
-  address: postalAddressSchema.optional(),
-  tradeLicenseNumber: z.string().trim().min(1).max(TRADE_LICENSE_MAX_LENGTH).optional(),
+  legalName: z.string().trim().min(1).max(LEGAL_NAME_MAX_LENGTH).nullable().optional(),
+  legalType: z.string().trim().min(1).max(LEGAL_TYPE_MAX_LENGTH).nullable().optional(),
+  phoneE164: phoneE164Schema.nullable().optional(),
+  email: emailSchema.nullable().optional(),
+  address: postalAddressSchema.nullable().optional(),
+  tradeLicenseNumber: z.string().trim().min(1).max(TRADE_LICENSE_MAX_LENGTH).nullable().optional(),
 });
 
 /**

@@ -7,6 +7,7 @@ import {
 } from "@banijjik/contracts";
 import type { OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
+import type { ClearableChanges } from "../../domain/clearable.js";
 import { recordNotFound } from "../../domain/errors.js";
 import type { Organization } from "../../domain/organization.entity.js";
 import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
@@ -31,7 +32,8 @@ export interface UpdateProfileInput {
   readonly version: number;
   readonly name?: string;
   readonly defaultLocale?: PreferredLocale;
-  readonly profile?: OrganizationProfileFields;
+  /** Per optional field: a value sets it, `null` clears it, an absent key leaves it. */
+  readonly profile?: ClearableChanges<OrganizationProfileFields>;
 }
 
 export interface UpdateProfileDependencies {

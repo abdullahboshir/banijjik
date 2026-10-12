@@ -97,7 +97,7 @@ function useProfileSubmit(props: ProfileFormSheetProps, form: ProfileFormState) 
   const [isSaving, setIsSaving] = useState(false);
 
   async function submit(): Promise<void> {
-    const result = buildProfileUpdate(form, props.version);
+    const result = buildProfileUpdate(form, props.version, props.initial);
     setFailure(NO_FAILURE);
     setErrors(result.ok ? {} : result.fieldErrors);
     if (!result.ok) return;

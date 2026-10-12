@@ -19,14 +19,18 @@ export const locationCreateRequestSchema = z.strictObject({
 });
 export type LocationCreateBody = z.output<typeof locationCreateRequestSchema>;
 
-/** Body of `PATCH /orgs/{organizationId}/locations/{locationId}`; at least one field besides `version`. */
+/**
+ * Body of `PATCH /orgs/{organizationId}/locations/{locationId}`; at least one field besides `version`.
+ * For the optional fields (address, phone, timezone) `null` clears the field and an absent key leaves it
+ * alone; the name and the type are required and reject `null`.
+ */
 export const locationUpdateRequestSchema = z
   .strictObject({
     name: locationNameSchema.optional(),
     locationType: z.enum(LOCATION_TYPE).optional(),
-    address: postalAddressSchema.optional(),
-    phoneE164: phoneE164Schema.optional(),
-    timezone: timezoneSchema.optional(),
+    address: postalAddressSchema.nullable().optional(),
+    phoneE164: phoneE164Schema.nullable().optional(),
+    timezone: timezoneSchema.nullable().optional(),
     version: versionSchema,
   })
   .refine((body) => Object.keys(body).some((key) => key !== "version"));

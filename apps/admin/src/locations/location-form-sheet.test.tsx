@@ -24,12 +24,16 @@ const { EMPTY_LOCATION_FORM } = await import("./location-state");
 const { t } = banglaTranslator();
 const labels = locationFormLabelsOf(t, 2);
 
-function renderSheet(location?: { locationId: string; version: number }, onClose = vi.fn()) {
+function renderSheet(
+  location?: { locationId: string; version: number },
+  onClose = vi.fn(),
+  saved: Partial<typeof EMPTY_LOCATION_FORM> = {},
+) {
   render(
     <I18nProvider locale="bn" catalog={BUNDLED_CATALOGS.bn} brandName="Example">
       <LocationFormSheet
         organizationId="org-1"
-        initial={{ ...EMPTY_LOCATION_FORM, name: location ? "মূল দোকান" : "" }}
+        initial={{ ...EMPTY_LOCATION_FORM, name: location ? "মূল দোকান" : "", ...saved }}
         {...(location ? { location } : {})}
         labels={labels}
         onClose={onClose}
@@ -135,5 +139,21 @@ describe("LocationFormSheet", () => {
     expect(await screen.findByText(labels.conflict)).not.toBeNull();
     expect(updateLocation.mock.calls[0]?.[1]).toBe("l1");
     expect(updateLocation.mock.calls[0]?.[2]).toMatchObject({ version: 5 });
+  });
+
+  it("sends null for a saved phone number the person emptied, and nothing for fields left empty", async () => {
+    updateLocation.mockResolvedValue({});
+    renderSheet({ locationId: "l1", version: 5 }, vi.fn(), { locationPhone: "01712-345678" });
+
+    await userEvent.clear(screen.getByLabelText(new RegExp(labels.fields.locationPhone)));
+    await submit();
+
+    await waitFor(() => expect(updateLocation).toHaveBeenCalled());
+    expect(updateLocation.mock.calls[0]?.[2]).toEqual({
+      name: "মূল দোকান",
+      locationType: "STORE",
+      phoneE164: null,
+      version: 5,
+    });
   });
 });

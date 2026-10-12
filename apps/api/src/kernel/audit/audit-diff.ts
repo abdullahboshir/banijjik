@@ -7,7 +7,17 @@ function sameValue(left: AuditValue | undefined, right: AuditValue | undefined):
   return left === right;
 }
 
-/** Per field that differs: the value before and after. Fields equal or unset on both sides are left out. */
+function toEntry(from: AuditValue | undefined, to: AuditValue | undefined): { to?: AuditValue } {
+  if (to !== undefined) return { to };
+  if (from !== undefined) return { to: null };
+  return {};
+}
+
+/**
+ * Per field that differs: the value before and after. Fields equal or unset on both sides are left
+ * out. A field that had a value and has none now is recorded as `to: null`: the entry shows it was
+ * emptied, not that nothing was written.
+ */
 export function diffAuditFields(before: AuditFields, after: AuditFields): AuditChanges {
   const changes: Record<string, { from?: AuditValue; to?: AuditValue }> = {};
   for (const field of new Set([...Object.keys(before), ...Object.keys(after)])) {
@@ -16,7 +26,7 @@ export function diffAuditFields(before: AuditFields, after: AuditFields): AuditC
     if (sameValue(from, to)) continue;
     changes[field] = {
       ...(from === undefined ? {} : { from }),
-      ...(to === undefined ? {} : { to }),
+      ...toEntry(from, to),
     };
   }
   return changes;
