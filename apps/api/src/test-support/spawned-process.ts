@@ -8,13 +8,6 @@ import type { TestDatabaseUrls } from "./test-databases.js";
 const PACKAGE_FOLDER = fileURLToPath(new URL("../..", import.meta.url));
 const TEXT_TIMEOUT_MS = 20_000;
 const POLL_INTERVAL_MS = 50;
-/**
- * Config refuses "localhost" and "127.0.0.1" in production. A trailing dot makes it the fully
- * qualified name of the same machine, which the check does not match and DNS still resolves, so a
- * production-mode process can reach the test servers.
- */
-const LOOPBACK_FULLY_QUALIFIED = "localhost.";
-
 export interface SpawnedProcess {
   output(): string;
   waitForText(text: string): Promise<void>;
@@ -63,10 +56,6 @@ export async function findFreePort(): Promise<number> {
   });
 }
 
-function useFullyQualifiedLoopback(url: string): string {
-  return url.replace("127.0.0.1", LOOPBACK_FULLY_QUALIFIED);
-}
-
 /** The environment of a process that believes it runs in production, against the test databases. */
 export function productionEnvironment(
   databases: TestDatabaseUrls,
@@ -77,11 +66,15 @@ export function productionEnvironment(
     NODE_ENV: "production",
     ROLE: role,
     PORT: String(port),
-    DB_PLATFORM_URL: useFullyQualifiedLoopback(databases.platformUrl),
-    DB_TENANT_SHARED_URL: useFullyQualifiedLoopback(databases.tenantSharedUrl),
-    REDIS_URL: useFullyQualifiedLoopback(redisUrlOrUnreachable()),
+    DB_PLATFORM_URL: databases.platformUrl,
+    DB_TENANT_SHARED_URL: databases.tenantSharedUrl,
+    REDIS_URL: redisUrlOrUnreachable(),
     CORS_ALLOWED_ORIGINS: "http://localhost:3000",
     AUTH_ACCESS_TOKEN_SECRET: TEST_ACCESS_TOKEN_SECRET,
     TRUSTED_PROXY_HOPS: "1",
+    // The test servers are local, which production config refuses. It accepts this flag only from a
+    // process that says it is a test (CI or VITEST), so no real deployment can use it.
+    ALLOW_LOCAL_SERVICES: "true",
+    VITEST: "true",
   };
 }

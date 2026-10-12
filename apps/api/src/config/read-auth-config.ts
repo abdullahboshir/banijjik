@@ -3,21 +3,41 @@ import {
   accessTokenSecretRule,
   accessTokenTtlRule,
   cookieDomainRule,
+  isPlaceholderSecret,
+  PLACEHOLDER_SECRET_HINT,
   platformAdminEmailRule,
   platformAdminPasswordRule,
   refreshTokenTtlRule,
   sessionFamilyMaxRule,
 } from "./env.schema.js";
-import { collectIssues, readField, readOptionalField, type Environment } from "./read-field.js";
+import {
+  collectIssues,
+  failure,
+  readField,
+  readOptionalField,
+  type Environment,
+  type FieldResult,
+} from "./read-field.js";
 
 export interface ConfigSection<Value> {
   readonly value?: Value;
   readonly issues: readonly ConfigIssue[];
 }
 
+/** Production refuses the example placeholder: a secret copied from `.env.example` is public. */
+function readAccessTokenSecret(env: Environment, isProduction: boolean): FieldResult<string> {
+  const result = readField(env, accessTokenSecretRule);
+  if (!isProduction || result.value === undefined) return result;
+  if (!isPlaceholderSecret(result.value)) return result;
+  return failure(accessTokenSecretRule, "INVALID", PLACEHOLDER_SECRET_HINT);
+}
+
 /** Session and token settings (card 1.1). Nothing here is ever printed. */
-export function readAuthConfig(env: Environment): ConfigSection<AppConfig["auth"]> {
-  const accessTokenSecret = readField(env, accessTokenSecretRule);
+export function readAuthConfig(
+  env: Environment,
+  isProduction: boolean,
+): ConfigSection<AppConfig["auth"]> {
+  const accessTokenSecret = readAccessTokenSecret(env, isProduction);
   const accessTokenTtlSeconds = readField(env, accessTokenTtlRule);
   const refreshTokenTtlDays = readField(env, refreshTokenTtlRule);
   const sessionFamilyMaxDays = readField(env, sessionFamilyMaxRule);

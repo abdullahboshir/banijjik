@@ -215,6 +215,116 @@ describe("loadConfig TRUSTED_PROXY_HOPS (1.9d, review M7)", () => {
   });
 });
 
+describe("loadConfig production hardening (1.9d, review M20 and the 1.9b note)", () => {
+  const PLACEHOLDER_SECRET = "change-me-local-only-placeholder-0123456789abcdef";
+
+  it.each([
+    ["the exact placeholder of .env.example", PLACEHOLDER_SECRET],
+    ["a value that contains change-me", "prefix-change-me-0123456789abcdef0123456789"],
+    ["a value that contains CHANGE-ME in capitals", "CHANGE-ME-0123456789abcdef0123456789abcdef"],
+  ])("refuses %s as the access-token secret in production", (_description, secret) => {
+    const error = catchConfigError({ ...productionEnv, AUTH_ACCESS_TOKEN_SECRET: secret });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "AUTH_ACCESS_TOKEN_SECRET", problem: "INVALID" }),
+    ]);
+    expect(String(error)).not.toContain(secret);
+  });
+
+  it("accepts the placeholder secret outside production, where it is only a local convenience", () => {
+    expect(() =>
+      loadConfig({ ...validEnv, AUTH_ACCESS_TOKEN_SECRET: PLACEHOLDER_SECRET }),
+    ).not.toThrow();
+  });
+
+  it.each([
+    ["localhost with a trailing dot", "redis://localhost.:6380"],
+    ["127.0.0.1 with a trailing dot", "redis://127.0.0.1.:6380"],
+    ["the IPv6 loopback", "redis://[::1]:6380"],
+    ["the unspecified address", "redis://0.0.0.0:6380"],
+    ["uppercase LOCALHOST", "redis://LOCALHOST:6380"],
+    ["a local host after credentials", "redis://user:pw@localhost.:6380"],
+  ])("refuses %s as the Redis host in production", (_description, redisUrl) => {
+    const error = catchConfigError({ ...productionEnv, REDIS_URL: redisUrl });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "REDIS_URL", problem: "INVALID" }),
+    ]);
+  });
+
+  it.each([
+    ["localhost with a trailing dot", "mongodb://localhost./platform?replicaSet=rs0"],
+    ["the IPv6 loopback", "mongodb://[::1]:27018/platform"],
+    ["a list that ends in the unspecified address", "mongodb://db1.example.com,0.0.0.0/platform"],
+  ])("refuses %s as the MongoDB host in production", (_description, platformUrl) => {
+    const error = catchConfigError({ ...productionEnv, DB_PLATFORM_URL: platformUrl });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "DB_PLATFORM_URL", problem: "INVALID" }),
+    ]);
+  });
+
+  it.each([
+    "redis://localhost-cache.example.com:6380",
+    "redis://cache.localhost.example.com:6380",
+    "redis://my127.0.0.1.example.com:6380",
+  ])("does not mistake the remote host in %s for a local one", (redisUrl) => {
+    expect(() => loadConfig({ ...productionEnv, REDIS_URL: redisUrl })).not.toThrow();
+  });
+
+  it("still accepts every local spelling outside production", () => {
+    expect(() => loadConfig({ ...validEnv, REDIS_URL: "redis://localhost.:6380" })).not.toThrow();
+  });
+
+  describe("ALLOW_LOCAL_SERVICES", () => {
+    const localProduction = {
+      ...productionEnv,
+      DB_PLATFORM_URL: validEnv.DB_PLATFORM_URL,
+      DB_TENANT_SHARED_URL: validEnv.DB_TENANT_SHARED_URL,
+      REDIS_URL: validEnv.REDIS_URL,
+    };
+
+    it.each([
+      ["CI", { CI: "true" }],
+      ["the test runner", { VITEST: "true" }],
+    ])("lets production use local services when %s sets it", (_description, marker) => {
+      const config = loadConfig({ ...localProduction, ALLOW_LOCAL_SERVICES: "true", ...marker });
+
+      expect(config.nodeEnv).toBe("production");
+    });
+
+    it("refuses the flag in production when neither CI nor the test runner is present", () => {
+      const error = catchConfigError({ ...localProduction, ALLOW_LOCAL_SERVICES: "true" });
+
+      expect(error.issues).toContainEqual(
+        expect.objectContaining({ key: "ALLOW_LOCAL_SERVICES", problem: "INVALID" }),
+      );
+    });
+
+    it("keeps refusing local services in production while the flag is false or unset", () => {
+      const error = catchConfigError({
+        ...localProduction,
+        ALLOW_LOCAL_SERVICES: "false",
+        CI: "true",
+      });
+
+      expect(error.issues.map((issue) => issue.key).sort()).toEqual([
+        "DB_PLATFORM_URL",
+        "DB_TENANT_SHARED_URL",
+        "REDIS_URL",
+      ]);
+    });
+
+    it("refuses a value that is not true or false", () => {
+      const error = catchConfigError({ ...productionEnv, ALLOW_LOCAL_SERVICES: "yes" });
+
+      expect(error.issues).toEqual([
+        expect.objectContaining({ key: "ALLOW_LOCAL_SERVICES", problem: "INVALID" }),
+      ]);
+    });
+  });
+});
+
 describe("loadConfig auth settings", () => {
   it("reads the optional overrides and the cookie domain", () => {
     const config = loadConfig({

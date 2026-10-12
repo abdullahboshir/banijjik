@@ -1,9 +1,12 @@
 import { ConfigError, type AppConfig } from "./app-config.js";
 import {
+  ALLOW_LOCAL_SERVICES_HINT,
   PRODUCTION_LOCAL_HOST_HINT,
+  allowLocalServicesRule,
   corsRule,
   isHttpOrigin,
   isLocalHostUrl,
+  isTestEnvironment,
   logLevelRule,
   nodeEnvRule,
   outboxPollIntervalRule,
@@ -42,12 +45,23 @@ function readOrigins(env: Environment): FieldResult<readonly string[]> {
 function readUrl(
   env: Environment,
   rule: FieldRule<string>,
-  isProduction: boolean,
+  blockLocalHosts: boolean,
 ): FieldResult<string> {
   const result = readField(env, rule);
-  if (!isProduction || result.value === undefined) return result;
+  if (!blockLocalHosts || result.value === undefined) return result;
   if (!isLocalHostUrl(result.value)) return result;
   return failure(rule, "INVALID", PRODUCTION_LOCAL_HOST_HINT);
+}
+
+/**
+ * Production refuses local services, unless CI or the test runner says this process only plays
+ * production (the spawned-process tests do). A real deployment cannot opt out by setting the flag.
+ */
+function readLocalServicesAllowed(env: Environment, isProduction: boolean): FieldResult<boolean> {
+  if (!isProduction) return { value: false };
+  const flag = readField(env, allowLocalServicesRule);
+  if (flag.value !== true || isTestEnvironment(env)) return flag;
+  return failure(allowLocalServicesRule, "INVALID", ALLOW_LOCAL_SERVICES_HINT);
 }
 
 /** Production must say how many proxies it has (no default); elsewhere 0 is the safe answer. */
@@ -96,10 +110,12 @@ function readServerSettings(
 }
 
 function readDataStores(env: Environment, isProduction: boolean): ConfigSection<DataStores> {
-  const platformUrl = readUrl(env, platformUrlRule, isProduction);
-  const tenantSharedUrl = readUrl(env, tenantSharedUrlRule, isProduction);
-  const redisUrl = readUrl(env, redisUrlRule, isProduction);
-  const issues = collectIssues([platformUrl, tenantSharedUrl, redisUrl]);
+  const localServicesAllowed = readLocalServicesAllowed(env, isProduction);
+  const blockLocalHosts = isProduction && localServicesAllowed.value !== true;
+  const platformUrl = readUrl(env, platformUrlRule, blockLocalHosts);
+  const tenantSharedUrl = readUrl(env, tenantSharedUrlRule, blockLocalHosts);
+  const redisUrl = readUrl(env, redisUrlRule, blockLocalHosts);
+  const issues = collectIssues([localServicesAllowed, platformUrl, tenantSharedUrl, redisUrl]);
   if (
     issues.length > 0 ||
     platformUrl.value === undefined ||
@@ -140,7 +156,7 @@ function readBaseConfig(env: Environment): ConfigSection<BaseConfig> {
 /** Validates an environment object. Returns a frozen config or throws ConfigError. Never includes values in messages. */
 export function loadConfig(env: Environment): AppConfig {
   const base = readBaseConfig(env);
-  const auth = readAuthConfig(env);
+  const auth = readAuthConfig(env, env["NODE_ENV"]?.trim() === "production");
   const platformAdmin = readPlatformAdmin(env);
   const outboxPollInterval = readOptionalField(env, outboxPollIntervalRule);
   const issues = [

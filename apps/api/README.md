@@ -64,7 +64,9 @@ Startup (`main.ts`) connects before it listens or starts the worker and exits 1 
 
 Run `npm run seed:packages -w @banijjik/api` once per environment before the first business is created: every new organization starts a trial on the seeded BUNDLE package (it inserts only the missing packages and never overwrites an edited one).
 
-In `production`, database and Redis URLs must not point to `localhost` or `127.0.0.1`.
+In `production`, database and Redis URLs must not point to this machine, in any spelling: `localhost`, `127.0.0.1`, `0.0.0.0` and `::1`, with or without a trailing dot (`localhost.` is the same host). Production also refuses the placeholder `AUTH_ACCESS_TOKEN_SECRET` of `.env.example` and any value that contains `change-me`.
+
+`ALLOW_LOCAL_SERVICES=true` lets a process with `NODE_ENV=production` use local services. It exists for the spawned-process tests, which play production against the test databases. Config accepts it only when `CI=true` or `VITEST` is set in the same environment, so a real deployment that sets it alone fails to start.
 
 `TRUSTED_PROXY_HOPS` is how many reverse proxies you run between the internet and the API. Every per-address rate limit (login, register, refresh, invitation preview) keys on the client address, and `X-Forwarded-For` is a header the caller can write. Express believes exactly that many entries, counted from the right, and ignores the rest: set `1` behind a single load balancer, `0` when the API faces the internet directly (the header is then ignored). Too high a number lets a caller forge its address and dodge the limits; too low shares one address across all clients. Production refuses to start without it, so the choice is always made on purpose.
 

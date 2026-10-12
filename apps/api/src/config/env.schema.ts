@@ -3,7 +3,9 @@ import { z } from "zod";
 export const NODE_ENVIRONMENTS = ["development", "test", "production"] as const;
 export const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace"] as const;
 
-const LOCAL_HOST_PATTERN = /(^|[@,/])(localhost|127\.0\.0\.1)(?=[:,/?]|$)/i;
+// A host after the scheme, after credentials or after a comma (MongoDB host lists). The optional dot is the
+// fully qualified spelling of the same machine ("localhost."), which DNS resolves just the same.
+const LOCAL_HOST_PATTERN = /(^|[@,/])(localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?)\.?(?=[:,/?]|$)/i;
 const MONGO_URL_PATTERN = /^mongodb(\+srv)?:\/\/[^/\s]+\/[^/?\s]+/;
 const REDIS_URL_PATTERN = /^rediss?:\/\/\S+$/;
 
@@ -101,6 +103,29 @@ export const corsRule: FieldRule<string> = {
 };
 
 export const PRODUCTION_LOCAL_HOST_HINT = "must not point to localhost in production";
+export const PLACEHOLDER_SECRET_HINT =
+  "must not be the placeholder of .env.example: generate a random value of your own";
+export const ALLOW_LOCAL_SERVICES_HINT =
+  "is accepted as true only in CI or under the test runner, never in a real production process";
+
+/** The `.env.example` secret is "change-me-...", so one marker covers it and every lookalike. */
+const PLACEHOLDER_SECRET_MARKER = "change-me";
+
+export function isPlaceholderSecret(value: string): boolean {
+  return value.toLowerCase().includes(PLACEHOLDER_SECRET_MARKER);
+}
+
+/** Only a CI run or the test runner may start a production-mode process against local services. */
+export function isTestEnvironment(env: Readonly<Record<string, string | undefined>>): boolean {
+  return env["CI"] === "true" || (env["VITEST"] ?? "") !== "";
+}
+
+export const allowLocalServicesRule: FieldRule<boolean> = {
+  key: "ALLOW_LOCAL_SERVICES",
+  hint: "must be true or false",
+  schema: z.enum(["true", "false"]).transform((text) => text === "true"),
+  defaultValue: "false",
+};
 /** Credentials mode cannot use a wildcard, and the cors package would not match it anyway. */
 export const WILDCARD_ORIGIN_HINT = "must not contain a wildcard; list explicit origins";
 
