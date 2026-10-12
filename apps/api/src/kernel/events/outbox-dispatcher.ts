@@ -3,7 +3,13 @@ import { reportError } from "../observability/report-error.js";
 import type { Clock } from "../time/index.js";
 import type { EventHandlerRegistry } from "./event-handler-registry.js";
 import type { EventJobQueue } from "./event-job.js";
-import { claimNextEvent, markDispatched, scheduleRetry } from "./outbox-claims.js";
+import {
+  claimNextEvent,
+  markDead,
+  markDispatched,
+  MAX_DISPATCH_ATTEMPTS,
+  scheduleRetry,
+} from "./outbox-claims.js";
 import type { OutboxEventDocument } from "./outbox-event.schema.js";
 
 export const DEFAULT_POLL_INTERVAL_MS = 500;
@@ -90,15 +96,21 @@ export class OutboxDispatcher {
       }
       await markDispatched(event.eventId, clock.now());
     } catch (error) {
-      getLogger().warn(
-        {
-          event: "outbox.dispatch_failed",
-          eventId: event.eventId,
-          attempts: event.dispatchAttempts + 1,
-        },
-        "outbox event could not be dispatched, will retry",
-      );
-      await scheduleRetry(event, clock.now(), error);
+      await this.handleDispatchFailure(event, error);
     }
+  }
+
+  private async handleDispatchFailure(event: OutboxEventDocument, error: unknown): Promise<void> {
+    const attempts = event.dispatchAttempts + 1;
+    if (attempts >= MAX_DISPATCH_ATTEMPTS) {
+      await markDead(event, error);
+      reportError(error, { eventId: event.eventId, eventType: event.type, attempts });
+      return;
+    }
+    getLogger().warn(
+      { event: "outbox.dispatch_failed", eventId: event.eventId, attempts },
+      "outbox event could not be dispatched, will retry",
+    );
+    await scheduleRetry(event, this.options.clock.now(), error);
   }
 }

@@ -14,6 +14,8 @@ export const DISPATCH_BACKOFF_MS: readonly number[] = [
   10 * MILLISECONDS_PER_MINUTE,
 ];
 export const CLAIM_LOCK_MS = 30 * MILLISECONDS_PER_SECOND;
+/** The tenth failed dispatch makes an event DEAD: it is no longer claimed and is reported once (review M12). */
+export const MAX_DISPATCH_ATTEMPTS = 10;
 
 function outbox() {
   return models({}).get<OutboxEventDocument>(OUTBOX_EVENT_MODEL_NAME);
@@ -63,6 +65,20 @@ export async function scheduleRetry(
     {
       $inc: { dispatchAttempts: 1 },
       $set: { nextAttemptAt, lockedUntil: null, lastError: summarizeError(error) },
+    },
+  );
+}
+
+/**
+ * The event can never be dispatched: it leaves the queue of pending work for good, so it stops
+ * costing a claim every hour. Only a still-pending event is changed, like every other transition.
+ */
+export async function markDead(event: OutboxEventDocument, error: unknown): Promise<void> {
+  await outbox().updateOne(
+    { eventId: event.eventId, status: OUTBOX_STATUS.PENDING },
+    {
+      $inc: { dispatchAttempts: 1 },
+      $set: { status: OUTBOX_STATUS.DEAD, lockedUntil: null, lastError: summarizeError(error) },
     },
   );
 }

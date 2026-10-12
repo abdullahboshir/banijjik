@@ -7,6 +7,7 @@ import {
   disposeTestDatabases,
   installTestLogger,
 } from "../../test-support/test-databases.js";
+import type { LogCapture } from "../../test-support/log-capture.js";
 import type { DatabaseConnections } from "../db/database-connections.js";
 import { initializeModels } from "../db/index.js";
 import { EventHandlerRegistry } from "./event-handler-registry.js";
@@ -18,9 +19,10 @@ import { registerEventModels } from "./register-event-models.js";
 registerEventModels();
 
 let connections: DatabaseConnections;
+let logs: LogCapture;
 
 beforeAll(async () => {
-  installTestLogger();
+  logs = installTestLogger();
   connections = await connectTestDatabases();
   await initializeModels();
 });
@@ -147,6 +149,71 @@ describe("OutboxDispatcher", () => {
     expect(queue.jobs).toHaveLength(1);
     const row = await outboxModel().findOne({ eventId: event.eventId }).lean();
     expect(row?.status).toBe(OUTBOX_STATUS.DISPATCHED);
+  });
+});
+
+describe("an event that can never be dispatched (review M12)", () => {
+  const ATTEMPTS_BEFORE_DEAD = 10;
+  const LONGER_THAN_ANY_BACKOFF_SECONDS = 2 * 60 * 60;
+
+  async function failDispatchTimes(
+    clock: MutableClock,
+    registry: EventHandlerRegistry,
+    times: number,
+  ): Promise<void> {
+    for (let attempt = 1; attempt <= times; attempt += 1) {
+      clock.advanceSeconds(LONGER_THAN_ANY_BACKOFF_SECONDS);
+      await aDispatcher(new FailingQueue(), registry, clock).dispatchBatch();
+    }
+  }
+
+  it("keeps retrying through the ninth failure", async () => {
+    const event = await publishTestEvent();
+    const clock = new MutableClock(new Date());
+
+    await failDispatchTimes(clock, registryWith("audit.userRegistered"), ATTEMPTS_BEFORE_DEAD - 1);
+
+    const row = await outboxModel().findOne({ eventId: event.eventId }).lean();
+    expect(row).toMatchObject({ status: OUTBOX_STATUS.PENDING, dispatchAttempts: 9 });
+  });
+
+  it("is set to DEAD after the tenth failed attempt and reported with its id, type and attempts", async () => {
+    const event = await publishTestEvent();
+    const clock = new MutableClock(new Date());
+
+    await failDispatchTimes(clock, registryWith("audit.userRegistered"), ATTEMPTS_BEFORE_DEAD);
+
+    const row = await outboxModel().findOne({ eventId: event.eventId }).lean();
+    expect(row).toMatchObject({
+      status: OUTBOX_STATUS.DEAD,
+      dispatchAttempts: ATTEMPTS_BEFORE_DEAD,
+      lastError: "Error ECONNREFUSED",
+      lockedUntil: null,
+    });
+    const reports = logs
+      .lines()
+      .filter((line) => line["level"] === 50 && line["eventId"] === event.eventId);
+    expect(reports).toHaveLength(1);
+    expect(reports[0]).toMatchObject({
+      eventType: "iam.user.registered",
+      attempts: ATTEMPTS_BEFORE_DEAD,
+    });
+  });
+
+  it("is never claimed again once it is DEAD, even after the queue is back", async () => {
+    const event = await publishTestEvent();
+    const clock = new MutableClock(new Date());
+    const registry = registryWith("audit.userRegistered");
+    await failDispatchTimes(clock, registry, ATTEMPTS_BEFORE_DEAD);
+    const queue = new RecordingQueue();
+
+    clock.advanceSeconds(LONGER_THAN_ANY_BACKOFF_SECONDS);
+    const handled = await aDispatcher(queue, registry, clock).dispatchBatch();
+
+    expect(handled).toBe(0);
+    expect(queue.jobs).toEqual([]);
+    const row = await outboxModel().findOne({ eventId: event.eventId }).lean();
+    expect(row?.status).toBe(OUTBOX_STATUS.DEAD);
   });
 });
 
