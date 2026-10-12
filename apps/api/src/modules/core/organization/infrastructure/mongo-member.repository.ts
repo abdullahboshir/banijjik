@@ -13,6 +13,7 @@ import type {
 import type { Page } from "../application/ports/profile-and-location-repositories.js";
 import type { MemberRepository } from "../application/ports/repositories.js";
 import type { Member } from "../domain/member.entity.js";
+import { assignmentsReachFilter } from "./assignments-reach-filter.js";
 import { toDuplicateFieldError } from "./duplicate-field.js";
 import { toAssignmentDocument, toMember, toMemberDocument } from "./member.mapper.js";
 import { MEMBER_MODEL_NAME, type MemberDocument } from "./member.schema.js";
@@ -54,12 +55,13 @@ export class MongoMemberRepository implements MemberRepository, MemberManagement
   }
 
   async list(request: MemberListRequest): Promise<Page<Member>> {
-    const { status, search, page, limit } = request;
+    const { status, search, page, limit, reach } = request;
     const filter = {
       ...(status === undefined ? {} : { status }),
       ...(search === undefined
         ? {}
         : { displayName: { $regex: escapeRegularExpression(search), $options: "i" } }),
+      ...assignmentsReachFilter(reach),
     };
     // One extra row tells whether another page exists, without counting the collection.
     const documents = await this.model()

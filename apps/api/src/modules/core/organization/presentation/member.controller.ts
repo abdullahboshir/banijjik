@@ -42,6 +42,7 @@ export class MemberController {
     const result = await this.dependencies.listMembers.execute({
       page,
       limit,
+      reach: readTenantCaller().allowedLocationIds,
       ...(status === undefined ? {} : { status }),
       ...(q === undefined ? {} : { search: q }),
     });
@@ -51,17 +52,21 @@ export class MemberController {
   };
 
   readonly get: RequestHandler = async (request, response) => {
-    const member = await this.dependencies.getMember.execute({ memberId: readMemberId(request) });
+    const member = await this.dependencies.getMember.execute({
+      memberId: readMemberId(request),
+      reach: readTenantCaller().allowedLocationIds,
+    });
     sendData(response, toMemberResponse(member));
   };
 
   readonly update: RequestHandler = async (request, response) => {
     // validate() already parsed the body with the member-update schema.
     const body: MemberUpdateBody = request.body;
-    const { organizationId, actorUserId } = readTenantCaller();
+    const { organizationId, actorUserId, allowedLocationIds } = readTenantCaller();
     const member = await this.dependencies.updateMember.execute({
       organizationId,
       actorUserId,
+      reach: allowedLocationIds,
       memberId: readMemberId(request),
       version: body.version,
       changes: {
@@ -77,10 +82,11 @@ export class MemberController {
   readonly transition = (action: MemberStatusAction): RequestHandler => {
     return async (request, response) => {
       const body: VersionedTransitionBody = request.body;
-      const { organizationId, actorUserId } = readTenantCaller();
+      const { organizationId, actorUserId, allowedLocationIds } = readTenantCaller();
       const member = await this.dependencies.changeStatus.execute({
         organizationId,
         actorUserId,
+        reach: allowedLocationIds,
         memberId: readMemberId(request),
         version: body.version,
         action,

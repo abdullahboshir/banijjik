@@ -6,7 +6,6 @@ import {
   assertRolesAreAssignable,
   diffAssignments,
   holdsEveryKey,
-  isWithinReach,
   keysHeldBy,
   type CallerKeys,
   type RoleGrant,
@@ -183,21 +182,5 @@ describe("keysHeldBy and holdsEveryKey (the inviter of an invitation)", () => {
 
     expect(holdsEveryKey([assign(readUpdate, LOCATION_TWO)], grants, holder)).toBe(false);
     expect(holdsEveryKey([assign(readUpdate, ALL_LOCATIONS)], grants, holder)).toBe(false);
-  });
-});
-
-describe("isWithinReach", () => {
-  const role = aRole([READ]);
-
-  it("accepts every assignment for a caller whose reach is ALL", () => {
-    expect(isWithinReach([assign(role, ALL_LOCATIONS), assign(role, LOCATION_ONE)], "ALL")).toBe(
-      true,
-    );
-  });
-
-  it("accepts only the named locations for a caller limited to some, and never ALL", () => {
-    expect(isWithinReach([assign(role, LOCATION_ONE)], [LOCATION_ONE])).toBe(true);
-    expect(isWithinReach([assign(role, LOCATION_TWO)], [LOCATION_ONE])).toBe(false);
-    expect(isWithinReach([assign(role, ALL_LOCATIONS)], [LOCATION_ONE])).toBe(false);
   });
 });

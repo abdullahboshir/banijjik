@@ -3,11 +3,13 @@ import type { MemberId, OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { diffAssignments } from "../../domain/assignment-rules.js";
-import { DomainRuleError, memberAssignmentsInvalid, recordNotFound } from "../../domain/errors.js";
+import { DomainRuleError, memberAssignmentsInvalid } from "../../domain/errors.js";
 import type { Member, MemberChanges } from "../../domain/member.entity.js";
+import type { Reach } from "../../domain/reach.js";
 import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
 import { assignmentsAuditValue } from "../audit-diff.js";
 import type { AssignmentGuard } from "../assignment-guard.js";
+import { assertAssignmentsInReach, requireMemberInReach } from "../member-reach.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
 import type {
   InvitationRepository,
@@ -56,13 +58,12 @@ export class ListMembersUseCase {
   }
 }
 
+/** A member outside the caller's reach is a 404, like one that does not exist. */
 export class GetMemberUseCase {
   constructor(private readonly members: MemberManagementRepository) {}
 
-  async execute(input: { readonly memberId: MemberId }): Promise<Member> {
-    const member = await this.members.findById(input.memberId);
-    if (member === undefined) throw recordNotFound();
-    return member;
+  async execute(input: { readonly memberId: MemberId; readonly reach: Reach }): Promise<Member> {
+    return requireMemberInReach(await this.members.findById(input.memberId), input.reach);
   }
 }
 
@@ -70,6 +71,8 @@ export interface UpdateMemberInput extends MemberActorInput {
   readonly memberId: MemberId;
   readonly version: number;
   readonly changes: MemberChanges;
+  /** Where the caller holds `organization.member.update`: the member and the new assignments must lie inside. */
+  readonly reach: Reach;
 }
 
 /**
@@ -84,8 +87,7 @@ export class UpdateMemberUseCase {
   execute(input: UpdateMemberInput): Promise<Member> {
     const { members, unitOfWork } = this.dependencies;
     return unitOfWork.run(async () => {
-      const existing = await members.findById(input.memberId);
-      if (existing === undefined) throw recordNotFound();
+      const existing = requireMemberInReach(await members.findById(input.memberId), input.reach);
       await assertMemberMayBeChanged(this.dependencies, {
         target: existing,
         actorUserId: input.actorUserId,
@@ -93,6 +95,7 @@ export class UpdateMemberUseCase {
         changesAssignments: input.changes.assignments !== undefined,
       });
       const edited = existing.withChanges(input.changes);
+      assertAssignmentsInReach(edited.assignments, input.reach);
       const hasChangedAssignments = await this.guardAssignments(existing, edited);
       const saved = await members.update(edited, input.version, input.actorUserId);
       await this.record(existing, saved);
@@ -137,6 +140,8 @@ export interface ChangeMemberStatusInput extends MemberActorInput {
   readonly memberId: MemberId;
   readonly version: number;
   readonly action: MemberStatusAction;
+  /** Where the caller holds the permission of this transition: the member must lie inside. */
+  readonly reach: Reach;
 }
 
 const ACTION_AUDIT = {
@@ -172,8 +177,7 @@ export class ChangeMemberStatusUseCase {
   execute(input: ChangeMemberStatusInput): Promise<Member> {
     const { members, unitOfWork, audit, events } = this.dependencies;
     return unitOfWork.run(async () => {
-      const existing = await members.findById(input.memberId);
-      if (existing === undefined) throw recordNotFound();
+      const existing = requireMemberInReach(await members.findById(input.memberId), input.reach);
       await assertMemberMayBeChanged(this.dependencies, {
         target: existing,
         actorUserId: input.actorUserId,

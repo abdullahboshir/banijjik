@@ -12,7 +12,7 @@ import type { Clock } from "../../../../../kernel/time/index.js";
 import { DuplicateFieldError, recordNotFound } from "../../domain/errors.js";
 import { Invitation } from "../../domain/invitation.entity.js";
 import type { Assignment } from "../../domain/member.entity.js";
-import { isWithinReach } from "../../domain/assignment-rules.js";
+import { isWithinReach } from "../../domain/reach.js";
 import { diffAuditFields } from "../../../../../kernel/audit/index.js";
 import { assignmentsAuditValue } from "../audit-diff.js";
 import type { AssignmentGuard } from "../assignment-guard.js";

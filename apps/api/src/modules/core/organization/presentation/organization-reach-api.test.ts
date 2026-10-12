@@ -1,4 +1,4 @@
-import { PERMISSION_KEY, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { ALL_LOCATIONS, PERMISSION_KEY, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { registerIamApiModels, startIamApi } from "../../../../test-support/iam-api-harness.js";
 import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
@@ -72,6 +72,12 @@ async function aReachWorld(): Promise<ReachWorld> {
   };
 }
 
+async function ownerMemberId(world: TwoOrganizations): Promise<string> {
+  const list = await world.alice.call("get", orgPath(world, "/members?limit=100"));
+  const owner = list.body.data.find((row: { userId: string }) => row.userId === world.alice.userId);
+  return owner.memberId as string;
+}
+
 describe("organization-level records need the permission at every location (decision 3)", () => {
   it("refuses a manager of one location the profile edit and the audit log, but lets them read the profile", async () => {
     const { world, manager } = await aReachWorld();
@@ -99,6 +105,114 @@ describe("organization-level records need the permission at every location (deci
 
     expect(edit.status).toBe(200);
     expect(audit.status).toBe(200);
+  });
+});
+
+describe("a manager of one location sees only the staff of that location (decision 4)", () => {
+  it("lists only members assigned solely to the manager's location", async () => {
+    const { world, manager, managerMemberId, twoLocationMemberId, otherLocationMemberId } =
+      await aReachWorld();
+
+    const response = await manager.call("get", orgPath(world, "/members?limit=100"));
+
+    const ids = response.body.data.map((row: { memberId: string }) => row.memberId).sort();
+    expect(response.status).toBe(200);
+    expect(ids).toEqual([managerMemberId, world.samMemberId].sort());
+    expect(ids).not.toContain(twoLocationMemberId);
+    expect(ids).not.toContain(otherLocationMemberId);
+  });
+
+  it("pages the filtered set correctly: every page is full until the last, with no gaps or repeats", async () => {
+    const { world, manager, staffRoleId } = await aReachWorld();
+    for (let index = 0; index < 3; index += 1) {
+      await addMemberWithAssignments(harness.app, world.organizationA, [
+        { locationId: world.locationA1, roleId: staffRoleId },
+      ]);
+    }
+
+    const first = await manager.call("get", orgPath(world, "/members?limit=2&page=1"));
+    const second = await manager.call("get", orgPath(world, "/members?limit=2&page=2"));
+    const third = await manager.call("get", orgPath(world, "/members?limit=2&page=3"));
+
+    const all = [first, second, third].flatMap((page) =>
+      page.body.data.map((row: { memberId: string }) => row.memberId),
+    );
+    expect(first.body.data).toHaveLength(2);
+    expect(first.body.meta.hasNext).toBe(true);
+    expect(second.body.data).toHaveLength(2);
+    expect(second.body.meta.hasNext).toBe(true);
+    expect(third.body.data).toHaveLength(1);
+    expect(third.body.meta.hasNext).toBe(false);
+    expect(new Set(all).size).toBe(5);
+  });
+
+  it("answers 404 for the owner and a two-location member by id, and for every change", async () => {
+    const { world, manager, twoLocationMemberId } = await aReachWorld();
+    const ownerId = await ownerMemberId(world);
+
+    for (const memberId of [ownerId, twoLocationMemberId]) {
+      const path = orgPath(world, `/members/${memberId}`);
+      const results = [
+        await manager.call("get", path),
+        await manager.call("patch", path, { displayName: "X", version: 1 }),
+        await manager.call("post", `${path}/suspend`, { version: 1 }),
+        await manager.call("post", `${path}/reactivate`, { version: 1 }),
+        await manager.call("post", `${path}/remove`, { version: 1 }),
+      ];
+      expect(results.map((result) => result.status)).toEqual([404, 404, 404, 404, 404]);
+    }
+  });
+
+  it("lets the manager read, suspend and reactivate a member of their own location", async () => {
+    const { world, manager } = await aReachWorld();
+    const path = orgPath(world, `/members/${world.samMemberId}`);
+
+    const read = await manager.call("get", path);
+    const suspended = await manager.call("post", `${path}/suspend`, { version: 1 });
+    const reactivated = await manager.call("post", `${path}/reactivate`, { version: 2 });
+
+    expect(read.status).toBe(200);
+    expect(suspended.status).toBe(200);
+    expect(suspended.body.data.status).toBe("SUSPENDED");
+    expect(reactivated.status).toBe(200);
+  });
+
+  it("refuses to give a member of their own location another location or ALL", async () => {
+    const { world, manager, staffRoleId } = await aReachWorld();
+    const path = orgPath(world, `/members/${world.samMemberId}`);
+
+    const otherLocation = await manager.call("patch", path, {
+      version: 1,
+      assignments: [{ locationId: world.locationA2, roleId: staffRoleId }],
+    });
+    const everywhere = await manager.call("patch", path, {
+      version: 1,
+      assignments: [{ locationId: ALL_LOCATIONS, roleId: staffRoleId }],
+    });
+    const unchanged = await world.alice.call("get", path);
+
+    expect(otherLocation.status).toBe(422);
+    expect(everywhere.status).toBe(422);
+    expect(unchanged.body.data.assignments).toEqual([
+      expect.objectContaining({ locationId: world.locationA1 }),
+    ]);
+  });
+
+  it("lets a caller at every location see and reach everyone", async () => {
+    const { world, twoLocationMemberId, otherLocationMemberId } = await aReachWorld();
+    const ownerId = await ownerMemberId(world);
+
+    const list = await world.alice.call("get", orgPath(world, "/members?limit=100"));
+    const twoLocation = await world.alice.call(
+      "get",
+      orgPath(world, `/members/${twoLocationMemberId}`),
+    );
+
+    const ids = list.body.data.map((row: { memberId: string }) => row.memberId);
+    expect(ids).toEqual(
+      expect.arrayContaining([ownerId, twoLocationMemberId, otherLocationMemberId]),
+    );
+    expect(twoLocation.status).toBe(200);
   });
 });
 

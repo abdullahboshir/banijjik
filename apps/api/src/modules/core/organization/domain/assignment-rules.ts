@@ -104,18 +104,6 @@ export function keysHeldBy(assignments: readonly Assignment[], grants: RoleGrant
   };
 }
 
-/**
- * True when every assignment names a location the caller may use for the permission. "ALL" is
- * inside the reach only for a caller who holds the permission at ALL (reach "ALL").
- */
-export function isWithinReach(
-  assignments: readonly Assignment[],
-  reach: readonly string[] | "ALL",
-): boolean {
-  if (reach === "ALL") return true;
-  return assignments.every(({ locationId }) => reach.includes(locationId));
-}
-
 function sameAssignment(left: Assignment, right: Assignment): boolean {
   return left.locationId === right.locationId && left.roleId === right.roleId;
 }

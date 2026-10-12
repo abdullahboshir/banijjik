@@ -187,6 +187,7 @@ describe("a change whose event cannot be written", () => {
           organizationId: asId<OrganizationId>(organizationId),
           actorUserId: asId<UserId>(world.alice.userId),
           memberId: asId<MemberId>(world.samMemberId),
+          reach: "ALL",
           version: 1,
           changes: {
             assignments: [

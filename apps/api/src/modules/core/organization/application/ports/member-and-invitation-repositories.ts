@@ -2,12 +2,15 @@ import type { InvitationStatus, MemberStatus } from "@banijjik/contracts";
 import type { InvitationId, LocationId, MemberId, UserId } from "@banijjik/ids";
 import type { Invitation } from "../../domain/invitation.entity.js";
 import type { Member } from "../../domain/member.entity.js";
+import type { Reach } from "../../domain/reach.js";
 import type { Page, PageRequest } from "./profile-and-location-repositories.js";
 
 export interface MemberListRequest extends PageRequest {
   readonly status?: MemberStatus;
   /** Case-insensitive part of the display name. */
   readonly search?: string;
+  /** Only members whose every assignment is inside this reach are listed (the filter runs in the query). */
+  readonly reach: Reach;
 }
 
 /** Members of the active organization; the tenant plugin scopes every query. */
@@ -27,7 +30,7 @@ export interface InvitationListRequest extends PageRequest {
   readonly status?: InvitationStatus;
   readonly now: Date;
   /** The locations the caller may invite to, "ALL" for every one. Only invitations inside it are listed. */
-  readonly reach: readonly string[] | "ALL";
+  readonly reach: Reach;
 }
 
 /** Invitations of the active organization; the tenant plugin scopes every query. */

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { permissionDefinition } from "./permission-definition.js";
 import {
   isPermissionKey,
+  ORGANIZATION_WIDE_PERMISSION_KEYS,
   PERMISSION_KEY,
   PERMISSION_KEY_PATTERN,
   PERMISSION_LABEL_MESSAGE_KEYS,
@@ -11,6 +12,14 @@ import {
 import { ROLE_MESSAGE_KEYS } from "./role-message-keys.js";
 import { ROLE_STATUS } from "./role-status.js";
 import { SURFACE } from "./surface.js";
+
+describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
+  it("names exactly the profile edit and the audit log read", () => {
+    expect([...ORGANIZATION_WIDE_PERMISSION_KEYS].sort()).toEqual(
+      [PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE, PERMISSION_KEY.AUDIT_LOG_READ].sort(),
+    );
+  });
+});
 
 describe("PERMISSION_KEY", () => {
   it("lists the sixteen keys of the iam, organization and audit modules", () => {

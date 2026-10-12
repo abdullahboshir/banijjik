@@ -12,6 +12,7 @@ import type {
 } from "../application/ports/member-and-invitation-repositories.js";
 import type { Page } from "../application/ports/profile-and-location-repositories.js";
 import type { Invitation } from "../domain/invitation.entity.js";
+import { assignmentsReachFilter } from "./assignments-reach-filter.js";
 import { toInvitation, toInvitationDocument } from "./invitation.mapper.js";
 import { INVITATION_MODEL_NAME, type InvitationDocument } from "./invitation.schema.js";
 
@@ -30,15 +31,6 @@ function statusFilter(status: InvitationStatus | undefined, now: Date): object {
     return { status: INVITATION_STATUS.PENDING, expiresAt: { $lte: now } };
   }
   return { status };
-}
-
-/**
- * Only invitations whose every assignment is inside the caller's reach. "ALL" is not a location ID,
- * so an invitation at "ALL" never matches a reach that is a list of locations.
- */
-function reachFilter(reach: readonly string[] | "ALL"): object {
-  if (reach === "ALL") return {};
-  return { assignments: { $not: { $elemMatch: { locationId: { $nin: [...reach] } } } } };
 }
 
 /** Invitations are tenant data: the tenant plugin adds the organization filter to every query. */
@@ -62,7 +54,7 @@ export class MongoInvitationRepository implements InvitationRepository {
     // One extra row tells whether another page exists, without counting the collection.
     const documents = await this.model()
       .find(
-        { ...statusFilter(status, now), ...reachFilter(reach) },
+        { ...statusFilter(status, now), ...assignmentsReachFilter(reach) },
         null,
         sessionOption(getActiveSession()),
       )
