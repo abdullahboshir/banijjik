@@ -1,4 +1,5 @@
 import { SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { newId } from "@banijjik/ids";
 import mongoose from "mongoose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { asCookies, callApi } from "../../../../test-support/auth-api-client.js";
@@ -197,6 +198,57 @@ describe("POST /me/orgs", () => {
 
     expect(response.status).toBe(429);
     expect(Number(response.headers["retry-after"])).toBeGreaterThan(0);
+  });
+
+  it("does not use up the daily allowance on a request that fails validation (review M9)", async () => {
+    const person = await registerViaApi(harness.app);
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const invalid = await createOrganization(person, aValidBody({ name: "a" }));
+      expect(invalid.status).toBe(400);
+    }
+
+    const fiveValid: number[] = [];
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      fiveValid.push((await createOrganization(person, aValidBody())).status);
+    }
+    const sixthValid = await createOrganization(person, aValidBody());
+
+    expect(fiveValid).toEqual([201, 201, 201, 201, 201]);
+    expect(sixthValid.status).toBe(429);
+  });
+
+  it("does not use up the daily allowance on a replay of an answer that was already given (review M9)", async () => {
+    const person = await registerViaApi(harness.app);
+    const body = aValidBody();
+    const idempotencyKey = newId();
+    const first = await callApi(harness.app, {
+      method: "post",
+      path: "/api/v1/me/orgs",
+      cookies: asCookies(person.session),
+      body,
+      idempotencyKey,
+    });
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const replayed = await callApi(harness.app, {
+        method: "post",
+        path: "/api/v1/me/orgs",
+        cookies: asCookies(person.session),
+        body,
+        idempotencyKey,
+      });
+      expect(replayed.status).toBe(201);
+      expect(replayed.headers["idempotency-replayed"]).toBe("true");
+    }
+
+    const fourMore: number[] = [];
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      fourMore.push((await createOrganization(person, aValidBody())).status);
+    }
+    const sixthDistinct = await createOrganization(person, aValidBody());
+
+    expect(first.status).toBe(201);
+    expect(fourMore).toEqual([201, 201, 201, 201]);
+    expect(sixthDistinct.status).toBe(429);
   });
 });
 

@@ -14,15 +14,17 @@ export function buildOrganizationRouter(
 ): Router {
   const router = Router();
   router.get("/", controller.list);
+  // The limiter comes last, so only a request that is valid and new uses up the daily allowance:
+  // validate() refuses a bad body first and idempotency() answers a replay without calling on (review M9).
   router.post(
     "/",
+    validate({ body: organizationCreateRequestSchema }),
+    idempotency,
     rateLimit({
       limiter: rateLimiter,
       ...ORGANIZATION_CREATE_PER_USER,
       keyOf: () => requireCurrentUserId(),
     }),
-    validate({ body: organizationCreateRequestSchema }),
-    idempotency,
     controller.create,
   );
   return router;
