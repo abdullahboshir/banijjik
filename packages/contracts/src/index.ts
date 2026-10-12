@@ -85,6 +85,7 @@ export { ROLE_STATUS } from "./iam/role-status.js";
 export type { RoleStatus } from "./iam/role-status.js";
 export {
   isPermissionKey,
+  ORGANIZATION_WIDE_PERMISSION_KEYS,
   PERMISSION_KEY,
   PERMISSION_KEY_PATTERN,
   PERMISSION_LABEL_MESSAGE_KEYS,

@@ -1,5 +1,6 @@
 import {
   isPermissionKey,
+  ORGANIZATION_WIDE_PERMISSION_KEYS,
   permissionModuleKey,
   type CallerPermissionsResponse,
   type MenuEntry,
@@ -30,6 +31,14 @@ function restrictToEffectiveModules(
     .filter((key) => effectiveModules.has(permissionModuleKey(key)));
 }
 
+/**
+ * Organization-wide permissions count only when held at every location: the API refuses them
+ * otherwise (`requireAllLocations`), so the menu must not offer them (review M3).
+ */
+function dropOrganizationWideKeys(keys: readonly PermissionKey[]): PermissionKey[] {
+  return keys.filter((key) => !ORGANIZATION_WIDE_PERMISSION_KEYS.includes(key));
+}
+
 function describePermissions(
   grants: CallerGrants,
   effectiveModules: ReadonlySet<string>,
@@ -37,7 +46,7 @@ function describePermissions(
   const byLocation = Object.fromEntries(
     Object.entries(grants.byLocation).map(([locationId, keys]) => [
       locationId,
-      restrictToEffectiveModules(keys, effectiveModules),
+      dropOrganizationWideKeys(restrictToEffectiveModules(keys, effectiveModules)),
     ]),
   );
   return {

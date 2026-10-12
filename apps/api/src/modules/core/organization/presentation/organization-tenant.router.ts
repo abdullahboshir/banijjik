@@ -39,6 +39,7 @@ function addProfileRoutes(router: Router, input: OrganizationTenantRouterDepende
   router.patch(
     "/profile",
     permission(PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE),
+    requireAllLocations(),
     validate({ body: profileUpdateRequestSchema }),
     controller.updateProfile,
   );

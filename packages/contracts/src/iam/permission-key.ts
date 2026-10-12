@@ -51,3 +51,13 @@ export function permissionAction(permissionKey: string): string {
 export const PERMISSION_LABEL_MESSAGE_KEYS: readonly string[] = Object.values(PERMISSION_KEY).map(
   (permissionKey) => permissionLabelKey(permissionKey),
 );
+
+/**
+ * Permissions over records of the whole organization (the profile, the audit log). The API refuses
+ * them unless they are held at every location (`requireAllLocations`, review M3), so `/me/config`
+ * reports them only when they are held at ALL and the menu never offers what the API refuses.
+ */
+export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
+  PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
+  PERMISSION_KEY.AUDIT_LOG_READ,
+];
