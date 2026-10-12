@@ -5,25 +5,23 @@ import type { Logger } from "pino";
 import { buildApp } from "./app.js";
 import { ConfigError, loadConfigFromProcess, type AppConfig } from "./config/index.js";
 import {
+  auditAllIndexes,
+  collectionsMissingRequiredIndexes,
   connectDatabases,
   createCloseDatabasesTask,
   initializeModels,
   type DatabaseConnections,
 } from "./kernel/db/index.js";
-import { registerEventModels } from "./kernel/events/index.js";
 import { registerCrashHandlers } from "./kernel/lifecycle/crash-handlers.js";
 import { registerShutdown } from "./kernel/lifecycle/shutdown.js";
 import { createLogger, setRootLogger } from "./kernel/logger/index.js";
-import { registerIdempotencyModel } from "./kernel/idempotency/index.js";
-import { registerRateLimitModel } from "./kernel/rate-limit/index.js";
 import {
   createCacheRedisClient,
   createCloseRedisTask,
   type RedisClient,
 } from "./kernel/redis/index.js";
-import { registerSequenceModel } from "./kernel/sequence/index.js";
 import { systemClock } from "./kernel/time/index.js";
-import { registerModuleModels } from "./routes/v1.js";
+import { registerAllModels } from "./register-all-models.js";
 import { seedPackages } from "./seeds/seed-packages.js";
 import { startWorker } from "./start-worker.js";
 
@@ -83,19 +81,35 @@ function logConnectFailure(logger: Logger, error: unknown): void {
   logger.fatal({ event: "db.connect_failed", errorName, errorCode }, "database connection failed");
 }
 
+/**
+ * Production never builds indexes by itself, and the unique ones carry correctness (a second
+ * concurrent request must fail) while the TTL ones carry cleanup. A server without them must not
+ * serve traffic, so it refuses to start and names the collections, never any value (finding J4).
+ */
+async function hasRequiredIndexes(config: AppConfig, logger: Logger): Promise<boolean> {
+  if (config.nodeEnv !== "production") return true;
+  const collections = collectionsMissingRequiredIndexes(await auditAllIndexes());
+  if (collections.length === 0) return true;
+  logger.fatal(
+    { event: "db.indexes_missing", collections },
+    "required indexes are missing; run the db:sync-indexes script of the api package, then start again",
+  );
+  return false;
+}
+
 async function openDatabases(
   config: AppConfig,
   logger: Logger,
 ): Promise<DatabaseConnections | undefined> {
   let connections: DatabaseConnections | undefined;
   try {
-    registerSequenceModel();
-    registerRateLimitModel();
-    registerIdempotencyModel();
-    registerEventModels();
-    registerModuleModels();
+    registerAllModels();
     connections = await connectDatabases(config);
     await initializeModels();
+    if (!(await hasRequiredIndexes(config, logger))) {
+      await connections.close();
+      return undefined;
+    }
     // Idempotent: inserts only the missing packages, so a fresh environment can create its first organization.
     const seeded = await seedPackages(systemClock);
     logger.info({ event: "packages.seeded", ...seeded }, "seed packages ensured");

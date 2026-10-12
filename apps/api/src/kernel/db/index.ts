@@ -27,3 +27,11 @@ export type {
   MongooseSchema,
   MongooseSchemaOptions,
 } from "./mongoose-types.js";
+export {
+  auditAllIndexes,
+  auditModelIndexes,
+  collectionsMissingRequiredIndexes,
+} from "./index-audit.js";
+export type { CollectionIndexAudit, ConflictingIndex, DeclaredIndex } from "./index-audit.js";
+export { createMissingIndexes } from "./index-sync.js";
+export type { CollectionIndexSync } from "./index-sync.js";

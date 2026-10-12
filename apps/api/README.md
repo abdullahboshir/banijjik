@@ -34,7 +34,7 @@ Local services use host ports 27018 (Mongo, to avoid a native MongoDB on 27017) 
 
 `npm test` runs a vitest global setup (`src/test-support/replica-set.global-setup.ts`) that starts a one-member `mongodb-memory-server` replica set (MongoDB 8.0.13, wiredTiger; set `MONGOMS_SYSTEM_BINARY` to a local `mongod` to skip the download) and shares its URI with the tests through `inject("mongoUri")`. Every test file creates its own databases. The first run downloads the server binary (about 750 MB download, 76 MB kept) into `node_modules/.cache/mongodb-memory-server` of the repository, so it needs network access and free space on the repository drive. CI should cache that folder.
 
-Startup (`main.ts`) connects before it listens or starts the worker and exits 1 with `db.connect_failed` when it cannot. In production indexes are not built at startup (`autoIndex` is off); an explicit index-sync task is a later card.
+Startup (`main.ts`) connects before it listens or starts the worker and exits 1 with `db.connect_failed` when it cannot. In production indexes are not built at startup (`autoIndex` is off). Run `npm run db:sync-indexes -w @banijjik/api` on the first deploy and on every deploy (see `docs/ops/deploy-indexes.md`); a production server whose unique or TTL indexes are missing logs `db.indexes_missing` and exits 1.
 
 ## Rules
 

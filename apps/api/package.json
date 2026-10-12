@@ -22,7 +22,8 @@
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "seed:platform-admin": "tsx src/seeds/run-seed-platform-admin.ts",
-    "seed:packages": "tsx src/seeds/run-seed-packages.ts"
+    "seed:packages": "tsx src/seeds/run-seed-packages.ts",
+    "db:sync-indexes": "tsx src/seeds/run-sync-indexes.ts"
   },
   "dependencies": {
     "@banijjik/contracts": "*",
