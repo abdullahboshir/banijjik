@@ -14,9 +14,18 @@ import { ROLE_STATUS } from "./role-status.js";
 import { SURFACE } from "./surface.js";
 
 describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
-  it("names exactly the profile edit and the audit log read", () => {
+  it("names the profile edit, the audit log read, the location writes and the role writes", () => {
     expect([...ORGANIZATION_WIDE_PERMISSION_KEYS].sort()).toEqual(
-      [PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE, PERMISSION_KEY.AUDIT_LOG_READ].sort(),
+      [
+        PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
+        PERMISSION_KEY.AUDIT_LOG_READ,
+        PERMISSION_KEY.ORGANIZATION_LOCATION_CREATE,
+        PERMISSION_KEY.ORGANIZATION_LOCATION_UPDATE,
+        PERMISSION_KEY.ORGANIZATION_LOCATION_ARCHIVE,
+        PERMISSION_KEY.IAM_ROLE_CREATE,
+        PERMISSION_KEY.IAM_ROLE_UPDATE,
+        PERMISSION_KEY.IAM_ROLE_ARCHIVE,
+      ].sort(),
     );
   });
 });

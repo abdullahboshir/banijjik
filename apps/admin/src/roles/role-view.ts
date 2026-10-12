@@ -6,7 +6,7 @@ import {
   type RoleSummary,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { holdsPermission } from "../shell/permissions";
+import { holdsPermissionEverywhere } from "../shell/permissions";
 import { roleLabelOf } from "../staff/assignment-options";
 import { groupPermissions, type PermissionGroup } from "./permission-groups";
 import type { RoleAction } from "./role-actions";
@@ -83,7 +83,8 @@ export function roleActionsFor(input: {
   const { role, permissions, canWrite } = input;
   if (!canWrite || role.isSystem || role.status !== ROLE_STATUS.ACTIVE) return [];
   const actions: RoleAction[] = [];
-  if (holdsPermission(permissions, PERMISSION_KEY.IAM_ROLE_UPDATE)) actions.push("edit");
-  if (holdsPermission(permissions, PERMISSION_KEY.IAM_ROLE_ARCHIVE)) actions.push("archive");
+  if (holdsPermissionEverywhere(permissions, PERMISSION_KEY.IAM_ROLE_UPDATE)) actions.push("edit");
+  if (holdsPermissionEverywhere(permissions, PERMISSION_KEY.IAM_ROLE_ARCHIVE))
+    actions.push("archive");
   return actions;
 }

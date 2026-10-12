@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
 import { fetchBusinessResource } from "../lib/api/server-resource";
 import { getTranslator } from "../lib/i18n/get-translator";
 import { requireOrgAccess } from "../shell/org-access";
-import { holdsPermission } from "../shell/permissions";
+import { holdsPermission, holdsPermissionEverywhere } from "../shell/permissions";
 import { NewRoleButton } from "./new-role-button";
 import { RoleList } from "./role-list";
 import { roleFormGroupsOf, roleFormLabelsOf } from "./role-labels";
@@ -25,7 +25,8 @@ export async function RolesPage({ orgSlug }: { orgSlug: string }): Promise<React
   const roles = await fetchBusinessResource<RoleSummary[]>(
     `/orgs/${organizationId}/roles?limit=${PAGE_SIZE}`,
   );
-  const canCreate = access.canWrite && holdsPermission(permissions, PERMISSION_KEY.IAM_ROLE_CREATE);
+  const canCreate =
+    access.canWrite && holdsPermissionEverywhere(permissions, PERMISSION_KEY.IAM_ROLE_CREATE);
   const groups = roleGroupsOf({
     definitions: permissionDefinitions,
     permissions,

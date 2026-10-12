@@ -2,6 +2,7 @@ import { ALL_LOCATIONS, PERMISSION_KEY, SYSTEM_ROLE_KEY } from "@banijjik/contra
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { registerIamApiModels, startIamApi } from "../../../../test-support/iam-api-harness.js";
 import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
+import { createCustomRoleAs } from "../../../../test-support/organization-tenant-world.js";
 import { addMemberWithAssignments, findSystemRoleId } from "../../../../test-support/rbac-world.js";
 import {
   createTwoOrganizations,
@@ -216,6 +217,21 @@ describe("a manager of one location sees only the staff of that location (decisi
   });
 });
 
+/** Reads the branch administrator keeps: they stay visible, only the writes over organization records go. */
+const BRANCH_ADMIN_READ_KEYS = [
+  PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
+  PERMISSION_KEY.IAM_ROLE_READ,
+];
+/** The API refuses each of these unless it is held at every location (requireAllLocations). */
+const ORGANIZATION_RECORD_WRITE_KEYS = [
+  PERMISSION_KEY.ORGANIZATION_LOCATION_CREATE,
+  PERMISSION_KEY.ORGANIZATION_LOCATION_UPDATE,
+  PERMISSION_KEY.ORGANIZATION_LOCATION_ARCHIVE,
+  PERMISSION_KEY.IAM_ROLE_CREATE,
+  PERMISSION_KEY.IAM_ROLE_UPDATE,
+  PERMISSION_KEY.IAM_ROLE_ARCHIVE,
+];
+
 describe("GET /me/config offers only what the API allows (decision 3)", () => {
   function menuKeys(response: { body: { data: { menu: { permissionKey: string }[] } } }) {
     return response.body.data.menu.map((entry) => entry.permissionKey);
@@ -248,5 +264,31 @@ describe("GET /me/config offers only what the API allows (decision 3)", () => {
       ]),
     );
     expect(menuKeys(response)).toContain(PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE);
+  });
+
+  it("leaves the location and role write keys out for a person who holds them at one location only (1.9c review, deviation 2)", async () => {
+    const { world } = await aReachWorld();
+    const roleId = await createCustomRoleAs(world.alice, {
+      organizationId: world.organizationA,
+      name: "Branch administrator",
+      permissionKeys: [...BRANCH_ADMIN_READ_KEYS, ...ORGANIZATION_RECORD_WRITE_KEYS],
+    });
+    const branchAdmin = await addMemberWithAssignments(harness.app, world.organizationA, [
+      { locationId: world.locationA1, roleId },
+    ]);
+
+    const response = await branchAdmin.actor.call("get", orgPath(world, "/me/config"));
+    const owner = await world.alice.call("get", orgPath(world, "/me/config"));
+
+    const { allLocations, byLocation } = response.body.data.permissions;
+    const everyKey = [...allLocations, ...Object.values<string[]>(byLocation).flat()];
+    expect(response.status).toBe(200);
+    for (const writeKey of ORGANIZATION_RECORD_WRITE_KEYS) {
+      expect(everyKey).not.toContain(writeKey);
+    }
+    expect(everyKey).toEqual(expect.arrayContaining(BRANCH_ADMIN_READ_KEYS));
+    expect(owner.body.data.permissions.allLocations).toEqual(
+      expect.arrayContaining(ORGANIZATION_RECORD_WRITE_KEYS),
+    );
   });
 });

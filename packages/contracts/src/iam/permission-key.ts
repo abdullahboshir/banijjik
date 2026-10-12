@@ -53,11 +53,17 @@ export const PERMISSION_LABEL_MESSAGE_KEYS: readonly string[] = Object.values(PE
 );
 
 /**
- * Permissions over records of the whole organization (the profile, the audit log). The API refuses
- * them unless they are held at every location (`requireAllLocations`, review M3), so `/me/config`
+ * Permissions over records of the whole organization (the profile, the audit log, the locations and
+ * the roles). The API refuses them unless they are held at every location (`requireAllLocations`, review M3), so `/me/config`
  * reports them only when they are held at ALL and the menu never offers what the API refuses.
  */
 export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
   PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
   PERMISSION_KEY.AUDIT_LOG_READ,
+  PERMISSION_KEY.ORGANIZATION_LOCATION_CREATE,
+  PERMISSION_KEY.ORGANIZATION_LOCATION_UPDATE,
+  PERMISSION_KEY.ORGANIZATION_LOCATION_ARCHIVE,
+  PERMISSION_KEY.IAM_ROLE_CREATE,
+  PERMISSION_KEY.IAM_ROLE_UPDATE,
+  PERMISSION_KEY.IAM_ROLE_ARCHIVE,
 ];

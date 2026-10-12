@@ -39,6 +39,21 @@ describe("roleActionsFor", () => {
     expect(actions).toEqual([]);
   });
 
+  it("offers nothing when the permissions are held at one location only", () => {
+    const actions = roleActionsFor({
+      role: { isSystem: false, status: "ACTIVE" },
+      permissions: {
+        allLocations: [],
+        byLocation: {
+          "location-1": [PERMISSION_KEY.IAM_ROLE_UPDATE, PERMISSION_KEY.IAM_ROLE_ARCHIVE],
+        },
+      },
+      canWrite: true,
+    });
+
+    expect(actions).toEqual([]);
+  });
+
   it("offers only the action the caller holds the permission for", () => {
     const actions = roleActionsFor({
       role: { isSystem: false, status: "ACTIVE" },

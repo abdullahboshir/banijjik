@@ -127,6 +127,11 @@ async function clickInRow(page: Page, rowText: string, buttonLabel: string): Pro
   );
 }
 
+/** The labels of the buttons in the page body; the page text also carries the whole message catalog. */
+async function buttonLabelsOfMain(page: Page): Promise<string[]> {
+  return page.$$eval("main button", (buttons) => buttons.map((button) => button.textContent ?? ""));
+}
+
 async function topBarText(page: Page): Promise<string> {
   return page.$eval("header", (header) => header.textContent ?? "");
 }
@@ -290,8 +295,18 @@ describe("a manager of one location (review M3)", () => {
     const profileButtons = await manager.$$eval("main button", (buttons) =>
       buttons.map((button) => button.textContent ?? ""),
     );
+    await gotoWhenHydrated(manager, "/acme/settings/locations", "main");
+    await waitForText(manager, SECOND_LOCATION_NAME);
+    const locationButtons = await buttonLabelsOfMain(manager);
+    await gotoWhenHydrated(manager, "/acme/settings/roles", "main");
+    await waitForText(manager, ROLE_NAME);
+    const roleButtons = await buttonLabelsOfMain(manager);
     await closePage(manager);
 
+    expect(locationButtons).not.toContain(message("locations.add"));
+    expect(locationButtons).not.toContain(message("locations.edit"));
+    expect(locationButtons).not.toContain(message("locations.archive"));
+    expect(roleButtons).not.toContain(message("roles.add"));
     expect(menuPaths).toContain(STAFF_LINK);
     expect(menuPaths).not.toContain("/acme/settings/profile");
     expect(staffList).toContain(BRANCH_MANAGER_NAME);

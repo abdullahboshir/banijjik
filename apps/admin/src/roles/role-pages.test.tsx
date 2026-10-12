@@ -109,6 +109,15 @@ describe("RolesPage", () => {
     expect(screen.getByRole("button", { name: banglaText("roles.add") })).not.toBeNull();
   });
 
+  it("offers no new role to someone who holds the create permission at one location only", async () => {
+    await renderList(
+      { keys: [PERMISSION_KEY.IAM_ROLE_READ], limitedKeys: [PERMISSION_KEY.IAM_ROLE_CREATE] },
+      [SYSTEM_ROLE],
+    );
+
+    expect(screen.queryByRole("button", { name: banglaText("roles.add") })).toBeNull();
+  });
+
   it("shows no list to someone who may not read roles", async () => {
     await renderList({}, [SYSTEM_ROLE]);
 
@@ -140,6 +149,16 @@ describe("RoleDetailPage", () => {
 
     expect(screen.getByRole("button", { name: banglaText("roles.edit") })).not.toBeNull();
     expect(screen.getByRole("button", { name: banglaText("roles.archive") })).not.toBeNull();
+  });
+
+  it("offers no edit or archive to someone who holds those permissions at one location only", async () => {
+    await renderDetail(
+      { keys: [PERMISSION_KEY.IAM_ROLE_READ], limitedKeys: ROLE_KEYS },
+      CUSTOM_ROLE.roleId,
+    );
+
+    expect(screen.queryByRole("button", { name: banglaText("roles.edit") })).toBeNull();
+    expect(screen.queryByRole("button", { name: banglaText("roles.archive") })).toBeNull();
   });
 
   it("offers no actions for a custom role in read-only mode", async () => {
