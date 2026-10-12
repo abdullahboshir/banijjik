@@ -127,7 +127,7 @@ describe("authenticatePlatform", () => {
 describe("platformPermission", () => {
   it("lets a role that grants the key through", async () => {
     const token = await signToken(TOKEN_AUDIENCE.PLATFORM);
-    const app = createApp(operatorWith([PLATFORM_ROLE.BILLING]));
+    const app = createApp(operatorWith([PLATFORM_ROLE.SUPER_ADMIN]));
 
     const response = await get(app, "/packages", `platform_access_token=${token}`);
 

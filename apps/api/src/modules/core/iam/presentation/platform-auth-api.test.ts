@@ -151,7 +151,8 @@ describe("GET /platform/me", () => {
       name: "Rahim Uddin",
       platformRoles: [PLATFORM_ROLE.BILLING],
     });
-    expect(response.body.data.permissions).toContain(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE);
+    expect(response.body.data.permissions).toContain(PLATFORM_PERMISSION_KEY.SUBSCRIPTION_WRITE);
+    expect(response.body.data.permissions).not.toContain(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE);
     expect(response.body.data.permissions).not.toContain(PLATFORM_PERMISSION_KEY.TENANT_SUSPEND);
   });
 
