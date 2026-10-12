@@ -84,29 +84,37 @@ export async function clickButtonContaining(page: Page, text: string): Promise<v
 /** Opens the invitation sheet, creates an invitation for the email and returns the one-time link. */
 export async function createInvitationThroughUi(
   page: Page,
-  invitee: { identifier: string; displayName: string; roleName?: string },
+  invitee: { identifier: string; displayName: string; roleName?: string; locationName?: string },
 ): Promise<string> {
   await gotoWhenHydrated(page, "/acme/settings/staff/invitations", "main button");
   await clickByName(page, message("invitations.create"));
   await waitForDialogSettled(page);
   await page.type("#invite-identifier", invitee.identifier);
   await page.type("#invite-name", invitee.displayName);
-  await page.evaluate((wantedRole) => {
-    const select = document.querySelector<HTMLSelectElement>("#invite-role-0");
-    const option = Array.from(select?.options ?? []).find(
-      (candidate) => candidate.textContent === wantedRole,
-    );
-    if (select && option) {
-      select.value = option.value;
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-    // With two or more locations the row also needs a location: "All locations" keeps the test about the role.
-    const location = document.querySelector<HTMLSelectElement>("#invite-location-0");
-    if (location) {
-      location.value = "ALL";
-      location.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-  }, invitee.roleName ?? DEFAULT_INVITED_ROLE);
+  await page.evaluate(
+    (wantedRole, wantedLocation) => {
+      const select = document.querySelector<HTMLSelectElement>("#invite-role-0");
+      const option = Array.from(select?.options ?? []).find(
+        (candidate) => candidate.textContent === wantedRole,
+      );
+      if (select && option) {
+        select.value = option.value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      // With two or more locations the row also needs a location: "All locations" keeps the test about the role,
+      // unless the test names one location.
+      const location = document.querySelector<HTMLSelectElement>("#invite-location-0");
+      if (location) {
+        const wanted = Array.from(location.options).find(
+          (candidate) => candidate.textContent === wantedLocation,
+        );
+        location.value = wanted?.value ?? "ALL";
+        location.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    },
+    invitee.roleName ?? DEFAULT_INVITED_ROLE,
+    invitee.locationName ?? "",
+  );
   await page.click(`[role=dialog] ${SUBMIT_BUTTON}`);
   await page.waitForSelector("#invite-link");
   return page.$eval("#invite-link", (input) => (input as HTMLInputElement).value);

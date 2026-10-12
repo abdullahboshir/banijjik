@@ -248,6 +248,59 @@ describe("roles", () => {
   });
 });
 
+const BRANCH_MANAGER_NAME = "সালমা বেগম";
+const BRANCH_STAFF_NAME = "জামাল মিয়া";
+const STAFF_LINK = "/acme/settings/staff";
+
+/** Invites a person to the second location only, and returns the page they land on after accepting. */
+async function joinSecondLocationAs(invitee: { name: string; roleName?: string }): Promise<Page> {
+  const email = `branch-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.com`;
+  const inviterPage = await ownerPage();
+  const link = await createInvitationThroughUi(inviterPage, {
+    identifier: email,
+    displayName: invitee.name,
+    locationName: SECOND_LOCATION_NAME,
+    ...(invitee.roleName === undefined ? {} : { roleName: invitee.roleName }),
+  });
+  await closePage(inviterPage);
+  const page = await openPage(stack.browser, PHONE_VIEWPORT);
+  await signUpAsInvitee(page, link, { name: invitee.name, email });
+  await waitForPath(page, new URL(link).pathname);
+  await clickByName(page, message("accept.submit"));
+  await waitForPath(page, "/acme");
+  return page;
+}
+
+describe("a manager of one location (review M3)", () => {
+  it("sees only the staff of that location and is not offered the profile edit or the audit log", async () => {
+    const staffPage = await joinSecondLocationAs({ name: BRANCH_STAFF_NAME, roleName: ROLE_NAME });
+    await closePage(staffPage);
+    const manager = await joinSecondLocationAs({ name: BRANCH_MANAGER_NAME });
+    const menuPaths = await manager.evaluate(() =>
+      [...new Set(Array.from(document.querySelectorAll("a")).map((a) => a.pathname))]
+        .filter((path) => path.startsWith("/acme"))
+        .sort(),
+    );
+    await gotoWhenHydrated(manager, STAFF_LINK, "main");
+    await waitForText(manager, BRANCH_STAFF_NAME);
+    const staffList = await manager.$eval("main", (main) => (main as HTMLElement).innerText);
+    await gotoWhenHydrated(manager, "/acme/settings/profile", "main");
+    await waitForText(manager, NEW_BUSINESS_NAME);
+    // Buttons only: the page text also carries the whole message catalog in its script data.
+    const profileButtons = await manager.$$eval("main button", (buttons) =>
+      buttons.map((button) => button.textContent ?? ""),
+    );
+    await closePage(manager);
+
+    expect(menuPaths).toContain(STAFF_LINK);
+    expect(menuPaths).not.toContain("/acme/settings/profile");
+    expect(staffList).toContain(BRANCH_MANAGER_NAME);
+    expect(staffList).not.toContain(MEMBER_NAME);
+    expect(staffList).not.toContain(owner.name);
+    expect(profileButtons).not.toContain(message("profile.edit"));
+  });
+});
+
 describe("initial JavaScript of the settings routes (13-UX section 11)", () => {
   it.each([
     "/acme/settings/profile",
