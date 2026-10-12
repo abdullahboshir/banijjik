@@ -15,5 +15,6 @@ export { readRequestId, REQUEST_ID_HEADER, requestIdMiddleware } from "./request
 export { validate } from "./validate.js";
 export type { ValidationSchemas } from "./validate.js";
 export { createReadyHandler } from "./ready-handler.js";
+export type { Readiness } from "./ready-handler.js";
 export { readCookie } from "./read-cookie.js";
 export { createOriginCheck } from "./origin-check.middleware.js";

@@ -9,6 +9,7 @@ import {
   createReadyHandler,
   errorHandler,
   notFoundHandler,
+  type Readiness,
   REQUEST_ID_HEADER,
   requestIdMiddleware,
   sendData,
@@ -26,19 +27,23 @@ export interface BuildAppOptions {
   readonly v1Router?: Router;
   /** The API role passes its Redis client: the permission cache uses it and /ready pings it. */
   readonly redis?: RedisClient;
-  /** Replaces the dependency check behind GET /ready. Production checks the database and Redis. */
-  readonly isReady?: () => Promise<boolean>;
+  /** Replaces the dependency check behind GET /ready. Production: the database decides, Redis is reported. */
+  readonly checkReadiness?: () => Promise<Readiness>;
   /** Replaces the system clock. Tests move it to expire tokens and rate-limit windows. */
   readonly clock?: Clock;
 }
 
 const JSON_BODY_LIMIT = "1mb";
 
+function defaultReadinessCheck(redis: RedisClient | undefined): () => Promise<Readiness> {
+  if (redis !== undefined) return createApiReadinessCheck(redis);
+  return async () => ({ isReady: await isDatabaseReady() });
+}
+
 /** Builds the Express app. Order matters: request id first, error handlers last. */
 export function buildApp(options: BuildAppOptions): Express {
   const { config, logger, redis, clock = systemClock } = options;
-  const isReady =
-    options.isReady ?? (redis === undefined ? isDatabaseReady : createApiReadinessCheck(redis));
+  const checkReadiness = options.checkReadiness ?? defaultReadinessCheck(redis);
   const v1Router =
     options.v1Router ??
     buildV1Router({
@@ -74,7 +79,7 @@ export function buildApp(options: BuildAppOptions): Express {
   app.get("/health", (_request, response) => {
     sendData(response, { status: "ok" });
   });
-  app.get("/ready", createReadyHandler(isReady));
+  app.get("/ready", createReadyHandler(checkReadiness));
   app.use("/api/v1", v1Router);
 
   app.use(notFoundHandler);
