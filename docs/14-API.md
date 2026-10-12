@@ -49,6 +49,9 @@ Why a path param, not a header: the org is visible in every log line, cache key 
   - webhooks: per provider account
   - tenant API: per user (generous)
   - Limits return `429 RATE_LIMITED` with `Retry-After`.
+  - Sign-in counts **failed** attempts only (ADR-096): per identifier + IP (5 per 15 min) and per identifier (50 per 15 min), for the admin and the platform sign-in separately, plus the per-IP bucket.
+  - Signed-in users: 600 requests per 60 s per user on the admin API (`/me`, `/me/orgs`, `/orgs/{organizationId}/…`) and per platform operator on `/platform/…` (ADR-090). The public auth routes and `logout-all` are not counted. If Redis is down the limit is skipped (fail open) and a `warn` is logged at most once a minute.
+- **Readiness:** `GET /ready` answers `200 { "status": "ready", "details": { "redis": "ok" | "degraded" } }` when MongoDB answers, and `503` only when it does not. A Redis outage shows as `degraded` and does not fail readiness (ADR-088, ADR-090).
 
 ## 3. Error codes (contracts `ERROR_CODE`; each has an i18n `messageKey`)
 
