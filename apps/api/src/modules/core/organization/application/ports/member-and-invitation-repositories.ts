@@ -26,6 +26,8 @@ export interface MemberManagementRepository {
 export interface InvitationListRequest extends PageRequest {
   readonly status?: InvitationStatus;
   readonly now: Date;
+  /** The locations the caller may invite to, "ALL" for every one. Only invitations inside it are listed. */
+  readonly reach: readonly string[] | "ALL";
 }
 
 /** Invitations of the active organization; the tenant plugin scopes every query. */
@@ -33,6 +35,8 @@ export interface InvitationRepository {
   insert(invitation: Invitation): Promise<void>;
   findById(invitationId: InvitationId): Promise<Invitation | undefined>;
   list(request: InvitationListRequest): Promise<Page<Invitation>>;
+  /** Every PENDING, unexpired invitation sent by this user (bounded by the `members` limit). */
+  listPendingInvitedBy(userId: UserId, now: Date): Promise<Invitation[]>;
   /** PENDING invitations that have not expired; they count against the `members` limit. */
   countPending(now: Date): Promise<number>;
   /** True when a PENDING, unexpired invitation names this location. */

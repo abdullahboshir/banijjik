@@ -179,6 +179,7 @@ export type {
 } from "./entitlement/entitlement-contracts.js";
 export {
   INVITATION_STATUS,
+  INVITATION_REVOKE_REASON,
   INVITATION_TOKEN_BYTES,
   INVITATION_TOKEN_LENGTH,
   INVITATION_VALIDITY_DAYS,

@@ -47,6 +47,20 @@ function callerHolds(caller: CallerKeys, locationId: string, key: string): boole
   return caller.byLocation[locationId]?.includes(key) ?? false;
 }
 
+function firstUngrantedRole(
+  assignments: readonly Assignment[],
+  grants: RoleGrants,
+  caller: CallerKeys,
+): RoleId | undefined {
+  for (const { locationId, roleId } of assignments) {
+    const keys = grants.get(roleId)?.permissionKeys ?? new Set<string>();
+    for (const key of keys) {
+      if (!callerHolds(caller, locationId, key)) return roleId;
+    }
+  }
+  return undefined;
+}
+
 /**
  * No privilege escalation (ADR-092): every permission key of every role in `assignments` must
  * already be held by the caller, at ALL or at that location. Run it for the roles being given
@@ -57,12 +71,49 @@ export function assertCallerHoldsEveryKey(
   grants: RoleGrants,
   caller: CallerKeys,
 ): void {
+  const ungranted = firstUngrantedRole(assignments, grants, caller);
+  if (ungranted !== undefined) throw roleNotGrantable(ungranted);
+}
+
+/** The same rule as a yes or no, for a holder other than the caller (the inviter of an invitation). */
+export function holdsEveryKey(
+  assignments: readonly Assignment[],
+  grants: RoleGrants,
+  holder: CallerKeys,
+): boolean {
+  return firstUngrantedRole(assignments, grants, holder) === undefined;
+}
+
+/** What a member holds, by where: a role given at "ALL" counts everywhere, any other at its location. */
+export function keysHeldBy(assignments: readonly Assignment[], grants: RoleGrants): CallerKeys {
+  const allLocations = new Set<string>();
+  const byLocation = new Map<string, Set<string>>();
   for (const { locationId, roleId } of assignments) {
     const keys = grants.get(roleId)?.permissionKeys ?? new Set<string>();
-    for (const key of keys) {
-      if (!callerHolds(caller, locationId, key)) throw roleNotGrantable(roleId);
+    if (locationId === ALL_LOCATIONS) {
+      keys.forEach((key) => allLocations.add(key));
+      continue;
     }
+    const atLocation = byLocation.get(locationId) ?? new Set<string>();
+    keys.forEach((key) => atLocation.add(key));
+    byLocation.set(locationId, atLocation);
   }
+  return {
+    allLocations: [...allLocations],
+    byLocation: Object.fromEntries([...byLocation].map(([id, keys]) => [id, [...keys]])),
+  };
+}
+
+/**
+ * True when every assignment names a location the caller may use for the permission. "ALL" is
+ * inside the reach only for a caller who holds the permission at ALL (reach "ALL").
+ */
+export function isWithinReach(
+  assignments: readonly Assignment[],
+  reach: readonly string[] | "ALL",
+): boolean {
+  if (reach === "ALL") return true;
+  return assignments.every(({ locationId }) => reach.includes(locationId));
 }
 
 function sameAssignment(left: Assignment, right: Assignment): boolean {

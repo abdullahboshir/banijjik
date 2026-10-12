@@ -82,7 +82,7 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | `POST /auth/register` | public | | `UserRegisterRequest` (phone/email + password or OTP) |
 | `POST /auth/otp/send` · `POST /auth/otp/verify` | public | | `OtpSendRequest`, `OtpVerifyRequest` |
 | `POST /auth/login` · `POST /auth/logout` · `POST /auth/refresh` | public / session | | `LoginRequest` → sets cookies |
-| `POST /auth/logout-all` | user | | revokes every session of the user, clears cookies, `204` (card 1.1) |
+| `POST /auth/logout-all` | user | | revokes every ADMIN session of the user, clears cookies, `204` (card 1.1; per audience since 1.9a) |
 | `POST /auth/password/forgot` · `POST /auth/password/reset` | public | | token from email/SMS (random secret) |
 | `GET /me` · `PATCH /me` | user | | `MeResponse` (user, preferredLocale) |
 | `GET /me/orgs` | user | | `MyOrganizationSummary[]` (id, slug, name, role keys, status) |
@@ -102,7 +102,7 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 | `GET /profile` · `PATCH /profile` | `organization.profile.update` (PATCH) | | `OrganizationProfile…` |
 | `GET /locations` · `POST /locations` · `PATCH /locations/{locationId}` · `POST /locations/{locationId}/archive` | `organization.location.*` | I (POST) | archive refused with stock/open requests (`BUSINESS_RULE`) |
 | `GET /members` · `GET /members/{memberId}` · `PATCH /members/{memberId}` · `POST /members/{memberId}/suspend` · `POST /members/{memberId}/reactivate` · `POST /members/{memberId}/remove` | `organization.member.*` (`remove` for remove, `update` for the rest) | | assignments edit via PATCH under the rules of ADR-092; sensitive custom fields need `readSensitive` (card 2.3) |
-| `POST /invitations` · `GET /invitations` · `POST /invitations/{invitationId}/revoke` | `organization.member.invite` | I (POST) | the create response carries `inviteUrlPath` once; a replay of the same key returns the invitation without it (ADR-092) |
+| `POST /invitations` · `GET /invitations` · `POST /invitations/{invitationId}/revoke` | `organization.member.invite` | I (POST) | lists and revokes only invitations within the caller's locations (outside: 404; roles above the caller: `422 ROLE_NOT_GRANTABLE`); a member who loses access (suspend, remove, assignments changed) takes their pending invitations with them; the create response carries `inviteUrlPath` once; a replay of the same key returns the invitation without it (ADR-092) |
 | `POST /ownership/transfer` | `organization.ownership.transfer` | A | target must be an active member |
 | `GET /roles` · `POST /roles` · `PATCH /roles/{roleId}` · `POST /roles/{roleId}/archive` | `iam.role.*` | | system roles read-only; writes need the permission at ALL locations and every key added or removed held by the caller at ALL (`422 ROLE_NOT_GRANTABLE`, `details.permissionKeys`) |
 | `GET /settings?keys=` · `PATCH /settings` | `settings.setting.*` | | batch update `{ key, value, locationId? }[]` with versions |
@@ -239,7 +239,7 @@ Permissions `platform.<module>.<action>` from `PlatformOperator.platformRoles` (
 
 | Area | Endpoints |
 |---|---|
-| Auth | `POST /platform/auth/login` · `/logout` · `/refresh` (separate cookie), `GET /platform/me` (`{ platformOperatorId, userId, name, platformRoles, permissions }`, for the panel after a reload) |
+| Auth | `POST /platform/auth/login` · `/logout` · `/logout-all` (platform sessions only, needs a platform session) · `/refresh` (separate cookie), `GET /platform/me` (`{ platformOperatorId, userId, name, platformRoles, permissions }`, for the panel after a reload) |
 | Tenants | `GET /platform/organizations?status=&q=`, `GET /platform/organizations/{organizationId}`, `POST …/{organizationId}/suspend` · `/reactivate` · `/change-industry-template` (additive, ADR-046), `POST …/{organizationId}/impersonate` (time-boxed, reason required, audited) |
 | Entitlements | `GET/POST /platform/organizations/{organizationId}/module-overrides`, `DELETE …/module-overrides/{moduleOverrideId}` |
 | Packages | CRUD `/platform/packages[/{packageId}]` (save-time closure validation, `10 §3`) |

@@ -6,6 +6,8 @@ import {
   assertCallerHoldsEveryKey,
   assertEveryLocationIsActive,
   assertRolesAreAssignable,
+  holdsEveryKey,
+  keysHeldBy,
   type RoleGrants,
 } from "../domain/assignment-rules.js";
 import type { Assignment } from "../domain/member.entity.js";
@@ -53,6 +55,18 @@ export class AssignmentGuard {
     if (assignments.length === 0) return;
     const caller = await this.dependencies.permissions.describeCaller();
     assertCallerHoldsEveryKey(assignments, await this.grantsOf(assignments), caller);
+  }
+
+  /**
+   * For an invitation that is accepted: does the inviter still hold every key of every invited role
+   * at the invited locations? A yes or no, because the answer decides whether the invitation lives.
+   */
+  async holderMayGrant(
+    holder: readonly Assignment[],
+    assignments: readonly Assignment[],
+  ): Promise<boolean> {
+    const grants = await this.grantsOf([...holder, ...assignments]);
+    return holdsEveryKey(assignments, grants, keysHeldBy(holder, grants));
   }
 
   private grantsOf(assignments: readonly Assignment[]): Promise<RoleGrants> {

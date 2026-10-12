@@ -158,7 +158,17 @@ function buildProfileAndLocationController(shared: SharedParts): ProfileAndLocat
 
 function buildMemberController(shared: SharedParts): MemberController {
   const { organizations, members, invitations, guard, unitOfWork, events, audit } = shared;
-  const memberDependencies = { members, organizations, guard, unitOfWork, events, audit };
+  const { clock } = shared;
+  const memberDependencies = {
+    members,
+    organizations,
+    guard,
+    unitOfWork,
+    events,
+    audit,
+    invitations,
+    clock,
+  };
   // Reactivating adds an ACTIVE member: the limit counts ACTIVE members plus pending invitations.
   const assertRoomForOneMore = async (organizationId: OrganizationId): Promise<void> => {
     await shared.limitLock.acquire(organizationId);
@@ -200,6 +210,7 @@ function buildInvitationController(
     }),
     revokeInvitation: new RevokeInvitationUseCase({
       invitations,
+      guard,
       unitOfWork,
       events,
       audit,

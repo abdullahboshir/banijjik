@@ -63,5 +63,7 @@ export const invitationSchema = new Schema<InvitationDocument>(
 invitationSchema.index({ organizationId: 1, invitationId: 1 }, { unique: true });
 // The list endpoint and the pending count filter by status.
 invitationSchema.index({ organizationId: 1, status: 1, createdAt: -1 });
+// A member who loses access takes their pending invitations with them.
+invitationSchema.index({ organizationId: 1, invitedByUserId: 1, status: 1 });
 // The public preview and accept look an invitation up by the hash of its token.
 invitationSchema.index({ tokenHash: 1 }, { unique: true });

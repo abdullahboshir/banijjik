@@ -163,6 +163,7 @@
   "errors.cannot_change_self": "You cannot change your own access.",
   "errors.role_not_grantable": "You cannot give this role. It is the owner role, archived, or has permissions you do not have.",
   "errors.role_permissions_not_grantable": "You cannot give or take away permissions you do not hold yourself, at every location.",
+  "errors.member_assignments_invalid": "A location or role of this member was archived meanwhile. Fix the assignments first, then reactivate.",
   "errors.invitation_identifier_mismatch": "This invitation was sent to a different phone number or email.",
   "errors.package_in_use": "This package is used by a running subscription and cannot be archived.",
   "errors.package_not_closed": "A module of this package needs another module that the package does not contain.",

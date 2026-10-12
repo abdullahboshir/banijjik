@@ -32,6 +32,7 @@ import type {
 import type { OrganizationContextRunner } from "../ports/organization-context-runner.js";
 import type { OrganizationLimitLock } from "../ports/profile-and-location-repositories.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
+import { revokeBecauseInviterAccessChanged } from "./revoke-inviter-invitations.js";
 import type { MyOrganizationsReader } from "./list-my-organizations.use-case.js";
 
 export interface InvitationPreview {
@@ -87,6 +88,8 @@ export interface AcceptInvitationDependencies {
   readonly clock: Clock;
 }
 
+type JoinOutcome = "JOINED" | "INVITER_LOST_ACCESS";
+
 interface JoinInput {
   readonly invitation: Invitation;
   readonly userId: UserId;
@@ -113,9 +116,11 @@ export class AcceptInvitationUseCase {
     const { invitation } = found;
     await this.assertAddressedTo(invitation, input.userId);
     const displayName = invitation.displayName ?? (await this.nameOf(input.userId));
-    await contextRunner.run(invitation.organizationId, () =>
+    const outcome = await contextRunner.run(invitation.organizationId, () =>
       this.join({ invitation, userId: input.userId, displayName }),
     );
+    // The revocation was committed first; the invitee only sees a link that no longer works.
+    if (outcome === "INVITER_LOST_ACCESS") throw recordNotFound();
     return this.summaryOf(input.userId, invitation.organizationId);
   }
 
@@ -132,18 +137,22 @@ export class AcceptInvitationUseCase {
   }
 
   /** The MEMBER number is taken before the transaction (FAST sequence): an abort loses it, never repeats it. */
-  private async join(input: Omit<JoinInput, "employeeNumber">): Promise<void> {
+  private async join(input: Omit<JoinInput, "employeeNumber">): Promise<JoinOutcome> {
     const { memberNumbers, unitOfWork } = this.dependencies;
     const number = await memberNumbers.next(input.invitation.organizationId);
-    await unitOfWork.run(() => this.store({ ...input, employeeNumber: String(number) }));
+    return unitOfWork.run(() => this.store({ ...input, employeeNumber: String(number) }));
   }
 
-  private async store(input: JoinInput): Promise<void> {
+  private async store(input: JoinInput): Promise<JoinOutcome> {
     const { invitations, members, guard, limitLock, clock, audit, events } = this.dependencies;
     const { userId } = input;
     await limitLock.acquire(input.invitation.organizationId);
     const current = await invitations.findById(input.invitation.invitationId);
     if (current === undefined || !current.isPendingAt(clock.now())) throw recordNotFound();
+    if (!(await this.inviterStillMayGrant(current))) {
+      await revokeBecauseInviterAccessChanged(this.dependencies, current, userId);
+      return "INVITER_LOST_ACCESS";
+    }
     await guard.assertAssignable(current.assignments);
     const existing = await members.findByUserId(userId);
     if (existing !== undefined && existing.status !== MEMBER_STATUS.REMOVED) {
@@ -161,6 +170,17 @@ export class AcceptInvitationUseCase {
       memberId: joined.memberId,
       userId,
     });
+    return "JOINED";
+  }
+
+  /**
+   * The check of ADR-092 was made when the invitation was created; access moves since then. The
+   * inviter must still be an ACTIVE member who holds every key of every invited role (review J1).
+   */
+  private async inviterStillMayGrant(invitation: Invitation): Promise<boolean> {
+    const inviter = await this.dependencies.members.findByUserId(invitation.invitedByUserId);
+    if (inviter === undefined || inviter.status !== MEMBER_STATUS.ACTIVE) return false;
+    return this.dependencies.guard.holderMayGrant(inviter.assignments, invitation.assignments);
   }
 
   private async saveMember(

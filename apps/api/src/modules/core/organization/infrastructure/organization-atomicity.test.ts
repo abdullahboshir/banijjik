@@ -177,6 +177,8 @@ describe("a change whose event cannot be written", () => {
       unitOfWork: new MongoUnitOfWork(),
       events: failingEvents,
       audit: audit(),
+      invitations: new MongoInvitationRepository(),
+      clock: harness.clock,
     });
 
     await expect(

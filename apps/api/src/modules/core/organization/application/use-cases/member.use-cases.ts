@@ -1,14 +1,16 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, ORGANIZATION_EVENT_TYPE } from "@banijjik/contracts";
 import type { MemberId, OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
+import type { Clock } from "../../../../../kernel/time/index.js";
 import { diffAssignments } from "../../domain/assignment-rules.js";
-import { recordNotFound } from "../../domain/errors.js";
+import { DomainRuleError, memberAssignmentsInvalid, recordNotFound } from "../../domain/errors.js";
 import type { Member, MemberChanges } from "../../domain/member.entity.js";
 import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
 import { assignmentsAuditValue } from "../audit-diff.js";
 import type { AssignmentGuard } from "../assignment-guard.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
 import type {
+  InvitationRepository,
   MemberListRequest,
   MemberManagementRepository,
 } from "../ports/member-and-invitation-repositories.js";
@@ -18,6 +20,7 @@ import type {
 } from "../ports/profile-and-location-repositories.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
 import { assertMemberMayBeChanged } from "./member-protection.js";
+import { revokeInvitationsOfInviter } from "./revoke-inviter-invitations.js";
 
 export interface MemberDependencies {
   readonly members: MemberManagementRepository;
@@ -26,6 +29,9 @@ export interface MemberDependencies {
   readonly unitOfWork: UnitOfWork;
   readonly events: EventPublisher;
   readonly audit: AuditRecorder;
+  /** A member who loses access takes the invitations they sent with them (review J1). */
+  readonly invitations: InvitationRepository;
+  readonly clock: Clock;
 }
 
 export interface MemberActorInput {
@@ -87,19 +93,24 @@ export class UpdateMemberUseCase {
         changesAssignments: input.changes.assignments !== undefined,
       });
       const edited = existing.withChanges(input.changes);
-      await this.guardAssignments(existing, edited);
+      const hasChangedAssignments = await this.guardAssignments(existing, edited);
       const saved = await members.update(edited, input.version, input.actorUserId);
       await this.record(existing, saved);
+      if (hasChangedAssignments) {
+        await revokeInvitationsOfInviter(this.dependencies, existing.userId, input.actorUserId);
+      }
       return saved;
     });
   }
 
-  private async guardAssignments(before: Member, after: Member): Promise<void> {
+  /** Returns whether the assignments changed at all. */
+  private async guardAssignments(before: Member, after: Member): Promise<boolean> {
     const { guard } = this.dependencies;
     const { added, removed } = diffAssignments(before.assignments, after.assignments);
-    if (added.length === 0 && removed.length === 0) return;
+    if (added.length === 0 && removed.length === 0) return false;
     await guard.assertAssignable(after.assignments);
     await guard.assertCallerHolds([...added, ...removed]);
+    return true;
   }
 
   private async record(before: Member, after: Member): Promise<void> {
@@ -171,8 +182,7 @@ export class ChangeMemberStatusUseCase {
       });
       const next = nextStatusOf(existing, input.action);
       await this.dependencies.guard.assertCallerHolds(existing.assignments);
-      if (input.action === "REACTIVATE")
-        await this.dependencies.assertRoomForOneMore(input.organizationId);
+      if (input.action === "REACTIVATE") await this.assertCanComeBack(existing, input);
       const saved = await members.update(next, input.version, input.actorUserId);
       await audit.record({
         action: ACTION_AUDIT[input.action],
@@ -184,7 +194,25 @@ export class ChangeMemberStatusUseCase {
         memberId: saved.memberId,
         userId: saved.userId,
       });
+      if (input.action !== "REACTIVATE") {
+        await revokeInvitationsOfInviter(this.dependencies, saved.userId, input.actorUserId);
+      }
       return saved;
     });
+  }
+
+  /**
+   * A member who was suspended may have had a location or role archived meanwhile (those archives
+   * count ACTIVE members only), so coming back re-checks them (review J5). The owner of the change
+   * fixes the assignments first; editing a suspended member is allowed.
+   */
+  private async assertCanComeBack(existing: Member, input: ChangeMemberStatusInput): Promise<void> {
+    try {
+      await this.dependencies.guard.assertAssignable(existing.assignments);
+    } catch (error) {
+      if (error instanceof DomainRuleError) throw memberAssignmentsInvalid();
+      throw error;
+    }
+    await this.dependencies.assertRoomForOneMore(input.organizationId);
   }
 }

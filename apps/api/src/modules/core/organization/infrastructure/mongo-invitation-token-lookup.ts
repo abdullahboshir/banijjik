@@ -1,3 +1,4 @@
+import { ORGANIZATION_STATUS } from "@banijjik/contracts";
 import { models } from "../../../../kernel/db/index.js";
 import type {
   InvitationTokenLookup,
@@ -23,9 +24,12 @@ export class MongoInvitationTokenLookup implements InvitationTokenLookup {
     const invitation = toInvitation(document);
     const organization = await models({})
       .get<OrganizationDocument>(ORGANIZATION_MODEL_NAME)
-      .findOne({ organizationId: invitation.organizationId }, { name: 1, _id: 0 })
-      .lean<Pick<OrganizationDocument, "name">>();
-    if (organization === null) return undefined;
+      .findOne({ organizationId: invitation.organizationId }, { name: 1, status: 1, _id: 0 })
+      .lean<Pick<OrganizationDocument, "name" | "status">>();
+    // A suspended or closed business takes no new members, and the link looks like any dead one.
+    if (organization === null || organization.status !== ORGANIZATION_STATUS.ACTIVE) {
+      return undefined;
+    }
     const inviter = await models({})
       .get<MemberDocument>(MEMBER_MODEL_NAME)
       .findOne(

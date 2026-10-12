@@ -5,6 +5,9 @@ import {
   assertCallerHoldsEveryKey,
   assertRolesAreAssignable,
   diffAssignments,
+  holdsEveryKey,
+  isWithinReach,
+  keysHeldBy,
   type CallerKeys,
   type RoleGrant,
   type RoleGrants,
@@ -151,5 +154,50 @@ describe("diffAssignments", () => {
 
     expect(change.added).toHaveLength(1);
     expect(change.removed).toHaveLength(1);
+  });
+});
+
+describe("keysHeldBy and holdsEveryKey (the inviter of an invitation)", () => {
+  const readOnly = aRole([READ]);
+  const readUpdate = aRole([READ, UPDATE]);
+  const grants = grantsOf(readOnly, readUpdate);
+
+  it("counts a role given at ALL everywhere and a role at a location only there", () => {
+    const held = keysHeldBy(
+      [assign(readOnly, ALL_LOCATIONS), assign(readUpdate, LOCATION_ONE)],
+      grants,
+    );
+
+    expect(held.allLocations).toEqual([READ]);
+    expect(held.byLocation).toEqual({ [LOCATION_ONE]: [READ, UPDATE] });
+  });
+
+  it("is true when the holder has every key at the named location", () => {
+    const holder = keysHeldBy([assign(readUpdate, ALL_LOCATIONS)], grants);
+
+    expect(holdsEveryKey([assign(readUpdate, LOCATION_TWO)], grants, holder)).toBe(true);
+  });
+
+  it("is false when a key is missing, or only held at another location", () => {
+    const holder = keysHeldBy([assign(readUpdate, LOCATION_ONE)], grants);
+
+    expect(holdsEveryKey([assign(readUpdate, LOCATION_TWO)], grants, holder)).toBe(false);
+    expect(holdsEveryKey([assign(readUpdate, ALL_LOCATIONS)], grants, holder)).toBe(false);
+  });
+});
+
+describe("isWithinReach", () => {
+  const role = aRole([READ]);
+
+  it("accepts every assignment for a caller whose reach is ALL", () => {
+    expect(isWithinReach([assign(role, ALL_LOCATIONS), assign(role, LOCATION_ONE)], "ALL")).toBe(
+      true,
+    );
+  });
+
+  it("accepts only the named locations for a caller limited to some, and never ALL", () => {
+    expect(isWithinReach([assign(role, LOCATION_ONE)], [LOCATION_ONE])).toBe(true);
+    expect(isWithinReach([assign(role, LOCATION_TWO)], [LOCATION_ONE])).toBe(false);
+    expect(isWithinReach([assign(role, ALL_LOCATIONS)], [LOCATION_ONE])).toBe(false);
   });
 });

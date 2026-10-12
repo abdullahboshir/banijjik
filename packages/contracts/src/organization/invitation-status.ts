@@ -10,3 +10,8 @@ export const INVITATION_TOKEN_BYTES = 32;
 export const INVITATION_TOKEN_LENGTH = 43;
 
 export const INVITATION_VALIDITY_DAYS = 7;
+
+/** Why the system, not a person, revoked a pending invitation (`changes.reason` of the audit entry). */
+export const INVITATION_REVOKE_REASON = {
+  INVITER_ACCESS_CHANGED: "INVITER_ACCESS_CHANGED",
+} as const;

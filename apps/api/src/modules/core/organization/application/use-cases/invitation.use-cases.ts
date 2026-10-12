@@ -12,6 +12,7 @@ import type { Clock } from "../../../../../kernel/time/index.js";
 import { DuplicateFieldError, recordNotFound } from "../../domain/errors.js";
 import { Invitation } from "../../domain/invitation.entity.js";
 import type { Assignment } from "../../domain/member.entity.js";
+import { isWithinReach } from "../../domain/assignment-rules.js";
 import { diffAuditFields } from "../../../../../kernel/audit/index.js";
 import { assignmentsAuditValue } from "../audit-diff.js";
 import type { AssignmentGuard } from "../assignment-guard.js";
@@ -141,19 +142,26 @@ export class CreateInvitationUseCase {
 
 export interface RevokeInvitationInput {
   readonly actorUserId: UserId;
+  /** The locations the caller may invite to; an invitation outside them looks like no invitation. */
+  readonly reach: readonly string[] | "ALL";
   readonly invitationId: InvitationId;
   readonly version: number;
 }
 
 export interface RevokeInvitationDependencies {
   readonly invitations: InvitationRepository;
+  readonly guard: AssignmentGuard;
   readonly unitOfWork: UnitOfWork;
   readonly events: EventPublisher;
   readonly audit: AuditRecorder;
   readonly clock: Clock;
 }
 
-/** Revokes a pending invitation. The link stops working at once; an accepted or expired one cannot be revoked. */
+/**
+ * Revokes a pending invitation. The link stops working at once; an accepted or expired one cannot
+ * be revoked. Taking an invitation away follows the rule for giving it (ADR-092): it must lie within
+ * the caller's locations (else 404) and its roles must not be above the caller (else 422).
+ */
 export class RevokeInvitationUseCase {
   constructor(private readonly dependencies: RevokeInvitationDependencies) {}
 
@@ -161,7 +169,10 @@ export class RevokeInvitationUseCase {
     const { invitations, unitOfWork, events, audit, clock } = this.dependencies;
     return unitOfWork.run(async () => {
       const existing = await invitations.findById(input.invitationId);
-      if (existing === undefined) throw recordNotFound();
+      if (existing === undefined || !isWithinReach(existing.assignments, input.reach)) {
+        throw recordNotFound();
+      }
+      await this.dependencies.guard.assertCallerHolds(existing.assignments);
       const revoked = existing.revoke(clock.now());
       const saved = await invitations.update(revoked, input.version, input.actorUserId);
       await audit.record({

@@ -55,12 +55,14 @@ export class InvitationController {
 
   readonly list: RequestHandler = async (_request, response) => {
     const { page, limit, status } = readQuery(response);
+    const { allowedLocationIds } = readTenantCaller();
     const { clock } = this.dependencies;
     const now = clock.now();
     const result = await this.dependencies.listInvitations.execute({
       page,
       limit,
       now,
+      reach: allowedLocationIds,
       ...(status === undefined ? {} : { status }),
     });
     sendData(
@@ -95,9 +97,10 @@ export class InvitationController {
 
   readonly revoke: RequestHandler = async (request, response) => {
     const body: VersionedTransitionBody = request.body;
-    const { actorUserId } = readTenantCaller();
+    const { actorUserId, allowedLocationIds } = readTenantCaller();
     const invitation = await this.dependencies.revokeInvitation.execute({
       actorUserId,
+      reach: allowedLocationIds,
       invitationId: asId<InvitationId>(String(request.params["invitationId"])),
       version: body.version,
     });

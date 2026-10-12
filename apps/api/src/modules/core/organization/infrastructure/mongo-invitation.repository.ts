@@ -32,6 +32,15 @@ function statusFilter(status: InvitationStatus | undefined, now: Date): object {
   return { status };
 }
 
+/**
+ * Only invitations whose every assignment is inside the caller's reach. "ALL" is not a location ID,
+ * so an invitation at "ALL" never matches a reach that is a list of locations.
+ */
+function reachFilter(reach: readonly string[] | "ALL"): object {
+  if (reach === "ALL") return {};
+  return { assignments: { $not: { $elemMatch: { locationId: { $nin: [...reach] } } } } };
+}
+
 /** Invitations are tenant data: the tenant plugin adds the organization filter to every query. */
 export class MongoInvitationRepository implements InvitationRepository {
   async insert(invitation: Invitation): Promise<void> {
@@ -49,10 +58,14 @@ export class MongoInvitationRepository implements InvitationRepository {
   }
 
   async list(request: InvitationListRequest): Promise<Page<Invitation>> {
-    const { status, now, page, limit } = request;
+    const { status, now, page, limit, reach } = request;
     // One extra row tells whether another page exists, without counting the collection.
     const documents = await this.model()
-      .find(statusFilter(status, now), null, sessionOption(getActiveSession()))
+      .find(
+        { ...statusFilter(status, now), ...reachFilter(reach) },
+        null,
+        sessionOption(getActiveSession()),
+      )
       .sort(LIST_SORT)
       .skip((page - 1) * limit)
       .limit(limit + 1)
@@ -61,6 +74,17 @@ export class MongoInvitationRepository implements InvitationRepository {
       items: documents.slice(0, limit).map(toInvitation),
       hasNext: documents.length > limit,
     };
+  }
+
+  async listPendingInvitedBy(userId: UserId, now: Date): Promise<Invitation[]> {
+    const documents = await this.model()
+      .find(
+        { ...statusFilter(INVITATION_STATUS.PENDING, now), invitedByUserId: userId },
+        null,
+        sessionOption(getActiveSession()),
+      )
+      .lean<InvitationDocument[]>();
+    return documents.map(toInvitation);
   }
 
   countPending(now: Date): Promise<number> {

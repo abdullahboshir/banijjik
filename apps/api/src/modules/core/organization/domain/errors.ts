@@ -74,6 +74,14 @@ export function roleNotGrantable(roleId: string): DomainRuleError {
   });
 }
 
+/** A suspended member's location or role was archived meanwhile; fix the assignments first (09 section 4.4). */
+export function memberAssignmentsInvalid(): DomainRuleError {
+  return businessRule(
+    ORGANIZATION_RULE_KEY.MEMBER_ASSIGNMENTS_INVALID,
+    "errors.member_assignments_invalid",
+  );
+}
+
 /** The signed-in user's email or phone number is not the one the invitation was sent to. */
 export function invitationIdentifierMismatch(): DomainRuleError {
   return new DomainRuleError({
