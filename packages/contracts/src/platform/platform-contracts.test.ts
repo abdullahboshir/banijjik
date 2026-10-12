@@ -27,11 +27,43 @@ describe("platform permissions", () => {
     expect(granted.has(PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE)).toBe(false);
   });
 
-  it("lets BILLING edit packages, entitlements and subscriptions but not suspend", () => {
+  it("lets BILLING edit entitlements and subscriptions but not suspend or edit packages", () => {
     const granted = platformPermissionsOf([PLATFORM_ROLE.BILLING]);
     expect(granted.has(PLATFORM_PERMISSION_KEY.TENANT_SUSPEND)).toBe(false);
-    expect(granted.has(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE)).toBe(true);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE)).toBe(false);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE)).toBe(true);
     expect(granted.has(PLATFORM_PERMISSION_KEY.SUBSCRIPTION_WRITE)).toBe(true);
+  });
+
+  it("gives each role exactly the permissions of the final mapping (ADR-093)", () => {
+    const sorted = (role: keyof typeof PLATFORM_ROLE_PERMISSIONS) =>
+      [...PLATFORM_ROLE_PERMISSIONS[role]].sort();
+    expect(sorted(PLATFORM_ROLE.SUPPORT)).toEqual(
+      [
+        PLATFORM_PERMISSION_KEY.TENANT_READ,
+        PLATFORM_PERMISSION_KEY.TENANT_SUSPEND,
+        PLATFORM_PERMISSION_KEY.PACKAGE_READ,
+        PLATFORM_PERMISSION_KEY.ENTITLEMENT_READ,
+        PLATFORM_PERMISSION_KEY.SUBSCRIPTION_READ,
+      ].sort(),
+    );
+    expect(sorted(PLATFORM_ROLE.BILLING)).toEqual(
+      [
+        PLATFORM_PERMISSION_KEY.TENANT_READ,
+        PLATFORM_PERMISSION_KEY.PACKAGE_READ,
+        PLATFORM_PERMISSION_KEY.ENTITLEMENT_READ,
+        PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE,
+        PLATFORM_PERMISSION_KEY.SUBSCRIPTION_READ,
+        PLATFORM_PERMISSION_KEY.SUBSCRIPTION_WRITE,
+      ].sort(),
+    );
+  });
+
+  it("reserves package writes for SUPER_ADMIN", () => {
+    const holders = Object.values(PLATFORM_ROLE).filter((role) =>
+      PLATFORM_ROLE_PERMISSIONS[role].includes(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE),
+    );
+    expect(holders).toEqual([PLATFORM_ROLE.SUPER_ADMIN]);
   });
 
   it("reserves the audit log for SUPER_ADMIN", () => {
@@ -47,6 +79,6 @@ describe("platform permissions", () => {
   it("unions the permissions of several roles", () => {
     const granted = platformPermissionsOf([PLATFORM_ROLE.SUPPORT, PLATFORM_ROLE.BILLING]);
     expect(granted.has(PLATFORM_PERMISSION_KEY.TENANT_SUSPEND)).toBe(true);
-    expect(granted.has(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE)).toBe(true);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE)).toBe(true);
   });
 });

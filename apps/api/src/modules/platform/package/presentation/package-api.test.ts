@@ -31,7 +31,9 @@ let issuedKeys = 0;
 
 beforeAll(async () => {
   harness = await startIamApi();
-  operator = await createPlatformActor(harness.app, harness.connections, [PLATFORM_ROLE.BILLING]);
+  operator = await createPlatformActor(harness.app, harness.connections, [
+    PLATFORM_ROLE.SUPER_ADMIN,
+  ]);
 });
 
 afterAll(async () => {

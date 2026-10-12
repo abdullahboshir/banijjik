@@ -140,7 +140,7 @@ interface PermissionCase {
   readonly name: string;
   readonly isAllowed: boolean;
   readonly request: (organizationId: string) => {
-    method: "get" | "post";
+    method: "get" | "post" | "patch";
     path: string;
     body?: object;
   };
@@ -197,11 +197,51 @@ const PERMISSION_CASES: readonly PermissionCase[] = [
   {
     role: PLATFORM_ROLE.BILLING,
     name: "create a package",
-    isAllowed: true,
+    isAllowed: false,
     request: () => ({
       method: "post",
       path: "/packages",
       body: { packageKey: "BILLING_TRY", isAddOn: true, moduleKeys: [], limits: FULL_LIMITS },
+    }),
+  },
+  {
+    role: PLATFORM_ROLE.SUPER_ADMIN,
+    name: "create a package",
+    isAllowed: true,
+    request: () => ({
+      method: "post",
+      path: "/packages",
+      body: { packageKey: "ADMIN_TRY", isAddOn: true, moduleKeys: [], limits: FULL_LIMITS },
+    }),
+  },
+  ...[PLATFORM_ROLE.SUPPORT, PLATFORM_ROLE.BILLING].map((role) => ({
+    role,
+    name: "edit a package",
+    isAllowed: false,
+    request: () => ({
+      method: "patch" as const,
+      path: `/packages/${newId()}`,
+      body: { version: 1, name: "Renamed" },
+    }),
+  })),
+  ...[PLATFORM_ROLE.SUPPORT, PLATFORM_ROLE.BILLING].map((role) => ({
+    role,
+    name: "archive a package",
+    isAllowed: false,
+    request: () => ({
+      method: "post" as const,
+      path: `/packages/${newId()}/archive`,
+      body: { version: 1 },
+    }),
+  })),
+  {
+    role: PLATFORM_ROLE.BILLING,
+    name: "grant a module",
+    isAllowed: true,
+    request: (id) => ({
+      method: "post",
+      path: `/organizations/${id}/module-overrides`,
+      body: { moduleKey: "pos", effect: "PLATFORM_GRANT", reason: "x" },
     }),
   },
   {

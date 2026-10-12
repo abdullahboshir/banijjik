@@ -24,8 +24,9 @@ const ALL_PLATFORM_PERMISSIONS: readonly PlatformPermissionKey[] =
   Object.values(PLATFORM_PERMISSION_KEY);
 
 /**
- * What each platform role may do (ADR-093, proposed). A code template, like the system roles of
+ * What each platform role may do (ADR-093, final). A code template, like the system roles of
  * tenants (ADR-088): a release that changes it applies to every operator without a migration.
+ * `package.write` is SUPER_ADMIN only: a package definition changes every tenant on it.
  */
 export const PLATFORM_ROLE_PERMISSIONS: Readonly<
   Record<PlatformRole, readonly PlatformPermissionKey[]>
@@ -41,7 +42,6 @@ export const PLATFORM_ROLE_PERMISSIONS: Readonly<
   [PLATFORM_ROLE.BILLING]: [
     PLATFORM_PERMISSION_KEY.TENANT_READ,
     PLATFORM_PERMISSION_KEY.PACKAGE_READ,
-    PLATFORM_PERMISSION_KEY.PACKAGE_WRITE,
     PLATFORM_PERMISSION_KEY.ENTITLEMENT_READ,
     PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE,
     PLATFORM_PERMISSION_KEY.SUBSCRIPTION_READ,
