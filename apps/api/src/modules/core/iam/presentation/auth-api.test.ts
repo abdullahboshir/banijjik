@@ -5,12 +5,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   asCookies,
   callApi,
+  freshIp,
   parseSetCookies,
   readSessionCookies,
 } from "../../../../test-support/auth-api-client.js";
 import {
   API_PASSWORD,
-  loginViaApi,
   registerViaApi,
   uniqueEmail,
 } from "../../../../test-support/auth-api-scenarios.js";
@@ -219,69 +219,83 @@ describe("login", () => {
     expect(wrongPassword.body.error.messageKey).toBe("errors.invalid_credentials");
   });
 
-  it("answers 429 RATE_LIMITED with Retry-After on the sixth failed login, and a success resets the count", async () => {
-    const person = await registerViaApi(harness.app);
-    const wrong = { identifier: person.email, password: "this is the wrong password" };
-    const statuses: number[] = [];
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
-      statuses.push(
-        (await callApi(harness.app, { method: "post", path: "/api/v1/auth/login", body: wrong }))
-          .status,
-      );
+  describe("failed-attempt throttling (1.9d, review M6)", () => {
+    const FAILURES_PER_IDENTIFIER_AND_IP = 5;
+    const FAILURES_PER_IDENTIFIER = 50;
+
+    function login(email: string, password: string, ip: string) {
+      return callApi(harness.app, {
+        method: "post",
+        path: "/api/v1/auth/login",
+        body: { identifier: email, password },
+        ip,
+      });
     }
 
-    const sixth = await callApi(harness.app, {
-      method: "post",
-      path: "/api/v1/auth/login",
-      body: wrong,
-    });
-    const rightWhileLimited = await callApi(harness.app, {
-      method: "post",
-      path: "/api/v1/auth/login",
-      body: {
-        identifier: person.email,
-        password: person.password,
-      },
-    });
-
-    expect(statuses).toEqual([401, 401, 401, 401, 401]);
-    expect(sixth.status).toBe(429);
-    expect(sixth.body.error.code).toBe("RATE_LIMITED");
-    expect(Number(sixth.headers["retry-after"])).toBeGreaterThan(0);
-    expect(rightWhileLimited.status).toBe(429);
-
-    harness.clock.advanceSeconds(15 * 60);
-    const afterWindow = await callApi(harness.app, {
-      method: "post",
-      path: "/api/v1/auth/login",
-      body: {
-        identifier: person.email,
-        password: person.password,
-      },
-    });
-    expect(afterWindow.status).toBe(200);
-  });
-
-  it("clears the failure counter after a successful login", async () => {
-    const person = await registerViaApi(harness.app);
-    const wrong = { identifier: person.email, password: "this is the wrong password" };
-    for (let attempt = 1; attempt <= 4; attempt += 1) {
-      await callApi(harness.app, { method: "post", path: "/api/v1/auth/login", body: wrong });
-    }
-    await loginViaApi(harness.app, person);
-
-    const statuses: number[] = [];
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
-      statuses.push(
-        (await callApi(harness.app, { method: "post", path: "/api/v1/auth/login", body: wrong }))
-          .status,
-      );
+    async function failTimes(email: string, ip: string, times: number): Promise<number[]> {
+      const statuses: number[] = [];
+      for (let attempt = 1; attempt <= times; attempt += 1) {
+        statuses.push((await login(email, "this is the wrong password", ip)).status);
+      }
+      return statuses;
     }
 
-    expect(statuses).toEqual([401, 401, 401, 401, 401]);
+    it("answers 429 RATE_LIMITED with Retry-After on the sixth failed login from one address", async () => {
+      const person = await registerViaApi(harness.app);
+      const ip = freshIp();
+      const statuses = await failTimes(person.email, ip, FAILURES_PER_IDENTIFIER_AND_IP);
+
+      const sixth = await login(person.email, "this is the wrong password", ip);
+      const rightWhileLimited = await login(person.email, person.password, ip);
+
+      expect(statuses).toEqual([401, 401, 401, 401, 401]);
+      expect(sixth.status).toBe(429);
+      expect(sixth.body.error.code).toBe("RATE_LIMITED");
+      expect(Number(sixth.headers["retry-after"])).toBeGreaterThan(0);
+      expect(rightWhileLimited.status).toBe(429);
+
+      harness.clock.advanceSeconds(15 * 60);
+      const afterWindow = await login(person.email, person.password, ip);
+      expect(afterWindow.status).toBe(200);
+    });
+
+    it("keeps a stranger who locked one address from locking the real person out from another", async () => {
+      const person = await registerViaApi(harness.app);
+      const strangerIp = freshIp();
+      await failTimes(person.email, strangerIp, FAILURES_PER_IDENTIFIER_AND_IP);
+
+      const stranger = await login(person.email, person.password, strangerIp);
+      const owner = await login(person.email, person.password, freshIp());
+
+      expect(stranger.status).toBe(429);
+      expect(owner.status).toBe(200);
+    });
+
+    it("clears the failure counter of an address after a successful login from it", async () => {
+      const person = await registerViaApi(harness.app);
+      const ip = freshIp();
+      await failTimes(person.email, ip, FAILURES_PER_IDENTIFIER_AND_IP - 1);
+      await login(person.email, person.password, ip);
+
+      const statuses = await failTimes(person.email, ip, FAILURES_PER_IDENTIFIER_AND_IP);
+
+      expect(statuses).toEqual([401, 401, 401, 401, 401]);
+    });
+
+    it("locks the identifier for every address after 50 failures spread over many addresses", async () => {
+      const person = await registerViaApi(harness.app);
+      for (let attempt = 1; attempt <= FAILURES_PER_IDENTIFIER; attempt += 1) {
+        const failed = await login(person.email, "this is the wrong password", freshIp());
+        expect(failed.status).toBe(401);
+      }
+
+      const fromNewAddress = await login(person.email, person.password, freshIp());
+
+      expect(fromNewAddress.status).toBe(429);
+      expect(fromNewAddress.body.error.code).toBe("RATE_LIMITED");
+    });
   });
 });
-
 describe("validation", () => {
   it("answers 400 with field paths and validation keys for a missing identifier and a short password", async () => {
     const missingIdentifier = await callApi(harness.app, {

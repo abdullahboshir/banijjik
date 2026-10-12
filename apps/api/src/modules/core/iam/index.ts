@@ -50,7 +50,7 @@ import { AuthCookies, PLATFORM_COOKIES } from "./presentation/auth-cookies.js";
 import { PlatformAuthController } from "./presentation/platform-auth.controller.js";
 import { buildPlatformAuthRouter } from "./presentation/platform-auth.router.js";
 import { buildPlatformMeRouter } from "./presentation/platform-me.router.js";
-import { AUTH_RATE_LIMIT } from "./domain/auth-limits.js";
+import { PLATFORM_LOGIN_LIMITS } from "./domain/auth-limits.js";
 import { buildAuthRouter } from "./presentation/auth.router.js";
 import { RolesController } from "./presentation/roles.controller.js";
 import { buildRolesRouter } from "./presentation/roles.router.js";
@@ -314,7 +314,7 @@ export function buildIamPlatformAuthRouter(dependencies: IamDependencies): Route
       clock,
       audience,
       operators,
-      identifierLimit: AUTH_RATE_LIMIT.PLATFORM_LOGIN_PER_IDENTIFIER,
+      limits: PLATFORM_LOGIN_LIMITS,
     }),
     refreshSession: new RefreshSessionUseCase({
       users,

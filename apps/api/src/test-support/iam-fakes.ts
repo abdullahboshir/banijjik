@@ -161,6 +161,11 @@ export class InMemoryRateLimiter implements RateLimiter {
     return { allowed: count <= request.limit, retryAfterSeconds: 60 };
   }
 
+  async refund(request: RateLimitRequest): Promise<void> {
+    const key = `${request.bucket}:${request.key}`;
+    this.counts.set(key, Math.max(0, (this.counts.get(key) ?? 0) - 1));
+  }
+
   async reset(subject: RateLimitSubject): Promise<void> {
     this.counts.delete(`${subject.bucket}:${subject.key}`);
   }

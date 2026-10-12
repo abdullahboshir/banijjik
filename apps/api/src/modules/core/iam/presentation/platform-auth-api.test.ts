@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   asCookies,
   callApi,
+  freshIp,
   parseSetCookies,
   readSessionCookies,
 } from "../../../../test-support/auth-api-client.js";
@@ -120,22 +121,53 @@ describe("platform sign-in", () => {
       PLATFORM_ROLE.SUPPORT,
     ]);
     const wrong = { ...person, password: "wrong one 12345" };
+    const ip = freshIp();
 
     const statuses: number[] = [];
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      statuses.push((await platformLogin(harness.app, wrong)).status);
+      statuses.push((await platformLogin(harness.app, wrong, ip)).status);
     }
     const businessLogin = await callApi(harness.app, {
       method: "post",
       path: "/api/v1/auth/login",
       body: { identifier: person.email, password: API_PASSWORD },
+      ip,
     });
 
     expect(statuses).toEqual([401, 401, 401, 401, 401, 429]);
     expect(businessLogin.status).toBe(200);
   });
-});
 
+  it("locks one address after five failures and leaves another address open", async () => {
+    const { person } = await insertOperator(harness.app, harness.connections, [
+      PLATFORM_ROLE.SUPPORT,
+    ]);
+    const strangerIp = freshIp();
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await platformLogin(harness.app, { ...person, password: "wrong one 12345" }, strangerIp);
+    }
+
+    const stranger = await platformLogin(harness.app, person, strangerIp);
+    const operator = await platformLogin(harness.app, person, freshIp());
+
+    expect(stranger.status).toBe(429);
+    expect(operator.status).toBe(200);
+  });
+
+  it("locks the operator for every address after 50 failures spread over many addresses", async () => {
+    const { person } = await insertOperator(harness.app, harness.connections, [
+      PLATFORM_ROLE.SUPPORT,
+    ]);
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const failed = await platformLogin(harness.app, { ...person, password: "wrong one 12345" });
+      expect(failed.status).toBe(401);
+    }
+
+    const fromNewAddress = await platformLogin(harness.app, person);
+
+    expect(fromNewAddress.status).toBe(429);
+  });
+});
 describe("GET /platform/me", () => {
   it("answers the signed-in operator with the roles and permissions", async () => {
     const operator = await createPlatformActor(harness.app, harness.connections, [

@@ -249,4 +249,77 @@ describe("LoginUseCase", () => {
       expect(error.code).toBe("UNAUTHENTICATED");
     }
   });
+
+  describe("failed-attempt throttling (1.9d, review M6)", () => {
+    const FAILURES_PER_IDENTIFIER_AND_IP = 5;
+    const FAILURES_PER_IDENTIFIER = 50;
+
+    function fromAddress(index: number) {
+      return { userAgent: "test-agent", ipAddress: `198.51.100.${index}` };
+    }
+
+    async function failFrom(world: IamWorld, address: number): Promise<DomainRuleError> {
+      return catchRuleError(
+        world.login.execute({
+          ...rightLogin,
+          password: "wrong password",
+          client: fromAddress(address),
+        }),
+      );
+    }
+
+    it("locks one address after five failures and leaves another address open for the same person", async () => {
+      const world = await registeredWorld();
+      for (let attempt = 1; attempt <= FAILURES_PER_IDENTIFIER_AND_IP; attempt += 1) {
+        await failFrom(world, 1);
+      }
+
+      const lockedAddress = await catchRuleError(
+        world.login.execute({ ...rightLogin, client: fromAddress(1) }),
+      );
+      const otherAddress = await world.login.execute({ ...rightLogin, client: fromAddress(2) });
+
+      expect(lockedAddress.code).toBe("RATE_LIMITED");
+      expect(otherAddress.user.email).toBe("rahim@example.com");
+    });
+
+    it("lets a success clear the failure count of its own address", async () => {
+      const world = await registeredWorld();
+      for (let attempt = 1; attempt < FAILURES_PER_IDENTIFIER_AND_IP; attempt += 1) {
+        await failFrom(world, 1);
+      }
+      await world.login.execute({ ...rightLogin, client: fromAddress(1) });
+
+      for (let attempt = 1; attempt <= FAILURES_PER_IDENTIFIER_AND_IP; attempt += 1) {
+        expect((await failFrom(world, 1)).code).toBe("UNAUTHENTICATED");
+      }
+    });
+
+    it("locks the identifier for everyone after 50 failures spread over many addresses", async () => {
+      const world = await registeredWorld();
+      for (let attempt = 1; attempt <= FAILURES_PER_IDENTIFIER; attempt += 1) {
+        expect((await failFrom(world, attempt)).code).toBe("UNAUTHENTICATED");
+      }
+
+      const freshAddress = await catchRuleError(
+        world.login.execute({ ...rightLogin, client: fromAddress(200) }),
+      );
+
+      expect(freshAddress.code).toBe("RATE_LIMITED");
+    });
+
+    it("never counts a successful sign-in against the identifier-wide allowance", async () => {
+      const world = await registeredWorld();
+      for (let attempt = 1; attempt < FAILURES_PER_IDENTIFIER; attempt += 1) {
+        await failFrom(world, attempt);
+      }
+      await world.login.execute({ ...rightLogin, client: fromAddress(200) });
+
+      const lastAllowedFailure = await failFrom(world, 201);
+      const firstRefusedFailure = await failFrom(world, 202);
+
+      expect(lastAllowedFailure.code).toBe("UNAUTHENTICATED");
+      expect(firstRefusedFailure.code).toBe("RATE_LIMITED");
+    });
+  });
 });

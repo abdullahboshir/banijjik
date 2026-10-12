@@ -77,11 +77,13 @@ export class PlatformActor {
 export async function platformLogin(
   app: Express,
   person: Pick<RegisteredPerson, "email" | "password">,
+  ip?: string,
 ): Promise<Response> {
   return callApi(app, {
     method: "post",
     path: "/api/v1/platform/auth/login",
     body: { identifier: person.email, password: person.password },
+    ...(ip === undefined ? {} : { ip }),
   });
 }
 

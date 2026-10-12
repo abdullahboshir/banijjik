@@ -20,10 +20,16 @@ export interface RateLimitSubject {
 
 /**
  * Port of the kernel. A call to `consume` counts one attempt; the attempt is refused once the
- * count in the current window passes `limit`. Card 1.4 may swap the Mongo implementation for Redis.
+ * count in the current window passes `limit`.
  */
 export interface RateLimiter {
   consume(request: RateLimitRequest): Promise<RateLimitDecision>;
+  /**
+   * Gives back one attempt that `consume` counted in the current window, never going below zero.
+   * A login reserves its attempt up front (so parallel guesses cannot all pass a check) and gives
+   * it back on success, which is how only failed attempts end up counted.
+   */
+  refund(request: RateLimitRequest): Promise<void>;
   /** Forgets the counters of one subject, e.g. after a successful login. */
   reset(subject: RateLimitSubject): Promise<void>;
 }

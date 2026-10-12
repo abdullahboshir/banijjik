@@ -34,7 +34,7 @@ export class MongoRateLimiter implements RateLimiter {
   async consume(request: RateLimitRequest): Promise<RateLimitDecision> {
     const windowMs = request.windowSeconds * MILLISECONDS_PER_SECOND;
     const nowMs = this.clock.now().getTime();
-    const windowStart = new Date(Math.floor(nowMs / windowMs) * windowMs);
+    const windowStart = this.windowStartOf(request, nowMs);
     const windowEndMs = windowStart.getTime() + windowMs;
     const counter = await this.counters()
       .findOneAndUpdate(
@@ -62,8 +62,22 @@ export class MongoRateLimiter implements RateLimiter {
     return { allowed: counter.count <= request.limit, retryAfterSeconds };
   }
 
+  async refund(request: RateLimitRequest): Promise<void> {
+    const windowStart = this.windowStartOf(request, this.clock.now().getTime());
+    // `count: { $gt: 0 }` keeps a refund after a reset or a window change from going negative.
+    await this.counters().updateOne(
+      { bucket: request.bucket, keyHash: hashKey(request), windowStart, count: { $gt: 0 } },
+      { $inc: { count: -1 } },
+    );
+  }
+
   async reset(subject: RateLimitSubject): Promise<void> {
     await this.counters().deleteMany({ bucket: subject.bucket, keyHash: hashKey(subject) });
+  }
+
+  private windowStartOf(request: RateLimitRequest, nowMs: number): Date {
+    const windowMs = request.windowSeconds * MILLISECONDS_PER_SECOND;
+    return new Date(Math.floor(nowMs / windowMs) * windowMs);
   }
 
   private counters() {

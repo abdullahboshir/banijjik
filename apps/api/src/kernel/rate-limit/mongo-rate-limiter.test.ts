@@ -76,6 +76,26 @@ describe("MongoRateLimiter", () => {
     expect(decision.allowed).toBe(true);
   });
 
+  it("gives one attempt back on refund and never counts below zero", async () => {
+    const key = "refund-case";
+    for (let attempt = 1; attempt <= 3; attempt += 1) await limiter.consume({ ...LIMIT, key });
+
+    await limiter.refund({ ...LIMIT, key });
+    const afterRefund = await limiter.consume({ ...LIMIT, key });
+    const overLimit = await limiter.consume({ ...LIMIT, key });
+    await limiter.reset({ bucket: LIMIT.bucket, key });
+    await limiter.refund({ ...LIMIT, key });
+    const afterEmptyRefund = await limiter.consume({ ...LIMIT, key });
+
+    expect(afterRefund.allowed).toBe(true);
+    expect(overLimit.allowed).toBe(false);
+    expect(afterEmptyRefund.allowed).toBe(true);
+    for (let attempt = 1; attempt < LIMIT.limit; attempt += 1) {
+      expect((await limiter.consume({ ...LIMIT, key })).allowed).toBe(true);
+    }
+    expect((await limiter.consume({ ...LIMIT, key })).allowed).toBe(false);
+  });
+
   it("lets exactly the limit through when requests arrive at the same time", async () => {
     const key = "concurrent-case";
 

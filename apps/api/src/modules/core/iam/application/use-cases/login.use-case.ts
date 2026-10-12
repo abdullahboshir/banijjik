@@ -1,8 +1,8 @@
 import { TOKEN_AUDIENCE, USER_STATUS, type TokenAudience } from "@banijjik/contracts";
 import type { LoginIdentifier } from "@banijjik/validation";
-import type { RateLimiter, RateLimitSubject } from "../../../../../kernel/rate-limit/index.js";
+import type { RateLimiter, RateLimitRequest } from "../../../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
-import { AUTH_RATE_LIMIT, type AuthRateLimit } from "../../domain/auth-limits.js";
+import { ADMIN_LOGIN_LIMITS, type LoginLimits } from "../../domain/auth-limits.js";
 import { invalidCredentials, tooManyAttempts } from "../../domain/errors.js";
 import { normalizePassword } from "../../domain/password-policy.js";
 import type { PlatformOperator } from "../../domain/platform-operator.entity.js";
@@ -30,8 +30,15 @@ export interface LoginDependencies {
   /** Defaults to ADMIN. A PLATFORM login also needs `operators`. */
   readonly audience?: TokenAudience;
   readonly operators?: PlatformOperatorRepository;
-  /** The per-identifier attempt limit; the platform login counts in its own bucket. */
-  readonly identifierLimit?: AuthRateLimit;
+  /** The failed-login buckets; the platform login counts in its own. */
+  readonly limits?: LoginLimits;
+}
+
+const UNKNOWN_ADDRESS = "unknown";
+
+interface LoginAttemptRequests {
+  readonly perIdentifierAndIp: RateLimitRequest;
+  readonly perIdentifier: RateLimitRequest;
 }
 
 // Hashed once and verified when the user does not exist, so both failures cost the same time.
@@ -50,26 +57,29 @@ export class LoginUseCase {
   }
 
   async execute(input: LoginInput): Promise<AuthenticationResult> {
-    const { users, sessions, sessionIssuer, rateLimiter, clock } = this.dependencies;
+    const { users, sessions, sessionIssuer, clock } = this.dependencies;
     const audience = this.dependencies.audience ?? TOKEN_AUDIENCE.ADMIN;
-    const subject: RateLimitSubject = {
-      bucket: this.identifierLimit().bucket,
-      key: `${input.identifier.kind}:${input.identifier.value}`,
-    };
-    await this.consumeAttempt(subject);
+    const attempts = this.attemptRequests(input);
+    await this.reserveAttempts(attempts);
     const user = await this.verifyCredentials(input);
     const operator = await this.requireOperatorIfPlatform(user);
     // The status is checked only after the password was right, so a guesser cannot find locked accounts.
     user.assertCanAuthenticate();
-    await rateLimiter.reset(subject);
+    await this.clearAttempts(attempts);
     await users.recordLogin(user.userId, clock.now());
     const prepared = await sessionIssuer.openFamily(user.userId, input.client, audience);
     await sessions.insert(prepared.session);
     return { user, issued: prepared.issued, ...(operator === undefined ? {} : { operator }) };
   }
 
-  private identifierLimit(): AuthRateLimit {
-    return this.dependencies.identifierLimit ?? AUTH_RATE_LIMIT.LOGIN_PER_IDENTIFIER;
+  private attemptRequests(input: LoginInput): LoginAttemptRequests {
+    const { perIdentifierAndIp, perIdentifier } = this.dependencies.limits ?? ADMIN_LOGIN_LIMITS;
+    const identifierKey = `${input.identifier.kind}:${input.identifier.value}`;
+    const address = input.client.ipAddress ?? UNKNOWN_ADDRESS;
+    return {
+      perIdentifierAndIp: { ...perIdentifierAndIp, key: `${identifierKey}|${address}` },
+      perIdentifier: { ...perIdentifier, key: identifierKey },
+    };
   }
 
   /** Checked before the account status, so a locked non-operator is not told apart either. */
@@ -82,11 +92,23 @@ export class LoginUseCase {
     return operator;
   }
 
-  /** Every attempt counts; a successful login clears the count again. */
-  private async consumeAttempt(subject: RateLimitSubject): Promise<void> {
-    const limit = this.identifierLimit();
-    const decision = await this.dependencies.rateLimiter.consume({ ...subject, ...limit });
-    if (!decision.allowed) throw tooManyAttempts(decision.retryAfterSeconds);
+  /**
+   * The attempt is counted before the password is checked, so parallel guesses cannot all pass a
+   * read-then-count gap. A success gives it back (`clearAttempts`), so in the end only failures count.
+   */
+  private async reserveAttempts(attempts: LoginAttemptRequests): Promise<void> {
+    const { rateLimiter } = this.dependencies;
+    const byAddress = await rateLimiter.consume(attempts.perIdentifierAndIp);
+    const byIdentifier = await rateLimiter.consume(attempts.perIdentifier);
+    const refused = [byAddress, byIdentifier].find((decision) => !decision.allowed);
+    if (refused !== undefined) throw tooManyAttempts(refused.retryAfterSeconds);
+  }
+
+  /** A success forgets the failures of this address and does not use up the identifier-wide allowance. */
+  private async clearAttempts(attempts: LoginAttemptRequests): Promise<void> {
+    const { rateLimiter } = this.dependencies;
+    await rateLimiter.reset(attempts.perIdentifierAndIp);
+    await rateLimiter.refund(attempts.perIdentifier);
   }
 
   private async verifyCredentials(input: LoginInput): Promise<User> {
