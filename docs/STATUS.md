@@ -77,8 +77,14 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 1.10c make the first GitHub CI run green | merged (2026-10-13, implemented with Cursor, Claude merge check 3 passed; GitHub CI green on PR #1, api 1275 on MongoDB 8.0.13) | branch `s/1.10c-ci-green`; handoff `docs/handoffs/1.10c.md`. CI test step is `turbo run test --concurrency=2 --continue`, jsdom timeouts raised, runner pinned to `ubuntu-24.04`. `test.passThroughEnv` is `CI`, `TEST_REDIS_URL`, `MONGOMS_*`, `VITEST_MAX_WORKERS`. The new-module lint helper disables typescript-eslint single-run inference so `CI=true` still sees files written in the test. Not pushed |
 | Phase 1 review | PASS (2026-10-12): both blockers and all five majors of `docs/handoffs/phase-1-review.md` are fixed in 1.9a/1.9b/1.9c and re-verified by the lead (turbo 29/29, api 1144 passed + 1 skipped, both browser suites); the minors are planned as 1.9d and 1.9e | from 1.9d on, cards are implemented with Cursor and reviewed by Claude: `docs/ops/implement-with-cursor.md`. Owner items: push `main`, P1 secret rotation, `db:sync-indexes` on every deploy |
 
-## Phases 2–8
-Track here once Phase 1 is done (copy the cards from the roadmap).
+## Phase 2
+| Card | Status | Note |
+|---|---|---|
+| 2.1a industry templates: model, seeds, real reader, signup check | planned (2026-10-13 on e2817c8, `docs/plans/2.1a.md`, Opus; T1, implement with Cursor) | template keys become data (ADR-097 proposed); replaces the interim template reader of 1.6a |
+| 2.1b industry templates: platform writes | todo | create, edit, publish, retire, change an organization's template (additive, ADR-046); planned after 2.1a |
+
+## Phases 3–8
+Track here once Phase 2 is done (copy the cards from the roadmap).
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.
