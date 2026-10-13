@@ -54,4 +54,45 @@ export class PlatformOperator implements PlatformOperatorProps {
   static restore(props: PlatformOperatorProps): PlatformOperator {
     return new PlatformOperator(props);
   }
+
+  /** Grants platform access to a user who does not have it yet. */
+  static grant(input: {
+    readonly userId: UserId;
+    readonly platformRoles: readonly PlatformRole[];
+    readonly now: Date;
+  }): PlatformOperator {
+    return new PlatformOperator({
+      platformOperatorId: newId(),
+      userId: input.userId,
+      platformRoles: input.platformRoles,
+      status: USER_STATUS.ACTIVE,
+      version: 1,
+      createdAt: input.now,
+      updatedAt: input.now,
+    });
+  }
+
+  /** A copy with a new role set. The repository bumps `version` when this is saved. */
+  withRoles(platformRoles: readonly PlatformRole[], now: Date): PlatformOperator {
+    return new PlatformOperator({ ...this, platformRoles, updatedAt: now });
+  }
+
+  /** A copy with a new status. The repository bumps `version` when this is saved. */
+  withStatus(status: UserStatus, now: Date): PlatformOperator {
+    return new PlatformOperator({ ...this, status, updatedAt: now });
+  }
+
+  /** True when the two lists hold the same roles, whatever the order. */
+  hasSameRoles(platformRoles: readonly PlatformRole[]): boolean {
+    if (platformRoles.length !== this.platformRoles.length) return false;
+    const stored = new Set(this.platformRoles);
+    return platformRoles.every((role) => stored.has(role));
+  }
+
+  /** The only actor allowed to change operators: an active super admin. */
+  isActiveSuperAdmin(): boolean {
+    return (
+      this.status === USER_STATUS.ACTIVE && this.platformRoles.includes(PLATFORM_ROLE.SUPER_ADMIN)
+    );
+  }
 }

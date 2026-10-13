@@ -18,6 +18,7 @@ import {
 import {
   buildIamPlatformAuthRouter,
   buildIamPlatformMeRouter,
+  buildIamPlatformOperatorRouter,
   buildPlatformOperatorLookup,
   buildUserIdentifierReader,
   type IamDependencies,
@@ -113,6 +114,28 @@ function buildLifecycle(platformAudit: PlatformAuditRecorder): TenantLifecycle {
   };
 }
 
+function mountPackageAndOperatorRoutes(
+  router: Router,
+  input: PlatformRouterInput,
+  manifests: { all: () => ReturnType<ModuleRegistry["all"]> },
+): void {
+  const { clock, platformAudit } = input;
+  router.use(
+    "/packages",
+    buildPackagePlatformRouter({
+      clock,
+      permission: platformPermission,
+      platformAudit,
+      manifests,
+      usage: buildPackageUsage(),
+    }),
+  );
+  router.use(
+    "/operators",
+    buildIamPlatformOperatorRouter({ clock, permission: platformPermission, platformAudit }),
+  );
+}
+
 function buildPlatformRouter(input: PlatformRouterInput): Router {
   const { clock, registry, platformAudit } = input;
   const manifests = { all: () => registry.all() };
@@ -154,16 +177,7 @@ function buildPlatformRouter(input: PlatformRouterInput): Router {
       configVersion,
     }),
   );
-  router.use(
-    "/packages",
-    buildPackagePlatformRouter({
-      clock,
-      permission: platformPermission,
-      platformAudit,
-      manifests,
-      usage: buildPackageUsage(),
-    }),
-  );
+  mountPackageAndOperatorRoutes(router, input, manifests);
   router.use(buildPlatformAuditRouter({ permission: platformPermission }));
   router.use(buildIamPlatformMeRouter());
   return router;

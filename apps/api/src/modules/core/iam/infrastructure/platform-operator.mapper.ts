@@ -3,7 +3,10 @@ import { stripMongoInternals } from "../../../../kernel/db/index.js";
 import { PlatformOperator } from "../domain/platform-operator.entity.js";
 import type { PlatformOperatorDocument } from "./platform-operator.schema.js";
 
-export function toPlatformOperatorDocument(operator: PlatformOperator): PlatformOperatorDocument {
+export function toPlatformOperatorDocument(
+  operator: PlatformOperator,
+  actorUserId?: string,
+): PlatformOperatorDocument {
   return {
     platformOperatorId: operator.platformOperatorId,
     userId: operator.userId,
@@ -12,8 +15,8 @@ export function toPlatformOperatorDocument(operator: PlatformOperator): Platform
     version: operator.version,
     createdAt: operator.createdAt,
     updatedAt: operator.updatedAt,
-    createdByUserId: null,
-    updatedByUserId: null,
+    createdByUserId: actorUserId ?? null,
+    updatedByUserId: actorUserId ?? null,
   };
 }
 

@@ -249,7 +249,7 @@ Permissions `platform.<module>.<action>` from `PlatformOperator.platformRoles` (
 | Subscriptions | `GET /platform/organizations/{organizationId}/subscription`, `POST …/subscription/change-package`, `POST …/subscription/extend-trial` |
 | Industry templates | CRUD `/platform/industry-templates[/{industryTemplateId}]`, `POST …/publish` · `/retire`, field definitions (scope INDUSTRY) under `…/{industryTemplateId}/custom-fields` |
 | Website templates | CRUD `/platform/website-templates[/{websiteTemplateId}]`, `POST …/publish` |
-| Operators | CRUD `/platform/operators[/{platformOperatorId}]` (SUPER_ADMIN only) |
+| Operators | `GET /platform/operators` (optional `status`), `GET /platform/operators/{platformOperatorId}`, `POST /platform/operators` `{ identifier, platformRoles, reason }`, `PATCH …/{platformOperatorId}` `{ platformRoles, version, reason }`, `POST …/disable` and `POST …/enable` `{ version, reason }`. SUPER_ADMIN only. No delete: disable keeps the row. |
 | Health & ops | `GET /platform/system/health`, `GET /platform/system/queues`, `GET /platform/system/errors` |
 
 Details built in card 1.8a (ADR-093):

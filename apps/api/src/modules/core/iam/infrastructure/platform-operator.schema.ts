@@ -21,6 +21,7 @@ export interface PlatformOperatorDocument {
   platformRoles: PlatformRole[];
   status: UserStatus;
   version: number;
+  referenceVersion?: number;
   createdAt: Date;
   updatedAt: Date;
   createdByUserId: string | null;
@@ -34,6 +35,7 @@ export const platformOperatorSchema = new Schema<PlatformOperatorDocument>(
     platformRoles: [{ type: String, enum: Object.values(PLATFORM_ROLE), required: true }],
     status: { type: String, required: true, enum: Object.values(USER_STATUS) },
     ...versionField,
+    referenceVersion: { type: Number, default: 0 },
     ...auditFields,
   },
   SCHEMA_OPTIONS,
@@ -41,3 +43,4 @@ export const platformOperatorSchema = new Schema<PlatformOperatorDocument>(
 
 platformOperatorSchema.index({ platformOperatorId: 1 }, { unique: true });
 platformOperatorSchema.index({ userId: 1 }, { unique: true });
+platformOperatorSchema.index({ status: 1, createdAt: -1, platformOperatorId: -1 });

@@ -59,6 +59,8 @@ import { buildMeRouter } from "./presentation/me.router.js";
 
 export { registerIamModels } from "./infrastructure/register-iam-models.js";
 export { iamManifest } from "./module.manifest.js";
+export { buildIamPlatformOperatorRouter } from "./platform-operator.composition.js";
+export type { IamPlatformOperatorRouterInput } from "./platform-operator.composition.js";
 
 export interface IamDependencies {
   readonly config: AppConfig;

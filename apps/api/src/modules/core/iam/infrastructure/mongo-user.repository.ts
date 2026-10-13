@@ -26,6 +26,29 @@ export class MongoUserRepository implements UserRepository {
     return this.findOne({ phoneE164 });
   }
 
+  async findByIds(userIds: readonly UserId[]): Promise<User[]> {
+    if (userIds.length === 0) return [];
+    const documents = await this.model()
+      .find(
+        { userId: { $in: [...userIds] } },
+        {
+          userId: 1,
+          name: 1,
+          email: 1,
+          phoneE164: 1,
+          passwordHash: 1,
+          status: 1,
+          preferredLocale: 1,
+          version: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+        sessionOption(getActiveSession()),
+      )
+      .lean<UserDocument[]>();
+    return documents.map(toUser);
+  }
+
   async insert(user: User): Promise<void> {
     try {
       await this.model().create([toUserDocument(user)], sessionOption(getActiveSession()));

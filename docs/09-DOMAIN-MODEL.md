@@ -152,7 +152,7 @@ Owner `core/iam` · scope platform · versioned
 
 **RefreshSession** (`core/iam`, platform): `refreshSessionId`, `userId`, `tokenHash`, `familyId` (rotation/reuse detection), `audience`, `expiresAt`, `familyExpiresAt`, `revokedAt?`, `rotatedAt?`, `replacedByRefreshSessionId?`, `userAgent`, `ipHash`. Index `{ userId, revokedAt }`, TTL on `expiresAt`.
 
-**PlatformOperator** (`core/iam`, platform, versioned): `platformOperatorId`, `userId` (unique), `platformRoles[]` (`SUPER_ADMIN`, `SUPPORT`, `BILLING`), `status`. Platform-panel access is this record, not a flag on User, so it is audited and revocable on its own. The platform app uses its own cookie name and audience.
+**PlatformOperator** (`core/iam`, platform, versioned): `platformOperatorId`, `userId` (unique), `platformRoles[]` (`SUPER_ADMIN`, `SUPPORT`, `BILLING`), `status` (`ACTIVE` or `DISABLED`), `referenceVersion` (guard counter, ADR-092). Platform-panel access is this record, not a flag on User, so it is audited and revocable on its own. The platform app uses its own cookie name and audience.
 
 ### 4.2 Organization
 Owner `core/organization` · scope platform (it *is* the tenant) · versioned

@@ -1,5 +1,6 @@
 import { TOKEN_AUDIENCE } from "@banijjik/contracts";
 import { newId, type UserId } from "@banijjik/ids";
+import mongoose from "mongoose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   connectTestDatabases,
@@ -90,6 +91,24 @@ describe("MongoUserRepository", () => {
 
     expect(error).toBeInstanceOf(DuplicateIdentifierError);
     expect(error.details).toEqual({ field: "phone" });
+  });
+
+  it("loads several users in one query", async () => {
+    const first = aUser({ email: "page-a@example.com" });
+    const second = aUser({ email: "page-b@example.com" });
+    await users.insert(first);
+    await users.insert(second);
+    const queries: string[] = [];
+    mongoose.set("debug", (collectionName: string, method: string) => {
+      if (collectionName === "users") queries.push(method);
+    });
+    try {
+      const found = await users.findByIds([second.userId, first.userId]);
+      expect(found.map((user) => user.userId).sort()).toEqual([first.userId, second.userId].sort());
+      expect(queries).toEqual(["find"]);
+    } finally {
+      mongoose.set("debug", false);
+    }
   });
 
   it("allows many users without an email, because the unique index is partial", async () => {

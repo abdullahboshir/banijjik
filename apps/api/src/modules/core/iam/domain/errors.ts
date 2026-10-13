@@ -1,4 +1,10 @@
-import { DomainRuleError, ERROR_CODE, ROLE_RULE_KEY, ROLE_STATUS } from "@banijjik/contracts";
+import {
+  DomainRuleError,
+  ERROR_CODE,
+  PLATFORM_RULE_KEY,
+  ROLE_RULE_KEY,
+  ROLE_STATUS,
+} from "@banijjik/contracts";
 
 /** The shared base class lives in contracts (ADR-086); re-exported so module code keeps one import. */
 export { DomainRuleError };
@@ -108,4 +114,48 @@ export function rolePermissionsNotGrantable(permissionKeys: readonly string[]): 
     messageKey: "errors.role_permissions_not_grantable",
     details: { ruleKey: ROLE_RULE_KEY.ROLE_NOT_GRANTABLE, permissionKeys: [...permissionKeys] },
   });
+}
+
+/** No account has the identifier a grant asked for. */
+export class OperatorUserNotFoundError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.BUSINESS_RULE,
+      messageKey: "errors.operator_user_not_found",
+      details: { ruleKey: PLATFORM_RULE_KEY.OPERATOR_USER_NOT_FOUND },
+    });
+    this.name = "OperatorUserNotFoundError";
+  }
+}
+
+/** The account exists but is not ACTIVE, so it cannot operate the platform. */
+export class OperatorUserNotActiveError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.BUSINESS_RULE,
+      messageKey: "errors.operator_user_not_active",
+      details: { ruleKey: PLATFORM_RULE_KEY.OPERATOR_USER_NOT_ACTIVE },
+    });
+    this.name = "OperatorUserNotActiveError";
+  }
+}
+
+/** The user already has an operator record, whatever its status. */
+export class OperatorExistsError extends DomainRuleError {
+  constructor() {
+    super({ code: ERROR_CODE.CONFLICT, messageKey: "errors.operator_exists" });
+    this.name = "OperatorExistsError";
+  }
+}
+
+/** A person cannot change their own operator record; another SUPER_ADMIN must. */
+export class OwnOperatorAccessError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.BUSINESS_RULE,
+      messageKey: "errors.own_operator_access",
+      details: { ruleKey: PLATFORM_RULE_KEY.OWN_OPERATOR_ACCESS },
+    });
+    this.name = "OwnOperatorAccessError";
+  }
 }
