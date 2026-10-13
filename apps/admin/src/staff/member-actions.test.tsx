@@ -1,5 +1,5 @@
-import { I18nProvider } from "@banijjik/web-client/client";
 // @vitest-environment jsdom
+import { I18nProvider } from "@banijjik/web-client/client";
 import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";

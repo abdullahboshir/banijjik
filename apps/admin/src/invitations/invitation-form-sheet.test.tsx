@@ -1,5 +1,5 @@
-import { I18nProvider } from "@banijjik/web-client/client";
 // @vitest-environment jsdom
+import { I18nProvider } from "@banijjik/web-client/client";
 import { ApiError } from "../lib/api/api-error";
 import { ERROR_CODE } from "@banijjik/contracts";
 import { render, screen, waitFor } from "@testing-library/react";

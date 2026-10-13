@@ -1,5 +1,5 @@
-import { I18nProvider } from "@banijjik/web-client/client";
 // @vitest-environment jsdom
+import { I18nProvider } from "@banijjik/web-client/client";
 import { ERROR_CODE, ROLE_RULE_KEY } from "@banijjik/contracts";
 import { BUNDLED_CATALOGS } from "@banijjik/i18n";
 import { render, screen, waitFor } from "@testing-library/react";
