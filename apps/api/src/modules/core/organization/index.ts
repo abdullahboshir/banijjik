@@ -39,7 +39,7 @@ import { MongoMembershipDirectory } from "./infrastructure/mongo-membership-dire
 import { MongoMemberRepository } from "./infrastructure/mongo-member.repository.js";
 import { MongoOrganizationRepository } from "./infrastructure/mongo-organization.repository.js";
 import { MongoRolesVersionBumper } from "./infrastructure/mongo-roles-version-bumper.js";
-import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { OrganizationController } from "./presentation/organization.controller.js";
 import { buildOrganizationRouter } from "./presentation/organization.router.js";
 

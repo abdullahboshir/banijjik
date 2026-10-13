@@ -4,7 +4,7 @@ import {
   type IdempotencyStatus,
 } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
-import { models } from "../db/index.js";
+import { isDuplicateKeyError, models } from "../db/index.js";
 import {
   IDEMPOTENCY_RECORD_MODEL_NAME,
   type IdempotencyRecordDocument,
@@ -16,7 +16,6 @@ const MILLISECONDS_PER_HOUR = 60 * 60 * MILLISECONDS_PER_SECOND;
 export const IDEMPOTENCY_LOCK_SECONDS = 60;
 /** How long a key is remembered (14-API.md: the stored answer of an earlier request). */
 export const IDEMPOTENCY_RETENTION_HOURS = 24;
-const DUPLICATE_KEY_ERROR_CODE = 11000;
 
 export interface IdempotencyKeyRef {
   readonly scopeKind: IdempotencyScopeKind;
@@ -45,11 +44,6 @@ export interface IdempotencyStore {
   complete(ref: IdempotencyKeyRef, response: { status: number; body: string }): Promise<void>;
   /** Deletes an IN_PROGRESS record so the client may retry with the same key. */
   release(ref: IdempotencyKeyRef, requestHash: string): Promise<void>;
-}
-
-function isDuplicateKeyError(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) return false;
-  return "code" in error && error.code === DUPLICATE_KEY_ERROR_CODE;
 }
 
 function lockExpiry(now: Date): Date {

@@ -1,8 +1,8 @@
 import { ERROR_CODE } from "@banijjik/contracts";
 import { asId, type OrganizationId, type UserId } from "@banijjik/ids";
-import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
-import { getRequestContext } from "../../../../kernel/context/index.js";
-import { AppError } from "../../../../kernel/http/index.js";
+import { requireCurrentUserId } from "../auth/index.js";
+import { getRequestContext } from "../context/index.js";
+import { AppError } from "../http/index.js";
 
 export interface TenantCaller {
   readonly organizationId: OrganizationId;

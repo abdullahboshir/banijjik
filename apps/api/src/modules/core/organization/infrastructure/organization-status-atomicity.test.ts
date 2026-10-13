@@ -16,7 +16,7 @@ import { SuspendOrganizationUseCase } from "../application/use-cases/organizatio
 import { Organization } from "../domain/organization.entity.js";
 import { MongoConfigVersionBumper } from "./mongo-config-version-bumper.js";
 import { MongoOrganizationRepository } from "./mongo-organization.repository.js";
-import { MongoUnitOfWork } from "./mongo-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../../kernel/db/index.js";
 import { registerOrganizationModels } from "./register-organization-models.js";
 
 registerOrganizationModels();

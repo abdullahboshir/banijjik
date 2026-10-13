@@ -1,9 +1,8 @@
 import { REFRESH_TOKEN_COOKIE_NAME } from "@banijjik/contracts";
 import type { LoginBody, UserRegisterBody } from "@banijjik/validation";
 import type { Request, RequestHandler } from "express";
-import { readCookie, sendData } from "../../../../kernel/http/index.js";
+import { readClientInfo, readCookie, sendData } from "../../../../kernel/http/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
-import type { ClientInfo } from "../application/session-issuer.js";
 import type { LoginUseCase } from "../application/use-cases/login.use-case.js";
 import type { LogoutAllUseCase } from "../application/use-cases/logout-all.use-case.js";
 import type { LogoutUseCase } from "../application/use-cases/logout.use-case.js";
@@ -24,10 +23,6 @@ export interface AuthControllerDependencies {
   readonly clock: Clock;
 }
 
-function clientOf(request: Request): ClientInfo {
-  return { userAgent: request.get("user-agent"), ipAddress: request.ip };
-}
-
 function refreshTokenOf(request: Request): string | undefined {
   return readCookie(request, REFRESH_TOKEN_COOKIE_NAME);
 }
@@ -46,7 +41,7 @@ export class AuthController {
       phoneE164: body.phone,
       password: body.password,
       preferredLocale: body.preferredLocale,
-      client: clientOf(request),
+      client: readClientInfo(request),
     });
     cookies.set(response, result.issued, clock.now());
     sendData(response, toMeResponse(result.user), { status: 201 });
@@ -59,7 +54,7 @@ export class AuthController {
     const result = await login.execute({
       identifier: body.identifier,
       password: body.password,
-      client: clientOf(request),
+      client: readClientInfo(request),
     });
     cookies.set(response, result.issued, clock.now());
     sendData(response, toMeResponse(result.user));
@@ -70,7 +65,7 @@ export class AuthController {
     try {
       const issued = await refreshSession.execute({
         refreshToken: refreshTokenOf(request),
-        client: clientOf(request),
+        client: readClientInfo(request),
       });
       cookies.set(response, issued, clock.now());
       response.status(204).end();

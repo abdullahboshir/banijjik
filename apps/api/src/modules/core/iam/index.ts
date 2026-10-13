@@ -40,7 +40,7 @@ import { JwtTokenIssuer } from "./infrastructure/jwt-token-issuer.js";
 import { MongoPlatformOperatorRepository } from "./infrastructure/mongo-platform-operator.repository.js";
 import { MongoRefreshSessionRepository } from "./infrastructure/mongo-refresh-session.repository.js";
 import { MongoRoleRepository } from "./infrastructure/mongo-role.repository.js";
-import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { RedisPermissionCache } from "./infrastructure/redis-permission-cache.js";
 import { TwoTierPermissionCache } from "./infrastructure/two-tier-permission-cache.js";
 import { MongoUserRepository } from "./infrastructure/mongo-user.repository.js";

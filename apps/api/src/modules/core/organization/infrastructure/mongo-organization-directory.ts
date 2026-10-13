@@ -1,4 +1,5 @@
 import { LOCATION_STATUS, MEMBER_STATUS } from "@banijjik/contracts";
+import { escapeRegExp } from "@banijjik/validation";
 import { models } from "../../../../kernel/db/index.js";
 import type {
   OrganizationAdminView,
@@ -11,10 +12,6 @@ import { MEMBER_MODEL_NAME, type MemberDocument } from "./member.schema.js";
 import { ORGANIZATION_MODEL_NAME, type OrganizationDocument } from "./organization.schema.js";
 
 const LIST_SORT = { createdAt: -1, organizationId: -1 } as const;
-
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 /** Case-sensitive prefix on name and slug, so both use their index (slugs are lower case). */
 function toFilter(query: OrganizationDirectoryQuery): Record<string, unknown> {

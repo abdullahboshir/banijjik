@@ -34,7 +34,7 @@ import { MongoLocationRepository } from "./mongo-location.repository.js";
 import { MongoMemberNumberSequence } from "./mongo-member-number-sequence.js";
 import { MongoMemberRepository } from "./mongo-member.repository.js";
 import { MongoOrganizationRepository } from "./mongo-organization.repository.js";
-import { MongoUnitOfWork } from "./mongo-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../../kernel/db/index.js";
 import { registerOrganizationModels } from "./register-organization-models.js";
 
 registerIamModels();

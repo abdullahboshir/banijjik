@@ -3,7 +3,7 @@ import type { SeededOperatorAudit } from "./application/ports/seeded-operator-au
 import { EnsurePlatformAdminUseCase } from "./application/use-cases/ensure-platform-admin.use-case.js";
 import { Argon2PasswordHasher } from "./infrastructure/argon2-password-hasher.js";
 import { MongoPlatformOperatorRepository } from "./infrastructure/mongo-platform-operator.repository.js";
-import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { MongoUserRepository } from "./infrastructure/mongo-user.repository.js";
 
 export type { SeededOperatorAudit } from "./application/ports/seeded-operator-audit.js";

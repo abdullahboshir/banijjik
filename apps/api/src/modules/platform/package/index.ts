@@ -16,7 +16,7 @@ import {
 } from "./application/use-cases/package-admin.use-cases.js";
 import { EnsureSeedPackagesUseCase } from "./application/use-cases/ensure-seed-packages.use-case.js";
 import { MongoPackageRepository } from "./infrastructure/mongo-package.repository.js";
-import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { PackageController } from "./presentation/package.controller.js";
 import { buildPackageRouter } from "./presentation/package.router.js";
 import { SEED_PACKAGES } from "./infrastructure/seed-packages.js";

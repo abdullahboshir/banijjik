@@ -25,7 +25,7 @@ import {
   toInvitationPreviewResponse,
   toInvitationResponse,
 } from "./member-and-invitation.transformers.js";
-import { readTenantCaller } from "./tenant-caller.js";
+import { readTenantCaller } from "../../../../kernel/access/index.js";
 
 const HTTP_CREATED = 201;
 const INVITE_URL_FIELD = "inviteUrlPath";

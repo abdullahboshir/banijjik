@@ -12,7 +12,7 @@ import type { CreateRoleUseCase } from "../application/use-cases/create-role.use
 import type { ListRolesUseCase } from "../application/use-cases/list-roles.use-case.js";
 import type { UpdateRoleUseCase } from "../application/use-cases/update-role.use-case.js";
 import { toRoleResponse, toRoleSummary } from "./role-response.transformer.js";
-import { readTenantCaller } from "./tenant-caller.js";
+import { readTenantIdentity } from "../../../../kernel/access/index.js";
 
 export interface RolesControllerDependencies {
   readonly listRoles: ListRolesUseCase;
@@ -49,7 +49,7 @@ export class RolesController {
     // validate() already parsed the body with the role-create schema.
     const body: RoleCreateBody = request.body;
     const view = await this.dependencies.createRole.execute({
-      ...readTenantCaller(),
+      ...readTenantIdentity(),
       name: body.name,
       permissionKeys: body.permissionKeys,
     });
@@ -59,7 +59,7 @@ export class RolesController {
   readonly update: RequestHandler = async (request, response) => {
     const body: RoleUpdateBody = request.body;
     const view = await this.dependencies.updateRole.execute({
-      ...readTenantCaller(),
+      ...readTenantIdentity(),
       roleId: readRoleId(request),
       version: body.version,
       ...(body.name === undefined ? {} : { name: body.name }),
@@ -71,7 +71,7 @@ export class RolesController {
   readonly archive: RequestHandler = async (request, response) => {
     const body: RoleArchiveBody = request.body;
     const view = await this.dependencies.archiveRole.execute({
-      ...readTenantCaller(),
+      ...readTenantIdentity(),
       roleId: readRoleId(request),
       version: body.version,
     });

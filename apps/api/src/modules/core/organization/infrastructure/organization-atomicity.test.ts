@@ -38,7 +38,7 @@ import { MongoMemberNumberSequence } from "./mongo-member-number-sequence.js";
 import { MongoMemberRepository } from "./mongo-member.repository.js";
 import { MongoOrganizationLimitLock } from "./mongo-organization-limit-lock.js";
 import { MongoOrganizationRepository } from "./mongo-organization.repository.js";
-import { MongoUnitOfWork } from "./mongo-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../../kernel/db/index.js";
 import { RandomInvitationTokens } from "./random-invitation-tokens.js";
 
 registerIamApiModels();

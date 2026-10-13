@@ -1,10 +1,9 @@
 import { ERROR_CODE } from "@banijjik/contracts";
 import type { LoginBody } from "@banijjik/validation";
-import type { Request, RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
-import { AppError, readCookie, sendData } from "../../../../kernel/http/index.js";
+import { AppError, readClientInfo, readCookie, sendData } from "../../../../kernel/http/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
-import type { ClientInfo } from "../application/session-issuer.js";
 import type { LoginUseCase } from "../application/use-cases/login.use-case.js";
 import type { LogoutAllUseCase } from "../application/use-cases/logout-all.use-case.js";
 import type { LogoutUseCase } from "../application/use-cases/logout.use-case.js";
@@ -23,10 +22,6 @@ export interface PlatformAuthControllerDependencies {
   readonly clock: Clock;
 }
 
-function clientOf(request: Request): ClientInfo {
-  return { userAgent: request.get("user-agent"), ipAddress: request.ip };
-}
-
 /** The platform counterpart of AuthController: same use cases with the PLATFORM audience, other cookies. */
 export class PlatformAuthController {
   constructor(private readonly dependencies: PlatformAuthControllerDependencies) {}
@@ -38,7 +33,7 @@ export class PlatformAuthController {
     const result = await login.execute({
       identifier: body.identifier,
       password: body.password,
-      client: clientOf(request),
+      client: readClientInfo(request),
     });
     // The platform login always returns the operator it checked; anything else is a wiring bug.
     if (result.operator === undefined) {
@@ -56,7 +51,7 @@ export class PlatformAuthController {
     try {
       const issued = await refreshSession.execute({
         refreshToken: readCookie(request, cookies.refreshName()),
-        client: clientOf(request),
+        client: readClientInfo(request),
       });
       cookies.set(response, issued, clock.now());
       response.status(204).end();

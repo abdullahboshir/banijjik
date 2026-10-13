@@ -19,7 +19,7 @@ import type {
   UpdateProfileUseCase,
 } from "../application/use-cases/profile.use-cases.js";
 import { toLocationResponse, toProfileResponse } from "./profile-and-location.transformers.js";
-import { readTenantCaller } from "./tenant-caller.js";
+import { readTenantCaller } from "../../../../kernel/access/index.js";
 
 const HTTP_CREATED = 201;
 

@@ -1,5 +1,6 @@
 import { MEMBER_STATUS } from "@banijjik/contracts";
 import type { LocationId, MemberId, UserId } from "@banijjik/ids";
+import { escapeRegExp } from "@banijjik/validation";
 import {
   getActiveSession,
   models,
@@ -19,10 +20,6 @@ import { toAssignmentDocument, toMember, toMemberDocument } from "./member.mappe
 import { MEMBER_MODEL_NAME, type MemberDocument } from "./member.schema.js";
 
 const LIST_SORT = { displayName: 1, memberId: 1 } as const;
-
-function escapeRegularExpression(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 /**
  * A tenant model: inside a request or an organization context the plugin adds the organization
@@ -60,7 +57,7 @@ export class MongoMemberRepository implements MemberRepository, MemberManagement
       ...(status === undefined ? {} : { status }),
       ...(search === undefined
         ? {}
-        : { displayName: { $regex: escapeRegularExpression(search), $options: "i" } }),
+        : { displayName: { $regex: escapeRegExp(search), $options: "i" } }),
       ...assignmentsReachFilter(reach),
     };
     // One extra row tells whether another page exists, without counting the collection.

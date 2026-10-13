@@ -6,3 +6,7 @@ export type { CallerGrants, PermissionGate } from "./permission-gate.js";
 export type { GateOrgConfig, OrgConfigReader } from "./org-config-reader.js";
 export type { LimitGuard } from "./limit-guard.js";
 export { requireAllLocations } from "./require-all-locations.js";
+export { readTenantCaller } from "./tenant-caller.js";
+export type { TenantCaller } from "./tenant-caller.js";
+export { readTenantIdentity } from "./tenant-identity.js";
+export type { TenantIdentity } from "./tenant-identity.js";

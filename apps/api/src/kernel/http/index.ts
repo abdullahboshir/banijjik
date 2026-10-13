@@ -16,5 +16,7 @@ export { validate } from "./validate.js";
 export type { ValidationSchemas } from "./validate.js";
 export { createReadyHandler } from "./ready-handler.js";
 export type { Readiness } from "./ready-handler.js";
+export { readClientInfo } from "./read-client-info.js";
+export type { RequestClientInfo } from "./read-client-info.js";
 export { readCookie } from "./read-cookie.js";
 export { createOriginCheck } from "./origin-check.middleware.js";

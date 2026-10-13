@@ -17,6 +17,8 @@ export {
 } from "./schema-parts.js";
 export { getActiveSession, onCommitted, withTransaction } from "./with-transaction.js";
 export type { TransactionOptions } from "./with-transaction.js";
+export { isDuplicateKeyError } from "./duplicate-key.js";
+export { MongoUnitOfWork } from "./unit-of-work.js";
 export { updateVersioned } from "./versioned-update.js";
 export type { VersionedUpdateOptions } from "./versioned-update.js";
 export { sessionOption } from "./session-option.js";

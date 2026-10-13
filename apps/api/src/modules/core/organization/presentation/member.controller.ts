@@ -14,7 +14,7 @@ import type {
   UpdateMemberUseCase,
 } from "../application/use-cases/member.use-cases.js";
 import { toAssignments, toMemberResponse } from "./member-and-invitation.transformers.js";
-import { readTenantCaller } from "./tenant-caller.js";
+import { readTenantCaller } from "../../../../kernel/access/index.js";
 
 export interface MemberControllerDependencies {
   readonly listMembers: ListMembersUseCase;

@@ -31,7 +31,7 @@ import {
   ListModuleOverridesUseCase,
 } from "./application/use-cases/module-override-admin.use-cases.js";
 import { MongoModuleOverrideAdminRepository } from "./infrastructure/mongo-module-override-admin.repository.js";
-import { MongoOverrideUnitOfWork } from "./infrastructure/mongo-override-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { ModuleOverrideController } from "./presentation/module-override.controller.js";
 import { buildModuleOverrideRouter } from "./presentation/module-override.router.js";
 import { GetMyConfigUseCase } from "./application/use-cases/get-my-config.use-case.js";
@@ -137,7 +137,7 @@ export function buildEntitlementPlatformRouter(
     organizations: dependencies.organizations,
     manifests: dependencies.manifests,
     configVersion: dependencies.configVersion,
-    unitOfWork: new MongoOverrideUnitOfWork(),
+    unitOfWork: new MongoUnitOfWork(),
     platformAudit: dependencies.platformAudit,
     clock: dependencies.clock,
   };

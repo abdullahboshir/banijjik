@@ -15,7 +15,7 @@ import {
   type SubscriptionAdminDependencies,
 } from "./application/use-cases/subscription-admin.use-cases.js";
 import { MongoSubscriptionAdminRepository } from "./infrastructure/mongo-subscription-admin.repository.js";
-import { MongoSubscriptionUnitOfWork } from "./infrastructure/mongo-subscription-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { SubscriptionController } from "./presentation/subscription.controller.js";
 import { buildSubscriptionRouter } from "./presentation/subscription.router.js";
 import { StartTrialUseCase } from "./application/use-cases/start-trial.use-case.js";
@@ -82,7 +82,7 @@ function buildAdminDependencies(
     subscriptions: new MongoSubscriptionAdminRepository(),
     packages: buildPackageKindLookup(),
     configVersion: dependencies.configVersion,
-    unitOfWork: new MongoSubscriptionUnitOfWork(),
+    unitOfWork: new MongoUnitOfWork(),
     platformAudit: dependencies.platformAudit,
     clock: dependencies.clock,
   };

@@ -1,16 +1,16 @@
 import { ERROR_CODE } from "@banijjik/contracts";
 import { asId, type OrganizationId, type UserId } from "@banijjik/ids";
-import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
-import { getRequestContext } from "../../../../kernel/context/index.js";
-import { AppError } from "../../../../kernel/http/index.js";
+import { requireCurrentUserId } from "../auth/index.js";
+import { getRequestContext } from "../context/index.js";
+import { AppError } from "../http/index.js";
 
-export interface TenantCaller {
+export interface TenantIdentity {
   readonly organizationId: OrganizationId;
   readonly actorUserId: UserId;
 }
 
 /** The organization and user of a request that went through the tenant pipeline. */
-export function readTenantCaller(): TenantCaller {
+export function readTenantIdentity(): TenantIdentity {
   const { organizationId } = getRequestContext();
   if (organizationId === undefined) {
     throw new AppError({ code: ERROR_CODE.INTERNAL, messageKey: "errors.missing_tenant_context" });

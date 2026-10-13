@@ -49,7 +49,7 @@ import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-
 import { MongoMemberRepository } from "./infrastructure/mongo-member.repository.js";
 import { MongoOrganizationLimitLock } from "./infrastructure/mongo-organization-limit-lock.js";
 import { MongoOrganizationRepository } from "./infrastructure/mongo-organization.repository.js";
-import { MongoUnitOfWork } from "./infrastructure/mongo-unit-of-work.js";
+import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { RandomInvitationTokens } from "./infrastructure/random-invitation-tokens.js";
 import { InvitationController } from "./presentation/invitation.controller.js";
 import { buildInvitationLinkRouter } from "./presentation/invitation-link.router.js";

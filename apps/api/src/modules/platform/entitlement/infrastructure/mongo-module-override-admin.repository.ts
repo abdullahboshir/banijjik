@@ -1,5 +1,10 @@
 import type { UserId } from "@banijjik/ids";
-import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
+import {
+  getActiveSession,
+  isDuplicateKeyError,
+  models,
+  sessionOption,
+} from "../../../../kernel/db/index.js";
 import type {
   ModuleOverrideAdminRepository,
   ModuleOverrideView,
@@ -9,14 +14,6 @@ import {
   MODULE_OVERRIDE_MODEL_NAME,
   type ModuleOverrideDocument,
 } from "./module-override.schema.js";
-
-const DUPLICATE_KEY_CODE = 11000;
-
-function isDuplicateKey(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) return false;
-  // Safe: only the numeric driver `code` is read, and it is compared before use.
-  return (error as { code?: unknown }).code === DUPLICATE_KEY_CODE;
-}
 
 function toView(document: ModuleOverrideDocument): ModuleOverrideView {
   return {
@@ -52,7 +49,7 @@ export class MongoModuleOverrideAdminRepository implements ModuleOverrideAdminRe
         sessionOption(getActiveSession()),
       );
     } catch (error) {
-      throw isDuplicateKey(error) ? new DuplicateOverrideError() : error;
+      throw isDuplicateKeyError(error) ? new DuplicateOverrideError() : error;
     }
   }
 
