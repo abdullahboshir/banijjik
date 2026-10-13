@@ -45,6 +45,7 @@ apps/api/src/
 │   ├── events/             in-process event bus + outbox + BullMQ dispatch
 │   ├── access/             permission and entitlement ports, tenant caller
 │   ├── audit/              audit entry shape
+│   ├── cache/              in-memory LRU cache
 │   ├── logger/             the logger
 │   ├── modules/            module registry
 │   ├── rate-limit/         rate-limit ports
