@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslator } from "@banijjik/web-client/client";
+import { useLocaleChange, useTranslator } from "@banijjik/web-client/client";
 import type { MyOrganizationSummary } from "@banijjik/contracts";
 import { SUPPORTED_LOCALES, type Locale, type Translator } from "@banijjik/i18n";
 import {
@@ -14,9 +14,9 @@ import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { signOut } from "../auth/sign-out";
 import { ApiError } from "../lib/api/api-error";
 import { seedMyOrganizations } from "../lib/api/me-api";
+import { setLocaleAction } from "../lib/i18n/set-locale.action";
 import { initialsOf } from "./initials";
 import { LazyAccountMenu } from "./lazy-account-menu";
-import { useLocaleChange } from "./use-locale-change";
 
 export interface AccountMenuContainerProps {
   userName: string;
@@ -72,7 +72,7 @@ export function AccountMenuContainer(props: AccountMenuContainerProps): ReactEle
   const queryClient = useQueryClient();
   const { organizations } = props;
   useEffect(() => seedMyOrganizations(queryClient, organizations), [queryClient, organizations]);
-  const changeLocale = useLocaleChange();
+  const changeLocale = useLocaleChange(setLocaleAction);
   const handleSignOut = useSignOut(translator);
   return (
     <>

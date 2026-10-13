@@ -3,6 +3,7 @@ import { AppShell, TopBar } from "@banijjik/ui";
 import type { ReactElement, ReactNode } from "react";
 import { loadOperator } from "../../src/auth/session-data";
 import { getTranslator } from "../../src/i18n/get-translator";
+import { setLocaleAction } from "../../src/i18n/set-locale.action";
 import { BrandLogo } from "../../src/shell/brand-logo";
 import { navigationEntriesFor } from "../../src/shell/navigation-entries";
 import { PanelBottomNav, PanelSidebar } from "../../src/shell/panel-navigation";
@@ -28,7 +29,7 @@ export default async function PanelLayout({
           organizationName={operator.name}
           actions={
             <>
-              <LanguageSwitch />
+              <LanguageSwitch buttonClassName="px-2 sm:px-4" setLocale={setLocaleAction} />
               <SignOutButton />
             </>
           }
