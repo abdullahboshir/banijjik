@@ -87,11 +87,11 @@ Code is written for the next human reader first and the compiler second. If a re
 - **Enums** are stored as the uppercase string from contracts. Never numbers, never localized text.
 - **Collections:** plural snake_case (`offerings`, `stock_movements`). **Fields:** camelCase.
 - **Events:** name `<module>.<entity>.<pastTenseVerb>` (`sales.order.confirmed`). Envelope `{ eventId (uuid v7), type, version, occurredAt, organizationId, actorUserId, payload }`; `organizationId` and `actorUserId` are null only for user-level events such as `iam.user.registered` (card 1.5b).
-- **Tenant prefix everywhere outside the DB:** cache keys `org:{organizationId}:…`, file paths `org/{organizationId}/…`, queue job data always carries `organizationId`.
+- **Tenant prefix everywhere outside the DB:** permission-cache keys `perm:{organizationId}:…`, file paths `org/{organizationId}/…`, queue job data always carries `organizationId`.
 
 ## System access (bypass), adapted from manoxen rule 9
 - Tenant filtering can only be skipped via `runAsSystem(reason, fn)`. `reason` is a closed contracts enum: `AUTH_LOOKUP`, `PERMISSION_RESOLUTION`, `CONTEXT_SETUP`, `SEED`, `PLATFORM_ADMIN`, `MIGRATION`, `WEBHOOK_ROUTING`, `SCHEDULED_JOB`.
-- Every call is logged with its reason. It is forbidden in module repositories, use cases and controllers, except platform-admin use cases with an audit entry.
+- Every call is logged with its reason. It is forbidden in module repositories, use cases and controllers, except platform-admin use cases. A platform write records an audit entry; a platform read does not (ADR-093).
 
 ## Errors & observability, adapted from manoxen rule 19
 - No empty `catch {}`. No `catch (e) { console.log(e) }`. Either handle the error meaningfully, rethrow it, or report it through the central error reporter.

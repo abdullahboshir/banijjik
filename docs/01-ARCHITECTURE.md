@@ -18,6 +18,7 @@ banijjik/
 │   ├── validation/   Zod schemas (+ runtime custom-field schema builder)
 │   ├── i18n/         BN/EN message catalogs, keys only in code
 │   ├── ui/           shared React components (shadcn-based), created in Phase 0.5
+│   ├── web-client/   shared API client and the app pieces both web apps use (session, locale, proxy)
 │   └── config/       shared tsconfig presets (the ESLint config is `eslint.config.mjs` + `eslint/*.mjs` at the root)
 ├── tools/            repo tooling, e.g. `lint-tests/` (fixtures that prove each custom lint rule)
 ├── scripts/          git and agent hooks (`scripts/hooks/`)
@@ -42,7 +43,14 @@ apps/api/src/
 │   ├── idempotency/        Idempotency-Key middleware + store
 │   ├── sequence/           per-org atomic document numbers (INV-…, ORD-…)
 │   ├── events/             in-process event bus + outbox + BullMQ dispatch
-│   ├── queue/  cache/  logger/  i18n/
+│   ├── access/             permission and entitlement ports, tenant caller
+│   ├── audit/              audit entry shape
+│   ├── logger/             the logger
+│   ├── modules/            module registry
+│   ├── rate-limit/         rate-limit ports
+│   ├── redis/              Redis clients and readiness
+│   ├── tenancy/            tenant context and plugins
+│   ├── time/               the clock
 │   ├── observability/      reportError (central error capture)
 │   ├── lifecycle/          registerShutdown (ordered shutdown tasks)
 ├── modules/
@@ -53,7 +61,7 @@ apps/api/src/
 │   ├── capability/         academic, clinical, kitchen-display, …                          (Phase 7)
 │   ├── integration/        courier, sms, payment-gateway (third-party providers)            (Phase 5)
 │   └── automation/         workflow, risk                                                   (Phase 5)
-└── routes/v1.ts            the ONLY place that mounts module routers and auth/tenant/permission middleware (transport middleware is in app.ts)
+└── routes/             v1.ts mounts the tenant pipeline; platform.ts mounts the platform API
 ```
 Full module list, classes (PLATFORM / SYSTEM / CORE / OPTIONAL) and manifests: `10-MODULE-CATALOG.md`.
 
@@ -70,17 +78,20 @@ modules/<group>/<module>/
 - Cross-module calls go through the other module's `index.ts` (sync read) or domain events (side effects, preferred).
 - Dependency direction: presentation → application → domain. Infrastructure implements domain/application ports.
 
-## 3. Request pipeline (mounted once in `routes/v1.ts`)
+## 3. Request pipeline
+
+Transport middleware (request id, access log, CORS, body parser) is mounted in `app.ts`. Rate limits are per route, not one global limiter. The tenant pipeline in `routes/v1.ts` is:
 
 ```
-requestId → logger → rateLimit → authenticate (cookie) → tenantContext (org from session, never from body)
-→ entitlement (module enabled for this org & plan?) → permission (role allows action?)
-→ locationAccess (filter/validate locationId against assignments) → validate(schema) → controller
+authenticate (cookie) → tenantContext (org from the URL, never from the body)
+→ locationAccess (filter/validate locationId against assignments)
+→ entitlement (module enabled for this org and plan?) → permission (role allows the action?)
+→ validate(schema) → controller
 ```
 Public routes (`/public/*`, storefront, webhooks) use their own small pipelines: webhook signature verification, slug → org resolution.
 
 ## 4. Tenancy & location
-- Session is per user. The active org comes from the URL `/[orgSlug]` (validated against memberships, cached). One login covers all of a user's organizations (ADR-022).
+- Session is per user. The active org comes from the URL `/[orgSlug]` (validated against the user's memberships on every request; there is no membership cache, ADR-087). One login covers all of a user's organizations (ADR-022).
 - Models are obtained via `models(ctx)` so a dedicated-DB tenant can be added later without touching business code (ADR-023, `06-AUTOMATION-AND-ACCOUNTS.md §3`).
 - `organizationId` on every tenant-owned document. A Mongoose plugin injects it into every query and write from the request context and **throws** when the context is missing. Cross-tenant jobs must opt out explicitly via `runAsSystem()`.
 - Location-scoped collections also get `locationId`. Queries are filtered to `allowedLocationIds` (ALL for owners). Writes are rejected when the location is outside the user's assignments.
@@ -100,7 +111,7 @@ Tenant (org) overrides → Location overrides (settings only)
 - **Code registers what can exist** (module keys, entity types that accept custom fields, setting keys). **DB decides what is enabled and how it is configured.** This keeps configuration safe and type-checked.
 - Field types: TEXT, LONG_TEXT, NUMBER, DECIMAL, BOOLEAN, DATE, DATETIME, SELECT, MULTI_SELECT, PHONE, EMAIL, URL, CURRENCY, FILE, IMAGE, REFERENCE.
 - One builder in `@banijjik/validation` turns definitions into a Zod schema. The API and the dynamic form renderer use the same builder.
-- The resolved config (modules, fields, settings, menu) is computed per org, cached in Redis, and invalidated by version bump on change.
+- The resolved config (modules, fields, settings, menu) is computed per org and kept in an in-process LRU, invalidated by version bump on change. It is not stored in Redis.
 
 ## 6. Reliability ("no-damage failure")
 - Multi-document writes (sale + stock + journal) run inside `withTransaction()`.

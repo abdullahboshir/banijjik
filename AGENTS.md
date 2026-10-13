@@ -55,7 +55,7 @@ Each card has a tier in `docs/03-ROADMAP.md` (T1 = risky core, T2 = standard, T3
 - Mutable aggregates carry `version` (optimistic concurrency). Audit fields `createdAt/updatedAt/createdByUserId/updatedByUserId` on every tenant document. Phones are stored as E.164.
 - Tenant filtering is skipped only via `runAsSystem(reason, fn)` with an enum reason. Never inside module repositories, use cases or controllers.
 - No empty `catch`, no `console.*`. Use the logger and the central error capture.
-- Transport middleware (request id, access log, CORS, body parser) is mounted once in `app.ts`. Auth, tenant, entitlement and permission middleware are mounted once in `routes/v1.ts`. Module routers never re-mount them.
+- Transport middleware (request id, access log, CORS, body parser) is mounted once in `app.ts`. Auth, tenant, entitlement and permission middleware for tenant routes are mounted once in `routes/v1.ts`. `routes/platform.ts` mounts `authenticatePlatform` for the platform API, and `runInOrganizationContext` is also used from `routes/platform.ts` and `routes/organization-config-ports.ts`. Module routers never re-mount them.
 - No empty folders, packages or placeholder files. Add a new dependency, package or app only when the card requires it.
 
 **Tenancy & security**

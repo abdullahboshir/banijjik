@@ -170,7 +170,7 @@ Admin groups (order): `home`, `sales`, `bookings`, `enrollments`, `catalog`, `co
 | `bot` | inbox › Bot, Knowledge |
 | `social` | catalog › Import from Facebook |
 | `workflow` | settings › Automations |
-| `iam`, `audit` | settings › Activity log |
+| `iam`, `audit` | settings › Activity log (not built in Phase 1: no menu entry and no screen yet) |
 | PLATFORM modules | **PLATFORM** surface: Tenants, Packages, Industries, Fields, Billing |
 
 Dashboard home is package-aware (ADR-032): the `report` module picks home widgets from the effective modules (inbox-first when `messaging` is on and `website`/`pos` are off, and so on). No package names in code.

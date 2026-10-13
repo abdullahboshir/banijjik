@@ -150,7 +150,7 @@ Owner `core/iam` · scope platform · versioned
 - Indexes: `{ userId }` unique, `{ email }` unique partial, `{ phoneE164 }` unique partial.
 - Events: `iam.user.registered`, `iam.user.locked`.
 
-**RefreshSession** (`core/iam`, platform): `refreshSessionId`, `userId`, `tokenHash`, `familyId` (rotation/reuse detection), `expiresAt`, `revokedAt?`, `userAgent`, `ipHash`. Index `{ userId, revokedAt }`, TTL on `expiresAt`.
+**RefreshSession** (`core/iam`, platform): `refreshSessionId`, `userId`, `tokenHash`, `familyId` (rotation/reuse detection), `audience`, `expiresAt`, `familyExpiresAt`, `revokedAt?`, `rotatedAt?`, `replacedByRefreshSessionId?`, `userAgent`, `ipHash`. Index `{ userId, revokedAt }`, TTL on `expiresAt`.
 
 **PlatformOperator** (`core/iam`, platform, versioned): `platformOperatorId`, `userId` (unique), `platformRoles[]` (`SUPER_ADMIN`, `SUPPORT`, `BILLING`), `status`. Platform-panel access is this record, not a flag on User, so it is audited and revocable on its own. The platform app uses its own cookie name and audience.
 
@@ -166,6 +166,7 @@ Owner `core/organization` · scope platform (it *is* the tenant) · versioned
 | `status` | `ACTIVE \| SUSPENDED \| CLOSED` | SUSPENDED blocks all tenant routes with a clear error (card 1.8) |
 | `deployment` | `SHARED \| DEDICATED` | ADR-023 |
 | `dedicatedConnectionRef` | string? | encrypted reference, only when DEDICATED |
+| `limitWriteVersion` | number | guard counter for limit checks that race a write (ADR-092) |
 | `countryCode` | `BD` … | |
 | `currencyCode` | `BDT` … | fixed after the first money record |
 | `timezone` | IANA, e.g. `Asia/Dhaka` | |
@@ -199,12 +200,13 @@ Owner `core/organization` · scope org · versioned
 | `address` | Address | |
 | `phoneE164` | string? | |
 | `timezone` | IANA? | falls back to the org timezone |
+| `referenceVersion` | number | guard counter for writes that must see the location's current state (ADR-092) |
 | `openingHours` | weekly schedule? | used by bot `get_policy` and booking defaults |
 | STF | | |
 
 - Invariants: the default location cannot be archived. The count of ACTIVE locations ≤ package limit `locations`. Archiving is refused while the location has non-zero stock or open requests (exact checks in D3).
 - UI rule (ADR-004): while an org has one ACTIVE location, no location UI is shown.
-- Indexes: `{ organizationId, locationId }` unique, `{ organizationId, name }` unique, `{ organizationId, isDefault }`.
+- Indexes: `{ organizationId, locationId }` unique, `{ organizationId, name }` partial unique among ACTIVE locations, `{ organizationId, isDefault }`.
 - Events: `organization.location.created`, `.updated`, `.archived`.
 
 ### 4.4 Member
@@ -253,7 +255,7 @@ All in the platform DB, all read through `resolveOrgConfig` (cached per `configV
 | Entity | Owner | Scope | Key fields | Key invariants |
 |---|---|---|---|---|
 | **IndustryTemplate** (versioned) | `platform/industry` | platform | `industryTemplateId`, `industryTemplateKey` (unique), `status` (`DRAFT \| PUBLISHED \| RETIRED`), `enabledKinds[]`, `defaultModuleKeys[]`, `allowedModuleKeys[]`, `terms`, `settingsDefaults`, `resourceTypes[{ resourceTypeKey, termKey }]`, `contactRoleKeys[]`, `websiteTemplateIds[]`, `botDefaults { personaKey, faqStarters, intakeFieldKeys }` | Only PUBLISHED templates can be chosen at signup. Kinds ⊆ contracts kinds. Defaults ⊆ allowed. |
-| **Package** (versioned) | `platform/package` | platform | `packageId`, `packageKey`, `nameKey` or `name` (exactly one: i18n key for seed packages, plain 2 to 60 characters for operator-made ones), `isAddOn`, `moduleKeys[]`, `limits` (all eight `LIMIT_KEY`s; `null` = unlimited), `limitIncrements` (add-ons and packs), `prices[]` (empty until P2), `status` | Module keys exist in the catalogue (`MODULE_KEY`). A base package and an add-on are never the same record. |
+| **Package** (versioned) | `platform/package` | platform | `packageId`, `packageKey`, `nameKey` or `name` (exactly one: i18n key for seed packages, plain 2 to 60 characters for operator-made ones), `isAddOn`, `moduleKeys[]`, `limits` (all eight `LIMIT_KEY`s; `null` = unlimited), `limitIncrements` (add-ons and packs), `prices[]` (empty until P2), `status`, `referenceVersion` (guard counter, ADR-093) | Module keys exist in the catalogue (`MODULE_KEY`). A base package and an add-on are never the same record. |
 | **PlatformSubscription** (versioned) | `platform/saas-billing` | org | `platformSubscriptionId`, `basePackageId`, `addOnPackageIds[]`, `status` (`TRIALING \| ACTIVE \| PAST_DUE \| CANCELLED`), `trialEndsAt`, `currentPeriodStart/End` | Exactly one non-cancelled subscription per org. Card 1.6 creates it; card 6.2 adds billing. |
 | **ModuleOverride** | `platform/entitlement` | org | `moduleOverrideId`, `moduleKey`, `effect` (`PLATFORM_GRANT \| PLATFORM_REVOKE \| TENANT_DISABLE`), `reason`, `expiresAt?` | Unique `(organizationId, moduleKey, effect)`. Tenant may only disable modules marked optional. Feeds `07 §3` formula. |
 | **CustomFieldDefinition** (versioned) | `core/custom-field` | platform (scope `INDUSTRY`) or org (scope `ORGANIZATION`) | `customFieldDefinitionId`, `scope`, `industryTemplateKey?`, `entityType`, `offeringKind?`, `fieldKey`, `labelKey`/`label`, `fieldType` (16 types, `01 §5`), `referenceEntity?` + `link? { relationKey, createIfMissingByPhone, defaultBillTo }` for contact-link fields (ADR-073), `isRequired`, `options[]`, `validation`, `visibility { admin, storefront, bot }`, `botAsk`, `isSearchable`, `isSensitive`, `sortOrder`, `status` (`ACTIVE \| ARCHIVED`) | `fieldKey` is immutable and unique per `(scope owner, entityType, offeringKind)`. `fieldType` cannot change once values exist. Archive, never hard delete. Tenants cannot edit INDUSTRY definitions, only hide optional ones and override labels/order (`00` limits). |
@@ -452,9 +454,9 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 
 ### 5.8 Technical records (kernel, listed so names stay fixed)
 - **Sequence** (`kernel/sequence`): `{ organizationId, sequenceKey, nextValue }` (`nextValue` holds the **last** number handed out; the first call returns 1), unique `(organizationId, sequenceKey)`. Keys: `ORDER`, `BOOKING`, `ENROLLMENT`, `PAYMENT`, `INVOICE`, `JOURNAL`, `MEMBER`, `EXPENSE`, `TRANSFER`, `ZREPORT`, `RETURN`. Each key has a mode (ADR-085): `FAST` (default) is taken outside the transaction, never conflicts and may leave gaps when a transaction aborts; `GAPLESS` (`INVOICE`, `JOURNAL`, `ZREPORT`) rolls back with the transaction and needs one. The system-access mark is read with `getSystemReason()`, it is not a field of the request context. Format (prefix, padding, yearly reset) comes from settings.
-- **OutboxEvent** (`kernel/events`): `{ eventId, type, version, occurredAt, organizationId (null for user-level events), actorUserId, requestId, payload, status PENDING|DISPATCHED|DEAD, dispatchAttempts, nextAttemptAt, lockedUntil, dispatchedAt, lastError }` in the platform DB (`05` envelope, ADR-090). Siblings: `processed_events` `{ eventId, handlerKey }` unique, `event_dead_letters` `{ eventId, handlerKey, type, attempts, lastError, failedAt }`.
+- **OutboxEvent** (`kernel/events`): `{ eventId, type, version, occurredAt, organizationId (null for user-level events), actorUserId, requestId, payload, status PENDING|DISPATCHED|DEAD, dispatchAttempts, nextAttemptAt, lockedUntil, dispatchedAt, lastError }` in the platform DB (`05` envelope, ADR-090). After ten failed dispatches the status becomes `DEAD` and the event is not claimed again (ADR-096). Siblings: `processed_events` `{ eventId, handlerKey }` unique, `event_dead_letters` `{ eventId, handlerKey, type, attempts, lastError, failedAt }`.
 - **IdempotencyRecord** (`kernel/idempotency`, platform DB, tenancy NONE): `{ idempotencyRecordId, scopeKind (ORGANIZATION|USER), scopeId, idempotencyKey, requestHash, status (IN_PROGRESS|COMPLETED), lockedUntil, responseStatus?, responseBody?, expiresAt }`, unique `(scopeKind, scopeId, idempotencyKey)` (ADR-089).
-- **AuditLog** (`core/audit`): `{ auditLogId, organizationId?, actorUserId?, actorPlatformOperatorId?, action, entityType, entityId, changes, requestId, systemReason?, occurredAt }`. Append-only. Platform-DB copy for platform actions, tenant-DB copy for business actions.
+- **AuditLog** (`core/audit`, tenant DB): `{ auditLogId, organizationId, actorUserId?, actorMemberId?, action, entityType, entityId, changes, requestId, systemReason?, occurredAt }`. Append-only. **PlatformAuditLog** (platform DB): `{ platformAuditLogId, actorPlatformOperatorId, actorUserId, action, targetType, targetId, organizationId?, changes, reason?, requestId, occurredAt }`. Append-only. They are two models, not one shape stored twice.
 - **FileAsset** (`core/file`): `{ fileId, organizationId, storageKey (org/{organizationId}/…), mimeType, byteSize, uploadedByUserId }`.
 
 ---

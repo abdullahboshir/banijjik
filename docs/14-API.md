@@ -17,7 +17,7 @@ New decisions: §9 (ADR-077 to ADR-081).
 | Surface | Base path | Auth | Org resolution |
 |---|---|---|---|
 | Auth & account | `/api/v1/auth/*`, `/api/v1/me/*` | admin cookie (access + refresh), none for login/OTP | none (user-level) |
-| Tenant (admin, POS, rider) | `/api/v1/orgs/{organizationId}/…` | admin cookie | **path param**, validated against the user's memberships (cached) |
+| Tenant (admin, POS, rider) | `/api/v1/orgs/{organizationId}/…` | admin cookie | **path param**, validated against the user's memberships on every request (not cached) |
 | Storefront & customer portal | `/api/v1/storefront/orgs/{organizationId}/…` | storefront cookie (audience `storefront`, ADR-045), optional for browsing | path param. The storefront app resolves host/slug → `organizationId` via `GET /api/v1/storefront/resolve?host=` (cached at the edge). |
 | Platform panel | `/api/v1/platform/…` | platform cookie (audience `platform`, ADR-048) | `{organizationId}` appears only as a resource id |
 | Webhooks | `/api/v1/webhooks/{provider}[/…]` | provider signature | from the payload (page id, phone number id, consignment id) → org (`runAsSystem(WEBHOOK_ROUTING)`) |
@@ -66,7 +66,7 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | 403 | `LOCATION_FORBIDDEN` | location outside the member's assignments |
 | 403 | `APPROVAL_REQUIRED` | approval token missing or invalid |
 | 404 | `NOT_FOUND` | also for resources of another org (never reveal existence) |
-| 409 | `CONFLICT` | version mismatch |
+| 409 | `CONFLICT` | version mismatch, or `errors.idempotency_in_progress` with `Retry-After` while the same key is still running |
 | 409 | `INVALID_TRANSITION` | transition not allowed from the current state; `details.currentStatus` |
 | 409 | `DUPLICATE` | unique key clash (phone, SKU, slug, trxID) with `details.existingId` where safe |
 | 409 | `INSUFFICIENT_STOCK` / `SLOT_UNAVAILABLE` / `CAPACITY_FULL` | stock or capacity checks |
