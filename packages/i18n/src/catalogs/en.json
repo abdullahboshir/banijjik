@@ -171,5 +171,9 @@
   "errors.module_class_fixed": "This module is always on or platform-only and cannot be granted or revoked.",
   "errors.trial_not_active": "The trial can be extended only while the subscription is in its trial.",
   "errors.package_kind_mismatch": "The base package must be a base package and the add-ons must be add-ons, none of them archived.",
-  "errors.package_archived": "An archived package cannot be changed."
+  "errors.package_archived": "An archived package cannot be changed.",
+  "errors.operator_exists": "This person already has operator access.",
+  "errors.operator_user_not_found": "No account has that email or phone number.",
+  "errors.operator_user_not_active": "This account is not active, so it cannot be given operator access.",
+  "errors.own_operator_access": "You cannot change your own operator access."
 }

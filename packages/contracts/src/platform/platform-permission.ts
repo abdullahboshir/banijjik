@@ -15,6 +15,8 @@ export const PLATFORM_PERMISSION_KEY = {
   SUBSCRIPTION_READ: "platform.subscription.read",
   SUBSCRIPTION_WRITE: "platform.subscription.write",
   AUDIT_READ: "platform.audit.read",
+  OPERATOR_READ: "platform.operator.read",
+  OPERATOR_WRITE: "platform.operator.write",
 } as const;
 
 export type PlatformPermissionKey =

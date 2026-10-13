@@ -6,6 +6,9 @@ export const PLATFORM_RULE_KEY = {
   MODULE_CLASS_FIXED: "MODULE_CLASS_FIXED",
   TRIAL_NOT_ACTIVE: "TRIAL_NOT_ACTIVE",
   PACKAGE_KIND_MISMATCH: "PACKAGE_KIND_MISMATCH",
+  OPERATOR_USER_NOT_FOUND: "OPERATOR_USER_NOT_FOUND",
+  OPERATOR_USER_NOT_ACTIVE: "OPERATOR_USER_NOT_ACTIVE",
+  OWN_OPERATOR_ACCESS: "OWN_OPERATOR_ACCESS",
 } as const;
 
 export type PlatformRuleKey = (typeof PLATFORM_RULE_KEY)[keyof typeof PLATFORM_RULE_KEY];
@@ -19,4 +22,8 @@ export const PLATFORM_MESSAGE_KEYS: readonly string[] = [
   "errors.trial_not_active",
   "errors.package_kind_mismatch",
   "errors.package_archived",
+  "errors.operator_exists",
+  "errors.operator_user_not_found",
+  "errors.operator_user_not_active",
+  "errors.own_operator_access",
 ];

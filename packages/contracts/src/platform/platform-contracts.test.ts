@@ -25,12 +25,16 @@ describe("platform permissions", () => {
     expect(granted.has(PLATFORM_PERMISSION_KEY.TENANT_SUSPEND)).toBe(true);
     expect(granted.has(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE)).toBe(false);
     expect(granted.has(PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE)).toBe(false);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.OPERATOR_READ)).toBe(false);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.OPERATOR_WRITE)).toBe(false);
   });
 
   it("lets BILLING edit entitlements and subscriptions but not suspend or edit packages", () => {
     const granted = platformPermissionsOf([PLATFORM_ROLE.BILLING]);
     expect(granted.has(PLATFORM_PERMISSION_KEY.TENANT_SUSPEND)).toBe(false);
     expect(granted.has(PLATFORM_PERMISSION_KEY.PACKAGE_WRITE)).toBe(false);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.OPERATOR_READ)).toBe(false);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.OPERATOR_WRITE)).toBe(false);
     expect(granted.has(PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE)).toBe(true);
     expect(granted.has(PLATFORM_PERMISSION_KEY.SUBSCRIPTION_WRITE)).toBe(true);
   });

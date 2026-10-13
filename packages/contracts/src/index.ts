@@ -219,6 +219,7 @@ export type {
 } from "./platform/platform-audit.js";
 export { PLATFORM_MESSAGE_KEYS, PLATFORM_RULE_KEY } from "./platform/platform-message-keys.js";
 export type { PlatformRuleKey } from "./platform/platform-message-keys.js";
+export type { PlatformOperatorSummary } from "./platform/platform-operator.js";
 export type {
   PlatformChangePackageRequest,
   PlatformExtendTrialRequest,

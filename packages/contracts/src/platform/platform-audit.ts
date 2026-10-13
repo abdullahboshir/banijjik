@@ -13,6 +13,10 @@ export const PLATFORM_AUDIT_ACTION = {
   SUBSCRIPTION_TRIAL_EXTENDED: "platform.subscription.trialExtended",
   SUBSCRIPTION_PACKAGE_CHANGED: "platform.subscription.packageChanged",
   OPERATOR_SEEDED: "platform.operator.seeded",
+  OPERATOR_CREATED: "platform.operator.created",
+  OPERATOR_ROLES_CHANGED: "platform.operator.rolesChanged",
+  OPERATOR_DISABLED: "platform.operator.disabled",
+  OPERATOR_ENABLED: "platform.operator.enabled",
 } as const;
 
 export type PlatformAuditAction =
