@@ -39,6 +39,13 @@ const ENTRY_DEFINITIONS: readonly EntryDefinition[] = [
     iconKey: "receipt",
     permission: PLATFORM_PERMISSION_KEY.AUDIT_READ,
   },
+  {
+    menuKey: "operators",
+    labelKey: "platform.nav.operators",
+    href: "/operators",
+    iconKey: "user",
+    permission: PLATFORM_PERMISSION_KEY.OPERATOR_READ,
+  },
 ];
 
 /** The entries this operator may open, in menu order. The permissions come from `GET /platform/me`. */

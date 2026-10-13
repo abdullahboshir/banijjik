@@ -1,5 +1,6 @@
 import type {
   LoginRequest,
+  PlatformOperatorSummary,
   PlatformChangePackageRequest,
   PlatformExtendTrialRequest,
   PlatformModuleOverrideCreateRequest,
@@ -12,6 +13,12 @@ import type {
   PlatformSessionResponse,
   PlatformSubscriptionResponse,
 } from "@banijjik/contracts";
+import {
+  platformOperatorCreateRequestSchema,
+  type PlatformOperatorStatusBody,
+  type PlatformOperatorUpdateBody,
+} from "@banijjik/validation";
+import type { z } from "zod";
 import { apiFetch } from "./platform-api-client";
 
 /** Signs an operator in; the API sets the platform cookies and answers with roles and permissions. */
@@ -102,6 +109,41 @@ export async function updatePackage(
     method: "PATCH",
     body: request,
   });
+  return result.data;
+}
+
+export type OperatorStatusAction = "disable" | "enable";
+
+export async function grantOperator(
+  request: z.input<typeof platformOperatorCreateRequestSchema>,
+): Promise<PlatformOperatorSummary> {
+  const result = await apiFetch<PlatformOperatorSummary>("/platform/operators", {
+    method: "POST",
+    body: request,
+  });
+  return result.data;
+}
+
+export async function changeOperatorRoles(
+  platformOperatorId: string,
+  request: PlatformOperatorUpdateBody,
+): Promise<PlatformOperatorSummary> {
+  const result = await apiFetch<PlatformOperatorSummary>(
+    `/platform/operators/${platformOperatorId}`,
+    { method: "PATCH", body: request },
+  );
+  return result.data;
+}
+
+export async function changeOperatorStatus(
+  platformOperatorId: string,
+  action: OperatorStatusAction,
+  request: PlatformOperatorStatusBody,
+): Promise<PlatformOperatorSummary> {
+  const result = await apiFetch<PlatformOperatorSummary>(
+    `/platform/operators/${platformOperatorId}/${action}`,
+    { method: "POST", body: request },
+  );
   return result.data;
 }
 

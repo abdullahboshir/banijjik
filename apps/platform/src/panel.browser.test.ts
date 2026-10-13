@@ -16,6 +16,8 @@ import {
   PHONE_VIEWPORT,
   DESKTOP_VIEWPORT,
   bodyText,
+  checkByLabel,
+  clickByName,
   closePage,
   factOf,
   gotoHydrated,
@@ -24,6 +26,8 @@ import {
   signInAsOperator,
   signInWithCookies,
   waitForButton,
+  waitForDialogClosed,
+  waitForDialogSettled,
   waitForText,
 } from "./test-support/browser-page";
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "./test-support/initial-js-size";
@@ -33,6 +37,7 @@ import {
   extendTrial,
   grantModule,
   openTenantFromList,
+  SUBMIT_IN_DIALOG,
   submitSheetWithReason,
 } from "./test-support/panel-steps";
 
@@ -135,7 +140,7 @@ describe("an operator at work, with a tenant's member in another tab", () => {
   it("shows the Platform band and the menu the operator's permissions allow", async () => {
     const text = await bodyText(operatorPage);
     expect(text).toContain(banglaText("platform.band"));
-    for (const key of ["tenants", "packages", "audit"]) {
+    for (const key of ["tenants", "packages", "audit", "operators"]) {
       expect(text).toContain(banglaText(`platform.nav.${key}`));
     }
   });
@@ -210,6 +215,60 @@ describe("an operator at work, with a tenant's member in another tab", () => {
     }
   });
 
+  it("adds a support operator, who cannot open operators and loses the panel when disabled", async () => {
+    const person = await seedPerson("নতুন সাপোর্ট");
+    await gotoHydrated(operatorPage, "/operators", "h1");
+    const ownRow = await operatorPage.evaluate((name) => {
+      const row = Array.from(document.querySelectorAll("tr")).find((candidate) =>
+        candidate.textContent?.includes(name),
+      );
+      return row?.textContent ?? "";
+    }, "Platform Admin");
+    expect(ownRow).toContain(banglaText("platform.operators.you"));
+    expect(ownRow).not.toContain(banglaText("platform.action.disableOperator"));
+
+    await clickByName(operatorPage, banglaText("platform.action.addOperator"));
+    await waitForDialogSettled(operatorPage);
+    await operatorPage.type("#operator-identifier", person.email);
+    await checkByLabel(operatorPage, banglaText("platform.role.SUPPORT"));
+    await operatorPage.type("#operator-reason", "সাপোর্ট হিসেবে যোগ");
+    await operatorPage.click(SUBMIT_IN_DIALOG);
+    await waitForDialogClosed(operatorPage);
+    await waitForText(operatorPage, person.name);
+
+    const supportPage = await openPage(stack.browser, DESKTOP_VIEWPORT);
+    await gotoHydrated(supportPage, "/sign-in", "form button[type=submit]");
+    await supportPage.type("#identifier", person.email);
+    await supportPage.type("#password", person.password);
+    await Promise.all([
+      supportPage.waitForFunction(() => window.location.pathname === "/tenants"),
+      supportPage.click("form button[type=submit]"),
+    ]);
+    const menu = await bodyText(supportPage);
+    expect(menu).toContain(banglaText("platform.nav.tenants"));
+    expect(menu).toContain(banglaText("platform.nav.packages"));
+    expect(menu).not.toContain(banglaText("platform.nav.operators"));
+    expect(menu).not.toContain(banglaText("platform.nav.audit"));
+    await supportPage.goto(`${PLATFORM_ORIGIN}/operators`, { waitUntil: "networkidle0" });
+    expect(await bodyText(supportPage)).toContain(banglaText("state.permissionDenied"));
+
+    await operatorPage.bringToFront();
+    await submitSheetWithReason(operatorPage, banglaText("platform.action.disableOperator"), {
+      fieldId: "#operator-status-reason",
+      text: "অ্যাক্সেস বন্ধ",
+    });
+    await waitForButton(operatorPage, banglaText("platform.action.enableOperator"));
+    await supportPage.goto(`${PLATFORM_ORIGIN}/tenants`, { waitUntil: "domcontentloaded" });
+    await supportPage.waitForFunction(() => window.location.pathname === "/sign-in");
+    expect(new URL(supportPage.url()).pathname).toBe("/sign-in");
+
+    await operatorPage.goto(`${PLATFORM_ORIGIN}/audit`, { waitUntil: "networkidle0" });
+    const audit = await bodyText(operatorPage);
+    expect(audit).toContain(banglaText("platform.audit.action.platform.operator.created"));
+    expect(audit).toContain(banglaText("platform.audit.action.platform.operator.disabled"));
+    await closePage(supportPage);
+  });
+
   describe("initial JavaScript of the routes (13-UX section 11)", () => {
     const routes = (): string[] => [
       "/tenants",
@@ -217,6 +276,7 @@ describe("an operator at work, with a tenant's member in another tab", () => {
       "/packages",
       "/packages/new",
       "/audit",
+      "/operators",
       "/sign-in",
     ];
 
@@ -263,7 +323,14 @@ describe("the panel on a phone (13-UX section 12: read-only use in an emergency)
     const page = await openPage(stack.browser, PHONE_VIEWPORT);
     await signInAsOperator(page);
     const widerThanScreen: string[] = [];
-    for (const route of ["/tenants", tenantPath, "/packages", "/packages/new", "/audit"]) {
+    for (const route of [
+      "/tenants",
+      tenantPath,
+      "/packages",
+      "/packages/new",
+      "/audit",
+      "/operators",
+    ]) {
       await page.goto(`${PLATFORM_ORIGIN}${route}`, { waitUntil: "networkidle0" });
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -296,6 +363,7 @@ describe.skipIf(!screenshotDir)("screenshots in Bangla", () => {
       ["packages", "/packages"],
       ["package-new", "/packages/new"],
       ["audit", "/audit"],
+      ["operators", "/operators"],
     ];
     for (const [name, path] of pages) {
       await page.goto(`${PLATFORM_ORIGIN}${path}`, { waitUntil: "networkidle0" });
