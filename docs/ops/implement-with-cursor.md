@@ -12,12 +12,16 @@ From card 1.9d on, the owner implements cards with **Cursor**. **Claude** (Opus)
 ## Before you start a card
 1. Read `AGENTS.md`, `docs/STATUS.md` (your card's row and the rows it depends on), `docs/plans/<card>.md`, and only the doc sections the plan lists under "Inputs read".
 2. Check the plan's "Based on commit". If `main` has moved and touched files the plan names, stop and ask Claude to refresh the plan.
-3. Make a worktree and a branch. Never work in the main folder.
-   ```
-   git -C E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik worktree add ..\banijjik-<card> -b s/<card>-<slug> main
-   cd ..\banijjik-<card>
-   npm install
-   ```
+3. Work in the one project folder, `E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik`, on a branch for the card. **Do not create extra folders (git worktrees).** One card runs at a time, so one folder is enough.
+   - **New card:** start from an up-to-date `main` with a clean folder.
+     ```
+     git status                      (must be clean)
+     git switch main
+     git switch -c s/<card>-<slug>
+     npm install
+     ```
+   - **Fixing review findings on a card:** stay on that card's existing branch (`git switch s/<card>-<slug>` if the folder is somewhere else). Add new commits on it.
+   - **Never commit on `main` itself.** `main` changes only by a fast-forward merge after a passed review.
 4. Make sure the local services are up. If they are not, start Docker Desktop and bring up only this project's stack: `docker compose -f infra/docker-compose.yml up -d` (Mongo on 27018, Redis on 6380). Never stop or change other projects' containers.
 
 ## While you implement
@@ -74,4 +78,4 @@ Tell the owner the branch is ready. The owner asks Claude to review `s/<card>-<s
 - for T1 cards, tries to break the security-relevant parts
 - writes the review section into the handoff
 
-Findings come back as a list. Fix them on the same branch with new commits, update the handoff, and ask again. Only after a pass does Claude (or the owner) fast-forward `main` and set the STATUS row to `merged`.
+Findings come back as a list. Fix them on the same branch with new commits, update the handoff, and ask again. Only after a pass does Claude (or the owner) fast-forward `main` and set the STATUS row to `merged`. Then the project folder goes back to `main` (`git switch main`), ready for the next card. Claude reviews in its own separate folders, so a review never changes the files in the project folder while Cursor works.
