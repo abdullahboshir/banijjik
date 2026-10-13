@@ -13,7 +13,8 @@
       "cache": false
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "passThroughEnv": ["CI", "TEST_REDIS_URL", "MONGOMS_*", "VITEST_MAX_WORKERS"]
     }
   }
 }
