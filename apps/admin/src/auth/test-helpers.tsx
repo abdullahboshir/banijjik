@@ -7,6 +7,7 @@ import {
 } from "@banijjik/i18n";
 import { render } from "@testing-library/react";
 import type { ReactElement } from "react";
+import { registerMessageCheck } from "./field-errors";
 
 /** Bangla catalog text by key, so tests name what the person reads without copying the catalog. */
 export function banglaText(messageKey: string): string {
@@ -17,10 +18,19 @@ export function banglaText(messageKey: string): string {
 
 export function renderInBangla(element: ReactElement): void {
   render(
-    <I18nProvider locale="bn" catalog={BUNDLED_CATALOGS.bn} brandName="Example">
+    <I18nProvider
+      locale="bn"
+      catalog={BUNDLED_CATALOGS.bn}
+      brandName="Example"
+      onTranslatorCreated={registerCatalog}
+    >
       {element}
     </I18nProvider>,
   );
+}
+
+function registerCatalog(translator: Translator): void {
+  registerMessageCheck(translator.has);
 }
 
 /** The Bangla translator the server pages use: bundled and screen catalogs together. */

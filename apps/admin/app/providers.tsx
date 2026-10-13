@@ -1,11 +1,12 @@
 "use client";
 
 import { LazyToaster, ShellLink, I18nProvider, useTranslator } from "@banijjik/web-client/client";
-import type { Catalog, Locale } from "@banijjik/i18n";
+import type { Catalog, Locale, Translator } from "@banijjik/i18n";
 import { LinkComponentProvider } from "@banijjik/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { useState, type ReactElement, type ReactNode } from "react";
+import { registerMessageCheck } from "../src/auth/field-errors";
 import { ApiError } from "../src/lib/api/api-error";
 
 const QUERY_STALE_TIME_MS = 30_000;
@@ -34,6 +35,11 @@ function TranslatedToaster(): ReactElement {
   return <LazyToaster label={t("shell.notifications")} />;
 }
 
+/** The catalog check used outside React (unknown API keys fall back to the generic error). */
+function registerCatalog(translator: Translator): void {
+  registerMessageCheck(translator.has);
+}
+
 export interface ProvidersProps {
   locale: Locale;
   catalog: Catalog;
@@ -44,7 +50,12 @@ export interface ProvidersProps {
 export function Providers({ locale, catalog, brandName, children }: ProvidersProps): ReactElement {
   const [queryClient] = useState(createQueryClient);
   return (
-    <I18nProvider locale={locale} catalog={catalog} brandName={brandName}>
+    <I18nProvider
+      locale={locale}
+      catalog={catalog}
+      brandName={brandName}
+      onTranslatorCreated={registerCatalog}
+    >
       <QueryClientProvider client={queryClient}>
         <LinkComponentProvider component={ShellLink}>
           {children}
