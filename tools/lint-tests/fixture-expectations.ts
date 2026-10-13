@@ -314,7 +314,11 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   passes("R34", "apps/api/src/seeds/r34-seeds-import-index-kernel-config.pass.ts"),
 
   fails("R37", "apps/admin/src/r37-jsx-text.fail.tsx", "banijjik-guard/no-jsx-text"),
+  fails("R37", "apps/admin/src/r37-bangla-text.fail.tsx", "banijjik-guard/no-jsx-text"),
+  fails("R37", "apps/admin/src/r37-literal-child.fail.tsx", "banijjik-guard/no-jsx-text"),
+  fails("R37", "apps/admin/src/r37-template-child.fail.tsx", "banijjik-guard/no-jsx-text"),
   passes("R37", "apps/admin/src/r37-translated-text.pass.tsx"),
+  passes("R37", "apps/admin/src/r37-classname-literal.pass.tsx"),
 
   fails(
     "R38",
@@ -322,6 +326,16 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
     "banijjik-guard/no-bare-id",
   ),
   fails("R38", "packages/contracts/src/r38-bare-id.fail.ts", "banijjik-guard/no-bare-id"),
+  fails(
+    "R38",
+    "apps/api/src/modules/core/demo/domain/r38-class-property.fail.ts",
+    "banijjik-guard/no-bare-id",
+  ),
+  fails(
+    "R38",
+    "apps/api/src/modules/core/demo/domain/r38-parameter-property.fail.ts",
+    "banijjik-guard/no-bare-id",
+  ),
   passes("R38", "apps/api/src/modules/core/demo/domain/r38-named-id.pass.ts"),
   passes("R38", "src/r38-bare-id-outside-domain.pass.ts"),
 ];

@@ -64,16 +64,23 @@ export const processEnvSyntax = syntaxRules(
   ],
 );
 
-/** R37: a JSX text node that contains a letter is user-facing copy, which belongs in an i18n catalog. */
+/** R37: a JSX text node, or a string child, that contains a letter belongs in an i18n catalog. */
 export const jsxTextSelectors = syntaxRules(
   "User-facing text belongs in an i18n catalog, not in JSX.",
-  ["JSXText[value=/[A-Za-z\\u0980-\\u09FF]/]"],
+  [
+    "JSXText[value=/[A-Za-z\\u0980-\\u09FF]/]",
+    "JSXElement > JSXExpressionContainer > Literal[value=/[A-Za-z\\u0980-\\u09FF]/]",
+    "JSXFragment > JSXExpressionContainer > Literal[value=/[A-Za-z\\u0980-\\u09FF]/]",
+    "JSXElement > JSXExpressionContainer > TemplateLiteral > TemplateElement[value.raw=/[A-Za-z\\u0980-\\u09FF]/]",
+  ],
 );
 
-/** R38: a property named exactly `id` on an object type or an interface (ADR-036). */
+/** R38: a property named exactly `id` on a type, an interface or a domain class (ADR-036). */
 export const bareIdSelectors = syntaxRules("Name the entity: userId, not id (ADR-036).", [
   "TSPropertySignature[key.name='id']",
   "TSPropertySignature[key.value='id']",
+  "PropertyDefinition[key.name='id']",
+  "TSParameterProperty > Identifier[name='id']",
 ]);
 
 const MIDDLEWARE_OPTION_NAMES = "/^(middleware|skipMiddlewareFunction)$/";
