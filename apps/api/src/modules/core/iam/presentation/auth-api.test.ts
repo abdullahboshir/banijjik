@@ -282,6 +282,18 @@ describe("login", () => {
       expect(statuses).toEqual([401, 401, 401, 401, 401]);
     });
 
+    it("keeps two addresses that send the route maximum of wrong attempts from locking the real person out (review 1, R1-1)", async () => {
+      const ATTEMPTS_PER_ADDRESS = 30;
+      const person = await registerViaApi(harness.app);
+      for (const ip of [freshIp(), freshIp()]) {
+        await failTimes(person.email, ip, ATTEMPTS_PER_ADDRESS);
+      }
+
+      const realPerson = await login(person.email, person.password, freshIp());
+
+      expect(realPerson.status).toBe(200);
+    });
+
     it("locks the identifier for every address after 50 failures spread over many addresses", async () => {
       const person = await registerViaApi(harness.app);
       for (let attempt = 1; attempt <= FAILURES_PER_IDENTIFIER; attempt += 1) {

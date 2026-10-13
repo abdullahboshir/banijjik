@@ -154,6 +154,22 @@ describe("platform sign-in", () => {
     expect(operator.status).toBe(200);
   });
 
+  it("keeps two addresses that send the route maximum of wrong attempts from locking the operator out (review 1, R1-1)", async () => {
+    const ATTEMPTS_PER_ADDRESS = 30;
+    const { person } = await insertOperator(harness.app, harness.connections, [
+      PLATFORM_ROLE.SUPPORT,
+    ]);
+    for (const ip of [freshIp(), freshIp()]) {
+      for (let attempt = 0; attempt < ATTEMPTS_PER_ADDRESS; attempt += 1) {
+        await platformLogin(harness.app, { ...person, password: "wrong one 12345" }, ip);
+      }
+    }
+
+    const operator = await platformLogin(harness.app, person, freshIp());
+
+    expect(operator.status).toBe(200);
+  });
+
   it("locks the operator for every address after 50 failures spread over many addresses", async () => {
     const { person } = await insertOperator(harness.app, harness.connections, [
       PLATFORM_ROLE.SUPPORT,

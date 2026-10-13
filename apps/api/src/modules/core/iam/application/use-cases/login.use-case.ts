@@ -95,13 +95,17 @@ export class LoginUseCase {
   /**
    * The attempt is counted before the password is checked, so parallel guesses cannot all pass a
    * read-then-count gap. A success gives it back (`clearAttempts`), so in the end only failures count.
+   * Only an attempt that gets as far as a password check may count against the identifier-wide bucket,
+   * otherwise a few addresses could lock a person out with requests that were never evaluated (review 1, R1-1).
    */
   private async reserveAttempts(attempts: LoginAttemptRequests): Promise<void> {
     const { rateLimiter } = this.dependencies;
     const byAddress = await rateLimiter.consume(attempts.perIdentifierAndIp);
+    if (!byAddress.allowed) throw tooManyAttempts(byAddress.retryAfterSeconds);
     const byIdentifier = await rateLimiter.consume(attempts.perIdentifier);
-    const refused = [byAddress, byIdentifier].find((decision) => !decision.allowed);
-    if (refused !== undefined) throw tooManyAttempts(refused.retryAfterSeconds);
+    if (byIdentifier.allowed) return;
+    await rateLimiter.refund(attempts.perIdentifierAndIp);
+    throw tooManyAttempts(byIdentifier.retryAfterSeconds);
   }
 
   /** A success forgets the failures of this address and does not use up the identifier-wide allowance. */

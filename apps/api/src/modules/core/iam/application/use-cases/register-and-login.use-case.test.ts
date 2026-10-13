@@ -308,6 +308,33 @@ describe("LoginUseCase", () => {
       expect(freshAddress.code).toBe("RATE_LIMITED");
     });
 
+    it("does not let attempts that an address bucket refused use up the identifier-wide allowance (review 1, R1-1)", async () => {
+      const world = await registeredWorld();
+      const ATTEMPTS_PER_ADDRESS = 30;
+      for (const address of [1, 2]) {
+        for (let attempt = 1; attempt <= ATTEMPTS_PER_ADDRESS; attempt += 1) {
+          await failFrom(world, address);
+        }
+      }
+
+      const realPerson = await world.login.execute({ ...rightLogin, client: fromAddress(3) });
+
+      expect(realPerson.user.email).toBe("rahim@example.com");
+    });
+
+    it("gives back the address attempt when the identifier-wide bucket refuses, because that attempt was never evaluated (review 1, R1-1)", async () => {
+      const world = await registeredWorld();
+      for (let attempt = 1; attempt <= FAILURES_PER_IDENTIFIER; attempt += 1) {
+        await failFrom(world, attempt);
+      }
+
+      const refusedByIdentifier = await failFrom(world, 200);
+
+      const addressKey = `auth.login.identifier-ip:EMAIL:rahim@example.com|${fromAddress(200).ipAddress}`;
+      expect(refusedByIdentifier.code).toBe("RATE_LIMITED");
+      expect(world.rateLimiter.counts.get(addressKey) ?? 0).toBe(0);
+    });
+
     it("never counts a successful sign-in against the identifier-wide allowance", async () => {
       const world = await registeredWorld();
       for (let attempt = 1; attempt < FAILURES_PER_IDENTIFIER; attempt += 1) {
