@@ -3,15 +3,8 @@ import { z } from "zod";
 export const NODE_ENVIRONMENTS = ["development", "test", "production"] as const;
 export const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace"] as const;
 
-// A host after the scheme, after credentials or after a comma (MongoDB host lists). The optional dot is the
-// fully qualified spelling of the same machine ("localhost."), which DNS resolves just the same.
-const LOCAL_HOST_PATTERN = /(^|[@,/])(localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?)\.?(?=[:,/?]|$)/i;
 const MONGO_URL_PATTERN = /^mongodb(\+srv)?:\/\/[^/\s]+\/[^/?\s]+/;
 const REDIS_URL_PATTERN = /^rediss?:\/\/\S+$/;
-
-export function isLocalHostUrl(value: string): boolean {
-  return LOCAL_HOST_PATTERN.test(value);
-}
 
 const portSchema = z
   .string()

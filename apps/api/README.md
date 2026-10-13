@@ -66,7 +66,7 @@ Startup (`main.ts`) connects before it listens or starts the worker and exits 1 
 
 Run `npm run seed:packages -w @banijjik/api` once per environment before the first business is created: every new organization starts a trial on the seeded BUNDLE package (it inserts only the missing packages and never overwrites an edited one).
 
-In `production`, database and Redis URLs must not point to this machine, in any spelling: `localhost`, `127.0.0.1`, `0.0.0.0` and `::1`, with or without a trailing dot (`localhost.` is the same host). Production also refuses the placeholder `AUTH_ACCESS_TOKEN_SECRET` of `.env.example` and any value that contains `change-me`.
+In `production`, database and Redis URLs must not point to this machine, in any spelling: `localhost`, any address of `127.0.0.0/8`, `0.0.0.0`, IPv6 `::1` and `::` (also written out in full), and IPv4-mapped forms such as `::ffff:127.0.0.1`, with or without a trailing dot (`localhost.` is the same host). Every host of a MongoDB host list is checked. Production also refuses the placeholder `AUTH_ACCESS_TOKEN_SECRET` of `.env.example` and any value that contains `change-me`.
 
 `ALLOW_LOCAL_SERVICES=true` lets a process with `NODE_ENV=production` use local services. It exists for the spawned-process tests, which play production against the test databases. Config accepts it only when `CI=true` or `VITEST` is set in the same environment, so a real deployment that sets it alone fails to start.
 

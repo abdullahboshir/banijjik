@@ -264,6 +264,75 @@ describe("loadConfig production hardening (1.9d, review M20 and the 1.9b note)",
     ]);
   });
 
+  describe("local addresses that are not spelled 127.0.0.1 (review 1, R1-3)", () => {
+    it.each([
+      ["127.0.0.2, inside 127.0.0.0/8", "redis://127.0.0.2:6380"],
+      ["the far end of 127.0.0.0/8", "redis://127.255.255.254:6380"],
+      ["the expanded IPv6 loopback", "redis://[0:0:0:0:0:0:0:1]:6380"],
+      ["the IPv6 unspecified address", "redis://[::]:6380"],
+      ["the expanded IPv6 unspecified address", "redis://[0:0:0:0:0:0:0:0]:6380"],
+      ["the IPv4-mapped loopback", "redis://[::ffff:127.0.0.1]:6380"],
+      ["the IPv4-mapped loopback in hex", "redis://[::ffff:7f00:1]:6380"],
+      ["the IPv4-mapped unspecified address", "redis://[::ffff:0.0.0.0]:6380"],
+      [
+        "a local host after credentials with an at sign in the password",
+        "redis://u:p@ss@127.0.0.2",
+      ],
+      ["a local address with no port", "redis://127.0.0.2"],
+      ["a local address followed by a query", "redis://127.0.0.2?family=4"],
+    ])("refuses %s as the Redis host in production", (_description, redisUrl) => {
+      const error = catchConfigError({ ...productionEnv, REDIS_URL: redisUrl });
+
+      expect(error.issues).toEqual([
+        expect.objectContaining({ key: "REDIS_URL", problem: "INVALID" }),
+      ]);
+    });
+
+    it.each([
+      ["127.0.0.2", "mongodb://127.0.0.2:27018/platform"],
+      ["the expanded IPv6 loopback", "mongodb://[0:0:0:0:0:0:0:1]:27018/platform"],
+      ["the IPv4-mapped loopback", "mongodb://[::ffff:127.0.0.1]/platform"],
+      [
+        "a local address anywhere in a host list",
+        "mongodb://db1.example.com:27017,127.0.0.9:27017/platform",
+      ],
+      ["a local address first in a host list", "mongodb://127.0.0.9,db1.example.com/platform"],
+      ["a local address after credentials", "mongodb://user:secret@127.0.0.2:27018/platform"],
+    ])("refuses %s as the MongoDB host in production", (_description, platformUrl) => {
+      const error = catchConfigError({ ...productionEnv, DB_PLATFORM_URL: platformUrl });
+
+      expect(error.issues).toEqual([
+        expect.objectContaining({ key: "DB_PLATFORM_URL", problem: "INVALID" }),
+      ]);
+    });
+
+    it.each([
+      "redis://mylocalhost.example.com:6380",
+      "redis://localhost.example.com:6380",
+      "redis://128.0.0.1:6380",
+      "redis://126.255.255.255:6380",
+      "redis://10.0.0.5:6380",
+      "redis://[2001:db8::1]:6380",
+      "redis://[::ffff:10.0.0.1]:6380",
+      "redis://[::2]:6380",
+    ])("still accepts the remote host in %s", (redisUrl) => {
+      expect(() => loadConfig({ ...productionEnv, REDIS_URL: redisUrl })).not.toThrow();
+    });
+
+    it("still accepts a MongoDB host list of remote hosts", () => {
+      expect(() =>
+        loadConfig({
+          ...productionEnv,
+          DB_PLATFORM_URL: "mongodb://db1.example.com:27017,db2.example.com:27017/platform",
+        }),
+      ).not.toThrow();
+    });
+
+    it("accepts every one of them outside production", () => {
+      expect(() => loadConfig({ ...validEnv, REDIS_URL: "redis://127.0.0.2:6380" })).not.toThrow();
+    });
+  });
+
   it.each([
     "redis://localhost-cache.example.com:6380",
     "redis://cache.localhost.example.com:6380",

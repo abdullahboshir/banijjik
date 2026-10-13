@@ -5,7 +5,6 @@ import {
   allowLocalServicesRule,
   corsRule,
   isHttpOrigin,
-  isLocalHostUrl,
   isTestEnvironment,
   logLevelRule,
   nodeEnvRule,
@@ -20,6 +19,7 @@ import {
   WILDCARD_ORIGIN_HINT,
   type FieldRule,
 } from "./env.schema.js";
+import { isLocalHostUrl } from "./local-host.js";
 import { readAuthConfig, readPlatformAdmin, type ConfigSection } from "./read-auth-config.js";
 import {
   collectIssues,
