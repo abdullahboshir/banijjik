@@ -1,6 +1,8 @@
 import react from "@vitejs/plugin-react";
 import { configDefaults, defineConfig } from "vitest/config";
 
+const slowMachineTestTimeoutMs = 15_000;
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -13,6 +15,7 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, "**/*.browser.test.ts"],
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
+    testTimeout: slowMachineTestTimeoutMs,
     env: {
       NEXT_PUBLIC_API_BASE_URL: "http://localhost:4000",
       NEXT_PUBLIC_BRAND_NAME: "Test Brand",

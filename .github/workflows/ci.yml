@@ -19,7 +19,7 @@ env:
 jobs:
   verify:
     name: verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     # The queue and permission-cache tests need a real Redis; the suite fails without TEST_REDIS_URL on CI.
     services:
@@ -68,8 +68,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Default Turbo concurrency is 10; the jsdom suites then time out while sharing the CPU with the API suite.
       - name: Test
-        run: npm test
+        run: npx turbo run test --concurrency=2 --continue
         env:
           TEST_REDIS_URL: redis://localhost:6379
 
@@ -90,7 +91,7 @@ jobs:
 
   secrets:
     name: secrets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       GITLEAKS_VERSION: "8.30.1"
