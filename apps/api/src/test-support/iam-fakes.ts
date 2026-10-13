@@ -1,14 +1,19 @@
 import type { EventPayloadMap, EventType, TokenAudience } from "@banijjik/contracts";
 import type { UserId } from "@banijjik/ids";
+import { conflict, notFound } from "../kernel/http/index.js";
 import type { PasswordHasher } from "../modules/core/iam/application/ports/password-hasher.js";
-import type { PlatformOperatorRepository } from "../modules/core/iam/application/ports/platform-operator-repository.js";
+import type {
+  PlatformOperatorListQuery,
+  PlatformOperatorPage,
+  PlatformOperatorRepository,
+} from "../modules/core/iam/application/ports/platform-operator-repository.js";
 import type { SeededOperatorAudit } from "../modules/core/iam/application/ports/seeded-operator-audit.js";
 import type { RefreshSessionRepository } from "../modules/core/iam/application/ports/refresh-session-repository.js";
 import type { TokenIssuer } from "../modules/core/iam/application/ports/token-issuer.js";
 import type { UnitOfWork } from "../modules/core/iam/application/ports/unit-of-work.js";
 import type { UserRepository } from "../modules/core/iam/application/ports/user-repository.js";
 import { DuplicateIdentifierError } from "../modules/core/iam/domain/errors.js";
-import type { PlatformOperator } from "../modules/core/iam/domain/platform-operator.entity.js";
+import { PlatformOperator } from "../modules/core/iam/domain/platform-operator.entity.js";
 import { RefreshSession } from "../modules/core/iam/domain/refresh-session.entity.js";
 import { User } from "../modules/core/iam/domain/user.entity.js";
 import type {
@@ -66,6 +71,13 @@ export class InMemoryUserRepository implements UserRepository {
 
   async findByPhone(phoneE164: string): Promise<User | undefined> {
     return [...this.users.values()].find((user) => user.phoneE164 === phoneE164);
+  }
+
+  async findByIds(userIds: readonly UserId[]): Promise<User[]> {
+    return userIds.flatMap((userId) => {
+      const user = this.users.get(userId);
+      return user === undefined ? [] : [user];
+    });
   }
 
   async insert(user: User): Promise<void> {
@@ -145,9 +157,41 @@ export class InMemoryPlatformOperatorRepository implements PlatformOperatorRepos
     return [...this.operators.values()].find((operator) => operator.userId === userId);
   }
 
+  async findById(platformOperatorId: string): Promise<PlatformOperator | undefined> {
+    return this.operators.get(platformOperatorId);
+  }
+
+  async list(query: PlatformOperatorListQuery): Promise<PlatformOperatorPage> {
+    const matching = [...this.operators.values()]
+      .filter((operator) => query.status === undefined || operator.status === query.status)
+      .sort(byNewestOperator);
+    const start = (query.page - 1) * query.limit;
+    const window = matching.slice(start, start + query.limit + 1);
+    return { items: window.slice(0, query.limit), hasNext: window.length > query.limit };
+  }
+
+  async touch(platformOperatorId: string): Promise<PlatformOperator | undefined> {
+    return this.operators.get(platformOperatorId);
+  }
+
   async insert(operator: PlatformOperator): Promise<void> {
     this.operators.set(operator.platformOperatorId, operator);
   }
+
+  async save(operator: PlatformOperator, expectedVersion: number): Promise<PlatformOperator> {
+    const stored = this.operators.get(operator.platformOperatorId);
+    if (stored === undefined) throw notFound();
+    if (stored.version !== expectedVersion) throw conflict({ currentVersion: stored.version });
+    const saved = PlatformOperator.restore({ ...operator, version: expectedVersion + 1 });
+    this.operators.set(operator.platformOperatorId, saved);
+    return saved;
+  }
+}
+
+function byNewestOperator(left: PlatformOperator, right: PlatformOperator): number {
+  const created = right.createdAt.getTime() - left.createdAt.getTime();
+  if (created !== 0) return created;
+  return right.platformOperatorId < left.platformOperatorId ? -1 : 1;
 }
 
 /** Counts attempts per subject without windows: enough to test the use case rules. */
