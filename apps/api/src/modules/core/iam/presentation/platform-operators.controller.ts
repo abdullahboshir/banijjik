@@ -35,7 +35,11 @@ export class PlatformOperatorsController {
   readonly list: RequestHandler = async (_request, response) => {
     // Safe: validate({ query: platformOperatorListQuerySchema }) produced this value on this route.
     const query = response.locals["validated"].query as PlatformOperatorListQuery;
-    const page = await this.dependencies.listOperators.execute(query);
+    const page = await this.dependencies.listOperators.execute({
+      page: query.page,
+      limit: query.limit,
+      ...(query.status === undefined ? {} : { status: query.status }),
+    });
     sendData(response, page.items.map(toPlatformOperatorResponse), {
       meta: { page: query.page, limit: query.limit, hasNext: page.hasNext },
     });
