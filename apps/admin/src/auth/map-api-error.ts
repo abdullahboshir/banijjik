@@ -30,6 +30,7 @@ function readFields(details: ApiError["details"]): ReceivedField[] {
   if (!Array.isArray(fields)) return [];
   return fields.flatMap((field: unknown): ReceivedField[] => {
     if (typeof field !== "object" || field === null) return [];
+    // The API sends `fields` as untyped JSON; the next line keeps only entries that are two strings.
     const { path, messageKey } = field as Partial<ReceivedField>;
     return typeof path === "string" && typeof messageKey === "string" ? [{ path, messageKey }] : [];
   });

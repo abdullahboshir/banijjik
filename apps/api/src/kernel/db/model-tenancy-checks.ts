@@ -17,6 +17,7 @@ function invalidModel(definition: ModelDefinition, problem: string): AppError {
 function hasRequiredImmutableString(schema: Schema, field: string): boolean {
   const path = schema.path(field);
   if (path === undefined || path.instance !== "String") return false;
+  // Mongoose types `options` as a wide object; this check only reads the two flags it declares.
   const options = path.options as { required?: unknown; immutable?: unknown };
   return Boolean(options.required) && Boolean(options.immutable);
 }
@@ -24,6 +25,7 @@ function hasRequiredImmutableString(schema: Schema, field: string): boolean {
 function hasRequiredString(schema: Schema, field: string): boolean {
   const path = schema.path(field);
   if (path === undefined || path.instance !== "String") return false;
+  // Same wide Mongoose options object; only `required` matters for a location field.
   return Boolean((path.options as { required?: unknown }).required);
 }
 

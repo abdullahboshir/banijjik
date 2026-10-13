@@ -62,6 +62,7 @@ export function buildProfileUpdate(
   }));
   return {
     ok: false,
+    // The form state is one string per field; the helper types that as a plain record.
     fieldErrors: issuesToFieldErrors(issues, form as unknown as Record<string, string>),
   };
 }

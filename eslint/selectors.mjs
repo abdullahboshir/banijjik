@@ -64,6 +64,18 @@ export const processEnvSyntax = syntaxRules(
   ],
 );
 
+/** R37: a JSX text node that contains a letter is user-facing copy, which belongs in an i18n catalog. */
+export const jsxTextSelectors = syntaxRules(
+  "User-facing text belongs in an i18n catalog, not in JSX.",
+  ["JSXText[value=/[A-Za-z\\u0980-\\u09FF]/]"],
+);
+
+/** R38: a property named exactly `id` on an object type or an interface (ADR-036). */
+export const bareIdSelectors = syntaxRules("Name the entity: userId, not id (ADR-036).", [
+  "TSPropertySignature[key.name='id']",
+  "TSPropertySignature[key.value='id']",
+]);
+
 const MIDDLEWARE_OPTION_NAMES = "/^(middleware|skipMiddlewareFunction)$/";
 
 /** R36: every spelling of the Mongoose option that skips hooks: an object key, an assignment or a setOptions argument. */

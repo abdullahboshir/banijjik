@@ -39,5 +39,7 @@ export const guardPlugin = {
     "no-orm-imports": alias("no-restricted-imports"),
     "no-then-chain": alias("no-restricted-syntax"),
     "no-ssr-false": alias("no-restricted-syntax"),
+    "no-jsx-text": alias("no-restricted-syntax"),
+    "no-bare-id": alias("no-restricted-syntax"),
   },
 };

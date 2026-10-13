@@ -69,7 +69,10 @@ function LocaleSelect({ form, labels, onChange }: SectionProps): ReactElement {
       <Select
         id="profile-defaultLocale"
         value={form.defaultLocale}
-        onChange={(event) => onChange({ defaultLocale: event.target.value as PreferredLocale })}
+        onChange={(event) =>
+          // The option values are the PREFERRED_LOCALE members; the DOM types the value as a plain string.
+          onChange({ defaultLocale: event.target.value as PreferredLocale })
+        }
       >
         {Object.values(PREFERRED_LOCALE).map((locale) => (
           <option key={locale} value={locale}>

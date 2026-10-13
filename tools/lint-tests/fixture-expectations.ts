@@ -312,4 +312,16 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
 
   fails("R34", "apps/api/src/seeds/r34-seeds-import-module-internals.fail.ts", BOUNDARIES),
   passes("R34", "apps/api/src/seeds/r34-seeds-import-index-kernel-config.pass.ts"),
+
+  fails("R37", "apps/admin/src/r37-jsx-text.fail.tsx", "banijjik-guard/no-jsx-text"),
+  passes("R37", "apps/admin/src/r37-translated-text.pass.tsx"),
+
+  fails(
+    "R38",
+    "apps/api/src/modules/core/demo/domain/r38-bare-id.fail.ts",
+    "banijjik-guard/no-bare-id",
+  ),
+  fails("R38", "packages/contracts/src/r38-bare-id.fail.ts", "banijjik-guard/no-bare-id"),
+  passes("R38", "apps/api/src/modules/core/demo/domain/r38-named-id.pass.ts"),
+  passes("R38", "src/r38-bare-id-outside-domain.pass.ts"),
 ];

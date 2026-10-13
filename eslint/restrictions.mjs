@@ -12,9 +12,11 @@ import {
 } from "./scopes.mjs";
 
 import {
+  bareIdSelectors,
   brandSelectors,
   industryComparisonSelectors,
   industrySelectors,
+  jsxTextSelectors,
   processEnvSyntax,
   syntaxRules,
   underscoreIdSelectors,
@@ -230,5 +232,17 @@ export const restrictionBlocks = [
         })),
       ],
     },
+  },
+  {
+    name: "banijjik/jsx-text",
+    files: ["apps/admin/**/*.{tsx,jsx}", "apps/platform/**/*.{tsx,jsx}"],
+    ignores: TEST_FILES,
+    rules: { "banijjik-guard/no-jsx-text": [ERROR, ...jsxTextSelectors] },
+  },
+  {
+    name: "banijjik/bare-id",
+    files: ["**/domain/**", "packages/contracts/**"],
+    ignores: TEST_FILES,
+    rules: { "banijjik-guard/no-bare-id": [ERROR, ...bareIdSelectors] },
   },
 ];

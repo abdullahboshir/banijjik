@@ -17,11 +17,13 @@ function rowErrorsFromFields(details: ApiError["details"]): Record<number, RowEr
   const fields: unknown = details?.["fields"];
   const rowErrors: Record<number, RowErrors> = {};
   if (!Array.isArray(fields)) return rowErrors;
+  // `fields` is untyped JSON from the API; each entry is checked before it is used.
   for (const field of fields as { path?: unknown; messageKey?: unknown }[]) {
     if (typeof field.path !== "string" || typeof field.messageKey !== "string") continue;
     const match = ROW_PATH.exec(field.path);
     if (!match) continue;
     const index = Number(match[1]);
+    // The regex only captures roleId or locationId, which are the keys of RowErrors.
     const key = match[2] as keyof RowErrors;
     rowErrors[index] = { ...rowErrors[index], [key]: knownMessageKeyOrInternal(field.messageKey) };
   }
