@@ -23,14 +23,12 @@ import type { MyOrganization } from "../my-organization.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
 import type { ActorProfileReader, UserIdentifierLookup } from "../ports/iam-ports.js";
 import type { MemberNumberSequence } from "../ports/member-number-sequence.js";
-import type {
-  InvitationRepository,
-  InvitationTokenLookup,
-  InvitationTokens,
-  MemberManagementRepository,
-} from "../ports/member-and-invitation-repositories.js";
+import type { InvitationRepository } from "../ports/invitation-repository.js";
+import type { InvitationTokenLookup } from "../ports/invitation-token-lookup.js";
+import type { InvitationTokens } from "../ports/invitation-tokens.js";
+import type { MemberManagementRepository } from "../ports/member-management-repository.js";
 import type { OrganizationContextRunner } from "../ports/organization-context-runner.js";
-import type { OrganizationLimitLock } from "../ports/profile-and-location-repositories.js";
+import type { OrganizationLimitLock } from "../ports/organization-limit-lock.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
 import { revokeBecauseInviterAccessChanged } from "./revoke-inviter-invitations.js";
 import type { MyOrganizationsReader } from "./list-my-organizations.use-case.js";

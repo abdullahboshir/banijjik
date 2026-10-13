@@ -2,12 +2,10 @@ import type { PlatformOrganizationListQuery, PlatformReasonBody } from "@banijji
 import type { RequestHandler, Response } from "express";
 import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
-import type {
-  GetTenantUseCase,
-  ListTenantsUseCase,
-  ReactivateTenantUseCase,
-  SuspendTenantUseCase,
-} from "../application/use-cases/tenant-admin.use-cases.js";
+import type { GetTenantUseCase } from "../application/use-cases/get-tenant.use-case.js";
+import type { ListTenantsUseCase } from "../application/use-cases/list-tenants.use-case.js";
+import type { ReactivateTenantUseCase } from "../application/use-cases/reactivate-tenant.use-case.js";
+import type { SuspendTenantUseCase } from "../application/use-cases/suspend-tenant.use-case.js";
 import { toDetailResponse, toSummaryResponse } from "./tenant.transformer.js";
 
 export interface TenantControllerDependencies {

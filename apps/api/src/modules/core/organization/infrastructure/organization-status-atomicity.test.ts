@@ -12,7 +12,7 @@ import {
   disposeTestDatabases,
   installTestLogger,
 } from "../../../../test-support/test-databases.js";
-import { SuspendOrganizationUseCase } from "../application/use-cases/organization-status.use-cases.js";
+import { SuspendOrganizationUseCase } from "../application/use-cases/suspend-organization.use-case.js";
 import { Organization } from "../domain/organization.entity.js";
 import { MongoConfigVersionBumper } from "./mongo-config-version-bumper.js";
 import { MongoOrganizationRepository } from "./mongo-organization.repository.js";

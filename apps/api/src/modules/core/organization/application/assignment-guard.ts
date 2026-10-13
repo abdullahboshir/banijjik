@@ -12,7 +12,7 @@ import {
 } from "../domain/assignment-rules.js";
 import type { Assignment } from "../domain/member.entity.js";
 import type { RoleGrantLookup } from "./ports/iam-ports.js";
-import type { LocationManagementRepository } from "./ports/profile-and-location-repositories.js";
+import type { LocationManagementRepository } from "./ports/location-management-repository.js";
 
 export interface AssignmentGuardDependencies {
   readonly roles: RoleGrantLookup;

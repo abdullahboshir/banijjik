@@ -1,5 +1,5 @@
 import type { PlatformPackageResponse } from "@banijjik/contracts";
-import type { PackageDetail } from "../application/use-cases/package-admin.use-cases.js";
+import type { PackageDetail } from "../application/use-cases/package-detail.js";
 
 /** The package as the platform panel sees it, with the module keys that have no manifest yet. */
 export function toPackageResponse(detail: PackageDetail): PlatformPackageResponse {

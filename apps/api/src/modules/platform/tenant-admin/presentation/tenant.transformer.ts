@@ -4,10 +4,8 @@ import type {
   PlatformOrganizationSummary,
   PlatformSubscriptionResponse,
 } from "@banijjik/contracts";
-import type {
-  TenantDetail,
-  TenantSummary,
-} from "../application/use-cases/tenant-admin.use-cases.js";
+import type { TenantDetail } from "../application/use-cases/tenant-detail.js";
+import type { TenantSummary } from "../application/use-cases/tenant-summary.js";
 import type {
   TenantOverrideView,
   TenantSubscriptionView,

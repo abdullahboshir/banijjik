@@ -21,10 +21,12 @@ import {
 import { validate } from "../../../../kernel/http/index.js";
 import type { InvitationController } from "./invitation.controller.js";
 import type { MemberController } from "./member.controller.js";
-import type { ProfileAndLocationController } from "./profile-and-location.controller.js";
+import type { LocationController } from "./location.controller.js";
+import type { ProfileController } from "./profile.controller.js";
 
 export interface OrganizationTenantRouterDependencies {
-  readonly profileAndLocations: ProfileAndLocationController;
+  readonly profile: ProfileController;
+  readonly locations: LocationController;
   readonly members: MemberController;
   readonly invitations: InvitationController;
   readonly permission: PermissionMiddlewareFactory;
@@ -33,7 +35,7 @@ export interface OrganizationTenantRouterDependencies {
 }
 
 function addProfileRoutes(router: Router, input: OrganizationTenantRouterDependencies): void {
-  const { profileAndLocations: controller, permission } = input;
+  const { profile: controller, permission } = input;
   // Any active member may read the profile: no permission key (plan 1.4, 1.7b decision 3).
   router.get("/profile", controller.getProfile);
   router.patch(
@@ -46,7 +48,7 @@ function addProfileRoutes(router: Router, input: OrganizationTenantRouterDepende
 }
 
 function addLocationRoutes(router: Router, input: OrganizationTenantRouterDependencies): void {
-  const { profileAndLocations: controller, permission, idempotency } = input;
+  const { locations: controller, permission, idempotency } = input;
   router.get(
     "/locations",
     permission(PERMISSION_KEY.ORGANIZATION_LOCATION_READ),

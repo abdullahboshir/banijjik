@@ -1,7 +1,7 @@
 import type { OrganizationId, UserId } from "@banijjik/ids";
 import { cannotChangeSelf, ownerIsProtected, recordNotFound } from "../../domain/errors.js";
 import type { Member } from "../../domain/member.entity.js";
-import type { OrganizationProfileRepository } from "../ports/profile-and-location-repositories.js";
+import type { OrganizationProfileRepository } from "../ports/organization-profile-repository.js";
 
 export interface MemberProtectionInput {
   readonly target: Member;

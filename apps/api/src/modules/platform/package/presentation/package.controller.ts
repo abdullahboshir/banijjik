@@ -7,13 +7,11 @@ import type {
 import type { RequestHandler, Response } from "express";
 import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
-import type {
-  ArchivePackageUseCase,
-  CreatePackageUseCase,
-  GetPackageUseCase,
-  ListPackagesUseCase,
-  UpdatePackageUseCase,
-} from "../application/use-cases/package-admin.use-cases.js";
+import type { ArchivePackageUseCase } from "../application/use-cases/archive-package.use-case.js";
+import type { CreatePackageUseCase } from "../application/use-cases/create-package.use-case.js";
+import type { GetPackageUseCase } from "../application/use-cases/get-package.use-case.js";
+import type { ListPackagesUseCase } from "../application/use-cases/list-packages.use-case.js";
+import type { UpdatePackageUseCase } from "../application/use-cases/update-package.use-case.js";
 import type { LimitIncrements } from "../domain/package.entity.js";
 import { toPackageResponse } from "./package.transformer.js";
 

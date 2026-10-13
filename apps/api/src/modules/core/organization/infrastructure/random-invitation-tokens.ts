@@ -3,7 +3,7 @@ import { INVITATION_TOKEN_BYTES } from "@banijjik/contracts";
 import type {
   InvitationTokens,
   IssuedInvitationToken,
-} from "../application/ports/member-and-invitation-repositories.js";
+} from "../application/ports/invitation-tokens.js";
 
 /** 32 random bytes as base64url; only the SHA-256 of the token is stored (ADR-092). */
 export class RandomInvitationTokens implements InvitationTokens {

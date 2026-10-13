@@ -13,18 +13,14 @@ import type {
   AcceptInvitationUseCase,
   PreviewInvitationUseCase,
 } from "../application/use-cases/accept-invitation.use-case.js";
-import type {
-  CreateInvitationUseCase,
-  ListInvitationsUseCase,
-  RevokeInvitationUseCase,
-} from "../application/use-cases/invitation.use-cases.js";
+import type { CreateInvitationUseCase } from "../application/use-cases/create-invitation.use-case.js";
+import type { ListInvitationsUseCase } from "../application/use-cases/list-invitations.use-case.js";
+import type { RevokeInvitationUseCase } from "../application/use-cases/revoke-invitation.use-case.js";
 import { toMyOrganizationSummary } from "./my-organization.transformer.js";
-import {
-  toAssignments,
-  toInvitationCreatedResponse,
-  toInvitationPreviewResponse,
-  toInvitationResponse,
-} from "./member-and-invitation.transformers.js";
+import { toAssignments } from "./assignment.transformer.js";
+import { toInvitationCreatedResponse } from "./invitation-created.transformer.js";
+import { toInvitationPreviewResponse } from "./invitation-preview.transformer.js";
+import { toInvitationResponse } from "./invitation.transformer.js";
 import { readTenantCaller } from "../../../../kernel/access/index.js";
 
 const HTTP_CREATED = 201;

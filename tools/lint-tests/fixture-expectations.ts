@@ -234,7 +234,7 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   // A file on the explicit SYSTEM_ACCESS_FILES list (eslint/scopes.mjs) may call it.
   passes(
     "R26",
-    "apps/api/src/modules/platform/tenant-admin/application/use-cases/tenant-admin.use-cases.ts",
+    "apps/api/src/modules/platform/tenant-admin/application/use-cases/list-tenants.use-case.ts",
   ),
   passes("R26", `${MODULE}/application/r26-run-as-system-in-tests.pass.test.ts`),
   passes("R26", "apps/api/src/kernel/context/r26-run-as-system-in-kernel.pass.ts"),

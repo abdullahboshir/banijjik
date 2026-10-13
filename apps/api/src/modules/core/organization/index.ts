@@ -16,17 +16,15 @@ import type { OrganizationContextRunner } from "./application/ports/organization
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
 import type { TrialStarter } from "./application/ports/trial-starter.js";
 import type { OrganizationDirectory } from "./application/ports/organization-directory.js";
-import {
-  ReactivateOrganizationUseCase,
-  SuspendOrganizationUseCase,
-} from "./application/use-cases/organization-status.use-cases.js";
+import { ReactivateOrganizationUseCase } from "./application/use-cases/reactivate-organization.use-case.js";
+import { SuspendOrganizationUseCase } from "./application/use-cases/suspend-organization.use-case.js";
 import { MongoOrganizationDirectory } from "./infrastructure/mongo-organization-directory.js";
 import { CreateOrganizationUseCase } from "./application/use-cases/create-organization.use-case.js";
 import {
   ListMyOrganizationsUseCase,
   type MyOrganizationsReader,
 } from "./application/use-cases/list-my-organizations.use-case.js";
-import type { InvitationTokenLookup } from "./application/ports/member-and-invitation-repositories.js";
+import type { InvitationTokenLookup } from "./application/ports/invitation-token-lookup.js";
 import { MongoInvitationTokenLookup } from "./infrastructure/mongo-invitation-token-lookup.js";
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
 import type { ActiveLocationCounter } from "./application/ports/active-location-counter.js";
@@ -153,7 +151,7 @@ export function buildInvitationTokenLookup(): InvitationTokenLookup {
   return new MongoInvitationTokenLookup();
 }
 
-export type { InvitationTokenLookup } from "./application/ports/member-and-invitation-repositories.js";
+export type { InvitationTokenLookup } from "./application/ports/invitation-token-lookup.js";
 export type { ActiveLocationCounter };
 export type {
   OrganizationConfigSnapshot,

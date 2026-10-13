@@ -1,6 +1,6 @@
 import type { OrganizationId } from "@banijjik/ids";
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
-import type { OrganizationLimitLock } from "../application/ports/profile-and-location-repositories.js";
+import type { OrganizationLimitLock } from "../application/ports/organization-limit-lock.js";
 import { ORGANIZATION_MODEL_NAME, type OrganizationDocument } from "./organization.schema.js";
 
 /**

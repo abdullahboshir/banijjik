@@ -7,13 +7,11 @@ import type {
   PackageReader,
   PackageUsage,
 } from "./application/ports/package-repository.js";
-import {
-  ArchivePackageUseCase,
-  CreatePackageUseCase,
-  GetPackageUseCase,
-  ListPackagesUseCase,
-  UpdatePackageUseCase,
-} from "./application/use-cases/package-admin.use-cases.js";
+import { ArchivePackageUseCase } from "./application/use-cases/archive-package.use-case.js";
+import { CreatePackageUseCase } from "./application/use-cases/create-package.use-case.js";
+import { GetPackageUseCase } from "./application/use-cases/get-package.use-case.js";
+import { ListPackagesUseCase } from "./application/use-cases/list-packages.use-case.js";
+import { UpdatePackageUseCase } from "./application/use-cases/update-package.use-case.js";
 import { EnsureSeedPackagesUseCase } from "./application/use-cases/ensure-seed-packages.use-case.js";
 import { MongoPackageRepository } from "./infrastructure/mongo-package.repository.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";

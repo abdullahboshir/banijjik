@@ -9,7 +9,7 @@ import { diffAuditFields, type AuditRecorder } from "../../../../../kernel/audit
 import type { Clock } from "../../../../../kernel/time/index.js";
 import type { Invitation } from "../../domain/invitation.entity.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
-import type { InvitationRepository } from "../ports/member-and-invitation-repositories.js";
+import type { InvitationRepository } from "../ports/invitation-repository.js";
 
 export interface InviterRevocationDependencies {
   readonly invitations: InvitationRepository;

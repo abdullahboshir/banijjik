@@ -8,12 +8,13 @@ import type { Request, RequestHandler, Response } from "express";
 import { sendData } from "../../../../kernel/http/index.js";
 import type {
   ChangeMemberStatusUseCase,
-  GetMemberUseCase,
-  ListMembersUseCase,
   MemberStatusAction,
-  UpdateMemberUseCase,
-} from "../application/use-cases/member.use-cases.js";
-import { toAssignments, toMemberResponse } from "./member-and-invitation.transformers.js";
+} from "../application/use-cases/change-member-status.use-case.js";
+import type { GetMemberUseCase } from "../application/use-cases/get-member.use-case.js";
+import type { ListMembersUseCase } from "../application/use-cases/list-members.use-case.js";
+import type { UpdateMemberUseCase } from "../application/use-cases/update-member.use-case.js";
+import { toAssignments } from "./assignment.transformer.js";
+import { toMemberResponse } from "./member.transformer.js";
 import { readTenantCaller } from "../../../../kernel/access/index.js";
 
 export interface MemberControllerDependencies {

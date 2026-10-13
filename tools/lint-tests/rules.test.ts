@@ -15,7 +15,7 @@ const EXPECTED_RULES = Array.from(
 );
 // Fixtures that cannot carry ".fail." / ".pass." in their name because the rule is about the real file name.
 const NAMED_BY_FOLDER =
-  /^(r21-star-export\/(fail|pass)\/(index|barrel)|apps\/api\/src\/kernel\/http\/error-handler|apps\/api\/src\/modules\/core\/organization\/index|apps\/api\/src\/modules\/platform\/tenant-admin\/application\/use-cases\/tenant-admin\.use-cases)\.ts$/;
+  /^(r21-star-export\/(fail|pass)\/(index|barrel)|apps\/api\/src\/kernel\/http\/error-handler|apps\/api\/src\/modules\/core\/organization\/index|apps\/api\/src\/modules\/platform\/tenant-admin\/application\/use-cases\/list-tenants\.use-case)\.ts$/;
 const FIXTURE_FILE = /\.(fail|pass)(\.(test|config))?\.tsx?$/;
 
 type FixtureOutcome = { ruleIds: string[]; messages: string[] };

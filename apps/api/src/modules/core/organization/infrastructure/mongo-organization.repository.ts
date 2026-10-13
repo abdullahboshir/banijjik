@@ -7,7 +7,7 @@ import {
   updateVersioned,
 } from "../../../../kernel/db/index.js";
 import type { OrganizationStatusRepository } from "../application/ports/organization-status-repository.js";
-import type { OrganizationProfileRepository } from "../application/ports/profile-and-location-repositories.js";
+import type { OrganizationProfileRepository } from "../application/ports/organization-profile-repository.js";
 import type { OrganizationRepository } from "../application/ports/repositories.js";
 import type { Organization } from "../domain/organization.entity.js";
 import { toSlugTakenError } from "./duplicate-slug.js";

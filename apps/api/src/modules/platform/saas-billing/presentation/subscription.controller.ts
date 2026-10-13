@@ -2,11 +2,9 @@ import type { PlatformChangePackageBody, PlatformExtendTrialBody } from "@banijj
 import type { RequestHandler, Response } from "express";
 import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
-import type {
-  ChangePackageUseCase,
-  ExtendTrialUseCase,
-  GetSubscriptionUseCase,
-} from "../application/use-cases/subscription-admin.use-cases.js";
+import type { ChangePackageUseCase } from "../application/use-cases/change-package.use-case.js";
+import type { ExtendTrialUseCase } from "../application/use-cases/extend-trial.use-case.js";
+import type { GetSubscriptionUseCase } from "../application/use-cases/get-subscription.use-case.js";
 import { toSubscriptionResponse } from "./subscription.transformer.js";
 
 export interface SubscriptionControllerDependencies {

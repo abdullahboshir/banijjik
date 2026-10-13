@@ -8,12 +8,10 @@ import type {
   TenantOverrideReader,
   TenantSubscriptionReader,
 } from "./application/ports/tenant-admin-ports.js";
-import {
-  GetTenantUseCase,
-  ListTenantsUseCase,
-  ReactivateTenantUseCase,
-  SuspendTenantUseCase,
-} from "./application/use-cases/tenant-admin.use-cases.js";
+import { GetTenantUseCase } from "./application/use-cases/get-tenant.use-case.js";
+import { ListTenantsUseCase } from "./application/use-cases/list-tenants.use-case.js";
+import { ReactivateTenantUseCase } from "./application/use-cases/reactivate-tenant.use-case.js";
+import { SuspendTenantUseCase } from "./application/use-cases/suspend-tenant.use-case.js";
 import { TenantController } from "./presentation/tenant.controller.js";
 import { buildTenantRouter } from "./presentation/tenant.router.js";
 

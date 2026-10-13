@@ -2,11 +2,9 @@ import type { PlatformModuleOverrideCreateBody } from "@banijjik/validation";
 import type { RequestHandler, Response } from "express";
 import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
-import type {
-  CreateModuleOverrideUseCase,
-  DeleteModuleOverrideUseCase,
-  ListModuleOverridesUseCase,
-} from "../application/use-cases/module-override-admin.use-cases.js";
+import type { CreateModuleOverrideUseCase } from "../application/use-cases/create-module-override.use-case.js";
+import type { DeleteModuleOverrideUseCase } from "../application/use-cases/delete-module-override.use-case.js";
+import type { ListModuleOverridesUseCase } from "../application/use-cases/list-module-overrides.use-case.js";
 import { toModuleOverrideResponse } from "./module-override.transformer.js";
 
 export interface ModuleOverrideControllerDependencies {

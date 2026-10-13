@@ -14,34 +14,26 @@ import { buildReadUserProfileUseCase, type RoleGrantReader } from "../iam/index.
 import { buildUserIdentifierReader } from "../iam/index.js";
 import { AssignmentGuard } from "./application/assignment-guard.js";
 import type { ActorProfileReader } from "./application/ports/iam-ports.js";
-import type { InvitationTokenLookup } from "./application/ports/member-and-invitation-repositories.js";
+import type { InvitationTokenLookup } from "./application/ports/invitation-token-lookup.js";
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
 import {
   AcceptInvitationUseCase,
   PreviewInvitationUseCase,
 } from "./application/use-cases/accept-invitation.use-case.js";
-import {
-  CreateInvitationUseCase,
-  ListInvitationsUseCase,
-  RevokeInvitationUseCase,
-} from "./application/use-cases/invitation.use-cases.js";
+import { CreateInvitationUseCase } from "./application/use-cases/create-invitation.use-case.js";
+import { ListInvitationsUseCase } from "./application/use-cases/list-invitations.use-case.js";
+import { RevokeInvitationUseCase } from "./application/use-cases/revoke-invitation.use-case.js";
 import type { MyOrganizationsReader } from "./application/use-cases/list-my-organizations.use-case.js";
-import {
-  ArchiveLocationUseCase,
-  CreateLocationUseCase,
-  ListLocationsUseCase,
-  UpdateLocationUseCase,
-} from "./application/use-cases/location.use-cases.js";
-import {
-  ChangeMemberStatusUseCase,
-  GetMemberUseCase,
-  ListMembersUseCase,
-  UpdateMemberUseCase,
-} from "./application/use-cases/member.use-cases.js";
-import {
-  GetProfileUseCase,
-  UpdateProfileUseCase,
-} from "./application/use-cases/profile.use-cases.js";
+import { ArchiveLocationUseCase } from "./application/use-cases/archive-location.use-case.js";
+import { CreateLocationUseCase } from "./application/use-cases/create-location.use-case.js";
+import { ListLocationsUseCase } from "./application/use-cases/list-locations.use-case.js";
+import { UpdateLocationUseCase } from "./application/use-cases/update-location.use-case.js";
+import { ChangeMemberStatusUseCase } from "./application/use-cases/change-member-status.use-case.js";
+import { GetMemberUseCase } from "./application/use-cases/get-member.use-case.js";
+import { ListMembersUseCase } from "./application/use-cases/list-members.use-case.js";
+import { UpdateMemberUseCase } from "./application/use-cases/update-member.use-case.js";
+import { GetProfileUseCase } from "./application/use-cases/get-profile.use-case.js";
+import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use-case.js";
 import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
 import { MongoInvitationRepository } from "./infrastructure/mongo-invitation.repository.js";
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
@@ -55,7 +47,8 @@ import { InvitationController } from "./presentation/invitation.controller.js";
 import { buildInvitationLinkRouter } from "./presentation/invitation-link.router.js";
 import { MemberController } from "./presentation/member.controller.js";
 import { buildOrganizationTenantRouter } from "./presentation/organization-tenant.router.js";
-import { ProfileAndLocationController } from "./presentation/profile-and-location.controller.js";
+import { LocationController } from "./presentation/location.controller.js";
+import { ProfileController } from "./presentation/profile.controller.js";
 
 export interface OrganizationTenantDependencies {
   readonly clock: Clock;
@@ -124,13 +117,19 @@ function buildSharedParts(dependencies: OrganizationTenantDependencies): SharedP
   };
 }
 
-function buildProfileAndLocationController(shared: SharedParts): ProfileAndLocationController {
-  const { organizations, locations, members, invitations } = shared;
-  const { unitOfWork, events, audit, clock, limits, limitLock } = shared;
-  const configVersion = new MongoConfigVersionBumper();
-  return new ProfileAndLocationController({
+function buildProfileController(shared: SharedParts): ProfileController {
+  const { organizations, unitOfWork, events, audit } = shared;
+  return new ProfileController({
     getProfile: new GetProfileUseCase(organizations),
     updateProfile: new UpdateProfileUseCase({ organizations, unitOfWork, events, audit }),
+  });
+}
+
+function buildLocationController(shared: SharedParts): LocationController {
+  const { locations, members, invitations } = shared;
+  const { unitOfWork, events, audit, clock, limits, limitLock } = shared;
+  const configVersion = new MongoConfigVersionBumper();
+  return new LocationController({
     listLocations: new ListLocationsUseCase(locations),
     createLocation: new CreateLocationUseCase({
       configVersion,
@@ -246,7 +245,8 @@ export function buildOrganizationTenantRouters(
   const invitations = buildInvitationController(shared, dependencies);
   return {
     tenantRouter: buildOrganizationTenantRouter({
-      profileAndLocations: buildProfileAndLocationController(shared),
+      profile: buildProfileController(shared),
+      locations: buildLocationController(shared),
       members: buildMemberController(shared),
       invitations,
       permission: dependencies.permission,

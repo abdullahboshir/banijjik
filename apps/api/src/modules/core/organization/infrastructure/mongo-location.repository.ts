@@ -10,8 +10,8 @@ import type { LocationRepository } from "../application/ports/repositories.js";
 import type {
   LocationListRequest,
   LocationManagementRepository,
-  Page,
-} from "../application/ports/profile-and-location-repositories.js";
+} from "../application/ports/location-management-repository.js";
+import type { Page } from "../application/ports/page.js";
 import type { Location } from "../domain/location.entity.js";
 import { toDuplicateFieldError } from "./duplicate-field.js";
 import { toLocation, toLocationDocument } from "./location.mapper.js";

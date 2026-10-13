@@ -1,5 +1,5 @@
 import type { PlatformSubscriptionResponse } from "@banijjik/contracts";
-import type { SubscriptionDetail } from "../application/use-cases/subscription-admin.use-cases.js";
+import type { SubscriptionDetail } from "../application/use-cases/subscription-detail.js";
 
 export function toSubscriptionResponse(detail: SubscriptionDetail): PlatformSubscriptionResponse {
   return {

@@ -9,8 +9,8 @@ import {
 import type {
   InvitationListRequest,
   InvitationRepository,
-} from "../application/ports/member-and-invitation-repositories.js";
-import type { Page } from "../application/ports/profile-and-location-repositories.js";
+} from "../application/ports/invitation-repository.js";
+import type { Page } from "../application/ports/page.js";
 import type { Invitation } from "../domain/invitation.entity.js";
 import { assignmentsReachFilter } from "./assignments-reach-filter.js";
 import { toInvitation, toInvitationDocument } from "./invitation.mapper.js";

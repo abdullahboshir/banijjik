@@ -29,10 +29,15 @@ export const ORM_ALLOWED_FILES = [
 // A new platform use case that needs system access is added here in the same commit, so the bypass
 // shows up in review (plan 1.9b, ADR-087). Patterns start with `**/` like the rest of this file.
 export const SYSTEM_ACCESS_FILES = [
-  "**/modules/platform/entitlement/application/use-cases/module-override-admin.use-cases.ts",
-  "**/modules/platform/package/application/use-cases/package-admin.use-cases.ts",
-  "**/modules/platform/saas-billing/application/use-cases/subscription-admin.use-cases.ts",
-  "**/modules/platform/tenant-admin/application/use-cases/tenant-admin.use-cases.ts",
+  "**/modules/platform/entitlement/application/use-cases/create-module-override.use-case.ts",
+  "**/modules/platform/entitlement/application/use-cases/delete-module-override.use-case.ts",
+  "**/modules/platform/entitlement/application/use-cases/list-module-overrides.use-case.ts",
+  "**/modules/platform/package/application/use-cases/archive-package.use-case.ts",
+  "**/modules/platform/saas-billing/application/use-cases/change-package.use-case.ts",
+  "**/modules/platform/saas-billing/application/use-cases/extend-trial.use-case.ts",
+  "**/modules/platform/saas-billing/application/use-cases/get-subscription.use-case.ts",
+  "**/modules/platform/tenant-admin/application/use-cases/get-tenant.use-case.ts",
+  "**/modules/platform/tenant-admin/application/use-cases/list-tenants.use-case.ts",
 ];
 export const PUBLIC_INDEX_FILES = ["**/index.ts"];
 export const ID_PACKAGE_FILES = ["**/packages/ids/**"];

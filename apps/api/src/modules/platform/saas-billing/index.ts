@@ -8,12 +8,10 @@ import type { Clock } from "../../../kernel/time/index.js";
 import { buildPackageReader, buildPackageReferenceGuard } from "../package/index.js";
 import type { SubscriptionReader } from "./application/ports/subscription-repository.js";
 import type { PackageKindLookup } from "./application/ports/subscription-admin-ports.js";
-import {
-  ChangePackageUseCase,
-  ExtendTrialUseCase,
-  GetSubscriptionUseCase,
-  type SubscriptionAdminDependencies,
-} from "./application/use-cases/subscription-admin.use-cases.js";
+import { ChangePackageUseCase } from "./application/use-cases/change-package.use-case.js";
+import { ExtendTrialUseCase } from "./application/use-cases/extend-trial.use-case.js";
+import { GetSubscriptionUseCase } from "./application/use-cases/get-subscription.use-case.js";
+import { type SubscriptionAdminDependencies } from "./application/use-cases/subscription-admin-dependencies.js";
 import { MongoSubscriptionAdminRepository } from "./infrastructure/mongo-subscription-admin.repository.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { SubscriptionController } from "./presentation/subscription.controller.js";
@@ -51,7 +49,7 @@ export function buildSubscriptionReader(): SubscriptionReader {
   return new MongoSubscriptionRepository();
 }
 
-export type { SubscriptionDetail } from "./application/use-cases/subscription-admin.use-cases.js";
+export type { SubscriptionDetail } from "./application/use-cases/subscription-detail.js";
 
 export interface SubscriptionPlatformDependencies {
   readonly clock: Clock;

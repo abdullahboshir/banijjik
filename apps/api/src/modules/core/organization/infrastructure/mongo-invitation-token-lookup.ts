@@ -3,7 +3,7 @@ import { models } from "../../../../kernel/db/index.js";
 import type {
   InvitationTokenLookup,
   InvitationWithContext,
-} from "../application/ports/member-and-invitation-repositories.js";
+} from "../application/ports/invitation-token-lookup.js";
 import { toInvitation } from "./invitation.mapper.js";
 import { INVITATION_MODEL_NAME, type InvitationDocument } from "./invitation.schema.js";
 import { MEMBER_MODEL_NAME, type MemberDocument } from "./member.schema.js";

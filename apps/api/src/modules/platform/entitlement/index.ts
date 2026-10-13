@@ -25,11 +25,9 @@ import type {
   OrganizationExistence,
   OverrideManifestCatalog,
 } from "./application/ports/override-admin-ports.js";
-import {
-  CreateModuleOverrideUseCase,
-  DeleteModuleOverrideUseCase,
-  ListModuleOverridesUseCase,
-} from "./application/use-cases/module-override-admin.use-cases.js";
+import { CreateModuleOverrideUseCase } from "./application/use-cases/create-module-override.use-case.js";
+import { DeleteModuleOverrideUseCase } from "./application/use-cases/delete-module-override.use-case.js";
+import { ListModuleOverridesUseCase } from "./application/use-cases/list-module-overrides.use-case.js";
 import { MongoModuleOverrideAdminRepository } from "./infrastructure/mongo-module-override-admin.repository.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { ModuleOverrideController } from "./presentation/module-override.controller.js";
