@@ -34,6 +34,19 @@ export async function waitForText(page: Page, text: string): Promise<void> {
   );
 }
 
+/** Waits until the text is visible inside the selector. `textContent` also matches the streamed payload in script tags. */
+export async function waitForTextIn(page: Page, selector: string, text: string): Promise<void> {
+  await page.waitForFunction(
+    (css, wanted) => {
+      const element = document.querySelector(css);
+      return element instanceof HTMLElement && element.innerText.includes(wanted);
+    },
+    {},
+    selector,
+    text,
+  );
+}
+
 /** Waits for a status badge with exactly this text (a button label may contain the same words). */
 export async function waitForBadge(page: Page, label: string): Promise<void> {
   await page.waitForFunction(

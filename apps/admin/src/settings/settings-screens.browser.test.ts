@@ -12,6 +12,7 @@ import {
   SUBMIT_BUTTON,
   waitForPath,
   waitForText,
+  waitForTextIn,
 } from "../test-support/browser-helpers";
 import {
   clickByName,
@@ -197,7 +198,7 @@ describe("roles", () => {
     await waitForSheetClosed(page);
     await waitForText(page, ROLE_NAME);
     await gotoWhenHydrated(page, "/acme/settings/roles", "main button");
-    await waitForText(page, ROLE_NAME);
+    await waitForTextIn(page, "main", ROLE_NAME);
     await clickButton(page, "main button", (text) => text.includes(ROLE_NAME));
     await page.waitForFunction(() => /\/settings\/roles\/[0-9a-f-]{36}$/.test(location.pathname));
     roleDetailPath = await page.evaluate(() => window.location.pathname);
@@ -226,7 +227,7 @@ describe("roles", () => {
         .sort(),
     );
     await gotoWhenHydrated(member, "/acme/settings/staff", "main");
-    await waitForText(member, MEMBER_NAME);
+    await waitForTextIn(member, "main", MEMBER_NAME);
     const staffActionPaths = await member.evaluate(() =>
       Array.from(document.querySelectorAll("main a")).map((a) => (a as HTMLAnchorElement).pathname),
     );
@@ -287,19 +288,19 @@ describe("a manager of one location (review M3)", () => {
         .sort(),
     );
     await gotoWhenHydrated(manager, STAFF_LINK, "main");
-    await waitForText(manager, BRANCH_STAFF_NAME);
+    await waitForTextIn(manager, "main", BRANCH_STAFF_NAME);
     const staffList = await manager.$eval("main", (main) => (main as HTMLElement).innerText);
     await gotoWhenHydrated(manager, "/acme/settings/profile", "main");
-    await waitForText(manager, NEW_BUSINESS_NAME);
+    await waitForTextIn(manager, "main", NEW_BUSINESS_NAME);
     // Buttons only: the page text also carries the whole message catalog in its script data.
     const profileButtons = await manager.$$eval("main button", (buttons) =>
       buttons.map((button) => button.textContent ?? ""),
     );
     await gotoWhenHydrated(manager, "/acme/settings/locations", "main");
-    await waitForText(manager, SECOND_LOCATION_NAME);
+    await waitForTextIn(manager, "main", SECOND_LOCATION_NAME);
     const locationButtons = await buttonLabelsOfMain(manager);
     await gotoWhenHydrated(manager, "/acme/settings/roles", "main");
-    await waitForText(manager, ROLE_NAME);
+    await waitForTextIn(manager, "main", ROLE_NAME);
     const roleButtons = await buttonLabelsOfMain(manager);
     await closePage(manager);
 
