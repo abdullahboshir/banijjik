@@ -1,8 +1,8 @@
 "use server";
 
+import { LOCALE_COOKIE_NAME } from "@banijjik/web-client/server";
 import { isSupportedLocale } from "@banijjik/i18n";
 import { cookies } from "next/headers";
-import { LOCALE_COOKIE_NAME } from "./get-locale";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 

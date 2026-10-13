@@ -1,8 +1,8 @@
 "use client";
 
+import { useLazyComponent } from "@banijjik/web-client/client";
 import { Button } from "@banijjik/ui";
 import { useState, type ComponentType, type ReactElement } from "react";
-import { useLazyComponent } from "../lib/use-lazy-component";
 
 export interface LazySheetButtonProps<Props extends { onClose: () => void }> {
   label: string;

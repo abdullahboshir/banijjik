@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { FormField, Textarea } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import { useTranslator } from "../i18n/i18n-provider";
 
 export interface ReasonFieldProps {
   fieldId: string;

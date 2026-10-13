@@ -1,7 +1,7 @@
+import { useTranslator } from "@banijjik/web-client/client";
 import type { Translator } from "@banijjik/i18n";
 import { useState, type FormEvent } from "react";
 import { ApiError } from "../lib/api/api-error";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 import type { FieldErrors } from "./field-errors";
 import { mapApiError, type FormMessage, type MappedApiError } from "./map-api-error";
 

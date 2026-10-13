@@ -1,3 +1,4 @@
+import { I18nProvider } from "@banijjik/web-client/client";
 import {
   BUNDLED_CATALOGS,
   PLATFORM_SCREEN_CATALOGS,
@@ -6,7 +7,6 @@ import {
 } from "@banijjik/i18n";
 import { render } from "@testing-library/react";
 import type { ReactElement } from "react";
-import { I18nProvider } from "../i18n/i18n-provider";
 import { banglaText } from "./bangla-text";
 
 export { banglaText };

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { PACKAGE_STATUS, type PlatformPackageResponse } from "@banijjik/contracts";
 import { Button } from "@banijjik/ui";
 import { useRouter } from "next/navigation";
@@ -8,7 +9,6 @@ import { createPackage, updatePackage } from "../api/platform-api";
 import { announceSuccess } from "../forms/announce-success";
 import type { FieldErrors } from "../forms/schema-errors";
 import { useFormSubmit } from "../forms/use-form-submit";
-import { useTranslator } from "../i18n/i18n-provider";
 import { ArchivePackageButton } from "./archive-package-button";
 import { ClosureGaps } from "./closure-gaps";
 import { LimitFields } from "./limit-fields";

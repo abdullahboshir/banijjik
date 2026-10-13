@@ -1,12 +1,12 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { ConfirmDialog } from "@banijjik/ui";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { archivePackage } from "../api/platform-api";
 import { announceSuccess } from "../forms/announce-success";
 import { useFormSubmit } from "../forms/use-form-submit";
-import { useTranslator } from "../i18n/i18n-provider";
 import type { PackageFormLabels } from "./package-form-labels";
 
 export interface ArchivePackageDialogProps {

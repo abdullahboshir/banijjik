@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { Button, EmptyState } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import { useTranslator } from "../../../src/lib/i18n/i18n-provider";
 
 /** A failed page inside a business keeps the shell around it; the person can try again. */
 export default function OrganizationPageError({

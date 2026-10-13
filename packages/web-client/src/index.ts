@@ -15,6 +15,8 @@ export {
 export type { ApiErrorFields } from "./api-error.js";
 export { parseApiResponse } from "./parse-api-response.js";
 export type { PageMeta } from "./page-meta.js";
+export { parseEnvironment } from "./parse-environment.js";
+export type { Environment } from "./parse-environment.js";
 export { REQUEST_PATH_HEADER } from "./request-path.js";
 export {
   SESSION_UNAVAILABLE_REASON,

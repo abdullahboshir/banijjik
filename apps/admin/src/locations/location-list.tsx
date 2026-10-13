@@ -1,8 +1,8 @@
 "use client";
 
+import { useLazyComponent } from "@banijjik/web-client/client";
 import { Button, DataList, EmptyState, StatusBadge, type DataListColumn } from "@banijjik/ui";
 import { useState, type ComponentType, type ReactElement } from "react";
-import { useLazyComponent } from "../lib/use-lazy-component";
 import type { LocationDialogsProps, LocationRowAction } from "./location-dialogs";
 import type { LocationArchiveLabels, LocationFormLabels } from "./location-labels";
 import type { LocationFormState } from "./location-state";

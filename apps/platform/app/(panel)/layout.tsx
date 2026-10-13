@@ -1,9 +1,9 @@
+import { LanguageSwitch } from "@banijjik/web-client/client";
 import { AppShell, TopBar } from "@banijjik/ui";
 import type { ReactElement, ReactNode } from "react";
 import { loadOperator } from "../../src/auth/session-data";
 import { getTranslator } from "../../src/i18n/get-translator";
 import { BrandLogo } from "../../src/shell/brand-logo";
-import { LanguageSwitch } from "../../src/shell/language-switch";
 import { navigationEntriesFor } from "../../src/shell/navigation-entries";
 import { PanelBottomNav, PanelSidebar } from "../../src/shell/panel-navigation";
 import { SignOutButton } from "../../src/shell/sign-out-button";

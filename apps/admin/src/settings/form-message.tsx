@@ -1,7 +1,7 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import type { ReactElement } from "react";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 import type { FormFailure } from "./form-failure";
 
 /** The refusal that belongs to no field, from the message key the API sent. */

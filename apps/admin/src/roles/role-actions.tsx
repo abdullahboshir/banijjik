@@ -1,8 +1,8 @@
 "use client";
 
+import { useLazyComponent } from "@banijjik/web-client/client";
 import { Button, StickyActionBar } from "@banijjik/ui";
 import { useState, type ComponentType, type ReactElement } from "react";
-import { useLazyComponent } from "../lib/use-lazy-component";
 import type { RoleArchiveDialogProps } from "./role-archive-dialog";
 import type { RoleFormSheetProps } from "./role-form-sheet";
 import type { RoleArchiveLabels, RoleFormGroup, RoleFormLabels } from "./role-labels";

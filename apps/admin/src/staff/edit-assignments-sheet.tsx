@@ -1,12 +1,12 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { Button, Sheet, SheetContent } from "@banijjik/ui";
 import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
 import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { ApiError } from "../lib/api/api-error";
 import { updateMember } from "../lib/api/organization-api";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 import { failureOfAssignmentError, type AssignmentFailure } from "./assignment-errors";
 import type { AssignmentOptions } from "./assignment-options";
 import { AssignmentRowsEditor } from "./assignment-rows-editor";

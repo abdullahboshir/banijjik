@@ -1,10 +1,10 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { loginRequestSchema } from "@banijjik/validation";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { login } from "../lib/api/auth-api";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 import { AuthTextField } from "./auth-text-field";
 import { issuesToFieldErrors, type FieldErrors } from "./field-errors";
 import { FormFooter } from "./form-footer";

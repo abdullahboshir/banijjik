@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { Button, EmptyState } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import { useTranslator } from "../src/i18n/i18n-provider";
 
 export default function ErrorPage({ reset }: { error: Error; reset: () => void }): ReactElement {
   const { t } = useTranslator();

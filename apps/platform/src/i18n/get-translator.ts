@@ -1,6 +1,6 @@
+import { getLocale } from "@banijjik/web-client/server";
 import { PLATFORM_SCREEN_CATALOGS, createTranslator, type Translator } from "@banijjik/i18n";
 import { env } from "../config/env";
-import { getLocale } from "./get-locale";
 
 /**
  * Server only. It also knows the platform screen catalogs, which never reach the browser: client components

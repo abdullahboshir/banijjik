@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import type { InvitationCreateRequest } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
 import { Button, FormField, Sheet, SheetContent, TextInput } from "@banijjik/ui";
@@ -8,7 +9,6 @@ import { useRef, useState, type FormEvent, type ReactElement } from "react";
 import { mapApiError, type MappedApiError } from "../auth/map-api-error";
 import { ApiError } from "../lib/api/api-error";
 import { createInvitation } from "../lib/api/organization-api";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 import { failureOfAssignmentError } from "../staff/assignment-errors";
 import type { AssignmentOptions } from "../staff/assignment-options";
 import { AssignmentRowsEditor } from "../staff/assignment-rows-editor";

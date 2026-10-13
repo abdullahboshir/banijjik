@@ -1,8 +1,8 @@
 "use client";
 
+import { useLazyComponent } from "@banijjik/web-client/client";
 import { Button } from "@banijjik/ui";
 import { useState, type ComponentType, type ReactElement } from "react";
-import { useLazyComponent } from "../lib/use-lazy-component";
 import type { RemoveOverrideDialogProps } from "./remove-override-dialog";
 import type { RemoveOverrideLabels } from "./remove-override-labels";
 

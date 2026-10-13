@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { Checkbox, FormField, Select } from "@banijjik/ui";
 import { platformChangePackageRequestSchema } from "@banijjik/validation";
 import { useState, type ReactElement } from "react";
@@ -8,7 +9,6 @@ import { FormSheet } from "../forms/form-sheet";
 import { issuesToFieldErrors, type FieldErrors } from "../forms/schema-errors";
 import { useFinishAction } from "../forms/use-finish-action";
 import { useFormSubmit } from "../forms/use-form-submit";
-import { useTranslator } from "../i18n/i18n-provider";
 import type { PackageOption, TenantActionContext } from "./tenant-action-labels";
 
 export interface ChangePackageSheetProps {

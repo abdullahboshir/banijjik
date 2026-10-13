@@ -1,9 +1,9 @@
+import { getLocale } from "@banijjik/web-client/server";
 import { BUNDLED_CATALOGS } from "@banijjik/i18n";
 import { Inter, Noto_Sans_Bengali } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactElement, ReactNode } from "react";
 import { env } from "../src/config/env";
-import { getLocale } from "../src/lib/i18n/get-locale";
 import { Providers } from "./providers";
 import "./globals.css";
 

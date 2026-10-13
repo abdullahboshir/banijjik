@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import {
   MODULE_OVERRIDE_EFFECT,
   type PlatformModuleOverrideCreateRequest,
@@ -14,7 +15,6 @@ import { issuesToFieldErrors, type FieldErrors } from "../forms/schema-errors";
 import { TextFieldRow } from "../forms/text-field-row";
 import { useFinishAction } from "../forms/use-finish-action";
 import { useFormSubmit } from "../forms/use-form-submit";
-import { useTranslator } from "../i18n/i18n-provider";
 import type { TenantActionContext, TenantActionLabels } from "./tenant-action-labels";
 
 export interface OverrideSheetProps {

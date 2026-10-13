@@ -1,9 +1,9 @@
+import { I18nProvider } from "@banijjik/web-client/client";
 // @vitest-environment jsdom
 import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BUNDLED_CATALOGS } from "@banijjik/i18n";
-import { I18nProvider } from "../lib/i18n/i18n-provider";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));

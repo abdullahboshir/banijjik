@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { ERROR_CODE } from "@banijjik/contracts";
 import { Button } from "@banijjik/ui";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { signOut } from "../auth/sign-out";
 import { ApiError } from "../lib/api/api-error";
 import { acceptInvitation } from "../lib/api/organization-api";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 
 export interface AcceptInvitationButtonProps {
   token: string;

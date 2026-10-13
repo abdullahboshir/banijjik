@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { FormField, TextInput, formFieldMessageId } from "@banijjik/ui";
 import type { ComponentProps, ReactElement } from "react";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 
 export interface SettingsTextFieldProps {
   fieldId: string;

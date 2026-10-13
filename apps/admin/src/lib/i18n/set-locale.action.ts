@@ -1,10 +1,10 @@
 "use server";
 
+import { LOCALE_COOKIE_NAME } from "@banijjik/web-client/server";
 import type { MeResponse, MeUpdateRequest } from "@banijjik/contracts";
 import { isSupportedLocale, type Locale } from "@banijjik/i18n";
 import { cookies } from "next/headers";
 import { serverApiFetch } from "../api/server-api-fetch";
-import { LOCALE_COOKIE_NAME } from "./get-locale";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 

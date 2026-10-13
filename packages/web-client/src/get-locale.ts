@@ -1,5 +1,5 @@
 import { DEFAULT_LOCALE, isSupportedLocale, type Locale } from "@banijjik/i18n";
-import { cookies } from "next/headers";
+import { cookies } from "next/headers.js";
 
 export const LOCALE_COOKIE_NAME = "locale";
 

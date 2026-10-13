@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { FormField, TextInput } from "@banijjik/ui";
 import { platformExtendTrialRequestSchema } from "@banijjik/validation";
 import { useState, type ReactElement } from "react";
@@ -9,7 +10,6 @@ import { ReasonField } from "../forms/reason-field";
 import { issuesToFieldErrors, type FieldErrors } from "../forms/schema-errors";
 import { useFinishAction } from "../forms/use-finish-action";
 import { useFormSubmit } from "../forms/use-form-submit";
-import { useTranslator } from "../i18n/i18n-provider";
 import type { TenantActionContext } from "./tenant-action-labels";
 
 export interface ExtendTrialSheetProps {

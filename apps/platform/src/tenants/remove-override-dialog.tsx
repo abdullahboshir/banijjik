@@ -1,11 +1,11 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { ConfirmDialog } from "@banijjik/ui";
 import { useState, type ReactElement } from "react";
 import { deleteModuleOverride } from "../api/platform-api";
 import { useFinishAction } from "../forms/use-finish-action";
 import { useFormSubmit } from "../forms/use-form-submit";
-import { useTranslator } from "../i18n/i18n-provider";
 import type { RemoveOverrideLabels } from "./remove-override-labels";
 
 export interface RemoveOverrideDialogProps {

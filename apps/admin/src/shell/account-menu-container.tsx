@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import type { MyOrganizationSummary } from "@banijjik/contracts";
 import { SUPPORTED_LOCALES, type Locale, type Translator } from "@banijjik/i18n";
 import {
@@ -13,7 +14,6 @@ import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { signOut } from "../auth/sign-out";
 import { ApiError } from "../lib/api/api-error";
 import { seedMyOrganizations } from "../lib/api/me-api";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 import { initialsOf } from "./initials";
 import { LazyAccountMenu } from "./lazy-account-menu";
 import { useLocaleChange } from "./use-locale-change";

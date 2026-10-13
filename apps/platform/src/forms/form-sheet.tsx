@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { Button, Sheet, SheetContent } from "@banijjik/ui";
 import type { FormEvent, ReactElement, ReactNode } from "react";
-import { useTranslator } from "../i18n/i18n-provider";
 import type { FormFailure } from "./api-failure";
 
 export interface FormSheetProps {

@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { Button, FormField, Select } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 import type { AssignmentLabels } from "./assignment-labels";
 import { withNumber } from "./assignment-labels";
 import type { AssignmentOptions } from "./assignment-options";

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { Button } from "@banijjik/ui";
 import { safeNextPath } from "@banijjik/web-client";
 import { useRouter } from "next/navigation";
@@ -8,7 +9,6 @@ import { login } from "../api/platform-api";
 import { issuesToFieldErrors, type FieldErrors } from "../forms/schema-errors";
 import { TextFieldRow } from "../forms/text-field-row";
 import { useFormSubmit } from "../forms/use-form-submit";
-import { useTranslator } from "../i18n/i18n-provider";
 
 const INITIAL_VALUES = { identifier: "", password: "" };
 

@@ -1,8 +1,8 @@
 "use client";
 
+import { useLazyComponent } from "@banijjik/web-client/client";
 import { Button, StickyActionBar } from "@banijjik/ui";
 import { useState, type ComponentType, type ReactElement } from "react";
-import { useLazyComponent } from "../lib/use-lazy-component";
 import type { AssignmentOptions } from "./assignment-options";
 import type { MemberActionDialogsProps } from "./member-action-dialogs";
 import type { MemberAction, MemberActionLabels, MemberSummary } from "./member-action-labels";

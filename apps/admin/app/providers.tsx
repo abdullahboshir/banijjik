@@ -1,14 +1,12 @@
 "use client";
 
+import { LazyToaster, ShellLink, I18nProvider, useTranslator } from "@banijjik/web-client/client";
 import type { Catalog, Locale } from "@banijjik/i18n";
 import { LinkComponentProvider } from "@banijjik/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { useState, type ReactElement, type ReactNode } from "react";
-import { LazyToaster } from "../src/shell/lazy-toaster";
-import { ShellLink } from "../src/shell/shell-link";
 import { ApiError } from "../src/lib/api/api-error";
-import { I18nProvider, useTranslator } from "../src/lib/i18n/i18n-provider";
 
 const QUERY_STALE_TIME_MS = 30_000;
 const MAX_QUERY_RETRIES = 2;

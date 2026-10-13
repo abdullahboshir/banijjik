@@ -1,6 +1,6 @@
+import { LanguageSwitch } from "@banijjik/web-client/client";
 import type { ReactElement, ReactNode } from "react";
 import { BrandLogo } from "../../src/shell/brand-logo";
-import { LanguageSwitch } from "../../src/shell/language-switch";
 
 /** A centred single column for sign-in and sign-up: the brand, the language switch, then the form. */
 export default function AuthLayout({ children }: { children: ReactNode }): ReactElement {

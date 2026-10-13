@@ -1,5 +1,5 @@
+import { useTranslator } from "@banijjik/web-client/client";
 import { useState } from "react";
-import { useTranslator } from "../i18n/i18n-provider";
 import { failureOf, type FormFailure } from "./api-failure";
 
 export interface FormSubmit {

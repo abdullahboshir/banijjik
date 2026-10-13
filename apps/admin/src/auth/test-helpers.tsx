@@ -1,3 +1,4 @@
+import { I18nProvider } from "@banijjik/web-client/client";
 import {
   BUNDLED_CATALOGS,
   createTranslator,
@@ -6,7 +7,6 @@ import {
 } from "@banijjik/i18n";
 import { render } from "@testing-library/react";
 import type { ReactElement } from "react";
-import { I18nProvider } from "../lib/i18n/i18n-provider";
 
 /** Bangla catalog text by key, so tests name what the person reads without copying the catalog. */
 export function banglaText(messageKey: string): string {

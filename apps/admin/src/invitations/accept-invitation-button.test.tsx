@@ -1,3 +1,4 @@
+import { I18nProvider } from "@banijjik/web-client/client";
 // @vitest-environment jsdom
 import { ERROR_CODE } from "@banijjik/contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,7 +8,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { banglaText } from "../auth/test-helpers";
 import { ApiError } from "../lib/api/api-error";
 import { BUNDLED_CATALOGS } from "@banijjik/i18n";
-import { I18nProvider } from "../lib/i18n/i18n-provider";
 
 const acceptInvitation = vi.fn();
 vi.mock("../lib/api/organization-api", () => ({

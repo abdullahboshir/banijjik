@@ -1,12 +1,12 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import type { UserRegisterRequest } from "@banijjik/contracts";
 import type { Locale } from "@banijjik/i18n";
 import { userRegisterRequestSchema } from "@banijjik/validation";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { register } from "../lib/api/auth-api";
-import { useTranslator } from "../lib/i18n/i18n-provider";
 import { AuthTextField } from "./auth-text-field";
 import { issuesToFieldErrors, type FieldErrors } from "./field-errors";
 import { FormFooter } from "./form-footer";

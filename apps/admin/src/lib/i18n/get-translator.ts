@@ -1,6 +1,6 @@
+import { getLocale } from "@banijjik/web-client/server";
 import { createTranslator, SCREEN_CATALOGS, type Translator } from "@banijjik/i18n";
 import { env } from "../../config/env";
-import { getLocale } from "./get-locale";
 
 /**
  * Server only. It also knows the screen catalogs that never reach the browser. Org terms are empty until

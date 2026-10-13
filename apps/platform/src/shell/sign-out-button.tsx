@@ -1,9 +1,9 @@
 "use client";
 
+import { useTranslator } from "@banijjik/web-client/client";
 import { Button } from "@banijjik/ui";
 import { useState, type ReactElement } from "react";
 import { signOut } from "../auth/sign-out";
-import { useTranslator } from "../i18n/i18n-provider";
 
 /** Sign out; a failure is shown as a toast and the operator stays signed in. */
 export function SignOutButton(): ReactElement {

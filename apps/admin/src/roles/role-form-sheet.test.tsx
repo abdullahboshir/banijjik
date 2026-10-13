@@ -1,3 +1,4 @@
+import { I18nProvider } from "@banijjik/web-client/client";
 // @vitest-environment jsdom
 import { ERROR_CODE, PERMISSION_KEY } from "@banijjik/contracts";
 import { BUNDLED_CATALOGS } from "@banijjik/i18n";
@@ -6,7 +7,6 @@ import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { banglaText, banglaTranslator } from "../auth/test-helpers";
 import { ApiError } from "../lib/api/api-error";
-import { I18nProvider } from "../lib/i18n/i18n-provider";
 import { allDefinitions } from "../settings/test-fixtures";
 
 const refresh = vi.fn();

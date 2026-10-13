@@ -12,7 +12,7 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
-const { getLocale } = await import("./get-locale");
+const { getLocale } = await import("./get-locale.js");
 
 beforeEach(() => {
   cookieValues.clear();
