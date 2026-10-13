@@ -87,9 +87,13 @@ function typeCheckTree() {
 }
 
 async function lintFiles(files) {
+  // CI makes typescript-eslint build its project once, so it misses files this helper has just written.
   const eslint = new ESLint({
     cwd: treeRoot,
     overrideConfigFile: join(REPOSITORY_ROOT, "eslint.config.mjs"),
+    overrideConfig: {
+      languageOptions: { parserOptions: { disallowAutomaticSingleRunInference: true } },
+    },
   });
   const results = await eslint.lintFiles(files);
   return results.flatMap((result) =>
