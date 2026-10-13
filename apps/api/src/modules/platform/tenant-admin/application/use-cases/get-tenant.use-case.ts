@@ -1,6 +1,6 @@
 import { DomainRuleError, ERROR_CODE, SYSTEM_REASON } from "@banijjik/contracts";
+import { maskIdentifier } from "@banijjik/validation";
 import { runAsSystem } from "../../../../../kernel/context/index.js";
-import { maskIdentifier } from "../../domain/mask-identifier.js";
 import type { TenantOverrideView } from "../ports/tenant-admin-ports.js";
 import type { TenantAdminDependencies } from "./tenant-admin-dependencies.js";
 import type { TenantDetail } from "./tenant-detail.js";

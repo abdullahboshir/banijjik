@@ -81,3 +81,17 @@ export type {
   PlatformPackageUpdateBody,
   PlatformReasonBody,
 } from "./platform/platform-schemas.js";
+export { maskIdentifier } from "./text/mask-identifier.js";
+export {
+  platformOperatorCreateRequestSchema,
+  platformOperatorListQuerySchema,
+  platformOperatorParamsSchema,
+  platformOperatorStatusRequestSchema,
+  platformOperatorUpdateRequestSchema,
+} from "./platform/platform-operator-schemas.js";
+export type {
+  PlatformOperatorCreateBody,
+  PlatformOperatorListQuery,
+  PlatformOperatorStatusBody,
+  PlatformOperatorUpdateBody,
+} from "./platform/platform-operator-schemas.js";

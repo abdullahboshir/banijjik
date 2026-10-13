@@ -20,7 +20,7 @@ const MAX_TRIAL_EXTENSION_DAYS = 30;
 const PACKAGE_KEY_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 
 /** A reason is mandatory for every operator action that changes a tenant (it goes to the platform audit log). */
-const reasonSchema = z.string().trim().min(1).max(REASON_MAX_LENGTH);
+export const reasonSchema = z.string().trim().min(1).max(REASON_MAX_LENGTH);
 
 export const platformOrganizationParamsSchema = z.object({ organizationId: uuidV7Schema });
 export const platformPackageParamsSchema = z.object({ packageId: uuidV7Schema });
