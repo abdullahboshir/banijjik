@@ -11,7 +11,7 @@ import {
   type OrganizationProfileFields,
   type OrganizationStatus,
   type PreferredLocale,
-  INDUSTRY_TEMPLATE_KEY,
+  INDUSTRY_TEMPLATE_KEY_PATTERN,
 } from "@banijjik/contracts";
 import { Schema } from "mongoose";
 import {
@@ -72,7 +72,7 @@ export const organizationSchema = new Schema<OrganizationDocument>(
     industryTemplateKey: {
       type: String,
       required: true,
-      enum: Object.values(INDUSTRY_TEMPLATE_KEY),
+      match: INDUSTRY_TEMPLATE_KEY_PATTERN,
     },
     ownerUserId: { type: String, required: true },
     status: { type: String, required: true, enum: Object.values(ORGANIZATION_STATUS) },

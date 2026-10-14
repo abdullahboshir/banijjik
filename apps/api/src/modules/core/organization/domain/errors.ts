@@ -89,3 +89,11 @@ export function invitationIdentifierMismatch(): DomainRuleError {
     messageKey: "errors.invitation_identifier_mismatch",
   });
 }
+
+/** The template is unknown, still a draft, or retired, so signup cannot choose it (ADR-075). */
+export function industryTemplateNotAvailable(): DomainRuleError {
+  return businessRule(
+    ORGANIZATION_RULE_KEY.INDUSTRY_TEMPLATE_NOT_AVAILABLE,
+    "errors.industry_template_not_available",
+  );
+}

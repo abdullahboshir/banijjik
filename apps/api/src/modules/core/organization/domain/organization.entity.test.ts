@@ -1,3 +1,4 @@
+import { SEED_INDUSTRY_TEMPLATE_KEY } from "@banijjik/contracts";
 import { newId, type UserId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
 import { DomainRuleError } from "./errors.js";
@@ -9,7 +10,7 @@ function anOrganizationInput(overrides: Partial<NewOrganizationInput> = {}): New
   return {
     name: "Rahim Store",
     slug: "rahim-store",
-    industryTemplateKey: "RETAIL",
+    industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
     ownerUserId: newId() as UserId,
     defaultLocale: "bn",
     now: NOW,
@@ -47,7 +48,7 @@ describe("Organization.create", () => {
     expect(organization).toMatchObject({
       slug: "rahim-store",
       name: "Rahim Store",
-      industryTemplateKey: "RETAIL",
+      industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
       ownerUserId,
       createdByUserId: ownerUserId,
       status: "ACTIVE",

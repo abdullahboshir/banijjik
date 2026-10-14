@@ -56,6 +56,12 @@ import {
 } from "../modules/platform/entitlement/index.js";
 import { registerPackageModels } from "../modules/platform/package/index.js";
 import {
+  buildIndustryTemplateAvailability,
+  buildIndustryTemplateReader,
+  buildPublishedIndustryTemplateRouter,
+  registerIndustryModels,
+} from "../modules/platform/industry/index.js";
+import {
   buildTrialStarter,
   registerSaasBillingModels,
 } from "../modules/platform/saas-billing/index.js";
@@ -83,7 +89,7 @@ export interface V1Dependencies {
   readonly tenantRouterFactories?: readonly ((permission: PermissionMiddlewareFactory) => Router)[];
   /** Probe modules for tests, registered through the same registry (ADR-091). Production passes none. */
   readonly extraManifests?: readonly ModuleManifest[];
-  /** Replaces the interim industry template reader so tests can turn modules off by template (card 1.6b). Production passes none. */
+  /** Replaces the industry template reader so tests can turn modules off by template (card 1.6b). */
   readonly templateReader?: IndustryTemplateReader;
 }
 
@@ -93,6 +99,7 @@ export function registerModuleModels(): void {
   registerOrganizationModels();
   registerAuditModels();
   registerPackageModels();
+  registerIndustryModels();
   registerSaasBillingModels();
   registerEntitlementModels();
 }
@@ -117,19 +124,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   // Built once here: the idempotency middleware and the audit recorder are shared by the modules.
   const audit = buildAuditRecorder(clock);
   const idempotency = createIdempotencyMiddleware({ clock });
-  const { myOrganizationsRouter } = buildOrganizationRouters({
-    ...dependencies,
-    // The creator becomes the owner of the organization being created, so creation runs as it.
-    contextRunner: {
-      run: (organizationId, work) => runInOrganizationContext(organizationId, work),
-    },
-    // "My organizations" spans organizations before any is chosen: a deliberate AUTH_LOOKUP.
-    myOrganizationsReader: asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMyOrganizationsReader()),
-    audit,
-    idempotency,
-    // The trial subscription is written inside the create-organization transaction (card 1.6a).
-    trialStarter: buildTrialStarter(clock),
-  });
+  const myOrganizationsRouter = buildMyOrganizationsRouter(dependencies, audit, idempotency);
   const membershipDirectory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
   const access = buildAccessParts({ clock, redis: dependencies.redis, registry });
   const organizationTenant = buildOrganizationTenant({
@@ -145,6 +140,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   router.use("/auth", authRouter);
   // More specific path first, so /me/orgs never falls into the /me router.
   router.use("/me/orgs", adminGuards, myOrganizationsRouter);
+  router.use("/industry-templates", adminGuards, buildPublishedIndustryTemplateRouter());
   router.use("/me", adminGuards, meRouter);
   // The invitation link: public preview, signed-in accept. Outside the tenant pipeline.
   router.use("/invitations", organizationTenant.invitationLinkRouter);
@@ -173,6 +169,28 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   return router;
 }
 
+/** Organization creation, including the published-template check and the trial subscription. */
+function buildMyOrganizationsRouter(
+  dependencies: V1Dependencies,
+  audit: AuditRecorder,
+  idempotency: RequestHandler,
+): Router {
+  return buildOrganizationRouters({
+    ...dependencies,
+    // The creator becomes the owner of the organization being created, so creation runs as it.
+    contextRunner: {
+      run: (organizationId, work) => runInOrganizationContext(organizationId, work),
+    },
+    // "My organizations" spans organizations before any is chosen: a deliberate AUTH_LOOKUP.
+    myOrganizationsReader: asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMyOrganizationsReader()),
+    audit,
+    idempotency,
+    // The trial subscription is written inside the create-organization transaction (card 1.6a).
+    trialStarter: buildTrialStarter(dependencies.clock),
+    industryTemplates: buildIndustryTemplateAvailability(),
+  }).myOrganizationsRouter;
+}
+
 /** The per-user limit of business users: none without a limiter, otherwise one handler. */
 function buildAdminUserLimit(dependencies: V1Dependencies): readonly RequestHandler[] {
   const { userRateLimiter, clock } = dependencies;
@@ -196,9 +214,7 @@ function buildResolvedConfigService(
     registry,
     clock: dependencies.clock,
     ...buildOrganizationConfigPorts(),
-    ...(dependencies.templateReader === undefined
-      ? {}
-      : { templates: dependencies.templateReader }),
+    templates: dependencies.templateReader ?? buildIndustryTemplateReader(dependencies.clock),
   });
 }
 

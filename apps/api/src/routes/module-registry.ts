@@ -4,6 +4,7 @@ import { auditManifest } from "../modules/core/audit/index.js";
 import { iamManifest } from "../modules/core/iam/index.js";
 import { organizationManifest } from "../modules/core/organization/index.js";
 import { entitlementManifest } from "../modules/platform/entitlement/index.js";
+import { industryManifest } from "../modules/platform/industry/index.js";
 import { packageManifest } from "../modules/platform/package/index.js";
 import { saasBillingManifest } from "../modules/platform/saas-billing/index.js";
 import { tenantAdminManifest } from "../modules/platform/tenant-admin/index.js";
@@ -14,6 +15,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   organizationManifest,
   auditManifest,
   packageManifest,
+  industryManifest,
   saasBillingManifest,
   entitlementManifest,
   tenantAdminManifest,

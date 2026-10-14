@@ -9,7 +9,11 @@ import {
 import type { RoleId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
-import { sessionNotValid, SlugTakenError } from "../../domain/errors.js";
+import {
+  industryTemplateNotAvailable,
+  sessionNotValid,
+  SlugTakenError,
+} from "../../domain/errors.js";
 import { Location } from "../../domain/location.entity.js";
 import { Member } from "../../domain/member.entity.js";
 import { Organization } from "../../domain/organization.entity.js";
@@ -27,6 +31,7 @@ import type {
   MemberRepository,
   OrganizationRepository,
 } from "../ports/repositories.js";
+import type { IndustryTemplateAvailability } from "../ports/industry-template-availability.js";
 import type { TrialStarter } from "../ports/trial-starter.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
 
@@ -47,6 +52,8 @@ export interface CreateOrganizationDependencies {
   readonly memberNumbers: MemberNumberSequence;
   /** Gives the new organization its trial subscription inside the same transaction. */
   readonly trialStarter: TrialStarter;
+  /** PUBLISHED templates only. Implemented by platform/industry and passed from routes/v1.ts. */
+  readonly industryTemplates: IndustryTemplateAvailability;
   readonly unitOfWork: UnitOfWork;
   readonly events: EventPublisher;
   readonly contextRunner: OrganizationContextRunner;
@@ -65,6 +72,7 @@ export class CreateOrganizationUseCase {
 
   async execute(input: CreateOrganizationInput): Promise<MyOrganization> {
     const { organizations, clock } = this.dependencies;
+    await this.assertTemplateIsSelectable(input.industryTemplateKey);
     const actor = await this.readActor(input.actorUserId);
     const organization = Organization.create({
       name: input.name,
@@ -111,6 +119,7 @@ export class CreateOrganizationUseCase {
   ): Promise<void> {
     const { organizations, locations, members, systemRoles, events } = this.dependencies;
     const { ownerUserId, organizationId } = organization;
+    await this.assertTemplateIsSelectable(organization.industryTemplateKey);
     await organizations.insert(organization);
     await this.dependencies.trialStarter.start(organizationId);
     const { ownerRoleId } = await systemRoles.provision(organizationId, ownerUserId);
@@ -142,6 +151,11 @@ export class CreateOrganizationUseCase {
       memberId: owner.memberId,
       userId: ownerUserId,
     });
+  }
+
+  private async assertTemplateIsSelectable(templateKey: IndustryTemplateKey): Promise<void> {
+    const selectable = await this.dependencies.industryTemplates.isSelectableAtSignup(templateKey);
+    if (!selectable) throw industryTemplateNotAvailable();
   }
 
   private buildOwner(

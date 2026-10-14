@@ -132,8 +132,8 @@ describe("POST /me/orgs", () => {
     ["a reserved slug", { slug: "admin" }, "slug"],
     ["a slug in Bangla", { slug: "রহিম-স্টোর" }, "slug"],
     [
-      "an industry template key that does not exist",
-      { industryTemplateKey: "BAKERY" },
+      "an industry template key in the wrong format",
+      { industryTemplateKey: "bakery-shop" },
       "industryTemplateKey",
     ],
     ["a name that is too short", { name: "a" }, "name"],

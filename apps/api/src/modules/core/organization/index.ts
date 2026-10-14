@@ -15,6 +15,7 @@ import type { ActorProfileReader, SystemRoleProvisioner } from "./application/po
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
 import type { TrialStarter } from "./application/ports/trial-starter.js";
+import type { IndustryTemplateAvailability } from "./application/ports/industry-template-availability.js";
 import type { OrganizationDirectory } from "./application/ports/organization-directory.js";
 import { ReactivateOrganizationUseCase } from "./application/use-cases/reactivate-organization.use-case.js";
 import { SuspendOrganizationUseCase } from "./application/use-cases/suspend-organization.use-case.js";
@@ -41,6 +42,7 @@ import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { OrganizationController } from "./presentation/organization.controller.js";
 import { buildOrganizationRouter } from "./presentation/organization.router.js";
 
+export type { IndustryTemplateAvailability } from "./application/ports/industry-template-availability.js";
 export { registerOrganizationModels } from "./infrastructure/register-organization-models.js";
 export { organizationManifest } from "./module.manifest.js";
 
@@ -57,6 +59,8 @@ export interface OrganizationDependencies {
   readonly idempotency: RequestHandler;
   /** Starts the trial subscription inside the create transaction; implemented by saas-billing (card 1.6a). */
   readonly trialStarter: TrialStarter;
+  /** PUBLISHED templates only; implemented by platform/industry. */
+  readonly industryTemplates: IndustryTemplateAvailability;
 }
 
 export interface OrganizationRouters {
@@ -69,7 +73,7 @@ export function buildOrganizationRouters(
   dependencies: OrganizationDependencies,
 ): OrganizationRouters {
   const { clock, rateLimiter, contextRunner, myOrganizationsReader } = dependencies;
-  const { audit, idempotency, trialStarter } = dependencies;
+  const { audit, idempotency, trialStarter, industryTemplates } = dependencies;
   const organizations = new MongoOrganizationRepository();
   const provisionSystemRoles = buildProvisionSystemRolesUseCase(clock);
   const readUserProfile = buildReadUserProfileUseCase();
@@ -90,6 +94,7 @@ export function buildOrganizationRouters(
       actorProfiles,
       memberNumbers: new MongoMemberNumberSequence(),
       trialStarter,
+      industryTemplates,
       unitOfWork: new MongoUnitOfWork(),
       events: kernelEventPublisher,
       contextRunner,

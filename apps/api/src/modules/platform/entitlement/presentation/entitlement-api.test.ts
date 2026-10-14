@@ -29,6 +29,7 @@ import { ApiActor } from "../../../../test-support/two-organizations.js";
 import { registerViaApi } from "../../../../test-support/auth-api-scenarios.js";
 import { buildOrganizationConfigPorts } from "../../../../routes/organization-config-ports.js";
 import { buildModuleRegistry } from "../../../../routes/module-registry.js";
+import { buildIndustryTemplateReader } from "../../industry/index.js";
 import { buildModuleEffectiveness, buildOrgConfigService } from "../index.js";
 
 registerIamApiModels();
@@ -386,6 +387,7 @@ describe("handlers of a module that is off", () => {
         registry,
         clock: harness.clock,
         ...buildOrganizationConfigPorts(),
+        templates: buildIndustryTemplateReader(harness.clock),
       }),
     );
 

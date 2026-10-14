@@ -1,4 +1,8 @@
-import { ORGANIZATION_EVENT_TYPE, SEQUENCE_KEY } from "@banijjik/contracts";
+import {
+  ORGANIZATION_EVENT_TYPE,
+  SEED_INDUSTRY_TEMPLATE_KEY,
+  SEQUENCE_KEY,
+} from "@banijjik/contracts";
 import { newId, type OrganizationId, type RoleId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { initializeModels, type DatabaseConnections } from "../../../../kernel/db/index.js";
@@ -19,6 +23,11 @@ import {
   buildEnsureSeedPackagesUseCase,
   registerPackageModels,
 } from "../../../platform/package/index.js";
+import {
+  buildEnsureSeedIndustryTemplatesUseCase,
+  buildIndustryTemplateAvailability,
+  registerIndustryModels,
+} from "../../../platform/industry/index.js";
 import {
   buildTrialStarter,
   registerSaasBillingModels,
@@ -43,6 +52,7 @@ registerSequenceModel();
 registerAuditModels();
 registerEventModels();
 registerPackageModels();
+registerIndustryModels();
 registerSaasBillingModels();
 
 const NOW = new Date("2026-10-11T08:00:00.000Z");
@@ -58,6 +68,7 @@ beforeAll(async () => {
   await initializeModels();
   // Every organization starts a trial on the BUNDLE package, so the packages must exist.
   await buildEnsureSeedPackagesUseCase(new MutableClock()).execute();
+  await buildEnsureSeedIndustryTemplatesUseCase(new MutableClock()).execute();
 });
 
 afterAll(async () => {
@@ -68,7 +79,7 @@ function anOrganization(slug: string): Organization {
   return Organization.create({
     name: "Rahim Store",
     slug,
-    industryTemplateKey: "RETAIL",
+    industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
     ownerUserId: newId() as UserId,
     defaultLocale: "bn",
     now: NOW,
@@ -213,6 +224,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
       actorProfiles,
       memberNumbers: new MongoMemberNumberSequence(),
       trialStarter: buildTrialStarter(clock),
+      industryTemplates: buildIndustryTemplateAvailability(),
       unitOfWork: new MongoUnitOfWork(),
       events,
       contextRunner: { run: runInOrganizationContext },
@@ -228,7 +240,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
       actorUserId,
       name: "Atomic Store",
       slug: "atomic-store",
-      industryTemplateKey: "RETAIL",
+      industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
       district: undefined,
     } as const;
 
@@ -257,7 +269,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
         actorUserId,
         name: "Event Store",
         slug: "event-store",
-        industryTemplateKey: "RETAIL",
+        industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
         district: undefined,
       }),
     ).rejects.toThrow("injected event failure");
@@ -276,7 +288,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
       actorUserId,
       name: "Atomic Store",
       slug: "atomic-store",
-      industryTemplateKey: "RETAIL",
+      industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
       district: undefined,
     });
 
@@ -296,7 +308,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
         actorUserId,
         name: "Trial Atomic Store",
         slug: "trial-atomic-store",
-        industryTemplateKey: "RETAIL",
+        industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
         district: undefined,
       }),
     ).rejects.toThrow("injected failure");
@@ -311,7 +323,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
       actorUserId,
       name: "Trial Store",
       slug: "trial-store",
-      industryTemplateKey: "RETAIL",
+      industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
       district: undefined,
     });
 
@@ -329,7 +341,7 @@ describe("CreateOrganizationUseCase on MongoDB", () => {
         actorUserId,
         name: "No Package Store",
         slug: "no-package-store",
-        industryTemplateKey: "RETAIL",
+        industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
         district: undefined,
       }),
     ).rejects.toThrow("errors.trial_package_missing");

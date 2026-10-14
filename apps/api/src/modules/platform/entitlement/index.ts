@@ -34,7 +34,6 @@ import { ModuleOverrideController } from "./presentation/module-override.control
 import { buildModuleOverrideRouter } from "./presentation/module-override.router.js";
 import { GetMyConfigUseCase } from "./application/use-cases/get-my-config.use-case.js";
 import type { ResolvedOrgConfig } from "./domain/resolved-org-config.js";
-import { InterimIndustryTemplateReader } from "./infrastructure/interim-industry-template-reader.js";
 import { MongoModuleOverrideReader } from "./infrastructure/mongo-module-override.reader.js";
 import { MeConfigController } from "./presentation/me-config.controller.js";
 import { buildMeConfigRouter } from "./presentation/me-config.router.js";
@@ -57,8 +56,8 @@ export interface OrgConfigServiceOptions {
   readonly organizations: OrganizationConfigSource;
   /** Implemented by core/organization, adapted in routes/active-location-counter.ts. */
   readonly activeLocations: ActiveLocationCounter;
-  /** Defaults to the interim reader (all modules, all kinds) until card 2.1. */
-  readonly templates?: IndustryTemplateReader;
+  /** Implemented by platform/industry. Tests may pass a reader that turns modules off. */
+  readonly templates: IndustryTemplateReader;
 }
 
 /** The resolver behind a cache; it is the gate's OrgConfigReader and the event runner's source of truth. */
@@ -76,7 +75,7 @@ export function buildOrgConfigService(options: OrgConfigServiceOptions): OrgConf
     }),
     organizations: options.organizations,
     activeLocations: options.activeLocations,
-    templates: options.templates ?? new InterimIndustryTemplateReader(),
+    templates: options.templates,
     catalogVersion: new PackageCatalogVersion(packages, clock),
     configCache: new InMemoryLruCache<ResolvedOrgConfig>({ clock }),
     templateKeyCache: new InMemoryLruCache({ clock }),

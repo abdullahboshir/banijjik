@@ -20,6 +20,7 @@ import {
 import type { RedisClient } from "../kernel/redis/index.js";
 import { registerSequenceModel } from "../kernel/sequence/index.js";
 import { buildEnsureSeedPackagesUseCase } from "../modules/platform/package/index.js";
+import { buildEnsureSeedIndustryTemplatesUseCase } from "../modules/platform/industry/index.js";
 import { buildV1Router, registerModuleModels } from "../routes/v1.js";
 import { createLogCapture, type LogCapture } from "./log-capture.js";
 import { MutableClock } from "./mutable-clock.js";
@@ -101,6 +102,7 @@ export async function startIamApi(
   const clock = new MutableClock(new Date());
   // Every new organization starts a trial on the BUNDLE package, so the packages are seeded first.
   await buildEnsureSeedPackagesUseCase(clock).execute();
+  await buildEnsureSeedIndustryTemplatesUseCase(clock).execute();
   const v1Router = buildProbeV1Router(options, config, clock);
   const app = buildApp({
     config,

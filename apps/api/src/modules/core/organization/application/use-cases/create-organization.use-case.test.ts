@@ -1,3 +1,4 @@
+import { SEED_INDUSTRY_TEMPLATE_KEY } from "@banijjik/contracts";
 import { newId, type UserId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
 import { InMemoryAuditRecorder } from "../../../../../test-support/audit-fakes.js";
@@ -21,7 +22,7 @@ import {
   type CreateOrganizationInput,
 } from "./create-organization.use-case.js";
 
-function aWorld() {
+function aWorld(isSelectable: () => Promise<boolean> = async () => true) {
   const organizations = new InMemoryOrganizationRepository();
   const locations = new InMemoryLocationRepository();
   const members = new InMemoryMemberRepository();
@@ -39,6 +40,7 @@ function aWorld() {
     actorProfiles,
     memberNumbers,
     trialStarter: { start: async () => undefined },
+    industryTemplates: { isSelectableAtSignup: () => isSelectable() },
     unitOfWork: new PassThroughUnitOfWork(),
     events: new RecordingEventPublisher(),
     contextRunner: new PassThroughContextRunner(),
@@ -49,7 +51,7 @@ function aWorld() {
     actorUserId,
     name: "Rahim Store",
     slug: "rahim-store",
-    industryTemplateKey: "RETAIL",
+    industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
     district: "Dhaka",
   };
   return { useCase, input, organizations, locations, members, systemRoles, memberNumbers, audit };
@@ -82,7 +84,7 @@ describe("CreateOrganizationUseCase", () => {
       ownerUserId: world.input.actorUserId,
       createdByUserId: world.input.actorUserId,
       defaultLocale: "en",
-      industryTemplateKey: "RETAIL",
+      industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
     });
   });
 
@@ -146,6 +148,21 @@ describe("CreateOrganizationUseCase", () => {
     await expect(attempt).rejects.toBeInstanceOf(DomainRuleError);
     expect(world.organizations.organizations.size).toBe(0);
     expect(world.memberNumbers.calls).toBe(0);
+  });
+
+  it("stores nothing when the template stops being selectable inside the transaction", async () => {
+    let checks = 0;
+    const world = aWorld(async () => {
+      checks += 1;
+      return checks === 1;
+    });
+
+    const attempt = world.useCase.execute(world.input);
+
+    await expect(attempt).rejects.toBeInstanceOf(DomainRuleError);
+    expect(world.organizations.organizations.size).toBe(0);
+    expect(world.locations.locations).toHaveLength(0);
+    expect(world.members.members).toHaveLength(0);
   });
 
   it("rejects a caller whose account no longer exists", async () => {

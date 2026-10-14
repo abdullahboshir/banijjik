@@ -1,4 +1,8 @@
-import { ORGANIZATION_EVENT_TYPE, ORGANIZATION_STATUS } from "@banijjik/contracts";
+import {
+  ORGANIZATION_EVENT_TYPE,
+  ORGANIZATION_STATUS,
+  SEED_INDUSTRY_TEMPLATE_KEY,
+} from "@banijjik/contracts";
 import { asId, newId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PlatformAuditEntry } from "../../../../kernel/audit/index.js";
@@ -41,7 +45,7 @@ async function insertOrganization(): Promise<Organization> {
   const organization = Organization.create({
     name: "Atomic Shop",
     slug: `atomic-${newId().slice(-12)}`,
-    industryTemplateKey: "RETAIL",
+    industryTemplateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
     ownerUserId: actorUserId,
     defaultLocale: "bn",
     now: new Date(),

@@ -33,6 +33,7 @@ import {
   buildModuleOverrideLister,
 } from "../modules/platform/entitlement/index.js";
 import { buildPackagePlatformRouter } from "../modules/platform/package/index.js";
+import { buildIndustryPlatformRouter } from "../modules/platform/industry/index.js";
 import {
   buildPackageUsage,
   buildSubscriptionAdminReader,
@@ -178,6 +179,10 @@ function buildPlatformRouter(input: PlatformRouterInput): Router {
     }),
   );
   mountPackageAndOperatorRoutes(router, input, manifests);
+  router.use(
+    "/industry-templates",
+    buildIndustryPlatformRouter({ permission: platformPermission }),
+  );
   router.use(buildPlatformAuditRouter({ permission: platformPermission }));
   router.use(buildIamPlatformMeRouter());
   return router;

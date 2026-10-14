@@ -22,6 +22,7 @@ import {
 } from "./kernel/redis/index.js";
 import { systemClock } from "./kernel/time/index.js";
 import { registerAllModels } from "./register-all-models.js";
+import { seedIndustryTemplates } from "./seeds/seed-industry-templates.js";
 import { seedPackages } from "./seeds/seed-packages.js";
 import { startWorker } from "./start-worker.js";
 
@@ -113,6 +114,11 @@ async function openDatabases(
     // Idempotent: inserts only the missing packages, so a fresh environment can create its first organization.
     const seeded = await seedPackages(systemClock);
     logger.info({ event: "packages.seeded", ...seeded }, "seed packages ensured");
+    const industrySeeded = await seedIndustryTemplates(systemClock);
+    logger.info(
+      { event: "industry.templates_seeded", ...industrySeeded },
+      "seed industry templates ensured",
+    );
     logger.info({ event: "db.connected" }, "databases connected");
     return connections;
   } catch (error) {
