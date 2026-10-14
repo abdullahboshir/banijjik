@@ -33,6 +33,37 @@ function removedFields(
     .map((field) => `customField:${fieldIdentity(field)}`);
 }
 
+function changedKeptFields(
+  before: readonly IndustryTemplateCustomField[],
+  after: readonly IndustryTemplateCustomField[],
+): string[] {
+  const nextByIdentity = new Map(after.map((field) => [fieldIdentity(field), field]));
+  const changed: string[] = [];
+  for (const field of before) {
+    const next = nextByIdentity.get(fieldIdentity(field));
+    if (next === undefined) continue;
+    changed.push(...incompatibleFieldChanges(field, next));
+  }
+  return changed;
+}
+
+/** A stored value was written for this type, target and link. Those three cannot change (09 §4.6). */
+function incompatibleFieldChanges(
+  field: IndustryTemplateCustomField,
+  next: IndustryTemplateCustomField,
+): string[] {
+  const identity = fieldIdentity(field);
+  const changed: string[] = [];
+  if (field.fieldType !== next.fieldType) changed.push(`fieldType:${identity}`);
+  if ((field.referenceEntity ?? "") !== (next.referenceEntity ?? "")) {
+    changed.push(`referenceEntity:${identity}`);
+  }
+  if ((field.link?.relationKey ?? "") !== (next.link?.relationKey ?? "")) {
+    changed.push(`link:${identity}`);
+  }
+  return changed;
+}
+
 function removedOptions(
   before: readonly IndustryTemplateCustomField[],
   after: readonly IndustryTemplateCustomField[],
@@ -60,6 +91,7 @@ export function removedByTemplateChange(
     ...missing("kind", before.enabledKinds, after.enabledKinds),
     ...missing("module", before.allowedModuleKeys, after.allowedModuleKeys),
     ...removedFields(before.configuration.customFields, after.configuration.customFields),
+    ...changedKeptFields(before.configuration.customFields, after.configuration.customFields),
     ...removedOptions(before.configuration.customFields, after.configuration.customFields),
     ...missing(
       "term",

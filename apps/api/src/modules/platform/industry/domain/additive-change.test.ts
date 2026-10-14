@@ -90,6 +90,90 @@ describe("removedByTemplateChange", () => {
 
     expect(removedByTemplateChange(BEFORE, after)).toEqual([]);
   });
+
+  it("lists a changed field type, reference target and link", () => {
+    const linked = {
+      ...SIZE_FIELD,
+      referenceEntity: "contact" as const,
+      link: {
+        relationKey: "GUARDIAN_OF" as const,
+        createIfMissingByPhone: false,
+        defaultBillTo: false,
+      },
+    };
+    const before = {
+      ...BEFORE,
+      configuration: configuration({
+        relationKeys: ["GUARDIAN_OF"],
+        customFields: [linked, NOTE_FIELD],
+      }),
+    };
+    const after = {
+      ...before,
+      configuration: configuration({
+        relationKeys: ["GUARDIAN_OF", "PARENT_OF"],
+        customFields: [
+          {
+            ...linked,
+            fieldType: "TEXT" as const,
+            referenceEntity: "member" as const,
+            options: undefined,
+            link: { ...linked.link, relationKey: "PARENT_OF" as const },
+          },
+          { ...NOTE_FIELD, fieldType: "DECIMAL" as const },
+        ],
+      }),
+    };
+
+    expect(removedByTemplateChange(before, after)).toEqual([
+      "fieldType:offering:SERVICE:note",
+      "fieldType:offering:SERVICE:size",
+      "link:offering:SERVICE:size",
+      "option:offering:SERVICE:size:LARGE",
+      "option:offering:SERVICE:size:SMALL",
+      "referenceEntity:offering:SERVICE:size",
+    ]);
+  });
+
+  it("keeps a label, an added option, isRequired, visibility and the other flags editable", () => {
+    const linked = {
+      ...SIZE_FIELD,
+      link: {
+        relationKey: "GUARDIAN_OF" as const,
+        createIfMissingByPhone: false,
+        defaultBillTo: false,
+      },
+    };
+    const before = {
+      ...BEFORE,
+      configuration: configuration({
+        relationKeys: ["GUARDIAN_OF"],
+        customFields: [linked, NOTE_FIELD],
+      }),
+    };
+    const after = {
+      ...before,
+      configuration: configuration({
+        relationKeys: ["GUARDIAN_OF"],
+        customFields: [
+          {
+            ...linked,
+            label: TEXT,
+            isRequired: true,
+            botAsk: true,
+            isSearchable: true,
+            isSensitive: true,
+            visibility: { admin: false, storefront: true, bot: true },
+            options: ["SMALL", "LARGE", "MEDIUM"],
+            link: { ...linked.link, createIfMissingByPhone: true, defaultBillTo: true },
+          },
+          NOTE_FIELD,
+        ],
+      }),
+    };
+
+    expect(removedByTemplateChange(before, after)).toEqual([]);
+  });
 });
 
 describe("removedKindsAndModules", () => {

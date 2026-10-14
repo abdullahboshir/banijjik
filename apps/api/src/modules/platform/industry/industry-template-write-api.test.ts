@@ -270,6 +270,30 @@ describe("PATCH /platform/industry-templates", () => {
     expect(detailOf(added).enabledKinds).toContain("EVENT");
   });
 
+  it("refuses a field type change on a published template", async () => {
+    const published = detailOf(await publish(detailOf(await createFrom("SALON", "TYPED_SHOP"))));
+    const source = seed("SALON").configuration;
+    const changed = await operator.call(
+      "patch",
+      `/industry-templates/${published.industryTemplateId}`,
+      {
+        version: published.version,
+        reason: "change a field type",
+        configuration: {
+          ...source,
+          customFields: source.customFields.map((field) =>
+            field.fieldKey === "skin_type"
+              ? { ...field, fieldType: "TEXT", options: undefined, optionLabels: undefined }
+              : field,
+          ),
+        },
+      },
+    );
+
+    expect(changed.status).toBe(422);
+    expect(changed.body.error.details.removed).toContain("fieldType:contact::skin_type");
+  });
+
   it("lets an unused draft remove a module, and locks a draft an organization uses", async () => {
     const unused = detailOf(await createFrom("SALON", "FREE_DRAFT"));
     const freed = await operator.call("patch", `/industry-templates/${unused.industryTemplateId}`, {
