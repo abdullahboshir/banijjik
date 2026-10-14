@@ -9,6 +9,8 @@ export const PLATFORM_RULE_KEY = {
   OPERATOR_USER_NOT_FOUND: "OPERATOR_USER_NOT_FOUND",
   OPERATOR_USER_NOT_ACTIVE: "OPERATOR_USER_NOT_ACTIVE",
   OWN_OPERATOR_ACCESS: "OWN_OPERATOR_ACCESS",
+  INDUSTRY_TEMPLATE_CHANGE_NOT_ADDITIVE: "INDUSTRY_TEMPLATE_CHANGE_NOT_ADDITIVE",
+  INDUSTRY_TEMPLATE_STATUS_INVALID: "INDUSTRY_TEMPLATE_STATUS_INVALID",
 } as const;
 
 export type PlatformRuleKey = (typeof PLATFORM_RULE_KEY)[keyof typeof PLATFORM_RULE_KEY];
@@ -26,4 +28,7 @@ export const PLATFORM_MESSAGE_KEYS: readonly string[] = [
   "errors.operator_user_not_found",
   "errors.operator_user_not_active",
   "errors.own_operator_access",
+  "errors.industry_template_key_taken",
+  "errors.industry_template_change_not_additive",
+  "errors.industry_template_status_invalid",
 ];

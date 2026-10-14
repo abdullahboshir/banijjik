@@ -283,6 +283,7 @@ export type {
   LocalizedText,
   PlatformIndustryTemplateDetail,
   PlatformIndustryTemplateSummary,
+  ChangeIndustryTemplateResponse,
 } from "./platform/industry-template.js";
 export type { SettingDefinition, SettingValueSpec } from "./settings/setting-definition.js";
 export { SETTINGS_EVENT_TYPE, type SettingsEventType } from "./settings/settings-event-type.js";

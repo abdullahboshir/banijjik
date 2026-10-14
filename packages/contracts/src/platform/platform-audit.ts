@@ -17,6 +17,11 @@ export const PLATFORM_AUDIT_ACTION = {
   OPERATOR_ROLES_CHANGED: "platform.operator.rolesChanged",
   OPERATOR_DISABLED: "platform.operator.disabled",
   OPERATOR_ENABLED: "platform.operator.enabled",
+  INDUSTRY_TEMPLATE_CREATED: "platform.industryTemplate.created",
+  INDUSTRY_TEMPLATE_UPDATED: "platform.industryTemplate.updated",
+  INDUSTRY_TEMPLATE_PUBLISHED: "platform.industryTemplate.published",
+  INDUSTRY_TEMPLATE_RETIRED: "platform.industryTemplate.retired",
+  ORGANIZATION_INDUSTRY_TEMPLATE_CHANGED: "platform.organization.industryTemplateChanged",
 } as const;
 
 export type PlatformAuditAction =
@@ -29,6 +34,7 @@ export const PLATFORM_AUDIT_TARGET_TYPE = defineEnum([
   "subscription",
   "module_override",
   "platform_operator",
+  "industry_template",
 ]);
 export type PlatformAuditTargetType =
   (typeof PLATFORM_AUDIT_TARGET_TYPE)[keyof typeof PLATFORM_AUDIT_TARGET_TYPE];

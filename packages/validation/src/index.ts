@@ -154,3 +154,16 @@ export {
   updateSettingsRequestSchema,
 } from "./settings/settings-request-schemas.js";
 export type { SettingsQuery, UpdateSettingsBody } from "./settings/settings-request-schemas.js";
+export {
+  changeIndustryTemplateRequestSchema,
+  industryTemplateCreateRequestSchema,
+  industryTemplateStatusRequestSchema,
+  industryTemplateUpdateRequestSchema,
+  toIndustryTemplateWriteConfiguration,
+} from "./platform/industry-template-write-schemas.js";
+export type {
+  ChangeIndustryTemplateBody,
+  IndustryTemplateCreateBody,
+  IndustryTemplateStatusBody,
+  IndustryTemplateUpdateBody,
+} from "./platform/industry-template-write-schemas.js";

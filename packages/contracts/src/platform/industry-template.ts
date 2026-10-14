@@ -120,3 +120,51 @@ export interface PlatformIndustryTemplateDetail extends PlatformIndustryTemplate
   readonly configuration: IndustryTemplateConfiguration;
   readonly createdAt: string;
 }
+
+/**
+ * `POST /platform/industry-templates`. A clone copies kinds, modules and configuration from
+ * another template; otherwise those three fields are required. The server always stores DRAFT.
+ */
+export interface IndustryTemplateCreateRequest {
+  readonly industryTemplateKey: string;
+  readonly name: LocalizedText;
+  readonly description: LocalizedText;
+  readonly iconKey: string;
+  readonly reason: string;
+  readonly enabledKinds?: readonly OfferingKind[] | undefined;
+  readonly allowedModuleKeys?: readonly string[] | undefined;
+  readonly configuration?: IndustryTemplateConfiguration | undefined;
+  readonly cloneFromIndustryTemplateId?: string | undefined;
+}
+
+/** `PATCH /platform/industry-templates/{industryTemplateId}`. The key and the status stay. */
+export interface IndustryTemplateUpdateRequest {
+  readonly version: number;
+  readonly reason: string;
+  readonly name?: LocalizedText | undefined;
+  readonly description?: LocalizedText | undefined;
+  readonly iconKey?: string | undefined;
+  readonly enabledKinds?: readonly OfferingKind[] | undefined;
+  readonly allowedModuleKeys?: readonly string[] | undefined;
+  readonly configuration?: IndustryTemplateConfiguration | undefined;
+}
+
+/** Body of publish and retire. */
+export interface IndustryTemplateStatusRequest {
+  readonly version: number;
+  readonly reason: string;
+}
+
+/** `POST /platform/organizations/{organizationId}/change-industry-template`. */
+export interface ChangeIndustryTemplateRequest {
+  readonly industryTemplateKey: string;
+  readonly reason: string;
+}
+
+/** The organization after a template move, or unchanged when the key was already current. */
+export interface ChangeIndustryTemplateResponse {
+  readonly organizationId: string;
+  readonly industryTemplateKey: string;
+  readonly configVersion: number;
+  readonly version: number;
+}

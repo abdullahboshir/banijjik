@@ -62,6 +62,7 @@ export interface EventPayloadMap {
   readonly [ORGANIZATION_EVENT_TYPE.INVITATION_REVOKED]: InvitationPayload;
   readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_SUSPENDED]: OrganizationStatusPayload;
   readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_REACTIVATED]: OrganizationStatusPayload;
+  readonly [ORGANIZATION_EVENT_TYPE.INDUSTRY_TEMPLATE_CHANGED]: OrganizationStatusPayload;
   readonly [CUSTOM_FIELD_EVENT_TYPE.DEFINITION_CHANGED]: CustomFieldDefinitionChangedPayload;
   readonly [SETTINGS_EVENT_TYPE.SETTING_CHANGED]: SettingChangedPayload;
 }
