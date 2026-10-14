@@ -21,6 +21,7 @@ const { defineModule } = await loadFromApi("kernel/modules/index.js");
 const { registerSequenceModel } = await loadFromApi("kernel/sequence/index.js");
 const { systemClock } = await loadFromApi("kernel/time/index.js");
 const { buildV1Router, registerModuleModels } = await loadFromApi("routes/v1.js");
+const { seedIndustryTemplates } = await loadFromApi("seeds/seed-industry-templates.js");
 const { seedPackages } = await loadFromApi("seeds/seed-packages.js");
 
 const PROBE_MODULE_KEY = MODULE_KEY.BOOKKEEPING;
@@ -57,6 +58,7 @@ registerModuleModels();
 await connectDatabases(config);
 await initializeModels();
 await seedPackages(systemClock);
+await seedIndustryTemplates(systemClock);
 
 const v1Router = buildV1Router({
   config,
