@@ -44,6 +44,10 @@ class MemoryTemplates implements IndustryTemplateRepository {
     throw new Error("not used");
   }
 
+  async reserveAssignable(): Promise<IndustryTemplate | undefined> {
+    throw new Error("not used");
+  }
+
   async findExistingKeys(): Promise<ReadonlySet<string>> {
     throw new Error("not used");
   }

@@ -27,6 +27,11 @@ export interface IndustryTemplateRepository {
    * False when no published row matched, so a concurrent retire wins (ADR-101).
    */
   reservePublished(templateKey: IndustryTemplateKey): Promise<boolean>;
+  /**
+   * Increments `referenceVersion` when the template is DRAFT or PUBLISHED, inside the active
+   * session. Undefined when no assignable row matched (ADR-092, review R1-1).
+   */
+  reserveAssignable(templateKey: IndustryTemplateKey): Promise<IndustryTemplate | undefined>;
   findExistingKeys(templateKeys: readonly string[]): Promise<ReadonlySet<string>>;
   findByKey(templateKey: IndustryTemplateKey): Promise<IndustryTemplate | undefined>;
   findById(industryTemplateId: string): Promise<IndustryTemplate | undefined>;

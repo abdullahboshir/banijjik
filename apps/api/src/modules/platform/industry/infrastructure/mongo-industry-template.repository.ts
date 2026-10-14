@@ -74,6 +74,22 @@ export class MongoIndustryTemplateRepository implements IndustryTemplateReposito
     return updated !== null;
   }
 
+  async reserveAssignable(templateKey: IndustryTemplateKey): Promise<IndustryTemplate | undefined> {
+    // The same guard counter as signup. It must not bump version or updatedAt.
+    const updated = await this.model()
+      .findOneAndUpdate(
+        {
+          industryTemplateKey: templateKey,
+          status: { $in: [INDUSTRY_TEMPLATE_STATUS.DRAFT, INDUSTRY_TEMPLATE_STATUS.PUBLISHED] },
+        },
+        { $inc: { referenceVersion: 1 } },
+        { returnDocument: "after", timestamps: false, ...sessionOption(getActiveSession()) },
+      )
+      .lean<IndustryTemplateDocument | null>();
+    if (updated === null) return undefined;
+    return toIndustryTemplate(updated);
+  }
+
   async findExistingKeys(templateKeys: readonly string[]): Promise<ReadonlySet<string>> {
     const rows = await this.model()
       .find(

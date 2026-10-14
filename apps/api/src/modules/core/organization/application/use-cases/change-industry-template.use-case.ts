@@ -60,7 +60,7 @@ export class ChangeIndustryTemplateUseCase {
     existing: Organization,
     input: ChangeIndustryTemplateInput,
   ): Promise<SavedMove> {
-    const decision = await this.dependencies.templates.assess({
+    const decision = await this.dependencies.templates.reserve({
       currentKey: existing.industryTemplateKey,
       targetKey: input.industryTemplateKey,
     });
