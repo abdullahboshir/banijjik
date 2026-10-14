@@ -40,17 +40,13 @@ import {
   buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
-  buildConfigVersionBumper,
   buildOrganizationRouters,
   buildOrganizationTenantRouters,
   buildRolesVersionBumper,
   type OrganizationTenantRouters,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
-import {
-  buildSettingsTenantRouter,
-  registerSettingsModels,
-} from "../modules/core/settings/index.js";
+import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
   buildEntitlementTenantRouter,
   buildLimitGuard,
@@ -70,12 +66,10 @@ import {
   buildTrialStarter,
   registerSaasBillingModels,
 } from "../modules/platform/saas-billing/index.js";
-import {
-  buildCustomFieldModule,
-  registerCustomFieldModels,
-} from "../modules/core/custom-field/index.js";
+import { registerCustomFieldModels } from "../modules/core/custom-field/index.js";
+import { buildCoreTenantRouters } from "./core-tenant-routers.js";
 import { buildOrganizationConfigPorts } from "./organization-config-ports.js";
-import { MODULE_MANIFESTS, buildModuleRegistry } from "./module-registry.js";
+import { buildModuleRegistry } from "./module-registry.js";
 import { mountPlatformApi } from "./platform.js";
 
 export interface V1Dependencies {
@@ -327,20 +321,12 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     permissions: permissionGate,
     permissionDefinitions: catalog.all(),
   });
-  const customFieldRouter = buildCustomFieldModule({
+  const { customFieldRouter, settingsRouter } = buildCoreTenantRouters({
     clock,
     audit,
     permission,
     orgConfig,
     registry: input.registry,
-    configVersion: buildConfigVersionBumper(),
-    productionManifests: MODULE_MANIFESTS,
-  }).router;
-  const settingsRouter = buildSettingsTenantRouter({
-    permission,
-    audit,
-    orgConfig,
-    configVersion: buildConfigVersionBumper(),
     manifests: input.manifests,
   });
   return [

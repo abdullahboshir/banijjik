@@ -50,7 +50,15 @@ const BOOKING_PROBE = defineModule({
 });
 
 const RETAIL_MODULES = ["audit", "custom-field", "file", "iam", "organization", "settings"];
-const SALON_MODULES = ["audit", "booking", "custom-field", "file", "iam", "organization", "settings"];
+const SALON_MODULES = [
+  "audit",
+  "booking",
+  "custom-field",
+  "file",
+  "iam",
+  "organization",
+  "settings",
+];
 
 let harness: IamApiHarness;
 let issuedSlugs = 0;
