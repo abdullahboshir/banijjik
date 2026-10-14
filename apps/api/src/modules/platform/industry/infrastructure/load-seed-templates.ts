@@ -8,6 +8,7 @@ import {
 } from "@banijjik/validation";
 import type { NewIndustryTemplateInput } from "../domain/industry-template.entity.js";
 
+// tsc does not emit JSON, so the api build copies this folder into dist.
 const SEED_DIRECTORY = join(dirname(fileURLToPath(import.meta.url)), "seeds");
 
 const SEED_FILE_NAMES = [
