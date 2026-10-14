@@ -35,6 +35,8 @@ export interface IndustryTemplateDocument {
    */
   configuration: IndustryTemplateConfiguration;
   version: number;
+  /** Guard counter for signup versus retire. It never moves `version` (ADR-092, ADR-101). */
+  referenceVersion?: number;
   createdAt: Date;
   updatedAt: Date;
   createdByUserId: string | null;
@@ -65,6 +67,7 @@ export const industryTemplateSchema = new Schema<IndustryTemplateDocument>(
     enabledKinds: [{ type: String, required: true }],
     allowedModuleKeys: [{ type: String, required: true }],
     configuration: { type: Schema.Types.Mixed, required: true },
+    referenceVersion: { type: Number, default: 0 },
     ...versionField,
     ...auditFields,
   },

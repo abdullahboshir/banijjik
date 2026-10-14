@@ -16,6 +16,7 @@ import type { OrganizationContextRunner } from "./application/ports/organization
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
 import type { TrialStarter } from "./application/ports/trial-starter.js";
 import type { IndustryTemplateAvailability } from "./application/ports/industry-template-availability.js";
+import type { IndustryTemplateMove } from "./application/ports/industry-template-move.js";
 import type { OrganizationDirectory } from "./application/ports/organization-directory.js";
 import { ReactivateOrganizationUseCase } from "./application/use-cases/reactivate-organization.use-case.js";
 import { SuspendOrganizationUseCase } from "./application/use-cases/suspend-organization.use-case.js";
@@ -39,6 +40,8 @@ import { MongoMemberAccessReader } from "./infrastructure/mongo-member-access-re
 import { MongoMembershipDirectory } from "./infrastructure/mongo-membership-directory.js";
 import { MongoMemberRepository } from "./infrastructure/mongo-member.repository.js";
 import { MongoOrganizationRepository } from "./infrastructure/mongo-organization.repository.js";
+import { MongoOrganizationTemplateUsage } from "./infrastructure/mongo-organization-template-usage.js";
+import { ChangeIndustryTemplateUseCase } from "./application/use-cases/change-industry-template.use-case.js";
 import { MongoRolesVersionBumper } from "./infrastructure/mongo-roles-version-bumper.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { OrganizationController } from "./presentation/organization.controller.js";
@@ -216,3 +219,32 @@ export type {
   OrganizationDirectoryQuery,
 } from "./application/ports/organization-directory.js";
 export type { SuspendOrganizationUseCase, ReactivateOrganizationUseCase };
+
+export type { IndustryTemplateMove } from "./application/ports/industry-template-move.js";
+export { ChangeIndustryTemplateUseCase, MongoOrganizationTemplateUsage };
+
+export interface ChangeIndustryTemplateDependencies {
+  readonly platformAudit: PlatformAuditRecorder;
+  readonly contextRunner: OrganizationContextRunner;
+  readonly templates: IndustryTemplateMove;
+}
+
+/** Moves an organization to another template. The additive check is platform/industry's. */
+export function buildChangeIndustryTemplateUseCase(
+  dependencies: ChangeIndustryTemplateDependencies,
+): ChangeIndustryTemplateUseCase {
+  return new ChangeIndustryTemplateUseCase({
+    organizations: new MongoOrganizationRepository(),
+    configVersion: new MongoConfigVersionBumper(),
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+    platformAudit: dependencies.platformAudit,
+    contextRunner: dependencies.contextRunner,
+    templates: dependencies.templates,
+  });
+}
+
+/** How many organizations use a template key, for the additive lock (ADR-101). */
+export function buildOrganizationTemplateUsage(): MongoOrganizationTemplateUsage {
+  return new MongoOrganizationTemplateUsage();
+}

@@ -10,4 +10,9 @@ export class MongoIndustryTemplateAvailability implements IndustryTemplateAvaila
     const template = await this.templates.findByKey(templateKey);
     return template !== undefined && template.status === INDUSTRY_TEMPLATE_STATUS.PUBLISHED;
   }
+
+  /** Writes the template inside the signup transaction so a concurrent retire conflicts (ADR-101). */
+  reserveForSignup(templateKey: IndustryTemplateKey): Promise<boolean> {
+    return this.templates.reservePublished(templateKey);
+  }
 }

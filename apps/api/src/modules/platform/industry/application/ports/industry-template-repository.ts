@@ -1,4 +1,5 @@
 import type { IndustryTemplateKey, IndustryTemplateStatus } from "@banijjik/contracts";
+import type { UserId } from "@banijjik/ids";
 import type { IndustryTemplate } from "../../domain/industry-template.entity.js";
 
 export interface IndustryTemplateListQuery {
@@ -14,7 +15,18 @@ export interface IndustryTemplatePage {
 
 /** Platform data (tenancy NONE). The database is the source of truth after the first seed (ADR-076). */
 export interface IndustryTemplateRepository {
-  insert(template: IndustryTemplate): Promise<void>;
+  insert(template: IndustryTemplate, actorUserId?: UserId): Promise<void>;
+  /** Saves the template when `version` is still `expectedVersion`, otherwise 409. */
+  update(
+    template: IndustryTemplate,
+    expectedVersion: number,
+    actorUserId: UserId,
+  ): Promise<IndustryTemplate>;
+  /**
+   * Increments `referenceVersion` when the template is PUBLISHED, inside the active session.
+   * False when no published row matched, so a concurrent retire wins (ADR-101).
+   */
+  reservePublished(templateKey: IndustryTemplateKey): Promise<boolean>;
   findExistingKeys(templateKeys: readonly string[]): Promise<ReadonlySet<string>>;
   findByKey(templateKey: IndustryTemplateKey): Promise<IndustryTemplate | undefined>;
   findById(industryTemplateId: string): Promise<IndustryTemplate | undefined>;

@@ -99,3 +99,5 @@ organizationSchema.index({ status: 1 });
 organizationSchema.index({ createdAt: -1, organizationId: -1 });
 organizationSchema.index({ status: 1, createdAt: -1, organizationId: -1 });
 organizationSchema.index({ name: 1 });
+// Counts organizations on one template for the additive lock (ADR-101).
+organizationSchema.index({ industryTemplateKey: 1 });

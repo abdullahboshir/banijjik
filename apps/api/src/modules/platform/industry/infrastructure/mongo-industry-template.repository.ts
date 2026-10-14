@@ -1,5 +1,12 @@
 import { INDUSTRY_TEMPLATE_STATUS, type IndustryTemplateKey } from "@banijjik/contracts";
-import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
+import type { UserId } from "@banijjik/ids";
+import {
+  getActiveSession,
+  models,
+  sessionOption,
+  updateVersioned,
+} from "../../../../kernel/db/index.js";
+import { toDuplicateIndustryTemplateKeyError } from "./duplicate-industry-template-key.js";
 import type {
   IndustryTemplateListQuery,
   IndustryTemplatePage,
@@ -14,11 +21,57 @@ import {
 
 /** Industry templates are platform configuration, shared by every organization (tenancy NONE). */
 export class MongoIndustryTemplateRepository implements IndustryTemplateRepository {
-  async insert(template: IndustryTemplate): Promise<void> {
-    await this.model().create(
-      [toIndustryTemplateDocument(template)],
-      sessionOption(getActiveSession()),
+  async insert(template: IndustryTemplate, actorUserId?: UserId): Promise<void> {
+    const document = toIndustryTemplateDocument(template);
+    try {
+      await this.model().create(
+        [
+          {
+            ...document,
+            createdByUserId: actorUserId ?? null,
+            updatedByUserId: actorUserId ?? null,
+          },
+        ],
+        sessionOption(getActiveSession()),
+      );
+    } catch (error) {
+      throw toDuplicateIndustryTemplateKeyError(error);
+    }
+  }
+
+  async update(
+    template: IndustryTemplate,
+    expectedVersion: number,
+    actorUserId: UserId,
+  ): Promise<IndustryTemplate> {
+    const saved = await updateVersioned<IndustryTemplateDocument>({
+      model: this.model(),
+      filter: { industryTemplateId: template.industryTemplateId },
+      expectedVersion,
+      update: {
+        $set: {
+          name: template.name,
+          description: template.description,
+          iconKey: template.iconKey,
+          enabledKinds: [...template.enabledKinds],
+          allowedModuleKeys: [...template.allowedModuleKeys],
+          configuration: template.configuration,
+          status: template.status,
+          updatedByUserId: actorUserId,
+        },
+      },
+    });
+    return toIndustryTemplate(saved);
+  }
+
+  async reservePublished(templateKey: IndustryTemplateKey): Promise<boolean> {
+    // referenceVersion is the guard counter: it must not bump version or updatedAt.
+    const updated = await this.model().findOneAndUpdate(
+      { industryTemplateKey: templateKey, status: INDUSTRY_TEMPLATE_STATUS.PUBLISHED },
+      { $inc: { referenceVersion: 1 } },
+      { returnDocument: "after", timestamps: false, ...sessionOption(getActiveSession()) },
     );
+    return updated !== null;
   }
 
   async findExistingKeys(templateKeys: readonly string[]): Promise<ReadonlySet<string>> {

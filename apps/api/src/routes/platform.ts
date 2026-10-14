@@ -27,13 +27,19 @@ import {
   buildConfigVersionBumper,
   buildOrganizationDirectory,
   buildOrganizationStatusUseCases,
+  buildChangeIndustryTemplateUseCase,
+  buildOrganizationTemplateUsage,
 } from "../modules/core/organization/index.js";
 import {
   buildEntitlementPlatformRouter,
   buildModuleOverrideLister,
 } from "../modules/platform/entitlement/index.js";
 import { buildPackagePlatformRouter } from "../modules/platform/package/index.js";
-import { buildIndustryPlatformRouter } from "../modules/platform/industry/index.js";
+import {
+  buildIndustryPlatformRouter,
+  buildChangeIndustryTemplateRouter,
+  buildIndustryTemplateMove,
+} from "../modules/platform/industry/index.js";
 import {
   buildPackageUsage,
   buildSubscriptionAdminReader,
@@ -137,6 +143,32 @@ function mountPackageAndOperatorRoutes(
   );
 }
 
+function mountIndustryRoutes(router: Router, input: PlatformRouterInput): void {
+  const { clock, platformAudit } = input;
+  router.use(
+    "/industry-templates",
+    buildIndustryPlatformRouter({
+      permission: platformPermission,
+      clock,
+      platformAudit,
+      usage: buildOrganizationTemplateUsage(),
+    }),
+  );
+  router.use(
+    "/organizations/:organizationId/change-industry-template",
+    buildChangeIndustryTemplateRouter(
+      buildChangeIndustryTemplateUseCase({
+        platformAudit,
+        contextRunner: {
+          run: (organizationId, work) => runInOrganizationContext(organizationId, work),
+        },
+        templates: buildIndustryTemplateMove(),
+      }),
+      platformPermission,
+    ),
+  );
+}
+
 function buildPlatformRouter(input: PlatformRouterInput): Router {
   const { clock, registry, platformAudit } = input;
   const manifests = { all: () => registry.all() };
@@ -179,10 +211,7 @@ function buildPlatformRouter(input: PlatformRouterInput): Router {
     }),
   );
   mountPackageAndOperatorRoutes(router, input, manifests);
-  router.use(
-    "/industry-templates",
-    buildIndustryPlatformRouter({ permission: platformPermission }),
-  );
+  mountIndustryRoutes(router, input);
   router.use(buildPlatformAuditRouter({ permission: platformPermission }));
   router.use(buildIamPlatformMeRouter());
   return router;

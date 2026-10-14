@@ -6,4 +6,9 @@ import type { IndustryTemplateKey } from "@banijjik/contracts";
  */
 export interface IndustryTemplateAvailability {
   isSelectableAtSignup(templateKey: IndustryTemplateKey): Promise<boolean>;
+  /**
+   * Claims a PUBLISHED template inside the active transaction.
+   * False when the row is missing or no longer published.
+   */
+  reserveForSignup(templateKey: IndustryTemplateKey): Promise<boolean>;
 }

@@ -40,7 +40,10 @@ function aWorld(isSelectable: () => Promise<boolean> = async () => true) {
     actorProfiles,
     memberNumbers,
     trialStarter: { start: async () => undefined },
-    industryTemplates: { isSelectableAtSignup: () => isSelectable() },
+    industryTemplates: {
+      isSelectableAtSignup: () => isSelectable(),
+      reserveForSignup: () => isSelectable(),
+    },
     unitOfWork: new PassThroughUnitOfWork(),
     events: new RecordingEventPublisher(),
     contextRunner: new PassThroughContextRunner(),

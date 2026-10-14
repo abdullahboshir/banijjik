@@ -112,6 +112,11 @@ export class CreateOrganizationUseCase {
     return profile;
   }
 
+  private async reserveTemplate(templateKey: IndustryTemplateKey): Promise<void> {
+    const reserved = await this.dependencies.industryTemplates.reserveForSignup(templateKey);
+    if (!reserved) throw industryTemplateNotAvailable();
+  }
+
   /** Order matters only for readability: the organization first, then what hangs off it. */
   private async storeAll(
     organization: Organization,
@@ -119,7 +124,7 @@ export class CreateOrganizationUseCase {
   ): Promise<void> {
     const { organizations, locations, members, systemRoles, events } = this.dependencies;
     const { ownerUserId, organizationId } = organization;
-    await this.assertTemplateIsSelectable(organization.industryTemplateKey);
+    await this.reserveTemplate(organization.industryTemplateKey);
     await organizations.insert(organization);
     await this.dependencies.trialStarter.start(organizationId);
     const { ownerRoleId } = await systemRoles.provision(organizationId, ownerUserId);

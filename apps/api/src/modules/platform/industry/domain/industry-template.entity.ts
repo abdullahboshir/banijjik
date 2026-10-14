@@ -1,10 +1,11 @@
-import type {
-  IndustryTemplateConfiguration,
-  IndustryTemplateKey,
-  IndustryTemplateStatus,
-  LocalizedText,
-  ModuleKey,
-  OfferingKind,
+import {
+  INDUSTRY_TEMPLATE_STATUS,
+  type IndustryTemplateConfiguration,
+  type IndustryTemplateKey,
+  type IndustryTemplateStatus,
+  type LocalizedText,
+  type ModuleKey,
+  type OfferingKind,
 } from "@banijjik/contracts";
 import { newId, type IndustryTemplateId } from "@banijjik/ids";
 import {
@@ -17,6 +18,7 @@ import {
   INDUSTRY_TEMPLATE_DESCRIPTION_MAX_LENGTH,
   INDUSTRY_TEMPLATE_NAME_MAX_LENGTH,
 } from "./industry-template-rules.js";
+import { industryTemplateStatusInvalid } from "./errors.js";
 
 const INITIAL_VERSION = 1;
 
@@ -105,4 +107,61 @@ export class IndustryTemplate implements IndustryTemplateProps {
   static restore(props: IndustryTemplateProps): IndustryTemplate {
     return new IndustryTemplate(props);
   }
+
+  /**
+   * The template with the given fields replaced. The key and the status stay.
+   * The repository moves `version` when it saves.
+   */
+  withEdits(edits: IndustryTemplateEdits): IndustryTemplate {
+    return new IndustryTemplate({
+      ...this,
+      name: this.editedName(edits.name),
+      description: this.editedDescription(edits.description),
+      iconKey: edits.iconKey === undefined ? this.iconKey : assertIconKey(edits.iconKey),
+      enabledKinds:
+        edits.enabledKinds === undefined
+          ? this.enabledKinds
+          : assertEnabledKinds(edits.enabledKinds),
+      allowedModuleKeys:
+        edits.allowedModuleKeys === undefined
+          ? this.allowedModuleKeys
+          : assertAllowedModuleKeys(edits.allowedModuleKeys),
+      configuration: edits.configuration ?? this.configuration,
+    });
+  }
+
+  /** DRAFT or RETIRED becomes PUBLISHED. */
+  published(): IndustryTemplate {
+    const canPublish =
+      this.status === INDUSTRY_TEMPLATE_STATUS.DRAFT ||
+      this.status === INDUSTRY_TEMPLATE_STATUS.RETIRED;
+    if (!canPublish) throw industryTemplateStatusInvalid();
+    return new IndustryTemplate({ ...this, status: INDUSTRY_TEMPLATE_STATUS.PUBLISHED });
+  }
+
+  /** PUBLISHED becomes RETIRED. Organizations already on it keep working. */
+  retired(): IndustryTemplate {
+    if (this.status !== INDUSTRY_TEMPLATE_STATUS.PUBLISHED) throw industryTemplateStatusInvalid();
+    return new IndustryTemplate({ ...this, status: INDUSTRY_TEMPLATE_STATUS.RETIRED });
+  }
+
+  private editedName(name: LocalizedText | undefined): LocalizedText {
+    if (name === undefined) return this.name;
+    return assertLocalized(name, "name", INDUSTRY_TEMPLATE_NAME_MAX_LENGTH);
+  }
+
+  private editedDescription(description: LocalizedText | undefined): LocalizedText {
+    if (description === undefined) return this.description;
+    return assertLocalized(description, "description", INDUSTRY_TEMPLATE_DESCRIPTION_MAX_LENGTH);
+  }
+}
+
+/** The fields a platform save may replace. Absent keys stay as they are. */
+export interface IndustryTemplateEdits {
+  readonly name?: LocalizedText | undefined;
+  readonly description?: LocalizedText | undefined;
+  readonly iconKey?: string | undefined;
+  readonly enabledKinds?: readonly string[] | undefined;
+  readonly allowedModuleKeys?: readonly string[] | undefined;
+  readonly configuration?: IndustryTemplateConfiguration | undefined;
 }

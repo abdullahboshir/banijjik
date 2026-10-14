@@ -197,4 +197,9 @@ export class Organization implements OrganizationProps {
   static restore(props: OrganizationProps): Organization {
     return new Organization(props);
   }
+
+  /** The same organization on another industry template. The repository saves it. */
+  withIndustryTemplate(industryTemplateKey: IndustryTemplateKey): Organization {
+    return new Organization({ ...this, industryTemplateKey });
+  }
 }
