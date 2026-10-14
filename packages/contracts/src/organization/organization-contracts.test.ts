@@ -4,7 +4,7 @@ import {
   SYSTEM_ROLE_NAME_MESSAGE_KEYS,
   systemRoleNameKey,
 } from "../iam/system-role-key.js";
-import { INDUSTRY_TEMPLATE_KEY } from "./industry-template-key.js";
+import { SEED_INDUSTRY_TEMPLATE_KEY } from "./industry-template-key.js";
 import { LOCATION_STATUS } from "./location-status.js";
 import { LOCATION_TYPE } from "./location-type.js";
 import { MEMBER_STATUS } from "./member-status.js";
@@ -30,7 +30,7 @@ describe("organization enums", () => {
   });
 
   it("lists the eight industry templates of 12-INDUSTRY-TEMPLATES", () => {
-    expect(Object.keys(INDUSTRY_TEMPLATE_KEY)).toEqual([
+    expect(Object.keys(SEED_INDUSTRY_TEMPLATE_KEY)).toEqual([
       "FCOMMERCE",
       "RETAIL",
       "SALON",

@@ -55,7 +55,11 @@ export { COUNTRY_CODE } from "./organization/country-code.js";
 export type { CountryCode } from "./organization/country-code.js";
 export { CURRENCY_CODE } from "./organization/currency-code.js";
 export type { CurrencyCode } from "./organization/currency-code.js";
-export { INDUSTRY_TEMPLATE_KEY } from "./organization/industry-template-key.js";
+export {
+  INDUSTRY_TEMPLATE_KEY_PATTERN,
+  SEED_INDUSTRY_TEMPLATE_KEY,
+  isIndustryTemplateKey,
+} from "./organization/industry-template-key.js";
 export type { IndustryTemplateKey } from "./organization/industry-template-key.js";
 export { ALL_LOCATIONS } from "./organization/all-locations.js";
 export type { AllLocations } from "./organization/all-locations.js";
@@ -240,3 +244,24 @@ export {
   PLATFORM_ACCESS_TOKEN_COOKIE_NAME,
   PLATFORM_REFRESH_TOKEN_COOKIE_NAME,
 } from "./iam/auth-cookie-names.js";
+export { CONTACT_ROLE } from "./contact/contact-role.js";
+export type { ContactRole } from "./contact/contact-role.js";
+export { RELATION_KEY } from "./contact/relation-key.js";
+export type { RelationKey } from "./contact/relation-key.js";
+export { CUSTOM_FIELD_TYPE } from "./custom-field/custom-field-type.js";
+export type { CustomFieldType } from "./custom-field/custom-field-type.js";
+export { INDUSTRY_TEMPLATE_STATUS } from "./platform/industry-template.js";
+export type {
+  IndustryTemplateBotDefaults,
+  IndustryTemplateCard,
+  IndustryTemplateConfiguration,
+  IndustryTemplateContactLink,
+  IndustryTemplateCustomField,
+  IndustryTemplateKnowledgeStarter,
+  IndustryTemplateModifierGroup,
+  IndustryTemplateResourceType,
+  IndustryTemplateStatus,
+  LocalizedText,
+  PlatformIndustryTemplateDetail,
+  PlatformIndustryTemplateSummary,
+} from "./platform/industry-template.js";

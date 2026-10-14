@@ -1,9 +1,6 @@
-import {
-  INDUSTRY_TEMPLATE_KEY,
-  ORGANIZATION_NAME_MAX_LENGTH,
-  ORGANIZATION_NAME_MIN_LENGTH,
-} from "@banijjik/contracts";
+import { ORGANIZATION_NAME_MAX_LENGTH, ORGANIZATION_NAME_MIN_LENGTH } from "@banijjik/contracts";
 import { z } from "zod";
+import { industryTemplateKeySchema } from "../industry-template-key.schema.js";
 import { organizationSlugSchema } from "../slug.js";
 
 const DISTRICT_MAX_LENGTH = 80;
@@ -15,7 +12,7 @@ const DISTRICT_MAX_LENGTH = 80;
 export const organizationCreateRequestSchema = z.strictObject({
   name: z.string().trim().min(ORGANIZATION_NAME_MIN_LENGTH).max(ORGANIZATION_NAME_MAX_LENGTH),
   slug: organizationSlugSchema,
-  industryTemplateKey: z.enum(INDUSTRY_TEMPLATE_KEY),
+  industryTemplateKey: industryTemplateKeySchema,
   district: z.string().trim().min(1).max(DISTRICT_MAX_LENGTH).optional(),
 });
 

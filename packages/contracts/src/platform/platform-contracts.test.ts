@@ -27,6 +27,8 @@ describe("platform permissions", () => {
     expect(granted.has(PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE)).toBe(false);
     expect(granted.has(PLATFORM_PERMISSION_KEY.OPERATOR_READ)).toBe(false);
     expect(granted.has(PLATFORM_PERMISSION_KEY.OPERATOR_WRITE)).toBe(false);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.INDUSTRY_READ)).toBe(true);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.INDUSTRY_WRITE)).toBe(false);
   });
 
   it("lets BILLING edit entitlements and subscriptions but not suspend or edit packages", () => {
@@ -37,6 +39,8 @@ describe("platform permissions", () => {
     expect(granted.has(PLATFORM_PERMISSION_KEY.OPERATOR_WRITE)).toBe(false);
     expect(granted.has(PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE)).toBe(true);
     expect(granted.has(PLATFORM_PERMISSION_KEY.SUBSCRIPTION_WRITE)).toBe(true);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.INDUSTRY_READ)).toBe(true);
+    expect(granted.has(PLATFORM_PERMISSION_KEY.INDUSTRY_WRITE)).toBe(false);
   });
 
   it("gives each role exactly the permissions of the final mapping (ADR-093)", () => {
@@ -49,6 +53,7 @@ describe("platform permissions", () => {
         PLATFORM_PERMISSION_KEY.PACKAGE_READ,
         PLATFORM_PERMISSION_KEY.ENTITLEMENT_READ,
         PLATFORM_PERMISSION_KEY.SUBSCRIPTION_READ,
+        PLATFORM_PERMISSION_KEY.INDUSTRY_READ,
       ].sort(),
     );
     expect(sorted(PLATFORM_ROLE.BILLING)).toEqual(
@@ -59,6 +64,7 @@ describe("platform permissions", () => {
         PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE,
         PLATFORM_PERMISSION_KEY.SUBSCRIPTION_READ,
         PLATFORM_PERMISSION_KEY.SUBSCRIPTION_WRITE,
+        PLATFORM_PERMISSION_KEY.INDUSTRY_READ,
       ].sort(),
     );
   });

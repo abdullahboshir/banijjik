@@ -95,3 +95,16 @@ export type {
   PlatformOperatorStatusBody,
   PlatformOperatorUpdateBody,
 } from "./platform/platform-operator-schemas.js";
+export { industryTemplateKeySchema } from "./industry-template-key.schema.js";
+export {
+  industryTemplateConfigurationSchema,
+  industryTemplateSeedSchema,
+  platformIndustryTemplateListQuerySchema,
+  platformIndustryTemplateParamsSchema,
+  toIndustryTemplateConfiguration,
+} from "./platform/industry-template-schemas.js";
+export type {
+  IndustryTemplateConfigurationOutput,
+  IndustryTemplateSeed,
+  PlatformIndustryTemplateListQuery,
+} from "./platform/industry-template-schemas.js";

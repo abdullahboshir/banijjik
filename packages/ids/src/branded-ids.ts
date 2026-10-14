@@ -12,6 +12,7 @@ export type InvitationId = Id<"Invitation">;
 export type PackageId = Id<"Package">;
 export type PlatformSubscriptionId = Id<"PlatformSubscription">;
 export type ModuleOverrideId = Id<"ModuleOverride">;
+export type IndustryTemplateId = Id<"IndustryTemplate">;
 
 export class InvalidIdError extends Error {
   constructor() {

@@ -175,5 +175,7 @@
   "errors.operator_exists": "This person already has operator access.",
   "errors.operator_user_not_found": "No account has that email or phone number.",
   "errors.operator_user_not_active": "This account is not active, so it cannot be given operator access.",
-  "errors.own_operator_access": "You cannot change your own operator access."
+  "errors.own_operator_access": "You cannot change your own operator access.",
+  "errors.industry_template_not_available": "This business type is not available for a new business.",
+  "errors.industry_template_missing": "This business type is not set up. Contact support."
 }

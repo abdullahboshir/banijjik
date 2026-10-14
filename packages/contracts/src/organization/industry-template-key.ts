@@ -1,10 +1,19 @@
 import { defineEnum } from "../define-enum.js";
 
 /**
- * The seed industry templates of 12-INDUSTRY-TEMPLATES. Whether one is PUBLISHED or DRAFT
- * (ADR-075) is registry data owned by platform/industry, not part of this list.
+ * A template key is data, not a closed enum (ADR-034, ADR-097). Two to forty characters:
+ * an uppercase letter, then uppercase letters, digits or underscores. Whether the key exists
+ * is checked against the database by the use case that needs it.
  */
-export const INDUSTRY_TEMPLATE_KEY = defineEnum([
+export const INDUSTRY_TEMPLATE_KEY_PATTERN = /^[A-Z][A-Z0-9_]{1,39}$/;
+
+export type IndustryTemplateKey = string & { readonly __brand: "IndustryTemplateKey" };
+
+export function isIndustryTemplateKey(value: string): value is IndustryTemplateKey {
+  return INDUSTRY_TEMPLATE_KEY_PATTERN.test(value);
+}
+
+const SEED_INDUSTRY_TEMPLATE_NAMES = defineEnum([
   "FCOMMERCE",
   "RETAIL",
   "SALON",
@@ -15,5 +24,13 @@ export const INDUSTRY_TEMPLATE_KEY = defineEnum([
   "HOSTEL",
 ]);
 
-export type IndustryTemplateKey =
-  (typeof INDUSTRY_TEMPLATE_KEY)[keyof typeof INDUSTRY_TEMPLATE_KEY];
+type SeedIndustryTemplateName = keyof typeof SEED_INDUSTRY_TEMPLATE_NAMES;
+
+/**
+ * The eight seed templates of 12-INDUSTRY-TEMPLATES. For seed data and tests only.
+ * Production code must not branch on a key (ADR-097). The brand is type-only: every name
+ * already matches {@link INDUSTRY_TEMPLATE_KEY_PATTERN}.
+ */
+export const SEED_INDUSTRY_TEMPLATE_KEY = SEED_INDUSTRY_TEMPLATE_NAMES as {
+  readonly [Key in SeedIndustryTemplateName]: IndustryTemplateKey;
+};

@@ -175,5 +175,7 @@
   "errors.operator_exists": "এই ব্যক্তির ইতিমধ্যে অপারেটর অ্যাক্সেস আছে।",
   "errors.operator_user_not_found": "এই ইমেইল বা ফোন দিয়ে কোনো অ্যাকাউন্ট নেই।",
   "errors.operator_user_not_active": "এই অ্যাকাউন্ট সক্রিয় নয়, তাই অপারেটর অ্যাক্সেস দেওয়া যাবে না।",
-  "errors.own_operator_access": "নিজের অপারেটর অ্যাক্সেস নিজে বদলানো যায় না।"
+  "errors.own_operator_access": "নিজের অপারেটর অ্যাক্সেস নিজে বদলানো যায় না।",
+  "errors.industry_template_not_available": "নতুন ব্যবসার জন্য এই ব্যবসার ধরনটি এখন নেওয়া যাবে না।",
+  "errors.industry_template_missing": "এই ব্যবসার ধরন সেট আপ করা নেই। সহায়তায় যোগাযোগ করুন।"
 }

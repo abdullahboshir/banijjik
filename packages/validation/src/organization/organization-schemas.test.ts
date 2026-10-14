@@ -52,10 +52,10 @@ describe("organizationCreateRequestSchema", () => {
     expect(parsed.district).toBe("Dhaka");
   });
 
-  it("rejects an industry template key that is not one of the eight", () => {
+  it("rejects an industry template key in the wrong format", () => {
     const result = organizationCreateRequestSchema.safeParse({
       ...VALID_BODY,
-      industryTemplateKey: "BAKERY",
+      industryTemplateKey: "bakery-shop",
     });
 
     expect(result.error?.issues[0]?.path).toEqual(["industryTemplateKey"]);
