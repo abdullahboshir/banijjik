@@ -12,7 +12,9 @@ manifest. This module does not know those keys.
   write needs the permission at every location; a location write needs it at that location.
 - **Location:** an ACTIVE location of this organization, asked through organization's
   `buildLocationLookup`. An archived location, or another organization's, is 404.
-- **Batch:** at most 50 items, all or nothing. `value: null` deletes the stored row. One audit
-  entry, one `settings.setting.changed` event and one `configVersion` bump per batch.
+- **Batch:** at most 50 items, all or nothing. `value: null` deletes the stored row. A batch
+  that changes something writes one audit entry, one `settings.setting.changed` event and one
+  `configVersion` bump. A delete of a missing row, or a value equal to the stored one, is left
+  out. A batch that changes nothing writes none of those.
 - **Not here:** `/me/config` settings and terms (card 2.2), a settings UI (card 2.7), and a
   resolve cache. Unregistered template keys are ignored until their module declares them.

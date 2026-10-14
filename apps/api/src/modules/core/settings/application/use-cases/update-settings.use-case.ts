@@ -42,7 +42,10 @@ export interface UpdateSettingsInput {
   readonly items: readonly SettingChange[];
 }
 
-/** One transaction: every item, one audit entry, one event, one configVersion bump (ADR-103). */
+/**
+ * One transaction. A batch that changes something writes one audit entry, one event and one
+ * configVersion bump. A batch that changes nothing writes none of those (review R1-3).
+ */
 export class UpdateSettingsUseCase {
   constructor(private readonly dependencies: UpdateSettingsDependencies) {}
 
@@ -80,11 +83,13 @@ export class UpdateSettingsUseCase {
     const rows = await this.loadRows(prepared);
     const applied: SettingAuditChange[] = [];
     for (const change of prepared) {
-      applied.push(await this.apply(input, change, rows.get(rowMark(change))));
+      const recorded = await this.apply(input, change, rows.get(rowMark(change)));
+      if (recorded !== undefined) applied.push(recorded);
     }
+    if (applied.length === 0) return;
     await recordSettingChange(this.dependencies.audit, input.organizationId, applied);
     await this.dependencies.events.publish(SETTINGS_EVENT_TYPE.SETTING_CHANGED, {
-      settingKeys: uniqueKeys(prepared),
+      settingKeys: uniqueKeys(applied.map((entry) => entry.change)),
     });
     await this.dependencies.configVersion.bump(input.organizationId);
   }
@@ -93,10 +98,11 @@ export class UpdateSettingsUseCase {
     input: UpdateSettingsInput,
     change: PreparedSettingChange,
     row: StoredSettingRow | undefined,
-  ): Promise<SettingAuditChange> {
+  ): Promise<SettingAuditChange | undefined> {
     if (change.value === null) return this.remove(change, row);
     if (row === undefined) return this.create(input, change);
     requireVersion(change, row);
+    if (valuesEqual(row.value, change.value)) return undefined;
     await this.dependencies.values.update({
       settingKey: change.settingKey,
       locationId: change.locationId,
@@ -110,8 +116,8 @@ export class UpdateSettingsUseCase {
   private async remove(
     change: PreparedSettingChange,
     row: StoredSettingRow | undefined,
-  ): Promise<SettingAuditChange> {
-    if (row === undefined) return { change, from: null, to: null };
+  ): Promise<SettingAuditChange | undefined> {
+    if (row === undefined) return undefined;
     requireVersion(change, row);
     await this.dependencies.values.delete({
       settingKey: change.settingKey,
@@ -166,6 +172,10 @@ export class UpdateSettingsUseCase {
       [...merged.entries()].sort(([left], [right]) => left.localeCompare(right, "en")),
     );
   }
+}
+
+function valuesEqual(stored: unknown, next: unknown): boolean {
+  return JSON.stringify(stored) === JSON.stringify(next);
 }
 
 function requireVersion(change: PreparedSettingChange, row: StoredSettingRow): void {

@@ -98,6 +98,20 @@ async function configVersion(organizationId: string): Promise<number> {
   return Number(row?.["configVersion"]);
 }
 
+function settingAudits(organizationId: string): Promise<Record<string, unknown>[]> {
+  return harness.connections.tenantShared
+    .collection("audit_logs")
+    .find({ organizationId, action: "settings.setting.changed" })
+    .toArray() as Promise<Record<string, unknown>[]>;
+}
+
+function settingEvents(organizationId: string): Promise<Record<string, unknown>[]> {
+  return harness.connections.platform
+    .collection("outbox_events")
+    .find({ organizationId, type: "settings.setting.changed" })
+    .toArray() as Promise<Record<string, unknown>[]>;
+}
+
 function warnCount(): number {
   return harness.logs.lines().filter((line) => line["msg"] === "settings.template_default_skipped")
     .length;
@@ -466,6 +480,59 @@ describe("PATCH /settings", () => {
     expect(statuses).toEqual([200, 409]);
     const conflict = first.status === 409 ? first : second;
     expect(conflict.body.error.details.currentVersion).toBe(1);
+  });
+
+  it("does not record deleting a row that is already absent", async () => {
+    const world = await aWorld();
+    const before = await configVersion(world.organizationA);
+
+    const response = await world.alice.call("patch", settingsPath(world.organizationA), {
+      items: [{ settingKey: "organization.digitScript", value: null }],
+    });
+    const audits = await settingAudits(world.organizationA);
+    const events = await settingEvents(world.organizationA);
+
+    expect(response.status).toBe(200);
+    expect(settingsOf(response)["organization.digitScript"]).toEqual({
+      value: "LATIN",
+      source: SETTING_VALUE_SOURCE.INDUSTRY,
+    });
+    expect(audits).toHaveLength(0);
+    expect(events).toHaveLength(0);
+    expect(await configVersion(world.organizationA)).toBe(before);
+  });
+
+  it("leaves a value that already matches out of the audit", async () => {
+    const world = await aWorld();
+    const path = settingsPath(world.organizationA);
+    await world.alice.call("patch", path, {
+      items: [{ settingKey: "organization.digitScript", value: "BENGALI" }],
+    });
+    const before = await configVersion(world.organizationA);
+
+    const sameValue = await world.alice.call("patch", path, {
+      items: [{ settingKey: "organization.digitScript", value: "BENGALI", version: 1 }],
+    });
+    const afterSame = await settingAudits(world.organizationA);
+
+    expect(sameValue.status).toBe(200);
+    expect(settingsOf(sameValue)["organization.digitScript"]?.version).toBe(1);
+    expect(await configVersion(world.organizationA)).toBe(before);
+    expect(afterSame).toHaveLength(1);
+
+    const mixed = await world.alice.call("patch", path, {
+      items: [
+        { settingKey: "organization.digitScript", value: "BENGALI", version: 1 },
+        { settingKey: "organization.numberGrouping", value: "INDIAN" },
+      ],
+    });
+    const afterMixed = await settingAudits(world.organizationA);
+
+    expect(mixed.status).toBe(200);
+    expect(afterMixed).toHaveLength(2);
+    expect(afterMixed[1]?.["changes"]).toEqual({
+      "organization.numberGrouping": { from: null, to: "INDIAN" },
+    });
   });
 });
 
