@@ -1,6 +1,6 @@
 import { defineEnum } from "../define-enum.js";
 
-/** The sixteen custom field types (01-ARCHITECTURE section 5). The field engine arrives in card 2.3. */
+/** The sixteen custom field types (01-ARCHITECTURE section 5). */
 export const CUSTOM_FIELD_TYPE = defineEnum([
   "TEXT",
   "LONG_TEXT",

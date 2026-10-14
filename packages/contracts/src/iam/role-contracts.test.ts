@@ -14,7 +14,7 @@ import { ROLE_STATUS } from "./role-status.js";
 import { SURFACE } from "./surface.js";
 
 describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
-  it("names the profile edit, the audit log read, the location writes and the role writes", () => {
+  it("names the organization-wide writes, including custom field definitions", () => {
     expect([...ORGANIZATION_WIDE_PERMISSION_KEYS].sort()).toEqual(
       [
         PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
@@ -25,14 +25,17 @@ describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
         PERMISSION_KEY.IAM_ROLE_CREATE,
         PERMISSION_KEY.IAM_ROLE_UPDATE,
         PERMISSION_KEY.IAM_ROLE_ARCHIVE,
+        PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_CREATE,
+        PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_UPDATE,
+        PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_ARCHIVE,
       ].sort(),
     );
   });
 });
 
 describe("PERMISSION_KEY", () => {
-  it("lists the sixteen keys of the iam, organization and audit modules", () => {
-    expect(Object.values(PERMISSION_KEY)).toHaveLength(16);
+  it("lists the keys of the iam, organization, audit and custom-field modules", () => {
+    expect(Object.values(PERMISSION_KEY)).toHaveLength(20);
   });
 
   it("only holds keys that match the module.entity.action pattern", () => {
@@ -64,7 +67,7 @@ describe("PERMISSION_KEY", () => {
 
   it("has one label message key per permission", () => {
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.iam.role.read");
-    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(16);
+    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(20);
   });
 });
 

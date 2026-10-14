@@ -177,5 +177,13 @@
   "errors.operator_user_not_active": "This account is not active, so it cannot be given operator access.",
   "errors.own_operator_access": "You cannot change your own operator access.",
   "errors.industry_template_not_available": "This business type is not available for a new business.",
-  "errors.industry_template_missing": "This business type is not set up. Contact support."
+  "errors.industry_template_missing": "This business type is not set up. Contact support.",
+  "errors.custom_field_key_taken": "A field with this key already exists for this record.",
+  "errors.custom_field_limit": "This record already has the maximum number of custom fields.",
+  "errors.custom_field_required": "A required field cannot be hidden.",
+  "errors.custom_field_options_locked": "An existing choice cannot be removed.",
+  "permission.custom-field.definition.read": "View custom fields",
+  "permission.custom-field.definition.create": "Create custom fields",
+  "permission.custom-field.definition.update": "Edit custom fields",
+  "permission.custom-field.definition.archive": "Archive custom fields"
 }

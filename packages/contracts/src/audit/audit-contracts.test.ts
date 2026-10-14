@@ -20,6 +20,8 @@ describe("audit vocabulary", () => {
       "member",
       "invitation",
       "role",
+      "customFieldDefinition",
+      "customFieldPreference",
     ]);
   });
 });

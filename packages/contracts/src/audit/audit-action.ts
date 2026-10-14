@@ -20,6 +20,10 @@ export const AUDIT_ACTION = {
   ROLE_CREATED: "iam.role.created",
   ROLE_UPDATED: "iam.role.updated",
   ROLE_ARCHIVED: "iam.role.archived",
+  CUSTOM_FIELD_DEFINITION_CREATED: "custom-field.definition.created",
+  CUSTOM_FIELD_DEFINITION_UPDATED: "custom-field.definition.updated",
+  CUSTOM_FIELD_DEFINITION_ARCHIVED: "custom-field.definition.archived",
+  CUSTOM_FIELD_PREFERENCE_UPDATED: "custom-field.preference.updated",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -31,5 +35,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "member",
   "invitation",
   "role",
+  "customFieldDefinition",
+  "customFieldPreference",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];

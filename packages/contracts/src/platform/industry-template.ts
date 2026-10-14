@@ -43,6 +43,9 @@ export interface IndustryTemplateCustomField {
   readonly isSearchable: boolean;
   readonly isSensitive: boolean;
   readonly options?: readonly string[] | undefined;
+  /** Absent on older rows. The engine falls back to the field key (ADR-102). */
+  readonly label?: LocalizedText | undefined;
+  readonly optionLabels?: Readonly<Record<string, LocalizedText>> | undefined;
   readonly referenceEntity?: "contact" | "member" | undefined;
   readonly link?: IndustryTemplateContactLink | undefined;
 }

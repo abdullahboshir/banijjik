@@ -19,6 +19,10 @@ export const PERMISSION_KEY = {
   ORGANIZATION_MEMBER_READ_SENSITIVE: "organization.member.readSensitive",
   ORGANIZATION_OWNERSHIP_TRANSFER: "organization.ownership.transfer",
   AUDIT_LOG_READ: "audit.log.read",
+  CUSTOM_FIELD_DEFINITION_READ: "custom-field.definition.read",
+  CUSTOM_FIELD_DEFINITION_CREATE: "custom-field.definition.create",
+  CUSTOM_FIELD_DEFINITION_UPDATE: "custom-field.definition.update",
+  CUSTOM_FIELD_DEFINITION_ARCHIVE: "custom-field.definition.archive",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];
@@ -66,4 +70,8 @@ export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
   PERMISSION_KEY.IAM_ROLE_CREATE,
   PERMISSION_KEY.IAM_ROLE_UPDATE,
   PERMISSION_KEY.IAM_ROLE_ARCHIVE,
+  // Definitions are organization-wide, so these writes need the permission at every location.
+  PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_CREATE,
+  PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_UPDATE,
+  PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_ARCHIVE,
 ];

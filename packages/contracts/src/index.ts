@@ -250,6 +250,36 @@ export { RELATION_KEY } from "./contact/relation-key.js";
 export type { RelationKey } from "./contact/relation-key.js";
 export { CUSTOM_FIELD_TYPE } from "./custom-field/custom-field-type.js";
 export type { CustomFieldType } from "./custom-field/custom-field-type.js";
+export {
+  CUSTOM_FIELD_ENTITY_TYPE,
+  isCustomFieldEntityType,
+} from "./custom-field/custom-field-entity-type.js";
+export type { CustomFieldEntityType } from "./custom-field/custom-field-entity-type.js";
+export { CUSTOM_FIELD_EVENT_TYPE } from "./custom-field/custom-field-event-type.js";
+export type { CustomFieldEventType } from "./custom-field/custom-field-event-type.js";
+export {
+  CUSTOM_FIELD_DEFINITION_STATUS,
+  CUSTOM_FIELD_SCOPE,
+} from "./custom-field/custom-field-contracts.js";
+export type {
+  CustomFieldArchiveRequest,
+  CustomFieldDefinitionChangedPayload,
+  CustomFieldDefinitionCreateRequest,
+  CustomFieldDefinitionStatus,
+  CustomFieldDefinitionUpdateRequest,
+  CustomFieldListQuery,
+  CustomFieldPreferenceBatchRequest,
+  CustomFieldPreferenceChange,
+  CustomFieldScope,
+  CustomFieldValidationBounds,
+  CustomFieldVisibility,
+  EffectiveCustomField,
+} from "./custom-field/custom-field-contracts.js";
+export {
+  CUSTOM_FIELD_MESSAGE_KEYS,
+  CUSTOM_FIELD_RULE_KEY,
+} from "./custom-field/custom-field-rule-key.js";
+export type { CustomFieldRuleKey } from "./custom-field/custom-field-rule-key.js";
 export { INDUSTRY_TEMPLATE_STATUS } from "./platform/industry-template.js";
 export type {
   IndustryTemplateBotDefaults,

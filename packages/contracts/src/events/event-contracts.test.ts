@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
+import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
 import { EVENT_TYPE } from "./event-type.js";
 import { OUTBOX_STATUS } from "./outbox-status.js";
 
-const EVENT_NAME_PATTERN = /^[a-z]+\.[a-z]+\.[a-z][A-Za-z]*(ed|d)$/;
+// The module segment is kebab-case, so `custom-field` is a legal event name (card 2.3).
+const EVENT_NAME_PATTERN = /^[a-z][a-z0-9-]*\.[a-z]+\.[a-z][A-Za-z]*(ed|d)$/;
 
 describe("event types", () => {
-  it("contains every iam and organization event exactly once", () => {
+  it("contains every module event exactly once", () => {
     const expected = [
       ...Object.values(IAM_EVENT_TYPE),
       ...Object.values(ORGANIZATION_EVENT_TYPE),
+      ...Object.values(CUSTOM_FIELD_EVENT_TYPE),
     ].sort();
 
     expect(Object.values(EVENT_TYPE).sort()).toEqual(expected);

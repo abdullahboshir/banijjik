@@ -1,3 +1,5 @@
+import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
+import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
 
@@ -58,4 +60,5 @@ export interface EventPayloadMap {
   readonly [ORGANIZATION_EVENT_TYPE.INVITATION_REVOKED]: InvitationPayload;
   readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_SUSPENDED]: OrganizationStatusPayload;
   readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_REACTIVATED]: OrganizationStatusPayload;
+  readonly [CUSTOM_FIELD_EVENT_TYPE.DEFINITION_CHANGED]: CustomFieldDefinitionChangedPayload;
 }

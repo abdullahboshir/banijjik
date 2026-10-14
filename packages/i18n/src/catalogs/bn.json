@@ -177,5 +177,13 @@
   "errors.operator_user_not_active": "এই অ্যাকাউন্ট সক্রিয় নয়, তাই অপারেটর অ্যাক্সেস দেওয়া যাবে না।",
   "errors.own_operator_access": "নিজের অপারেটর অ্যাক্সেস নিজে বদলানো যায় না।",
   "errors.industry_template_not_available": "নতুন ব্যবসার জন্য এই ব্যবসার ধরনটি এখন নেওয়া যাবে না।",
-  "errors.industry_template_missing": "এই ব্যবসার ধরন সেট আপ করা নেই। সহায়তায় যোগাযোগ করুন।"
+  "errors.industry_template_missing": "এই ব্যবসার ধরন সেট আপ করা নেই। সহায়তায় যোগাযোগ করুন।",
+  "errors.custom_field_key_taken": "এই তথ্যে এই নামের ঘরটি আগে থেকেই আছে।",
+  "errors.custom_field_limit": "এই তথ্যে আর কাস্টম ঘর যোগ করা যাবে না। সর্বোচ্চ সংখ্যা পূর্ণ।",
+  "errors.custom_field_required": "আবশ্যক ঘর লুকানো যায় না।",
+  "errors.custom_field_options_locked": "আগের কোনো অপশন মুছে ফেলা যায় না।",
+  "permission.custom-field.definition.read": "কাস্টম ঘর দেখা",
+  "permission.custom-field.definition.create": "কাস্টম ঘর তৈরি",
+  "permission.custom-field.definition.update": "কাস্টম ঘর সম্পাদনা",
+  "permission.custom-field.definition.archive": "কাস্টম ঘর আর্কাইভ"
 }
