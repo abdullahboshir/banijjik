@@ -6,6 +6,8 @@ import {
   SYSTEM_ROLE_KEY,
 } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
+import { registerStructuredSettingSchema } from "@banijjik/validation";
+import { z } from "zod";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { defineModule } from "../../../../kernel/modules/index.js";
 import { registerIamApiModels, startIamApi } from "../../../../test-support/iam-api-harness.js";
@@ -40,6 +42,13 @@ const LOCATION_PROBE = defineModule({
       allowsLocationOverride: true,
       isClientVisible: false,
     },
+    {
+      settingKey: "notification.probeShape",
+      value: { kind: "STRUCTURED", schemaKey: "notification.probeShape" },
+      systemDefault: { name: "none" },
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
   ],
   customFieldEntities: [],
   botTools: [],
@@ -54,6 +63,7 @@ registerIamApiModels();
 let harness: IamApiHarness;
 
 beforeAll(async () => {
+  registerStructuredSettingSchema("notification.probeShape", z.object({ name: z.string() }));
   harness = await startIamApi({ tenantRouters: [], extraManifests: [LOCATION_PROBE] });
 });
 
@@ -119,6 +129,7 @@ describe("GET /settings", () => {
     expect(response.status).toBe(200);
     expect(Object.keys(settingsOf(response))).toEqual([
       "notification.probeFlag",
+      "notification.probeShape",
       "organization.digitScript",
       "organization.numberGrouping",
     ]);
@@ -353,6 +364,32 @@ describe("PATCH /settings", () => {
 
     expect(archived.status).toBe(200);
     expect(response.status).toBe(404);
+  });
+
+  it("stores the parsed structured value and drops a key the schema does not name", async () => {
+    const world = await aWorld();
+    const response = await world.alice.call("patch", settingsPath(world.organizationA), {
+      items: [
+        {
+          settingKey: "notification.probeShape",
+          value: { name: "Dhaka", extra: true },
+        },
+      ],
+    });
+    const row = await harness.connections.tenantShared
+      .collection("setting_values")
+      .findOne({ organizationId: world.organizationA, settingKey: "notification.probeShape" });
+    const audits = await harness.connections.tenantShared
+      .collection("audit_logs")
+      .find({ organizationId: world.organizationA, action: "settings.setting.changed" })
+      .toArray();
+
+    expect(response.status).toBe(200);
+    expect(settingsOf(response)["notification.probeShape"]?.value).toEqual({ name: "Dhaka" });
+    expect(row?.["value"]).toEqual({ name: "Dhaka" });
+    expect(audits[0]?.["changes"]).toMatchObject({
+      "notification.probeShape": { from: null, to: JSON.stringify({ name: "Dhaka" }) },
+    });
   });
 
   it("rejects an empty batch, a duplicate item and more than 50 items", async () => {

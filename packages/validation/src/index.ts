@@ -144,6 +144,7 @@ export {
 export { buildSettingValueSchema } from "./settings/build-setting-value-schema.js";
 export {
   STRUCTURED_SETTING_SCHEMAS,
+  registerStructuredSettingSchema,
   structuredSettingSchema,
 } from "./settings/structured-setting-schemas.js";
 export {

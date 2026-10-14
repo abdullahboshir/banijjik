@@ -31,14 +31,14 @@ export async function prepareSettingChange(
   input: PrepareSettingChangeInput,
 ): Promise<PreparedSettingChange> {
   const definition = availableSetting(input);
-  assertValue(input.item, definition, input.index);
+  const value = parsedValue(input.item, definition, input.index);
   assertLocationScope(input.item, definition);
   assertReach(input.item.locationId, input.reach);
   await assertLocationExists(input.item.locationId, input.locations);
   return {
     settingKey: input.item.settingKey,
     locationId: input.item.locationId ?? null,
-    value: input.item.value,
+    value,
     ...(input.item.version === undefined ? {} : { version: input.item.version }),
   };
 }
@@ -51,11 +51,12 @@ function availableSetting(input: PrepareSettingChangeInput): RegisteredSetting {
   return definition;
 }
 
-function assertValue(item: SettingChange, definition: RegisteredSetting, index: number): void {
-  if (item.value === null) return;
-  if (!buildSettingValueSchema(definition.value).safeParse(item.value).success) {
-    throw invalidSettingValue(index);
-  }
+/** The stored value is what the spec returned, so a structured schema can drop unknown keys. */
+function parsedValue(item: SettingChange, definition: RegisteredSetting, index: number): unknown {
+  if (item.value === null) return null;
+  const parsed = buildSettingValueSchema(definition.value).safeParse(item.value);
+  if (!parsed.success) throw invalidSettingValue(index);
+  return parsed.data;
 }
 
 function assertLocationScope(item: SettingChange, definition: RegisteredSetting): void {
