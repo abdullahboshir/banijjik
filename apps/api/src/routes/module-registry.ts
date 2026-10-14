@@ -7,6 +7,7 @@ import { entitlementManifest } from "../modules/platform/entitlement/index.js";
 import { industryManifest } from "../modules/platform/industry/index.js";
 import { packageManifest } from "../modules/platform/package/index.js";
 import { saasBillingManifest } from "../modules/platform/saas-billing/index.js";
+import { customFieldManifest } from "../modules/core/custom-field/index.js";
 import { tenantAdminManifest } from "../modules/platform/tenant-admin/index.js";
 
 /** Every manifest of the application. A module joins the product by adding its manifest here. */
@@ -19,6 +20,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   saasBillingManifest,
   entitlementManifest,
   tenantAdminManifest,
+  customFieldManifest,
 ];
 
 /**

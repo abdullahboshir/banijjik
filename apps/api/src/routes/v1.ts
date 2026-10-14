@@ -40,6 +40,7 @@ import {
   buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
+  buildConfigVersionBumper,
   buildOrganizationRouters,
   buildOrganizationTenantRouters,
   buildRolesVersionBumper,
@@ -65,8 +66,12 @@ import {
   buildTrialStarter,
   registerSaasBillingModels,
 } from "../modules/platform/saas-billing/index.js";
+import {
+  buildCustomFieldModule,
+  registerCustomFieldModels,
+} from "../modules/core/custom-field/index.js";
 import { buildOrganizationConfigPorts } from "./organization-config-ports.js";
-import { buildModuleRegistry } from "./module-registry.js";
+import { MODULE_MANIFESTS, buildModuleRegistry } from "./module-registry.js";
 import { mountPlatformApi } from "./platform.js";
 
 export interface V1Dependencies {
@@ -102,6 +107,7 @@ export function registerModuleModels(): void {
   registerIndustryModels();
   registerSaasBillingModels();
   registerEntitlementModels();
+  registerCustomFieldModels();
 }
 
 /**
@@ -162,6 +168,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
         audit,
         orgConfig,
         access,
+        registry,
         organizationRouter: organizationTenant.tenantRouter,
       }),
     ),
@@ -285,6 +292,7 @@ interface TenantRoutersInput {
   readonly audit: AuditRecorder;
   readonly orgConfig: OrgConfigService;
   readonly access: AccessParts;
+  readonly registry: ModuleRegistry;
   readonly organizationRouter: Router;
 }
 
@@ -312,11 +320,21 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     permissions: permissionGate,
     permissionDefinitions: catalog.all(),
   });
+  const customFieldRouter = buildCustomFieldModule({
+    clock,
+    audit,
+    permission,
+    orgConfig,
+    registry: input.registry,
+    configVersion: buildConfigVersionBumper(),
+    productionManifests: MODULE_MANIFESTS,
+  }).router;
   return [
     iamRouter,
     input.organizationRouter,
     auditRouter,
     entitlementRouter,
+    customFieldRouter,
     ...tenantRouters,
     ...tenantRouterFactories.map((build) => build(permission)),
   ];

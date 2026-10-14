@@ -55,6 +55,14 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
     [SYSTEM_ROLE_KEY.RIDER]: "NONE",
     [SYSTEM_ROLE_KEY.VIEWER]: "NONE",
   },
+  "custom-field": {
+    [SYSTEM_ROLE_KEY.OWNER]: "ALL",
+    [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
+    [SYSTEM_ROLE_KEY.CASHIER]: "READ",
+    [SYSTEM_ROLE_KEY.STAFF]: "READ",
+    [SYSTEM_ROLE_KEY.RIDER]: "NONE",
+    [SYSTEM_ROLE_KEY.VIEWER]: "READ",
+  },
 };
 
 const READ_ACTION = "read";
