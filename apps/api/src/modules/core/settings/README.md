@@ -10,6 +10,8 @@ manifest. This module does not know those keys.
 - **Endpoints:** `GET` and `PATCH /api/v1/orgs/{organizationId}/settings`. Read permission
   `settings.setting.read`, write permission `settings.setting.update`. An organization-level
   write needs the permission at every location; a location write needs it at that location.
+- **Location:** an ACTIVE location of this organization, asked through organization's
+  `buildLocationLookup`. An archived location, or another organization's, is 404.
 - **Batch:** at most 50 items, all or nothing. `value: null` deletes the stored row. One audit
   entry, one `settings.setting.changed` event and one `configVersion` bump per batch.
 - **Not here:** `/me/config` settings and terms (card 2.2), a settings UI (card 2.7), and a

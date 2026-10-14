@@ -29,7 +29,9 @@ import type { InvitationTokenLookup } from "./application/ports/invitation-token
 import { MongoInvitationTokenLookup } from "./infrastructure/mongo-invitation-token-lookup.js";
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
 import type { ActiveLocationCounter } from "./application/ports/active-location-counter.js";
+import type { LocationLookup } from "./application/ports/location-lookup.js";
 import { MongoActiveLocationCounter } from "./infrastructure/mongo-active-location-counter.js";
+import { MongoLocationLookup } from "./infrastructure/mongo-location-lookup.js";
 import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
 import { MongoOrganizationConfigSource } from "./infrastructure/mongo-organization-config-source.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
@@ -140,6 +142,11 @@ export function buildActiveLocationCounter(): ActiveLocationCounter {
   return new MongoActiveLocationCounter();
 }
 
+/** Whether a location of the current organization is ACTIVE. Settings uses this, not the model. */
+export function buildLocationLookup(): LocationLookup {
+  return new MongoLocationLookup();
+}
+
 /** The template key and config version of an organization, for the config resolver. */
 export function buildOrganizationConfigSource(): OrganizationConfigSource {
   return new MongoOrganizationConfigSource();
@@ -158,6 +165,7 @@ export function buildInvitationTokenLookup(): InvitationTokenLookup {
 
 export type { InvitationTokenLookup } from "./application/ports/invitation-token-lookup.js";
 export type { ActiveLocationCounter };
+export type { LocationLookup };
 export type {
   OrganizationConfigSnapshot,
   OrganizationConfigSource,

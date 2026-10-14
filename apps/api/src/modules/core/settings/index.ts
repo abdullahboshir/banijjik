@@ -10,13 +10,14 @@ import { settingCatalogOf } from "./application/setting-catalog.js";
 import { SettingsResolver } from "./application/settings-resolver.js";
 import { GetSettingsUseCase } from "./application/use-cases/get-settings.use-case.js";
 import { UpdateSettingsUseCase } from "./application/use-cases/update-settings.use-case.js";
-import { MongoLocationExistence } from "./infrastructure/mongo-location-existence.js";
+import type { LocationExistence } from "./application/ports/location-existence.js";
 import { MongoSettingValueRepository } from "./infrastructure/mongo-setting-value.repository.js";
 import { SettingsController } from "./presentation/settings.controller.js";
 import { buildSettingsRouter } from "./presentation/settings.router.js";
 
 export { registerSettingsModels } from "./infrastructure/register-settings-models.js";
 export { settingsManifest } from "./module.manifest.js";
+export type { LocationExistence };
 
 export interface SettingsResolverDependencies {
   readonly orgConfig: OrgConfigReader;
@@ -41,6 +42,7 @@ export interface SettingsTenantRouterDependencies {
   readonly orgConfig: OrgConfigReader;
   readonly configVersion: ConfigVersionBumper;
   readonly manifests: readonly ModuleManifest[];
+  readonly locations: LocationExistence;
 }
 
 /** `GET` and `PATCH /orgs/{organizationId}/settings`, mounted by routes/v1.ts. */
@@ -53,7 +55,7 @@ export function buildSettingsTenantRouter(dependencies: SettingsTenantRouterDepe
     updateSettings: new UpdateSettingsUseCase({
       catalog,
       orgConfig: dependencies.orgConfig,
-      locations: new MongoLocationExistence(),
+      locations: dependencies.locations,
       values,
       resolver,
       unitOfWork: new MongoUnitOfWork(),

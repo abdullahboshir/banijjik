@@ -334,6 +334,27 @@ describe("PATCH /settings", () => {
     expect(missing.status).toBe(404);
   });
 
+  it("answers 404 for an archived location", async () => {
+    const world = await aWorld();
+    const archived = await world.alice.call(
+      "post",
+      `/orgs/${world.organizationA}/locations/${world.locationA2}/archive`,
+      { version: 1 },
+    );
+    const response = await world.alice.call("patch", settingsPath(world.organizationA), {
+      items: [
+        {
+          settingKey: "notification.probeFlag",
+          value: true,
+          locationId: world.locationA2,
+        },
+      ],
+    });
+
+    expect(archived.status).toBe(200);
+    expect(response.status).toBe(404);
+  });
+
   it("rejects an empty batch, a duplicate item and more than 50 items", async () => {
     const world = await aWorld();
     const path = settingsPath(world.organizationA);

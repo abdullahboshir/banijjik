@@ -1,4 +1,4 @@
-/** A location of this organization. The tenant plugin hides every other organization's rows. */
+/** An ACTIVE location of this organization. Another organization's row, or an archived one, is absent. */
 export interface LocationExistence {
   exists(locationId: string): Promise<boolean>;
 }

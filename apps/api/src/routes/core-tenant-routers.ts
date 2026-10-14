@@ -5,8 +5,14 @@ import type { AuditRecorder } from "../kernel/audit/index.js";
 import type { ModuleRegistry } from "../kernel/modules/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildCustomFieldModule } from "../modules/core/custom-field/index.js";
-import { buildConfigVersionBumper } from "../modules/core/organization/index.js";
-import { buildSettingsTenantRouter } from "../modules/core/settings/index.js";
+import {
+  buildConfigVersionBumper,
+  buildLocationLookup,
+} from "../modules/core/organization/index.js";
+import {
+  buildSettingsTenantRouter,
+  type LocationExistence,
+} from "../modules/core/settings/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
@@ -42,6 +48,15 @@ export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenant
     orgConfig,
     configVersion: buildConfigVersionBumper(),
     manifests: input.manifests,
+    locations: activeLocationExistence(),
   });
   return { customFieldRouter, settingsRouter };
+}
+
+/** Organization owns the Location model. Settings only asks whether the location is ACTIVE. */
+function activeLocationExistence(): LocationExistence {
+  const locations = buildLocationLookup();
+  return {
+    exists: (locationId) => locations.isActiveLocation(locationId),
+  };
 }
