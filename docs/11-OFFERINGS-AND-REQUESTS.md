@@ -108,7 +108,7 @@ CANCELLED: from DRAFT, PLACED, CONFIRMED, PACKED.
 | cancel | `CancelOrder` | `sales.order.cancel`; customer self-cancel only in PLACED when `sales.customerCanCancel` | DRAFT, PLACED, CONFIRMED, PACKED | release reservations; advance → refund or store credit (§7) | `sales.order.cancelled` |
 
 - **POS sale:** `CreatePosSale` = create + complete + payments (+ store credit use) in **one** transaction. On a payment shortfall, the order completes with `paymentStatus` PARTIAL/UNPAID (a due), only if `pos.allowCreditSale` and a contact is attached.
-- **Reservation:** `InventoryLevel.reserved` += quantity at PLACED. `available = onHand − reserved − damaged`. Placing an order that exceeds `available` is refused unless `inventory.allowNegativeStock`. Reservations are released at cancel/expiry and consumed at commit.
+- **Reservation:** for every stock component of a line's variant (ADR-098), `InventoryLevel.reserved` of that inventory item += line quantity × component quantity, in base units, at PLACED. All components of an order are reserved in one transaction. `available = onHand − reserved − damaged`. Placing an order that exceeds `available` is refused unless `inventory.allowNegativeStock`. Reservations are released at cancel/expiry and consumed at commit.
 - **Auto-cancel:** PLACED orders not confirmed within `sales.placedAutoCancelHours` (default off/null) are cancelled by a scheduled job.
 
 ### 4.3 Payment status (derived, never set by hand)

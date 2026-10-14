@@ -8,7 +8,7 @@ Inputs:
 - `07` (capability model), `09 §4.6` (IndustryTemplate, CustomFieldDefinition), `10` (modules), `11` (kinds, lifecycles, settings), `08` (bot), `13 §7` (terms, locale)
 - Manoxen industry config (`packages/contracts/src/constants/industry/industry-capabilities.ts`) and the old banijjik blueprint (archive), reviewed for field ideas only
 
-Owner answer (2026-10-09): **published at launch = FCOMMERCE and RETAIL.** The other six are DRAFT, assignable to pilot orgs by a platform operator, and published later with one action.
+Owner answer (2026-10-09): **published at launch = FCOMMERCE and RETAIL.** The other six are DRAFT, assignable to pilot orgs by a platform operator, and published later with one action. **Amended 2026-10-14 (ADR-099):** the launch focus is SALON, GYM and COACHING; an operator publishes them after their template data is reviewed with pilot businesses (P3). FCOMMERCE and RETAIL stay published; RESTAURANT is the second wave.
 
 New decisions: §6 (ADR-072 to ADR-076).
 
@@ -211,7 +211,7 @@ Core fields (name, phone, address, price, variants, times…) are **not** listed
 | order | `table_number` | TEXT | – | – | A | | dine-in |
 | order | `special_instruction` | LONG_TEXT | – | – | A S B | | |
 
-- **Offering defaults:** menu items `isStockTracked=false` (setting `catalog.defaultStockTracked=false`). Table reservation = RENTAL offering, price 0, `rateUnit=HOUR`, `minUnits=1`.
+- **Offering defaults:** menu items have no stock components by default (setting `catalog.defaultStockTracked=false`); a restaurant may add ingredient components later (ADR-098). Table reservation = RENTAL offering, price 0, `rateUnit=HOUR`, `minUnits=1`.
 - **Modifiers seed:** "Extra cheese" (+৳ 40), "Size" (Regular / Large +৳ 80, required single choice)
 - **Settings:** `sales.usePacking=false`, `pos.requireShift=true`, `sales.deliveryCharges` per seller
 - **Website templates:** `restaurant-menu`, `cafe-cozy`

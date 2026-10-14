@@ -31,7 +31,7 @@ Phases are sequential: a later phase depends on the earlier one, so two **phases
 | 10 | 1.3 tenant enforcement | 1.8 platform skeleton | |
 | 11 | 1.6 module registry | 1.7 admin shell | 1.7 can mock `/me/config` until 1.6 merges |
 
-From Phase 2 on, pairs are chosen when planning (the PLAN session lists the next safe pair). **A PLAN session may plan both cards of a pair** in one sitting, writing two plan files, so both implement sessions can start at once.
+From Phase 2 on, pairs are chosen when planning (the PLAN session lists the next safe pair). Planned so far (2026-10-14): 2.3 ‖ 2.4, then 2.6 ‖ 2.7; 3.1 ‖ 3.2, with 4.1 as an optional third lane; then lane A (3.3 → 3.5 → 3.9), lane B (3.6 → 3.7) and lane C (3.8) side by side. Each extra session works in its own folder, heavy test runs never overlap on the owner's machine, and verification of parallel branches runs on GitHub CI through a pull request. **A PLAN session may plan both cards of a pair** in one sitting, writing two plan files, so both implement sessions can start at once.
 
 ---
 
@@ -176,9 +176,12 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 ## Phase 3: Core business (port from manoxen; all kinds). Needs D3, D8.
 Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API and admin UI.
 
+**Order (ADR-099, service businesses first):** 3.1 ‖ 3.2 (a pair) → 3.4 → lane B (3.6 → 3.7) and lane C (3.8 accounting, payments, dues) → 3.9 POS ‖ lane A (3.3 → 3.5) → 3.11 → 3.10 last. The numbers stay as names; this is the build order.
+
+
 **3.1 Contacts** (customers/suppliers/students/patients via `terms`; tags; custom fields). M: `modules/contacts`
-**3.2 Offerings catalog** (all kinds, variants, categories, units, images, per-location availability/price, synonyms per org for search). M: `modules/catalog`
-**3.3 Inventory ledger** (PRODUCT kind: StockMovement, InventoryLevel projection, adjustment, transfer, low stock). M: `modules/supply`, `modules/inventory`
+**3.2 Offerings catalog** (all kinds, variants, categories, units from the contracts unit registry, `quantityRule` for loose sale, stock components that link variants to inventory items (ADR-098), modifiers (ADR-072), images, per-location availability/price, synonyms per org for search). M: `modules/catalog`
+**3.3 Inventory ledger** (InventoryItem with a base unit (ADR-098), StockMovement and InventoryLevel per inventory item, reservation per stock component, packs and loose sale from one stock, kits and recipes, services that use up products, adjustment, transfer, low stock, moving average cost). M: `modules/supply`, `modules/inventory`
 **3.4 Pricing & tax** (price resolution for all kinds, promotions as rules, tax classes; money in minor units). M: `modules/pricing`
 **3.5 Orders** (PRODUCT requests: state machine from D3, invoice, returns/refunds, COD; one transaction for order + stock + journal). M: `modules/sales` + guides 15, 16, 21
 **3.6 Booking core** (Resources: staff/room/seat/table/vehicle; availability rules; bookings for SERVICE/RENTAL/EVENT; no double-booking under concurrency; reminders via outbox).
@@ -187,7 +190,8 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **3.8b Bookkeeping add-on UI** (OPTIONAL `bookkeeping`: chart of accounts, journal view, manual entries, trial balance, P&L, balance sheet; reads the `accounting` ledger; ADR-051).
 **3.9 POS** (`/pos` PWA, device ↔ location binding, shift/register, Z-report, receipt print, fast search; sells products and services). M: `modules/pos`
 **3.10 Reports & dashboard** (daily summaries per location via events, for orders, bookings and enrollments; package-aware home). M: `modules/analytics`
-- Phase done: a product seller runs a full day (stock in → POS + online orders → returns → day close), **and** a salon and a gym from templates take bookings/enrollments and payments, with correct numbers in reports. No industry-specific code.
+**3.11 Staff commission** (OPTIONAL `commission`, ADR-100: rules per member or role and per offering, category or kind; performer on booking and order lines; append-only accruals; payouts posted through `accounting`).
+- Phase done: a salon, a gym and a coaching centre from templates take bookings and enrollments, sell services and products at the counter, collect fees and dues, and pay staff commission, with correct numbers in reports; **and** a product seller runs a full day (stock in → POS + online orders → returns → day close), including loose and packed sale from one stock. No industry-specific code.
 
 ---
 
@@ -196,6 +200,7 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **4.2 Storefront app** (subdomain + custom domain via edge custom hostnames → org (ADR-031), render page JSON + tokens server-side, SEO, CDN cache). M: `modules/storefront`, guide 38
 **4.3 Shop & booking flow** (browse offerings of all kinds, cart/checkout COD for products, slot booking for services/rentals, plan enrollment, server-side re-pricing, order/booking tracking).
 **4.4 Platform template builder** (`apps/platform`: build/publish templates per industry, set lock levels).
+**4.6 Simple online booking page** (launch track, ADR-099: one public page per business with its services or plans, free slots and a booking or enrollment request; uses the 3.6/3.7 APIs; no theme engine needed).
 **4.5 Tenant website editor** (`apps/admin`: choose template, edit within limits, mobile/desktop preview, publish, version rollback).
 
 ---
@@ -226,6 +231,15 @@ Before each card here: verify the provider's current docs and rules, then record
   - The same bot code serves every template.
 
 ---
+
+## Launch track (ADR-099)
+What must be done before the pilot launch (6.6) with salons, gyms and coaching centres:
+- Phase 2 and Phase 3 in full.
+- From Phase 5: **5.1** (integration framework, enough for SMS provider credentials) and **5.13** (SMS notifications: appointment reminders, fee dues, messages to guardians).
+- A simple public **online booking page** per business (card **4.6**, below), instead of the full website of Phase 4.
+- Phase 6 in full.
+
+After the pilot: the rest of Phase 4 and Phase 5 (courier, channels, inbox, bot). **Restaurant (second wave):** the kitchen capability of Phase 7 (order tickets to the kitchen, table service, split bills) is built before RESTAURANT is published.
 
 ## Phase 6: SaaS go-live
 **6.1 Signup + onboarding wizard** (package choice: Store / Chat / Shop / Bundle (14-day Bundle trial by default), and industry → defaults → package-specific first steps → first sale; package-aware dashboard home, ADR-032).

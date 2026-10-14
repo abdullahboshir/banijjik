@@ -18,9 +18,9 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 |---|---|---|
 | P1 rotate secrets | todo | repo is public; `.env` was committed |
 | P2 brand checks, domain, pricing | todo | brand = Banijjik (ADR-021), pending domain + trademark check |
-| P3 pilot sellers | todo | |
+| P3 pilot businesses | todo | launch focus (ADR-099): salons and parlours, gyms, coaching centres; review their template fields and gather their top daily pains |
 | P4 Meta verification/app review | todo | long lead time |
-| P5 courier/payment/SMS accounts | todo | |
+| P5 courier/payment/SMS accounts | todo | an SMS provider account is needed before the pilot (card 5.13, launch track) |
 | P6 hosting | todo | |
 
 ## Phase D (design, docs only; `done` only after owner approval)
@@ -81,7 +81,13 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | Card | Status | Note |
 |---|---|---|
 | 2.1a industry templates: model, seeds, real reader, signup check | merged (2026-10-14, implemented with Cursor, Claude T1 review passed) | branch `s/2.1a-industry-templates`; handoff `docs/handoffs/2.1a.md`; ADR-097 proposed. Closes the 1.6a interim template reader (allow-all). Not merged, not pushed |
-| 2.1b industry templates: platform writes | todo | create, edit, publish, retire, change an organization's template (additive, ADR-046); planned after 2.1a |
+| 2.1b industry templates: platform writes | todo | create, edit, publish, retire, change an organization's template (additive, ADR-046); planned after 2.1a. A signup racing a retire must be serialized with a guard-document touch on the template (ADR-092): 2.1a's second read inside the transaction does not serialize on its own |
+| 2.2 resolver: terms, settings defaults, tenant-disabled optional modules | todo | |
+| 2.3 custom field engine (API) | todo | pair with 2.4 |
+| 2.4 settings engine | todo | pair with 2.3 |
+| 2.5 dynamic form renderer | todo | after 2.3 |
+| 2.6 platform UI: template, module and field builders | todo | pair with 2.7 |
+| 2.7 tenant UI: settings and tenant custom fields | todo | pair with 2.6 |
 
 ## Phases 3–8
 Track here once Phase 2 is done (copy the cards from the roadmap).

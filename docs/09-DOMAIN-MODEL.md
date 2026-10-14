@@ -41,8 +41,9 @@ Inputs: `00`, `01`, `04` (ADRs), `05` (conventions), `06`, `07`, `08`. New decis
 | **Checkout** | One customer action that creates several requests paid together. A correlation ID, not an aggregate. | `checkoutId` |
 | **Payment** | Money received or refunded, allocated to one or more requests. | `Payment`, `paymentId` |
 | **Due** | Request total minus allocated payments. Derived, never stored as the source of truth. | — |
-| **Stock movement** | One append-only ledger line that changes stock of a variant at a location. | `StockMovement`, `stockMovementId` |
-| **Inventory level** | Projection of stock movements per variant per location. | `InventoryLevel` |
+| **Inventory item** | What is stocked (rice in kg, a shampoo bottle, burger buns). Variants draw from inventory items through stock components (ADR-098). | `InventoryItem`, `inventoryItemId` |
+| **Stock movement** | One append-only ledger line that changes the stock of an inventory item at a location. | `StockMovement`, `stockMovementId` |
+| **Inventory level** | Projection of stock movements per inventory item per location. | `InventoryLevel` |
 | **Journal entry** | Double-entry accounting record, append-only. | `JournalEntry`, `journalEntryId` |
 | **Module** | Code unit with a manifest (`07 §2`). Key from contracts. | `moduleKey` |
 | **Package** | What the platform sells: a set of module keys + limits (Store, Chat, Shop, Bundle, add-ons; ADR-050). Never called "plan". | `Package`, `packageId` |
@@ -330,9 +331,16 @@ Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fiel
 | `source`, `channelId?` | | lineage |
 | STF + `version` | | |
 
-**OfferingVariant** (embedded): `variantId`, `name` (`"Default"` when the offering has no options), `optionValues` (`{ size: "XL" }`), `price: Money`, `compareAtPrice?: Money`, `sku?`, `barcode?`, `unitKey` (`PIECE`, `KG`, … from contracts, with precision), `isStockTracked` (PRODUCT only), `status`.
+**OfferingVariant** (embedded): `variantId`, `name` (`"Default"` when the offering has no options), `optionValues` (`{ size: "XL" }`, `{ pack: "Loose" }`), `price: Money` (per sales unit), `compareAtPrice?: Money`, `sku?`, `barcode?`, `unitKey` (the sales unit, from the contracts unit registry: `PIECE`, `KG`, `LITRE`, …, ADR-098), `quantityRule? { min, step, max? }` (integers in the sales unit's precision; e.g. loose rice `{ min: 250, step: 250 }` grams), `stockComponents[{ inventoryItemId, quantity }]` (0 to 10; ADR-098), `status`.
 
-- Invariants: every offering has ≥ 1 variant, so stock, order lines and bookings always reference `(offeringId, variantId)`. `sku` unique per org when present. `kind` must be in the org's resolved `kinds`. A kind-specific field on the wrong kind is a validation error. Price edits never change existing requests (they snapshot).
+- **Stock comes from inventory items, not from variants (ADR-098).** What a customer buys (a variant) and what sits on a shelf (an `InventoryItem`) are separate. A variant draws `quantity` (in the item's base unit) of each component per sales unit:
+  - no components: nothing is stocked (a haircut, a membership, an untracked menu item)
+  - one component × 1: a normal product with its own stock (the default when `catalog.defaultStockTracked` is on)
+  - one component × N: packs and loose sale from one stock ("1 kg pack" draws 1000 g of the rice item; "Loose" draws 1000 g per kg sold)
+  - several components: a kit or a recipe (gift box, burger), or a service that uses up products (20 ml of cream per facial)
+  
+  One level only: an inventory item is never an offering and has no components of its own. A variant's available quantity is the minimum over its components of `floor(available / quantity)`.
+- Invariants: every offering has ≥ 1 variant, so order lines and bookings always reference `(offeringId, variantId)`, and stock movements reference `inventoryItemId`. `sku` unique per org when present. `kind` must be in the org's resolved `kinds`. A kind-specific field on the wrong kind is a validation error. Price edits never change existing requests (they snapshot).
 - **OfferingLocation** (catalog, location scope): `offeringId`, `variantId?`, `locationId`, `isAvailable`, `priceOverride?: Money`. Unique `(organizationId, offeringId, variantId, locationId)`. No row = org defaults apply (ADR-005).
 - **Category** (catalog, org): `categoryId`, `name`, `slug`, `parentCategoryId?` (max depth 3), `sortOrder`, `imageFileId?`.
 - **ModifierGroup** (catalog, org, ADR-072): `modifierGroupId`, `name`, `selection` (`SINGLE | MULTIPLE`), `isRequired`, `minSelect`, `maxSelect`, `options[{ modifierOptionId, name, priceDelta: Money, status }]`. No stock of its own.
@@ -380,7 +388,7 @@ Three aggregates share one **request contract**: `requestType` (`ORDER \| BOOKIN
 | `businessDate` | string | |
 | `checkoutId`, `source`, `channelId?`, `conversationId?`, `customFields`, STF + `version` | | |
 
-- Invariants: ≥ 1 line. A line with a kind that needs time or capacity (RENTAL, EVENT, or a SERVICE with a required resource/slot) is refused: those go to a Booking. PRODUCT lines with `isStockTracked` create stock movements in the same transaction as the state change that commits stock (D3 says which). Totals are recomputed on every change.
+- Invariants: ≥ 1 line. A line with a kind that needs time or capacity (RENTAL, EVENT, or a SERVICE with a required resource/slot) is refused: those go to a Booking. Lines whose variant has stock components create one stock movement per component in the same transaction as the state change that commits stock (D3 says which). Totals are recomputed on every change.
 
 **Booking** (`commerce/booking`)
 | Field | Type | Notes |
@@ -426,8 +434,9 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | Entity | Owner | Scope | Key fields | Invariants |
 |---|---|---|---|---|
 | **Payment** | `commerce/payment` | location | `paymentId`, `paymentNumber`, `direction` (`IN \| REFUND \| REVERSAL`), `method` (`CASH`, `BKASH`, `NAGAD`, `CARD`, `BANK`, `GATEWAY`, `STORE_CREDIT`, `COD_COURIER`, `RIDER_CASH`), `amount: Money`, `externalReference?` (unique per org + method), `reversesPaymentId?`, `posSessionId?`, `allocations[{ requestType, requestId, enrollmentPeriodId?, amount: Money }]`, `contactId?`, `receivedByMemberId`, `businessDate`, `status` | Append-only: corrections are a REFUND or a reversal, never an edit. Sum of allocations ≤ amount. Requires `Idempotency-Key`. |
-| **StockMovement** | `commerce/inventory` | location | `stockMovementId`, `offeringId`, `variantId`, `quantityDelta` (integer, unit precision), `stockState` (`SELLABLE | DAMAGED`), `reason` (`PURCHASE`, `SALE`, `RETURN`, `RETURN_DAMAGED`, `DAMAGE_WRITE_OFF`, `ADJUSTMENT`, `TRANSFER_OUT`, `TRANSFER_IN`, `OPENING`), `sourceType`, `sourceId`, `reversesStockMovementId?`, `unitCost?: Money`, `occurredAt`, `businessDate` | Append-only (ADR-014). Only PRODUCT variants with `isStockTracked`. A transfer is two movements in one transaction. |
-| **InventoryLevel** | `commerce/inventory` | location | `offeringId`, `variantId`, `onHand`, `reserved`, `damaged`, `available` (= onHand − reserved), `averageUnitCost: Money` (moving average, ADR-069), `version` | Projection; rebuildable from movements. Unique `(organizationId, locationId, offeringId, variantId)`. |
+| **InventoryItem** (ADR-098) | `commerce/inventory` | org | `inventoryItemId`, `name`, `sku?`, `barcode?`, `baseUnitKey` (contracts unit registry), `status` (`ACTIVE \| ARCHIVED`), STF + `version` | What is stocked. Created with a product (one item per variant by default) or on its own (shared stock, ingredients). Archived, never deleted, while movements reference it. |
+| **StockMovement** | `commerce/inventory` | location | `stockMovementId`, `inventoryItemId`, `quantityDelta` (integer, base unit precision), `offeringId?` + `variantId?` (the sold variant, for reports), `stockState` (`SELLABLE | DAMAGED`), `reason` (`PURCHASE`, `SALE`, `RETURN`, `RETURN_DAMAGED`, `DAMAGE_WRITE_OFF`, `ADJUSTMENT`, `TRANSFER_OUT`, `TRANSFER_IN`, `OPENING`), `sourceType`, `sourceId`, `reversesStockMovementId?`, `unitCost?: Money`, `occurredAt`, `businessDate` | Append-only (ADR-014). One movement per stock component of a sold line (ADR-098). A transfer is two movements in one transaction. |
+| **InventoryLevel** | `commerce/inventory` | location | `inventoryItemId`, `onHand`, `reserved`, `damaged`, `available` (= onHand − reserved), `averageUnitCost: Money` (moving average, ADR-069), `version` | Projection; rebuildable from movements. Unique `(organizationId, locationId, inventoryItemId)`. |
 | **Account** | `commerce/accounting` | org | `accountId`, `accountCode`, `name`, `accountType` (`ASSET \| LIABILITY \| EQUITY \| INCOME \| EXPENSE`), `isSystem` | System accounts are seeded per org; never deleted. |
 | **JournalEntry** | `commerce/accounting` | org (+ `locationId?`) | `journalEntryId`, `entryNumber`, `businessDate`, `lines[{ accountId, debit: Money, credit: Money }]`, `sourceType`, `sourceId`, `reversesJournalEntryId?` | Debits = credits. Append-only, fixed with a reversing entry. |
 | **Expense** (D2) | `commerce/expense` | location | `expenseId`, `expenseNumber` (sequence `EXPENSE`), `expenseCategoryId`, `amount: Money`, `paidVia` (`CASH`, `BKASH`, `NAGAD`, `BANK`, `CARD`), `businessDate`, `note?`, `attachmentFileIds[]`, `status` (`POSTED \| VOIDED`), `journalEntryId`, custom fields (entityType `expense`) | Posting writes the journal entry in the same transaction (via `accounting`). Void = a reversing journal entry; the expense is never edited or deleted. |
