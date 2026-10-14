@@ -1,0 +1,179 @@
+{
+  "industryTemplateKey": "RETAIL",
+  "status": "PUBLISHED",
+  "name": {
+    "bn": "দোকান",
+    "en": "Retail shop"
+  },
+  "description": {
+    "bn": "দোকানে বিক্রি, স্টক ও হিসাব",
+    "en": "Shop counter sales, stock and accounts"
+  },
+  "iconKey": "store",
+  "enabledKinds": ["PRODUCT"],
+  "allowedModuleKeys": [
+    "contact",
+    "catalog",
+    "inventory",
+    "pricing",
+    "sales",
+    "payment",
+    "expense",
+    "report",
+    "delivery",
+    "courier",
+    "sms",
+    "risk",
+    "pos",
+    "website",
+    "payment-gateway",
+    "messaging",
+    "bot",
+    "social",
+    "workflow",
+    "bookkeeping"
+  ],
+  "configuration": {
+    "contactRoleKeys": ["CUSTOMER", "SUPPLIER", "LEAD"],
+    "relationKeys": [],
+    "resourceTypes": [],
+    "terms": {
+      "contact": {
+        "bn": "গ্রাহক / গ্রাহকরা",
+        "en": "Customer / Customers"
+      },
+      "offering": {
+        "bn": "পণ্য",
+        "en": "Product"
+      },
+      "order": {
+        "bn": "বিক্রি",
+        "en": "Sale"
+      },
+      "booking": {
+        "bn": "বুকিং",
+        "en": "Booking"
+      },
+      "enrollment": {
+        "bn": "ভর্তি",
+        "en": "Enrollment"
+      },
+      "resource": {
+        "bn": "রিসোর্স",
+        "en": "Resource"
+      },
+      "location": {
+        "bn": "শাখা",
+        "en": "Branch"
+      }
+    },
+    "customFields": [
+      {
+        "entityType": "offering",
+        "fieldKey": "brand",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": true
+        },
+        "isSearchable": true,
+        "isSensitive": false,
+        "offeringKind": "PRODUCT"
+      },
+      {
+        "entityType": "offering",
+        "fieldKey": "warranty_months",
+        "fieldType": "NUMBER",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": true
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "offeringKind": "PRODUCT"
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "customer_type",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["RETAIL", "WHOLESALE"]
+      }
+    ],
+    "settingsDefaults": {
+      "organization.digitScript": "LATIN",
+      "organization.numberGrouping": "WESTERN",
+      "sales.returnWindowDays": 7,
+      "sales.advance.required": "NONE",
+      "booking.deposit.required": "NONE",
+      "enrollment.refundPolicy": "NONE",
+      "pos.requireShift": true,
+      "pos.allowCreditSale": true,
+      "inventory.lowStockDefault": 5,
+      "catalog.defaultUnitKey": "PIECE",
+      "bot.tone": "POLITE"
+    },
+    "knowledgeSeed": [
+      {
+        "topicKey": "DELIVERY",
+        "answer": {
+          "bn": "ডেলিভারি এলাকা, সময় ও চার্জ",
+          "en": "Delivery areas, time and charge"
+        }
+      },
+      {
+        "topicKey": "PAYMENT",
+        "answer": {
+          "bn": "পেমেন্ট পদ্ধতি, ক্যাশ অন ডেলিভারি ও বিকাশ নম্বর",
+          "en": "Payment methods, cash on delivery and bKash number"
+        }
+      },
+      {
+        "topicKey": "RETURNS",
+        "answer": {
+          "bn": "রিটার্ন নীতি",
+          "en": "Return policy"
+        }
+      },
+      {
+        "topicKey": "HOURS",
+        "answer": {
+          "bn": "খোলার সময়",
+          "en": "Opening hours"
+        }
+      },
+      {
+        "topicKey": "LOCATION",
+        "answer": {
+          "bn": "ঠিকানা",
+          "en": "Location"
+        }
+      }
+    ],
+    "websiteTemplateKeys": ["grocery", "pharmacy-shop", "general-store"],
+    "botDefaults": {
+      "personaKey": "POLITE_SHOPKEEPER",
+      "handoffTopics": [
+        "refund or complaint",
+        "angry customer",
+        "request for a human",
+        "anything not grounded",
+        "credit requests"
+      ]
+    }
+  }
+}

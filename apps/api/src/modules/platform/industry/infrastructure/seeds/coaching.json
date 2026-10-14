@@ -1,0 +1,252 @@
+{
+  "industryTemplateKey": "COACHING",
+  "status": "DRAFT",
+  "name": {
+    "bn": "কোচিং ও প্রশিক্ষণ",
+    "en": "Coaching & training centre"
+  },
+  "description": {
+    "bn": "কোচিং ও প্রশিক্ষণ",
+    "en": "Coaching & training centre"
+  },
+  "iconKey": "graduation-cap",
+  "enabledKinds": ["PLAN", "EVENT"],
+  "allowedModuleKeys": [
+    "contact",
+    "catalog",
+    "pricing",
+    "enrollment",
+    "booking",
+    "payment",
+    "expense",
+    "report",
+    "sms",
+    "website",
+    "payment-gateway",
+    "messaging",
+    "bot",
+    "workflow",
+    "bookkeeping"
+  ],
+  "configuration": {
+    "contactRoleKeys": ["CUSTOMER", "LEAD"],
+    "relationKeys": ["GUARDIAN_OF"],
+    "resourceTypes": [
+      {
+        "resourceTypeKey": "TEACHER",
+        "termKey": "resource",
+        "isMember": true
+      },
+      {
+        "resourceTypeKey": "CLASSROOM",
+        "termKey": "resource",
+        "isMember": false
+      }
+    ],
+    "terms": {
+      "contact": {
+        "bn": "ছাত্র-ছাত্রী",
+        "en": "Student"
+      },
+      "offering": {
+        "bn": "পণ্য",
+        "en": "Product"
+      },
+      "order": {
+        "bn": "অর্ডার",
+        "en": "Order"
+      },
+      "booking": {
+        "bn": "আসন",
+        "en": "Seat"
+      },
+      "enrollment": {
+        "bn": "ভর্তি",
+        "en": "Admission"
+      },
+      "resource": {
+        "bn": "রিসোর্স",
+        "en": "Resource"
+      },
+      "location": {
+        "bn": "শাখা",
+        "en": "Branch"
+      },
+      "offering.PLAN": {
+        "bn": "কোর্স/ব্যাচ",
+        "en": "Course"
+      },
+      "offering.EVENT": {
+        "bn": "ক্লাস/পরীক্ষা",
+        "en": "Class or exam"
+      }
+    },
+    "customFields": [
+      {
+        "entityType": "contact",
+        "fieldKey": "class_level",
+        "fieldType": "SELECT",
+        "isRequired": true,
+        "botAsk": true,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": true
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": [
+          "CLASS_1",
+          "CLASS_2",
+          "CLASS_3",
+          "CLASS_4",
+          "CLASS_5",
+          "CLASS_6",
+          "CLASS_7",
+          "CLASS_8",
+          "CLASS_9",
+          "CLASS_10",
+          "SSC",
+          "HSC",
+          "ADMISSION",
+          "OTHER"
+        ]
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "study_group",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": true,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": true
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["SCIENCE", "COMMERCE", "ARTS", "GENERAL"]
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "school_name",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": true,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": false
+        },
+        "isSearchable": true,
+        "isSensitive": false
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "guardian",
+        "fieldType": "REFERENCE",
+        "isRequired": true,
+        "botAsk": true,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "referenceEntity": "contact",
+        "link": {
+          "relationKey": "GUARDIAN_OF",
+          "createIfMissingByPhone": true,
+          "defaultBillTo": true
+        }
+      },
+      {
+        "entityType": "enrollment",
+        "fieldKey": "roll_number",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": true,
+        "isSensitive": false
+      },
+      {
+        "entityType": "enrollment",
+        "fieldKey": "academic_session",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": false
+      }
+    ],
+    "settingsDefaults": {
+      "organization.digitScript": "LATIN",
+      "organization.numberGrouping": "WESTERN",
+      "sales.returnWindowDays": 7,
+      "sales.advance.required": "NONE",
+      "booking.deposit.required": "NONE",
+      "enrollment.refundPolicy": "NONE",
+      "enrollment.graceDays": 10,
+      "enrollment.blockCheckInWhenOverdue": false
+    },
+    "knowledgeSeed": [
+      {
+        "topicKey": "DELIVERY",
+        "answer": {
+          "bn": "ডেলিভারি এলাকা, সময় ও চার্জ",
+          "en": "Delivery areas, time and charge"
+        }
+      },
+      {
+        "topicKey": "PAYMENT",
+        "answer": {
+          "bn": "পেমেন্ট পদ্ধতি, ক্যাশ অন ডেলিভারি ও বিকাশ নম্বর",
+          "en": "Payment methods, cash on delivery and bKash number"
+        }
+      },
+      {
+        "topicKey": "RETURNS",
+        "answer": {
+          "bn": "রিটার্ন নীতি",
+          "en": "Return policy"
+        }
+      },
+      {
+        "topicKey": "HOURS",
+        "answer": {
+          "bn": "খোলার সময়",
+          "en": "Opening hours"
+        }
+      },
+      {
+        "topicKey": "LOCATION",
+        "answer": {
+          "bn": "ঠিকানা",
+          "en": "Location"
+        }
+      }
+    ],
+    "websiteTemplateKeys": ["coaching-bright", "academy-classic"],
+    "botDefaults": {
+      "personaKey": "HELPFUL_ADMISSION_DESK",
+      "handoffTopics": [
+        "refund or complaint",
+        "angry customer",
+        "request for a human",
+        "anything not grounded",
+        "exam result disputes"
+      ]
+    }
+  }
+}

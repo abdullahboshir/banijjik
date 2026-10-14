@@ -1,0 +1,249 @@
+{
+  "industryTemplateKey": "CLINIC",
+  "status": "DRAFT",
+  "name": {
+    "bn": "ক্লিনিক ও চেম্বার",
+    "en": "Clinic & doctor's chamber"
+  },
+  "description": {
+    "bn": "ক্লিনিক ও চেম্বার",
+    "en": "Clinic & doctor's chamber"
+  },
+  "iconKey": "stethoscope",
+  "enabledKinds": ["SERVICE"],
+  "allowedModuleKeys": [
+    "contact",
+    "catalog",
+    "pricing",
+    "booking",
+    "payment",
+    "expense",
+    "report",
+    "sms",
+    "website",
+    "payment-gateway",
+    "messaging",
+    "bot",
+    "workflow",
+    "bookkeeping"
+  ],
+  "configuration": {
+    "contactRoleKeys": ["CUSTOMER"],
+    "relationKeys": ["GUARDIAN_OF"],
+    "resourceTypes": [
+      {
+        "resourceTypeKey": "DOCTOR",
+        "termKey": "resource",
+        "isMember": true
+      },
+      {
+        "resourceTypeKey": "ROOM",
+        "termKey": "resource.ROOM",
+        "isMember": false
+      }
+    ],
+    "terms": {
+      "contact": {
+        "bn": "রোগী",
+        "en": "Patient"
+      },
+      "offering": {
+        "bn": "পণ্য",
+        "en": "Product"
+      },
+      "order": {
+        "bn": "অর্ডার",
+        "en": "Order"
+      },
+      "booking": {
+        "bn": "সিরিয়াল",
+        "en": "Appointment"
+      },
+      "enrollment": {
+        "bn": "ভর্তি",
+        "en": "Enrollment"
+      },
+      "resource": {
+        "bn": "ডাক্তার",
+        "en": "Doctor"
+      },
+      "location": {
+        "bn": "শাখা",
+        "en": "Branch"
+      },
+      "offering.SERVICE": {
+        "bn": "সেবা",
+        "en": "Consultation"
+      },
+      "resource.ROOM": {
+        "bn": "রুম",
+        "en": "Room"
+      }
+    },
+    "customFields": [
+      {
+        "entityType": "contact",
+        "fieldKey": "age_years",
+        "fieldType": "NUMBER",
+        "isRequired": true,
+        "botAsk": true,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": true
+        },
+        "isSearchable": false,
+        "isSensitive": false
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "gender",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": true,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": true
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["FEMALE", "MALE", "OTHER"]
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "blood_group",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": true,
+        "options": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "allergies",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": true
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "chronic_conditions",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": true
+      },
+      {
+        "entityType": "booking",
+        "fieldKey": "visit_type",
+        "fieldType": "SELECT",
+        "isRequired": true,
+        "botAsk": true,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": true
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["NEW", "FOLLOW_UP", "REPORT_SHOW"]
+      },
+      {
+        "entityType": "booking",
+        "fieldKey": "symptoms",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": true,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": true
+      }
+    ],
+    "settingsDefaults": {
+      "organization.digitScript": "LATIN",
+      "organization.numberGrouping": "WESTERN",
+      "sales.returnWindowDays": 7,
+      "sales.advance.required": "NONE",
+      "booking.deposit.required": "NONE",
+      "enrollment.refundPolicy": "NONE",
+      "booking.requireApproval": true,
+      "booking.slotStepMinutes": 10,
+      "booking.noShowAfterMinutes": 20,
+      "booking.reminderLeadMinutes": 180
+    },
+    "knowledgeSeed": [
+      {
+        "topicKey": "DELIVERY",
+        "answer": {
+          "bn": "ডেলিভারি এলাকা, সময় ও চার্জ",
+          "en": "Delivery areas, time and charge"
+        }
+      },
+      {
+        "topicKey": "PAYMENT",
+        "answer": {
+          "bn": "পেমেন্ট পদ্ধতি, ক্যাশ অন ডেলিভারি ও বিকাশ নম্বর",
+          "en": "Payment methods, cash on delivery and bKash number"
+        }
+      },
+      {
+        "topicKey": "RETURNS",
+        "answer": {
+          "bn": "রিটার্ন নীতি",
+          "en": "Return policy"
+        }
+      },
+      {
+        "topicKey": "HOURS",
+        "answer": {
+          "bn": "খোলার সময়",
+          "en": "Opening hours"
+        }
+      },
+      {
+        "topicKey": "LOCATION",
+        "answer": {
+          "bn": "ঠিকানা",
+          "en": "Location"
+        }
+      }
+    ],
+    "websiteTemplateKeys": ["clinic-trust", "doctor-chamber"],
+    "botDefaults": {
+      "personaKey": "CALM_RECEPTIONIST",
+      "handoffTopics": [
+        "refund or complaint",
+        "angry customer",
+        "request for a human",
+        "anything not grounded",
+        "medical advice",
+        "diagnosis",
+        "medicine or dosage question"
+      ]
+    }
+  }
+}

@@ -1,0 +1,254 @@
+{
+  "industryTemplateKey": "SALON",
+  "status": "DRAFT",
+  "name": {
+    "bn": "সেলুন ও পার্লার",
+    "en": "Salon & beauty parlour"
+  },
+  "description": {
+    "bn": "সেলুন ও পার্লার",
+    "en": "Salon & beauty parlour"
+  },
+  "iconKey": "scissors",
+  "enabledKinds": ["SERVICE", "PRODUCT"],
+  "allowedModuleKeys": [
+    "contact",
+    "catalog",
+    "inventory",
+    "pricing",
+    "sales",
+    "payment",
+    "expense",
+    "report",
+    "delivery",
+    "courier",
+    "sms",
+    "risk",
+    "pos",
+    "website",
+    "payment-gateway",
+    "messaging",
+    "bot",
+    "social",
+    "workflow",
+    "bookkeeping",
+    "booking"
+  ],
+  "configuration": {
+    "contactRoleKeys": ["CUSTOMER", "SUPPLIER"],
+    "relationKeys": [],
+    "resourceTypes": [
+      {
+        "resourceTypeKey": "STYLIST",
+        "termKey": "resource",
+        "isMember": true
+      },
+      {
+        "resourceTypeKey": "CHAIR",
+        "termKey": "resource.CHAIR",
+        "isMember": false
+      }
+    ],
+    "terms": {
+      "contact": {
+        "bn": "ক্লায়েন্ট",
+        "en": "Client"
+      },
+      "offering": {
+        "bn": "পণ্য",
+        "en": "Product"
+      },
+      "order": {
+        "bn": "অর্ডার",
+        "en": "Order"
+      },
+      "booking": {
+        "bn": "অ্যাপয়েন্টমেন্ট",
+        "en": "Appointment"
+      },
+      "enrollment": {
+        "bn": "ভর্তি",
+        "en": "Enrollment"
+      },
+      "resource": {
+        "bn": "স্টাইলিস্ট",
+        "en": "Stylist"
+      },
+      "location": {
+        "bn": "শাখা",
+        "en": "Branch"
+      },
+      "offering.SERVICE": {
+        "bn": "সার্ভিস",
+        "en": "Service"
+      },
+      "resource.CHAIR": {
+        "bn": "চেয়ার",
+        "en": "Chair"
+      }
+    },
+    "customFields": [
+      {
+        "entityType": "contact",
+        "fieldKey": "skin_type",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["NORMAL", "OILY", "DRY", "SENSITIVE"]
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "hair_type",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["STRAIGHT", "WAVY", "CURLY"]
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "allergies",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": false
+        },
+        "isSearchable": false,
+        "isSensitive": true
+      },
+      {
+        "entityType": "contact",
+        "fieldKey": "preferred_stylist",
+        "fieldType": "REFERENCE",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": false,
+          "bot": true
+        },
+        "isSearchable": false,
+        "isSensitive": false,
+        "referenceEntity": "member"
+      },
+      {
+        "entityType": "booking",
+        "fieldKey": "special_request",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": {
+          "admin": true,
+          "storefront": true,
+          "bot": true
+        },
+        "isSearchable": false,
+        "isSensitive": false
+      }
+    ],
+    "settingsDefaults": {
+      "organization.digitScript": "LATIN",
+      "organization.numberGrouping": "WESTERN",
+      "sales.returnWindowDays": 7,
+      "sales.advance.required": "NONE",
+      "booking.deposit.required": "NONE",
+      "enrollment.refundPolicy": "NONE",
+      "booking.slotStepMinutes": 15,
+      "booking.minNoticeMinutes": 60,
+      "booking.freeCancelHours": 4,
+      "booking.reminderLeadMinutes": 120,
+      "booking.requireApproval": false
+    },
+    "modifierGroupsSeed": [
+      {
+        "name": "Hair wash",
+        "selection": "SINGLE",
+        "isRequired": false,
+        "minSelect": 0,
+        "maxSelect": 1,
+        "options": [
+          {
+            "name": "Hair wash",
+            "priceDeltaMinor": 10000
+          }
+        ]
+      },
+      {
+        "name": "Premium products",
+        "selection": "SINGLE",
+        "isRequired": false,
+        "minSelect": 0,
+        "maxSelect": 1,
+        "options": [
+          {
+            "name": "Premium products",
+            "priceDeltaMinor": 30000
+          }
+        ]
+      }
+    ],
+    "knowledgeSeed": [
+      {
+        "topicKey": "DELIVERY",
+        "answer": {
+          "bn": "ডেলিভারি এলাকা, সময় ও চার্জ",
+          "en": "Delivery areas, time and charge"
+        }
+      },
+      {
+        "topicKey": "PAYMENT",
+        "answer": {
+          "bn": "পেমেন্ট পদ্ধতি, ক্যাশ অন ডেলিভারি ও বিকাশ নম্বর",
+          "en": "Payment methods, cash on delivery and bKash number"
+        }
+      },
+      {
+        "topicKey": "RETURNS",
+        "answer": {
+          "bn": "রিটার্ন নীতি",
+          "en": "Return policy"
+        }
+      },
+      {
+        "topicKey": "HOURS",
+        "answer": {
+          "bn": "খোলার সময়",
+          "en": "Opening hours"
+        }
+      },
+      {
+        "topicKey": "LOCATION",
+        "answer": {
+          "bn": "ঠিকানা",
+          "en": "Location"
+        }
+      }
+    ],
+    "websiteTemplateKeys": ["salon-classic", "parlour-elegant"],
+    "botDefaults": {
+      "personaKey": "CARING_STYLIST",
+      "handoffTopics": [
+        "refund or complaint",
+        "angry customer",
+        "request for a human",
+        "anything not grounded"
+      ]
+    }
+  }
+}
