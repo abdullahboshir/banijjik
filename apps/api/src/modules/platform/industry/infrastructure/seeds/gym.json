@@ -102,7 +102,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "ওজন (কেজি)",
+          "en": "Weight (kg)"
+        }
       },
       {
         "entityType": "contact",
@@ -116,7 +120,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "উচ্চতা (সেমি)",
+          "en": "Height (cm)"
+        }
       },
       {
         "entityType": "contact",
@@ -131,7 +139,29 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["WEIGHT_LOSS", "MUSCLE_GAIN", "GENERAL_FITNESS", "REHAB"]
+        "options": ["WEIGHT_LOSS", "MUSCLE_GAIN", "GENERAL_FITNESS", "REHAB"],
+        "label": {
+          "bn": "ফিটনেস লক্ষ্য",
+          "en": "Fitness goal"
+        },
+        "optionLabels": {
+          "WEIGHT_LOSS": {
+            "bn": "ওজন কমানো",
+            "en": "Weight loss"
+          },
+          "MUSCLE_GAIN": {
+            "bn": "পেশি বাড়ানো",
+            "en": "Muscle gain"
+          },
+          "GENERAL_FITNESS": {
+            "bn": "সাধারণ ফিটনেস",
+            "en": "General fitness"
+          },
+          "REHAB": {
+            "bn": "পুনর্বাসন",
+            "en": "Rehabilitation"
+          }
+        }
       },
       {
         "entityType": "contact",
@@ -145,7 +175,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "জরুরি যোগাযোগ",
+          "en": "Emergency contact"
+        }
       },
       {
         "entityType": "contact",
@@ -159,7 +193,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": true
+        "isSensitive": true,
+        "label": {
+          "bn": "স্বাস্থ্যের নোট",
+          "en": "Medical notes"
+        }
       },
       {
         "entityType": "enrollment",
@@ -174,7 +212,11 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "referenceEntity": "member"
+        "referenceEntity": "member",
+        "label": {
+          "bn": "পছন্দের ট্রেনার",
+          "en": "Preferred trainer"
+        }
       }
     ],
     "settingsDefaults": {

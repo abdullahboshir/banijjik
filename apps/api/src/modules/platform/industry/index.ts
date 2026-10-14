@@ -1,11 +1,18 @@
 import type { Router } from "express";
 import type { IndustryTemplateReader } from "../entitlement/index.js";
-import type { IndustryTemplateAvailability } from "../../core/organization/index.js";
+import {
+  buildOrganizationConfigSource,
+  type IndustryTemplateAvailability,
+} from "../../core/organization/index.js";
 import type { PlatformPermissionMiddlewareFactory } from "../../../kernel/auth/index.js";
 import { InMemoryLruCache } from "../../../kernel/cache/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import { EnsureSeedIndustryTemplatesUseCase } from "./application/use-cases/ensure-seed-industry-templates.use-case.js";
 import { GetIndustryTemplateUseCase } from "./application/use-cases/get-industry-template.use-case.js";
+import {
+  ReadIndustryCustomFieldsUseCase,
+  type IndustryCustomFieldReader,
+} from "./application/use-cases/read-industry-custom-fields.use-case.js";
 import { ListPlatformIndustryTemplatesUseCase } from "./application/use-cases/list-platform-industry-templates.use-case.js";
 import { ListPublishedIndustryTemplatesUseCase } from "./application/use-cases/list-published-industry-templates.use-case.js";
 import {
@@ -73,4 +80,17 @@ export function buildIndustryPlatformRouter(
     getTemplate: new GetIndustryTemplateUseCase(templates),
   });
   return buildPlatformIndustryTemplateRouter(controller, dependencies.permission);
+}
+
+export type { IndustryCustomFieldReader };
+
+/** Industry custom fields of the active organization's template (ADR-102). */
+export function buildIndustryCustomFieldReader(): IndustryCustomFieldReader {
+  const organizations = buildOrganizationConfigSource();
+  return new ReadIndustryCustomFieldsUseCase(new MongoIndustryTemplateRepository(), {
+    findTemplateKey: async (organizationId) => {
+      const snapshot = await organizations.find(organizationId);
+      return snapshot?.industryTemplateKey;
+    },
+  });
 }

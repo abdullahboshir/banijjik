@@ -72,4 +72,24 @@ describe("industry template seed files", () => {
       maxSelect: 1,
     });
   });
+
+  it("gives every custom field a Bangla and English label, and every choice an option label", () => {
+    for (const entry of templates) {
+      for (const field of entry.configuration.customFields) {
+        expect(field.label?.bn, `${entry.industryTemplateKey} ${field.fieldKey}`).toEqual(
+          expect.any(String),
+        );
+        expect(field.label?.en, `${entry.industryTemplateKey} ${field.fieldKey}`).toEqual(
+          expect.any(String),
+        );
+        if (field.fieldType !== "SELECT" && field.fieldType !== "MULTI_SELECT") continue;
+        for (const option of field.options ?? []) {
+          expect(
+            field.optionLabels?.[option],
+            `${entry.industryTemplateKey} ${field.fieldKey} ${option}`,
+          ).toEqual({ bn: expect.any(String), en: expect.any(String) });
+        }
+      }
+    }
+  });
 });

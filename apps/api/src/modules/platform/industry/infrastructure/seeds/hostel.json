@@ -99,6 +99,10 @@
           "relationKey": "GUARDIAN_OF",
           "createIfMissingByPhone": true,
           "defaultBillTo": false
+        },
+        "label": {
+          "bn": "অভিভাবক",
+          "en": "Guardian"
         }
       },
       {
@@ -113,7 +117,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "শিক্ষাপ্রতিষ্ঠান বা কর্মস্থল",
+          "en": "Institution or workplace"
+        }
       },
       {
         "entityType": "contact",
@@ -127,7 +135,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": true
+        "isSensitive": true,
+        "label": {
+          "bn": "জাতীয় পরিচয় বা শিক্ষার্থী আইডি",
+          "en": "National or student ID"
+        }
       },
       {
         "entityType": "contact",
@@ -142,7 +154,25 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["REGULAR", "NO_MEAL", "VEGETARIAN"]
+        "options": ["REGULAR", "NO_MEAL", "VEGETARIAN"],
+        "label": {
+          "bn": "খাবারের পছন্দ",
+          "en": "Meal preference"
+        },
+        "optionLabels": {
+          "REGULAR": {
+            "bn": "নিয়মিত",
+            "en": "Regular"
+          },
+          "NO_MEAL": {
+            "bn": "খাবার ছাড়া",
+            "en": "No meal"
+          },
+          "VEGETARIAN": {
+            "bn": "নিরামিষ",
+            "en": "Vegetarian"
+          }
+        }
       }
     ],
     "settingsDefaults": {

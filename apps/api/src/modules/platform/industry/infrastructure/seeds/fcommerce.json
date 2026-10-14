@@ -81,7 +81,11 @@
         },
         "isSearchable": true,
         "isSensitive": false,
-        "offeringKind": "PRODUCT"
+        "offeringKind": "PRODUCT",
+        "label": {
+          "bn": "উপাদান",
+          "en": "Material"
+        }
       },
       {
         "entityType": "offering",
@@ -96,7 +100,11 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "offeringKind": "PRODUCT"
+        "offeringKind": "PRODUCT",
+        "label": {
+          "bn": "সাইজ চার্ট",
+          "en": "Size chart"
+        }
       },
       {
         "entityType": "offering",
@@ -111,7 +119,11 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "offeringKind": "PRODUCT"
+        "offeringKind": "PRODUCT",
+        "label": {
+          "bn": "যত্নের নির্দেশ",
+          "en": "Care instructions"
+        }
       },
       {
         "entityType": "order",
@@ -126,7 +138,29 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["MORNING", "AFTERNOON", "EVENING", "ANY"]
+        "options": ["MORNING", "AFTERNOON", "EVENING", "ANY"],
+        "label": {
+          "bn": "পছন্দের ডেলিভারি সময়",
+          "en": "Preferred delivery time"
+        },
+        "optionLabels": {
+          "MORNING": {
+            "bn": "সকাল",
+            "en": "Morning"
+          },
+          "AFTERNOON": {
+            "bn": "দুপুর",
+            "en": "Afternoon"
+          },
+          "EVENING": {
+            "bn": "সন্ধ্যা",
+            "en": "Evening"
+          },
+          "ANY": {
+            "bn": "যেকোনো সময়",
+            "en": "Any time"
+          }
+        }
       },
       {
         "entityType": "order",
@@ -140,7 +174,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "উপহারের নোট",
+          "en": "Gift note"
+        }
       }
     ],
     "settingsDefaults": {

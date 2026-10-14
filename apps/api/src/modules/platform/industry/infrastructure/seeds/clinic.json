@@ -93,7 +93,11 @@
           "bot": true
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "বয়স (বছর)",
+          "en": "Age (years)"
+        }
       },
       {
         "entityType": "contact",
@@ -108,7 +112,25 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["FEMALE", "MALE", "OTHER"]
+        "options": ["FEMALE", "MALE", "OTHER"],
+        "label": {
+          "bn": "লিঙ্গ",
+          "en": "Gender"
+        },
+        "optionLabels": {
+          "FEMALE": {
+            "bn": "নারী",
+            "en": "Female"
+          },
+          "MALE": {
+            "bn": "পুরুষ",
+            "en": "Male"
+          },
+          "OTHER": {
+            "bn": "অন্যান্য",
+            "en": "Other"
+          }
+        }
       },
       {
         "entityType": "contact",
@@ -123,7 +145,45 @@
         },
         "isSearchable": false,
         "isSensitive": true,
-        "options": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+        "options": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+        "label": {
+          "bn": "রক্তের গ্রুপ",
+          "en": "Blood group"
+        },
+        "optionLabels": {
+          "A+": {
+            "bn": "এ+",
+            "en": "A+"
+          },
+          "A-": {
+            "bn": "এ-",
+            "en": "A-"
+          },
+          "B+": {
+            "bn": "বি+",
+            "en": "B+"
+          },
+          "B-": {
+            "bn": "বি-",
+            "en": "B-"
+          },
+          "AB+": {
+            "bn": "এবি+",
+            "en": "AB+"
+          },
+          "AB-": {
+            "bn": "এবি-",
+            "en": "AB-"
+          },
+          "O+": {
+            "bn": "ও+",
+            "en": "O+"
+          },
+          "O-": {
+            "bn": "ও-",
+            "en": "O-"
+          }
+        }
       },
       {
         "entityType": "contact",
@@ -137,7 +197,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": true
+        "isSensitive": true,
+        "label": {
+          "bn": "অ্যালার্জি",
+          "en": "Allergies"
+        }
       },
       {
         "entityType": "contact",
@@ -151,7 +215,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": true
+        "isSensitive": true,
+        "label": {
+          "bn": "দীর্ঘমেয়াদি সমস্যা",
+          "en": "Long-term conditions"
+        }
       },
       {
         "entityType": "booking",
@@ -166,7 +234,25 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["NEW", "FOLLOW_UP", "REPORT_SHOW"]
+        "options": ["NEW", "FOLLOW_UP", "REPORT_SHOW"],
+        "label": {
+          "bn": "ভিজিটের ধরন",
+          "en": "Visit type"
+        },
+        "optionLabels": {
+          "NEW": {
+            "bn": "নতুন",
+            "en": "New"
+          },
+          "FOLLOW_UP": {
+            "bn": "ফলোআপ",
+            "en": "Follow-up"
+          },
+          "REPORT_SHOW": {
+            "bn": "রিপোর্ট দেখানো",
+            "en": "Show report"
+          }
+        }
       },
       {
         "entityType": "booking",
@@ -180,7 +266,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": true
+        "isSensitive": true,
+        "label": {
+          "bn": "উপসর্গ",
+          "en": "Symptoms"
+        }
       }
     ],
     "settingsDefaults": {

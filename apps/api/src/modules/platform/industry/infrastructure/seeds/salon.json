@@ -101,7 +101,29 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["NORMAL", "OILY", "DRY", "SENSITIVE"]
+        "options": ["NORMAL", "OILY", "DRY", "SENSITIVE"],
+        "label": {
+          "bn": "ত্বকের ধরন",
+          "en": "Skin type"
+        },
+        "optionLabels": {
+          "NORMAL": {
+            "bn": "স্বাভাবিক",
+            "en": "Normal"
+          },
+          "OILY": {
+            "bn": "তৈলাক্ত",
+            "en": "Oily"
+          },
+          "DRY": {
+            "bn": "শুষ্ক",
+            "en": "Dry"
+          },
+          "SENSITIVE": {
+            "bn": "সংবেদনশীল",
+            "en": "Sensitive"
+          }
+        }
       },
       {
         "entityType": "contact",
@@ -116,7 +138,25 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["STRAIGHT", "WAVY", "CURLY"]
+        "options": ["STRAIGHT", "WAVY", "CURLY"],
+        "label": {
+          "bn": "চুলের ধরন",
+          "en": "Hair type"
+        },
+        "optionLabels": {
+          "STRAIGHT": {
+            "bn": "সোজা",
+            "en": "Straight"
+          },
+          "WAVY": {
+            "bn": "ঢেউ খেলানো",
+            "en": "Wavy"
+          },
+          "CURLY": {
+            "bn": "কোঁকড়ানো",
+            "en": "Curly"
+          }
+        }
       },
       {
         "entityType": "contact",
@@ -130,7 +170,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": true
+        "isSensitive": true,
+        "label": {
+          "bn": "অ্যালার্জি",
+          "en": "Allergies"
+        }
       },
       {
         "entityType": "contact",
@@ -145,7 +189,11 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "referenceEntity": "member"
+        "referenceEntity": "member",
+        "label": {
+          "bn": "পছন্দের স্টাইলিস্ট",
+          "en": "Preferred stylist"
+        }
       },
       {
         "entityType": "booking",
@@ -159,7 +207,11 @@
           "bot": true
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "বিশেষ অনুরোধ",
+          "en": "Special request"
+        }
       }
     ],
     "settingsDefaults": {

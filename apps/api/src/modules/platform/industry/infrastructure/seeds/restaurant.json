@@ -93,7 +93,25 @@
         "isSearchable": false,
         "isSensitive": false,
         "offeringKind": "PRODUCT",
-        "options": ["MILD", "MEDIUM", "HOT"]
+        "options": ["MILD", "MEDIUM", "HOT"],
+        "label": {
+          "bn": "ঝালের মাত্রা",
+          "en": "Spice level"
+        },
+        "optionLabels": {
+          "MILD": {
+            "bn": "কম ঝাল",
+            "en": "Mild"
+          },
+          "MEDIUM": {
+            "bn": "মাঝারি",
+            "en": "Medium"
+          },
+          "HOT": {
+            "bn": "বেশি ঝাল",
+            "en": "Hot"
+          }
+        }
       },
       {
         "entityType": "offering",
@@ -108,7 +126,11 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "offeringKind": "PRODUCT"
+        "offeringKind": "PRODUCT",
+        "label": {
+          "bn": "নিরামিষ",
+          "en": "Vegetarian"
+        }
       },
       {
         "entityType": "offering",
@@ -123,7 +145,11 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "offeringKind": "PRODUCT"
+        "offeringKind": "PRODUCT",
+        "label": {
+          "bn": "তৈরির সময় (মিনিট)",
+          "en": "Preparation time (minutes)"
+        }
       },
       {
         "entityType": "order",
@@ -137,7 +163,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "টেবিল নম্বর",
+          "en": "Table number"
+        }
       },
       {
         "entityType": "order",
@@ -151,7 +181,11 @@
           "bot": true
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "বিশেষ নির্দেশ",
+          "en": "Special instruction"
+        }
       }
     ],
     "settingsDefaults": {

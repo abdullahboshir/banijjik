@@ -81,7 +81,11 @@
         },
         "isSearchable": true,
         "isSensitive": false,
-        "offeringKind": "PRODUCT"
+        "offeringKind": "PRODUCT",
+        "label": {
+          "bn": "ব্র্যান্ড",
+          "en": "Brand"
+        }
       },
       {
         "entityType": "offering",
@@ -96,7 +100,11 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "offeringKind": "PRODUCT"
+        "offeringKind": "PRODUCT",
+        "label": {
+          "bn": "ওয়ারেন্টি (মাস)",
+          "en": "Warranty (months)"
+        }
       },
       {
         "entityType": "contact",
@@ -111,7 +119,21 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["RETAIL", "WHOLESALE"]
+        "options": ["RETAIL", "WHOLESALE"],
+        "label": {
+          "bn": "ক্রেতার ধরন",
+          "en": "Customer type"
+        },
+        "optionLabels": {
+          "RETAIL": {
+            "bn": "খুচরা",
+            "en": "Retail"
+          },
+          "WHOLESALE": {
+            "bn": "পাইকারি",
+            "en": "Wholesale"
+          }
+        }
       }
     ],
     "settingsDefaults": {

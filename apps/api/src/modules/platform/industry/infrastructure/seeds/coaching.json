@@ -110,7 +110,69 @@
           "HSC",
           "ADMISSION",
           "OTHER"
-        ]
+        ],
+        "label": {
+          "bn": "শ্রেণি",
+          "en": "Class level"
+        },
+        "optionLabels": {
+          "CLASS_1": {
+            "bn": "প্রথম শ্রেণি",
+            "en": "Class 1"
+          },
+          "CLASS_2": {
+            "bn": "দ্বিতীয় শ্রেণি",
+            "en": "Class 2"
+          },
+          "CLASS_3": {
+            "bn": "তৃতীয় শ্রেণি",
+            "en": "Class 3"
+          },
+          "CLASS_4": {
+            "bn": "চতুর্থ শ্রেণি",
+            "en": "Class 4"
+          },
+          "CLASS_5": {
+            "bn": "পঞ্চম শ্রেণি",
+            "en": "Class 5"
+          },
+          "CLASS_6": {
+            "bn": "ষষ্ঠ শ্রেণি",
+            "en": "Class 6"
+          },
+          "CLASS_7": {
+            "bn": "সপ্তম শ্রেণি",
+            "en": "Class 7"
+          },
+          "CLASS_8": {
+            "bn": "অষ্টম শ্রেণি",
+            "en": "Class 8"
+          },
+          "CLASS_9": {
+            "bn": "নবম শ্রেণি",
+            "en": "Class 9"
+          },
+          "CLASS_10": {
+            "bn": "দশম শ্রেণি",
+            "en": "Class 10"
+          },
+          "SSC": {
+            "bn": "এসএসসি",
+            "en": "SSC"
+          },
+          "HSC": {
+            "bn": "এইচএসসি",
+            "en": "HSC"
+          },
+          "ADMISSION": {
+            "bn": "ভর্তি প্রস্তুতি",
+            "en": "Admission"
+          },
+          "OTHER": {
+            "bn": "অন্যান্য",
+            "en": "Other"
+          }
+        }
       },
       {
         "entityType": "contact",
@@ -125,7 +187,29 @@
         },
         "isSearchable": false,
         "isSensitive": false,
-        "options": ["SCIENCE", "COMMERCE", "ARTS", "GENERAL"]
+        "options": ["SCIENCE", "COMMERCE", "ARTS", "GENERAL"],
+        "label": {
+          "bn": "বিভাগ",
+          "en": "Study group"
+        },
+        "optionLabels": {
+          "SCIENCE": {
+            "bn": "বিজ্ঞান",
+            "en": "Science"
+          },
+          "COMMERCE": {
+            "bn": "ব্যবসায় শিক্ষা",
+            "en": "Commerce"
+          },
+          "ARTS": {
+            "bn": "মানবিক",
+            "en": "Arts"
+          },
+          "GENERAL": {
+            "bn": "সাধারণ",
+            "en": "General"
+          }
+        }
       },
       {
         "entityType": "contact",
@@ -139,7 +223,11 @@
           "bot": false
         },
         "isSearchable": true,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "স্কুলের নাম",
+          "en": "School name"
+        }
       },
       {
         "entityType": "contact",
@@ -159,6 +247,10 @@
           "relationKey": "GUARDIAN_OF",
           "createIfMissingByPhone": true,
           "defaultBillTo": true
+        },
+        "label": {
+          "bn": "অভিভাবক",
+          "en": "Guardian"
         }
       },
       {
@@ -173,7 +265,11 @@
           "bot": false
         },
         "isSearchable": true,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "রোল নম্বর",
+          "en": "Roll number"
+        }
       },
       {
         "entityType": "enrollment",
@@ -187,7 +283,11 @@
           "bot": false
         },
         "isSearchable": false,
-        "isSensitive": false
+        "isSensitive": false,
+        "label": {
+          "bn": "শিক্ষাবর্ষ",
+          "en": "Academic session"
+        }
       }
     ],
     "settingsDefaults": {
