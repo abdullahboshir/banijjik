@@ -30,7 +30,7 @@ const CONTACT_PROBE = defineModule({
   permissions: [],
   routes: {},
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: ["contact"],
   botTools: [],
   storefrontSections: [],

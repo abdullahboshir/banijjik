@@ -37,7 +37,7 @@ const probeManifest = defineModule({
   permissions: [],
   menu: [],
   routes: { admin: [] },
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

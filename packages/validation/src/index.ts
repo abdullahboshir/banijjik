@@ -141,3 +141,15 @@ export {
   toCustomFieldPreferenceBatch,
   toCustomFieldUpdateRequest,
 } from "./custom-field/custom-field-request-schemas.js";
+export { buildSettingValueSchema } from "./settings/build-setting-value-schema.js";
+export {
+  STRUCTURED_SETTING_SCHEMAS,
+  structuredSettingSchema,
+} from "./settings/structured-setting-schemas.js";
+export {
+  MAX_SETTING_CHANGES_PER_BATCH,
+  MAX_SETTING_KEYS_PER_READ,
+  settingsQuerySchema,
+  updateSettingsRequestSchema,
+} from "./settings/settings-request-schemas.js";
+export type { SettingsQuery, UpdateSettingsBody } from "./settings/settings-request-schemas.js";

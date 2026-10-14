@@ -185,5 +185,9 @@
   "permission.custom-field.definition.read": "কাস্টম ঘর দেখা",
   "permission.custom-field.definition.create": "কাস্টম ঘর তৈরি",
   "permission.custom-field.definition.update": "কাস্টম ঘর সম্পাদনা",
-  "permission.custom-field.definition.archive": "কাস্টম ঘর আর্কাইভ"
+  "permission.custom-field.definition.archive": "কাস্টম ঘর আর্কাইভ",
+  "permission.settings.setting.read": "সেটিংস দেখা",
+  "permission.settings.setting.update": "সেটিংস সম্পাদনা",
+  "errors.setting_not_available": "এই ব্যবসার জন্য এই সেটিংটি নেই।",
+  "errors.setting_not_location_scoped": "এই সেটিং লোকেশনভেদে আলাদা করা যায় না।"
 }

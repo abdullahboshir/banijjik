@@ -38,7 +38,7 @@ interface ModuleManifest {
   permissions: PermissionDefinition[];    // { permissionKey, labelKey, isSensitive?, surface }
   routes: { admin?: string[]; storefront?: string[]; platform?: string[]; webhook?: string[] };
   menu: MenuEntry[];                      // see §6
-  settingKeys: SettingKey[];              // definitions live in the module, registered via the manifest
+  settings: SettingDefinition[];          // value spec, system default, location override, client visibility (ADR-103)
   customFieldEntities: EntityType[];      // entityType values that accept custom fields
   botTools: BotToolKey[];
   storefrontSections: SectionKey[];
@@ -181,7 +181,7 @@ Permission keys follow `<moduleKey>.<entity>.<action>` (ADR-054). Standard actio
 
 | Module | Permissions | Settings keys (first set) | Custom-field entities | Bot tools | Storefront sections | Emits (consumes) | Limits | Sequences |
 |---|---|---|---|---|---|---|---|---|
-| `organization` | `organization.profile.update`, `organization.location.{read,create,update,archive}`, `organization.member.{read,invite,update,remove}`, `organization.member.readSensitive`*, `organization.ownership.transfer`* | `organization.defaultLocale`, `organization.sequenceFormats` | `organization`, `member` | — | `about`, `contact-info` | `organization.*` events of `09 §4` | `locations`, `members` | `MEMBER` |
+| `organization` | `organization.profile.update`, `organization.location.{read,create,update,archive}`, `organization.member.{read,invite,update,remove}`, `organization.member.readSensitive`*, `organization.ownership.transfer`* | `organization.digitScript` (LATIN\|BENGALI), `organization.numberGrouping` (WESTERN\|INDIAN); both client-visible, no location override. `defaultLocale` stays a profile field (ADR-103) | `organization`, `member` | — | `about`, `contact-info` | `organization.*` events of `09 §4` | `locations`, `members` | `MEMBER` |
 | `iam` | `iam.role.{read,create,update,archive}` | `iam.sessionTimeoutMinutes` | — | — | — | `iam.*` | — | — |
 | `settings` / `custom-field` | `settings.setting.{read,update}`, `settings.term.update`, `custom-field.definition.{read,create,update,archive}` | — | — | — | — | `settings.setting.changed`, `custom-field.definition.changed` | — | — |
 | `audit` | `audit.log.read`* | `audit.retentionDays` | — | — | — | — | — | — |
@@ -292,8 +292,8 @@ All numbers are **seed proposals** stored in the DB. Changing them needs no code
 |---|---|---|---|---|---|---|
 | organization | F | F except `ownership.transfer`, `member.readSensitive` | — | — | — | R (profile, locations) |
 | iam (roles) | F | R | — | — | — | — |
-| settings | F | F | — | — | — | R |
-| custom-field | F | F | R | R | — | R |
+| settings (ADR-103) | F | F | R | R | — | R |
+| custom-field (ADR-102) | F | F | R | R | — | R |
 | audit | F | R | — | — | — | — |
 | contact | F | F except `anonymize` | read, create, update | read, create, update | read | R |
 | catalog / pricing | F | F | R | R | — | R |

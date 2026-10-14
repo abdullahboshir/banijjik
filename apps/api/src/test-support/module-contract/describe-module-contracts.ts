@@ -9,6 +9,8 @@ import type { ModuleRegistry } from "../../kernel/modules/index.js";
 import type { IamApiHarness } from "../iam-api-harness.js";
 import { ApiActor } from "../two-organizations.js";
 import {
+  assertDeclaredSettingsAreHidden,
+  assertDeclaredSettingsAreServed,
   assertModuleIsHidden,
   assertModuleIsVisible,
   assertRoutesAreDisabled,
@@ -70,11 +72,13 @@ async function runScenario(scenario: Scenario): Promise<void> {
   });
   await seedModuleData(data, subject);
   const dataBefore = await countModuleData(data, subject);
+  await assertDeclaredSettingsAreServed(organization, manifest);
 
   await offPath.apply({ world, organization, manifest });
 
   await assertRoutesAreDisabled(organization.owner, subject);
   assertModuleIsHidden(await readConfigView(world, organization), manifest);
+  await assertDeclaredSettingsAreHidden(organization, manifest);
   expect(await runProbeHandler(world, subject), "handler of a module that is off").toEqual({
     outcome: "SKIPPED_MODULE_OFF",
     calls: 0,

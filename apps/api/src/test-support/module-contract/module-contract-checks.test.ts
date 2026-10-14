@@ -95,7 +95,7 @@ describe("the mounted route walk", () => {
         permissions: [],
         routes: { admin: ["/orgs/:organizationId/owned"] },
         menu: [],
-        settingKeys: [],
+        settings: [],
         customFieldEntities: [],
         botTools: [],
         storefrontSections: [],

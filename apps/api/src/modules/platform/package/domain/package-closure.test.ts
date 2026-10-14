@@ -19,7 +19,7 @@ function manifest(
     permissions: [],
     routes: {},
     menu: [],
-    settingKeys: [],
+    settings: [],
     customFieldEntities: [],
     botTools: [],
     storefrontSections: [],

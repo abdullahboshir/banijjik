@@ -57,6 +57,20 @@ describe("system role grants (10 section 10)", () => {
     expect(manager.has(futureKey)).toBe(false);
   });
 
+  it.each([
+    [SYSTEM_ROLE_KEY.OWNER, ["settings.setting.read", "settings.setting.update"]],
+    [SYSTEM_ROLE_KEY.MANAGER, ["settings.setting.read", "settings.setting.update"]],
+    [SYSTEM_ROLE_KEY.CASHIER, ["settings.setting.read"]],
+    [SYSTEM_ROLE_KEY.STAFF, ["settings.setting.read"]],
+    [SYSTEM_ROLE_KEY.RIDER, []],
+    [SYSTEM_ROLE_KEY.VIEWER, ["settings.setting.read"]],
+  ] as const)("gives %s the settings keys of ADR-103", (roleKey, expected) => {
+    const granted = [...grantedKeysOf(roleKey, ALL_KEYS)].filter((key) =>
+      key.startsWith("settings."),
+    );
+    expect(sorted(granted)).toEqual(sorted(expected));
+  });
+
   it("recognises system role keys and rejects custom ones", () => {
     expect(isSystemRoleKey("CASHIER")).toBe(true);
     expect(isSystemRoleKey("custom.0199a3b2-7c11-7a3e-9d5e-1f2e3d4c5b6a")).toBe(false);

@@ -19,6 +19,25 @@ const eventTypeSchema = z.enum(Object.values(EVENT_TYPE));
 const sequenceKeySchema = z.enum(Object.values(SEQUENCE_KEY));
 const surfaceSchema = z.enum(Object.values(SURFACE));
 const stringListSchema = z.array(z.string().min(1));
+const integerBounds = { min: z.number(), max: z.number() };
+const settingValueSpecSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("BOOLEAN") }).strict(),
+  z.object({ kind: z.literal("INTEGER"), ...integerBounds }).strict(),
+  z.object({ kind: z.literal("MONEY"), ...integerBounds }).strict(),
+  z.object({ kind: z.literal("DURATION_MINUTES"), ...integerBounds }).strict(),
+  z.object({ kind: z.literal("ENUM"), values: z.array(z.string().min(1)).min(1) }).strict(),
+  z.object({ kind: z.literal("TEXT"), maxLength: z.number().int().positive() }).strict(),
+  z.object({ kind: z.literal("STRUCTURED"), schemaKey: z.string().min(1) }).strict(),
+]);
+const settingDefinitionSchema = z
+  .object({
+    settingKey: z.string().min(1),
+    value: settingValueSpecSchema,
+    systemDefault: z.unknown(),
+    allowsLocationOverride: z.boolean(),
+    isClientVisible: z.boolean(),
+  })
+  .strict();
 
 /** A route prefix is a full v1 path: it starts with "/" and has no trailing slash. */
 const routePrefixSchema = z
@@ -69,7 +88,7 @@ const manifestSchema = z
       })
       .strict(),
     menu: z.array(menuEntrySchema),
-    settingKeys: stringListSchema,
+    settings: z.array(settingDefinitionSchema),
     customFieldEntities: stringListSchema,
     botTools: stringListSchema,
     storefrontSections: stringListSchema,

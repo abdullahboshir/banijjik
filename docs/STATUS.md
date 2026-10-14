@@ -84,7 +84,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 2.1b industry templates: platform writes | planned (2026-10-14 on 8291363, `docs/plans/2.1b.md`, Opus; T1, wave 1) | create, edit, publish, retire, change an organization's template (additive, ADR-046); planned after 2.1a. A signup racing a retire must be serialized with a guard-document touch on the template (ADR-092): 2.1a's second read inside the transaction does not serialize on its own |
 | 2.2 resolver integration: terms, settings and fields in the resolved config, tenant-disabled optional modules | todo (wave 2) | after 2.3 and 2.4; owns terms (`TermOverride`, `/terms`) |
 | 2.3 custom field engine (API) | merged (2026-10-14, implemented with Cursor, Claude T1 review 2 passed; ADR-102 proposed) | branch `s/2.3-custom-fields`; handoff `docs/handoffs/2.3.md`. Seed fields are labelled. Not merged, not pushed |
-| 2.4 settings engine | planned (2026-10-14 on 8291363, `docs/plans/2.4.md`, Opus; T1, wave 1) | owns `module-manifest.ts` in wave 1 |
+| 2.4 settings engine | implemented (awaiting review) | branch `s/2.4-settings`; handoff `docs/handoffs/2.4.md`; ADR-103 proposed. Rebased onto main after 2.3. Full turbo, lint, format and browser suites wait for this session's turn |
 | 2.5 dynamic form renderer | todo (wave 2) | after 2.3 |
 | 2.6 platform UI: template, module and field builders | todo (wave 3) | pair with 2.7 |
 | 2.7 tenant UI: settings and tenant custom fields | todo (wave 3) | pair with 2.6 |

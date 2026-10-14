@@ -24,7 +24,7 @@ export const iamManifest = defineModule({
   ],
   routes: { admin: ["/auth", "/me", "/orgs/:organizationId/roles"] },
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

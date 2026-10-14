@@ -98,6 +98,63 @@ export function assertModuleIsVisible(view: ConfigView, manifest: ModuleManifest
   }
 }
 
+function settingsPath(organizationId: string): string {
+  return `/orgs/${organizationId}/settings`;
+}
+
+function settingsOf(response: {
+  body: Record<string, unknown>;
+}): Record<string, { value: unknown }> {
+  const data = response.body["data"] as { settings?: Record<string, { value: unknown }> };
+  return data.settings ?? {};
+}
+
+/**
+ * While the module is on, each declared setting is listed and a write of its system default succeeds.
+ * `/me/config` stays empty until card 2.2, so this is the real settings check (ADR-103).
+ */
+export async function assertDeclaredSettingsAreServed(
+  organization: ContractOrganization,
+  manifest: ModuleManifest,
+): Promise<void> {
+  if (manifest.settings.length === 0) return;
+  const path = settingsPath(organization.organizationId);
+  const listed = await organization.owner.call("get", path);
+  expect(listed.status, "GET /settings").toBe(200);
+  for (const setting of manifest.settings) {
+    expect(settingsOf(listed)[setting.settingKey]?.value, setting.settingKey).toEqual(
+      setting.systemDefault,
+    );
+  }
+  const [first] = manifest.settings;
+  if (first === undefined) return;
+  const patched = await organization.owner.call("patch", path, {
+    items: [{ settingKey: first.settingKey, value: first.systemDefault }],
+  });
+  expect(patched.status, "PATCH /settings").toBe(200);
+}
+
+/** A module that is off is omitted from GET and refused by PATCH. */
+export async function assertDeclaredSettingsAreHidden(
+  organization: ContractOrganization,
+  manifest: ModuleManifest,
+): Promise<void> {
+  if (manifest.settings.length === 0) return;
+  const path = settingsPath(organization.organizationId);
+  const listed = await organization.owner.call("get", path);
+  expect(listed.status, "GET /settings while off").toBe(200);
+  for (const setting of manifest.settings) {
+    expect(settingsOf(listed), setting.settingKey).not.toHaveProperty(setting.settingKey);
+  }
+  const [first] = manifest.settings;
+  if (first === undefined) return;
+  const patched = await organization.owner.call("patch", path, {
+    items: [{ settingKey: first.settingKey, value: first.systemDefault }],
+  });
+  expect(patched.status, "PATCH /settings while off").toBe(404);
+  expect(patched.body.error.messageKey).toBe("errors.setting_not_available");
+}
+
 /** Assertions 2 to 5: the module is gone from the modules, menu, bot tools, sections, settings and fields. */
 export function assertModuleIsHidden(view: ConfigView, manifest: ModuleManifest): void {
   expect(view.modules, "modules").not.toContain(manifest.key);
@@ -106,7 +163,9 @@ export function assertModuleIsHidden(view: ConfigView, manifest: ModuleManifest)
   for (const section of manifest.storefrontSections) {
     expect(view.storefrontSections, "storefront sections").not.toContain(section);
   }
-  for (const key of manifest.settingKeys) expect(view.settingKeys, "settings").not.toContain(key);
+  for (const setting of manifest.settings) {
+    expect(view.settingKeys, "settings").not.toContain(setting.settingKey);
+  }
   for (const entity of manifest.customFieldEntities) {
     expect(view.fieldEntities, "custom field entities").not.toContain(entity);
   }

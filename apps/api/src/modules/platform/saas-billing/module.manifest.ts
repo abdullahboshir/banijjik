@@ -16,7 +16,7 @@ export const saasBillingManifest = defineModule({
   permissions: [],
   routes: { platform: ["/platform/organizations/:organizationId/subscription"] },
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

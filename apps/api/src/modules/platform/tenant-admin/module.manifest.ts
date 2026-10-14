@@ -17,7 +17,7 @@ export const tenantAdminManifest = defineModule({
   permissions: [],
   routes: { platform: ["/platform/organizations"] },
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

@@ -8,6 +8,7 @@ import type { MenuVisibility } from "./menu-visibility.js";
 import type { ModuleClass } from "./module-class.js";
 import type { ModuleKey } from "./module-key.js";
 import type { OfferingKind } from "./offering-kind.js";
+import type { SettingDefinition } from "../settings/setting-definition.js";
 
 /** One entry of the admin menu (10-MODULE-CATALOG section 6). Labels come from terms or message keys, never literals. */
 export interface MenuEntry {
@@ -35,7 +36,7 @@ export interface ModuleRoutes {
 
 /**
  * What a module declares about itself (10-MODULE-CATALOG section 2). The manifest is the only
- * place routes, permissions, menu entries and events live. The setting, field, bot tool and
+ * place routes, permissions, menu entries, settings and events live. Field, bot tool and
  * section key types arrive with the cards that define those registries; until then they are strings.
  */
 export interface ModuleManifest {
@@ -49,7 +50,7 @@ export interface ModuleManifest {
   readonly permissions: readonly PermissionDefinition[];
   readonly routes: ModuleRoutes;
   readonly menu: readonly MenuEntry[];
-  readonly settingKeys: readonly string[];
+  readonly settings: readonly SettingDefinition[];
   readonly customFieldEntities: readonly string[];
   readonly botTools: readonly string[];
   readonly storefrontSections: readonly string[];

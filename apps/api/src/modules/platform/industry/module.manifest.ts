@@ -18,7 +18,7 @@ export const industryManifest = defineModule({
   permissions: [],
   routes: { platform: ["/platform/industry-templates"] },
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

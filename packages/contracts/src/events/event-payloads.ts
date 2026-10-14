@@ -2,6 +2,8 @@ import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type
 import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
+import { SETTINGS_EVENT_TYPE } from "../settings/settings-event-type.js";
+import type { SettingChangedPayload } from "../settings/settings-contracts.js";
 
 /** Payloads carry identifiers only, never personal data: a consumer reads the rest through the owning module. */
 export interface UserRegisteredPayload {
@@ -61,4 +63,5 @@ export interface EventPayloadMap {
   readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_SUSPENDED]: OrganizationStatusPayload;
   readonly [ORGANIZATION_EVENT_TYPE.ORGANIZATION_REACTIVATED]: OrganizationStatusPayload;
   readonly [CUSTOM_FIELD_EVENT_TYPE.DEFINITION_CHANGED]: CustomFieldDefinitionChangedPayload;
+  readonly [SETTINGS_EVENT_TYPE.SETTING_CHANGED]: SettingChangedPayload;
 }

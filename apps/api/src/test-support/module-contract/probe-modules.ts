@@ -79,6 +79,20 @@ function toPascalCase(key: string): string {
     .join("");
 }
 
+/** One location-overridable setting on the website probe, so the module-off suite can hide it. */
+function probeSettings(key: ModuleKey): ModuleManifest["settings"] {
+  if (key !== MODULE_KEY.WEBSITE) return [];
+  return [
+    {
+      settingKey: "website.probeEnabled",
+      value: { kind: "BOOLEAN" },
+      systemDefault: false,
+      allowsLocationOverride: true,
+      isClientVisible: false,
+    },
+  ];
+}
+
 function routePrefix(key: ModuleKey): string {
   return `/contract-probe/${key}`;
 }
@@ -111,7 +125,7 @@ function buildProbeManifest(profile: ProbeProfile): ModuleManifest {
         order: 1,
       },
     ],
-    settingKeys: [`contract.${key}.setting`],
+    settings: probeSettings(key),
     customFieldEntities: [`contract_${key}`],
     botTools: [`contract.${key}.lookup`],
     storefrontSections: [`contract-${key}-banner`],

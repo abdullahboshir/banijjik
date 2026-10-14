@@ -87,6 +87,85 @@ describe("createModuleRegistry", () => {
       /OPTIONAL modules only/,
     ],
     [
+      "a duplicate setting key",
+      () => [
+        aManifest("workflow", {
+          settings: [
+            {
+              settingKey: "workflow.flag",
+              value: { kind: "BOOLEAN" },
+              systemDefault: false,
+              allowsLocationOverride: false,
+              isClientVisible: false,
+            },
+          ],
+        }),
+        aManifest("website", {
+          settings: [
+            {
+              settingKey: "workflow.flag",
+              value: { kind: "BOOLEAN" },
+              systemDefault: false,
+              allowsLocationOverride: false,
+              isClientVisible: false,
+            },
+          ],
+        }),
+      ],
+      /duplicate setting key/,
+    ],
+    [
+      "a setting key that does not start with the module key",
+      () => [
+        aManifest("workflow", {
+          settings: [
+            {
+              settingKey: "website.flag",
+              value: { kind: "BOOLEAN" },
+              systemDefault: false,
+              allowsLocationOverride: false,
+              isClientVisible: false,
+            },
+          ],
+        }),
+      ],
+      /does not start with the module key/,
+    ],
+    [
+      "a system default that fails its spec",
+      () => [
+        aManifest("workflow", {
+          settings: [
+            {
+              settingKey: "workflow.flag",
+              value: { kind: "BOOLEAN" },
+              systemDefault: "no",
+              allowsLocationOverride: false,
+              isClientVisible: false,
+            },
+          ],
+        }),
+      ],
+      /systemDefault of workflow.flag fails its spec/,
+    ],
+    [
+      "an unknown structured setting schema",
+      () => [
+        aManifest("workflow", {
+          settings: [
+            {
+              settingKey: "workflow.layout",
+              value: { kind: "STRUCTURED", schemaKey: "missing.thing" },
+              systemDefault: {},
+              allowsLocationOverride: false,
+              isClientVisible: false,
+            },
+          ],
+        }),
+      ],
+      /unknown setting schema missing.thing/,
+    ],
+    [
       "two modules with the same route prefix",
       () => [
         aManifest("workflow", { routes: { admin: ["/orgs/:organizationId/flows"] } }),

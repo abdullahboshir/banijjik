@@ -13,6 +13,7 @@ import {
   ReadIndustryCustomFieldsUseCase,
   type IndustryCustomFieldReader,
 } from "./application/use-cases/read-industry-custom-fields.use-case.js";
+import { ReadIndustrySettingDefaultsUseCase } from "./application/use-cases/read-industry-setting-defaults.use-case.js";
 import { ListPlatformIndustryTemplatesUseCase } from "./application/use-cases/list-platform-industry-templates.use-case.js";
 import { ListPublishedIndustryTemplatesUseCase } from "./application/use-cases/list-published-industry-templates.use-case.js";
 import {
@@ -41,6 +42,14 @@ export function buildIndustryTemplateReader(clock: Clock): IndustryTemplateReade
       ttlMilliseconds: INDUSTRY_TEMPLATE_VIEW_CACHE_TTL_MILLISECONDS,
     }),
   });
+}
+
+/** The stored template defaults for the settings resolver. Uncached, so a test edit is visible (ADR-103). */
+export function buildIndustrySettingDefaultsReader(): ReadIndustrySettingDefaultsUseCase {
+  return new ReadIndustrySettingDefaultsUseCase(
+    buildOrganizationConfigSource(),
+    new MongoIndustryTemplateRepository(),
+  );
 }
 
 /** Signup accepts only a PUBLISHED template. */

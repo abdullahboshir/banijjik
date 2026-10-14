@@ -21,7 +21,7 @@ export const auditManifest = defineModule({
   permissions: [permissionDefinition(PERMISSION_KEY.AUDIT_LOG_READ, { isSensitive: true })],
   routes: { admin: ["/orgs/:organizationId/audit-logs"], platform: ["/platform/audit-logs"] },
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

@@ -24,7 +24,7 @@ export const customFieldManifest = defineModule({
   ],
   routes: { admin: ["/orgs/:organizationId/custom-fields"] },
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

@@ -23,6 +23,8 @@ export const PERMISSION_KEY = {
   CUSTOM_FIELD_DEFINITION_CREATE: "custom-field.definition.create",
   CUSTOM_FIELD_DEFINITION_UPDATE: "custom-field.definition.update",
   CUSTOM_FIELD_DEFINITION_ARCHIVE: "custom-field.definition.archive",
+  SETTINGS_SETTING_READ: "settings.setting.read",
+  SETTINGS_SETTING_UPDATE: "settings.setting.update",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

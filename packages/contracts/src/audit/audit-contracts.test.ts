@@ -22,6 +22,7 @@ describe("audit vocabulary", () => {
       "role",
       "customFieldDefinition",
       "customFieldPreference",
+      "setting",
     ]);
   });
 });

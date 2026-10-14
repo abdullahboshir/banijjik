@@ -185,5 +185,9 @@
   "permission.custom-field.definition.read": "View custom fields",
   "permission.custom-field.definition.create": "Create custom fields",
   "permission.custom-field.definition.update": "Edit custom fields",
-  "permission.custom-field.definition.archive": "Archive custom fields"
+  "permission.custom-field.definition.archive": "Archive custom fields",
+  "permission.settings.setting.read": "View settings",
+  "permission.settings.setting.update": "Edit settings",
+  "errors.setting_not_available": "This setting is not available for this business.",
+  "errors.setting_not_location_scoped": "This setting cannot be different at a location."
 }

@@ -78,7 +78,23 @@ export const organizationManifest = defineModule({
       order: 30,
     },
   ],
-  settingKeys: [],
+  // Number formatting reads these in cards 2.2 and 2.7. defaultLocale stays a profile field.
+  settings: [
+    {
+      settingKey: "organization.digitScript",
+      value: { kind: "ENUM", values: ["LATIN", "BENGALI"] },
+      systemDefault: "LATIN",
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+    {
+      settingKey: "organization.numberGrouping",
+      value: { kind: "ENUM", values: ["WESTERN", "INDIAN"] },
+      systemDefault: "WESTERN",
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+  ],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

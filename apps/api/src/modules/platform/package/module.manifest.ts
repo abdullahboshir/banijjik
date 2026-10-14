@@ -16,7 +16,7 @@ export const packageManifest = defineModule({
   permissions: [],
   routes: { platform: ["/platform/packages"] },
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

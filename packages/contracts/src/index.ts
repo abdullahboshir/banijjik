@@ -295,3 +295,17 @@ export type {
   PlatformIndustryTemplateDetail,
   PlatformIndustryTemplateSummary,
 } from "./platform/industry-template.js";
+export type { SettingDefinition, SettingValueSpec } from "./settings/setting-definition.js";
+export { SETTINGS_EVENT_TYPE } from "./settings/settings-event-type.js";
+export type { SettingsEventType } from "./settings/settings-event-type.js";
+export { SETTINGS_RULE_KEY } from "./settings/settings-rule-key.js";
+export type { SettingsRuleKey } from "./settings/settings-rule-key.js";
+export { SETTING_VALUE_SOURCE } from "./settings/settings-contracts.js";
+export type {
+  ResolvedSetting,
+  SettingChange,
+  SettingChangedPayload,
+  SettingValueSource,
+  SettingsResponse,
+  UpdateSettingsRequest,
+} from "./settings/settings-contracts.js";

@@ -24,6 +24,7 @@ export const AUDIT_ACTION = {
   CUSTOM_FIELD_DEFINITION_UPDATED: "custom-field.definition.updated",
   CUSTOM_FIELD_DEFINITION_ARCHIVED: "custom-field.definition.archived",
   CUSTOM_FIELD_PREFERENCE_UPDATED: "custom-field.preference.updated",
+  SETTING_CHANGED: "settings.setting.changed",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -37,5 +38,6 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "role",
   "customFieldDefinition",
   "customFieldPreference",
+  "setting",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];

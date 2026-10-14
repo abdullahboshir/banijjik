@@ -17,7 +17,7 @@ export const entitlementManifest = defineModule({
   permissions: [],
   routes: { platform: ["/platform/organizations/:organizationId/module-overrides"] },
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],

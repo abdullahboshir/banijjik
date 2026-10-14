@@ -91,7 +91,7 @@ function describeKeyRules(manifests: readonly ModuleManifest[]): void {
   // so the rule that holds today is uniqueness. Add the "declared in contracts" check with those registries.
   it("keeps setting, custom field, bot tool, storefront section and menu keys unique", () => {
     const lists = [
-      manifests.flatMap((manifest) => manifest.settingKeys),
+      manifests.flatMap((manifest) => manifest.settings.map((setting) => setting.settingKey)),
       manifests.flatMap((manifest) => manifest.customFieldEntities),
       manifests.flatMap((manifest) => manifest.botTools),
       manifests.flatMap((manifest) => manifest.storefrontSections),

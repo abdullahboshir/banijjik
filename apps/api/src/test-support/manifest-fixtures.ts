@@ -16,7 +16,7 @@ export function aManifest(
     permissions: [],
     routes: {},
     menu: [],
-    settingKeys: [],
+    settings: [],
     customFieldEntities: [],
     botTools: [],
     storefrontSections: [],

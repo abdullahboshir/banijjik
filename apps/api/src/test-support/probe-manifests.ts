@@ -15,7 +15,7 @@ const EMPTY_MANIFEST_PARTS = {
   requiresAnyKind: [],
   permissions: [],
   menu: [],
-  settingKeys: [],
+  settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],
@@ -27,12 +27,13 @@ const EMPTY_MANIFEST_PARTS = {
 /**
  * The module that owns the routes of the kernel probe routers (/probe, /notes, /guarded). It is a
  * SYSTEM module under a catalogue key that no real module uses yet, so the fail-closed entitlement
- * gate lets the probes through exactly as it would a SYSTEM module.
+ * gate lets the probes through exactly as it would a SYSTEM module. `settings` is the real module
+ * now, so the probe uses `file` until that module arrives.
  */
 export const KERNEL_PROBE_MANIFEST: ModuleManifest = defineModule({
   ...EMPTY_MANIFEST_PARTS,
-  key: MODULE_KEY.SETTINGS,
-  path: "core/settings",
+  key: MODULE_KEY.FILE,
+  path: "core/file",
   moduleClass: MODULE_CLASS.SYSTEM,
   tenantCanDisable: false,
   routes: {

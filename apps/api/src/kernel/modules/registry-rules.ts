@@ -5,7 +5,9 @@ import {
   SURFACE,
   type ModuleKey,
   type ModuleManifest,
+  type SettingDefinition,
 } from "@banijjik/contracts";
+import { buildSettingValueSchema, structuredSettingSchema } from "@banijjik/validation";
 import { ManifestError } from "./manifest-error.js";
 import { allRoutePrefixes, routeShape } from "./route-prefix.js";
 
@@ -75,6 +77,55 @@ function findCycle(
   return visit(manifest.key);
 }
 
+function assertSettingKeysAreUnique(manifests: readonly ModuleManifest[]): void {
+  const ownerOfKey = new Map<string, ModuleKey>();
+  for (const manifest of manifests) {
+    for (const { settingKey } of manifest.settings) {
+      const owner = ownerOfKey.get(settingKey);
+      if (owner !== undefined) {
+        throw new ManifestError(
+          `duplicate setting key ${settingKey} (${owner} and ${manifest.key})`,
+        );
+      }
+      ownerOfKey.set(settingKey, manifest.key);
+    }
+  }
+}
+
+function assertSettingKeyBelongsToModule(
+  manifest: ModuleManifest,
+  setting: SettingDefinition,
+): void {
+  if (!setting.settingKey.startsWith(`${manifest.key}.`)) {
+    throw new ManifestError(
+      `${manifest.key}: ${setting.settingKey} does not start with the module key`,
+    );
+  }
+}
+
+function assertStructuredSchemaIsKnown(manifest: ModuleManifest, setting: SettingDefinition): void {
+  if (setting.value.kind !== "STRUCTURED") return;
+  if (structuredSettingSchema(setting.value.schemaKey) !== undefined) return;
+  throw new ManifestError(`${manifest.key}: unknown setting schema ${setting.value.schemaKey}`);
+}
+
+function assertSystemDefaultPasses(manifest: ModuleManifest, setting: SettingDefinition): void {
+  const parsed = buildSettingValueSchema(setting.value).safeParse(setting.systemDefault);
+  if (parsed.success) return;
+  throw new ManifestError(`${manifest.key}: systemDefault of ${setting.settingKey} fails its spec`);
+}
+
+function assertSettingsAreDeclared(manifests: readonly ModuleManifest[]): void {
+  assertSettingKeysAreUnique(manifests);
+  for (const manifest of manifests) {
+    for (const setting of manifest.settings) {
+      assertSettingKeyBelongsToModule(manifest, setting);
+      assertStructuredSchemaIsKnown(manifest, setting);
+      assertSystemDefaultPasses(manifest, setting);
+    }
+  }
+}
+
 function assertNoDependencyCycle(manifests: readonly ModuleManifest[]): void {
   const byKey = new Map(manifests.map((manifest) => [manifest.key, manifest] as const));
   for (const manifest of manifests) {
@@ -96,4 +147,5 @@ export function assertRegistryRules(manifests: readonly ModuleManifest[]): void 
   }
   assertRoutePrefixesAreUnique(manifests);
   assertNoDependencyCycle(manifests);
+  assertSettingsAreDeclared(manifests);
 }

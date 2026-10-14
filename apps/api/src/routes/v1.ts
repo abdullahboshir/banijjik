@@ -48,6 +48,10 @@ import {
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
 import {
+  buildSettingsTenantRouter,
+  registerSettingsModels,
+} from "../modules/core/settings/index.js";
+import {
   buildEntitlementTenantRouter,
   buildLimitGuard,
   buildOrgConfigService,
@@ -108,6 +112,7 @@ export function registerModuleModels(): void {
   registerSaasBillingModels();
   registerEntitlementModels();
   registerCustomFieldModels();
+  registerSettingsModels();
 }
 
 /**
@@ -170,6 +175,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
         access,
         registry,
         organizationRouter: organizationTenant.tenantRouter,
+        manifests: registry.all(),
       }),
     ),
   );
@@ -294,6 +300,7 @@ interface TenantRoutersInput {
   readonly access: AccessParts;
   readonly registry: ModuleRegistry;
   readonly organizationRouter: Router;
+  readonly manifests: readonly ModuleManifest[];
 }
 
 /**
@@ -329,12 +336,20 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     configVersion: buildConfigVersionBumper(),
     productionManifests: MODULE_MANIFESTS,
   }).router;
+  const settingsRouter = buildSettingsTenantRouter({
+    permission,
+    audit,
+    orgConfig,
+    configVersion: buildConfigVersionBumper(),
+    manifests: input.manifests,
+  });
   return [
     iamRouter,
     input.organizationRouter,
     auditRouter,
     entitlementRouter,
     customFieldRouter,
+    settingsRouter,
     ...tenantRouters,
     ...tenantRouterFactories.map((build) => build(permission)),
   ];
