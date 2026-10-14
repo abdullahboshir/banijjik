@@ -105,6 +105,30 @@ async function effectCounts(organizationId: string): Promise<{
   };
 }
 
+async function preferenceChanges(organizationId: string): Promise<unknown[]> {
+  const rows = await harness.connections.tenantShared
+    .collection("audit_logs")
+    .find({ organizationId, action: "custom-field.preference.updated" })
+    .sort({ _id: 1 })
+    .toArray();
+  return rows.map((row) => row["changes"]);
+}
+
+async function changedFieldKeys(organizationId: string): Promise<string[]> {
+  const rows = await harness.connections.platform
+    .collection("outbox_events")
+    .find({ organizationId, type: "custom-field.definition.changed" })
+    .sort({ _id: 1 })
+    .toArray();
+  return rows.map((row) => readFieldKey(row["payload"]));
+}
+
+function readFieldKey(payload: unknown): string {
+  if (typeof payload !== "object" || payload === null || !("fieldKey" in payload)) return "";
+  const fieldKey = payload.fieldKey;
+  return typeof fieldKey === "string" ? fieldKey : "";
+}
+
 async function expectGrew(
   organizationId: string,
   before: { version: number; audits: number; events: number },
@@ -182,6 +206,64 @@ describe("custom field API", () => {
     expect(keys).not.toContain("skin_type");
     expect(keys[0]).toBe("preferred_stylist");
     expect(hair.label).toMatchObject({ bn: "চুল", en: "Hair" });
+  });
+
+  it("audits every row of a preference batch and bumps the config once", async () => {
+    const world = await aWorld();
+    await useTemplate(world.organizationA, "SALON");
+    const path = `${fieldsPath(world.organizationA)}/preferences`;
+    const prepared = await world.alice.call("patch", path, {
+      preferences: [
+        { entityType: "contact", fieldKey: "skin_type", isHidden: false },
+        {
+          entityType: "contact",
+          fieldKey: "hair_type",
+          label: { bn: "চুলের ধরন", en: "Hair type" },
+        },
+      ],
+    });
+    expect(prepared.status).toBe(200);
+    const versionOf = new Map(
+      prepared.body.data.map((row: { fieldKey: string; version: number }) => [
+        row.fieldKey,
+        row.version,
+      ]),
+    );
+    const before = await effectCounts(world.organizationA);
+
+    const batch = await world.alice.call("patch", path, {
+      preferences: [
+        {
+          entityType: "contact",
+          fieldKey: "skin_type",
+          isHidden: true,
+          version: versionOf.get("skin_type"),
+        },
+        {
+          entityType: "contact",
+          fieldKey: "hair_type",
+          label: { bn: "চুল", en: "Hair" },
+          version: versionOf.get("hair_type"),
+        },
+        { entityType: "contact", fieldKey: "allergies", isHidden: true },
+      ],
+    });
+
+    expect(batch.status).toBe(200);
+    const after = await effectCounts(world.organizationA);
+    expect(after.version).toBe(before.version + 1);
+    expect(after.audits).toBe(before.audits + 3);
+    expect(after.events).toBe(before.events + 3);
+    expect((await preferenceChanges(world.organizationA)).slice(-3)).toEqual([
+      { isHidden: { from: false, to: true } },
+      { labelBn: { from: "চুলের ধরন", to: "চুল" }, labelEn: { from: "Hair type", to: "Hair" } },
+      { fieldKey: { to: "allergies" }, isHidden: { to: true } },
+    ]);
+    expect((await changedFieldKeys(world.organizationA)).slice(-3)).toEqual([
+      "skin_type",
+      "hair_type",
+      "allergies",
+    ]);
   });
 
   it("refuses a bad definition", async () => {

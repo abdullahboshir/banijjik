@@ -20,8 +20,8 @@ export interface RecordedChange {
   readonly organizationId: string;
 }
 
-/** One audit entry, one event and one config bump, inside the caller's transaction (ADR-102). */
-export async function recordCustomFieldChange(
+/** One audit entry and one event, inside the caller's transaction (ADR-089, ADR-102). */
+export async function recordCustomFieldAuditAndEvent(
   dependencies: CustomFieldWriteDependencies,
   change: RecordedChange,
 ): Promise<void> {
@@ -35,6 +35,14 @@ export async function recordCustomFieldChange(
     entityType: change.eventEntityType,
     fieldKey: change.fieldKey,
   });
+}
+
+/** One audit entry, one event and one config bump, inside the caller's transaction (ADR-102). */
+export async function recordCustomFieldChange(
+  dependencies: CustomFieldWriteDependencies,
+  change: RecordedChange,
+): Promise<void> {
+  await recordCustomFieldAuditAndEvent(dependencies, change);
   await dependencies.configVersion.bump(change.organizationId);
 }
 

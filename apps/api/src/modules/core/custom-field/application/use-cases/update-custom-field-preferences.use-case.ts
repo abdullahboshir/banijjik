@@ -7,11 +7,12 @@ import type { OrganizationId, UserId } from "@banijjik/ids";
 import { CustomFieldPreference } from "../../domain/custom-field-preference.entity.js";
 import { recordNotFound, requiredFieldHidden, versionConflict } from "../../domain/errors.js";
 import { preferenceAuditFields } from "../custom-field-audit-fields.js";
+import type { AuditFields } from "../../../../../kernel/audit/index.js";
 import type { CustomFieldWriteDependencies } from "../ports/custom-field-write-dependencies.js";
 import {
   DEFINITION_AUDIT,
   PREFERENCE_ENTITY,
-  recordCustomFieldChange,
+  recordCustomFieldAuditAndEvent,
 } from "../record-custom-field-change.js";
 
 export interface UpdatePreferencesInput {
@@ -27,7 +28,12 @@ export interface SavedPreference {
   readonly version: number;
 }
 
-/** Applies a batch of industry-field preferences. One HTTP write is one audit, one event and one bump. */
+interface SavedPreferenceRow {
+  readonly before: AuditFields;
+  readonly preference: CustomFieldPreference;
+}
+
+/** Each changed row is one audit entry and one event. The batch bumps configVersion once. */
 export class UpdateCustomFieldPreferencesUseCase {
   constructor(private readonly dependencies: CustomFieldWriteDependencies) {}
 
@@ -37,25 +43,31 @@ export class UpdateCustomFieldPreferencesUseCase {
 
   private async update(input: UpdatePreferencesInput): Promise<readonly SavedPreference[]> {
     const industryFields = await this.dependencies.industry.forOrganization(input.organizationId);
-    const saved: CustomFieldPreference[] = [];
+    const saved: SavedPreferenceRow[] = [];
     for (const change of input.preferences) {
       saved.push(await this.saveOne(input, change, industryFields));
     }
-    await this.recordBatch(input, saved);
-    return saved.map(toSavedPreference);
+    await this.recordRows(input, saved);
+    await this.dependencies.configVersion.bump(input.organizationId);
+    return saved.map((row) => toSavedPreference(row.preference));
   }
 
   private async saveOne(
     input: UpdatePreferencesInput,
     change: CustomFieldPreferenceChange,
     industryFields: readonly IndustryTemplateCustomField[],
-  ): Promise<CustomFieldPreference> {
+  ): Promise<SavedPreferenceRow> {
     const field = findIndustryField(industryFields, change);
     if (field === undefined) throw recordNotFound();
     if (change.isHidden === true && field.isRequired) throw requiredFieldHidden();
     const existing = await this.dependencies.preferences.find(change);
-    if (existing === undefined) return this.insertPreference(input, change);
-    return this.updatePreference(input, change, existing);
+    if (existing === undefined) {
+      return { before: {}, preference: await this.insertPreference(input, change) };
+    }
+    return {
+      before: preferenceAuditFields(existing),
+      preference: await this.updatePreference(input, change, existing),
+    };
   }
 
   private async insertPreference(
@@ -88,22 +100,22 @@ export class UpdateCustomFieldPreferencesUseCase {
     return this.dependencies.preferences.update(edited, change.version, input.actorUserId);
   }
 
-  private async recordBatch(
+  private async recordRows(
     input: UpdatePreferencesInput,
-    saved: readonly CustomFieldPreference[],
+    saved: readonly SavedPreferenceRow[],
   ): Promise<void> {
-    const first = saved[0];
-    if (first === undefined) return;
-    await recordCustomFieldChange(this.dependencies, {
-      action: DEFINITION_AUDIT.preference,
-      entityType: PREFERENCE_ENTITY,
-      entityId: first.customFieldPreferenceId,
-      before: {},
-      after: preferenceAuditFields(first),
-      eventEntityType: first.entityType,
-      fieldKey: first.fieldKey,
-      organizationId: input.organizationId,
-    });
+    for (const row of saved) {
+      await recordCustomFieldAuditAndEvent(this.dependencies, {
+        action: DEFINITION_AUDIT.preference,
+        entityType: PREFERENCE_ENTITY,
+        entityId: row.preference.customFieldPreferenceId,
+        before: row.before,
+        after: preferenceAuditFields(row.preference),
+        eventEntityType: row.preference.entityType,
+        fieldKey: row.preference.fieldKey,
+        organizationId: input.organizationId,
+      });
+    }
   }
 }
 
