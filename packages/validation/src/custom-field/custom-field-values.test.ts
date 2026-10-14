@@ -228,6 +228,21 @@ describe("custom field values, per type", () => {
       "customFields.secret",
     );
   });
+
+  it("refuses inherited keys that are not fields", () => {
+    const field = rule({ fieldKey: "note", fieldType: CUSTOM_FIELD_TYPE.TEXT });
+    for (const key of ["constructor", "toString", "hasOwnProperty"]) {
+      const result = parse([field], { note: "ok", [key]: "x" });
+      expect(result.success).toBe(false);
+      expect(issuePaths(result)).toContain(`customFields.${key}`);
+    }
+    const withProto = JSON.parse('{"note":"ok","__proto__":{"polluted":true}}') as {
+      note: string;
+    };
+    const proto = parse([field], withProto);
+    expect(proto.success).toBe(false);
+    expect(issuePaths(proto)).toContain("customFields.__proto__");
+  });
 });
 
 describe("custom field value helpers", () => {

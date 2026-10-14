@@ -20,7 +20,8 @@ export function buildCustomFieldValuesSchema(
   options: CustomFieldValuesOptions,
 ): ZodType {
   const visible = fields.filter((field) => isVisibleTo(field, options.audience));
-  const shape: Record<string, ZodType> = {};
+  // Null prototype: `key in shape` would also be true for constructor, toString and similar.
+  const shape: Record<string, ZodType> = Object.create(null);
   for (const field of visible) {
     shape[field.fieldKey] = fieldValueSchema(field, options.mode);
   }
@@ -30,7 +31,7 @@ export function buildCustomFieldValuesSchema(
       context.addIssue({ code: "invalid_type", expected: "object", path: [], input });
       return NEVER;
     }
-    const unknownKeys = Object.keys(input).filter((key) => !(key in shape));
+    const unknownKeys = Object.keys(input).filter((key) => !Object.hasOwn(shape, key));
     for (const key of unknownKeys) {
       context.addIssue({ code: "unrecognized_keys", keys: [key], path: [key], input });
     }
