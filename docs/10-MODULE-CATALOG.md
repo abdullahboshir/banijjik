@@ -292,7 +292,8 @@ All numbers are **seed proposals** stored in the DB. Changing them needs no code
 |---|---|---|---|---|---|---|
 | organization | F | F except `ownership.transfer`, `member.readSensitive` | — | — | — | R (profile, locations) |
 | iam (roles) | F | R | — | — | — | — |
-| settings / custom-field | F | F | — | — | — | R |
+| settings | F | F | — | — | — | R |
+| custom-field | F | F | R | R | — | R |
 | audit | F | R | — | — | — | — |
 | contact | F | F except `anonymize` | read, create, update | read, create, update | read | R |
 | catalog / pricing | F | F | R | R | — | R |

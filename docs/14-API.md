@@ -111,7 +111,7 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 | `GET /roles` · `POST /roles` · `PATCH /roles/{roleId}` · `POST /roles/{roleId}/archive` | `iam.role.*` | | system roles read-only; writes need the permission at ALL locations and every key added or removed held by the caller at ALL (`422 ROLE_NOT_GRANTABLE`, `details.permissionKeys`) |
 | `GET /settings?keys=` · `PATCH /settings` | `settings.setting.*` | | batch update `{ key, value, locationId? }[]` with versions |
 | `GET /terms` · `PATCH /terms` | `settings.term.update` | | |
-| `GET /custom-fields?entityType=` · `POST /custom-fields` · `PATCH /custom-fields/{customFieldDefinitionId}` · `POST /custom-fields/{customFieldDefinitionId}/archive` | `custom-field.definition.*` | | org-scope definitions only; industry ones read-only |
+| `GET /custom-fields?entityType=&offeringKind=&page=&limit=` · `POST /custom-fields` · `PATCH /custom-fields/{customFieldDefinitionId}` · `POST /custom-fields/{customFieldDefinitionId}/archive` · `PATCH /custom-fields/preferences` | `custom-field.definition.*` | | effective list: industry fields (read-only) then active organization fields; an entity no effective module declares is `404`; writes need the permission at ALL locations; duplicate key `409`; 51st active organization field `422 CUSTOM_FIELD_LIMIT`; hiding a required industry field `422 CUSTOM_FIELD_REQUIRED` |
 | `GET /audit-logs` | `audit.log.read` | | needs the permission at ALL locations (else `403`); filters: entityType, entityId, actor, date |
 | `POST /files` (multipart or signed upload) · `GET /files/{fileId}` | any member with a write permission on the owner entity | I | returns `FileResponse`; storage path `org/{organizationId}/…` |
 
