@@ -15,7 +15,10 @@ describe("buildPermissionCatalog", () => {
     const catalog = buildPermissionCatalog([iamManifest, organizationManifest, auditManifest]);
 
     const keys = catalog.all().map((definition) => definition.permissionKey);
-    expect(keys.sort()).toEqual(Object.values(PERMISSION_KEY).sort());
+    const manifestKeys = [iamManifest, organizationManifest, auditManifest].flatMap((manifest) =>
+      manifest.permissions.map((permission) => permission.permissionKey),
+    );
+    expect(keys.sort()).toEqual(manifestKeys.sort());
     expect(catalog.ofModule("iam")).toHaveLength(4);
     expect(catalog.has("iam.role.read")).toBe(true);
     expect(catalog.has("sales.order.read")).toBe(false);

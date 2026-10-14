@@ -317,6 +317,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
     });
     expect(response.body.data.modules).toEqual([
       "audit",
+      "custom-field",
       "iam",
       "organization",
       "settings",
@@ -355,6 +356,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
     expect(response.status).toBe(200);
     expect(response.body.data.permissions.allLocations).toEqual([
       PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
+      PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_READ,
     ]);
     expect(
       response.body.data.menu.map((entry: { permissionKey: string }) => entry.permissionKey),

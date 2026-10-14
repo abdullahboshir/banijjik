@@ -49,8 +49,8 @@ const BOOKING_PROBE = defineModule({
   sequenceKeys: [],
 });
 
-const RETAIL_MODULES = ["audit", "iam", "organization", "settings"];
-const SALON_MODULES = ["audit", "booking", "iam", "organization", "settings"];
+const RETAIL_MODULES = ["audit", "custom-field", "iam", "organization", "settings"];
+const SALON_MODULES = ["audit", "booking", "custom-field", "iam", "organization", "settings"];
 
 let harness: IamApiHarness;
 let issuedSlugs = 0;
