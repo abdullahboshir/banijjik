@@ -5,6 +5,7 @@ import type {
 } from "@banijjik/contracts";
 import type { OrganizationId, UserId } from "@banijjik/ids";
 import { CustomFieldPreference } from "../../domain/custom-field-preference.entity.js";
+import type { FieldSlot } from "../ports/custom-field-ports.js";
 import { recordNotFound, requiredFieldHidden, versionConflict } from "../../domain/errors.js";
 import { preferenceAuditFields } from "../custom-field-audit-fields.js";
 import type { AuditFields } from "../../../../../kernel/audit/index.js";
@@ -33,6 +34,11 @@ interface SavedPreferenceRow {
   readonly preference: CustomFieldPreference;
 }
 
+interface PreferenceSaveContext {
+  readonly industryFields: readonly IndustryTemplateCustomField[];
+  readonly existing: ReadonlyMap<string, CustomFieldPreference>;
+}
+
 /** Each changed row is one audit entry and one event. The batch bumps configVersion once. */
 export class UpdateCustomFieldPreferencesUseCase {
   constructor(private readonly dependencies: CustomFieldWriteDependencies) {}
@@ -43,9 +49,10 @@ export class UpdateCustomFieldPreferencesUseCase {
 
   private async update(input: UpdatePreferencesInput): Promise<readonly SavedPreference[]> {
     const industryFields = await this.dependencies.industry.forOrganization(input.organizationId);
+    const existing = indexBySlot(await this.dependencies.preferences.findMany(input.preferences));
     const saved: SavedPreferenceRow[] = [];
     for (const change of input.preferences) {
-      saved.push(await this.saveOne(input, change, industryFields));
+      saved.push(await this.saveOne(input, change, { industryFields, existing }));
     }
     await this.recordRows(input, saved);
     await this.dependencies.configVersion.bump(input.organizationId);
@@ -55,12 +62,12 @@ export class UpdateCustomFieldPreferencesUseCase {
   private async saveOne(
     input: UpdatePreferencesInput,
     change: CustomFieldPreferenceChange,
-    industryFields: readonly IndustryTemplateCustomField[],
+    context: PreferenceSaveContext,
   ): Promise<SavedPreferenceRow> {
-    const field = findIndustryField(industryFields, change);
+    const field = findIndustryField(context.industryFields, change);
     if (field === undefined) throw recordNotFound();
     if (change.isHidden === true && field.isRequired) throw requiredFieldHidden();
-    const existing = await this.dependencies.preferences.find(change);
+    const existing = context.existing.get(slotKey(change));
     if (existing === undefined) {
       return { before: {}, preference: await this.insertPreference(input, change) };
     }
@@ -117,6 +124,16 @@ export class UpdateCustomFieldPreferencesUseCase {
       });
     }
   }
+}
+
+function slotKey(slot: FieldSlot): string {
+  return `${slot.entityType}\u0000${slot.offeringKind ?? ""}\u0000${slot.fieldKey}`;
+}
+
+function indexBySlot(
+  preferences: readonly CustomFieldPreference[],
+): Map<string, CustomFieldPreference> {
+  return new Map(preferences.map((preference) => [slotKey(preference), preference]));
 }
 
 function findIndustryField(

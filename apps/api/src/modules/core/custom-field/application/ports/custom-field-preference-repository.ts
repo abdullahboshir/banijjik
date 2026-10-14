@@ -5,6 +5,7 @@ import type { FieldSlot } from "./custom-field-ports.js";
 
 export interface CustomFieldPreferenceRepository {
   find(slot: FieldSlot): Promise<CustomFieldPreference | undefined>;
+  findMany(slots: readonly FieldSlot[]): Promise<readonly CustomFieldPreference[]>;
   listFor(
     entityType: CustomFieldEntityType,
     offeringKind: OfferingKind | undefined,

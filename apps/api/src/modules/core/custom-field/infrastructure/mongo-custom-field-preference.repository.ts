@@ -45,6 +45,14 @@ export class MongoCustomFieldPreferenceRepository implements CustomFieldPreferen
     }
   }
 
+  async findMany(slots: readonly FieldSlot[]): Promise<readonly CustomFieldPreference[]> {
+    if (slots.length === 0) return [];
+    const documents = await this.model()
+      .find({ $or: slots.map(slotFilter) }, null, sessionOption(getActiveSession()))
+      .lean<CustomFieldPreferenceDocument[]>();
+    return documents.map(toCustomFieldPreference);
+  }
+
   async find(slot: FieldSlot): Promise<CustomFieldPreference | undefined> {
     const document = await this.model()
       .findOne(slotFilter(slot), null, sessionOption(getActiveSession()))
