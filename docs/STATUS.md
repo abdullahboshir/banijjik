@@ -80,7 +80,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 ## Phase 2
 | Card | Status | Note |
 |---|---|---|
-| 2.1a industry templates: model, seeds, real reader, signup check | planned (2026-10-13 on e2817c8, `docs/plans/2.1a.md`, Opus; T1, implement with Cursor) | template keys become data (ADR-097 proposed); replaces the interim template reader of 1.6a |
+| 2.1a industry templates: model, seeds, real reader, signup check | implemented (awaiting review) | branch `s/2.1a-industry-templates`; handoff `docs/handoffs/2.1a.md`; ADR-097 proposed. Closes the 1.6a interim template reader (allow-all). Not merged, not pushed |
 | 2.1b industry templates: platform writes | todo | create, edit, publish, retire, change an organization's template (additive, ADR-046); planned after 2.1a |
 
 ## Phases 3–8
