@@ -95,7 +95,7 @@ Inputs: the org's `PlatformSubscription`, its base and add-on `Package`s, its `M
 
 | Key | Path | Class | Card | dependsOn | Provides kinds | Requires any kind | Tenant can disable | Owns (from `09 §6`) |
 |---|---|---|---|---|---|---|---|---|
-| `industry` | platform/industry | PLATFORM | 2.1 | `package` | | | | IndustryTemplate |
+| `industry` | platform/industry | PLATFORM | 2.1 | `package` | | | | IndustryTemplate (stored shape `12 §1`; seeds live in the module, card 2.1a) |
 | `package` | platform/package | PLATFORM | 1.6 | | | | | Package |
 | `entitlement` | platform/entitlement | PLATFORM | 1.6 | `package` | | | | ModuleOverride, resolver |
 | `saas-billing` | platform/saas-billing | PLATFORM | 1.6 / 6.2 | `package` | | | | PlatformSubscription, platform invoices |

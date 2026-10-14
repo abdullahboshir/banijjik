@@ -89,7 +89,8 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | `POST /auth/password/forgot` · `POST /auth/password/reset` | public | | token from email/SMS (random secret) |
 | `GET /me` · `PATCH /me` | user | | `MeResponse` (user, preferredLocale) |
 | `GET /me/orgs` | user | | `MyOrganizationSummary[]` (id, slug, name, role keys, status) |
-| `POST /me/orgs` | user (verified identifier) | I | `OrganizationCreateRequest` (name, slug, industryTemplateKey, packageKey/trial, district) → org + location + roles + owner member + trial subscription (card 1.2 / 1.6 / 6.1) |
+| `POST /me/orgs` | user (verified identifier) | I | `OrganizationCreateRequest` (name, slug, industryTemplateKey, packageKey/trial, district) → org + location + roles + owner member + trial subscription (card 1.2 / 1.6 / 6.1). A well-formed key that is unknown, DRAFT or RETIRED is `422 INDUSTRY_TEMPLATE_NOT_AVAILABLE` (card 2.1a) |
+| `GET /industry-templates` | signed-in admin user | | Published templates only, ordered by key, both languages, hard cap 100 (card 2.1a). Not in the tenant pipeline. A platform-operator cookie is 401 |
 | `GET /orgs/{organizationId}/me/config` | member | | `ResolvedOrgConfigResponse` (modules, kinds, menu, terms, settings subset, limits, accessMode, permissions at each location) |
 | `POST /orgs/{organizationId}/me/approval-pin` | member with `sales.approval.grant` | | set/change own PIN |
 | `POST /orgs/{organizationId}/approvals` | member with `sales.approval.grant` (PIN on the same device) | | `ApprovalGrantRequest { action, requestId, amount, pin }` → `{ approvalToken, expiresAt }` |
@@ -247,7 +248,7 @@ Permissions `platform.<module>.<action>` from `PlatformOperator.platformRoles` (
 | Entitlements | `GET/POST /platform/organizations/{organizationId}/module-overrides`, `DELETE …/module-overrides/{moduleOverrideId}` |
 | Packages | CRUD `/platform/packages[/{packageId}]` (save-time closure validation, `10 §3`) |
 | Subscriptions | `GET /platform/organizations/{organizationId}/subscription`, `POST …/subscription/change-package`, `POST …/subscription/extend-trial` |
-| Industry templates | CRUD `/platform/industry-templates[/{industryTemplateId}]`, `POST …/publish` · `/retire`, field definitions (scope INDUSTRY) under `…/{industryTemplateId}/custom-fields` |
+| Industry templates | `GET /platform/industry-templates` (paged, optional `status`, ordered by key) and `GET …/{industryTemplateId}` (the template including `configuration`; unknown id is 404). Permission `platform.industry.read` (SUPER_ADMIN, SUPPORT, BILLING). Writes (create, edit, publish, retire, change an organization's template) are card 2.1b; `platform.industry.write` is defined for that card |
 | Website templates | CRUD `/platform/website-templates[/{websiteTemplateId}]`, `POST …/publish` |
 | Operators | `GET /platform/operators` (optional `status`), `GET /platform/operators/{platformOperatorId}`, `POST /platform/operators` `{ identifier, platformRoles, reason }`, `PATCH …/{platformOperatorId}` `{ platformRoles, version, reason }`, `POST …/disable` and `POST …/enable` `{ version, reason }`. SUPER_ADMIN only. No delete: disable keeps the row. |
 | Health & ops | `GET /platform/system/health`, `GET /platform/system/queues`, `GET /platform/system/errors` |
