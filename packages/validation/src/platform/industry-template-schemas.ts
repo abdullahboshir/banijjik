@@ -46,6 +46,8 @@ const customFieldSchema = z.strictObject({
   isSearchable: z.boolean(),
   isSensitive: z.boolean(),
   options: z.array(z.string().trim().min(1).max(OPTION_MAX)).optional(),
+  label: localizedTextSchema.optional(),
+  optionLabels: z.record(z.string().trim().min(1).max(OPTION_MAX), localizedTextSchema).optional(),
   referenceEntity: z.enum(["contact", "member"]).optional(),
   link: contactLinkSchema.optional(),
 });
@@ -75,6 +77,7 @@ interface FieldShape {
   readonly entityType: string;
   readonly offeringKind?: string | undefined;
   readonly options?: readonly string[] | undefined;
+  readonly optionLabels?: Readonly<Record<string, unknown>> | undefined;
   readonly referenceEntity?: string | undefined;
   readonly link?: unknown;
 }
@@ -90,6 +93,14 @@ function customFieldIsConsistent(field: FieldShape): boolean {
     return false;
   if (field.entityType === "offering") return field.offeringKind !== undefined;
   return field.offeringKind === undefined;
+}
+
+function optionLabelsMatch(field: FieldShape): boolean {
+  if (field.optionLabels === undefined) return true;
+  const options = field.options ?? [];
+  const keys = Object.keys(field.optionLabels);
+  if (keys.length !== options.length) return false;
+  return options.every((option) => field.optionLabels?.[option] !== undefined);
 }
 
 function linkMatchesReference(field: FieldShape): boolean {
@@ -131,6 +142,7 @@ export const industryTemplateConfigurationSchema = z
     { path: ["resourceTypes"] },
   )
   .refine((value) => value.customFields.every(customFieldIsConsistent), { path: ["customFields"] })
+  .refine((value) => value.customFields.every(optionLabelsMatch), { path: ["customFields"] })
   .refine((value) => value.customFields.every(linkMatchesReference), { path: ["customFields"] })
   .refine(
     (value) =>

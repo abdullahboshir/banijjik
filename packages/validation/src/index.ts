@@ -108,3 +108,36 @@ export type {
   IndustryTemplateSeed,
   PlatformIndustryTemplateListQuery,
 } from "./platform/industry-template-schemas.js";
+export { buildCustomFieldValuesSchema } from "./custom-field/build-custom-field-values-schema.js";
+export {
+  CUSTOM_FIELD_AUDIENCE,
+  CUSTOM_FIELD_VALUE_MODE,
+  isVisibleTo,
+} from "./custom-field/custom-field-rule.js";
+export type {
+  CustomFieldAudience,
+  CustomFieldRule,
+  CustomFieldValueMode,
+  CustomFieldValuesOptions,
+} from "./custom-field/custom-field-rule.js";
+export { redactSensitive, toSearchEntries } from "./custom-field/custom-field-helpers.js";
+export {
+  CUSTOM_FIELD_DECIMAL_PATTERN,
+  CUSTOM_FIELD_LONG_TEXT_MAX_LENGTH,
+  CUSTOM_FIELD_MULTI_SELECT_MAX,
+  CUSTOM_FIELD_TEXT_MAX_LENGTH,
+  CUSTOM_FIELD_URL_MAX_LENGTH,
+  isRealCalendarDay,
+} from "./custom-field/custom-field-limits.js";
+export {
+  customFieldArchiveRequestSchema,
+  customFieldDefinitionCreateRequestSchema,
+  customFieldDefinitionParamsSchema,
+  customFieldDefinitionUpdateRequestSchema,
+  customFieldListQuerySchema,
+  customFieldPreferenceBatchRequestSchema,
+  toCustomFieldArchiveRequest,
+  toCustomFieldListQuery,
+  toCustomFieldPreferenceBatch,
+  toCustomFieldUpdateRequest,
+} from "./custom-field/custom-field-request-schemas.js";
