@@ -5,6 +5,7 @@ import { Button, FormField, TextInput } from "@banijjik/ui";
 import { useState, type ReactElement } from "react";
 import { IndustrySection } from "./industry-section";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
+import { writeConfiguration } from "./write-configuration";
 import type { TemplatePatch } from "./use-template-save";
 
 interface TermRow {
@@ -27,19 +28,21 @@ function recordOf(rows: readonly TermRow[]): Record<string, LocalizedText> {
   return Object.fromEntries(rows.map((row) => [row.key, { bn: row.bn, en: row.en }]));
 }
 
+interface TermsSectionProps {
+  configuration: IndustryTemplateConfiguration;
+  canWrite: boolean;
+  refusesRemoval: boolean;
+  labels: IndustryLabels;
+  onSave: (patch: TemplatePatch) => void;
+}
+
 export function TermsSection({
   configuration,
   canWrite,
   refusesRemoval,
   labels,
   onSave,
-}: {
-  configuration: IndustryTemplateConfiguration;
-  canWrite: boolean;
-  refusesRemoval: boolean;
-  labels: IndustryLabels;
-  onSave: (patch: TemplatePatch) => void;
-}): ReactElement {
+}: TermsSectionProps): ReactElement {
   const t = labelsTranslator(labels);
   const [rows, setRows] = useState<TermRow[]>(() => rowsOf(configuration.terms));
   const [key, setKey] = useState("");
@@ -83,7 +86,11 @@ export function TermsSection({
           onBn={setBn}
           onEn={setEn}
           onAdd={addTerm}
-          onSave={() => onSave({ configuration: { ...configuration, terms: recordOf(rows) } })}
+          onSave={() =>
+            onSave({
+              configuration: writeConfiguration({ ...configuration, terms: recordOf(rows) }),
+            })
+          }
         />
       ) : null}
     </IndustrySection>

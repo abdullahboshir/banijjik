@@ -103,9 +103,32 @@ export const changeIndustryTemplateRequestSchema = z.strictObject({
 
 export type ChangeIndustryTemplateBody = z.output<typeof changeIndustryTemplateRequestSchema>;
 
-/** The schema output is the contracts configuration. A mismatch fails this assignment. */
+function listed<Item>(values: readonly Item[]): Item[] {
+  return [...values];
+}
+
+/**
+ * Copies a stored configuration into the shape a create or PATCH body accepts.
+ * The schema parse is the copy: the result is the write schema's output, not a cast.
+ */
 export function toIndustryTemplateWriteConfiguration(
-  value: z.output<typeof industryTemplateConfigurationSchema>,
-): IndustryTemplateConfiguration {
-  return value;
+  configuration: IndustryTemplateConfiguration,
+): z.output<typeof industryTemplateConfigurationSchema> {
+  return industryTemplateConfigurationSchema.parse({
+    contactRoleKeys: listed(configuration.contactRoleKeys),
+    relationKeys: listed(configuration.relationKeys),
+    resourceTypes: listed(configuration.resourceTypes),
+    terms: { ...configuration.terms },
+    customFields: listed(configuration.customFields),
+    settingsDefaults: { ...configuration.settingsDefaults },
+    ...(configuration.modifierGroupsSeed === undefined
+      ? {}
+      : { modifierGroupsSeed: listed(configuration.modifierGroupsSeed) }),
+    knowledgeSeed: listed(configuration.knowledgeSeed),
+    websiteTemplateKeys: listed(configuration.websiteTemplateKeys),
+    botDefaults: {
+      personaKey: configuration.botDefaults.personaKey,
+      handoffTopics: listed(configuration.botDefaults.handoffTopics),
+    },
+  });
 }

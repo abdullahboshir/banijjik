@@ -8,6 +8,7 @@ import { Button, FormField, Textarea, TextInput } from "@banijjik/ui";
 import { useState, type ReactElement } from "react";
 import { IndustrySection } from "./industry-section";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
+import { writeConfiguration } from "./write-configuration";
 import type { TemplatePatch } from "./use-template-save";
 
 function linesOf(value: string): string[] {
@@ -38,12 +39,12 @@ export function BotSection({
 
   function save(): void {
     onSave({
-      configuration: {
+      configuration: writeConfiguration({
         ...configuration,
         botDefaults: { personaKey, handoffTopics: linesOf(handoff) },
         websiteTemplateKeys: linesOf(websites),
         knowledgeSeed: starters,
-      },
+      }),
     });
   }
 

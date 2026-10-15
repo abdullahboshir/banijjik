@@ -72,7 +72,8 @@ function IndustryTemplateField(props: {
   templates: readonly IndustryTemplateOption[];
   value: string;
   onChange: (value: string) => void;
-}): ReactElement {
+}): ReactElement | null {
+  if (props.label === undefined) return null;
   return (
     <FormField label={props.label} htmlFor="change-industry-template">
       <Select

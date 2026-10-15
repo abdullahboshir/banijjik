@@ -12,6 +12,7 @@ import { emptyCustomField } from "./empty-custom-field";
 import type { FieldEditorSheetProps } from "./field-editor-sheet";
 import { IndustrySection } from "./industry-section";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
+import { writeConfiguration } from "./write-configuration";
 import type { TemplatePatch } from "./use-template-save";
 
 interface EditorTarget {
@@ -76,7 +77,9 @@ export function FieldsSection(props: FieldsSectionProps): ReactElement {
         addLabel={t("platform.industry.action.addField")}
         saveLabel={t("platform.industry.action.save")}
         onAdd={() => setTarget({ field: emptyCustomField(), isExisting: false })}
-        onSave={() => onSave({ configuration: { ...configuration, customFields: fields } })}
+        onSave={() =>
+          onSave({ configuration: writeConfiguration({ ...configuration, customFields: fields }) })
+        }
         sheet={
           Sheet && target ? (
             <Sheet

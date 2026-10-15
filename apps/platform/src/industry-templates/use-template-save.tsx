@@ -25,7 +25,12 @@ export function useTemplateSave(
   labels: IndustryLabels,
   saveWithReason: (reason: string, patch: TemplatePatch | undefined) => Promise<unknown>,
 ): {
-  requestSave: (pending: Omit<PendingSave, "save"> & { patch?: TemplatePatch }) => void;
+  requestSave: (
+    pending: Omit<PendingSave, "save"> & {
+      patch?: TemplatePatch;
+      save?: (reason: string) => Promise<unknown>;
+    },
+  ) => void;
   sheet: ReactElement | null;
 } {
   const [pending, setPending] = useState<PendingSave | undefined>();

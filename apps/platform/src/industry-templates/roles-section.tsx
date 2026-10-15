@@ -12,6 +12,7 @@ import { Button, Checkbox, FormField, TextInput } from "@banijjik/ui";
 import { useState, type ReactElement } from "react";
 import { IndustrySection } from "./industry-section";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
+import { writeConfiguration } from "./write-configuration";
 import type { TemplatePatch } from "./use-template-save";
 
 function ChoiceList<Value extends string>(props: {
@@ -96,12 +97,12 @@ export function RolesSection(props: RolesSectionProps): ReactElement {
           id="save-roles"
           onClick={() =>
             props.onSave({
-              configuration: {
+              configuration: writeConfiguration({
                 ...props.configuration,
                 contactRoleKeys: roles,
                 relationKeys: relations,
                 resourceTypes: resources,
-              },
+              }),
             })
           }
         >

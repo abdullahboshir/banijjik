@@ -9,6 +9,7 @@ import { Button, Checkbox, FormField, Select, TextInput } from "@banijjik/ui";
 import { useState, type ReactElement } from "react";
 import { IndustrySection } from "./industry-section";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
+import { writeConfiguration } from "./write-configuration";
 import { isSettingReadOnly, parseSettingText } from "./setting-input";
 import type { TemplatePatch } from "./use-template-save";
 
@@ -87,7 +88,7 @@ export function SettingsSection({
       if (stored !== undefined) settingsDefaults[definition.settingKey] = stored;
     }
     setInvalid(false);
-    onSave({ configuration: { ...configuration, settingsDefaults } });
+    onSave({ configuration: writeConfiguration({ ...configuration, settingsDefaults }) });
   }
 
   return (
