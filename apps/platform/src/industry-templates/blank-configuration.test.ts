@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { customFieldIsValid, emptyCustomField } from "./blank-configuration";
+import { emptyCustomField } from "./blank-configuration";
+import { customFieldIsValid } from "./custom-field-is-valid";
 
 function field(override: object) {
   return { ...emptyCustomField(), label: { bn: "লেবেল", en: "Label" }, ...override };

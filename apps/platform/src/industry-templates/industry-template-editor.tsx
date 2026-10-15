@@ -5,11 +5,17 @@ import type {
   PlatformSettingDefinition,
 } from "@banijjik/contracts";
 import { Button } from "@banijjik/ui";
-import type { ReactElement } from "react";
+import { useLazyComponent } from "@banijjik/web-client/client";
+import { type ComponentType, type ReactElement } from "react";
 import { useEditorActions } from "./editor-actions";
-import { EditorSections } from "./editor-sections";
+import type { EditorSectionsProps } from "./editor-sections";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
 import { templateRefusesRemoval, templateStatusActions } from "./template-status";
+
+async function loadSections(): Promise<ComponentType<EditorSectionsProps>> {
+  const loaded = await import("./editor-sections");
+  return loaded.EditorSections;
+}
 
 export function IndustryTemplateEditor({
   template,
@@ -28,6 +34,7 @@ export function IndustryTemplateEditor({
   const refusesRemoval = templateRefusesRemoval(template.status);
   const actions = templateStatusActions(template.status, canWrite);
   const { savePatch, saveStatus, sheet } = useEditorActions(template, labels);
+  const Sections = useLazyComponent(loadSections, true);
   return (
     <div className="flex flex-col gap-3">
       {refusesRemoval ? (
@@ -50,15 +57,17 @@ export function IndustryTemplateEditor({
           </Button>
         ))}
       </div>
-      <EditorSections
-        template={template}
-        definitions={definitions}
-        canWrite={canWrite}
-        refusesRemoval={refusesRemoval}
-        labels={labels}
-        locale={locale}
-        onSave={savePatch}
-      />
+      {Sections === null ? null : (
+        <Sections
+          template={template}
+          definitions={definitions}
+          canWrite={canWrite}
+          refusesRemoval={refusesRemoval}
+          labels={labels}
+          locale={locale}
+          onSave={savePatch}
+        />
+      )}
       {sheet}
     </div>
   );

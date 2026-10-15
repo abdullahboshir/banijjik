@@ -15,11 +15,11 @@ import type {
   PlatformIndustryTemplateDetail,
   PlatformIndustryTemplateSummary,
   PlatformSettingDefinition,
+  IndustryTemplateCreateRequest,
 } from "@banijjik/contracts";
 import {
   platformOperatorCreateRequestSchema,
   type ChangeIndustryTemplateBody,
-  type IndustryTemplateCreateBody,
   type IndustryTemplateStatusBody,
   type IndustryTemplateUpdateBody,
   type PlatformOperatorStatusBody,
@@ -169,7 +169,7 @@ export async function archivePackage(
 }
 
 export async function createIndustryTemplate(
-  request: IndustryTemplateCreateBody,
+  request: IndustryTemplateCreateRequest,
 ): Promise<PlatformIndustryTemplateDetail> {
   const result = await apiFetch<PlatformIndustryTemplateDetail>("/platform/industry-templates", {
     method: "POST",

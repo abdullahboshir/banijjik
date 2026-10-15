@@ -1,9 +1,4 @@
-import {
-  OFFERING_KIND,
-  type IndustryTemplateConfiguration,
-  type IndustryTemplateCustomField,
-} from "@banijjik/contracts";
-import { industryTemplateConfigurationSchema } from "@banijjik/validation";
+import { OFFERING_KIND, type IndustryTemplateConfiguration } from "@banijjik/contracts";
 import { emptyCustomField } from "./empty-custom-field";
 
 export { emptyCustomField };
@@ -25,9 +20,3 @@ export function blankIndustryConfiguration(): IndustryTemplateConfiguration {
 
 export const BLANK_ENABLED_KINDS = [OFFERING_KIND.PRODUCT] as const;
 export const BLANK_MODULE_KEYS = ["catalog"] as const;
-
-/** True when this one field would pass the same schema the API uses for a template configuration. */
-export function customFieldIsValid(field: IndustryTemplateCustomField): boolean {
-  const configuration = { ...blankIndustryConfiguration(), customFields: [field] };
-  return industryTemplateConfigurationSchema.safeParse(configuration).success;
-}

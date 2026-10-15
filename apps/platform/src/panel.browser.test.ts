@@ -30,7 +30,9 @@ import {
   waitForButton,
   waitForDialogClosed,
   waitForDialogSettled,
+  waitForHydration,
   waitForText,
+  waitForToastsGone,
 } from "./test-support/browser-page";
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "./test-support/initial-js-size";
 import {
@@ -415,9 +417,12 @@ describe("building an industry from the panel", () => {
     await page.select("#template-clone", retailId);
     await page.type("#template-reason", "বেকারি কপি");
     await page.click("form button[type=submit]");
-    await page.waitForFunction(() =>
-      /^\/industry-templates\/[^/]+$/.test(window.location.pathname),
+    await page.waitForFunction(
+      () =>
+        /^\/industry-templates\/[^/]+$/.test(window.location.pathname) &&
+        !window.location.pathname.endsWith("/new"),
     );
+    await page.waitForSelector("#add-field");
     const templatePath = new URL(page.url()).pathname;
 
     await page.click("#add-field");
@@ -443,9 +448,9 @@ describe("building an industry from the panel", () => {
     await page.type("#template-save-reason", "প্রকাশ");
     await page.click(SUBMIT_IN_DIALOG);
     await waitForDialogClosed(page);
-    expect(await bodyText(page)).toContain(
-      banglaText("platform.status.industryTemplate.PUBLISHED"),
-    );
+    await waitForText(page, banglaText("platform.status.industryTemplate.PUBLISHED"));
+    await waitForToastsGone(page);
+    await waitForHydration(page, "#save-kinds");
 
     const baker = await seedPerson("বেকারি মালিক");
     const bakeryId = await seedOrganization(baker, `bakery-${newId().slice(-8)}`, {
@@ -472,7 +477,7 @@ describe("building an industry from the panel", () => {
     await page.type("#change-industry-reason", "বেকারিতে নেওয়া");
     await page.click(SUBMIT_IN_DIALOG);
     await waitForDialogClosed(page);
-    expect(await bodyText(page)).toContain("BAKERY");
+    await waitForText(page, "BAKERY");
 
     const support = await seedPerson("সাপোর্ট ব্যক্তি");
     await page.goto(`${PLATFORM_ORIGIN}/operators`, { waitUntil: "networkidle0" });
@@ -507,4 +512,7 @@ async function saveSection(page: Page, buttonId: string, reason: string): Promis
   await page.type("#template-save-reason", reason);
   await page.click(SUBMIT_IN_DIALOG);
   await waitForDialogClosed(page);
+  await waitForToastsGone(page);
+  await page.waitForNetworkIdle({ idleTime: 300, timeout: 15_000 });
+  await waitForHydration(page, buttonId);
 }

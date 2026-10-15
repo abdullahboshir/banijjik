@@ -15,7 +15,7 @@ import { SettingsSection } from "./settings-section";
 import { TermsSection } from "./terms-section";
 import type { TemplatePatch } from "./use-template-save";
 
-interface SectionProps {
+export interface EditorSectionsProps {
   template: PlatformIndustryTemplateDetail;
   definitions: readonly PlatformSettingDefinition[];
   canWrite: boolean;
@@ -26,7 +26,7 @@ interface SectionProps {
 }
 
 /** The collapsible sections of one template. Each one saves through the same reason sheet. */
-export function EditorSections(props: SectionProps): ReactElement {
+export function EditorSections(props: EditorSectionsProps): ReactElement {
   return (
     <>
       <CatalogSections {...props} />
@@ -35,7 +35,7 @@ export function EditorSections(props: SectionProps): ReactElement {
   );
 }
 
-function CatalogSections(props: SectionProps): ReactElement {
+function CatalogSections(props: EditorSectionsProps): ReactElement {
   const { template, canWrite, refusesRemoval, labels, onSave } = props;
   return (
     <>
@@ -66,7 +66,7 @@ function CatalogSections(props: SectionProps): ReactElement {
   );
 }
 
-function OperationsSections(props: SectionProps): ReactElement {
+function OperationsSections(props: EditorSectionsProps): ReactElement {
   const { template, canWrite, labels, onSave } = props;
   return (
     <>

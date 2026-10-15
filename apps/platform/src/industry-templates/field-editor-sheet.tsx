@@ -5,7 +5,7 @@ import { FieldFlagFields, FieldIdentityFields, OptionFields } from "./field-edit
 import { ReferenceFields } from "./field-reference-fields";
 import { useState, type ReactElement } from "react";
 import { FormSheet } from "../forms/form-sheet";
-import { customFieldIsValid } from "./blank-configuration";
+import { customFieldIsValid } from "./custom-field-is-valid";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
 
 const SELECT_TYPES: readonly string[] = [CUSTOM_FIELD_TYPE.SELECT, CUSTOM_FIELD_TYPE.MULTI_SELECT];

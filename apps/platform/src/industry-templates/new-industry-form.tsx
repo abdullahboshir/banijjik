@@ -3,7 +3,6 @@
 import type { PlatformIndustryTemplateSummary } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
 import { useTranslator } from "@banijjik/web-client/client";
-import { industryTemplateCreateRequestSchema } from "@banijjik/validation";
 import { Button, FormField, Select, TextInput, Textarea } from "@banijjik/ui";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactElement } from "react";
@@ -61,12 +60,8 @@ export function NewIndustryForm(props: {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const parsed = industryTemplateCreateRequestSchema.safeParse(
-      createBody({ ...draft, source: draft.source }),
-    );
-    if (!parsed.success) return;
     const created = await submit.run(async () => {
-      const detail = await createIndustryTemplate(parsed.data);
+      const detail = await createIndustryTemplate(createBody({ ...draft, source: draft.source }));
       await announceSuccess(t("platform.industry.created"));
       router.push(`/industry-templates/${detail.industryTemplateId}`);
     });
