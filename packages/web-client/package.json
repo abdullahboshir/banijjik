@@ -36,6 +36,7 @@
     "@banijjik/contracts": "*",
     "@banijjik/i18n": "*",
     "@banijjik/ui": "*",
+    "@banijjik/validation": "*",
     "zod": "^4.0.0"
   },
   "devDependencies": {

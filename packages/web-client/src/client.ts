@@ -10,3 +10,9 @@ export type { SessionRenewalProps } from "./session-renewal.js";
 export { ShellLink } from "./shell-link.js";
 export { useLazyComponent } from "./use-lazy-component.js";
 export { useLocaleChange } from "./use-locale-change.js";
+export {
+  toFieldDescriptors,
+  toRequestValues,
+  validateCustomFieldValues,
+} from "./custom-field-form.js";
+export type { CustomFieldFormModel } from "./custom-field-form.js";

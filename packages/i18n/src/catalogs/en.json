@@ -192,5 +192,7 @@
   "errors.setting_not_location_scoped": "This setting cannot be different at a location.",
   "errors.industry_template_key_taken": "This industry template key is already in use.",
   "errors.industry_template_change_not_additive": "This change would remove something an organization can already have. Only additions are allowed.",
-  "errors.industry_template_status_invalid": "This template cannot move to that status."
+  "errors.industry_template_status_invalid": "This template cannot move to that status.",
+  "form.field.notEditableHere": "This field cannot be edited here",
+  "form.field.choose": "Choose"
 }
