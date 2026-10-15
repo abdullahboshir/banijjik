@@ -189,8 +189,8 @@ export const restrictionBlocks = [
     rules: { "banijjik-guard/no-industry-branching": [ERROR, ...industrySelectors] },
   },
   {
-    // Later blocks win per rule, so inside core/organization this replaces the list above with the
-    // comparison selectors only. The module's infrastructure and tests stay full readers (ignores).
+    // Later blocks win per rule, so a key owner replaces the list above with the comparison
+    // selectors only. Infrastructure and tests stay full readers (ignores).
     name: "banijjik/industry-branching-key-owner",
     files: INDUSTRY_KEY_OWNER_FILES,
     ignores: INDUSTRY_READER_FILES,

@@ -148,6 +148,8 @@ export const FIXTURE_EXPECTATIONS: FixtureExpectation[] = [
   passes("R16", `${ORGANIZATION}/domain/r16-industry-key-stored.pass.ts`),
   fails("R16", `${ORGANIZATION}/domain/r16-industry-key-compared.fail.ts`, INDUSTRY),
   fails("R16", `${ORGANIZATION}/application/r16-industry-key-switch.fail.ts`, INDUSTRY),
+  passes("R16", "apps/platform/src/industry-templates/r16-industry-key-named.pass.ts"),
+  fails("R16", "apps/platform/src/industry-templates/r16-industry-key-compared.fail.ts", INDUSTRY),
   fails("R16", `${SALES}/application/r16-industry-key-outside-organization.fail.ts`, INDUSTRY),
   ...READERS.map((folder) => passes("R16", `${folder}/r16-industry-reader-allowed.pass.ts`)),
 

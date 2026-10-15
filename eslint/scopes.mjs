@@ -49,7 +49,15 @@ export const BRAND_SCOPE_FILES = [
 ];
 
 // ADR-082: core/organization owns the industry key (09 section 4.2), so it may name the field but not branch on it.
-export const INDUSTRY_KEY_OWNER_FILES = ["**/modules/core/organization/**"];
+// These files may name industryTemplateKey. Comparison selectors still apply (ADR-033, ADR-106).
+export const INDUSTRY_KEY_OWNER_FILES = [
+  "**/modules/core/organization/**",
+  "apps/platform/src/industry-templates/**",
+  "apps/platform/src/tenants/change-industry-sheet.tsx",
+  "apps/platform/src/tenants/tenant-action-labels.ts",
+  "apps/platform/src/tenants/tenant-detail-page.tsx",
+  "apps/platform/src/test-support/browser-stack.ts",
+];
 
 // ADR-033 / ADR-082: the only places allowed to read the organization's industry key.
 export const INDUSTRY_READER_FILES = [
@@ -58,11 +66,5 @@ export const INDUSTRY_READER_FILES = [
   "**/modules/core/organization/infrastructure/**",
   "**/packages/contracts/**",
   "**/packages/validation/**",
-  // The platform panel builds templates and moves a tenant onto one (card 2.6). It names the key; it does not branch on it.
-  "apps/platform/src/industry-templates/**",
-  "apps/platform/src/tenants/change-industry-sheet.tsx",
-  "apps/platform/src/tenants/tenant-action-labels.ts",
-  "apps/platform/src/tenants/tenant-detail-page.tsx",
-  "apps/platform/src/test-support/browser-stack.ts",
   ...TEST_FILES,
 ];

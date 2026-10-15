@@ -14,9 +14,8 @@ const INDUSTRY_MESSAGE =
   "Feature code must not branch on industry; ask resolveOrgConfig instead (ADR-033).";
 
 /**
- * Comparisons, switches, list lookups and computed keys on an industry value. The module that owns
- * the key (core/organization, 09 section 4.2) is held to these only, because it must carry the
- * field through its layers (ADR-082).
+ * Comparisons, switches, list lookups and computed keys on an industry value. A key owner
+ * (core/organization, and the platform template screens in ADR-106) is held to these only.
  */
 export const industryComparisonSelectors = syntaxRules(INDUSTRY_MESSAGE, [
   `${COMPARISON} > MemberExpression[property.name=${INDUSTRY_NAME}]`,
