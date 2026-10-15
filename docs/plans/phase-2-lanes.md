@@ -71,3 +71,21 @@ The same machine rules as wave 1 apply: **one heavy test run at a time**, and br
 2. Run turbo with `--continue`, so one failure does not hide the others.
 3. Check that Docker (Mongo 27018, Redis 6380) is running before a full run.
 4. After a rebase, search the branch's own tests for manifest fields and expected module lists the merged card changed.
+
+## Wave 3 (planned 2026-10-15 on `main 52bf49e`)
+Wave 2 merged on 2026-10-15: 2.2, 2.5. Card 2.7 is split, because the Phase 2 done-criterion ("tenants see the right forms with server-side validation") needs a real entity that stores custom field values:
+- **2.7a:** values on the business profile and on staff
+- **2.7b:** the settings, terms, fields and modules screens
+
+| Session | Cards, in order | Folder | ADR |
+|---|---|---|---|
+| 1 | **2.6** platform template, module and field builders (`docs/plans/2.6.md`) | `banijjik` | ADR-106 |
+| 2 | **2.7a** custom field values on profile and staff (`docs/plans/2.7a.md`), then **2.7b** tenant settings, terms, fields and modules screens (`docs/plans/2.7b.md`) once 2.7a is merged | `banijjik-1.7b` | ADR-107 (2.7a), ADR-108 only if needed (2.7b) |
+
+**Ownership:**
+- **2.6** works in `apps/platform`, `platform/industry` (a read API and the settings-default check), and `routes/platform.ts`.
+- **2.7a** works in `core/organization`, `apps/admin/src/{profile,staff}`, and one routes adapter.
+- **2.7b** works in `apps/admin` settings pages and the `settings` and `custom-field` manifests' menu entries.
+- Shared, add-only: the contracts and validation indexes, the i18n catalogs (platform catalogs mostly 2.6, main catalogs mostly 2.7a/b), `docs/04-DECISIONS.md`, `docs/14-API.md`, `docs/STATUS.md` (own row).
+
+The machine rules and the wave-1/2 lessons above still apply. After wave 3, Phase 2 gets its **phase review** before Phase 3 starts.
