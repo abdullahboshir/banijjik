@@ -92,6 +92,7 @@ export async function OrganizationShell(props: OrganizationShellProps): Promise<
     menu: config?.menu ?? [],
     orgSlug,
     terms: config?.terms ?? {},
+    locale: me.preferredLocale,
     t,
   });
   const banners = config ? bannerStatesOf(config, new Date(), props.timeZone ?? UTC) : [];

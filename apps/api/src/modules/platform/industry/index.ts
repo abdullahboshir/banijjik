@@ -19,6 +19,7 @@ import {
   type IndustryCustomFieldReader,
 } from "./application/use-cases/read-industry-custom-fields.use-case.js";
 import { ReadIndustrySettingDefaultsUseCase } from "./application/use-cases/read-industry-setting-defaults.use-case.js";
+import { ReadIndustryTermsUseCase } from "./application/use-cases/read-industry-terms.use-case.js";
 import { ListPlatformIndustryTemplatesUseCase } from "./application/use-cases/list-platform-industry-templates.use-case.js";
 import { ListPublishedIndustryTemplatesUseCase } from "./application/use-cases/list-published-industry-templates.use-case.js";
 import { SetIndustryTemplateStatusUseCase } from "./application/use-cases/set-industry-template-status.use-case.js";
@@ -52,6 +53,14 @@ export function buildIndustryTemplateReader(clock: Clock): IndustryTemplateReade
       ttlMilliseconds: INDUSTRY_TEMPLATE_VIEW_CACHE_TTL_MILLISECONDS,
     }),
   });
+}
+
+/** Template terms for a key the resolver already holds. Uncached (ADR-104). */
+export function buildIndustryTermsReader(): ReadIndustryTermsUseCase {
+  return new ReadIndustryTermsUseCase(
+    new MongoIndustryTemplateRepository(),
+    buildOrganizationConfigSource(),
+  );
 }
 
 /** The stored template defaults for the settings resolver. Uncached, so a test edit is visible (ADR-103). */

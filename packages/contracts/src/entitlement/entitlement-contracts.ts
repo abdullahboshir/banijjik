@@ -1,6 +1,8 @@
+import type { EffectiveCustomField } from "../custom-field/custom-field-contracts.js";
 import type { MenuEntry } from "../modules/module-manifest.js";
 import type { ModuleKey } from "../modules/module-key.js";
 import type { OfferingKind } from "../modules/offering-kind.js";
+import type { LocalizedText } from "../platform/industry-template.js";
 import type { PermissionKey } from "../iam/permission-key.js";
 import type { AccessMode } from "./access-mode.js";
 import type { LimitMap } from "./limit-key.js";
@@ -32,7 +34,7 @@ export interface PermissionDefinitionResponse {
 
 /**
  * Response of `GET /orgs/{organizationId}/me/config`: what the admin app needs to draw itself.
- * `settings` and `terms` stay empty objects until the settings module (card 2.4).
+ * `terms`, client-visible organization settings and effective fields come from one resolution (ADR-104).
  */
 export interface ResolvedOrgConfigResponse {
   readonly organizationId: string;
@@ -47,8 +49,10 @@ export interface ResolvedOrgConfigResponse {
   readonly kinds: readonly OfferingKind[];
   readonly limits: LimitMap;
   readonly menu: readonly MenuEntry[];
-  readonly terms: Readonly<Record<string, string>>;
+  readonly terms: Readonly<Record<string, LocalizedText>>;
   readonly settings: Readonly<Record<string, unknown>>;
+  /** Effective custom fields, keyed by entity type. Empty when no effective module declares one. */
+  readonly fields: Readonly<Record<string, readonly EffectiveCustomField[]>>;
   readonly permissions: CallerPermissionsResponse;
   /** Every permission of the effective modules, so a client never hard-codes which ones are sensitive. */
   readonly permissionDefinitions: readonly PermissionDefinitionResponse[];

@@ -23,6 +23,8 @@ describe("audit vocabulary", () => {
       "customFieldDefinition",
       "customFieldPreference",
       "setting",
+      "termOverride",
+      "moduleOverride",
     ]);
   });
 });

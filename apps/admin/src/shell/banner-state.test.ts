@@ -22,6 +22,7 @@ function config(overrides: Partial<ResolvedOrgConfigResponse>): ResolvedOrgConfi
     menu: [],
     terms: {},
     settings: {},
+    fields: {},
     permissions: { allLocations: [], byLocation: {} },
     permissionDefinitions: [],
     ...overrides,

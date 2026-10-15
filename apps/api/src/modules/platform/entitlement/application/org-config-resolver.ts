@@ -1,4 +1,4 @@
-import type { ModuleKey } from "@banijjik/contracts";
+import type { IndustryTemplateKey, ModuleKey } from "@banijjik/contracts";
 import { getLogger } from "../../../../kernel/logger/index.js";
 import type { ModuleRegistry } from "../../../../kernel/modules/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
@@ -14,6 +14,11 @@ import {
 } from "../domain/module-override.js";
 import type { ResolvedOrgConfig, SubscriptionSnapshot } from "../domain/resolved-org-config.js";
 import type { IndustryTemplateView, ModuleOverrideReader } from "./ports/entitlement-ports.js";
+import type {
+  OrgClientSettingsSource,
+  OrgFieldsSource,
+  OrgTermsSource,
+} from "./ports/resolved-config-sources.js";
 
 export interface OrgConfigResolverDependencies {
   readonly registry: ModuleRegistry;
@@ -21,11 +26,15 @@ export interface OrgConfigResolverDependencies {
   readonly packages: Pick<PackageReader, "findByIds">;
   readonly overrides: ModuleOverrideReader;
   readonly clock: Clock;
+  readonly terms: OrgTermsSource;
+  readonly clientSettings: OrgClientSettingsSource;
+  readonly fields: OrgFieldsSource;
 }
 
 export interface ResolveRequest {
   readonly organizationId: string;
   readonly configVersion: number;
+  readonly templateKey: IndustryTemplateKey;
   readonly template: IndustryTemplateView;
 }
 
@@ -108,10 +117,18 @@ export class OrgConfigResolver {
     }
   }
 
-  private assemble(request: ResolveRequest, resolved: ResolvedParts): ResolvedOrgConfig {
-    const { registry } = this.dependencies;
+  private async assemble(
+    request: ResolveRequest,
+    resolved: ResolvedParts,
+  ): Promise<ResolvedOrgConfig> {
+    const { registry, terms, clientSettings, fields } = this.dependencies;
     const manifests = registry.all();
     const { moduleKeys, kinds, purchased } = resolved;
+    const [resolvedTerms, settings, resolvedFields] = await Promise.all([
+      terms.forOrganization(request.organizationId, request.templateKey),
+      clientSettings.resolve(request.organizationId, moduleKeys),
+      fields.forModules(request.organizationId, moduleKeys),
+    ]);
     return {
       organizationId: request.organizationId,
       configVersion: request.configVersion,
@@ -122,9 +139,9 @@ export class OrgConfigResolver {
       menu: menuOf(manifests, moduleKeys, kinds),
       botTools: botToolsOf(manifests, moduleKeys),
       storefrontSections: storefrontSectionsOf(manifests, moduleKeys),
-      settings: {},
-      fields: {},
-      terms: {},
+      settings,
+      fields: resolvedFields,
+      terms: resolvedTerms,
       subscription: toSubscriptionSnapshot(resolved.subscription),
       validUntil: earliestExpiry(resolved.overrides),
     };

@@ -117,6 +117,7 @@ export class GetMyConfigUseCase {
       menu,
       terms: config.terms,
       settings: config.settings,
+      fields: config.fields,
       permissions,
       permissionDefinitions: describeDefinitions(
         this.dependencies.permissionDefinitions,

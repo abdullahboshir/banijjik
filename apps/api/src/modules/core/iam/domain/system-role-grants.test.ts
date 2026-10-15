@@ -58,8 +58,24 @@ describe("system role grants (10 section 10)", () => {
   });
 
   it.each([
-    [SYSTEM_ROLE_KEY.OWNER, ["settings.setting.read", "settings.setting.update"]],
-    [SYSTEM_ROLE_KEY.MANAGER, ["settings.setting.read", "settings.setting.update"]],
+    [
+      SYSTEM_ROLE_KEY.OWNER,
+      [
+        "settings.setting.read",
+        "settings.setting.update",
+        "settings.term.update",
+        "settings.module.update",
+      ],
+    ],
+    [
+      SYSTEM_ROLE_KEY.MANAGER,
+      [
+        "settings.setting.read",
+        "settings.setting.update",
+        "settings.term.update",
+        "settings.module.update",
+      ],
+    ],
     [SYSTEM_ROLE_KEY.CASHIER, ["settings.setting.read"]],
     [SYSTEM_ROLE_KEY.STAFF, ["settings.setting.read"]],
     [SYSTEM_ROLE_KEY.RIDER, []],

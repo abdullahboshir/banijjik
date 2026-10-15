@@ -16,5 +16,13 @@ manifest. This module does not know those keys.
   that changes something writes one audit entry, one `settings.setting.changed` event and one
   `configVersion` bump. A delete of a missing row, or a value equal to the stored one, is left
   out. A batch that changes nothing writes none of those.
-- **Not here:** `/me/config` settings and terms (card 2.2), a settings UI (card 2.7), and a
-  resolve cache. Unregistered template keys are ignored until their module declares them.
+- **Terms:** `term_overrides` in the tenant database. Allowed keys come from the template.
+  `GET` and `PATCH /terms`. A batch that changes something writes one audit entry, one
+  `settings.term.changed` event and one `configVersion` bump (ADR-104).
+- **Module switches:** `GET /modules` and `POST /modules/{moduleKey}/disable|enable`. The write is
+  a `TENANT_DISABLE` override through `platform/entitlement`. One audit entry, one
+  `settings.module.toggled` event and one `configVersion` bump.
+- **Resolver:** `buildResolvedTermTexts` and `buildClientSettingsSource` are the ports the
+  resolver calls with the effective module set. They do not read `OrgConfigReader`.
+- **Not here:** a settings or terms screen (card 2.7). Unregistered template setting keys are
+  ignored until their module declares them.

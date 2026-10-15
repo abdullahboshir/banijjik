@@ -5,6 +5,11 @@ import {
   SETTING_VALUE_MODEL_NAME,
   settingValueSchema,
 } from "./setting-value.schema.js";
+import {
+  TERM_OVERRIDE_COLLECTION_NAME,
+  TERM_OVERRIDE_MODEL_NAME,
+  termOverrideSchema,
+} from "./term-override.schema.js";
 
 /**
  * Organization tenancy, not location tenancy: an organization-level row has no location, and the
@@ -16,6 +21,13 @@ export function registerSettingsModels(): void {
     collectionName: SETTING_VALUE_COLLECTION_NAME,
     database: DATABASE_KIND.TENANT,
     schema: settingValueSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    modelName: TERM_OVERRIDE_MODEL_NAME,
+    collectionName: TERM_OVERRIDE_COLLECTION_NAME,
+    database: DATABASE_KIND.TENANT,
+    schema: termOverrideSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

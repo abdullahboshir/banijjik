@@ -51,21 +51,43 @@ export class SettingsResolver {
     organizationId: string,
     query: SettingsResolveQuery,
   ): Promise<ReadonlyMap<string, ResolvedSetting>> {
-    const { catalog, orgConfig, values, defaults } = this.dependencies;
-    const effective = new Set((await orgConfig.current()).modules);
-    const definitions = selectedSettings(catalog, effective, query.keys);
+    const effective = new Set((await this.dependencies.orgConfig.current()).modules);
+    const definitions = selectedSettings(this.dependencies.catalog, effective, query.keys);
+    return this.resolveDefinitions(organizationId, definitions, query.locationId);
+  }
+
+  /**
+   * Organization-level values of client-visible settings. The caller passes the effective module
+   * set, so this path never asks OrgConfigReader (ADR-104).
+   */
+  async resolveClientVisible(
+    organizationId: string,
+    effectiveModules: ReadonlySet<ModuleKey>,
+  ): Promise<Record<string, unknown>> {
+    const definitions = selectedSettings(
+      this.dependencies.catalog,
+      effectiveModules,
+      undefined,
+    ).filter((definition) => definition.isClientVisible);
+    const resolved = await this.resolveDefinitions(organizationId, definitions, undefined);
+    return Object.fromEntries(
+      [...resolved].map(([settingKey, value]) => [settingKey, value.value]),
+    );
+  }
+
+  private async resolveDefinitions(
+    organizationId: string,
+    definitions: readonly RegisteredSetting[],
+    locationId: string | undefined,
+  ): Promise<ReadonlyMap<string, ResolvedSetting>> {
+    const { values, defaults } = this.dependencies;
     if (definitions.length === 0) return new Map();
     const settingKeys = definitions.map((definition) => definition.settingKey);
     const [rows, template] = await Promise.all([
-      values.findForResolution(settingKeys, query.locationId),
+      values.findForResolution(settingKeys, locationId),
       defaults.read(organizationId),
     ]);
-    return assemble({
-      definitions,
-      rows: indexRows(rows),
-      template,
-      locationId: query.locationId,
-    });
+    return assemble({ definitions, rows: indexRows(rows), template, locationId });
   }
 }
 

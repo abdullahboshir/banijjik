@@ -63,3 +63,63 @@ export const updateSettingsRequestSchema = z
   });
 
 export type UpdateSettingsBody = z.output<typeof updateSettingsRequestSchema>;
+
+export const MAX_TERM_CHANGES_PER_BATCH = 50;
+export const TERM_TEXT_MAX_LENGTH = 40;
+
+const termLocaleSchema = z.enum(["bn", "en"]);
+
+const termChangeSchema = z
+  .object({
+    termKey: z.string().trim().min(1),
+    locale: termLocaleSchema,
+    text: z.string().trim().min(1).max(TERM_TEXT_MAX_LENGTH).nullable(),
+    version: z.number().int().positive().optional(),
+  })
+  .strict();
+
+function duplicateTerm(items: readonly { termKey: string; locale: string }[]): number {
+  const seen = new Set<string>();
+  for (const [index, item] of items.entries()) {
+    const mark = `${item.termKey}\u0000${item.locale}`;
+    if (seen.has(mark)) return index;
+    seen.add(mark);
+  }
+  return -1;
+}
+
+/** `PATCH /terms`. One batch, all or nothing, at most 50 items (ADR-104). */
+export const updateTermsRequestSchema = z
+  .object({
+    items: z.array(termChangeSchema).min(1).max(MAX_TERM_CHANGES_PER_BATCH),
+  })
+  .strict()
+  .superRefine((body, context) => {
+    const duplicateIndex = duplicateTerm(body.items);
+    if (duplicateIndex < 0) return;
+    context.addIssue({
+      code: "custom",
+      path: ["items", duplicateIndex, "termKey"],
+    });
+  });
+
+export type UpdateTermsBody = z.output<typeof updateTermsRequestSchema>;
+
+const REASON_MAX_LENGTH = 200;
+
+/** `POST /modules/{moduleKey}/disable` and `…/enable`. */
+export const moduleSwitchRequestSchema = z
+  .object({
+    reason: z.string().trim().min(1).max(REASON_MAX_LENGTH),
+  })
+  .strict();
+
+export type ModuleSwitchBody = z.output<typeof moduleSwitchRequestSchema>;
+
+export const moduleKeyParamsSchema = z
+  .object({
+    moduleKey: z.string().min(1),
+  })
+  .strict();
+
+export type ModuleKeyParams = z.output<typeof moduleKeyParamsSchema>;

@@ -27,7 +27,10 @@ import { KERNEL_PROBE_MANIFEST } from "../../../../test-support/probe-manifests.
 import { addMemberWithAssignments, findSystemRoleId } from "../../../../test-support/rbac-world.js";
 import { ApiActor } from "../../../../test-support/two-organizations.js";
 import { registerViaApi } from "../../../../test-support/auth-api-scenarios.js";
-import { buildOrganizationConfigPorts } from "../../../../routes/organization-config-ports.js";
+import {
+  buildOrganizationConfigPorts,
+  buildResolvedConfigSources,
+} from "../../../../routes/organization-config-ports.js";
 import { buildModuleRegistry } from "../../../../routes/module-registry.js";
 import { buildIndustryTemplateReader } from "../../industry/index.js";
 import { buildModuleEffectiveness, buildOrgConfigService } from "../index.js";
@@ -302,8 +305,14 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       accessMode: ACCESS_MODE.FULL,
       isPastDue: false,
       kinds: [],
-      terms: {},
-      settings: {},
+      terms: expect.objectContaining({
+        contact: { bn: "গ্রাহক / গ্রাহকরা", en: "Customer / Customers" },
+      }),
+      settings: {
+        "organization.digitScript": "LATIN",
+        "organization.numberGrouping": "WESTERN",
+      },
+      fields: {},
       limits: {
         locations: 2,
         members: 10,
@@ -391,6 +400,7 @@ describe("handlers of a module that is off", () => {
         registry,
         clock: harness.clock,
         ...buildOrganizationConfigPorts(),
+        ...buildResolvedConfigSources(registry),
         templates: buildIndustryTemplateReader(harness.clock),
       }),
     );

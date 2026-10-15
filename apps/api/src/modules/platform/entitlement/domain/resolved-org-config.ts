@@ -1,5 +1,7 @@
 import type {
+  EffectiveCustomField,
   LimitMap,
+  LocalizedText,
   MenuEntry,
   ModuleKey,
   OfferingKind,
@@ -28,12 +30,12 @@ export interface ResolvedOrgConfig {
   readonly menu: readonly MenuEntry[];
   readonly botTools: readonly string[];
   readonly storefrontSections: readonly string[];
-  /** Empty until the settings module (card 2.4). */
+  /** Client-visible organization-level settings (ADR-104). */
   readonly settings: Readonly<Record<string, unknown>>;
-  /** Empty until custom fields (card 2.3). */
-  readonly fields: Readonly<Record<string, unknown>>;
-  /** Empty until terms (card 2.4). */
-  readonly terms: Readonly<Record<string, string>>;
+  /** Effective custom fields keyed by entity type (ADR-104). */
+  readonly fields: Readonly<Record<string, readonly EffectiveCustomField[]>>;
+  /** Template terms with tenant overrides. Both languages are always present (ADR-104). */
+  readonly terms: Readonly<Record<string, LocalizedText>>;
   readonly subscription: SubscriptionSnapshot | undefined;
   /** From this instant the cached copy is stale (an override expires). Null when nothing expires. */
   readonly validUntil: Date | null;

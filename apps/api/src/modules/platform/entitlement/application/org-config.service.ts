@@ -107,7 +107,12 @@ export class OrgConfigService implements OrgConfigReader {
     const cached = configCache.get(cacheKey);
     // An expired override changes the module set without any version bump, so the copy carries its own deadline.
     if (cached !== undefined && !isPastDeadline(cached, clock.now())) return cached;
-    const unfiltered = await resolver.resolve({ organizationId, configVersion, template });
+    const unfiltered = await resolver.resolve({
+      organizationId,
+      configVersion,
+      templateKey,
+      template,
+    });
     const resolved = await this.withVisibleMenu(unfiltered);
     configCache.set(cacheKey, resolved);
     return resolved;

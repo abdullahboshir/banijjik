@@ -8,12 +8,17 @@ import { buildCustomFieldModule } from "../modules/core/custom-field/index.js";
 import {
   buildConfigVersionBumper,
   buildLocationLookup,
+  buildOrganizationConfigSource,
 } from "../modules/core/organization/index.js";
 import {
   buildSettingsTenantRouter,
   type LocationExistence,
 } from "../modules/core/settings/index.js";
-import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
+import { buildIndustryTemplateReader } from "../modules/platform/industry/index.js";
+import {
+  buildTenantModuleSwitch,
+  type OrgConfigService,
+} from "../modules/platform/entitlement/index.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -49,6 +54,14 @@ export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenant
     configVersion: buildConfigVersionBumper(),
     manifests: input.manifests,
     locations: activeLocationExistence(),
+    modules: buildTenantModuleSwitch({
+      registry: input.registry,
+      clock,
+      templates: buildIndustryTemplateReader(clock),
+      organizations: buildOrganizationConfigSource(),
+      audit,
+      configVersion: buildConfigVersionBumper(),
+    }),
   });
   return { customFieldRouter, settingsRouter };
 }

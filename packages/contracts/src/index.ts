@@ -288,12 +288,12 @@ export type {
 export type { SettingDefinition, SettingValueSpec } from "./settings/setting-definition.js";
 export { SETTINGS_EVENT_TYPE, type SettingsEventType } from "./settings/settings-event-type.js";
 export { SETTINGS_RULE_KEY, type SettingsRuleKey } from "./settings/settings-rule-key.js";
-export {
-  SETTING_VALUE_SOURCE,
-  type ResolvedSetting,
-  type SettingChange,
-  type SettingChangedPayload,
-  type SettingValueSource,
-  type SettingsResponse,
-  type UpdateSettingsRequest,
-} from "./settings/settings-contracts.js";
+export { SETTING_VALUE_SOURCE, TERM_TEXT_SOURCE } from "./settings/settings-contracts.js";
+export type { ModuleSwitchRequest, UpdateTermsRequest } from "./settings/settings-contracts.js";
+export type { ModuleToggledPayload, TenantModuleView } from "./settings/settings-contracts.js";
+export type { ResolvedSetting, SettingChange } from "./settings/settings-contracts.js";
+export type { SettingChangedPayload, TermView } from "./settings/settings-contracts.js";
+export type { SettingValueSource, TermLocaleValue } from "./settings/settings-contracts.js";
+export type { SettingsResponse, TermChange } from "./settings/settings-contracts.js";
+export type { TermChangedPayload, TermsResponse } from "./settings/settings-contracts.js";
+export type { TermTextSource, UpdateSettingsRequest } from "./settings/settings-contracts.js";

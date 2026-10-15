@@ -25,6 +25,7 @@ import { buildCustomFieldRouter } from "./presentation/custom-field.router.js";
 export { customFieldManifest } from "./module.manifest.js";
 export { registerCustomFieldModels } from "./infrastructure/register-custom-field-models.js";
 export type { EffectiveCustomFieldReader } from "./application/ports/custom-field-ports.js";
+export { buildModuleFieldsReader } from "./infrastructure/module-fields.js";
 
 /** Phase 3 modules import this through the index and call `forEntity` (ADR-102). */
 export function buildEffectiveCustomFieldReader(): EffectiveCustomFieldReader {

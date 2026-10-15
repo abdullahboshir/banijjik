@@ -22,14 +22,29 @@ export const settingsManifest = defineModule({
   permissions: [
     permissionDefinition(PERMISSION_KEY.SETTINGS_SETTING_READ),
     permissionDefinition(PERMISSION_KEY.SETTINGS_SETTING_UPDATE),
+    permissionDefinition(PERMISSION_KEY.SETTINGS_TERM_UPDATE),
+    permissionDefinition(PERMISSION_KEY.SETTINGS_MODULE_UPDATE),
   ],
-  routes: { admin: ["/orgs/:organizationId/settings"] },
+  routes: {
+    admin: [
+      "/orgs/:organizationId/settings",
+      "/orgs/:organizationId/terms",
+      "/orgs/:organizationId/modules",
+    ],
+  },
   menu: [],
   settings: [],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: [],
-  events: { emits: [SETTINGS_EVENT_TYPE.SETTING_CHANGED], consumes: [] },
+  events: {
+    emits: [
+      SETTINGS_EVENT_TYPE.SETTING_CHANGED,
+      SETTINGS_EVENT_TYPE.TERM_CHANGED,
+      SETTINGS_EVENT_TYPE.MODULE_TOGGLED,
+    ],
+    consumes: [],
+  },
   limitKeys: [],
   sequenceKeys: [],
 });

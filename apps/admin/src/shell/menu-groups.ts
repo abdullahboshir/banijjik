@@ -1,4 +1,4 @@
-import { SURFACE, type MenuEntry } from "@banijjik/contracts";
+import { SURFACE, type MenuEntry, type PreferredLocale } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
 import type { SidebarGroup } from "@banijjik/ui";
 
@@ -24,8 +24,9 @@ const HOME_ICON_KEY = "house";
 export interface MenuGroupOptions {
   menu: readonly MenuEntry[];
   orgSlug: string;
-  /** Term overrides of the business (`config.terms`); empty until card 2.4. */
-  terms: Readonly<Record<string, string>>;
+  /** Resolved terms (`config.terms`). A missing key or language falls back to the catalog. */
+  terms: Readonly<Record<string, { readonly bn?: string; readonly en?: string }>>;
+  locale: PreferredLocale;
   t: Translator["t"];
 }
 
@@ -51,7 +52,7 @@ function hrefOf(orgSlug: string, path: string): string {
 }
 
 function toSidebarGroups(options: MenuGroupOptions): SidebarGroup[] {
-  const { menu, orgSlug, terms, t } = options;
+  const { menu, orgSlug, terms, locale, t } = options;
   const groups = new Map<string, SidebarGroup>();
   for (const entry of menu.filter((candidate) => candidate.surface === SURFACE.ADMIN)) {
     const group = groups.get(entry.groupKey) ?? {
@@ -61,7 +62,7 @@ function toSidebarGroups(options: MenuGroupOptions): SidebarGroup[] {
     };
     group.entries.push({
       menuKey: entry.menuKey,
-      label: terms[entry.labelTermKey] ?? t(entry.labelTermKey),
+      label: terms[entry.labelTermKey]?.[locale] ?? t(entry.labelTermKey),
       href: hrefOf(orgSlug, entry.path),
       iconKey: entry.iconKey,
       isActive: false,

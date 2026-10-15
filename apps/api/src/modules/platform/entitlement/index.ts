@@ -13,6 +13,10 @@ import { OrgLimitGuard } from "./application/org-limit-guard.js";
 import { buildPackageReader } from "../package/index.js";
 import { buildSubscriptionReader } from "../saas-billing/index.js";
 import { OrgConfigResolver } from "./application/org-config-resolver.js";
+import {
+  TenantModuleSwitch,
+  type TenantModuleSwitchDependencies,
+} from "./application/tenant-module-switch.js";
 import { OrgConfigService } from "./application/org-config.service.js";
 import { PackageCatalogVersion } from "./application/package-catalog-version.js";
 import type {
@@ -20,6 +24,11 @@ import type {
   IndustryTemplateReader,
   OrganizationConfigSource,
 } from "./application/ports/entitlement-ports.js";
+import type {
+  OrgClientSettingsSource,
+  OrgFieldsSource,
+  OrgTermsSource,
+} from "./application/ports/resolved-config-sources.js";
 import type {
   ModuleOverrideAdminRepository,
   OrganizationExistence,
@@ -58,6 +67,9 @@ export interface OrgConfigServiceOptions {
   readonly activeLocations: ActiveLocationCounter;
   /** Implemented by platform/industry. Tests may pass a reader that turns modules off. */
   readonly templates: IndustryTemplateReader;
+  readonly terms: OrgTermsSource;
+  readonly clientSettings: OrgClientSettingsSource;
+  readonly fields: OrgFieldsSource;
 }
 
 /** The resolver behind a cache; it is the gate's OrgConfigReader and the event runner's source of truth. */
@@ -72,6 +84,9 @@ export function buildOrgConfigService(options: OrgConfigServiceOptions): OrgConf
       packages,
       overrides: new MongoModuleOverrideReader(),
       clock,
+      terms: options.terms,
+      clientSettings: options.clientSettings,
+      fields: options.fields,
     }),
     organizations: options.organizations,
     activeLocations: options.activeLocations,
@@ -113,6 +128,27 @@ export function buildLimitGuard(orgConfig: OrgConfigService): LimitGuard {
 }
 
 export type { ModuleOverrideView } from "./application/ports/override-admin-ports.js";
+export type {
+  OrgClientSettingsSource,
+  OrgFieldsSource,
+  OrgTermsSource,
+} from "./application/ports/resolved-config-sources.js";
+export { TenantModuleSwitch };
+export type {
+  ModuleSwitchInput,
+  TenantModuleSwitchDependencies,
+} from "./application/tenant-module-switch.js";
+
+export function buildTenantModuleSwitch(
+  options: Omit<TenantModuleSwitchDependencies, "subscriptions" | "packages" | "overrides">,
+): TenantModuleSwitch {
+  return new TenantModuleSwitch({
+    ...options,
+    subscriptions: buildSubscriptionReader(),
+    packages: buildPackageReader(),
+    overrides: new MongoModuleOverrideAdminRepository(),
+  });
+}
 
 export interface EntitlementPlatformRouterDependencies {
   readonly clock: Clock;

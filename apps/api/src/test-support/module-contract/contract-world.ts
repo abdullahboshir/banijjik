@@ -14,7 +14,10 @@ import {
   type EffectiveOrgConfig,
   type OrgConfigService,
 } from "../../modules/platform/entitlement/index.js";
-import { buildOrganizationConfigPorts } from "../../routes/organization-config-ports.js";
+import {
+  buildOrganizationConfigPorts,
+  buildResolvedConfigSources,
+} from "../../routes/organization-config-ports.js";
 import { registerViaApi } from "../auth-api-scenarios.js";
 import { writeModuleOverride } from "../entitlement-world.js";
 import type { IamApiHarness } from "../iam-api-harness.js";
@@ -62,6 +65,7 @@ export class ContractWorld {
       registry,
       clock: harness.clock,
       ...buildOrganizationConfigPorts(),
+      ...buildResolvedConfigSources(registry),
       templates: templateReader,
     });
   }

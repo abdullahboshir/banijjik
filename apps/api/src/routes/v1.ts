@@ -68,7 +68,10 @@ import {
 } from "../modules/platform/saas-billing/index.js";
 import { registerCustomFieldModels } from "../modules/core/custom-field/index.js";
 import { buildCoreTenantRouters } from "./core-tenant-routers.js";
-import { buildOrganizationConfigPorts } from "./organization-config-ports.js";
+import {
+  buildOrganizationConfigPorts,
+  buildResolvedConfigSources,
+} from "./organization-config-ports.js";
 import { buildModuleRegistry } from "./module-registry.js";
 import { mountPlatformApi } from "./platform.js";
 
@@ -221,6 +224,7 @@ function buildResolvedConfigService(
     registry,
     clock: dependencies.clock,
     ...buildOrganizationConfigPorts(),
+    ...buildResolvedConfigSources(registry),
     templates: dependencies.templateReader ?? buildIndustryTemplateReader(dependencies.clock),
   });
 }

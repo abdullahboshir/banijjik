@@ -1,7 +1,17 @@
 import { PERMISSION_KEY } from "@banijjik/contracts";
-import { settingsQuerySchema, updateSettingsRequestSchema } from "@banijjik/validation";
+import {
+  moduleKeyParamsSchema,
+  moduleSwitchRequestSchema,
+  paginationQuerySchema,
+  settingsQuerySchema,
+  updateSettingsRequestSchema,
+  updateTermsRequestSchema,
+} from "@banijjik/validation";
 import { Router } from "express";
-import type { PermissionMiddlewareFactory } from "../../../../kernel/access/index.js";
+import {
+  requireAllLocations,
+  type PermissionMiddlewareFactory,
+} from "../../../../kernel/access/index.js";
 import { validate } from "../../../../kernel/http/index.js";
 import type { SettingsController } from "./settings.controller.js";
 
@@ -22,6 +32,34 @@ export function buildSettingsRouter(
     permission(PERMISSION_KEY.SETTINGS_SETTING_UPDATE),
     validate({ body: updateSettingsRequestSchema }),
     controller.updateSettings,
+  );
+  router.get("/terms", permission(PERMISSION_KEY.SETTINGS_SETTING_READ), controller.getTerms);
+  router.patch(
+    "/terms",
+    permission(PERMISSION_KEY.SETTINGS_TERM_UPDATE),
+    requireAllLocations(),
+    validate({ body: updateTermsRequestSchema }),
+    controller.updateTerms,
+  );
+  router.get(
+    "/modules",
+    permission(PERMISSION_KEY.SETTINGS_SETTING_READ),
+    validate({ query: paginationQuerySchema }),
+    controller.listModules,
+  );
+  router.post(
+    "/modules/:moduleKey/disable",
+    permission(PERMISSION_KEY.SETTINGS_MODULE_UPDATE),
+    requireAllLocations(),
+    validate({ params: moduleKeyParamsSchema, body: moduleSwitchRequestSchema }),
+    controller.disableModule,
+  );
+  router.post(
+    "/modules/:moduleKey/enable",
+    permission(PERMISSION_KEY.SETTINGS_MODULE_UPDATE),
+    requireAllLocations(),
+    validate({ params: moduleKeyParamsSchema, body: moduleSwitchRequestSchema }),
+    controller.enableModule,
   );
   return router;
 }

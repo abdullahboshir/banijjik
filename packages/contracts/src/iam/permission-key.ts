@@ -25,6 +25,8 @@ export const PERMISSION_KEY = {
   CUSTOM_FIELD_DEFINITION_ARCHIVE: "custom-field.definition.archive",
   SETTINGS_SETTING_READ: "settings.setting.read",
   SETTINGS_SETTING_UPDATE: "settings.setting.update",
+  SETTINGS_TERM_UPDATE: "settings.term.update",
+  SETTINGS_MODULE_UPDATE: "settings.module.update",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];
@@ -76,4 +78,6 @@ export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
   PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_CREATE,
   PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_UPDATE,
   PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_ARCHIVE,
+  PERMISSION_KEY.SETTINGS_TERM_UPDATE,
+  PERMISSION_KEY.SETTINGS_MODULE_UPDATE,
 ];
