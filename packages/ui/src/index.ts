@@ -83,3 +83,13 @@ export type {
 } from "./components/account-menu.js";
 export { AccountMenuTrigger } from "./components/account-menu-trigger.js";
 export type { AccountMenuTriggerProps } from "./components/account-menu-trigger.js";
+export { CustomFieldInputs } from "./components/custom-field-inputs.js";
+export type {
+  CustomFieldDescriptor,
+  CustomFieldInputKind,
+  CustomFieldInputsProps,
+  CustomFieldOption,
+  PendingCustomField,
+} from "./components/custom-field-types.js";
+export { parseMoneyInput } from "./format/parse-money-input.js";
+export type { ParsedMoney } from "./format/parse-money-input.js";
