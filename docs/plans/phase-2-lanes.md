@@ -48,3 +48,26 @@ Card 2.2 moved to wave 2: it puts the terms, settings and fields of 2.3 and 2.4 
 
 ## Review
 Claude reviews each card when it is ready, one at a time, with the strict process (re-run everything, read the diff, try to break the T1 parts). When GitHub CI is available for card branches (owner permission to push card branches), the reviewer uses the pull request's CI run instead of the local turbo run, which keeps the owner's machine free.
+
+## Wave 2 (planned 2026-10-15 on `main 1b4f85d`)
+Wave 1 merged on 2026-10-15: 2.1b, 2.3, 2.4.
+
+| Session | Card | Folder | ADR |
+|---|---|---|---|
+| 1 | **2.2** resolver integration, terms, tenant module switches (`docs/plans/2.2.md`) | `banijjik` | ADR-104 |
+| 2 | **2.5** dynamic form renderer (`docs/plans/2.5.md`) | `banijjik-1.7b` | ADR-105, only if needed |
+
+The two cards share almost no files:
+- **2.2** works in `apps/api` (`core/settings`, `core/custom-field`, `platform/entitlement`, one new file in `platform/industry`) and in two admin shell files.
+- **2.5** works in `packages/ui` and `packages/web-client` only.
+
+Shared files, add-only:
+- `packages/contracts/src/index.ts`, `packages/validation/src/index.ts`
+- the i18n catalogs
+- `docs/04-DECISIONS.md`, `docs/STATUS.md` (own row)
+
+The same machine rules as wave 1 apply: **one heavy test run at a time**, and browser suites never in parallel. Lessons from wave 1:
+1. After a rebase, rebuild the workspace packages before `test:tools`, or a stale `dist` fails `new-module.test.mjs`.
+2. Run turbo with `--continue`, so one failure does not hide the others.
+3. Check that Docker (Mongo 27018, Redis 6380) is running before a full run.
+4. After a rebase, search the branch's own tests for manifest fields and expected module lists the merged card changed.

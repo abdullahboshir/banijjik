@@ -82,10 +82,10 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 |---|---|---|
 | 2.1a industry templates: model, seeds, real reader, signup check | merged (2026-10-14, implemented with Cursor, Claude T1 review passed) | branch `s/2.1a-industry-templates`; handoff `docs/handoffs/2.1a.md`; ADR-097 proposed. Closes the 1.6a interim template reader (allow-all). Not merged, not pushed |
 | 2.1b industry templates: platform writes | merged (2026-10-15, implemented with Cursor, Claude T1 review 2 passed; ADR-101 proposed) | branch `s/2.1b-template-writes`; handoff `docs/handoffs/2.1b.md`; ADR-101 proposed. Create, clone, patch, publish, retire, and an additive organization move. Signup reserves the published row. Not merged, not pushed |
-| 2.2 resolver integration: terms, settings and fields in the resolved config, tenant-disabled optional modules | todo (wave 2) | after 2.3 and 2.4; owns terms (`TermOverride`, `/terms`) |
+| 2.2 resolver integration: terms, settings and fields in the resolved config, tenant module switches | planned (2026-10-15 on 1b4f85d, `docs/plans/2.2.md`, Opus; T1, wave 2) | pair with 2.5; owns terms (`TermOverride`, `/terms`) |
 | 2.3 custom field engine (API) | merged (2026-10-14, implemented with Cursor, Claude T1 review 2 passed; ADR-102 proposed) | branch `s/2.3-custom-fields`; handoff `docs/handoffs/2.3.md`. Seed fields are labelled. Not merged, not pushed |
 | 2.4 settings engine | merged (2026-10-14, implemented with Cursor, Claude T1 review 2 passed; ADR-103 proposed) | branch `s/2.4-settings`; handoff `docs/handoffs/2.4.md`; ADR-103 proposed. Review 1 fixes R1-1 to R1-3 committed. Lint, format, turbo (29 tasks), test:tools and both browser suites passed |
-| 2.5 dynamic form renderer | todo (wave 2) | after 2.3 |
+| 2.5 dynamic form renderer | planned (2026-10-15 on 1b4f85d, `docs/plans/2.5.md`, Opus; T2, wave 2) | pair with 2.2; FILE, IMAGE and REFERENCE inputs come with the file module and entity cards |
 | 2.6 platform UI: template, module and field builders | todo (wave 3) | pair with 2.7 |
 | 2.7 tenant UI: settings and tenant custom fields | todo (wave 3) | pair with 2.6 |
 
