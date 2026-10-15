@@ -11,12 +11,18 @@ function hrefsFor(operator: Parameters<typeof navigationEntriesFor>[0]): string[
 
 describe("navigationEntriesFor", () => {
   it("shows tenants, packages, the audit log and operators to a super admin", () => {
-    expect(hrefsFor(SUPER_ADMIN)).toEqual(["/tenants", "/packages", "/audit", "/operators"]);
+    expect(hrefsFor(SUPER_ADMIN)).toEqual([
+      "/tenants",
+      "/packages",
+      "/industry-templates",
+      "/audit",
+      "/operators",
+    ]);
   });
 
   it("hides the audit log from support and billing, who lack platform.audit.read", () => {
-    expect(hrefsFor(SUPPORT)).toEqual(["/tenants", "/packages"]);
-    expect(hrefsFor(BILLING)).toEqual(["/tenants", "/packages"]);
+    expect(hrefsFor(SUPPORT)).toEqual(["/tenants", "/packages", "/industry-templates"]);
+    expect(hrefsFor(BILLING)).toEqual(["/tenants", "/packages", "/industry-templates"]);
   });
 
   it("follows the permissions it is given, not the role name", () => {
@@ -30,6 +36,6 @@ describe("navigationEntriesFor", () => {
 
   it("labels every entry in Bangla", () => {
     const labels = navigationEntriesFor(SUPER_ADMIN, t).map((entry) => entry.label);
-    expect(labels).toEqual(["টেন্যান্ট", "প্যাকেজ", "অডিট লগ", "অপারেটর"]);
+    expect(labels).toEqual(["টেন্যান্ট", "প্যাকেজ", "ইন্ডাস্ট্রি", "অডিট লগ", "অপারেটর"]);
   });
 });

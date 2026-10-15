@@ -33,6 +33,13 @@ const ENTRY_DEFINITIONS: readonly EntryDefinition[] = [
     permission: PLATFORM_PERMISSION_KEY.PACKAGE_READ,
   },
   {
+    menuKey: "industries",
+    labelKey: "platform.nav.industries",
+    href: "/industry-templates",
+    iconKey: "tag",
+    permission: PLATFORM_PERMISSION_KEY.INDUSTRY_READ,
+  },
+  {
     menuKey: "audit",
     labelKey: "platform.nav.audit",
     href: "/audit",

@@ -265,11 +265,15 @@ export async function seedPerson(name: string): Promise<SeededPerson> {
 export async function seedOrganization(
   person: SeededPerson,
   slug: string,
-  name: string,
+  details: { name: string; templateKey?: string },
 ): Promise<string> {
   const response = await callApi("/me/orgs", {
     method: "POST",
-    body: { name, slug, ...industryFixture },
+    body: {
+      name: details.name,
+      slug,
+      industryTemplateKey: details.templateKey ?? industryFixture.industryTemplateKey,
+    },
     cookies: person.cookies,
   });
   // Safe: the API answers with the { data: { organizationId } } envelope.
@@ -288,4 +292,27 @@ export async function effectiveModulesOf(
   // Safe: the API answers with the { data: ResolvedOrgConfigResponse } envelope; only `modules` is read.
   const config = ((await response.json()) as { data: { modules: string[] } }).data;
   return config.modules;
+}
+
+/** Terms and organization settings of a business, as its owner sees them. */
+export async function readOrganizationConfig(
+  person: SeededPerson,
+  organizationId: string,
+): Promise<{
+  terms: Readonly<Record<string, { bn: string; en: string }>>;
+  settings: Readonly<Record<string, unknown>>;
+}> {
+  const response = await callApi(`/orgs/${organizationId}/me/config`, {
+    method: "GET",
+    cookies: person.cookies,
+  });
+  const config = (
+    (await response.json()) as {
+      data: {
+        terms: Readonly<Record<string, { bn: string; en: string }>>;
+        settings: Readonly<Record<string, unknown>>;
+      };
+    }
+  ).data;
+  return { terms: config.terms, settings: config.settings };
 }

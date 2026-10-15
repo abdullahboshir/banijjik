@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
+import { ChangeIndustrySheet } from "./change-industry-sheet";
 import { ChangePackageSheet } from "./change-package-sheet";
 import { ExtendTrialSheet } from "./extend-trial-sheet";
 import { OverrideSheet } from "./override-sheet";
@@ -30,5 +31,7 @@ export function TenantActionSheet({
     case "grantModule":
     case "revokeModule":
       return <OverrideSheet kind={kind} context={context} onClose={onClose} />;
+    case "changeIndustry":
+      return <ChangeIndustrySheet context={context} onClose={onClose} />;
   }
 }

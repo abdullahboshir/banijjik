@@ -13,6 +13,8 @@ export interface FormFailure {
   messageKey: string;
   values?: TranslationValues;
   gaps: ClosureGap[];
+  /** `details.removed` of an industry-template change that is not additive. */
+  removed: string[];
 }
 
 const INTERNAL_KEY = "errors.internal";
@@ -31,6 +33,12 @@ function readGaps(details: ApiError["details"]): ClosureGap[] {
   });
 }
 
+function readRemoved(details: ApiError["details"]): string[] {
+  const removed: unknown = details?.["removed"];
+  if (!Array.isArray(removed)) return [];
+  return removed.filter((item): item is string => typeof item === "string");
+}
+
 /**
  * Turns any failure into something a form can show. An unknown message key from the server would show as raw
  * text, so it becomes the generic error; a rate limit shows its wait.
@@ -39,11 +47,11 @@ export function failureOf(
   error: unknown,
   hasMessage: (messageKey: string) => boolean,
 ): FormFailure {
-  if (!(error instanceof ApiError)) return { messageKey: INTERNAL_KEY, gaps: [] };
+  if (!(error instanceof ApiError)) return { messageKey: INTERNAL_KEY, gaps: [], removed: [] };
   if (error.code === ERROR_CODE.RATE_LIMITED && error.retryAfterSeconds !== undefined) {
     const minutes = Math.ceil(error.retryAfterSeconds / SECONDS_PER_MINUTE);
-    return { messageKey: "auth.rateLimited", values: { minutes }, gaps: [] };
+    return { messageKey: "auth.rateLimited", values: { minutes }, gaps: [], removed: [] };
   }
   const messageKey = hasMessage(error.messageKey) ? error.messageKey : INTERNAL_KEY;
-  return { messageKey, gaps: readGaps(error.details) };
+  return { messageKey, gaps: readGaps(error.details), removed: readRemoved(error.details) };
 }

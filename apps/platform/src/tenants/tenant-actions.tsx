@@ -24,6 +24,7 @@ const VARIANT: Record<TenantActionKind, "primary" | "secondary" | "danger"> = {
   changePackage: "secondary",
   grantModule: "secondary",
   revokeModule: "secondary",
+  changeIndustry: "secondary",
 };
 
 /** The action buttons of a tenant's page. The sheets and their forms load on the first tap. */

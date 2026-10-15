@@ -9,7 +9,13 @@ import { holdsPermission } from "../auth/permissions";
 import type { Labels } from "../lib/labels";
 
 export type TenantActionKind =
-  "suspend" | "reactivate" | "extendTrial" | "changePackage" | "grantModule" | "revokeModule";
+  | "suspend"
+  | "reactivate"
+  | "extendTrial"
+  | "changePackage"
+  | "grantModule"
+  | "revokeModule"
+  | "changeIndustry";
 
 /** Text of the tenant action buttons and sheets; the tenant name is filled into the titles on the server. */
 export const TENANT_ACTION_LABEL_KEYS = [
@@ -19,6 +25,7 @@ export const TENANT_ACTION_LABEL_KEYS = [
   "platform.action.changePackage",
   "platform.action.grantModule",
   "platform.action.revokeModule",
+  "platform.action.changeIndustry",
   "platform.sheet.suspend.title",
   "platform.sheet.suspend.description",
   "platform.sheet.reactivate.title",
@@ -33,6 +40,8 @@ export const TENANT_ACTION_LABEL_KEYS = [
   "platform.sheet.grantModule.success",
   "platform.sheet.revokeModule.title",
   "platform.sheet.revokeModule.success",
+  "platform.sheet.changeIndustry.title",
+  "platform.sheet.changeIndustry.success",
   "platform.field.reason",
   "platform.field.reasonHint",
   "platform.field.days",
@@ -42,6 +51,18 @@ export const TENANT_ACTION_LABEL_KEYS = [
   "platform.field.chooseModule",
   "platform.field.expiresAt",
   "platform.field.expiresAtHint",
+  "platform.field.industryTemplate",
+  "platform.removed.kind",
+  "platform.removed.module",
+  "platform.removed.customField",
+  "platform.removed.fieldType",
+  "platform.removed.referenceEntity",
+  "platform.removed.link",
+  "platform.removed.option",
+  "platform.removed.term",
+  "platform.removed.contactRole",
+  "platform.removed.relation",
+  "platform.removed.resourceType",
 ] as const;
 
 export type TenantActionLabels = Labels<(typeof TENANT_ACTION_LABEL_KEYS)[number]>;
@@ -56,6 +77,11 @@ export interface ModuleOption {
   label: string;
 }
 
+export interface IndustryTemplateOption {
+  industryTemplateKey: string;
+  label: string;
+}
+
 /** Everything the lazily loaded sheets need; plain data, so it can travel from the server page. */
 export interface TenantActionContext {
   organizationId: string;
@@ -64,6 +90,7 @@ export interface TenantActionContext {
   basePackages: PackageOption[];
   addOnPackages: PackageOption[];
   modules: ModuleOption[];
+  industryTemplates: IndustryTemplateOption[];
   labels: TenantActionLabels;
 }
 
@@ -88,6 +115,9 @@ export function availableTenantActions(
   }
   if (holdsPermission(operator, PLATFORM_PERMISSION_KEY.ENTITLEMENT_WRITE)) {
     actions.push("grantModule", "revokeModule");
+  }
+  if (holdsPermission(operator, PLATFORM_PERMISSION_KEY.INDUSTRY_WRITE)) {
+    actions.push("changeIndustry");
   }
   return actions;
 }

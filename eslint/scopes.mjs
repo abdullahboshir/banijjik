@@ -63,5 +63,6 @@ export const INDUSTRY_READER_FILES = [
   "apps/platform/src/tenants/change-industry-sheet.tsx",
   "apps/platform/src/tenants/tenant-action-labels.ts",
   "apps/platform/src/tenants/tenant-detail-page.tsx",
+  "apps/platform/src/test-support/browser-stack.ts",
   ...TEST_FILES,
 ];

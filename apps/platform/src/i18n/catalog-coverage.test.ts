@@ -1,12 +1,18 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  CONTACT_ROLE,
+  CUSTOM_FIELD_ENTITY_TYPE,
+  CUSTOM_FIELD_TYPE,
+  INDUSTRY_TEMPLATE_STATUS,
   LIMIT_KEY_VALUES,
   MODULE_CLASS,
+  OFFERING_KIND,
   ORGANIZATION_STATUS,
   PACKAGE_STATUS,
   PLATFORM_AUDIT_ACTION,
   PLATFORM_AUDIT_TARGET_TYPE,
+  RELATION_KEY,
   SUBSCRIPTION_STATUS,
   MODULE_OVERRIDE_EFFECT,
 } from "@banijjik/contracts";
@@ -14,6 +20,7 @@ import { BUNDLED_CATALOGS, PLATFORM_SCREEN_CATALOGS, SUPPORTED_LOCALES } from "@
 import { describe, expect, it } from "vitest";
 import { PACKAGE_FORM_LABEL_KEYS } from "../packages/package-form-labels";
 import { MODULE_LABEL_KEYS, moduleClassLabelKey } from "../packages/module-catalog";
+import { REMOVED_ITEM_LABEL_KEYS } from "../industry-templates/removed-items";
 import { REMOVE_OVERRIDE_LABEL_KEYS } from "../tenants/remove-override-labels";
 import { TENANT_ACTION_LABEL_KEYS } from "../tenants/tenant-action-labels";
 
@@ -54,6 +61,19 @@ function enumeratedKeys(): string[] {
     ...TENANT_ACTION_LABEL_KEYS,
     ...REMOVE_OVERRIDE_LABEL_KEYS,
     ...PACKAGE_FORM_LABEL_KEYS,
+    ...REMOVED_ITEM_LABEL_KEYS,
+    ...Object.values(INDUSTRY_TEMPLATE_STATUS).map(
+      (status) => `platform.status.industryTemplate.${status}`,
+    ),
+    ...Object.values(OFFERING_KIND).map((kind) => `platform.kind.${kind}`),
+    ...Object.values(CUSTOM_FIELD_TYPE).map((fieldType) => `platform.fieldType.${fieldType}`),
+    ...Object.values(CUSTOM_FIELD_ENTITY_TYPE).map((entityType) => `platform.entity.${entityType}`),
+    ...Object.values(CONTACT_ROLE).map((role) => `platform.contactRole.${role}`),
+    ...Object.values(RELATION_KEY).map((relation) => `platform.relation.${relation}`),
+    "platform.industry.action.publish",
+    "platform.industry.action.retire",
+    "platform.industry.locked.PUBLISHED",
+    "platform.industry.locked.RETIRED",
   ];
 }
 

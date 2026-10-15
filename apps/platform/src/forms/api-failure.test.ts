@@ -19,6 +19,7 @@ describe("failureOf", () => {
     expect(failureOf(refusal(), knowsEverything)).toEqual({
       messageKey: "errors.package_in_use",
       gaps: [],
+      removed: [],
     });
   });
 

@@ -1,3 +1,4 @@
+import { newId } from "@banijjik/ids";
 import type { Page } from "puppeteer-core";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { banglaText } from "./test-support/bangla-text";
@@ -6,6 +7,7 @@ import {
   PLATFORM_ORIGIN,
   PROBE_MODULE_KEY,
   effectiveModulesOf,
+  readOrganizationConfig,
   seedOrganization,
   seedPerson,
   startBrowserStack,
@@ -57,6 +59,16 @@ const PROBE_MODULE_LABEL = "বুককিপিং";
 /** The suspended page names the product after the sentence, so only the fixed beginning is compared. */
 const SUSPENDED_PAGE_TEXT = banglaText("errors.org_suspended").split("{brand}")[0]?.trim() ?? "";
 
+async function industryDetailPath(page: Page): Promise<string> {
+  await page.goto(`${PLATFORM_ORIGIN}/industry-templates`, { waitUntil: "networkidle0" });
+  const href = await page.$eval(
+    "a[href^='/industry-templates/']:not([href='/industry-templates/new'])",
+    (anchor) => anchor.getAttribute("href"),
+  );
+  if (href === null) throw new Error("no industry template link on the list");
+  return href;
+}
+
 let stack: BrowserStack;
 let owner: SeededPerson;
 let organizationId: string;
@@ -65,7 +77,7 @@ let tenantPath = "";
 beforeAll(async () => {
   stack = await startBrowserStack();
   owner = await seedPerson("আকমি মালিক");
-  organizationId = await seedOrganization(owner, TENANT_SLUG, TENANT_NAME);
+  organizationId = await seedOrganization(owner, TENANT_SLUG, { name: TENANT_NAME });
 });
 
 afterAll(async () => {
@@ -140,7 +152,7 @@ describe("an operator at work, with a tenant's member in another tab", () => {
   it("shows the Platform band and the menu the operator's permissions allow", async () => {
     const text = await bodyText(operatorPage);
     expect(text).toContain(banglaText("platform.band"));
-    for (const key of ["tenants", "packages", "audit", "operators"]) {
+    for (const key of ["tenants", "packages", "industries", "audit", "operators"]) {
       expect(text).toContain(banglaText(`platform.nav.${key}`));
     }
   });
@@ -247,6 +259,7 @@ describe("an operator at work, with a tenant's member in another tab", () => {
     const menu = await bodyText(supportPage);
     expect(menu).toContain(banglaText("platform.nav.tenants"));
     expect(menu).toContain(banglaText("platform.nav.packages"));
+    expect(menu).toContain(banglaText("platform.nav.industries"));
     expect(menu).not.toContain(banglaText("platform.nav.operators"));
     expect(menu).not.toContain(banglaText("platform.nav.audit"));
     await supportPage.goto(`${PLATFORM_ORIGIN}/operators`, { waitUntil: "networkidle0" });
@@ -275,6 +288,8 @@ describe("an operator at work, with a tenant's member in another tab", () => {
       tenantPath,
       "/packages",
       "/packages/new",
+      "/industry-templates",
+      "/industry-templates/new",
       "/audit",
       "/operators",
       "/sign-in",
@@ -282,7 +297,8 @@ describe("an operator at work, with a tenant's member in another tab", () => {
 
     it("stays within the budget on every route", async () => {
       const failures: string[] = [];
-      for (const route of routes()) {
+      const detailPath = await industryDetailPath(operatorPage);
+      for (const route of [...routes(), detailPath]) {
         const size = await measureInitialJs(operatorPage, route);
         process.stdout.write(
           `initial JS ${route}: ${size.gzipBytes} B = ${toKiB(size.gzipBytes)} KiB\n`,
@@ -328,6 +344,9 @@ describe("the panel on a phone (13-UX section 12: read-only use in an emergency)
       tenantPath,
       "/packages",
       "/packages/new",
+      "/industry-templates",
+      "/industry-templates/new",
+      await industryDetailPath(page),
       "/audit",
       "/operators",
     ]) {
@@ -362,6 +381,9 @@ describe.skipIf(!screenshotDir)("screenshots in Bangla", () => {
       ["tenant-detail", tenantPath],
       ["packages", "/packages"],
       ["package-new", "/packages/new"],
+      ["industries", "/industry-templates"],
+      ["industry-new", "/industry-templates/new"],
+      ["industry-detail", await industryDetailPath(page)],
       ["audit", "/audit"],
       ["operators", "/operators"],
     ];
@@ -372,3 +394,117 @@ describe.skipIf(!screenshotDir)("screenshots in Bangla", () => {
     await closePage(page);
   });
 });
+
+describe("building an industry from the panel", () => {
+  it("creates, publishes and assigns a copy of retail", async () => {
+    const page = await openPage(stack.browser, DESKTOP_VIEWPORT);
+    await signInAsOperator(page);
+    await gotoHydrated(page, "/industry-templates/new", "#template-key");
+    await page.type("#template-key", "BAKERY");
+    await page.type("#template-name-bn", "বেকারি");
+    await page.type("#template-name-en", "Bakery");
+    await page.type("#template-description-bn", "বেকারির দোকান");
+    await page.type("#template-description-en", "A bakery shop");
+    await page.type("#template-icon", "tag");
+    const retailId = await page.evaluate(() => {
+      const option = [...document.querySelectorAll("#template-clone option")].find((item) =>
+        item.textContent?.includes("RETAIL"),
+      );
+      return option instanceof HTMLOptionElement ? option.value : "";
+    });
+    await page.select("#template-clone", retailId);
+    await page.type("#template-reason", "বেকারি কপি");
+    await page.click("form button[type=submit]");
+    await page.waitForFunction(() =>
+      /^\/industry-templates\/[^/]+$/.test(window.location.pathname),
+    );
+    const templatePath = new URL(page.url()).pathname;
+
+    await page.click("#add-field");
+    await waitForDialogSettled(page);
+    await page.select("#field-entity", "member");
+    await page.type("#field-key", "nid_number");
+    await page.type("#field-label-bn", "এনআইডি");
+    await page.type("#field-label-en", "NID");
+    await page.click("#field-sensitive");
+    await page.click(SUBMIT_IN_DIALOG);
+    await waitForDialogClosed(page);
+    await saveSection(page, "#save-fields", "এনআইডি ফিল্ড");
+
+    await page.click("#term-offering-en", { clickCount: 3 });
+    await page.keyboard.press("Backspace");
+    await page.type("#term-offering-en", "Item");
+    await saveSection(page, "#save-terms", "পণ্যের ইংরেজি");
+
+    await page.select("#setting-organization-digitScript", "BENGALI");
+    await saveSection(page, "#save-settings", "বাংলা সংখ্যা");
+    await page.click("#publish-template");
+    await waitForDialogSettled(page);
+    await page.type("#template-save-reason", "প্রকাশ");
+    await page.click(SUBMIT_IN_DIALOG);
+    await waitForDialogClosed(page);
+    expect(await bodyText(page)).toContain(
+      banglaText("platform.status.industryTemplate.PUBLISHED"),
+    );
+
+    const baker = await seedPerson("বেকারি মালিক");
+    const bakeryId = await seedOrganization(baker, `bakery-${newId().slice(-8)}`, {
+      name: "বেকারি ঘর",
+      templateKey: "BAKERY",
+    });
+    const config = await readOrganizationConfig(baker, bakeryId);
+    expect(config.terms["offering"]?.en).toBe("Item");
+    expect(config.settings["organization.digitScript"]).toBe("BENGALI");
+
+    await checkByLabel(page, banglaText("platform.module.sales"));
+    await page.click("#save-kinds");
+    await waitForDialogSettled(page);
+    await page.type("#template-save-reason", "মডিউল সরানো");
+    await page.click(SUBMIT_IN_DIALOG);
+    await waitForText(page, "মডিউল: Sales");
+    await clickByName(page, banglaText("common.cancel"));
+    await waitForDialogClosed(page);
+
+    await page.goto(`${PLATFORM_ORIGIN}${tenantPath}`, { waitUntil: "networkidle0" });
+    await clickByName(page, banglaText("platform.action.changeIndustry"));
+    await waitForDialogSettled(page);
+    await page.select("#change-industry-template", "BAKERY");
+    await page.type("#change-industry-reason", "বেকারিতে নেওয়া");
+    await page.click(SUBMIT_IN_DIALOG);
+    await waitForDialogClosed(page);
+    expect(await bodyText(page)).toContain("BAKERY");
+
+    const support = await seedPerson("সাপোর্ট ব্যক্তি");
+    await page.goto(`${PLATFORM_ORIGIN}/operators`, { waitUntil: "networkidle0" });
+    await clickByName(page, banglaText("platform.action.addOperator"));
+    await waitForDialogSettled(page);
+    await page.type("#operator-identifier", support.email);
+    await checkByLabel(page, banglaText("platform.role.SUPPORT"));
+    await page.type("#operator-reason", "সাপোর্ট হিসেবে যোগ");
+    await page.click(SUBMIT_IN_DIALOG);
+    await waitForDialogClosed(page);
+
+    const supportPage = await openPage(stack.browser, DESKTOP_VIEWPORT);
+    await gotoHydrated(supportPage, "/sign-in", "form button[type=submit]");
+    await supportPage.type("#identifier", support.email);
+    await supportPage.type("#password", support.password);
+    await Promise.all([
+      supportPage.waitForFunction(() => window.location.pathname === "/tenants"),
+      supportPage.click("form button[type=submit]"),
+    ]);
+    await supportPage.goto(`${PLATFORM_ORIGIN}${templatePath}`, { waitUntil: "networkidle0" });
+    const readOnly = await bodyText(supportPage);
+    expect(readOnly).toContain(banglaText("platform.industry.readOnly"));
+    expect(await supportPage.$("#publish-template")).toBeNull();
+    await closePage(supportPage);
+    await closePage(page);
+  });
+});
+
+async function saveSection(page: Page, buttonId: string, reason: string): Promise<void> {
+  await page.click(buttonId);
+  await waitForDialogSettled(page);
+  await page.type("#template-save-reason", reason);
+  await page.click(SUBMIT_IN_DIALOG);
+  await waitForDialogClosed(page);
+}

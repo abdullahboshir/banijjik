@@ -12,9 +12,16 @@ import type {
   PlatformReasonRequest,
   PlatformSessionResponse,
   PlatformSubscriptionResponse,
+  PlatformIndustryTemplateDetail,
+  PlatformIndustryTemplateSummary,
+  PlatformSettingDefinition,
 } from "@banijjik/contracts";
 import {
   platformOperatorCreateRequestSchema,
+  type ChangeIndustryTemplateBody,
+  type IndustryTemplateCreateBody,
+  type IndustryTemplateStatusBody,
+  type IndustryTemplateUpdateBody,
   type PlatformOperatorStatusBody,
   type PlatformOperatorUpdateBody,
 } from "@banijjik/validation";
@@ -160,3 +167,48 @@ export async function archivePackage(
   );
   return result.data;
 }
+
+export async function createIndustryTemplate(
+  request: IndustryTemplateCreateBody,
+): Promise<PlatformIndustryTemplateDetail> {
+  const result = await apiFetch<PlatformIndustryTemplateDetail>("/platform/industry-templates", {
+    method: "POST",
+    body: request,
+  });
+  return result.data;
+}
+
+export async function updateIndustryTemplate(
+  industryTemplateId: string,
+  request: IndustryTemplateUpdateBody,
+): Promise<PlatformIndustryTemplateDetail> {
+  const result = await apiFetch<PlatformIndustryTemplateDetail>(
+    `/platform/industry-templates/${industryTemplateId}`,
+    { method: "PATCH", body: request },
+  );
+  return result.data;
+}
+
+export async function setIndustryTemplateStatus(
+  industryTemplateId: string,
+  action: "publish" | "retire",
+  request: IndustryTemplateStatusBody,
+): Promise<PlatformIndustryTemplateDetail> {
+  const result = await apiFetch<PlatformIndustryTemplateDetail>(
+    `/platform/industry-templates/${industryTemplateId}/${action}`,
+    { method: "POST", body: request },
+  );
+  return result.data;
+}
+
+export async function changeIndustryTemplate(
+  organizationId: string,
+  request: ChangeIndustryTemplateBody,
+): Promise<void> {
+  await apiFetch<unknown>(`/platform/organizations/${organizationId}/change-industry-template`, {
+    method: "POST",
+    body: request,
+  });
+}
+
+export type { PlatformIndustryTemplateSummary, PlatformSettingDefinition };

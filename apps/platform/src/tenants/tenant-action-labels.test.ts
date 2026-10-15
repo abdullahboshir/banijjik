@@ -11,6 +11,7 @@ describe("availableTenantActions", () => {
       "changePackage",
       "grantModule",
       "revokeModule",
+      "changeIndustry",
     ]);
   });
 

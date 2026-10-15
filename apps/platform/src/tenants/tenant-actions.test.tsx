@@ -34,6 +34,7 @@ function context(): TenantActionContext {
     basePackages: [],
     addOnPackages: [],
     modules: [{ moduleKey: "pos", label: "POS" }],
+    industryTemplates: [{ industryTemplateKey: "SALON", label: "সেলুন" }],
     labels: pickLabels(banglaTranslator().t, TENANT_ACTION_LABEL_KEYS, { name: "Acme" }),
   };
 }
@@ -59,9 +60,14 @@ describe("TenantActions by permission", () => {
       />,
     );
     expect(buttonNames()).toEqual(
-      ["suspend", "extendTrial", "changePackage", "grantModule", "revokeModule"].map((kind) =>
-        banglaText(`platform.action.${kind}`),
-      ),
+      [
+        "suspend",
+        "extendTrial",
+        "changePackage",
+        "grantModule",
+        "revokeModule",
+        "changeIndustry",
+      ].map((kind) => banglaText(`platform.action.${kind}`)),
     );
   });
 
