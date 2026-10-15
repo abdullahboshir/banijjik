@@ -15,7 +15,6 @@ import type {
   PlatformIndustryTemplateDetail,
   PlatformIndustryTemplateSummary,
   PlatformSettingDefinition,
-  IndustryTemplateCreateRequest,
 } from "@banijjik/contracts";
 import {
   platformOperatorCreateRequestSchema,
@@ -26,6 +25,7 @@ import {
   type PlatformOperatorUpdateBody,
 } from "@banijjik/validation";
 import type { z } from "zod";
+import type { IndustryTemplateCreatePayload } from "../industry-templates/create-payload";
 import { apiFetch } from "./platform-api-client";
 
 /** Signs an operator in; the API sets the platform cookies and answers with roles and permissions. */
@@ -169,7 +169,7 @@ export async function archivePackage(
 }
 
 export async function createIndustryTemplate(
-  request: IndustryTemplateCreateRequest,
+  request: IndustryTemplateCreatePayload,
 ): Promise<PlatformIndustryTemplateDetail> {
   const result = await apiFetch<PlatformIndustryTemplateDetail>("/platform/industry-templates", {
     method: "POST",
