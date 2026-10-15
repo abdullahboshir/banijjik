@@ -85,7 +85,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 2.2 resolver integration: terms, settings and fields in the resolved config, tenant module switches | planned (2026-10-15 on 1b4f85d, `docs/plans/2.2.md`, Opus; T1, wave 2) | pair with 2.5; owns terms (`TermOverride`, `/terms`) |
 | 2.3 custom field engine (API) | merged (2026-10-14, implemented with Cursor, Claude T1 review 2 passed; ADR-102 proposed) | branch `s/2.3-custom-fields`; handoff `docs/handoffs/2.3.md`. Seed fields are labelled. Not merged, not pushed |
 | 2.4 settings engine | merged (2026-10-14, implemented with Cursor, Claude T1 review 2 passed; ADR-103 proposed) | branch `s/2.4-settings`; handoff `docs/handoffs/2.4.md`; ADR-103 proposed. Review 1 fixes R1-1 to R1-3 committed. Lint, format, turbo (29 tasks), test:tools and both browser suites passed |
-| 2.5 dynamic form renderer | planned (2026-10-15 on 1b4f85d, `docs/plans/2.5.md`, Opus; T2, wave 2) | pair with 2.2; FILE, IMAGE and REFERENCE inputs come with the file module and entity cards |
+| 2.5 dynamic form renderer | implemented (awaiting review) | branch `s/2.5-dynamic-form`; handoff `docs/handoffs/2.5.md`. FILE, IMAGE and REFERENCE stay a pending line until the file module and entity cards. Not merged, not pushed |
 | 2.6 platform UI: template, module and field builders | todo (wave 3) | pair with 2.7 |
 | 2.7 tenant UI: settings and tenant custom fields | todo (wave 3) | pair with 2.6 |
 
