@@ -4,6 +4,7 @@ import type {
   PlatformIndustryTemplateSummary,
 } from "@banijjik/contracts";
 import type { IndustryTemplate } from "../../domain/industry-template.entity.js";
+import { pendingSettingKeysOf, type SettingCatalog } from "../registered-settings.js";
 
 export function toIndustryTemplateCard(template: IndustryTemplate): IndustryTemplateCard {
   return {
@@ -32,11 +33,13 @@ export function toIndustryTemplateSummary(
 
 export function toIndustryTemplateDetail(
   template: IndustryTemplate,
+  settings: SettingCatalog,
 ): PlatformIndustryTemplateDetail {
   return {
     ...toIndustryTemplateSummary(template),
     description: template.description,
     configuration: template.configuration,
     createdAt: template.createdAt.toISOString(),
+    pendingSettingKeys: pendingSettingKeysOf(template.configuration.settingsDefaults, settings),
   };
 }

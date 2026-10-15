@@ -16,6 +16,7 @@ import {
 import type { IndustryTemplate } from "../../domain/industry-template.entity.js";
 import type { IndustryTemplateWriteDependencies } from "./industry-template-write-dependencies.js";
 import { auditFieldsOf, sameConfiguration } from "./industry-template-audit-fields.js";
+import { assertRegisteredSettingDefaults } from "../registered-settings.js";
 import { toIndustryTemplateDetail } from "./industry-template-presenter.js";
 
 export interface UpdateIndustryTemplateInput {
@@ -37,12 +38,18 @@ export class UpdateIndustryTemplateUseCase {
 
   async execute(input: UpdateIndustryTemplateInput): Promise<PlatformIndustryTemplateDetail> {
     const existing = await this.requireTemplate(input.industryTemplateId);
+    if (input.configuration !== undefined) {
+      assertRegisteredSettingDefaults(
+        input.configuration.settingsDefaults,
+        this.dependencies.settings,
+      );
+    }
     const edited = existing.withEdits(input);
     const configurationChanged = this.configurationChanged(existing, input.configuration);
     const saved = await this.dependencies.unitOfWork.run(() =>
       this.save({ existing, edited, input, configurationChanged }),
     );
-    return toIndustryTemplateDetail(saved);
+    return toIndustryTemplateDetail(saved, this.dependencies.settings);
   }
 
   private async save(command: {

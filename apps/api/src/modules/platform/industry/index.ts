@@ -36,8 +36,11 @@ import { ChangeIndustryTemplateController } from "./presentation/change-industry
 import { buildChangeIndustryTemplateRoutes } from "./presentation/change-industry-template.router.js";
 import { PlatformIndustryTemplateController } from "./presentation/platform-industry-template.controller.js";
 import { buildPlatformIndustryTemplateRouter } from "./presentation/platform-industry-template.router.js";
+import type { SettingCatalog } from "./application/registered-settings.js";
 import { PublishedIndustryTemplateController } from "./presentation/published-industry-template.controller.js";
 import { buildPublishedIndustryTemplateRouter as createPublishedIndustryTemplateRouter } from "./presentation/published-industry-template.router.js";
+import { SettingDefinitionsController } from "./presentation/setting-definitions.controller.js";
+import { buildSettingDefinitionsRouter as createSettingDefinitionsRouter } from "./presentation/setting-definitions.router.js";
 
 export { registerIndustryModels } from "./infrastructure/register-industry-models.js";
 export { industryManifest } from "./module.manifest.js";
@@ -99,6 +102,7 @@ export interface IndustryPlatformRouterDependencies {
   readonly clock: Clock;
   readonly platformAudit: PlatformAuditRecorder;
   readonly usage: OrganizationTemplateUsage;
+  readonly settings: SettingCatalog;
 }
 
 /** `/platform/industry-templates`, mounted behind authenticatePlatform. */
@@ -112,10 +116,11 @@ export function buildIndustryPlatformRouter(
     unitOfWork: new MongoUnitOfWork(),
     platformAudit: dependencies.platformAudit,
     clock: dependencies.clock,
+    settings: dependencies.settings,
   };
   const controller = new PlatformIndustryTemplateController({
     listTemplates: new ListPlatformIndustryTemplatesUseCase(templates),
-    getTemplate: new GetIndustryTemplateUseCase(templates),
+    getTemplate: new GetIndustryTemplateUseCase(templates, dependencies.settings),
     createTemplate: new CreateIndustryTemplateUseCase(writes),
     updateTemplate: new UpdateIndustryTemplateUseCase(writes),
     setStatus: new SetIndustryTemplateStatusUseCase(writes),
@@ -137,6 +142,16 @@ export function buildChangeIndustryTemplateRouter(
     new ChangeIndustryTemplateController(changeTemplate),
     permission,
   );
+}
+
+export { settingCatalogFrom } from "./application/registered-settings.js";
+
+/** `GET /platform/setting-definitions` (`platform.industry.read`). */
+export function buildSettingDefinitionsRouter(
+  settings: SettingCatalog,
+  permission: PlatformPermissionMiddlewareFactory,
+): Router {
+  return createSettingDefinitionsRouter(new SettingDefinitionsController(settings), permission);
 }
 
 export type { IndustryCustomFieldReader };

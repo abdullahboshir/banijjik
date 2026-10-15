@@ -16,6 +16,7 @@ import {
 } from "../../domain/errors.js";
 import type { IndustryTemplateWriteDependencies } from "./industry-template-write-dependencies.js";
 import { auditFieldsOf } from "./industry-template-audit-fields.js";
+import { assertRegisteredSettingDefaults } from "../registered-settings.js";
 import { toIndustryTemplateDetail } from "./industry-template-presenter.js";
 
 export interface CreateIndustryTemplateInput {
@@ -43,6 +44,10 @@ export class CreateIndustryTemplateUseCase {
 
   async execute(input: CreateIndustryTemplateInput): Promise<PlatformIndustryTemplateDetail> {
     const contents = await this.contentsOf(input);
+    assertRegisteredSettingDefaults(
+      contents.configuration.settingsDefaults,
+      this.dependencies.settings,
+    );
     const created = IndustryTemplate.create({
       industryTemplateKey: input.industryTemplateKey,
       status: INDUSTRY_TEMPLATE_STATUS.DRAFT,
@@ -55,7 +60,7 @@ export class CreateIndustryTemplateUseCase {
       now: this.dependencies.clock.now(),
     });
     await this.persist(created, input);
-    return toIndustryTemplateDetail(created);
+    return toIndustryTemplateDetail(created, this.dependencies.settings);
   }
 
   private async persist(

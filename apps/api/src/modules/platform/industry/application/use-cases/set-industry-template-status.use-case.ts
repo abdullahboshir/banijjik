@@ -26,10 +26,12 @@ export class SetIndustryTemplateStatusUseCase {
 
   async execute(input: SetIndustryTemplateStatusInput): Promise<PlatformIndustryTemplateDetail> {
     const existing = await this.requireTemplate(input.industryTemplateId);
-    if (existing.status === input.target) return toIndustryTemplateDetail(existing);
+    if (existing.status === input.target) {
+      return toIndustryTemplateDetail(existing, this.dependencies.settings);
+    }
     const next = this.transition(existing, input.target);
     const saved = await this.dependencies.unitOfWork.run(() => this.save(existing, next, input));
-    return toIndustryTemplateDetail(saved);
+    return toIndustryTemplateDetail(saved, this.dependencies.settings);
   }
 
   private transition(existing: IndustryTemplate, target: IndustryTemplateStatus): IndustryTemplate {

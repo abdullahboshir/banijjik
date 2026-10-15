@@ -119,6 +119,11 @@ export interface PlatformIndustryTemplateDetail extends PlatformIndustryTemplate
   readonly description: LocalizedText;
   readonly configuration: IndustryTemplateConfiguration;
   readonly createdAt: string;
+  /**
+   * `settingsDefaults` keys no registered module declares yet (ADR-106).
+   * Computed on read; not stored.
+   */
+  readonly pendingSettingKeys: readonly string[];
 }
 
 /**

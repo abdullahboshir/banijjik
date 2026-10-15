@@ -58,5 +58,10 @@ export const INDUSTRY_READER_FILES = [
   "**/modules/core/organization/infrastructure/**",
   "**/packages/contracts/**",
   "**/packages/validation/**",
+  // The platform panel builds templates and moves a tenant onto one (card 2.6). It names the key; it does not branch on it.
+  "apps/platform/src/industry-templates/**",
+  "apps/platform/src/tenants/change-industry-sheet.tsx",
+  "apps/platform/src/tenants/tenant-action-labels.ts",
+  "apps/platform/src/tenants/tenant-detail-page.tsx",
   ...TEST_FILES,
 ];

@@ -30,6 +30,18 @@ export function industryTemplateStatusInvalid(): DomainRuleError {
   });
 }
 
+/** A registered setting default does not match its spec (ADR-106). Unregistered keys are not listed here. */
+export function industryTemplateSettingInvalid(settingKeys: readonly string[]): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "errors.industry_template_setting_invalid",
+    details: {
+      ruleKey: PLATFORM_RULE_KEY.INDUSTRY_TEMPLATE_SETTING_INVALID,
+      settingKeys,
+    },
+  });
+}
+
 /** A locked template, or an organization move, would drop something that is already in use. */
 export function industryTemplateChangeNotAdditive(removed: readonly string[]): DomainRuleError {
   return new DomainRuleError({

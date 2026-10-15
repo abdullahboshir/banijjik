@@ -64,7 +64,9 @@ interface TemplateDetail {
     readonly customFields: readonly { readonly fieldKey: string }[];
     readonly contactRoleKeys: readonly string[];
     readonly terms: Readonly<Record<string, unknown>>;
+    readonly settingsDefaults: Readonly<Record<string, unknown>>;
   };
+  readonly pendingSettingKeys: readonly string[];
 }
 
 let harness: IamApiHarness;
@@ -560,5 +562,73 @@ describe("template write permissions", () => {
         ).status,
       ).toBe(401);
     }
+  });
+});
+
+describe("setting defaults against the registry", () => {
+  it("lists organization.digitScript for support and answers 401 without a session", async () => {
+    const support = await createPlatformActor(harness.app, harness.connections, [
+      PLATFORM_ROLE.SUPPORT,
+    ]);
+    const listed = await support.call("get", "/setting-definitions");
+    const anonymous = await callApi(harness.app, {
+      method: "get",
+      path: "/api/v1/platform/setting-definitions",
+    });
+    const rows = listed.body.data as {
+      settingKey: string;
+      moduleKey: string;
+      value: { kind: string; values?: readonly string[] };
+    }[];
+    const keys = rows.map((row) => row.settingKey);
+
+    expect(listed.status).toBe(200);
+    expect(keys).toEqual([...keys].sort((left, right) => left.localeCompare(right, "en")));
+    expect(rows.find((row) => row.settingKey === "organization.digitScript")).toMatchObject({
+      moduleKey: "organization",
+      value: { kind: "ENUM", values: ["LATIN", "BENGALI"] },
+    });
+    expect(anonymous.status).toBe(401);
+  });
+
+  it("rejects a bad registered default and lists an unregistered key as pending", async () => {
+    const created = detailOf(await createFrom("RETAIL", "SETTING_SHOP"));
+    const invalid = await operator.call(
+      "patch",
+      `/industry-templates/${created.industryTemplateId}`,
+      {
+        version: created.version,
+        reason: "bad digit script",
+        configuration: {
+          ...created.configuration,
+          settingsDefaults: {
+            ...created.configuration.settingsDefaults,
+            "organization.digitScript": "ROMAN",
+          },
+        },
+      },
+    );
+    const accepted = await operator.call(
+      "patch",
+      `/industry-templates/${created.industryTemplateId}`,
+      {
+        version: created.version,
+        reason: "keep an unbuilt setting",
+        configuration: {
+          ...created.configuration,
+          settingsDefaults: {
+            ...created.configuration.settingsDefaults,
+            "sales.returnWindowDays": 14,
+          },
+        },
+      },
+    );
+
+    expect(invalid.status).toBe(422);
+    expect(invalid.body.error.code).toBe("BUSINESS_RULE");
+    expect(invalid.body.error.details.ruleKey).toBe("INDUSTRY_TEMPLATE_SETTING_INVALID");
+    expect(invalid.body.error.details.settingKeys).toEqual(["organization.digitScript"]);
+    expect(accepted.status).toBe(200);
+    expect(detailOf(accepted).pendingSettingKeys).toContain("sales.returnWindowDays");
   });
 });

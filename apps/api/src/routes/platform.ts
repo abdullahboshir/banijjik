@@ -39,6 +39,8 @@ import {
   buildIndustryPlatformRouter,
   buildChangeIndustryTemplateRouter,
   buildIndustryTemplateMove,
+  buildSettingDefinitionsRouter,
+  settingCatalogFrom,
 } from "../modules/platform/industry/index.js";
 import {
   buildPackageUsage,
@@ -145,6 +147,7 @@ function mountPackageAndOperatorRoutes(
 
 function mountIndustryRoutes(router: Router, input: PlatformRouterInput): void {
   const { clock, platformAudit } = input;
+  const settings = settingCatalogFrom(input.registry);
   router.use(
     "/industry-templates",
     buildIndustryPlatformRouter({
@@ -152,8 +155,10 @@ function mountIndustryRoutes(router: Router, input: PlatformRouterInput): void {
       clock,
       platformAudit,
       usage: buildOrganizationTemplateUsage(),
+      settings,
     }),
   );
+  router.use("/setting-definitions", buildSettingDefinitionsRouter(settings, platformPermission));
   router.use(
     "/organizations/:organizationId/change-industry-template",
     buildChangeIndustryTemplateRouter(

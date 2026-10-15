@@ -198,6 +198,7 @@
   "errors.industry_template_key_taken": "এই ব্যবসার ধরনের চাবিটি আগে থেকেই আছে।",
   "errors.industry_template_change_not_additive": "এই পরিবর্তনে আগের কিছু সরে যায়। প্রকাশিত বা ব্যবহৃত টেমপ্লেটে শুধু যোগ করা যায়।",
   "errors.industry_template_status_invalid": "এই অবস্থা থেকে টেমপ্লেটটি সেখানে নেওয়া যায় না।",
+  "errors.industry_template_setting_invalid": "একটি সেটিংয়ের ডিফল্ট সেই কী-এর নিবন্ধিত নিয়মের সঙ্গে মেলে না।",
   "form.field.notEditableHere": "এই ঘর এখানে সম্পাদনা করা যায় না",
   "form.field.choose": "বেছে নিন"
 }

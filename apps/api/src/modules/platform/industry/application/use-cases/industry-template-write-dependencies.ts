@@ -1,6 +1,7 @@
 import type { IndustryTemplateKey } from "@banijjik/contracts";
 import type { PlatformAuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
+import type { SettingCatalog } from "../registered-settings.js";
 import type { IndustryTemplateRepository } from "../ports/industry-template-repository.js";
 
 /** How many organizations already use a template key. Implemented by core/organization. */
@@ -19,4 +20,5 @@ export interface IndustryTemplateWriteDependencies {
   readonly unitOfWork: IndustryTemplateUnitOfWork;
   readonly platformAudit: PlatformAuditRecorder;
   readonly clock: Clock;
+  readonly settings: SettingCatalog;
 }
