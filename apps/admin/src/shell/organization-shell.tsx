@@ -12,7 +12,7 @@ import { getTranslator } from "../lib/i18n/get-translator";
 import { AccountMenuContainer } from "./account-menu-container";
 import { bannerStatesOf } from "./banner-state";
 import { BrandLogo } from "./brand-logo";
-import { buildMenuGroups } from "./menu-groups";
+import { buildMenuGroups, settingsHomeHref } from "./menu-groups";
 import { ShellNavigation } from "./shell-navigation";
 import { ShellSidebar } from "./shell-sidebar";
 import { SubscriptionBanners } from "./subscription-banners";
@@ -102,7 +102,11 @@ export async function OrganizationShell(props: OrganizationShellProps): Promise<
       hasSidebar={menuGroups.length > 0}
       topBar={topBar}
       sidebar={
-        <ShellSidebar groups={menuGroups} navLabel={t("nav.primary")} homeHref={`/${orgSlug}`} />
+        <ShellSidebar
+          groups={menuGroups}
+          navLabel={t("nav.primary")}
+          exactMatchHrefs={[`/${orgSlug}`, settingsHomeHref(orgSlug)]}
+        />
       }
       bottomNav={<MobileNavigation orgSlug={orgSlug} menu={menuGroups} t={t} />}
     >

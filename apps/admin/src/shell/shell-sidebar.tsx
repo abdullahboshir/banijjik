@@ -8,19 +8,24 @@ import { isOnPath } from "./active-path";
 export interface ShellSidebarProps {
   groups: SidebarGroup[];
   navLabel: string;
-  /** The business's home path: it is active only on that exact page, not on every page below it. */
-  homeHref: string;
+  /** Entries that are active only on that exact page, not on every page below it: the business home and the settings home. */
+  exactMatchHrefs: readonly string[];
 }
 
 /** The sidebar of the persistent shell: the server sends the groups, the browser marks the current page. */
-export function ShellSidebar({ groups, navLabel, homeHref }: ShellSidebarProps): ReactElement {
+export function ShellSidebar({
+  groups,
+  navLabel,
+  exactMatchHrefs,
+}: ShellSidebarProps): ReactElement {
   const activePath = usePathname();
   const markedGroups = groups.map((group) => ({
     ...group,
     entries: group.entries.map((entry) => ({
       ...entry,
-      isActive:
-        entry.href === homeHref ? activePath === homeHref : isOnPath(activePath, entry.href),
+      isActive: exactMatchHrefs.includes(entry.href)
+        ? activePath === entry.href
+        : isOnPath(activePath, entry.href),
     })),
   }));
   return <Sidebar groups={markedGroups} navLabel={navLabel} />;

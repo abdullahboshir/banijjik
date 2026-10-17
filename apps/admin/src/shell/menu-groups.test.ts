@@ -38,10 +38,12 @@ describe("buildMenuGroups", () => {
     expect(groups.map((group) => group.groupKey)).toEqual(["home", "settings"]);
     expect(groups[0]?.entries[0]?.href).toBe("/acme");
     expect(groups[1]?.entries.map((item) => item.menuKey)).toEqual([
+      "settings.home",
       "organization.profile",
       "organization.staff",
     ]);
-    expect(groups[1]?.entries[0]?.href).toBe("/acme/settings/profile");
+    expect(groups[1]?.entries[0]?.href).toBe("/acme/settings");
+    expect(groups[1]?.entries[1]?.href).toBe("/acme/settings/profile");
   });
 
   describe("labels", () => {
@@ -59,7 +61,8 @@ describe("buildMenuGroups", () => {
       locale: "bn" | "en";
     }): string | undefined {
       const groups = buildMenuGroups({ menu: [options.entry], orgSlug: "acme", ...options, t });
-      return groups[1]?.entries[0]?.label;
+      // Entry 0 of the settings group is the settings home (ADR-112); the entry under test follows it.
+      return groups[1]?.entries[1]?.label;
     }
 
     it("shows the business's word for an entry named after a term, in the user's language", () => {
@@ -83,7 +86,7 @@ describe("buildMenuGroups", () => {
           terms: { "menu.organization.staff": { bn: "টিম", en: "Team" } },
           locale: "bn",
         }),
-      ).toBe("কর্মী ও ভূমিকা");
+      ).toBe("কর্মী");
     });
   });
 

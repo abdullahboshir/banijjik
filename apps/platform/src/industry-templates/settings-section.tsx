@@ -10,7 +10,7 @@ import { useState, type ReactElement } from "react";
 import { IndustrySection } from "./industry-section";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
 import { writeConfiguration } from "./write-configuration";
-import { isSettingReadOnly, parseSettingText } from "./setting-input";
+import { isSettingReadOnly, parseSettingText } from "@banijjik/web-client";
 import type { TemplatePatch } from "./use-template-save";
 
 interface SettingRow {

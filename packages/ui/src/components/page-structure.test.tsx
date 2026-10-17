@@ -114,14 +114,13 @@ describe("TopicCard", () => {
 });
 
 describe("DashboardFrame", () => {
-  it("shows the greeting, the banners and the cards area", () => {
+  it("shows the greeting and the cards area", () => {
     render(
-      <DashboardFrame greeting="শুভ সকাল" banners={<p>সাবস্ক্রিপশন সতর্কতা</p>}>
+      <DashboardFrame greeting="শুভ সকাল">
         <p>আজকের কার্ড</p>
       </DashboardFrame>,
     );
     expect(screen.getByRole("heading", { level: 1, name: "শুভ সকাল" })).not.toBeNull();
-    expect(screen.getByText("সাবস্ক্রিপশন সতর্কতা")).not.toBeNull();
     expect(screen.getByText("আজকের কার্ড")).not.toBeNull();
   });
 

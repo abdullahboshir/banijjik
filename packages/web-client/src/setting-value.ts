@@ -1,8 +1,9 @@
 import type { SettingValueSpec } from "@banijjik/contracts";
 import { parseMoneyInput } from "@banijjik/ui";
 
-/** The only platform currency is BDT, which has two fraction digits (ADR-013). */
+/** Taka only at launch, two fraction digits (ADR-013). */
 const BDT_FRACTION_DIGITS = 2;
+const MINOR_UNITS_PER_MAJOR = 10 ** BDT_FRACTION_DIGITS;
 
 /** STRUCTURED settings have no editor yet: none are registered, and the value is shown read-only. */
 export function isSettingReadOnly(spec: SettingValueSpec): boolean {
@@ -28,10 +29,7 @@ function booleanText(text: string): boolean | undefined {
   return undefined;
 }
 
-/**
- * Turns what the operator typed into a value the setting spec accepts.
- * `undefined` means the text is not a value of that spec.
- */
+/** What the person typed or chose, as a value the spec accepts. `undefined` means it is not one. */
 export function parseSettingText(spec: SettingValueSpec, text: string): unknown | undefined {
   switch (spec.kind) {
     case "BOOLEAN":
@@ -52,4 +50,20 @@ export function parseSettingText(spec: SettingValueSpec, text: string): unknown 
       return unreachable;
     }
   }
+}
+
+function moneyText(minorUnits: number): string {
+  const major = Math.floor(minorUnits / MINOR_UNITS_PER_MAJOR);
+  const minor = minorUnits % MINOR_UNITS_PER_MAJOR;
+  if (minor === 0) return String(major);
+  return `${major}.${String(minor).padStart(BDT_FRACTION_DIGITS, "0")}`;
+}
+
+/** The stored value as the text an input starts with. */
+export function settingToText(spec: SettingValueSpec, value: unknown): string {
+  if (spec.kind === "MONEY" && typeof value === "number") return moneyText(value);
+  if (typeof value === "boolean" || typeof value === "number" || typeof value === "string") {
+    return String(value);
+  }
+  return "";
 }

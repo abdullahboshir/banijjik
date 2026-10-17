@@ -9,7 +9,7 @@ import { SheetFeedback } from "../settings/sheet-feedback";
 import { useSheetSubmit, type SheetSendResult } from "../settings/use-sheet-submit";
 import type { SettingSheetLabels } from "./setting-labels";
 import type { SettingRowView } from "./setting-rows";
-import { parseSettingText } from "./setting-value";
+import { parseSettingText } from "@banijjik/web-client";
 
 export interface SettingEditSheetProps {
   organizationId: string;

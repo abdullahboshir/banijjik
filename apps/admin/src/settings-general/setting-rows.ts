@@ -1,7 +1,7 @@
 import type { SettingsResponse, SettingValueSource, SettingValueSpec } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
 import { sourceLabelOf } from "./setting-labels";
-import { isSettingReadOnly, settingToText } from "./setting-value";
+import { isSettingReadOnly, settingToText } from "@banijjik/web-client";
 
 export interface ChoiceOption {
   value: string;

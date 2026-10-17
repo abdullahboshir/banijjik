@@ -1,6 +1,6 @@
 import type { SettingValueSpec } from "@banijjik/contracts";
 import { describe, expect, it } from "vitest";
-import { isSettingReadOnly, parseSettingText, settingToText } from "./setting-value";
+import { isSettingReadOnly, parseSettingText, settingToText } from "./setting-value.js";
 
 const ENUM: SettingValueSpec = { kind: "ENUM", values: ["LATIN", "BENGALI"] };
 const INTEGER: SettingValueSpec = { kind: "INTEGER", min: 1, max: 10 };
@@ -34,6 +34,20 @@ describe("parseSettingText", () => {
     expect(parseSettingText({ kind: "STRUCTURED", schemaKey: "x" }, "{}")).toBeUndefined();
     expect(isSettingReadOnly({ kind: "STRUCTURED", schemaKey: "x" })).toBe(true);
     expect(isSettingReadOnly(ENUM)).toBe(false);
+  });
+});
+
+describe("parseSettingText: more kinds", () => {
+  it("accepts a boolean, an integer and a money amount in minor units", () => {
+    expect(parseSettingText({ kind: "BOOLEAN" }, "false")).toBe(false);
+    expect(parseSettingText({ kind: "INTEGER", min: 0, max: 10 }, "3.5")).toBeUndefined();
+    expect(parseSettingText({ kind: "MONEY", min: 0, max: 100_000 }, "12.50")).toBe(1250);
+    expect(parseSettingText({ kind: "DURATION_MINUTES", min: 0, max: 60 }, "15")).toBe(15);
+  });
+
+  it("marks only a structured setting as read-only", () => {
+    expect(isSettingReadOnly({ kind: "STRUCTURED", schemaKey: "hours" })).toBe(true);
+    expect(isSettingReadOnly({ kind: "BOOLEAN" })).toBe(false);
   });
 });
 
