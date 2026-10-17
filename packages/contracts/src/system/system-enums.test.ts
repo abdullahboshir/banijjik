@@ -15,6 +15,7 @@ describe("system enums", () => {
       "MIGRATION",
       "WEBHOOK_ROUTING",
       "SCHEDULED_JOB",
+      "PUBLIC_FILE",
     ]);
   });
 

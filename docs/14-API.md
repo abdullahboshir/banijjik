@@ -73,6 +73,8 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | 422 | `IDEMPOTENCY_MISMATCH` | same key, different body |
 | 422 | `LIMIT_REACHED` | package limit; `details.limitKey`, `details.limit` |
 | 422 | `BUSINESS_RULE` | a named domain rule failed; `details.ruleKey` (e.g. `RETURN_WINDOW_EXPIRED`) |
+| 413 | `PAYLOAD_TOO_LARGE` | an upload over its size limit (`errors.file_too_large`), aborted while streaming |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | an upload whose content is not an accepted type, checked by magic bytes (`errors.file_type_not_allowed`) |
 | 429 | `RATE_LIMITED` | |
 | 500 | `INTERNAL` | unexpected; `requestId` for support |
 | 503 | `INTERNAL` | only `GET /ready` when the database does not answer (`errors.not_ready`); the one deliberate exception to "`INTERNAL` is 500" |

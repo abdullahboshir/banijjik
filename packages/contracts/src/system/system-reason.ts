@@ -10,6 +10,7 @@ export const SYSTEM_REASON = defineEnum([
   "MIGRATION",
   "WEBHOOK_ROUTING",
   "SCHEDULED_JOB",
+  "PUBLIC_FILE",
 ]);
 
 export type SystemReason = (typeof SYSTEM_REASON)[keyof typeof SYSTEM_REASON];

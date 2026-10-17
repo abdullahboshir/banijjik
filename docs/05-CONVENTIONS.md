@@ -90,7 +90,7 @@ Code is written for the next human reader first and the compiler second. If a re
 - **Tenant prefix everywhere outside the DB:** permission-cache keys `perm:{organizationId}:…`, file paths `org/{organizationId}/…`, queue job data always carries `organizationId`.
 
 ## System access (bypass), adapted from manoxen rule 9
-- Tenant filtering can only be skipped via `runAsSystem(reason, fn)`. `reason` is a closed contracts enum: `AUTH_LOOKUP`, `PERMISSION_RESOLUTION`, `CONTEXT_SETUP`, `SEED`, `PLATFORM_ADMIN`, `MIGRATION`, `WEBHOOK_ROUTING`, `SCHEDULED_JOB`.
+- Tenant filtering can only be skipped via `runAsSystem(reason, fn)`. `reason` is a closed contracts enum: `AUTH_LOOKUP`, `PERMISSION_RESOLUTION`, `CONTEXT_SETUP`, `SEED`, `PLATFORM_ADMIN`, `MIGRATION`, `WEBHOOK_ROUTING`, `SCHEDULED_JOB`, `PUBLIC_FILE` (the unauthenticated serving of one public file, ADR-109).
 - Every call is logged with its reason. It is forbidden in module repositories, use cases and controllers, except platform-admin use cases. A platform write records an audit entry; a platform read does not (ADR-093).
 
 ## Errors & observability, adapted from manoxen rule 19

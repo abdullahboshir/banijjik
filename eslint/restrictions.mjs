@@ -36,7 +36,8 @@ const deepPackagePatterns = [
 // Matches every import source EXCEPT @banijjik/contracts, @banijjik/ids and relative paths. The plan
 // asked for a negated group, but the `ignore` library behind `group` cannot re-include a child of an
 // ignored parent, so "!@banijjik/contracts" never worked (measured); `regex` is the same allow-list.
-const DOMAIN_FORBIDDEN_SOURCE = "^(?!@banijjik/(?:contracts|ids)$)(?!\\.{1,2}(?:/|$))";
+// The `file` entry of @banijjik/contracts is the same package: its root index is at the line cap (card 3.0).
+const DOMAIN_FORBIDDEN_SOURCE = "^(?!@banijjik/(?:contracts(?:/file)?|ids)$)(?!\\.{1,2}(?:/|$))";
 
 const DOMAIN_IMPORT_MESSAGE =
   "Domain code imports only @banijjik/contracts, @banijjik/ids and files of its own domain folder (ADR-011a).";

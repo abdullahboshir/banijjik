@@ -2,6 +2,7 @@ import {
   IAM_MESSAGE_KEYS,
   ORGANIZATION_MESSAGE_KEYS,
   SYSTEM_ROLE_NAME_MESSAGE_KEYS,
+  FILE_MESSAGE_KEYS,
   PERMISSION_LABEL_MESSAGE_KEYS,
   ROLE_MESSAGE_KEYS,
   IDEMPOTENCY_MESSAGE_KEYS,
@@ -44,6 +45,7 @@ describe("bundled catalogs", () => {
       ...ROLE_MESSAGE_KEYS,
       ...IDEMPOTENCY_MESSAGE_KEYS,
       ...ENTITLEMENT_MESSAGE_KEYS,
+      ...FILE_MESSAGE_KEYS,
     ];
     for (const locale of SUPPORTED_LOCALES) {
       for (const key of emittedKeys) {

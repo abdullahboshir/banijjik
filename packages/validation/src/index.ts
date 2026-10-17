@@ -179,3 +179,10 @@ export type {
   IndustryTemplateStatusBody,
   IndustryTemplateUpdateBody,
 } from "./platform/industry-template-write-schemas.js";
+export {
+  fileContentQuerySchema,
+  fileIdParamsSchema,
+  filePurposeSchema,
+  fileVariantSchema,
+  publicFileParamsSchema,
+} from "./file/file-request-schemas.js";
