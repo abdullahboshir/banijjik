@@ -49,6 +49,11 @@ const ROLE_PERMISSIONS = [
   PERMISSION_KEY.ORGANIZATION_MEMBER_READ,
   PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
 ];
+/** A message with the {term} placeholder, filled with the catalog's word for a location (no term renamed here). */
+function withLocationTerm(messageKey: string): string {
+  return message(messageKey).replace("{term}", message("locations.term"));
+}
+
 const LOCATIONS_LINK = 'a[href="/acme/settings/locations"]';
 
 let stack: BrowserStack;
@@ -160,7 +165,7 @@ describe("locations", () => {
     const page = await ownerPage();
     await gotoWhenHydrated(page, "/acme/settings/profile", "main button");
     const hadEntryBefore = await hasLink(page, LOCATIONS_LINK);
-    await clickByName(page, message("profile.locations.add"));
+    await clickByName(page, withLocationTerm("profile.locations.add"));
     await waitForDialogSettled(page);
     await page.type("#location-name", SECOND_LOCATION_NAME);
     await page.click(`[role=dialog] ${SUBMIT_BUTTON}`);
@@ -304,7 +309,7 @@ describe("a manager of one location (review M3)", () => {
     const roleButtons = await buttonLabelsOfMain(manager);
     await closePage(manager);
 
-    expect(locationButtons).not.toContain(message("locations.add"));
+    expect(locationButtons).not.toContain(withLocationTerm("locations.add"));
     expect(locationButtons).not.toContain(message("locations.edit"));
     expect(locationButtons).not.toContain(message("locations.archive"));
     expect(roleButtons).not.toContain(message("roles.add"));
@@ -364,7 +369,7 @@ describe.each(viewports)("screenshots at %s px in Bangla", (width, viewport) => 
       await gotoWhenHydrated(page, "/acme/settings/locations", "main button");
       await waitForText(page, SECOND_LOCATION_NAME);
       await shoot(page, "locations");
-      await shootSheet(page, "location-form", message("locations.add"));
+      await shootSheet(page, "location-form", withLocationTerm("locations.add"));
       await gotoWhenHydrated(page, "/acme/settings/roles", "main button");
       await waitForText(page, ROLE_NAME);
       await shoot(page, "roles");
