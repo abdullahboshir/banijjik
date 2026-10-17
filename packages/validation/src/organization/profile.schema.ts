@@ -6,6 +6,7 @@ import {
 import { z } from "zod";
 import { emailSchema } from "../email.js";
 import { phoneE164Schema } from "../phone.js";
+import { brandingUpdateSchema } from "./branding.schema.js";
 import {
   customFieldValuesRequestSchema,
   postalAddressSchema,
@@ -45,6 +46,7 @@ export const profileUpdateRequestSchema = z
     defaultLocale: z.enum(PREFERRED_LOCALE).optional(),
     profile: profileFieldsSchema.optional(),
     customFields: customFieldValuesRequestSchema.optional(),
+    branding: brandingUpdateSchema.optional(),
     version: versionSchema,
   })
   .refine((body) => Object.keys(body).some((key) => key !== "version"));

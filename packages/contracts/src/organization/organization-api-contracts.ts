@@ -17,6 +17,24 @@ export interface OrganizationProfileFields {
   tradeLicenseNumber?: string | undefined;
 }
 
+/** A business's branding as the API returns it (card 3.12). A missing key means "not set". */
+export interface OrganizationBrandingResponse {
+  logoFileId?: string | undefined;
+  /** The public `medium` variant of the logo, as a path under the API origin (ADR-109). */
+  logoUrl?: string | undefined;
+  primaryColor?: string | undefined;
+  accentColor?: string | undefined;
+  tagline?: string | undefined;
+}
+
+/** Per key: a value sets it, `null` clears it, an absent key leaves it. */
+export interface OrganizationBrandingUpdate {
+  logoFileId?: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
+  tagline?: string | null;
+}
+
 /** `GET /orgs/{organizationId}/profile` and the body of `PATCH /profile`. */
 export interface OrganizationProfileResponse {
   organizationId: string;
@@ -32,6 +50,7 @@ export interface OrganizationProfileResponse {
    * caller holds `organization.profile.update` at every location.
    */
   customFields: Record<string, unknown>;
+  branding: OrganizationBrandingResponse;
   version: number;
 }
 
@@ -42,6 +61,7 @@ export interface OrganizationProfileUpdateRequest {
   profile?: OrganizationProfileFields;
   /** Per key: a value sets it, `null` clears it, an absent key leaves it. Checked against the organization's fields. */
   customFields?: Record<string, unknown>;
+  branding?: OrganizationBrandingUpdate;
   version: number;
 }
 

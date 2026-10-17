@@ -3,4 +3,5 @@ export const ORGANIZATION_MESSAGE_KEYS: readonly string[] = [
   "validation.slug_invalid",
   "validation.slug_reserved",
   "validation.name_length",
+  "validation.color_low_contrast",
 ];

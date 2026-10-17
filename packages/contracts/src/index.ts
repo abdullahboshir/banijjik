@@ -40,8 +40,8 @@ export type { OrganizationDeployment } from "./organization/organization-deploym
 export { LOCATION_TYPE, type LocationType } from "./organization/location-type.js";
 export { LOCATION_STATUS, type LocationStatus } from "./organization/location-status.js";
 export { MEMBER_STATUS, type MemberStatus } from "./organization/member-status.js";
-export { COUNTRY_CODE } from "./organization/country-code.js";
-export type { CountryCode } from "./organization/country-code.js";
+export { COUNTRY_CODE, type CountryCode } from "./organization/country-code.js";
+export { BRAND_COLOR_PRESETS, BRANDING_RULES } from "./organization/branding.js";
 export { CURRENCY_CODE } from "./organization/currency-code.js";
 export type { CurrencyCode } from "./organization/currency-code.js";
 export {

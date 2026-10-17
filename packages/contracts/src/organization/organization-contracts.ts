@@ -20,4 +20,6 @@ export interface MyOrganizationSummary {
   status: OrganizationStatus;
   /** System role keys today; custom role keys join them with card 1.4. */
   roleKeys: string[];
+  /** The business's logo as a thumbnail path under the API origin; absent when no logo is set (card 3.12). */
+  logoUrl?: string | undefined;
 }
