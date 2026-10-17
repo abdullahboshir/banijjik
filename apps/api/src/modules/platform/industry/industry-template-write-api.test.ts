@@ -42,8 +42,9 @@ const BOOKING_PROBE = defineModule({
   sequenceKeys: [],
 });
 
-const RETAIL_MODULES = ["audit", "custom-field", "file", "iam", "organization", "settings"];
+const RETAIL_MODULES = ["ai", "audit", "custom-field", "file", "iam", "organization", "settings"];
 const WITH_BOOKING = [
+  "ai",
   "audit",
   "booking",
   "custom-field",

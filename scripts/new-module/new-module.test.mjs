@@ -53,6 +53,8 @@ function buildTree() {
   copyContractFile("module-class.ts");
   copyKernelModules(join(treeRoot, "apps", "api", "src", "kernel", "modules"));
   const contractsEntry = join(CONTRACTS_SOURCE, "index.ts");
+  // The `file` entry of the package (card 3.0) must resolve before the root alias, which matches by prefix.
+  const fileEntry = join(CONTRACTS_SOURCE, "file", "index.ts");
   writeFileSync(
     join(treeRoot, "tsconfig.json"),
     JSON.stringify({
@@ -61,14 +63,14 @@ function buildTree() {
         noEmit: true,
         lib: ["ES2022"],
         types: ["node"],
-        paths: { "@banijjik/contracts": [contractsEntry] },
+        paths: { "@banijjik/contracts/file": [fileEntry], "@banijjik/contracts": [contractsEntry] },
       },
       include: ["apps/**/*.ts"],
     }),
   );
   writeFileSync(
     join(treeRoot, "vitest.config.mjs"),
-    `export default { resolve: { alias: { "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
+    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
   );
 }
 

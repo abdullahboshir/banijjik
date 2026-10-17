@@ -2,7 +2,6 @@ import {
   IAM_MESSAGE_KEYS,
   ORGANIZATION_MESSAGE_KEYS,
   SYSTEM_ROLE_NAME_MESSAGE_KEYS,
-  FILE_MESSAGE_KEYS,
   PERMISSION_LABEL_MESSAGE_KEYS,
   ROLE_MESSAGE_KEYS,
   IDEMPOTENCY_MESSAGE_KEYS,
@@ -10,6 +9,7 @@ import {
   KERNEL_ERROR_MESSAGE_KEYS,
   VALIDATION_MESSAGE_KEYS,
 } from "@banijjik/contracts";
+import { FILE_MESSAGE_KEYS } from "@banijjik/contracts/file";
 import { describe, expect, it, vi } from "vitest";
 import { BUNDLED_CATALOGS } from "./bundled-catalogs.js";
 import { createTranslator } from "./create-translator.js";
