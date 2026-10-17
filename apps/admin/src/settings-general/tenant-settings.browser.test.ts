@@ -43,6 +43,8 @@ const TENANT_ROUTES = [
   "/acme/settings/fields",
   "/acme/settings/modules",
 ];
+/** The tenant routes plus the settings home (card 3.13), which every member opens. */
+const PHONE_FIT_ROUTES = [...TENANT_ROUTES, "/acme/settings"];
 
 let stack: BrowserStack;
 let owner: SeededPerson;
@@ -285,7 +287,7 @@ describe("a staff member sees the pages without edit buttons", () => {
 });
 
 describe("the new routes fit the phone", () => {
-  it.each(TENANT_ROUTES)(
+  it.each(PHONE_FIT_ROUTES)(
     "stays within the JavaScript budget and the width on %s",
     async (route) => {
       const page = await ownerPage();

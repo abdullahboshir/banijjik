@@ -141,9 +141,47 @@ async function buttonLabelsOfMain(page: Page): Promise<string[]> {
   return page.$$eval("main button", (buttons) => buttons.map((button) => button.textContent ?? ""));
 }
 
+/** The topic cards of the settings home: one h2 each. */
+async function topicTitlesOfMain(page: Page): Promise<string[]> {
+  return page.$$eval("main h2", (headings) => headings.map((heading) => heading.textContent ?? ""));
+}
+
 async function topBarText(page: Page): Promise<string> {
   return page.$eval("header", (header) => header.textContent ?? "");
 }
+
+describe("the settings home", () => {
+  it("shows an owner the Business, Team and Advanced topics with their pages, and fits the phone", async () => {
+    const page = await ownerPage();
+    await gotoWhenHydrated(page, "/acme/settings", "main h2");
+    const topics = await topicTitlesOfMain(page);
+    const pagePaths = await page.$$eval("main a", (links) =>
+      links.map((link) => (link as HTMLAnchorElement).pathname),
+    );
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    await closePage(page);
+
+    expect(topics).toEqual([
+      message("settings.topic.BUSINESS.title"),
+      message("settings.topic.TEAM.title"),
+      message("settings.topic.ADVANCED.title"),
+    ]);
+    expect(pagePaths).toEqual(
+      expect.arrayContaining([
+        "/acme/settings/profile",
+        "/acme/settings/general",
+        "/acme/settings/terms",
+        "/acme/settings/staff",
+        "/acme/settings/roles",
+        "/acme/settings/fields",
+        "/acme/settings/modules",
+      ]),
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+});
 
 describe("the business profile", () => {
   it("lets the owner rename the business and shows the new name in the top bar after a reload", async () => {
@@ -243,9 +281,21 @@ describe("roles", () => {
     const profilePage = await member.evaluate(() => document.body.textContent ?? "");
     await gotoWhenHydrated(member, "/acme/settings/locations", "main");
     const locationsPage = await member.evaluate(() => document.body.textContent ?? "");
+    await gotoWhenHydrated(member, "/acme/settings", "main h2");
+    const memberTopics = await topicTitlesOfMain(member);
     await closePage(member);
 
-    expect(menuPaths).toEqual(["/acme", "/acme/settings/profile", "/acme/settings/staff"]);
+    // The settings home entry (ADR-112) is the first entry of the settings group, so it is in the menu too.
+    expect(menuPaths).toEqual([
+      "/acme",
+      "/acme/settings",
+      "/acme/settings/profile",
+      "/acme/settings/staff",
+    ]);
+    expect(memberTopics).toEqual([
+      message("settings.topic.BUSINESS.title"),
+      message("settings.topic.TEAM.title"),
+    ]);
     expect(staffActionPaths).not.toContain("/acme/settings/staff/invitations");
     expect(staffActionPaths).not.toContain("/acme/settings/roles");
     expect(profilePage).toContain(message("profile.edit"));
