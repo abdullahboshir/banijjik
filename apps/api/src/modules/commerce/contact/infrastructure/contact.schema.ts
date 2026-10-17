@@ -153,12 +153,12 @@ contactSchema.index(
   { organizationId: 1, phoneE164: 1 },
   {
     unique: true,
-    partialFilterExpression: { status: CONTACT_STATUS.ACTIVE, phoneE164: { $exists: true } },
+    partialFilterExpression: { status: CONTACT_STATUS.ACTIVE, phoneE164: { $type: "string" } },
   },
 );
 contactSchema.index(
   { organizationId: 1, email: 1 },
-  { partialFilterExpression: { email: { $exists: true } } },
+  { partialFilterExpression: { email: { $type: "string" } } },
 );
 // The list by role, newest first, and the same list without a role.
 contactSchema.index({ organizationId: 1, status: 1, contactRoles: 1, updatedAt: -1 });

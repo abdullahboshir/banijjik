@@ -126,6 +126,7 @@ function optionalIndustryParts(field: IndustryTemplateCustomField): Partial<Effe
     ...(field.options === undefined ? {} : { options: field.options }),
     ...(field.optionLabels === undefined ? {} : { optionLabels: field.optionLabels }),
     ...(field.referenceEntity === undefined ? {} : { referenceEntity: field.referenceEntity }),
+    ...(field.link === undefined ? {} : { link: field.link }),
   };
 }
 

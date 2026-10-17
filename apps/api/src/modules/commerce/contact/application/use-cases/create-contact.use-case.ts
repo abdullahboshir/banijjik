@@ -2,6 +2,7 @@ import { type ContactRole, type EffectiveCustomField } from "@banijjik/contracts
 import {
   CONTACT_SOURCE,
   type ContactAddressInput,
+  type ContactDedupeMode,
   type ContactType,
 } from "@banijjik/contracts/contact";
 import { Contact } from "../../domain/contact.entity.js";
@@ -36,6 +37,13 @@ export interface CreateContactInput extends ContactActorInput {
   readonly allowedLocationIds: readonly string[] | "ALL";
 }
 
+/** What is read before the transaction: fields, the home location and the dedupe setting. */
+interface PreparedCreate {
+  readonly fields: readonly EffectiveCustomField[];
+  readonly homeLocationId: Contact["homeLocationId"];
+  readonly dedupeMode: ContactDedupeMode;
+}
+
 /**
  * Adds a contact (09 section 5.1). One party, one contact: a phone (or email) that an ACTIVE
  * contact holds is a 409 naming that contact. Contact-link fields create or link their contact in
@@ -45,8 +53,9 @@ export class CreateContactUseCase {
   constructor(private readonly dependencies: CreateContactDependencies) {}
 
   async execute(input: CreateContactInput): Promise<ContactDetailView> {
-    const { unitOfWork, customFields, locations } = this.dependencies;
+    const { unitOfWork, customFields, locations, dedupeModes } = this.dependencies;
     const fields = await customFields.forContacts(input.organizationId);
+    const dedupeMode = await dedupeModes.read(input.organizationId);
     const homeLocationId =
       input.homeLocationId === undefined
         ? undefined
@@ -55,7 +64,9 @@ export class CreateContactUseCase {
             allowedLocationIds: input.allowedLocationIds,
           });
     try {
-      const saved = await unitOfWork.run(() => this.createInside(input, fields, homeLocationId));
+      const saved = await unitOfWork.run(() =>
+        this.createInside(input, { fields, homeLocationId, dedupeMode }),
+      );
       return await viewContact(this.dependencies, saved, fields);
     } catch (error) {
       throw await asDuplicateAnswer(this.dependencies, error);
@@ -64,12 +75,12 @@ export class CreateContactUseCase {
 
   private async createInside(
     input: CreateContactInput,
-    fields: readonly EffectiveCustomField[],
-    homeLocationId: Contact["homeLocationId"],
+    prepared: PreparedCreate,
   ): Promise<Contact> {
+    const { fields, homeLocationId, dedupeMode } = prepared;
     const { contacts, clock, sensitiveAccess } = this.dependencies;
     await assertNotDuplicate(this.dependencies, {
-      organizationId: input.organizationId,
+      dedupeMode,
       phoneE164: input.phoneE164,
       email: input.email,
     });

@@ -1,10 +1,11 @@
-import { CONTACT_DEDUPE_MODE } from "@banijjik/contracts/contact";
-import type { ContactId, OrganizationId } from "@banijjik/ids";
+import { CONTACT_DEDUPE_MODE, type ContactDedupeMode } from "@banijjik/contracts/contact";
+import type { ContactId } from "@banijjik/ids";
 import { ContactPhoneTakenError, contactDuplicate } from "../domain/errors.js";
 import type { ContactWriteDependencies } from "./contact-dependencies.js";
 
 export interface DuplicateCheck {
-  readonly organizationId: OrganizationId;
+  /** Read before the transaction starts: the setting is not part of it. */
+  readonly dedupeMode: ContactDedupeMode;
   readonly phoneE164: string | undefined;
   readonly email: string | undefined;
   /** An edit does not collide with the contact itself. */
@@ -17,17 +18,17 @@ export interface DuplicateCheck {
  * names the existing contact, so the screen can offer "open existing".
  */
 export async function assertNotDuplicate(
-  dependencies: Pick<ContactWriteDependencies, "contacts" | "dedupeModes">,
+  dependencies: Pick<ContactWriteDependencies, "contacts">,
   check: DuplicateCheck,
 ): Promise<void> {
-  const { contacts, dedupeModes } = dependencies;
+  const { contacts } = dependencies;
   const byPhone =
     check.phoneE164 === undefined ? undefined : await contacts.findActiveByPhone(check.phoneE164);
   if (byPhone !== undefined && byPhone.contactId !== check.ignoreContactId) {
     throw contactDuplicate(byPhone.contactId);
   }
   if (check.email === undefined) return;
-  if ((await dedupeModes.read(check.organizationId)) !== CONTACT_DEDUPE_MODE.PHONE_OR_EMAIL) return;
+  if (check.dedupeMode !== CONTACT_DEDUPE_MODE.PHONE_OR_EMAIL) return;
   const byEmail = await contacts.findActiveByEmail(check.email);
   if (byEmail !== undefined && byEmail.contactId !== check.ignoreContactId) {
     throw contactDuplicate(byEmail.contactId);

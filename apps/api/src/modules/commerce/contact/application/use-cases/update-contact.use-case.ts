@@ -1,5 +1,9 @@
 import type { ContactRole, EffectiveCustomField } from "@banijjik/contracts";
-import type { ContactAddressInput, ContactType } from "@banijjik/contracts/contact";
+import type {
+  ContactAddressInput,
+  ContactDedupeMode,
+  ContactType,
+} from "@banijjik/contracts/contact";
 import type { ContactId, LocationId } from "@banijjik/ids";
 import type { Contact, ContactChanges } from "../../domain/contact.entity.js";
 import { contactNotFound } from "../../domain/errors.js";
@@ -36,6 +40,12 @@ export interface UpdateContactInput extends ContactActorInput {
   readonly allowedLocationIds: readonly string[] | "ALL";
 }
 
+/** What is read before the transaction: the home location and the dedupe setting. */
+interface PreparedUpdate {
+  readonly homeLocationId: LocationId | null | undefined;
+  readonly dedupeMode: ContactDedupeMode;
+}
+
 /**
  * Edits a contact. A phone or email that an ACTIVE contact already holds is the same 409 as on
  * create. A changed contact-link field moves the relation from the old linked contact to the new
@@ -45,11 +55,14 @@ export class UpdateContactUseCase {
   constructor(private readonly dependencies: UpdateContactDependencies) {}
 
   async execute(input: UpdateContactInput): Promise<ContactDetailView> {
-    const { unitOfWork, customFields } = this.dependencies;
+    const { unitOfWork, customFields, dedupeModes } = this.dependencies;
     const fields = await customFields.forContacts(input.organizationId);
+    const dedupeMode = await dedupeModes.read(input.organizationId);
     const homeLocationId = await this.requireHomeLocationIfSet(input);
     try {
-      const saved = await unitOfWork.run(() => this.updateInside(input, fields, homeLocationId));
+      const saved = await unitOfWork.run(() =>
+        this.updateInside(input, fields, { homeLocationId, dedupeMode }),
+      );
       return await viewContact(this.dependencies, saved, fields);
     } catch (error) {
       throw await asDuplicateAnswer(this.dependencies, error);
@@ -71,12 +84,13 @@ export class UpdateContactUseCase {
   private async updateInside(
     input: UpdateContactInput,
     fields: readonly EffectiveCustomField[],
-    homeLocationId: LocationId | null | undefined,
+    prepared: PreparedUpdate,
   ): Promise<Contact> {
+    const { homeLocationId, dedupeMode } = prepared;
     const { contacts, sensitiveAccess } = this.dependencies;
     const existing = await contacts.findById(input.contactId);
     if (existing === undefined) throw contactNotFound();
-    await this.assertNoNewDuplicate(input, existing);
+    await this.assertNoNewDuplicate(input, existing, dedupeMode);
     const merged =
       input.customFields === undefined
         ? undefined
@@ -111,12 +125,16 @@ export class UpdateContactUseCase {
   }
 
   /** Only a phone or email that really changes can collide; the contact never collides with itself. */
-  private async assertNoNewDuplicate(input: UpdateContactInput, existing: Contact): Promise<void> {
+  private async assertNoNewDuplicate(
+    input: UpdateContactInput,
+    existing: Contact,
+    dedupeMode: ContactDedupeMode,
+  ): Promise<void> {
     const phoneE164 = typeof input.phoneE164 === "string" ? input.phoneE164 : undefined;
     const email = typeof input.email === "string" ? input.email : undefined;
     if (phoneE164 === undefined && email === undefined) return;
     await assertNotDuplicate(this.dependencies, {
-      organizationId: input.organizationId,
+      dedupeMode,
       phoneE164,
       email,
       ignoreContactId: existing.contactId,

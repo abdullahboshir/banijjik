@@ -1,7 +1,6 @@
-import { MODULE_CLASS, MODULE_KEY, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { SYSTEM_ROLE_KEY } from "@banijjik/contracts";
 import { asId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { defineModule } from "../../../kernel/modules/index.js";
 import { CustomFieldDefinition } from "./domain/custom-field-definition.entity.js";
 import { MongoCustomFieldDefinitionRepository } from "./infrastructure/mongo-custom-field-definition.repository.js";
 import { registerIamApiModels, startIamApi } from "../../../test-support/iam-api-harness.js";
@@ -19,32 +18,12 @@ import {
 
 registerIamApiModels();
 
-const CONTACT_PROBE = defineModule({
-  key: MODULE_KEY.CONTACT,
-  path: "core/contact",
-  moduleClass: MODULE_CLASS.CORE,
-  dependsOn: [],
-  providesKinds: [],
-  requiresAnyKind: [],
-  tenantCanDisable: false,
-  permissions: [],
-  routes: {},
-  menu: [],
-  settings: [],
-  customFieldEntities: ["contact"],
-  botTools: [],
-  storefrontSections: [],
-  events: { emits: [], consumes: [] },
-  limitKeys: [],
-  sequenceKeys: [],
-});
-
 const SALON_CONTACT_KEYS = ["skin_type", "hair_type", "allergies", "preferred_stylist"];
 
 let harness: IamApiHarness;
 
 beforeAll(async () => {
-  harness = await startIamApi({ tenantRouters: [], extraManifests: [CONTACT_PROBE] });
+  harness = await startIamApi({ tenantRouters: [] });
 });
 
 afterAll(async () => {
