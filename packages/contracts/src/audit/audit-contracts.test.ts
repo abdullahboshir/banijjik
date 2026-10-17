@@ -26,6 +26,11 @@ describe("audit vocabulary", () => {
       "termOverride",
       "moduleOverride",
       "contact",
+      "offering",
+      "offeringLocation",
+      "category",
+      "modifierGroup",
+      "searchSynonym",
     ]);
   });
 });

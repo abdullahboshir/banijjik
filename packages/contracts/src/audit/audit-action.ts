@@ -35,13 +35,13 @@ export const AUDIT_ACTION = {
   OFFERING_UPDATED: "catalog.offering.updated",
   OFFERING_PUBLISHED: "catalog.offering.published",
   OFFERING_ARCHIVED: "catalog.offering.archived",
-  OFFERING_LOCATION_CHANGED: "catalog.offeringLocation.changed",
+  OFFERING_LOCATION_CHANGED: "catalog.availability.changed",
   CATEGORY_CREATED: "catalog.category.created",
   CATEGORY_UPDATED: "catalog.category.updated",
   CATEGORY_ARCHIVED: "catalog.category.archived",
-  MODIFIER_GROUP_CREATED: "catalog.modifierGroup.created",
-  MODIFIER_GROUP_UPDATED: "catalog.modifierGroup.updated",
-  MODIFIER_GROUP_ARCHIVED: "catalog.modifierGroup.archived",
+  MODIFIER_GROUP_CREATED: "catalog.addon.created",
+  MODIFIER_GROUP_UPDATED: "catalog.addon.updated",
+  MODIFIER_GROUP_ARCHIVED: "catalog.addon.archived",
   SYNONYMS_UPDATED: "catalog.synonym.updated",
 } as const;
 
