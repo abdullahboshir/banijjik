@@ -145,14 +145,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     orgConfig,
     requireUser: requireAdminUser,
   });
-  const coreRouters = buildCoreRouters({
-    dependencies,
-    audit,
-    orgConfig,
-    access,
-    registry,
-    idempotency,
-  });
+  const core = buildCoreRouters({ dependencies, audit, orgConfig, access, registry, idempotency });
   // logout-all lives in the auth router but needs a session; the rest of /auth is public.
   router.use("/auth/logout-all", requireAdminUser);
   router.use("/auth", authRouter);
@@ -160,7 +153,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   router.use("/me/orgs", adminGuards, myOrganizationsRouter);
   router.use("/industry-templates", adminGuards, buildPublishedIndustryTemplateRouter());
   // PUBLIC files are served without a session (logos and product images for websites, ADR-109).
-  router.use("/public", coreRouters.publicFileRouter);
+  router.use("/public", core.publicFileRouter);
   router.use("/me", adminGuards, meRouter);
   // The invitation link: public preview, signed-in accept. Outside the tenant pipeline.
   router.use("/invitations", organizationTenant.invitationLinkRouter);
@@ -184,7 +177,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
         access,
         registry,
         organizationRouter: organizationTenant.tenantRouter,
-        coreRouters,
+        coreRouters: core,
       }),
     ),
   );
