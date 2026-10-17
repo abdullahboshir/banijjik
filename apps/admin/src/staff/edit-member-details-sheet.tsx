@@ -110,7 +110,12 @@ export function EditMemberDetailsSheet(props: EditMemberDetailsSheetProps): Reac
   return (
     <Sheet open onOpenChange={(open) => (open ? undefined : onClose())}>
       <SheetContent title={labels.title} closeLabel={labels.close}>
-        <CustomFieldsSection idPrefix="member-custom" props={props.customFields} form={form} />
+        <CustomFieldsSection
+          idPrefix="member-custom"
+          organizationId={organizationId}
+          props={props.customFields}
+          form={form}
+        />
         <Refused refusal={refusal} labels={labels} onReload={() => router.refresh()} />
         <Button isLoading={isSaving} onClick={() => void save()}>
           {labels.save}

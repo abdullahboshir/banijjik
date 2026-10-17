@@ -6,12 +6,10 @@ import {
 import type { Locale, Translator } from "@banijjik/i18n";
 import { formatMoney, formatPhoneForDisplay } from "@banijjik/ui";
 
-/** File, image and reference values have no screen yet, so they are not shown (card 2.7a). */
-const PENDING_FIELD_TYPES = new Set<string>([
-  CUSTOM_FIELD_TYPE.FILE,
-  CUSTOM_FIELD_TYPE.IMAGE,
-  CUSTOM_FIELD_TYPE.REFERENCE,
-]);
+/** Reference values have no screen yet, so they are not shown (card 2.7a). */
+const PENDING_FIELD_TYPES = new Set<string>([CUSTOM_FIELD_TYPE.REFERENCE]);
+
+const UPLOADED_FIELD_TYPES = new Set<string>([CUSTOM_FIELD_TYPE.FILE, CUSTOM_FIELD_TYPE.IMAGE]);
 
 /** One line of the read-only list of extra details. `text` is empty when nothing is saved or the value is hidden. */
 export interface DetailRow {
@@ -57,6 +55,8 @@ function numberText(field: EffectiveCustomField, value: number, input: DetailRow
 }
 
 function stringText(field: EffectiveCustomField, value: string, input: DetailRowsInput): string {
+  // The stored value is a file id: the list says that something is uploaded, not the id.
+  if (UPLOADED_FIELD_TYPES.has(field.fieldType)) return input.t("customFields.fileUploaded");
   if (field.fieldType === CUSTOM_FIELD_TYPE.PHONE) return formatPhoneForDisplay(value);
   if (field.fieldType === CUSTOM_FIELD_TYPE.DATETIME) return dateTimeText(value, input);
   if (field.fieldType === CUSTOM_FIELD_TYPE.SELECT)

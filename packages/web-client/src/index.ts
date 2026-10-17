@@ -13,6 +13,8 @@ export {
   networkError,
 } from "./api-error.js";
 export type { ApiErrorFields } from "./api-error.js";
+export { organizationFileUrl, publicFileUrl, uploadFile } from "./file-upload.js";
+export type { FileUrlBase, UploadFileInput } from "./file-upload.js";
 export { parseApiResponse } from "./parse-api-response.js";
 export type { PageMeta } from "./page-meta.js";
 export { parseEnvironment } from "./parse-environment.js";

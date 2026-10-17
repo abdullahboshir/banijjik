@@ -210,5 +210,14 @@
   "errors.industry_template_status_invalid": "এই অবস্থা থেকে টেমপ্লেটটি সেখানে নেওয়া যায় না।",
   "errors.industry_template_setting_invalid": "একটি সেটিংয়ের ডিফল্ট সেই কী-এর নিবন্ধিত নিয়মের সঙ্গে মেলে না।",
   "form.field.notEditableHere": "এই ঘর এখানে সম্পাদনা করা যায় না",
-  "form.field.choose": "বেছে নিন"
+  "form.field.choose": "বেছে নিন",
+  "form.image.choose": "ছবি বেছে নিন",
+  "form.image.change": "ছবি বদলান",
+  "form.image.remove": "ছবি সরান",
+  "form.image.previewAlt": "বেছে নেওয়া ছবি",
+  "form.file.choose": "PDF বেছে নিন",
+  "form.file.change": "PDF বদলান",
+  "form.file.remove": "PDF সরান",
+  "form.file.uploading": "আপলোড হচ্ছে…",
+  "form.file.attached": "PDF যুক্ত আছে"
 }

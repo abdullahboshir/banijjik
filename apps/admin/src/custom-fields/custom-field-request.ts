@@ -4,11 +4,8 @@ import { toRequestValues, validateCustomFieldValues } from "@banijjik/web-client
 
 const REQUIRED_MESSAGE_KEY = "validation.required";
 const REQUEST_PATH_PREFIX = "customFields.";
-const PENDING_FIELD_TYPES = new Set<string>([
-  CUSTOM_FIELD_TYPE.FILE,
-  CUSTOM_FIELD_TYPE.IMAGE,
-  CUSTOM_FIELD_TYPE.REFERENCE,
-]);
+/** Reference values still have no input (card 3.1b); file and image have since card 3.0. */
+const PENDING_FIELD_TYPES = new Set<string>([CUSTOM_FIELD_TYPE.REFERENCE]);
 
 export interface CustomFieldsInput {
   fields: readonly EffectiveCustomField[];

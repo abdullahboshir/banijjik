@@ -210,5 +210,14 @@
   "errors.industry_template_status_invalid": "This template cannot move to that status.",
   "errors.industry_template_setting_invalid": "A setting default does not match the definition registered for that key.",
   "form.field.notEditableHere": "This field cannot be edited here",
-  "form.field.choose": "Choose"
+  "form.field.choose": "Choose",
+  "form.image.choose": "Choose image",
+  "form.image.change": "Change image",
+  "form.image.remove": "Remove image",
+  "form.image.previewAlt": "Chosen image",
+  "form.file.choose": "Choose PDF",
+  "form.file.change": "Change PDF",
+  "form.file.remove": "Remove PDF",
+  "form.file.uploading": "Uploading…",
+  "form.file.attached": "PDF attached"
 }

@@ -1,7 +1,11 @@
 import { useState, type ReactElement } from "react";
 import { parseMoneyInput } from "../format/parse-money-input.js";
 import { Checkbox, Select, Textarea, TextInput, formFieldMessageId } from "./form.js";
-import type { CustomFieldInputKind, CustomFieldOption } from "./custom-field-types.js";
+import type {
+  CustomFieldFileSupport,
+  CustomFieldInputKind,
+  CustomFieldOption,
+} from "./custom-field-types.js";
 import {
   parseIntegerInput,
   textOrNull,
@@ -27,6 +31,7 @@ export interface CustomFieldControlProps {
   readonly currencySymbol: string;
   readonly moneyFractionDigits: number;
   readonly chooseLabel: string;
+  readonly files?: CustomFieldFileSupport | undefined;
 }
 
 function describedBy(props: CustomFieldControlProps): string | undefined {

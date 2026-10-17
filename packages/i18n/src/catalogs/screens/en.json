@@ -360,5 +360,6 @@
   "fields.show.title": "Show field",
   "fields.show.description": "The field comes back in forms, with the values saved earlier.",
   "fields.trait.hidden": "Hidden",
-  "locations.term": "location"
+  "locations.term": "location",
+  "customFields.fileUploaded": "Uploaded"
 }

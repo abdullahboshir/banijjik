@@ -84,8 +84,13 @@ export type {
 export { AccountMenuTrigger } from "./components/account-menu-trigger.js";
 export type { AccountMenuTriggerProps } from "./components/account-menu-trigger.js";
 export { CustomFieldInputs } from "./components/custom-field-inputs.js";
+export { FileInput } from "./components/file-input.js";
+export type { FileInputLabels, FileInputProps } from "./components/file-input.js";
+export { ImageInput } from "./components/image-input.js";
+export type { ImageInputLabels, ImageInputProps } from "./components/image-input.js";
 export type {
   CustomFieldDescriptor,
+  CustomFieldFileSupport,
   CustomFieldInputKind,
   CustomFieldInputsProps,
   CustomFieldOption,

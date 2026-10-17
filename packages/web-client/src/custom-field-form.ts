@@ -7,7 +7,13 @@ import {
   type LocalizedText,
 } from "@banijjik/contracts";
 import type { Locale, Translator } from "@banijjik/i18n";
-import type { CustomFieldDescriptor, CustomFieldInputKind, PendingCustomField } from "@banijjik/ui";
+import type {
+  CustomFieldDescriptor,
+  CustomFieldInputKind,
+  FileInputLabels,
+  ImageInputLabels,
+  PendingCustomField,
+} from "@banijjik/ui";
 import {
   buildCustomFieldValuesSchema,
   CUSTOM_FIELD_VALUE_MODE,
@@ -16,11 +22,8 @@ import {
   type CustomFieldValuesOptions,
 } from "@banijjik/validation";
 
-const PENDING_FIELD_TYPES = new Set<CustomFieldType>([
-  CUSTOM_FIELD_TYPE.FILE,
-  CUSTOM_FIELD_TYPE.IMAGE,
-  CUSTOM_FIELD_TYPE.REFERENCE,
-]);
+/** Reference values still wait for the contact module (card 3.1b); file and image have inputs since card 3.0. */
+const PENDING_FIELD_TYPES = new Set<CustomFieldType>([CUSTOM_FIELD_TYPE.REFERENCE]);
 
 /** Presentation kinds. NUMBER and CURRENCY keep the contract names and map to integer and money inputs. */
 const INPUT_KIND_BY_TYPE: Readonly<Record<CustomFieldType, CustomFieldInputKind | undefined>> = {
@@ -37,8 +40,8 @@ const INPUT_KIND_BY_TYPE: Readonly<Record<CustomFieldType, CustomFieldInputKind 
   [CUSTOM_FIELD_TYPE.PHONE]: "PHONE",
   [CUSTOM_FIELD_TYPE.EMAIL]: "EMAIL",
   [CUSTOM_FIELD_TYPE.URL]: "URL",
-  [CUSTOM_FIELD_TYPE.FILE]: undefined,
-  [CUSTOM_FIELD_TYPE.IMAGE]: undefined,
+  [CUSTOM_FIELD_TYPE.FILE]: "FILE",
+  [CUSTOM_FIELD_TYPE.IMAGE]: "IMAGE",
   [CUSTOM_FIELD_TYPE.REFERENCE]: undefined,
 };
 
@@ -48,6 +51,8 @@ export interface CustomFieldFormModel {
   readonly pendingFields: readonly PendingCustomField[];
   readonly chooseLabel: string;
   readonly notEditableText: string;
+  readonly imageLabels: ImageInputLabels;
+  readonly fileLabels: FileInputLabels;
 }
 
 function preferredLabel(label: LocalizedText, locale: Locale): string {
@@ -85,7 +90,7 @@ function toPending(field: EffectiveCustomField, locale: Locale): PendingCustomFi
   return { fieldKey: field.fieldKey, label: preferredLabel(field.label, locale) };
 }
 
-/** Admin-visible fields only. File, image and reference stay pending until their own modules exist. */
+/** Admin-visible fields only. Reference stays pending until the contact module exists. */
 export function toFieldDescriptors(
   fields: readonly EffectiveCustomField[],
   locale: Locale,
@@ -102,6 +107,20 @@ export function toFieldDescriptors(
     pendingFields: pending.map((field) => toPending(field, locale)),
     chooseLabel: t("form.field.choose"),
     notEditableText: t("form.field.notEditableHere"),
+    imageLabels: {
+      choose: t("form.image.choose"),
+      change: t("form.image.change"),
+      remove: t("form.image.remove"),
+      uploading: t("form.file.uploading"),
+      previewAlt: t("form.image.previewAlt"),
+    },
+    fileLabels: {
+      choose: t("form.file.choose"),
+      change: t("form.file.change"),
+      remove: t("form.file.remove"),
+      uploading: t("form.file.uploading"),
+      attached: t("form.file.attached"),
+    },
   };
 }
 
@@ -157,7 +176,7 @@ function clearedRequestValue(
 
 /**
  * An emptied optional field is `null` on update (clears it) and omitted on create.
- * File, image and reference are left out: this card cannot edit them.
+ * Reference is left out: it has no input yet.
  */
 export function toRequestValues(
   values: Readonly<Record<string, unknown>>,

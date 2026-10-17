@@ -40,7 +40,7 @@ function field(
 const translator = createTranslator({ locale: "bn", brandName: "Example" });
 
 describe("toFieldDescriptors", () => {
-  it("maps the thirteen editable types and keeps file, image and reference pending", () => {
+  it("maps the fifteen editable types and keeps only reference pending", () => {
     const model = toFieldDescriptors(
       Object.values(CUSTOM_FIELD_TYPE).map((fieldType) => field(fieldType)),
       "en",
@@ -60,8 +60,10 @@ describe("toFieldDescriptors", () => {
       "EMAIL",
       "URL",
       "MONEY",
+      "FILE",
+      "IMAGE",
     ]);
-    expect(model.pendingFieldKeys).toEqual(["file", "image", "reference"]);
+    expect(model.pendingFieldKeys).toEqual(["reference"]);
   });
 
   it("picks the Bangla label and the Bangla option label", () => {
@@ -137,5 +139,47 @@ describe("toRequestValues", () => {
     expect(toRequestValues({ note: "kept" }, [note], CUSTOM_FIELD_VALUE_MODE.CREATE)).toEqual({
       note: "kept",
     });
+  });
+});
+
+describe("file and image fields", () => {
+  const photo = field(CUSTOM_FIELD_TYPE.IMAGE, { fieldKey: "photo" });
+  const scan = field(CUSTOM_FIELD_TYPE.FILE, { fieldKey: "scan" });
+
+  it("gives them the labels of the image and file inputs in the user's language", () => {
+    const model = toFieldDescriptors([photo, scan], "bn", translator.t);
+
+    expect(model.imageLabels.choose).toBe(translator.t("form.image.choose"));
+    expect(model.fileLabels.attached).toBe(translator.t("form.file.attached"));
+    expect(model.imageLabels.choose).not.toBe("form.image.choose");
+  });
+
+  it("sends the saved file id on update and null when the optional file is removed", () => {
+    expect(
+      toRequestValues(
+        { photo: "0198aaaa-0000-7000-8000-000000000001" },
+        [photo],
+        CUSTOM_FIELD_VALUE_MODE.UPDATE,
+      ),
+    ).toEqual({ photo: "0198aaaa-0000-7000-8000-000000000001" });
+    expect(toRequestValues({ photo: null }, [photo], CUSTOM_FIELD_VALUE_MODE.UPDATE)).toEqual({
+      photo: null,
+    });
+    expect(toRequestValues({ scan: undefined }, [scan], CUSTOM_FIELD_VALUE_MODE.CREATE)).toEqual(
+      {},
+    );
+  });
+
+  it("agrees with the shared schema that the value must be an id", () => {
+    const options = { audience: CUSTOM_FIELD_AUDIENCE.ADMIN, mode: CUSTOM_FIELD_VALUE_MODE.CREATE };
+
+    expect(validateCustomFieldValues([photo], { photo: "not-an-id" }, options).photo).toBeDefined();
+    expect(
+      validateCustomFieldValues(
+        [photo],
+        { photo: "0198aaaa-0000-7000-8000-000000000001" },
+        options,
+      ),
+    ).toEqual({});
   });
 });

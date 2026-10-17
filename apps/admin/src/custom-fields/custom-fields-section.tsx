@@ -6,6 +6,7 @@ import type { CustomFieldsFormProps, CustomFieldsFormState } from "./use-custom-
 
 export interface CustomFieldsSectionProps {
   idPrefix: string;
+  organizationId: string;
   props: CustomFieldsFormProps | undefined;
   form: CustomFieldsFormState;
 }
@@ -13,6 +14,7 @@ export interface CustomFieldsSectionProps {
 /** The "Additional details" part of a sheet; nothing is drawn when the business has no such fields for this person. */
 export function CustomFieldsSection({
   idPrefix,
+  organizationId,
   props,
   form,
 }: CustomFieldsSectionProps): ReactElement | null {
@@ -22,6 +24,7 @@ export function CustomFieldsSection({
       <legend className="mb-1 text-title font-semibold text-primary">{props.title}</legend>
       <CustomFieldsEditor
         idPrefix={idPrefix}
+        organizationId={organizationId}
         fields={form.editableFields}
         values={form.values}
         errors={form.errors}

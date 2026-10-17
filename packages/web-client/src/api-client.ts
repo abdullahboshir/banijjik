@@ -7,6 +7,7 @@ const IDEMPOTENCY_HEADER = "Idempotency-Key";
 
 export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
+  /** JSON-encoded, except a FormData body, which is sent as multipart and gets its boundary from the browser. */
   body?: unknown;
   idempotencyKey?: string;
   signal?: AbortSignal;
@@ -45,7 +46,9 @@ export interface ApiClient {
 
 function buildRequestInit(options: ApiRequestOptions): RequestInit {
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.body !== undefined && !(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
   if (options.idempotencyKey) headers[IDEMPOTENCY_HEADER] = options.idempotencyKey;
   const init: RequestInit = {
     method: options.method ?? "GET",
@@ -53,7 +56,8 @@ function buildRequestInit(options: ApiRequestOptions): RequestInit {
     // Cookies carry the session (ADR-010); nothing is kept in browser storage.
     credentials: "include",
   };
-  if (options.body !== undefined) init.body = JSON.stringify(options.body);
+  if (options.body instanceof FormData) init.body = options.body;
+  else if (options.body !== undefined) init.body = JSON.stringify(options.body);
   if (options.signal) init.signal = options.signal;
   return init;
 }

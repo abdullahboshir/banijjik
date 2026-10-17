@@ -360,5 +360,6 @@
   "fields.show.title": "ঘর দেখান",
   "fields.show.description": "ঘরটি আগে সংরক্ষিত মানসহ ফর্মে ফিরে আসবে।",
   "fields.trait.hidden": "লুকানো",
-  "locations.term": "লোকেশন"
+  "locations.term": "লোকেশন",
+  "customFields.fileUploaded": "আপলোড করা আছে"
 }

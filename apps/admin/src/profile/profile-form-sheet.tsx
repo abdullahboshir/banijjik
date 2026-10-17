@@ -175,6 +175,7 @@ function ProfileForm(props: ProfileFormSheetProps): ReactElement {
       </Section>
       <CustomFieldsSection
         idPrefix="profile-custom"
+        organizationId={props.organizationId}
         props={props.customFields}
         form={customFields}
       />
