@@ -177,7 +177,7 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 ## Phase 3: Core business (port from manoxen; all kinds). Needs D3, D8.
 Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API and admin UI.
 
-**Order (ADR-099, service businesses first; updated 2026-10-17):** wave 1: 3.0 ‖ 3.1 ‖ 3.13 → wave 2: 3.2 ‖ 3.12 → 3.4 → lane B (3.6 → 3.7) and lane C (3.8 accounting, payments, dues) → 3.9 POS ‖ lane A (3.3 → 3.5) → 3.11 → 3.10 last. The numbers stay as names; this is the build order.
+**Order (ADR-099, service businesses first; updated 2026-10-17):** wave 1: 3.0 ‖ 3.1 ‖ 3.13 → wave 2: 3.2 ‖ 3.12 ‖ per-organization event ordering (3.8a) → wave 3: 3.4 ‖ 3.6 ‖ 3.8 → wave 4: 3.7 ‖ 3.8b ‖ 3.9 POS → wave 5: lane A (3.3 → 3.5) ‖ 3.11 → 3.10 last. Sessions, gates and when each plan is written: `docs/plans/phase-3-lanes.md` "Whole-phase map". The numbers stay as names; this is the build order.
 
 **Carried over from Phase 2** (each lands in the card named):
 - FILE and IMAGE custom-field inputs (2.5 gap) → 3.0; the REFERENCE and contact-link input, which unblocks COACHING's required `guardian` (2.5 note) → 3.1.
