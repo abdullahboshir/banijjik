@@ -24,8 +24,8 @@ export const colorTokens = {
   },
   text: {
     primary: { light: "#0F172A", dark: "#F1F5F9" },
-    secondary: { light: "#475569", dark: "#CBD5E1" },
-    muted: { light: "#94A3B8", dark: "#94A3B8" },
+    secondary: { light: "#334155", dark: "#CBD5E1" },
+    muted: { light: "#566579", dark: "#94A3B8" },
   },
   status: {
     success: { light: "#15803D", dark: "#4ADE80" },

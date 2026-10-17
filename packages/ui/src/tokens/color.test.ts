@@ -32,6 +32,7 @@ const backgrounds = Object.entries(colorTokens.bg);
 const textColors = [
   ["text.primary", colorTokens.text.primary],
   ["text.secondary", colorTokens.text.secondary],
+  ["text.muted", colorTokens.text.muted],
 ] as const;
 const statusColors = Object.entries(colorTokens.status);
 const textOnBackgroundPairs = textColors.flatMap(([textName, text]) =>
