@@ -1,3 +1,15 @@
+/** Where uploaded files are stored (ADR-109). Credentials are never logged. */
+export type StorageConfig =
+  | { readonly driver: "local"; readonly localRoot: string }
+  | {
+      readonly driver: "s3";
+      readonly bucket: string;
+      readonly region: string;
+      readonly endpoint?: string;
+      readonly accessKeyId: string;
+      readonly secretAccessKey: string;
+    };
+
 export interface AppConfig {
   readonly nodeEnv: "development" | "test" | "production";
   readonly port: number;
@@ -16,6 +28,7 @@ export interface AppConfig {
   /** How often the worker looks for pending outbox events. Absent means the dispatcher default (500 ms). */
   readonly outboxPollIntervalMs?: number;
   readonly corsAllowedOrigins: readonly string[];
+  readonly storage: StorageConfig;
   readonly auth: {
     /** Signs access tokens. Never logged. */
     readonly accessTokenSecret: string;

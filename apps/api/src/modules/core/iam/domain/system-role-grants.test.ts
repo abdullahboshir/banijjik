@@ -92,3 +92,22 @@ describe("system role grants (10 section 10)", () => {
     expect(isSystemRoleKey("custom.0199a3b2-7c11-7a3e-9d5e-1f2e3d4c5b6a")).toBe(false);
   });
 });
+
+describe("system role grants of the file module (card 3.0)", () => {
+  const FILE_KEYS = ALL_KEYS.filter((key) => key.startsWith("file."));
+  const CREATE_AND_READ = [PERMISSION_KEY.FILE_ASSET_CREATE, PERMISSION_KEY.FILE_ASSET_READ];
+  const FILE_EXPECTED = {
+    [SYSTEM_ROLE_KEY.OWNER]: FILE_KEYS,
+    [SYSTEM_ROLE_KEY.MANAGER]: FILE_KEYS,
+    [SYSTEM_ROLE_KEY.CASHIER]: CREATE_AND_READ,
+    [SYSTEM_ROLE_KEY.STAFF]: CREATE_AND_READ,
+    [SYSTEM_ROLE_KEY.RIDER]: [],
+    [SYSTEM_ROLE_KEY.VIEWER]: [PERMISSION_KEY.FILE_ASSET_READ],
+  };
+
+  it.each(Object.values(SYSTEM_ROLE_KEY))("gives %s the file keys of the plan", (roleKey) => {
+    const granted = [...grantedKeysOf(roleKey, ALL_KEYS)].filter((key) => key.startsWith("file."));
+
+    expect(sorted(granted)).toEqual(sorted(FILE_EXPECTED[roleKey]));
+  });
+});

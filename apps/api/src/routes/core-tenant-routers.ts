@@ -1,9 +1,11 @@
 import type { ModuleManifest } from "@banijjik/contracts";
+import type { StorageConfig } from "../config/index.js";
 import type { Router } from "express";
 import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import type { ModuleRegistry } from "../kernel/modules/index.js";
 import type { Clock } from "../kernel/time/index.js";
+import { buildFileModule, type FileModuleDependencies } from "../modules/core/file/index.js";
 import { buildCustomFieldModule } from "../modules/core/custom-field/index.js";
 import {
   buildConfigVersionBumper,
@@ -28,14 +30,20 @@ export interface CoreTenantRouterInput {
   readonly orgConfig: OrgConfigService;
   readonly registry: ModuleRegistry;
   readonly manifests: readonly ModuleManifest[];
+  readonly storage: StorageConfig;
+  /** Tests lower the quota, shorten the upload timeout or swap the storage. Production passes none. */
+  readonly fileOverrides?: FileModuleDependencies["overrides"];
 }
 
 export interface CoreTenantRouters {
   readonly customFieldRouter: Router;
   readonly settingsRouter: Router;
+  readonly fileRouter: Router;
+  /** PUBLIC files without a session; mounted outside the tenant pipeline by routes/v1.ts. */
+  readonly publicFileRouter: Router;
 }
 
-/** Custom-field and settings routers, both mounted on the tenant pipeline (cards 2.3 and 2.4). */
+/** Custom-field, settings and file routers (cards 2.3, 2.4 and 3.0). The file module also builds the public router. */
 export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenantRouters {
   const { clock, audit, permission, orgConfig } = input;
   const customFieldRouter = buildCustomFieldModule({
@@ -63,7 +71,18 @@ export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenant
       configVersion: buildConfigVersionBumper(),
     }),
   });
-  return { customFieldRouter, settingsRouter };
+  const files = buildFileModule({
+    clock,
+    permission,
+    storage: input.storage,
+    ...(input.fileOverrides === undefined ? {} : { overrides: input.fileOverrides }),
+  });
+  return {
+    customFieldRouter,
+    settingsRouter,
+    fileRouter: files.tenantRouter,
+    publicFileRouter: files.publicRouter,
+  };
 }
 
 /** Organization owns the Location model. Settings only asks whether the location is ACTIVE. */

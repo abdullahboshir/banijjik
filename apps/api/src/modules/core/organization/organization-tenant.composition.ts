@@ -16,6 +16,7 @@ import { buildUserIdentifierReader } from "../iam/index.js";
 import { AssignmentGuard } from "./application/assignment-guard.js";
 import type { ActorProfileReader } from "./application/ports/iam-ports.js";
 import type {
+  FileReferenceChecker,
   OrganizationCustomFieldReader,
   SensitiveValueAccess,
 } from "./application/ports/custom-field-ports.js";
@@ -74,6 +75,8 @@ export interface OrganizationTenantDependencies {
   readonly myOrganizationsReader: MyOrganizationsReader;
   /** Already wrapped as system access by routes/v1.ts: the token is looked up before any organization is known. */
   readonly invitationTokenLookup: InvitationTokenLookup;
+  /** Lets FILE and IMAGE custom field values name only usable files; adapted in routes (ADR-109). */
+  readonly fileReferences: FileReferenceChecker;
   /** `authenticate()` for the admin audience, for the accept route. */
   readonly requireUser: RequestHandler;
 }
@@ -104,6 +107,7 @@ interface SharedParts {
   readonly limitLock: MongoOrganizationLimitLock;
   readonly customFields: OrganizationCustomFieldReader;
   readonly sensitiveAccess: SensitiveValueAccess;
+  readonly fileReferences: FileReferenceChecker;
 }
 
 /** Sensitive values are readable only with the permission at every location (ADR-107). */
@@ -137,6 +141,7 @@ function buildSharedParts(dependencies: OrganizationTenantDependencies): SharedP
     // The effective fields come from the custom-field engine through its index, as iam is used (ADR-102, ADR-107).
     customFields: buildEffectiveCustomFieldReader(),
     sensitiveAccess: buildSensitiveValueAccess(permissions),
+    fileReferences: dependencies.fileReferences,
   };
 }
 
@@ -151,6 +156,7 @@ function buildProfileController(shared: SharedParts): ProfileController {
       audit,
       customFields,
       sensitiveAccess,
+      fileReferences: shared.fileReferences,
     }),
   });
 }
@@ -216,6 +222,7 @@ function buildMemberController(shared: SharedParts): MemberController {
       ...memberDependencies,
       customFields: shared.customFields,
       sensitiveAccess: shared.sensitiveAccess,
+      fileReferences: shared.fileReferences,
     }),
     changeStatus: new ChangeMemberStatusUseCase({ ...memberDependencies, assertRoomForOneMore }),
   });

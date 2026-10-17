@@ -8,6 +8,7 @@ import { industryManifest } from "../modules/platform/industry/index.js";
 import { packageManifest } from "../modules/platform/package/index.js";
 import { saasBillingManifest } from "../modules/platform/saas-billing/index.js";
 import { customFieldManifest } from "../modules/core/custom-field/index.js";
+import { fileManifest } from "../modules/core/file/index.js";
 import { settingsManifest } from "../modules/core/settings/index.js";
 import { tenantAdminManifest } from "../modules/platform/tenant-admin/index.js";
 
@@ -23,6 +24,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   tenantAdminManifest,
   customFieldManifest,
   settingsManifest,
+  fileManifest,
 ];
 
 /**

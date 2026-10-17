@@ -12,8 +12,10 @@ import { recordNotFound } from "../../domain/errors.js";
 import type { Organization } from "../../domain/organization.entity.js";
 import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
 import { viewOrganization, type ProfileView } from "../custom-field-view.js";
+import { assertFileValuesUsable } from "../custom-field-file-values.js";
 import { mergeCustomFieldValues, type MergedCustomFields } from "../custom-field-values.js";
 import type {
+  FileReferenceChecker,
   OrganizationCustomFieldReader,
   SensitiveValueAccess,
 } from "../ports/custom-field-ports.js";
@@ -40,6 +42,7 @@ export interface UpdateProfileDependencies {
   readonly audit: AuditRecorder;
   readonly customFields: OrganizationCustomFieldReader;
   readonly sensitiveAccess: SensitiveValueAccess;
+  readonly fileReferences: FileReferenceChecker;
 }
 
 function auditFieldsOf(organization: Organization): AuditFields {
@@ -69,10 +72,18 @@ export class UpdateProfileUseCase {
   constructor(private readonly dependencies: UpdateProfileDependencies) {}
 
   async execute(input: UpdateProfileInput): Promise<ProfileView> {
-    const { organizations, unitOfWork, customFields, sensitiveAccess } = this.dependencies;
+    const { organizations, unitOfWork, customFields, sensitiveAccess, fileReferences } =
+      this.dependencies;
     const existing = await organizations.findById(input.organizationId);
     if (existing === undefined) throw recordNotFound();
     const fields = await customFields.forEntity(input.organizationId, "organization");
+    if (input.customFields !== undefined) {
+      await assertFileValuesUsable({
+        checker: fileReferences,
+        fields,
+        requested: input.customFields,
+      });
+    }
     const merged =
       input.customFields === undefined
         ? undefined

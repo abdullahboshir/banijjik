@@ -56,6 +56,7 @@ afterAll(async () => {
 /** These cases change no custom field, so the use cases get a reader with no fields and no sensitive access. */
 const noCustomFields = {
   customFields: { forEntity: async () => [] },
+  fileReferences: { isUsable: async () => false },
   sensitiveAccess: {
     mayReadOrganizationSensitive: async () => false,
     mayReadMemberSensitive: async () => false,

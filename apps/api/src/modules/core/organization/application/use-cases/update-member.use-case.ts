@@ -5,9 +5,11 @@ import type { Member, MemberChanges } from "../../domain/member.entity.js";
 import type { Reach } from "../../domain/reach.js";
 import { diffAuditFields } from "../../../../../kernel/audit/index.js";
 import { viewMember, type MemberDetailView } from "../custom-field-view.js";
+import { assertFileValuesUsable } from "../custom-field-file-values.js";
 import { mergeCustomFieldValues, type MergedCustomFields } from "../custom-field-values.js";
 import { assertAssignmentsInReach, requireMemberInReach } from "../member-reach.js";
 import type {
+  FileReferenceChecker,
   OrganizationCustomFieldReader,
   SensitiveValueAccess,
 } from "../ports/custom-field-ports.js";
@@ -20,6 +22,7 @@ import { memberAuditFields } from "./member-audit-fields.js";
 export interface UpdateMemberDependencies extends MemberDependencies {
   readonly customFields: OrganizationCustomFieldReader;
   readonly sensitiveAccess: SensitiveValueAccess;
+  readonly fileReferences: FileReferenceChecker;
 }
 
 export interface UpdateMemberInput extends MemberActorInput {
@@ -43,8 +46,16 @@ export class UpdateMemberUseCase {
   constructor(private readonly dependencies: UpdateMemberDependencies) {}
 
   async execute(input: UpdateMemberInput): Promise<MemberDetailView> {
-    const { members, unitOfWork, customFields, sensitiveAccess } = this.dependencies;
+    const { members, unitOfWork, customFields, sensitiveAccess, fileReferences } =
+      this.dependencies;
     const fields = await customFields.forEntity(input.organizationId, "member");
+    if (input.customFields !== undefined) {
+      await assertFileValuesUsable({
+        checker: fileReferences,
+        fields,
+        requested: input.customFields,
+      });
+    }
     const saved = await unitOfWork.run(async () => {
       const existing = requireMemberInReach(await members.findById(input.memberId), input.reach);
       await assertMemberMayBeChanged(this.dependencies, {

@@ -16,7 +16,18 @@ const validEnv = {
   CORS_ALLOWED_ORIGINS: "http://localhost:3000, https://admin.example.com, http://localhost:3000",
 };
 
+/** Production stores files in an S3-compatible service (card 3.0). The values are fake. */
+const objectStorageEnv = {
+  FILE_STORAGE_DRIVER: "s3",
+  FILE_STORAGE_S3_BUCKET: "shop-files",
+  FILE_STORAGE_S3_REGION: "auto",
+  FILE_STORAGE_S3_ENDPOINT: "https://objects.example.com",
+  FILE_STORAGE_S3_ACCESS_KEY_ID: "test-only-access-key-id",
+  FILE_STORAGE_S3_SECRET_ACCESS_KEY: "test-only-secret-access-key",
+};
+
 const productionEnv = {
+  ...objectStorageEnv,
   AUTH_ACCESS_TOKEN_SECRET: FAKE_ACCESS_SECRET,
   NODE_ENV: "production",
   DB_PLATFORM_URL: "mongodb+srv://user:pw@cluster.example.com/platform",
@@ -58,8 +69,10 @@ describe("loadConfig", () => {
         refreshTokenTtlDays: 30,
         sessionFamilyMaxDays: 90,
       },
+      storage: { driver: "local", localRoot: expect.any(String) },
     });
     expect(Object.isFrozen(config)).toBe(true);
+    expect(Object.isFrozen(config.storage)).toBe(true);
     expect(Object.isFrozen(config.database)).toBe(true);
     expect(Object.isFrozen(config.auth)).toBe(true);
   });
@@ -499,5 +512,82 @@ describe("loadConfigFromProcess", () => {
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
+  });
+});
+
+describe("loadConfig file storage (card 3.0)", () => {
+  it("stores files on local disk outside the repository when nothing is set in development", () => {
+    const config = loadConfig({ ...validEnv, NODE_ENV: "development" });
+
+    expect(config.storage.driver).toBe("local");
+    expect(config.storage).toMatchObject({
+      localRoot: expect.stringContaining("platform-uploads"),
+    });
+  });
+
+  it("takes the folder from FILE_STORAGE_LOCAL_PATH", () => {
+    const config = loadConfig({ ...validEnv, FILE_STORAGE_LOCAL_PATH: "/var/uploads-test" });
+
+    expect(config.storage).toEqual({ driver: "local", localRoot: "/var/uploads-test" });
+  });
+
+  it("accepts the object storage settings in production", () => {
+    const config = loadConfig(productionEnv);
+
+    expect(config.storage).toEqual({
+      driver: "s3",
+      bucket: "shop-files",
+      region: "auto",
+      endpoint: "https://objects.example.com",
+      accessKeyId: "test-only-access-key-id",
+      secretAccessKey: "test-only-secret-access-key",
+    });
+  });
+
+  it("refuses the local driver in production, and says so on FILE_STORAGE_DRIVER", () => {
+    const error = catchConfigError({ ...productionEnv, FILE_STORAGE_DRIVER: "local" });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "FILE_STORAGE_DRIVER", problem: "INVALID" }),
+    ]);
+  });
+
+  it("refuses production without any storage setting, because local is the default", () => {
+    const withoutDriver = Object.fromEntries(
+      Object.entries(productionEnv).filter(([key]) => key !== "FILE_STORAGE_DRIVER"),
+    );
+
+    const error = catchConfigError(withoutDriver);
+
+    expect(error.issues.map((issue) => issue.key)).toContain("FILE_STORAGE_DRIVER");
+  });
+
+  it("names every missing object storage setting when the driver is s3", () => {
+    const error = catchConfigError({ ...validEnv, FILE_STORAGE_DRIVER: "s3" });
+
+    expect(error.issues.map((issue) => [issue.key, issue.problem])).toEqual([
+      ["FILE_STORAGE_S3_BUCKET", "MISSING"],
+      ["FILE_STORAGE_S3_REGION", "MISSING"],
+      ["FILE_STORAGE_S3_ACCESS_KEY_ID", "MISSING"],
+      ["FILE_STORAGE_S3_SECRET_ACCESS_KEY", "MISSING"],
+    ]);
+  });
+
+  it("refuses an object storage endpoint that is not https", () => {
+    const error = catchConfigError({
+      ...productionEnv,
+      FILE_STORAGE_S3_ENDPOINT: "http://objects.example.com",
+    });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "FILE_STORAGE_S3_ENDPOINT", problem: "INVALID" }),
+    ]);
+  });
+
+  it("never puts the credentials in the error message", () => {
+    const error = catchConfigError({ ...productionEnv, FILE_STORAGE_S3_BUCKET: "NOT A BUCKET" });
+
+    expect(error.message).not.toContain("test-only-secret-access-key");
+    expect(error.message).not.toContain("test-only-access-key-id");
   });
 });

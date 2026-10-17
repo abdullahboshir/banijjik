@@ -192,3 +192,51 @@ export const platformAdminPasswordRule: FieldRule<string> = {
   hint: "must be set together with PLATFORM_ADMIN_EMAIL",
   schema: z.string().min(1),
 };
+
+export const FILE_STORAGE_DRIVERS = ["local", "s3"] as const;
+
+export const fileStorageDriverRule: FieldRule<(typeof FILE_STORAGE_DRIVERS)[number]> = {
+  key: "FILE_STORAGE_DRIVER",
+  hint: "must be local or s3",
+  schema: z.enum(FILE_STORAGE_DRIVERS),
+  defaultValue: "local",
+};
+
+export const fileStorageLocalPathRule: FieldRule<string> = {
+  key: "FILE_STORAGE_LOCAL_PATH",
+  hint: "must be a folder path outside the repository",
+  schema: z.string().min(1),
+};
+
+export const fileStorageBucketRule: FieldRule<string> = {
+  key: "FILE_STORAGE_S3_BUCKET",
+  hint: "must be the bucket name; required when FILE_STORAGE_DRIVER is s3",
+  schema: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/),
+};
+
+export const fileStorageRegionRule: FieldRule<string> = {
+  key: "FILE_STORAGE_S3_REGION",
+  hint: "must be the region name, such as us-east-1 or auto; required when FILE_STORAGE_DRIVER is s3",
+  schema: z.string().regex(/^[a-z0-9-]{2,40}$/),
+};
+
+export const fileStorageEndpointRule: FieldRule<string> = {
+  key: "FILE_STORAGE_S3_ENDPOINT",
+  hint: "must be an absolute https URL of the S3-compatible service",
+  schema: z.string().regex(/^https:\/\/\S+$/),
+};
+
+export const fileStorageAccessKeyIdRule: FieldRule<string> = {
+  key: "FILE_STORAGE_S3_ACCESS_KEY_ID",
+  hint: "must be the access key id; required when FILE_STORAGE_DRIVER is s3",
+  schema: z.string().min(1),
+};
+
+export const fileStorageSecretAccessKeyRule: FieldRule<string> = {
+  key: "FILE_STORAGE_S3_SECRET_ACCESS_KEY",
+  hint: "must be the secret access key; required when FILE_STORAGE_DRIVER is s3",
+  schema: z.string().min(1),
+};
+
+export const FILE_STORAGE_LOCAL_IN_PRODUCTION_HINT =
+  "local disk storage is refused in production; use s3";

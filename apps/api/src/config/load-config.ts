@@ -20,6 +20,7 @@ import {
   type FieldRule,
 } from "./env.schema.js";
 import { isLocalHostUrl } from "./local-host.js";
+import { readStorageConfig } from "./read-storage-config.js";
 import { readAuthConfig, readPlatformAdmin, type ConfigSection } from "./read-auth-config.js";
 import {
   collectIssues,
@@ -70,7 +71,7 @@ function readTrustedProxyHops(env: Environment, isProduction: boolean): FieldRes
   return readField(env, rule);
 }
 
-type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin">;
+type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin" | "storage">;
 type ServerSettings = Pick<
   AppConfig,
   "port" | "logLevel" | "role" | "trustedProxyHops" | "corsAllowedOrigins"
@@ -158,19 +159,27 @@ export function loadConfig(env: Environment): AppConfig {
   const base = readBaseConfig(env);
   const auth = readAuthConfig(env, env["NODE_ENV"]?.trim() === "production");
   const platformAdmin = readPlatformAdmin(env);
+  const storage = readStorageConfig(env, env["NODE_ENV"]?.trim() === "production");
   const outboxPollInterval = readOptionalField(env, outboxPollIntervalRule);
   const issues = [
     ...base.issues,
     ...auth.issues,
     ...platformAdmin.issues,
+    ...storage.issues,
     ...collectIssues([outboxPollInterval]),
   ];
-  if (issues.length > 0 || base.value === undefined || auth.value === undefined) {
+  if (
+    issues.length > 0 ||
+    base.value === undefined ||
+    auth.value === undefined ||
+    storage.value === undefined
+  ) {
     throw new ConfigError(issues);
   }
   return Object.freeze({
     ...base.value,
     auth: auth.value,
+    storage: storage.value,
     ...(outboxPollInterval.value === undefined
       ? {}
       : { outboxPollIntervalMs: outboxPollInterval.value }),

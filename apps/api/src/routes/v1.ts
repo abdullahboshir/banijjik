@@ -32,24 +32,19 @@ import {
   buildPermissionCache,
   buildPermissionCatalog,
   buildPermissionGate,
-  buildRoleGrantReader,
   registerIamModels,
 } from "../modules/core/iam/index.js";
 import {
-  buildInvitationTokenLookup,
   buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
   buildOrganizationRouters,
-  buildOrganizationTenantRouters,
   buildRolesVersionBumper,
-  type OrganizationTenantRouters,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
   buildEntitlementTenantRouter,
-  buildLimitGuard,
   buildOrgConfigService,
   registerEntitlementModels,
   type IndustryTemplateReader,
@@ -67,7 +62,9 @@ import {
   registerSaasBillingModels,
 } from "../modules/platform/saas-billing/index.js";
 import { registerCustomFieldModels } from "../modules/core/custom-field/index.js";
-import { buildCoreTenantRouters } from "./core-tenant-routers.js";
+import { registerFileModels } from "../modules/core/file/index.js";
+import { buildCoreTenantRouters, type CoreTenantRouters } from "./core-tenant-routers.js";
+import { buildOrganizationTenant } from "./organization-tenant-routers.js";
 import {
   buildOrganizationConfigPorts,
   buildResolvedConfigSources,
@@ -97,7 +94,11 @@ export interface V1Dependencies {
   readonly extraManifests?: readonly ModuleManifest[];
   /** Replaces the industry template reader so tests can turn modules off by template (card 1.6b). */
   readonly templateReader?: IndustryTemplateReader;
+  /** Tests lower the file quota, shorten the upload timeout or swap the file storage. Production passes none. */
+  readonly fileOverrides?: CoreTenantInput["fileOverrides"];
 }
+
+type CoreTenantInput = Parameters<typeof buildCoreTenantRouters>[0];
 
 /** Every module registers its models here, before the databases connect (see main.ts). */
 export function registerModuleModels(): void {
@@ -110,6 +111,7 @@ export function registerModuleModels(): void {
   registerEntitlementModels();
   registerCustomFieldModels();
   registerSettingsModels();
+  registerFileModels();
 }
 
 /**
@@ -136,19 +138,23 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   const membershipDirectory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
   const access = buildAccessParts({ clock, redis: dependencies.redis, registry });
   const organizationTenant = buildOrganizationTenant({
-    dependencies,
+    clock,
+    rateLimiter: dependencies.rateLimiter,
     audit,
     idempotency,
     access,
     orgConfig,
     requireUser: requireAdminUser,
   });
+  const coreRouters = buildCoreRouters({ dependencies, audit, orgConfig, access, registry });
   // logout-all lives in the auth router but needs a session; the rest of /auth is public.
   router.use("/auth/logout-all", requireAdminUser);
   router.use("/auth", authRouter);
   // More specific path first, so /me/orgs never falls into the /me router.
   router.use("/me/orgs", adminGuards, myOrganizationsRouter);
   router.use("/industry-templates", adminGuards, buildPublishedIndustryTemplateRouter());
+  // PUBLIC files are served without a session (logos and product images for websites, ADR-109).
+  router.use("/public", coreRouters.publicFileRouter);
   router.use("/me", adminGuards, meRouter);
   // The invitation link: public preview, signed-in accept. Outside the tenant pipeline.
   router.use("/invitations", organizationTenant.invitationLinkRouter);
@@ -172,11 +178,34 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
         access,
         registry,
         organizationRouter: organizationTenant.tenantRouter,
-        manifests: registry.all(),
+        coreRouters,
       }),
     ),
   );
   return router;
+}
+
+/** Custom-field, settings and file routers; the file module also yields the public router. */
+function buildCoreRouters(input: {
+  readonly dependencies: V1Dependencies;
+  readonly audit: AuditRecorder;
+  readonly orgConfig: OrgConfigService;
+  readonly access: AccessParts;
+  readonly registry: ModuleRegistry;
+}): CoreTenantRouters {
+  const { dependencies, access, registry } = input;
+  return buildCoreTenantRouters({
+    clock: dependencies.clock,
+    audit: input.audit,
+    permission: access.permission,
+    orgConfig: input.orgConfig,
+    registry,
+    manifests: registry.all(),
+    storage: dependencies.config.storage,
+    ...(dependencies.fileOverrides === undefined
+      ? {}
+      : { fileOverrides: dependencies.fileOverrides }),
+  });
 }
 
 /** Organization creation, including the published-template check and the trial subscription. */
@@ -229,38 +258,6 @@ function buildResolvedConfigService(
   });
 }
 
-interface OrganizationTenantInput {
-  readonly dependencies: V1Dependencies;
-  readonly audit: AuditRecorder;
-  readonly idempotency: RequestHandler;
-  readonly access: AccessParts;
-  readonly orgConfig: OrgConfigService;
-  readonly requireUser: RequestHandler;
-}
-
-/** The card 1.7b routers: profile, locations, members and invitations, plus the invitation link. */
-function buildOrganizationTenant(input: OrganizationTenantInput): OrganizationTenantRouters {
-  const { dependencies, access } = input;
-  return buildOrganizationTenantRouters({
-    clock: dependencies.clock,
-    rateLimiter: dependencies.rateLimiter,
-    audit: input.audit,
-    idempotency: input.idempotency,
-    permission: access.permission,
-    permissions: access.permissionGate,
-    roleGrants: buildRoleGrantReader(access.catalog),
-    limits: buildLimitGuard(input.orgConfig),
-    // Accepting an invitation runs as the inviting organization (ADR-087).
-    contextRunner: {
-      run: (organizationId, work) => runInOrganizationContext(organizationId, work),
-    },
-    myOrganizationsReader: asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMyOrganizationsReader()),
-    // The token is looked up before any organization is known: a deliberate AUTH_LOOKUP.
-    invitationTokenLookup: asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildInvitationTokenLookup()),
-    requireUser: input.requireUser,
-  });
-}
-
 interface AccessParts {
   readonly catalog: PermissionCatalog;
   readonly memberAccess: MemberAccessReader;
@@ -298,7 +295,7 @@ interface TenantRoutersInput {
   readonly access: AccessParts;
   readonly registry: ModuleRegistry;
   readonly organizationRouter: Router;
-  readonly manifests: readonly ModuleManifest[];
+  readonly coreRouters: CoreTenantRouters;
 }
 
 /**
@@ -325,14 +322,7 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     permissions: permissionGate,
     permissionDefinitions: catalog.all(),
   });
-  const { customFieldRouter, settingsRouter } = buildCoreTenantRouters({
-    clock,
-    audit,
-    permission,
-    orgConfig,
-    registry: input.registry,
-    manifests: input.manifests,
-  });
+  const { customFieldRouter, settingsRouter, fileRouter } = input.coreRouters;
   return [
     iamRouter,
     input.organizationRouter,
@@ -340,6 +330,7 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     entitlementRouter,
     customFieldRouter,
     settingsRouter,
+    fileRouter,
     ...tenantRouters,
     ...tenantRouterFactories.map((build) => build(permission)),
   ];

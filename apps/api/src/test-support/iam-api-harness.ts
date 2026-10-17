@@ -21,7 +21,7 @@ import type { RedisClient } from "../kernel/redis/index.js";
 import { registerSequenceModel } from "../kernel/sequence/index.js";
 import { buildEnsureSeedPackagesUseCase } from "../modules/platform/package/index.js";
 import { buildEnsureSeedIndustryTemplatesUseCase } from "../modules/platform/industry/index.js";
-import { buildV1Router, registerModuleModels } from "../routes/v1.js";
+import { buildV1Router, registerModuleModels, type V1Dependencies } from "../routes/v1.js";
 import { createLogCapture, type LogCapture } from "./log-capture.js";
 import { MutableClock } from "./mutable-clock.js";
 import { KERNEL_PROBE_MANIFEST } from "./probe-manifests.js";
@@ -50,6 +50,14 @@ export function registerIamApiModels(): void {
 
 type StartIamApiOptions = NonNullable<Parameters<typeof startIamApi>[0]>;
 
+/** An option from this list makes the harness build its own v1 router instead of the default one. */
+const PROBE_OPTION_KEYS = [
+  "tenantRouters",
+  "tenantRouterFactories",
+  "userRateLimiter",
+  "fileOverrides",
+] as const;
+
 /**
  * Without probe routers or a replaced limiter the app builds its own v1 router, exactly as
  * production does (it then has no Redis, so no per-user limit); with them, the same router plus
@@ -60,10 +68,7 @@ function buildProbeV1Router(
   config: AppConfig,
   clock: MutableClock,
 ): Router | undefined {
-  const needsOwnRouter =
-    options.tenantRouters !== undefined ||
-    options.tenantRouterFactories !== undefined ||
-    options.userRateLimiter !== undefined;
+  const needsOwnRouter = PROBE_OPTION_KEYS.some((key) => options[key] !== undefined);
   if (!needsOwnRouter) return undefined;
   return buildV1Router({
     config,
@@ -74,6 +79,7 @@ function buildProbeV1Router(
     extraManifests: [KERNEL_PROBE_MANIFEST, ...(options.extraManifests ?? [])],
     ...(options.templateReader === undefined ? {} : { templateReader: options.templateReader }),
     ...(options.userRateLimiter === undefined ? {} : { userRateLimiter: options.userRateLimiter }),
+    ...(options.fileOverrides === undefined ? {} : { fileOverrides: options.fileOverrides }),
   });
 }
 /** The real app on a real replica set, with a clock the test controls and the logs captured. */
@@ -91,6 +97,8 @@ export async function startIamApi(
     readonly userRateLimiter?: RateLimiter;
     /** The API role's cache client: with it the app builds the real Redis per-user limiter, as production does. */
     readonly redis?: RedisClient;
+    /** Where uploaded files go, the file quota and the upload timeout (card 3.0). */
+    readonly fileOverrides?: V1Dependencies["fileOverrides"];
   } = {},
 ): Promise<IamApiHarness> {
   const config = createDatabaseTestConfig();
