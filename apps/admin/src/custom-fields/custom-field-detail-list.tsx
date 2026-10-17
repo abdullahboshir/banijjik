@@ -1,8 +1,10 @@
+import { PageSection } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import type { DetailRow } from "./custom-field-display";
 
 export interface CustomFieldDetailListProps {
   title: string;
+  help: string;
   rows: readonly DetailRow[];
   notSetLabel: string;
   hiddenLabel: string;
@@ -12,8 +14,7 @@ export interface CustomFieldDetailListProps {
 export function CustomFieldDetailList(props: CustomFieldDetailListProps): ReactElement | null {
   if (props.rows.length === 0) return null;
   return (
-    <section className="mb-6">
-      <h2 className="mb-2 text-title font-semibold text-primary">{props.title}</h2>
+    <PageSection title={props.title} help={props.help}>
       <dl className="grid gap-4 md:grid-cols-3">
         {props.rows.map((row) => (
           <div key={row.fieldKey} className="flex flex-col gap-1">
@@ -24,6 +25,6 @@ export function CustomFieldDetailList(props: CustomFieldDetailListProps): ReactE
           </div>
         ))}
       </dl>
-    </section>
+    </PageSection>
   );
 }

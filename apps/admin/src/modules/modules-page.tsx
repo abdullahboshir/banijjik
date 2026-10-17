@@ -1,5 +1,5 @@
 import { PERMISSION_KEY, type TenantModuleView } from "@banijjik/contracts";
-import { EmptyState, PageHeader } from "@banijjik/ui";
+import { EmptyState, PageLayout } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { fetchBusinessResource } from "../lib/api/server-resource";
 import { getTranslator } from "../lib/i18n/get-translator";
@@ -30,14 +30,13 @@ export async function ModulesPage({ orgSlug }: { orgSlug: string }): Promise<Rea
     access.canWrite &&
     holdsPermissionEverywhere(permissions, PERMISSION_KEY.SETTINGS_MODULE_UPDATE);
   return (
-    <>
-      <PageHeader title={t("modules.title")} />
+    <PageLayout title={t("modules.title")} subtitle={t("modules.subtitle")}>
       <ModuleList
         organizationId={organizationId}
         rows={toModuleRows(result.data, canEdit, t)}
         labels={moduleListLabelsOf(t)}
         sheetLabels={moduleSheetLabelsOf(t)}
       />
-    </>
+    </PageLayout>
   );
 }

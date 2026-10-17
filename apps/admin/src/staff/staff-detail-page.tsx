@@ -1,6 +1,6 @@
 import { CURRENCY_CODE, PERMISSION_KEY, type MemberResponse } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { DetailHeader, EmptyState, StatusBadge } from "@banijjik/ui";
+import { DetailHeader, EmptyState, PageSection, StatusBadge } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { getTranslator } from "../lib/i18n/get-translator";
 import { fetchBusinessResource } from "../lib/api/server-resource";
@@ -100,10 +100,10 @@ function MemberDetails({
     canWrite: access.canWrite,
   });
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <CustomFieldDetailList {...parts.list} />
       {canEdit ? (
-        <div className="mb-6">
+        <div>
           <EditMemberDetailsButton
             label={t("staff.action.editDetails")}
             sheetProps={{
@@ -122,7 +122,7 @@ function MemberDetails({
           />
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -144,7 +144,7 @@ function MemberOverview({
   const { t, locale } = translator;
   const orgSlug = access.organization.slug;
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <DetailHeader
         title={member.displayName}
         backHref={`/${orgSlug}/settings/staff`}
@@ -158,7 +158,7 @@ function MemberOverview({
         }
         facts={<span>{roleNamesOfMember(member, lookups, t)}</span>}
       />
-      <dl className="mb-6 grid gap-4 md:grid-cols-3">
+      <dl className="grid gap-4 md:grid-cols-3">
         <Fact label={t("staff.detail.jobTitle")} value={member.jobTitle} />
         <Fact label={t("staff.detail.employeeNumber")} value={member.employeeNumber} />
         <Fact
@@ -166,11 +166,10 @@ function MemberOverview({
           value={formatJoinedDate(member.joinedAt, locale, access.timeZone)}
         />
       </dl>
-      <h2 className="mb-2 text-title font-semibold text-primary">
-        {t("staff.detail.assignments")}
-      </h2>
-      <AssignmentList member={member} lookups={lookups} t={t} />
-    </>
+      <PageSection title={t("staff.detail.assignments")} help={t("staff.detail.assignments.help")}>
+        <AssignmentList member={member} lookups={lookups} t={t} />
+      </PageSection>
+    </div>
   );
 }
 
@@ -203,7 +202,7 @@ export async function StaffDetailPage({
     canChooseAssignments: lookups.options !== undefined,
   });
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <MemberOverview member={member} lookups={lookups} access={access} translator={translator} />
       <MemberDetails member={member} lookups={lookups} access={access} translator={translator} />
       <MemberActions
@@ -217,6 +216,6 @@ export async function StaffDetailPage({
         options={lookups.options}
         labels={memberActionLabelsOf(t, member.displayName)}
       />
-    </>
+    </div>
   );
 }

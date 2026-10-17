@@ -5,7 +5,7 @@ import {
   type MemberStatus,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { Button, buttonVariants, EmptyState, PageHeader, TextInput } from "@banijjik/ui";
+import { Button, buttonVariants, EmptyState, PageLayout, TextInput } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { getTranslator } from "../lib/i18n/get-translator";
@@ -183,17 +183,17 @@ export async function StaffListPage({
   ]);
   const basePath = `/${orgSlug}/settings/staff`;
   return (
-    <>
-      <PageHeader
-        title={t("menu.organization.staff")}
-        actions={<StaffHeaderActions access={access} orgSlug={orgSlug} t={t} />}
-        filters={
-          <>
-            <StatusChips basePath={basePath} query={query} t={t} />
-            <SearchForm query={query} t={t} />
-          </>
-        }
-      />
+    <PageLayout
+      subtitle={t("staff.subtitle")}
+      title={t("menu.organization.staff")}
+      actions={<StaffHeaderActions access={access} orgSlug={orgSlug} t={t} />}
+      filters={
+        <>
+          <StatusChips basePath={basePath} query={query} t={t} />
+          <SearchForm query={query} t={t} />
+        </>
+      }
+    >
       <StaffList
         rows={toRows(members.data, lookups, t)}
         detailBasePath={basePath}
@@ -207,6 +207,6 @@ export async function StaffListPage({
         }}
       />
       <Pager basePath={basePath} query={query} hasNext={members.meta?.hasNext ?? false} t={t} />
-    </>
+    </PageLayout>
   );
 }

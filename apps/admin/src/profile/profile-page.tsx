@@ -4,7 +4,7 @@ import {
   type OrganizationProfileResponse,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { PageHeader, formatPhoneForDisplay } from "@banijjik/ui";
+import { PageLayout, PageSection, formatPhoneForDisplay } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { fetchBusinessResource, fetchBusinessResourceIfAllowed } from "../lib/api/server-resource";
 import { getTranslator } from "../lib/i18n/get-translator";
@@ -24,10 +24,16 @@ interface Fact {
   value: string | undefined;
 }
 
-function FactList({ title, facts, t }: { title: string; facts: Fact[]; t: Translator["t"] }) {
+interface FactListProps {
+  title: string;
+  help: string;
+  facts: Fact[];
+  t: Translator["t"];
+}
+
+function FactList({ title, help, facts, t }: FactListProps): ReactElement {
   return (
-    <section className="mb-6">
-      <h2 className="mb-2 text-title font-semibold text-primary">{title}</h2>
+    <PageSection title={title} help={help}>
       <dl className="grid gap-4 md:grid-cols-3">
         {facts.map((fact) => (
           <div key={fact.label} className="flex flex-col gap-1">
@@ -38,7 +44,7 @@ function FactList({ title, facts, t }: { title: string; facts: Fact[]; t: Transl
           </div>
         ))}
       </dl>
-    </section>
+    </PageSection>
   );
 }
 
@@ -81,6 +87,32 @@ function fixedFacts(profile: OrganizationProfileResponse, t: Translator["t"]): F
   ];
 }
 
+/** The business and address sections: the facts every member may read. */
+function ProfileFacts({
+  profile,
+  t,
+}: {
+  profile: OrganizationProfileResponse;
+  t: Translator["t"];
+}): ReactElement {
+  return (
+    <>
+      <FactList
+        title={t("profile.section.business")}
+        help={t("profile.section.business.help")}
+        facts={businessFacts(profile, t)}
+        t={t}
+      />
+      <FactList
+        title={t("profile.section.address")}
+        help={t("profile.section.address.help")}
+        facts={addressFacts(profile, t)}
+        t={t}
+      />
+    </>
+  );
+}
+
 function canEditProfile(access: OrgAccess): boolean {
   const { permissions } = access.config;
   return (
@@ -120,26 +152,25 @@ export async function ProfilePage({ orgSlug }: { orgSlug: string }): Promise<Rea
     currencyCode: profile.currencyCode,
   });
   return (
-    <>
-      <PageHeader
-        title={t("profile.title")}
-        actions={
-          canEditProfile(access) ? (
-            <EditProfileButton
-              label={t("profile.edit")}
-              sheetProps={{
-                organizationId,
-                initial: profileToFormState(profile),
-                version: profile.version,
-                labels: profileLabelsOf(t),
-                customFields: customFieldParts.form,
-              }}
-            />
-          ) : null
-        }
-      />
-      <FactList title={t("profile.section.business")} facts={businessFacts(profile, t)} t={t} />
-      <FactList title={t("profile.section.address")} facts={addressFacts(profile, t)} t={t} />
+    <PageLayout
+      title={t("profile.title")}
+      subtitle={t("profile.subtitle")}
+      actions={
+        canEditProfile(access) ? (
+          <EditProfileButton
+            label={t("profile.edit")}
+            sheetProps={{
+              organizationId,
+              initial: profileToFormState(profile),
+              version: profile.version,
+              labels: profileLabelsOf(t),
+              customFields: customFieldParts.form,
+            }}
+          />
+        ) : null
+      }
+    >
+      <ProfileFacts profile={profile} t={t} />
       <CustomFieldDetailList {...customFieldParts.list} />
       <ProfileLocationsSection
         access={access}
@@ -148,8 +179,12 @@ export async function ProfilePage({ orgSlug }: { orgSlug: string }): Promise<Rea
         locale={translator.locale}
         orgSlug={orgSlug}
       />
-      <FactList title={t("profile.section.fixed")} facts={fixedFacts(profile, t)} t={t} />
-      <p className="text-small text-secondary">{t("profile.fixed.hint")}</p>
-    </>
+      <FactList
+        title={t("profile.section.fixed")}
+        help={t("profile.fixed.hint")}
+        facts={fixedFacts(profile, t)}
+        t={t}
+      />
+    </PageLayout>
   );
 }

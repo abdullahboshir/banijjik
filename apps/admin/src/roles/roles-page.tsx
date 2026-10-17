@@ -1,5 +1,5 @@
 import { PERMISSION_KEY, type RoleSummary } from "@banijjik/contracts";
-import { EmptyState, PageHeader, buttonVariants } from "@banijjik/ui";
+import { EmptyState, PageLayout, buttonVariants } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { fetchBusinessResource } from "../lib/api/server-resource";
@@ -42,8 +42,9 @@ export async function RolesPage({ orgSlug }: { orgSlug: string }): Promise<React
       >
         {t("staff.detail.back")}
       </Link>
-      <PageHeader
+      <PageLayout
         title={t("roles.title")}
+        subtitle={t("roles.subtitle")}
         actions={
           canCreate ? (
             <NewRoleButton
@@ -54,18 +55,19 @@ export async function RolesPage({ orgSlug }: { orgSlug: string }): Promise<React
             />
           ) : null
         }
-      />
-      <RoleList
-        rows={toRoleRows(roles.data, t)}
-        detailBasePath={`/${orgSlug}/settings/roles`}
-        labels={{
-          name: t("roles.column.name"),
-          members: t("roles.column.members"),
-          status: t("roles.column.status"),
-          system: t("roles.system"),
-          empty: t("roles.empty"),
-        }}
-      />
+      >
+        <RoleList
+          rows={toRoleRows(roles.data, t)}
+          detailBasePath={`/${orgSlug}/settings/roles`}
+          labels={{
+            name: t("roles.column.name"),
+            members: t("roles.column.members"),
+            status: t("roles.column.status"),
+            system: t("roles.system"),
+            empty: t("roles.empty"),
+          }}
+        />
+      </PageLayout>
     </>
   );
 }

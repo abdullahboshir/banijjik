@@ -1,6 +1,6 @@
 import { PERMISSION_KEY, type LocationResponse, type SettingsResponse } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { EmptyState, PageHeader } from "@banijjik/ui";
+import { EmptyState, PageLayout, PageSection } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { fetchBusinessResource, fetchBusinessResourceIfAllowed } from "../lib/api/server-resource";
@@ -11,9 +11,10 @@ import {
   holdsPermissionAt,
   holdsPermissionEverywhere,
 } from "../shell/permissions";
+import { groupSettingRows, settingGroupTexts } from "./setting-groups";
 import { SettingList } from "./setting-list";
 import { settingListLabelsOf, settingSheetLabelsOf } from "./setting-labels";
-import { toSettingRows } from "./setting-rows";
+import { toSettingRows, type SettingRowView } from "./setting-rows";
 
 const LOCATION_PAGE_SIZE = 100;
 const CHIP_CLASS =
@@ -57,6 +58,40 @@ function LevelChips({
         );
       })}
     </nav>
+  );
+}
+
+/** One titled section per module that has settings; with no row at all, the list draws its own empty state. */
+function SettingGroups({
+  organizationId,
+  rows,
+  t,
+}: {
+  organizationId: string;
+  rows: SettingRowView[];
+  t: Translator["t"];
+}): ReactElement {
+  const groups = groupSettingRows(rows);
+  const list = (groupRows: SettingRowView[]): ReactElement => (
+    <SettingList
+      organizationId={organizationId}
+      rows={groupRows}
+      labels={settingListLabelsOf(t)}
+      sheetLabels={settingSheetLabelsOf(t)}
+    />
+  );
+  if (groups.length === 0) return list([]);
+  return (
+    <>
+      {groups.map((group) => {
+        const { title, help } = settingGroupTexts(group.groupKey, t);
+        return (
+          <PageSection key={group.groupKey} title={title} help={help}>
+            {list(group.rows)}
+          </PageSection>
+        );
+      })}
+    </>
   );
 }
 
@@ -131,26 +166,21 @@ export async function SettingsGeneralPage({
     t,
   });
   return (
-    <>
-      <PageHeader
-        title={t("settings.general.title")}
-        filters={
-          places.length > 1 ? (
-            <LevelChips
-              basePath={`/${orgSlug}/settings/general`}
-              locations={places}
-              selectedId={locationId}
-              t={t}
-            />
-          ) : undefined
-        }
-      />
-      <SettingList
-        organizationId={organizationId}
-        rows={rows}
-        labels={settingListLabelsOf(t)}
-        sheetLabels={settingSheetLabelsOf(t)}
-      />
-    </>
+    <PageLayout
+      title={t("settings.general.title")}
+      subtitle={t("settings.general.subtitle")}
+      filters={
+        places.length > 1 ? (
+          <LevelChips
+            basePath={`/${orgSlug}/settings/general`}
+            locations={places}
+            selectedId={locationId}
+            t={t}
+          />
+        ) : undefined
+      }
+    >
+      <SettingGroups organizationId={organizationId} rows={rows} t={t} />
+    </PageLayout>
   );
 }

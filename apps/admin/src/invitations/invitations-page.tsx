@@ -5,7 +5,7 @@ import {
   type InvitationStatus,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { EmptyState, PageHeader, formatPhoneForDisplay } from "@banijjik/ui";
+import { EmptyState, PageLayout, formatPhoneForDisplay } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { getTranslator } from "../lib/i18n/get-translator";
 import type { PageMeta } from "../lib/api/page-meta";
@@ -95,20 +95,20 @@ export async function InvitationsPage({ orgSlug }: { orgSlug: string }): Promise
     toRow({ invitation, lookups, access, t, locale }),
   );
   return (
-    <>
-      <PageHeader
-        title={t("invitations.title")}
-        actions={
-          access.canWrite && lookups.options ? (
-            <NewInvitationButton
-              organizationId={organizationId}
-              options={lookups.options}
-              labels={inviteLabelsOf(t)}
-              buttonLabel={t("invitations.create")}
-            />
-          ) : null
-        }
-      />
+    <PageLayout
+      subtitle={t("invitations.subtitle")}
+      title={t("invitations.title")}
+      actions={
+        access.canWrite && lookups.options ? (
+          <NewInvitationButton
+            organizationId={organizationId}
+            options={lookups.options}
+            labels={inviteLabelsOf(t)}
+            buttonLabel={t("invitations.create")}
+          />
+        ) : null
+      }
+    >
       <InvitationList
         organizationId={organizationId}
         rows={rows}
@@ -129,6 +129,6 @@ export async function InvitationsPage({ orgSlug }: { orgSlug: string }): Promise
           },
         }}
       />
-    </>
+    </PageLayout>
   );
 }

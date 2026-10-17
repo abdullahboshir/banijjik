@@ -1,5 +1,5 @@
 import { PERMISSION_KEY, type TermsResponse } from "@banijjik/contracts";
-import { EmptyState, PageHeader } from "@banijjik/ui";
+import { EmptyState, PageLayout } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { fetchBusinessResource } from "../lib/api/server-resource";
 import { getTranslator } from "../lib/i18n/get-translator";
@@ -22,15 +22,13 @@ export async function TermsPage({ orgSlug }: { orgSlug: string }): Promise<React
   const canEdit =
     access.canWrite && holdsPermissionEverywhere(permissions, PERMISSION_KEY.SETTINGS_TERM_UPDATE);
   return (
-    <>
-      <PageHeader title={t("terms.title")} />
-      <p className="mb-4 text-small text-secondary">{t("terms.hint")}</p>
+    <PageLayout title={t("terms.title")} subtitle={t("terms.hint")}>
       <TermList
         organizationId={organizationId}
         rows={toTermRows(result.data.terms, canEdit, t)}
         labels={termListLabelsOf(t)}
         sheetLabels={termSheetLabelsOf(t)}
       />
-    </>
+    </PageLayout>
   );
 }

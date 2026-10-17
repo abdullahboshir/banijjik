@@ -1,6 +1,6 @@
 import { LOCATION_STATUS, PERMISSION_KEY, type LocationResponse } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { EmptyState, PageHeader } from "@banijjik/ui";
+import { EmptyState, PageLayout } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { termLabel } from "@banijjik/web-client";
@@ -99,26 +99,26 @@ export async function LocationsPage({
       holdsPermissionEverywhere(permissions, PERMISSION_KEY.ORGANIZATION_LOCATION_ARCHIVE),
   };
   return (
-    <>
-      <PageHeader
-        title={termLabel(terms, "location", { locale, fallback: t("locations.title") })}
-        actions={
-          canCreate ? (
-            <NewLocationButton
-              organizationId={organizationId}
-              label={t("locations.add", { term })}
-              labels={formLabels}
-            />
-          ) : null
-        }
-        filters={<StatusChips basePath={`/${orgSlug}/settings/locations`} status={status} t={t} />}
-      />
+    <PageLayout
+      subtitle={t("locations.subtitle", { term })}
+      title={termLabel(terms, "location", { locale, fallback: t("locations.title") })}
+      actions={
+        canCreate ? (
+          <NewLocationButton
+            organizationId={organizationId}
+            label={t("locations.add", { term })}
+            labels={formLabels}
+          />
+        ) : null
+      }
+      filters={<StatusChips basePath={`/${orgSlug}/settings/locations`} status={status} t={t} />}
+    >
       <LocationList
         organizationId={organizationId}
         rows={toLocationRows(locations.data, abilities, t)}
         labels={listLabelsOf(t, term)}
         formLabels={formLabels}
       />
-    </>
+    </PageLayout>
   );
 }

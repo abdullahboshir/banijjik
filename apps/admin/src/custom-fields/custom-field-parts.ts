@@ -28,6 +28,7 @@ export function customFieldPartsOf(input: CustomFieldPartsInput): CustomFieldPar
   return {
     list: {
       title: t("customFields.title"),
+      help: t("customFields.detail.help"),
       rows: detailRowsOf({
         fields,
         values,

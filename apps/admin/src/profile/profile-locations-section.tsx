@@ -1,6 +1,6 @@
 import { PERMISSION_KEY, type LocationResponse } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { buttonVariants } from "@banijjik/ui";
+import { PageSection, buttonVariants } from "@banijjik/ui";
 import { termLabel } from "@banijjik/web-client";
 import Link from "next/link";
 import type { ReactElement } from "react";
@@ -42,11 +42,11 @@ export function ProfileLocationsSection(props: ProfileLocationsSectionProps): Re
     locations.length >= LOCATIONS_MENU_THRESHOLD &&
     holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_LOCATION_READ);
   return (
-    <section className="mb-6" aria-labelledby="profile-locations-title">
-      <h2 id="profile-locations-title" className="mb-2 text-title font-semibold text-primary">
-        {termLabel(terms, "location", { locale, fallback: t("profile.locations.title") })}
-      </h2>
-      <ul className="mb-3 flex flex-col gap-2">
+    <PageSection
+      title={termLabel(terms, "location", { locale, fallback: t("profile.locations.title") })}
+      help={t(canCreate ? "profile.locations.hint" : "profile.locations.help", { term })}
+    >
+      <ul className="flex flex-col gap-2">
         {locations.map((location) => (
           <li
             key={location.locationId}
@@ -56,9 +56,6 @@ export function ProfileLocationsSection(props: ProfileLocationsSectionProps): Re
           </li>
         ))}
       </ul>
-      {canCreate ? (
-        <p className="mb-3 text-small text-secondary">{t("profile.locations.hint")}</p>
-      ) : null}
       <div className="flex flex-wrap gap-2">
         {canCreate ? (
           <NewLocationButton
@@ -77,6 +74,6 @@ export function ProfileLocationsSection(props: ProfileLocationsSectionProps): Re
           </Link>
         ) : null}
       </div>
-    </section>
+    </PageSection>
   );
 }

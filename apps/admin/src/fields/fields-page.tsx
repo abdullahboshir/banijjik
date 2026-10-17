@@ -5,7 +5,7 @@ import {
   type EffectiveCustomField,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { EmptyState, PageHeader } from "@banijjik/ui";
+import { EmptyState, PageLayout } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { fetchBusinessResource } from "../lib/api/server-resource";
@@ -106,35 +106,35 @@ export async function FieldsPage({
   const abilities = abilitiesOf(access);
   const formLabels = fieldLabelsOf(t);
   return (
-    <>
-      <PageHeader
-        title={t("fields.title")}
-        actions={
-          abilities.canCreate ? (
-            <NewFieldButton
-              organizationId={organizationId}
-              entityType={entityType}
-              label={t("fields.add")}
-              sortOrder={nextSortOrder(result.data)}
-              labels={formLabels}
-            />
-          ) : null
-        }
-        filters={
-          <EntityTabs
-            basePath={`/${orgSlug}/settings/fields`}
-            entityTypes={entityTypes}
-            selected={entityType}
-            t={t}
+    <PageLayout
+      subtitle={t("fields.subtitle")}
+      title={t("fields.title")}
+      actions={
+        abilities.canCreate ? (
+          <NewFieldButton
+            organizationId={organizationId}
+            entityType={entityType}
+            label={t("fields.add")}
+            sortOrder={nextSortOrder(result.data)}
+            labels={formLabels}
           />
-        }
-      />
+        ) : null
+      }
+      filters={
+        <EntityTabs
+          basePath={`/${orgSlug}/settings/fields`}
+          entityTypes={entityTypes}
+          selected={entityType}
+          t={t}
+        />
+      }
+    >
       <FieldList
         organizationId={organizationId}
         rows={toFieldRows(result.data, { abilities, locale, t })}
         labels={fieldListLabelsOf(t)}
         formLabels={formLabels}
       />
-    </>
+    </PageLayout>
   );
 }

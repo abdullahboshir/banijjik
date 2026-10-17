@@ -1,6 +1,6 @@
 import { PERMISSION_KEY, type RoleSummary } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { DetailHeader, EmptyState, StatusBadge } from "@banijjik/ui";
+import { DetailHeader, EmptyState, PageSection, StatusBadge } from "@banijjik/ui";
 import { notFound } from "next/navigation";
 import type { ReactElement } from "react";
 import { fetchBusinessResource } from "../lib/api/server-resource";
@@ -61,9 +61,9 @@ function GroupSection({ group, t }: { group: PermissionGroup; t: Translator["t"]
 
 function RoleNote({ role, t }: { role: RoleSummary; t: Translator["t"] }): ReactElement | null {
   if (role.isSystem)
-    return <p className="mb-4 text-small text-secondary">{t("roles.detail.systemNote")}</p>;
+    return <p className="text-small text-secondary">{t("roles.detail.systemNote")}</p>;
   if (role.status === "ARCHIVED") {
-    return <p className="mb-4 text-small text-secondary">{t("roles.detail.archivedNote")}</p>;
+    return <p className="text-small text-secondary">{t("roles.detail.archivedNote")}</p>;
   }
   return null;
 }
@@ -104,10 +104,7 @@ function PermissionsOverview({
   t: Translator["t"];
 }): ReactElement {
   return (
-    <>
-      <h2 className="mb-2 text-title font-semibold text-primary">
-        {t("roles.detail.permissions")}
-      </h2>
+    <PageSection title={t("roles.detail.permissions")} help={t("roles.detail.permissions.help")}>
       {groups.length === 0 ? (
         <p className="text-body text-secondary">{t("roles.detail.none")}</p>
       ) : (
@@ -117,7 +114,7 @@ function PermissionsOverview({
           ))}
         </div>
       )}
-    </>
+    </PageSection>
   );
 }
 
@@ -149,7 +146,7 @@ export async function RoleDetailPage({
   const name = roleLabelOf(role, t);
   const groupInput = { definitions, permissions, role, translator };
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <RoleHeader role={role} name={name} orgSlug={orgSlug} t={t} />
       <RoleNote role={role} t={t} />
       <PermissionsOverview groups={roleGroupsOf({ ...groupInput, mode: "show" })} t={t} />
@@ -167,6 +164,6 @@ export async function RoleDetailPage({
           archive: t("roles.archive"),
         }}
       />
-    </>
+    </div>
   );
 }
