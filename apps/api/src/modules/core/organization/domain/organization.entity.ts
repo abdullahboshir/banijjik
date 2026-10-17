@@ -20,6 +20,7 @@ import {
 } from "@banijjik/contracts";
 import { newId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { applyClearableChanges, type ClearableChanges } from "./clearable.js";
+import type { CustomFieldSearchEntry, StoredCustomFields } from "./custom-field-values.js";
 import { invalidField, invalidTransition } from "./errors.js";
 
 const DEFAULT_TIMEZONE = "Asia/Dhaka";
@@ -40,6 +41,9 @@ export interface OrganizationProps {
   readonly defaultLocale: PreferredLocale;
   /** Shown on invoices and the storefront; empty until the owner fills it in. */
   readonly profile: OrganizationProfileFields;
+  /** Values of the organization custom fields; the endpoint validated them against the effective fields (ADR-107). */
+  readonly customFields: Readonly<Record<string, unknown>>;
+  readonly customFieldSearch: readonly CustomFieldSearchEntry[];
   readonly configVersion: number;
   /** Bumped by every role change; part of the permission cache key (card 1.4). */
   readonly rolesVersion: number;
@@ -56,6 +60,8 @@ export interface OrganizationProfileChanges {
   readonly defaultLocale?: PreferredLocale;
   /** Per optional field: a value sets it, `null` clears it, an absent key leaves it. */
   readonly profile?: ClearableChanges<OrganizationProfileFields>;
+  /** The merged values and search entries, already validated against the organization fields. */
+  readonly customFields?: StoredCustomFields;
 }
 
 export interface NewOrganizationInput {
@@ -102,6 +108,8 @@ export class Organization implements OrganizationProps {
   readonly timezone: string;
   readonly defaultLocale: PreferredLocale;
   readonly profile: OrganizationProfileFields;
+  readonly customFields: Readonly<Record<string, unknown>>;
+  readonly customFieldSearch: readonly CustomFieldSearchEntry[];
   readonly configVersion: number;
   /** Bumped by every role change; part of the permission cache key (card 1.4). */
   readonly rolesVersion: number;
@@ -124,6 +132,8 @@ export class Organization implements OrganizationProps {
     this.timezone = props.timezone;
     this.defaultLocale = props.defaultLocale;
     this.profile = props.profile;
+    this.customFields = props.customFields;
+    this.customFieldSearch = props.customFieldSearch;
     this.configVersion = props.configVersion;
     this.rolesVersion = props.rolesVersion;
     this.version = props.version;
@@ -151,6 +161,8 @@ export class Organization implements OrganizationProps {
       timezone: DEFAULT_TIMEZONE,
       defaultLocale: input.defaultLocale,
       profile: {},
+      customFields: {},
+      customFieldSearch: [],
       configVersion: INITIAL_CONFIG_VERSION,
       rolesVersion: INITIAL_ROLES_VERSION,
       version: 1,
@@ -172,6 +184,8 @@ export class Organization implements OrganizationProps {
       name,
       defaultLocale: changes.defaultLocale ?? this.defaultLocale,
       profile: applyClearableChanges(this.profile, changes.profile ?? {}),
+      customFields: changes.customFields?.values ?? this.customFields,
+      customFieldSearch: changes.customFields?.search ?? this.customFieldSearch,
     });
   }
 

@@ -1,5 +1,6 @@
 import { MEMBER_STATUS, type MemberStatus } from "@banijjik/contracts";
 import { Schema } from "mongoose";
+import type { CustomFieldSearchEntry } from "../domain/custom-field-values.js";
 import {
   auditFields,
   domainIdField,
@@ -25,6 +26,9 @@ export interface MemberDocument {
   displayName: string;
   jobTitle?: string;
   employeeNumber?: string;
+  /** Missing on members created before card 2.7a: read as no values. */
+  customFields?: Record<string, unknown>;
+  customFieldSearch?: CustomFieldSearchEntry[];
   joinedAt: Date;
   version: number;
   createdAt: Date;
@@ -41,6 +45,14 @@ const assignmentSchema = new Schema<AssignmentDocument>(
   SUB_SCHEMA_OPTIONS,
 );
 
+const customFieldSearchSchema = new Schema<CustomFieldSearchEntry>(
+  {
+    fieldKey: { type: String, required: true },
+    value: { type: String, required: true },
+  },
+  SUB_SCHEMA_OPTIONS,
+);
+
 export const memberSchema = new Schema<MemberDocument>(
   {
     ...domainIdField("memberId"),
@@ -51,6 +63,8 @@ export const memberSchema = new Schema<MemberDocument>(
     displayName: { type: String, required: true },
     jobTitle: { type: String },
     employeeNumber: { type: String },
+    customFields: { type: Schema.Types.Mixed },
+    customFieldSearch: { type: [customFieldSearchSchema] },
     joinedAt: { type: Date, required: true },
     ...versionField,
     ...auditFields,
@@ -63,5 +77,11 @@ memberSchema.index({ organizationId: 1, userId: 1 }, { unique: true });
 // "Is any ACTIVE member assigned to this location?" (location archive) and the member list.
 memberSchema.index({ organizationId: 1, status: 1, "assignments.locationId": 1 });
 memberSchema.index({ organizationId: 1, status: 1, displayName: 1 });
+// Finds members by a searchable custom field value (attribute pattern, ADR-102 and ADR-107).
+memberSchema.index({
+  organizationId: 1,
+  "customFieldSearch.fieldKey": 1,
+  "customFieldSearch.value": 1,
+});
 // Lists the organizations of one user (GET /me/orgs).
 memberSchema.index({ userId: 1, status: 1 });

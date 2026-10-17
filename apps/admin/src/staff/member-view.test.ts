@@ -1,6 +1,7 @@
 import type { CallerPermissionsResponse } from "@banijjik/contracts";
 import { describe, expect, it } from "vitest";
 import {
+  canEditMemberDetails,
   locationNamesOfMember,
   memberActionsFor,
   roleNamesOfMember,
@@ -103,5 +104,40 @@ describe("member names", () => {
   it("lists each role and each location once", () => {
     expect(roleNamesOfMember(member, LOOKUPS, translate)).toBe("ম্যানেজার, স্টাফ");
     expect(locationNamesOfMember(member, LOOKUPS, translate)).toBe("সব শাখা, মূল শাখা");
+  });
+});
+
+describe("canEditMemberDetails", () => {
+  const base = context();
+
+  it("is offered to a caller who may update members, for an active or suspended member", () => {
+    expect(canEditMemberDetails(base)).toBe(true);
+    expect(canEditMemberDetails({ ...base, member: { ...base.member, status: "SUSPENDED" } })).toBe(
+      true,
+    );
+  });
+
+  it("is hidden for a removed member, in read-only mode and without the permission", () => {
+    expect(canEditMemberDetails({ ...base, member: { ...base.member, status: "REMOVED" } })).toBe(
+      false,
+    );
+    expect(canEditMemberDetails({ ...base, canWrite: false })).toBe(false);
+    expect(canEditMemberDetails({ ...base, permissions: READER_ONLY })).toBe(false);
+  });
+
+  it("is hidden for the owner's record unless the owner is the one looking", () => {
+    const owner = {
+      ...base.member,
+      assignments: [{ roleId: OWNER_ROLE_ID, locationId: FIRST_LOCATION_ID }],
+    };
+
+    expect(canEditMemberDetails({ ...base, member: owner })).toBe(false);
+    expect(canEditMemberDetails({ ...base, member: { ...owner, userId: "me" } })).toBe(true);
+  });
+
+  it("lets a person edit their own details, which they cannot do for their assignments", () => {
+    const self = { ...base.member, userId: "me" };
+
+    expect(canEditMemberDetails({ ...base, member: self })).toBe(true);
   });
 });

@@ -27,6 +27,11 @@ export interface OrganizationProfileResponse {
   countryCode: CountryCode;
   currencyCode: CurrencyCode;
   profile: OrganizationProfileFields;
+  /**
+   * Values of the organization's custom fields (ADR-107). Sensitive ones are left out unless the
+   * caller holds `organization.profile.update` at every location.
+   */
+  customFields: Record<string, unknown>;
   version: number;
 }
 
@@ -35,6 +40,8 @@ export interface OrganizationProfileUpdateRequest {
   name?: string;
   defaultLocale?: PreferredLocale;
   profile?: OrganizationProfileFields;
+  /** Per key: a value sets it, `null` clears it, an absent key leaves it. Checked against the organization's fields. */
+  customFields?: Record<string, unknown>;
   version: number;
 }
 
@@ -86,6 +93,8 @@ export interface MemberUpdateRequest {
   displayName?: string;
   jobTitle?: string;
   assignments?: AssignmentRequest[];
+  /** Per key: a value sets it, `null` clears it, an absent key leaves it. Checked against the member fields. */
+  customFields?: Record<string, unknown>;
   version: number;
 }
 
@@ -98,6 +107,11 @@ export interface MemberResponse {
   jobTitle?: string;
   employeeNumber?: string;
   assignments: AssignmentRequest[];
+  /**
+   * Only in the detail (`GET /members/{memberId}`) and in the body of an update, never in the list.
+   * Sensitive values are left out unless the caller holds `organization.member.readSensitive` at every location.
+   */
+  customFields?: Record<string, unknown>;
   joinedAt: string;
   version: number;
 }

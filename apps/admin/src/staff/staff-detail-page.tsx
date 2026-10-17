@@ -1,12 +1,16 @@
-import { PERMISSION_KEY, type MemberResponse } from "@banijjik/contracts";
+import { CURRENCY_CODE, PERMISSION_KEY, type MemberResponse } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
 import { DetailHeader, EmptyState, StatusBadge } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { getTranslator } from "../lib/i18n/get-translator";
 import { fetchBusinessResource } from "../lib/api/server-resource";
 import { requireOrgAccess, type OrgAccess } from "../shell/org-access";
-import { holdsPermission } from "../shell/permissions";
+import { holdsPermission, holdsPermissionEverywhere } from "../shell/permissions";
+import { CustomFieldDetailList } from "../custom-fields/custom-field-detail-list";
+import { customFieldPartsOf } from "../custom-fields/custom-field-parts";
+import { EditMemberDetailsButton } from "./edit-member-details-button";
 import {
+  canEditMemberDetails,
   locationNameOf,
   memberActionsFor,
   memberStatusLabel,
@@ -55,6 +59,70 @@ function AssignmentList({
         );
       })}
     </ul>
+  );
+}
+
+/** Sensitive staff details are shown only to someone holding `readSensitive` at every location (ADR-107). */
+function canSeeSensitiveDetails(access: OrgAccess): boolean {
+  return holdsPermissionEverywhere(
+    access.config.permissions,
+    PERMISSION_KEY.ORGANIZATION_MEMBER_READ_SENSITIVE,
+  );
+}
+
+/** The member's extra details with the "Edit details" button for someone who may use it. */
+function MemberDetails({
+  member,
+  lookups,
+  access,
+  translator,
+}: {
+  member: MemberResponse;
+  lookups: MemberLookups;
+  access: OrgAccess;
+  translator: Translator;
+}): ReactElement | null {
+  const { t } = translator;
+  const parts = customFieldPartsOf({
+    fields: access.config.fields["member"] ?? [],
+    values: member.customFields ?? {},
+    canSeeSensitive: canSeeSensitiveDetails(access),
+    translator,
+    timeZone: access.timeZone,
+    currencyCode: CURRENCY_CODE.BDT,
+  });
+  if (parts.list.rows.length === 0) return null;
+  const canEdit = canEditMemberDetails({
+    member,
+    lookups,
+    callerUserId: access.me.userId,
+    permissions: access.config.permissions,
+    canWrite: access.canWrite,
+  });
+  return (
+    <>
+      <CustomFieldDetailList {...parts.list} />
+      {canEdit ? (
+        <div className="mb-6">
+          <EditMemberDetailsButton
+            label={t("staff.action.editDetails")}
+            sheetProps={{
+              organizationId: access.organization.organizationId,
+              memberId: member.memberId,
+              version: member.version,
+              customFields: parts.form,
+              labels: {
+                title: t("staff.action.editDetails"),
+                close: t("shell.closeMenu"),
+                save: t("common.save"),
+                conflict: t("staff.conflict"),
+                reload: t("staff.reload"),
+              },
+            }}
+          />
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -137,6 +205,7 @@ export async function StaffDetailPage({
   return (
     <>
       <MemberOverview member={member} lookups={lookups} access={access} translator={translator} />
+      <MemberDetails member={member} lookups={lookups} access={access} translator={translator} />
       <MemberActions
         organizationId={organizationId}
         member={{

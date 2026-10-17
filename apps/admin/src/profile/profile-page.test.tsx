@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { banglaText, banglaTranslator } from "../auth/test-helpers";
+import { effectiveField } from "../custom-fields/test-fixtures";
 import { accessFixture, type AccessOptions } from "../settings/test-fixtures";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -37,8 +38,25 @@ const PROFILE = {
   countryCode: "BD",
   currencyCode: "BDT",
   profile: { phoneE164: "+8801712345678" },
+  customFields: { branch_code: "DHK-01", tax_note: "secret-note" },
   version: 3,
 };
+
+const ORGANIZATION_FIELDS = [
+  effectiveField({
+    fieldKey: "branch_code",
+    fieldType: "TEXT",
+    entityType: "organization",
+    label: { bn: "শাখা কোড", en: "Branch code" },
+  }),
+  effectiveField({
+    fieldKey: "tax_note",
+    fieldType: "TEXT",
+    entityType: "organization",
+    isSensitive: true,
+    label: { bn: "কর নোট", en: "Tax note" },
+  }),
+];
 
 function location(locationId: string, name: string): LocationResponse {
   return { locationId, name, locationType: "STORE", isDefault: true, status: "ACTIVE", version: 1 };
@@ -107,5 +125,38 @@ describe("ProfilePage", () => {
     await renderPage({}, undefined);
 
     expect(screen.queryByText(banglaText("profile.locations.title"))).toBeNull();
+  });
+});
+
+describe("ProfilePage additional details", () => {
+  const withFields = { fields: { organization: ORGANIZATION_FIELDS } };
+
+  it("lists the extra details under their own title", async () => {
+    await renderPage(withFields, []);
+
+    expect(screen.getByText(banglaText("customFields.title"))).not.toBeNull();
+    expect(screen.getByText("DHK-01")).not.toBeNull();
+  });
+
+  it("hides a sensitive detail from someone who may not edit the profile at every location", async () => {
+    await renderPage(
+      { ...withFields, limitedKeys: [PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE] },
+      [],
+    );
+
+    expect(screen.queryByText("secret-note")).toBeNull();
+    expect(screen.getByText(banglaText("customFields.hidden"))).not.toBeNull();
+  });
+
+  it("shows the sensitive detail to someone who may edit the profile at every location", async () => {
+    await renderPage({ ...withFields, keys: [PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE] }, []);
+
+    expect(screen.getByText("secret-note")).not.toBeNull();
+  });
+
+  it("leaves the section out when the business has no organization fields", async () => {
+    await renderPage({}, []);
+
+    expect(screen.queryByText(banglaText("customFields.title"))).toBeNull();
   });
 });

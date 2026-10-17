@@ -113,3 +113,20 @@ export function memberActionsFor(context: MemberActionContext): MemberAction[] {
     (action) => action !== "editAssignments" || context.canChooseAssignments,
   );
 }
+
+/**
+ * Whether the detail page offers "Edit details": the same permission as any member edit, a member who
+ * is not removed, and not the owner's record unless the owner is the one looking (the API refuses
+ * the rest). Unlike the assignments, a person may edit their own details.
+ */
+export function canEditMemberDetails(
+  context: Omit<MemberActionContext, "canChooseAssignments">,
+): boolean {
+  const { member, lookups, permissions } = context;
+  if (!context.canWrite) return false;
+  if (!holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_MEMBER_UPDATE)) return false;
+  if (member.status !== MEMBER_STATUS.ACTIVE && member.status !== MEMBER_STATUS.SUSPENDED) {
+    return false;
+  }
+  return !isOwnerMember(member, lookups) || member.userId === context.callerUserId;
+}

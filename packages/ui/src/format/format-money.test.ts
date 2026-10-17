@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney } from "./format-money.js";
+import { currencySymbolOf, formatMoney } from "./format-money.js";
 
 const THIN_SPACE = " ";
 const bdt = (amount: number) => ({ amount, currency: "BDT" });
@@ -43,5 +43,12 @@ describe("formatMoney", () => {
 
   it("falls back to the ISO code with two fraction digits for an unknown currency", () => {
     expect(formatMoney({ amount: 1250, currency: "USD" }, english)).toBe(`USD${THIN_SPACE}12.50`);
+  });
+});
+
+describe("currencySymbolOf", () => {
+  it("gives the taka sign for BDT and the ISO code for a currency it does not know", () => {
+    expect(currencySymbolOf("BDT")).toBe("৳");
+    expect(currencySymbolOf("XYZ")).toBe("XYZ");
   });
 });

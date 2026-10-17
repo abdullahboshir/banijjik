@@ -9,7 +9,9 @@ import type { ReactElement } from "react";
 import { fetchBusinessResource, fetchBusinessResourceIfAllowed } from "../lib/api/server-resource";
 import { getTranslator } from "../lib/i18n/get-translator";
 import { requireOrgAccess, type OrgAccess } from "../shell/org-access";
-import { holdsPermission } from "../shell/permissions";
+import { holdsPermission, holdsPermissionEverywhere } from "../shell/permissions";
+import { CustomFieldDetailList } from "../custom-fields/custom-field-detail-list";
+import { customFieldPartsOf } from "../custom-fields/custom-field-parts";
 import { EditProfileButton } from "./edit-profile-button";
 import { ProfileLocationsSection } from "./profile-locations-section";
 import { profileLabelsOf } from "./profile-labels";
@@ -86,12 +88,21 @@ function canEditProfile(access: OrgAccess): boolean {
   );
 }
 
+/** Sensitive extra details are shown only to someone who may edit the profile at every location (ADR-107). */
+function canSeeSensitiveDetails(access: OrgAccess): boolean {
+  return holdsPermissionEverywhere(
+    access.config.permissions,
+    PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
+  );
+}
+
 /**
  * `/{orgSlug}/settings/profile`: the business details and its locations. Any member may read the
  * profile; the edit button shows only with the permission and outside READ_ONLY (the API enforces both).
  */
 export async function ProfilePage({ orgSlug }: { orgSlug: string }): Promise<ReactElement> {
-  const [{ t }, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
+  const [translator, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
+  const { t } = translator;
   const { organizationId } = access.organization;
   const [profileResult, locations] = await Promise.all([
     fetchBusinessResource<OrganizationProfileResponse>(`/orgs/${organizationId}/profile`),
@@ -100,6 +111,14 @@ export async function ProfilePage({ orgSlug }: { orgSlug: string }): Promise<Rea
     ),
   ]);
   const profile = profileResult.data;
+  const customFieldParts = customFieldPartsOf({
+    fields: access.config.fields["organization"] ?? [],
+    values: profile.customFields,
+    canSeeSensitive: canSeeSensitiveDetails(access),
+    translator,
+    timeZone: access.timeZone,
+    currencyCode: profile.currencyCode,
+  });
   return (
     <>
       <PageHeader
@@ -113,6 +132,7 @@ export async function ProfilePage({ orgSlug }: { orgSlug: string }): Promise<Rea
                 initial: profileToFormState(profile),
                 version: profile.version,
                 labels: profileLabelsOf(t),
+                customFields: customFieldParts.form,
               }}
             />
           ) : null
@@ -120,6 +140,7 @@ export async function ProfilePage({ orgSlug }: { orgSlug: string }): Promise<Rea
       />
       <FactList title={t("profile.section.business")} facts={businessFacts(profile, t)} t={t} />
       <FactList title={t("profile.section.address")} facts={addressFacts(profile, t)} t={t} />
+      <CustomFieldDetailList {...customFieldParts.list} />
       <ProfileLocationsSection access={access} locations={locations} t={t} orgSlug={orgSlug} />
       <FactList title={t("profile.section.fixed")} facts={fixedFacts(profile, t)} t={t} />
       <p className="text-small text-secondary">{t("profile.fixed.hint")}</p>

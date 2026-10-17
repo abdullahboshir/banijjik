@@ -11,6 +11,13 @@ export function invalidField(path: string, messageKey: string): DomainRuleError 
   });
 }
 
+/** Several field-level failures at once, in the same shape as the schema errors (14-API.md section 3). */
+export function invalidFields(
+  fields: readonly { readonly path: string; readonly messageKey: string }[],
+): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.VALIDATION_ERROR, details: { fields } });
+}
+
 /** The slug already belongs to an organization, or was taken a moment ago by a concurrent request. */
 export class SlugTakenError extends DomainRuleError {
   constructor() {

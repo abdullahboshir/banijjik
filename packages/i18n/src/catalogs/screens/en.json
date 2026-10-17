@@ -189,5 +189,11 @@
   "roles.form.notHeld": "You do not have this permission, so you cannot change it.",
   "roles.archive.title": "Archive {name}?",
   "roles.archive.description": "An archived role cannot be given to anyone. People who had it before keep their history.",
-  "roles.archive.inUse": "{count} members still have this role. Move them to another role first."
+  "roles.archive.inUse": "{count} members still have this role. Move them to another role first.",
+  "customFields.title": "Additional details",
+  "customFields.hidden": "Hidden",
+  "customFields.hiddenHint": "Some details are hidden from you. They stay as they are.",
+  "customFields.yes": "Yes",
+  "customFields.no": "No",
+  "staff.action.editDetails": "Edit details"
 }

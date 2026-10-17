@@ -6,7 +6,11 @@ import {
 import { z } from "zod";
 import { emailSchema } from "../email.js";
 import { phoneE164Schema } from "../phone.js";
-import { postalAddressSchema, versionSchema } from "./organization-fields.js";
+import {
+  customFieldValuesRequestSchema,
+  postalAddressSchema,
+  versionSchema,
+} from "./organization-fields.js";
 
 const LEGAL_NAME_MAX_LENGTH = 120;
 const LEGAL_TYPE_MAX_LENGTH = 60;
@@ -40,6 +44,7 @@ export const profileUpdateRequestSchema = z
       .optional(),
     defaultLocale: z.enum(PREFERRED_LOCALE).optional(),
     profile: profileFieldsSchema.optional(),
+    customFields: customFieldValuesRequestSchema.optional(),
     version: versionSchema,
   })
   .refine((body) => Object.keys(body).some((key) => key !== "version"));

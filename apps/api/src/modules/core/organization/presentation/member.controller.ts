@@ -47,24 +47,30 @@ export class MemberController {
       ...(status === undefined ? {} : { status }),
       ...(q === undefined ? {} : { search: q }),
     });
-    sendData(response, result.items.map(toMemberResponse), {
-      meta: { page, limit, hasNext: result.hasNext },
-    });
+    sendData(
+      response,
+      result.items.map((member) => toMemberResponse(member)),
+      {
+        meta: { page, limit, hasNext: result.hasNext },
+      },
+    );
   };
 
   readonly get: RequestHandler = async (request, response) => {
-    const member = await this.dependencies.getMember.execute({
+    const { organizationId, allowedLocationIds } = readTenantCaller();
+    const { member, customFields } = await this.dependencies.getMember.execute({
+      organizationId,
       memberId: readMemberId(request),
-      reach: readTenantCaller().allowedLocationIds,
+      reach: allowedLocationIds,
     });
-    sendData(response, toMemberResponse(member));
+    sendData(response, toMemberResponse(member, customFields));
   };
 
   readonly update: RequestHandler = async (request, response) => {
     // validate() already parsed the body with the member-update schema.
     const body: MemberUpdateBody = request.body;
     const { organizationId, actorUserId, allowedLocationIds } = readTenantCaller();
-    const member = await this.dependencies.updateMember.execute({
+    const { member, customFields } = await this.dependencies.updateMember.execute({
       organizationId,
       actorUserId,
       reach: allowedLocationIds,
@@ -75,8 +81,9 @@ export class MemberController {
         ...(body.jobTitle === undefined ? {} : { jobTitle: body.jobTitle }),
         ...(body.assignments === undefined ? {} : { assignments: toAssignments(body.assignments) }),
       },
+      ...(body.customFields === undefined ? {} : { customFields: body.customFields }),
     });
-    sendData(response, toMemberResponse(member));
+    sendData(response, toMemberResponse(member, customFields));
   };
 
   /** One handler per transition, so the router names what each route does. */

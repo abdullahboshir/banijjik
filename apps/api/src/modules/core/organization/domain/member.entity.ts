@@ -12,6 +12,7 @@ import {
   type RoleId,
   type UserId,
 } from "@banijjik/ids";
+import type { CustomFieldSearchEntry, StoredCustomFields } from "./custom-field-values.js";
 import { invalidField, invalidTransition } from "./errors.js";
 import type { Location } from "./location.entity.js";
 
@@ -31,6 +32,9 @@ export interface MemberProps {
   readonly jobTitle: string | undefined;
   /** From the organization's MEMBER sequence; formatting is a settings concern (card 2.4). */
   readonly employeeNumber: string | undefined;
+  /** The staff profile values (NID, blood group, ...), validated against the member fields (ADR-107). */
+  readonly customFields: Readonly<Record<string, unknown>>;
+  readonly customFieldSearch: readonly CustomFieldSearchEntry[];
   readonly joinedAt: Date;
   readonly version: number;
   readonly createdAt: Date;
@@ -55,6 +59,8 @@ export interface MemberChanges {
   readonly displayName?: string;
   readonly jobTitle?: string;
   readonly assignments?: readonly Assignment[];
+  /** The merged values and search entries, already validated against the member fields. */
+  readonly customFields?: StoredCustomFields;
 }
 
 export interface RejoinInput {
@@ -91,6 +97,8 @@ export class Member implements MemberProps {
   readonly displayName: string;
   readonly jobTitle: string | undefined;
   readonly employeeNumber: string | undefined;
+  readonly customFields: Readonly<Record<string, unknown>>;
+  readonly customFieldSearch: readonly CustomFieldSearchEntry[];
   readonly joinedAt: Date;
   readonly version: number;
   readonly createdAt: Date;
@@ -107,6 +115,8 @@ export class Member implements MemberProps {
     this.displayName = props.displayName;
     this.jobTitle = props.jobTitle;
     this.employeeNumber = props.employeeNumber;
+    this.customFields = props.customFields;
+    this.customFieldSearch = props.customFieldSearch;
     this.joinedAt = props.joinedAt;
     this.version = props.version;
     this.createdAt = props.createdAt;
@@ -127,6 +137,8 @@ export class Member implements MemberProps {
       displayName,
       jobTitle: undefined,
       employeeNumber: input.employeeNumber,
+      customFields: {},
+      customFieldSearch: [],
       joinedAt: input.now,
       version: 1,
       createdAt: input.now,
@@ -153,6 +165,8 @@ export class Member implements MemberProps {
           : trimmedDisplayName(changes.displayName),
       jobTitle: changes.jobTitle ?? this.jobTitle,
       assignments,
+      customFields: changes.customFields?.values ?? this.customFields,
+      customFieldSearch: changes.customFields?.search ?? this.customFieldSearch,
     });
   }
 

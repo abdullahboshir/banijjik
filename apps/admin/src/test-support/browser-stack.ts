@@ -216,3 +216,52 @@ export async function setTrialEndsInDays(
     await client.close();
   }
 }
+
+/** The organization ID of a seeded person's business, read through the real API. */
+async function organizationIdOf(person: SeededPerson, slug: string): Promise<string> {
+  const cookieHeader = person.cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+  const response = await fetch(`${API_ORIGIN}/api/v1/me/orgs`, {
+    headers: { Cookie: cookieHeader, Origin: ADMIN_ORIGIN },
+  });
+  if (!response.ok) throw new Error(`GET /me/orgs answered ${response.status}`);
+  // Safe: the API answers with the { data: MyOrganizationSummary[] } envelope (14 section 4).
+  const body = (await response.json()) as { data: { organizationId: string; slug: string }[] };
+  const found = body.data.find((organization) => organization.slug === slug);
+  if (!found) throw new Error(`No business with slug ${slug}`);
+  return found.organizationId;
+}
+
+/** A text custom field the admin can see, in the shape `POST /orgs/{organizationId}/custom-fields` takes. */
+export interface SeededTextField {
+  entityType: "organization" | "member";
+  fieldKey: string;
+  label: { bn: string; en: string };
+  isSensitive?: boolean;
+}
+
+/**
+ * Adds organization-level custom fields to a seeded business through the real API, so a browser test can
+ * fill them in. The business's own fields are the same kind of field a template brings (ADR-102).
+ */
+export async function seedCustomFields(
+  person: SeededPerson,
+  slug: string,
+  fields: readonly SeededTextField[],
+): Promise<void> {
+  const organizationId = await organizationIdOf(person, slug);
+  for (const field of fields) {
+    await callApi(`/orgs/${organizationId}/custom-fields`, {
+      cookies: person.cookies,
+      body: {
+        ...field,
+        fieldType: "TEXT",
+        isRequired: false,
+        visibility: { admin: true, storefront: false, bot: false },
+        botAsk: false,
+        isSearchable: false,
+        isSensitive: field.isSensitive ?? false,
+        sortOrder: 10,
+      },
+    });
+  }
+}

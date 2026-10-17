@@ -117,7 +117,7 @@ export type {
   IdempotencyScopeKind,
   IdempotencyStatus,
 } from "./idempotency/idempotency-contracts.js";
-export { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "./audit/audit-action.js";
+export { AUDIT_ACTION, AUDIT_ENTITY_TYPE, REDACTED_AUDIT_VALUE } from "./audit/audit-action.js";
 export type { AuditAction, AuditEntityType } from "./audit/audit-action.js";
 export type { AuditChanges, AuditLogSummary, AuditValue } from "./audit/audit-contracts.js";
 export { EVENT_TYPE } from "./events/event-type.js";

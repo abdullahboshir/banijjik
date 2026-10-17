@@ -9,7 +9,7 @@ import { emailSchema } from "../email.js";
 import { paginationQuerySchema } from "../pagination.js";
 import { phoneE164Schema } from "../phone.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
-import { versionSchema } from "./organization-fields.js";
+import { customFieldValuesRequestSchema, versionSchema } from "./organization-fields.js";
 
 const DISPLAY_NAME_MAX_LENGTH = 100;
 const JOB_TITLE_MAX_LENGTH = 80;
@@ -33,6 +33,7 @@ export const memberUpdateRequestSchema = z
     displayName: displayNameSchema.optional(),
     jobTitle: z.string().trim().min(1).max(JOB_TITLE_MAX_LENGTH).optional(),
     assignments: assignmentsSchema.optional(),
+    customFields: customFieldValuesRequestSchema.optional(),
     version: versionSchema,
   })
   .refine((body) => Object.keys(body).some((key) => key !== "version"));

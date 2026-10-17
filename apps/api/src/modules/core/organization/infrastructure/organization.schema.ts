@@ -14,6 +14,7 @@ import {
   INDUSTRY_TEMPLATE_KEY_PATTERN,
 } from "@banijjik/contracts";
 import { Schema } from "mongoose";
+import type { CustomFieldSearchEntry } from "../domain/custom-field-values.js";
 import {
   auditFields,
   domainIdField,
@@ -41,6 +42,9 @@ export interface OrganizationDocument {
   defaultLocale: PreferredLocale;
   /** Missing on organizations created before card 1.7b: read as an empty profile. */
   profile?: OrganizationProfileFields;
+  /** Missing on organizations created before card 2.7a: read as no values. */
+  customFields?: Record<string, unknown>;
+  customFieldSearch?: CustomFieldSearchEntry[];
   configVersion: number;
   rolesVersion: number;
   /** Guard counter that serializes limit-checked creates, see OrganizationLimitLock. Not part of any cache key. */
@@ -64,6 +68,14 @@ const profileSchema = new Schema<OrganizationProfileFields>(
   SUB_SCHEMA_OPTIONS,
 );
 
+const customFieldSearchSchema = new Schema<CustomFieldSearchEntry>(
+  {
+    fieldKey: { type: String, required: true },
+    value: { type: String, required: true },
+  },
+  SUB_SCHEMA_OPTIONS,
+);
+
 export const organizationSchema = new Schema<OrganizationDocument>(
   {
     ...domainIdField("organizationId"),
@@ -82,6 +94,8 @@ export const organizationSchema = new Schema<OrganizationDocument>(
     timezone: { type: String, required: true },
     defaultLocale: { type: String, required: true, enum: Object.values(PREFERRED_LOCALE) },
     profile: { type: profileSchema },
+    customFields: { type: Schema.Types.Mixed },
+    customFieldSearch: { type: [customFieldSearchSchema] },
     configVersion: { type: Number, required: true },
     rolesVersion: { type: Number, required: true, default: 1 },
     limitWriteVersion: { type: Number, default: 0 },

@@ -73,6 +73,8 @@ export class MongoOrganizationRepository
           name: organization.name,
           defaultLocale: organization.defaultLocale,
           profile: organization.profile,
+          customFields: { ...organization.customFields },
+          customFieldSearch: organization.customFieldSearch.map((entry) => ({ ...entry })),
           updatedByUserId: actorUserId,
         },
       },

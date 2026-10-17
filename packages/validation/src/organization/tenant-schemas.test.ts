@@ -106,3 +106,45 @@ describe("clearing optional fields with null", () => {
     ).toBe(false);
   });
 });
+
+describe("customFields in the profile and member updates", () => {
+  it("accepts an object of values, including null, and keeps the values unchecked for the use case", () => {
+    const profile = profileUpdateRequestSchema.parse({
+      customFields: { branch_code: "DHK-01", closed_on: null, any_shape: { nested: true } },
+      version: 1,
+    });
+    const member = memberUpdateRequestSchema.parse({
+      customFields: { nid: "123" },
+      version: 1,
+    });
+
+    expect(profile.customFields).toEqual({
+      branch_code: "DHK-01",
+      closed_on: null,
+      any_shape: { nested: true },
+    });
+    expect(member.customFields).toEqual({ nid: "123" });
+  });
+
+  it("lets customFields be the only change besides the version", () => {
+    expect(
+      profileUpdateRequestSchema.safeParse({ customFields: { a: "1" }, version: 1 }).success,
+    ).toBe(true);
+    expect(
+      memberUpdateRequestSchema.safeParse({ customFields: { a: "1" }, version: 1 }).success,
+    ).toBe(true);
+  });
+
+  it("refuses a list, a text and a flood of keys", () => {
+    const flood = Object.fromEntries(
+      Array.from({ length: 101 }, (_, index) => [`key_${index}`, "x"]),
+    );
+
+    for (const customFields of [["a"], "a", flood]) {
+      expect(profileUpdateRequestSchema.safeParse({ customFields, version: 1 }).success).toBe(
+        false,
+      );
+      expect(memberUpdateRequestSchema.safeParse({ customFields, version: 1 }).success).toBe(false);
+    }
+  });
+});

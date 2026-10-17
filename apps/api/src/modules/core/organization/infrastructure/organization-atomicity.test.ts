@@ -53,6 +53,15 @@ afterAll(async () => {
   await harness.dispose();
 });
 
+/** These cases change no custom field, so the use cases get a reader with no fields and no sensitive access. */
+const noCustomFields = {
+  customFields: { forEntity: async () => [] },
+  sensitiveAccess: {
+    mayReadOrganizationSensitive: async () => false,
+    mayReadMemberSensitive: async () => false,
+  },
+};
+
 const FAILURE_MESSAGE = "the event could not be written";
 
 /** An event port that fails after the audit entry and the change were written in the transaction. */
@@ -108,6 +117,7 @@ describe("a change whose event cannot be written", () => {
       unitOfWork: new MongoUnitOfWork(),
       events: failingEvents,
       audit: audit(),
+      ...noCustomFields,
     });
 
     await expect(
@@ -179,6 +189,7 @@ describe("a change whose event cannot be written", () => {
       audit: audit(),
       invitations: new MongoInvitationRepository(),
       clock: harness.clock,
+      ...noCustomFields,
     });
 
     await expect(

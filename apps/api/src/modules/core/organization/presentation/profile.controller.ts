@@ -17,22 +17,23 @@ export class ProfileController {
 
   readonly getProfile: RequestHandler = async (_request, response) => {
     const { organizationId } = readTenantCaller();
-    const organization = await this.dependencies.getProfile.execute({ organizationId });
-    sendData(response, toProfileResponse(organization));
+    const view = await this.dependencies.getProfile.execute({ organizationId });
+    sendData(response, toProfileResponse(view));
   };
 
   readonly updateProfile: RequestHandler = async (request, response) => {
     // validate() already parsed the body with the profile-update schema.
     const body: ProfileUpdateBody = request.body;
     const { organizationId, actorUserId } = readTenantCaller();
-    const organization = await this.dependencies.updateProfile.execute({
+    const view = await this.dependencies.updateProfile.execute({
       organizationId,
       actorUserId,
       version: body.version,
       ...(body.name === undefined ? {} : { name: body.name }),
       ...(body.defaultLocale === undefined ? {} : { defaultLocale: body.defaultLocale }),
       ...(body.profile === undefined ? {} : { profile: body.profile }),
+      ...(body.customFields === undefined ? {} : { customFields: body.customFields }),
     });
-    sendData(response, toProfileResponse(organization));
+    sendData(response, toProfileResponse(view));
   };
 }

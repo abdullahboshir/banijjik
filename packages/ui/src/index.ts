@@ -43,7 +43,7 @@ export { toast, Toaster, UNDO_DURATION_MS } from "./components/toast.js";
 export type { ToastOptions } from "./components/toast.js";
 export { TopBar } from "./components/top-bar.js";
 export type { TopBarProps } from "./components/top-bar.js";
-export { formatMoney } from "./format/format-money.js";
+export { currencySymbolOf, formatMoney } from "./format/format-money.js";
 export type { Money } from "./format/format-money.js";
 export { formatNumber } from "./format/format-number.js";
 export type {

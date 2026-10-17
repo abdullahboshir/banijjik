@@ -45,3 +45,6 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "moduleOverride",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
+
+/** Recorded in place of a sensitive custom field's value, on both sides: the change stays visible, the data does not (ADR-107). */
+export const REDACTED_AUDIT_VALUE = "[redacted]";

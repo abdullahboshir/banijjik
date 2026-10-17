@@ -1,4 +1,4 @@
-import { LIMIT_KEY } from "@banijjik/contracts";
+import { LIMIT_KEY, PERMISSION_KEY } from "@banijjik/contracts";
 import type { OrganizationId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type {
@@ -10,10 +10,15 @@ import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
+import { buildEffectiveCustomFieldReader } from "../custom-field/index.js";
 import { buildReadUserProfileUseCase, type RoleGrantReader } from "../iam/index.js";
 import { buildUserIdentifierReader } from "../iam/index.js";
 import { AssignmentGuard } from "./application/assignment-guard.js";
 import type { ActorProfileReader } from "./application/ports/iam-ports.js";
+import type {
+  OrganizationCustomFieldReader,
+  SensitiveValueAccess,
+} from "./application/ports/custom-field-ports.js";
 import type { InvitationTokenLookup } from "./application/ports/invitation-token-lookup.js";
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
 import {
@@ -58,7 +63,7 @@ export interface OrganizationTenantDependencies {
   readonly idempotency: RequestHandler;
   readonly permission: PermissionMiddlewareFactory;
   /** The caller's own grants, for the anti-escalation check (ADR-092). */
-  readonly permissions: Pick<PermissionGate, "describeCaller">;
+  readonly permissions: Pick<PermissionGate, "describeCaller" | "locationsWith">;
   /** Role lookups of the iam module, built from the permission catalogue by routes/v1.ts. */
   readonly roleGrants: RoleGrantReader;
   /** Implemented by entitlement from the resolved config (10 section 9). */
@@ -97,6 +102,21 @@ interface SharedParts {
   readonly clock: Clock;
   readonly limits: LimitGuard;
   readonly limitLock: MongoOrganizationLimitLock;
+  readonly customFields: OrganizationCustomFieldReader;
+  readonly sensitiveAccess: SensitiveValueAccess;
+}
+
+/** Sensitive values are readable only with the permission at every location (ADR-107). */
+function buildSensitiveValueAccess(
+  permissions: Pick<PermissionGate, "locationsWith">,
+): SensitiveValueAccess {
+  return {
+    mayReadOrganizationSensitive: async () =>
+      (await permissions.locationsWith(PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE)) === "ALL",
+    mayReadMemberSensitive: async () =>
+      (await permissions.locationsWith(PERMISSION_KEY.ORGANIZATION_MEMBER_READ_SENSITIVE)) ===
+      "ALL",
+  };
 }
 
 function buildSharedParts(dependencies: OrganizationTenantDependencies): SharedParts {
@@ -114,14 +134,24 @@ function buildSharedParts(dependencies: OrganizationTenantDependencies): SharedP
     clock,
     limits,
     limitLock: new MongoOrganizationLimitLock(),
+    // The effective fields come from the custom-field engine through its index, as iam is used (ADR-102, ADR-107).
+    customFields: buildEffectiveCustomFieldReader(),
+    sensitiveAccess: buildSensitiveValueAccess(permissions),
   };
 }
 
 function buildProfileController(shared: SharedParts): ProfileController {
-  const { organizations, unitOfWork, events, audit } = shared;
+  const { organizations, unitOfWork, events, audit, customFields, sensitiveAccess } = shared;
   return new ProfileController({
-    getProfile: new GetProfileUseCase(organizations),
-    updateProfile: new UpdateProfileUseCase({ organizations, unitOfWork, events, audit }),
+    getProfile: new GetProfileUseCase({ organizations, customFields, sensitiveAccess }),
+    updateProfile: new UpdateProfileUseCase({
+      organizations,
+      unitOfWork,
+      events,
+      audit,
+      customFields,
+      sensitiveAccess,
+    }),
   });
 }
 
@@ -177,8 +207,16 @@ function buildMemberController(shared: SharedParts): MemberController {
   };
   return new MemberController({
     listMembers: new ListMembersUseCase(members),
-    getMember: new GetMemberUseCase(members),
-    updateMember: new UpdateMemberUseCase(memberDependencies),
+    getMember: new GetMemberUseCase({
+      members,
+      customFields: shared.customFields,
+      sensitiveAccess: shared.sensitiveAccess,
+    }),
+    updateMember: new UpdateMemberUseCase({
+      ...memberDependencies,
+      customFields: shared.customFields,
+      sensitiveAccess: shared.sensitiveAccess,
+    }),
     changeStatus: new ChangeMemberStatusUseCase({ ...memberDependencies, assertRoomForOneMore }),
   });
 }

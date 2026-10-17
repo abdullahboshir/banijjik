@@ -1,7 +1,8 @@
 import type { OrganizationProfileResponse } from "@banijjik/contracts";
-import type { Organization } from "../domain/organization.entity.js";
+import type { ProfileView } from "../application/custom-field-view.js";
 
-export function toProfileResponse(organization: Organization): OrganizationProfileResponse {
+export function toProfileResponse(view: ProfileView): OrganizationProfileResponse {
+  const { organization } = view;
   return {
     organizationId: organization.organizationId,
     slug: organization.slug,
@@ -11,6 +12,7 @@ export function toProfileResponse(organization: Organization): OrganizationProfi
     countryCode: organization.countryCode,
     currencyCode: organization.currencyCode,
     profile: { ...organization.profile },
+    customFields: view.customFields,
     version: organization.version,
   };
 }

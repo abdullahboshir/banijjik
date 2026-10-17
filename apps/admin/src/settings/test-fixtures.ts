@@ -2,6 +2,7 @@ import {
   ACCESS_MODE,
   PERMISSION_KEY,
   type CallerPermissionsResponse,
+  type EffectiveCustomField,
   type PermissionDefinitionResponse,
   type PermissionKey,
 } from "@banijjik/contracts";
@@ -30,6 +31,8 @@ export interface AccessOptions {
   canWrite?: boolean;
   locationLimit?: number | null;
   sensitiveKeys?: readonly string[];
+  /** The effective custom fields of `/me/config`, by entity type. */
+  fields?: Record<string, EffectiveCustomField[]>;
 }
 
 /** An `OrgAccess` for the server pages of the settings screens, built from the few facts they read. */
@@ -46,6 +49,7 @@ export function accessFixture(options: AccessOptions = {}): OrgAccess {
       limits: { locations: options.locationLimit ?? null },
       permissions,
       permissionDefinitions: allDefinitions(options.sensitiveKeys),
+      fields: options.fields ?? {},
     },
     canWrite: options.canWrite ?? true,
     timeZone: "Asia/Dhaka",

@@ -11,6 +11,12 @@ import type { ClearableChanges } from "../../domain/clearable.js";
 import { recordNotFound } from "../../domain/errors.js";
 import type { Organization } from "../../domain/organization.entity.js";
 import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
+import { viewOrganization, type ProfileView } from "../custom-field-view.js";
+import { mergeCustomFieldValues, type MergedCustomFields } from "../custom-field-values.js";
+import type {
+  OrganizationCustomFieldReader,
+  SensitiveValueAccess,
+} from "../ports/custom-field-ports.js";
 import type { EventPublisher } from "../ports/event-publisher.js";
 import type { OrganizationProfileRepository } from "../ports/organization-profile-repository.js";
 import type { UnitOfWork } from "../ports/unit-of-work.js";
@@ -23,6 +29,8 @@ export interface UpdateProfileInput {
   readonly defaultLocale?: PreferredLocale;
   /** Per optional field: a value sets it, `null` clears it, an absent key leaves it. */
   readonly profile?: ClearableChanges<OrganizationProfileFields>;
+  /** Per key: a value sets it, `null` clears it, an absent key leaves it. Validated against the organization fields. */
+  readonly customFields?: Readonly<Record<string, unknown>>;
 }
 
 export interface UpdateProfileDependencies {
@@ -30,6 +38,8 @@ export interface UpdateProfileDependencies {
   readonly unitOfWork: UnitOfWork;
   readonly events: EventPublisher;
   readonly audit: AuditRecorder;
+  readonly customFields: OrganizationCustomFieldReader;
+  readonly sensitiveAccess: SensitiveValueAccess;
 }
 
 function auditFieldsOf(organization: Organization): AuditFields {
@@ -51,36 +61,54 @@ function auditFieldsOf(organization: Organization): AuditFields {
 }
 
 /**
- * Edits the name, the default language and the profile. The slug, currency, timezone, country
- * and industry template are not editable here. A stale version is a 409; the audit entry and
- * the events are written in the same transaction as the change.
+ * Edits the name, the default language, the profile and the custom field values. The slug,
+ * currency, timezone, country and industry template are not editable here. A stale version is a
+ * 409; the audit entry and the events are written in the same transaction as the change.
  */
 export class UpdateProfileUseCase {
   constructor(private readonly dependencies: UpdateProfileDependencies) {}
 
-  async execute(input: UpdateProfileInput): Promise<Organization> {
-    const { organizations, unitOfWork } = this.dependencies;
+  async execute(input: UpdateProfileInput): Promise<ProfileView> {
+    const { organizations, unitOfWork, customFields, sensitiveAccess } = this.dependencies;
     const existing = await organizations.findById(input.organizationId);
     if (existing === undefined) throw recordNotFound();
+    const fields = await customFields.forEntity(input.organizationId, "organization");
+    const merged =
+      input.customFields === undefined
+        ? undefined
+        : mergeCustomFieldValues({
+            stored: existing.customFields,
+            requested: input.customFields,
+            fields,
+          });
     const edited = existing.withProfileChanges({
       ...(input.name === undefined ? {} : { name: input.name }),
       ...(input.defaultLocale === undefined ? {} : { defaultLocale: input.defaultLocale }),
       ...(input.profile === undefined ? {} : { profile: input.profile }),
+      ...(merged === undefined ? {} : { customFields: merged }),
     });
-    return unitOfWork.run(async () => {
-      const saved = await organizations.update(edited, input.version, input.actorUserId);
-      await this.record(existing, saved);
-      return saved;
+    const saved = await unitOfWork.run(async () => {
+      const updated = await organizations.update(edited, input.version, input.actorUserId);
+      await this.record(existing, updated, merged);
+      return updated;
     });
+    return viewOrganization(sensitiveAccess, saved, fields);
   }
 
-  private async record(before: Organization, after: Organization): Promise<void> {
+  private async record(
+    before: Organization,
+    after: Organization,
+    merged: MergedCustomFields | undefined,
+  ): Promise<void> {
     const { audit, events } = this.dependencies;
     await audit.record({
       action: AUDIT_ACTION.ORGANIZATION_UPDATED,
       entityType: AUDIT_ENTITY_TYPE.organization,
       entityId: after.organizationId,
-      changes: diffAuditFields(auditFieldsOf(before), auditFieldsOf(after)),
+      changes: {
+        ...diffAuditFields(auditFieldsOf(before), auditFieldsOf(after)),
+        ...merged?.auditChanges,
+      },
     });
     if (before.name === after.name) return;
     await events.publish(ORGANIZATION_EVENT_TYPE.ORGANIZATION_RENAMED, {

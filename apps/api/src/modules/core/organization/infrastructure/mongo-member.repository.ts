@@ -95,6 +95,8 @@ export class MongoMemberRepository implements MemberRepository, MemberManagement
           displayName: member.displayName,
           assignments: member.assignments.map(toAssignmentDocument),
           joinedAt: member.joinedAt,
+          customFields: { ...member.customFields },
+          customFieldSearch: member.customFieldSearch.map((entry) => ({ ...entry })),
           updatedByUserId: actorUserId,
           ...(member.jobTitle === undefined ? {} : { jobTitle: member.jobTitle }),
         },

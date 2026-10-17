@@ -189,5 +189,11 @@
   "roles.form.notHeld": "এই অনুমতি আপনার নেই, তাই এটি বদলানো যাবে না।",
   "roles.archive.title": "“{name}” আর্কাইভ করবেন?",
   "roles.archive.description": "আর্কাইভ করা রোল কাউকে দেওয়া যায় না। আগে যাঁরা পেয়েছিলেন তাঁদের ইতিহাস থাকবে।",
-  "roles.archive.inUse": "এখনো {count} জন সদস্যের এই রোল আছে। আগে তাঁদের অন্য রোলে সরান।"
+  "roles.archive.inUse": "এখনো {count} জন সদস্যের এই রোল আছে। আগে তাঁদের অন্য রোলে সরান।",
+  "customFields.title": "অতিরিক্ত তথ্য",
+  "customFields.hidden": "লুকানো",
+  "customFields.hiddenHint": "কিছু তথ্য আপনার কাছ থেকে লুকানো আছে। সেগুলো যেমন আছে তেমনই থাকবে।",
+  "customFields.yes": "হ্যাঁ",
+  "customFields.no": "না",
+  "staff.action.editDetails": "তথ্য সম্পাদনা"
 }

@@ -5,6 +5,12 @@ import { Button, FormField, Select, Sheet, SheetContent } from "@banijjik/ui";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactElement, type ReactNode } from "react";
 import type { FieldErrors } from "../auth/field-errors";
+import { CustomFieldsSection } from "../custom-fields/custom-fields-section";
+import {
+  useCustomFieldsForm,
+  type CustomFieldsFormProps,
+  type CustomFieldsFormState,
+} from "../custom-fields/use-custom-fields-form";
 import { ApiError } from "../lib/api/api-error";
 import { ConflictNotice } from "../settings/conflict-notice";
 import { failureOfApiError, NO_FAILURE, type FormFailure } from "../settings/form-failure";
@@ -22,6 +28,8 @@ export interface ProfileFormSheetProps {
   /** The version the page was drawn from; a stale one is refused with a 409. */
   version: number;
   labels: ProfileFormLabels;
+  /** The business's own extra details (ADR-107); absent when it has no such fields. */
+  customFields?: CustomFieldsFormProps | undefined;
   onClose: () => void;
 }
 
@@ -93,7 +101,14 @@ function Section({ title, children }: { title: string; children: ReactNode }): R
   );
 }
 
-function useProfileSubmit(props: ProfileFormSheetProps, form: ProfileFormState) {
+/** The API names a refused extra detail `customFields.<key>`; the form places those on the fields, not under the form. */
+const API_FIELD_NAMES: readonly string[] = [...PROFILE_FIELD_NAMES, "customFields"];
+
+function useProfileSubmit(
+  props: ProfileFormSheetProps,
+  form: ProfileFormState,
+  customFields: CustomFieldsFormState,
+) {
   const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [failure, setFailure] = useState<FormFailure>(NO_FAILURE);
@@ -101,18 +116,24 @@ function useProfileSubmit(props: ProfileFormSheetProps, form: ProfileFormState) 
 
   async function submit(): Promise<void> {
     const result = buildProfileUpdate(form, props.version, props.initial);
+    const extra = customFields.buildRequest();
     setFailure(NO_FAILURE);
     setErrors(result.ok ? {} : result.fieldErrors);
-    if (!result.ok) return;
+    if (!result.ok || !extra.ok) return;
+    const hasExtra = Object.keys(extra.customFields).length > 0;
     setIsSaving(true);
     try {
-      await updateProfile(props.organizationId, result.body);
+      await updateProfile(props.organizationId, {
+        ...result.body,
+        ...(hasExtra ? { customFields: extra.customFields } : {}),
+      });
       props.onClose();
       router.refresh();
       return;
     } catch (error) {
       if (!(error instanceof ApiError)) throw error;
-      const refused = failureOfApiError(error, PROFILE_FIELD_NAMES);
+      const refused = failureOfApiError(error, API_FIELD_NAMES);
+      customFields.showRefusal(error.details);
       setErrors(refused.fieldErrors);
       setFailure(refused);
     }
@@ -125,7 +146,8 @@ function useProfileSubmit(props: ProfileFormSheetProps, form: ProfileFormState) 
 function ProfileForm(props: ProfileFormSheetProps): ReactElement {
   const { labels } = props;
   const [form, setForm] = useState<ProfileFormState>(props.initial);
-  const state = useProfileSubmit(props, form);
+  const customFields = useCustomFieldsForm(props.customFields);
+  const state = useProfileSubmit(props, form, customFields);
   const section: SectionProps = {
     form,
     labels,
@@ -151,6 +173,11 @@ function ProfileForm(props: ProfileFormSheetProps): ReactElement {
       <Section title={labels.sections.address}>
         <TextFields names={["line1", "area", "thana", "district", "postalCode"]} props={section} />
       </Section>
+      <CustomFieldsSection
+        idPrefix="profile-custom"
+        props={props.customFields}
+        form={customFields}
+      />
       {state.failure.isConflict ? (
         <ConflictNotice
           message={labels.conflict}

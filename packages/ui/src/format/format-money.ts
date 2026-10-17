@@ -25,6 +25,11 @@ function currencyFormatOf(currency: string): CurrencyFormat {
   );
 }
 
+/** The symbol people write for the currency ("৳" for BDT), or the ISO code when none is known. */
+export function currencySymbolOf(currency: string): string {
+  return currencyFormatOf(currency).symbol;
+}
+
 /** Splits integer minor units into major and minor digits with integer math only (ADR-013). */
 function splitMinorUnits(absoluteAmount: number, fractionDigits: number) {
   const unitsPerMajor = 10 ** fractionDigits;

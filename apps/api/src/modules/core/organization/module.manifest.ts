@@ -95,7 +95,8 @@ export const organizationManifest = defineModule({
       isClientVisible: true,
     },
   ],
-  customFieldEntities: [],
+  // The business profile and the staff profile take custom field values (09 sections 4.2 and 4.4, ADR-107).
+  customFieldEntities: ["organization", "member"],
   botTools: [],
   storefrontSections: [],
   events: {
