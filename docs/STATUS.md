@@ -90,14 +90,15 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 2.7a custom field values on the business profile and on staff | merged (2026-10-17, implemented with Claude Code (Sonnet 5.5), Claude T1 review 2 passed; ADR-107 proposed) | branch `s/2.7a-profile-staff-fields`; handoff `docs/handoffs/2.7a.md`; ADR-107 proposed. Full verify passed. Two open questions in the handoff (blind sensitive writes, sensitive+searchable). Not merged, not pushed |
 | 2.7b tenant UI: settings, terms, fields and modules | merged (2026-10-17, implemented with Claude Code (Sonnet 5.5), Claude merge check passed; ADR-108 proposed) | branch `s/2.7b-tenant-settings-ui`; handoff `docs/handoffs/2.7b.md`; ADR-108 proposed (`GET /settings` also returns `definitions`). Full verify passed. A hidden template field can be shown again (management list marks it `isHidden`). Not merged, not pushed |
 | 2.8 terms in visible labels | planned (2026-10-17, `docs/plans/2.8.md`, Opus; T2) | Phase 2 review F1: menu `termKey`, locations screens use the `location` term, Phase 3 convention |
-| Phase 2 review | PASS WITH FIXES (2026-10-17, `docs/handoffs/phase-2-review.md`) | Phase 3 code merges after 2.8 is merged and `main` has a green GitHub CI run (F2, needs the owner to allow the push) |
+| Phase 2 review | PASS WITH FIXES (2026-10-17, `docs/handoffs/phase-2-review.md`) | Phase 3 code merges after 2.8 is merged. F2 closed: GitHub CI run `39020750964` on `a04012d` passed |
 
 ## Phase 3 (build order of `03-ROADMAP.md`, ADR-099)
 | Card | Status | Note |
 |---|---|---|
-| 3.0 files and images | todo | wave 1; FILE and IMAGE custom-field inputs |
-| 3.1 contacts | todo | wave 1; contact-link input (COACHING guardian), search by custom field |
-| 3.13 clear structure and visual design pass | todo | wave 1; topic-wise settings home, titled sections, visual quality, pilot usability check |
+| 3.0 files and images | planned (2026-10-17, `docs/plans/3.0.md`, Opus; T1) | wave 1, can start now; storage port, content-checked uploads, image variants, FILE and IMAGE custom-field inputs; ADR-109 |
+| 3.1a contacts API | planned (2026-10-17, `docs/plans/3.1a.md`, Opus; T1) | wave 1, after 2.8 is merged; phone-first dedupe, contact-link (COACHING guardian), search by custom field; ADR-110 |
+| 3.1b contacts screens | planned (2026-10-17, `docs/plans/3.1b.md`, Opus; T2) | after 3.1a is merged; list, add, detail, contact-link input |
+| 3.13 clear structure and visual design pass | planned (2026-10-17, `docs/plans/3.13.md`, Opus; T2) | wave 1, after 2.8 is merged; topic-wise settings home, titled sections, visual quality, phase 2 carry-overs, pilot usability check; ADR-112 |
 | 3.2 offerings catalog | todo | wave 2; ADR-098 stock components, units, quantity rules, modifiers |
 | 3.12 business branding | todo | wave 2; logo and colours per business, default website theme |
 | 3.4 pricing and tax | todo |  |

@@ -188,7 +188,7 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 
 
 **3.0 Files and images** (SYSTEM `file`: upload through a storage port (local disk in development, object storage in production), image resizing and variants, size and type limits, virus-scan hook, per-organization quota from the package limits; the FILE and IMAGE custom-field inputs; used by business logos, offering images and attachments). M: `modules/file`. Moved out of 3.2 so logos and images have one owner.
-**3.1 Contacts** (customers/suppliers/students/patients via `terms`; tags; custom fields). M: `modules/contacts`
+**3.1 Contacts** (customers/suppliers/students/patients via `terms`; tags; custom fields). M: `modules/contacts` (split: 3.1a API, 3.1b screens)
 **3.2 Offerings catalog** (uses 3.0 for images; all kinds, variants, categories, units from the contracts unit registry, `quantityRule` for loose sale, stock components that link variants to inventory items (ADR-098), modifiers (ADR-072), images, per-location availability/price, synonyms per org for search). M: `modules/catalog`
 **3.3 Inventory ledger** (InventoryItem with a base unit (ADR-098), StockMovement and InventoryLevel per inventory item, reservation per stock component, packs and loose sale from one stock, kits and recipes, services that use up products, adjustment, transfer, low stock, moving average cost). M: `modules/supply`, `modules/inventory`
 **3.4 Pricing & tax** (price resolution for all kinds, promotions as rules, tax classes; money in minor units). M: `modules/pricing`
