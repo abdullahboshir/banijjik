@@ -1,6 +1,6 @@
 import { PLATFORM_PERMISSION_KEY, type PlatformAuditLogSummary } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { Button, EmptyState, PageHeader, TextInput } from "@banijjik/ui";
+import { Button, EmptyState, PageLayout, TextInput } from "@banijjik/ui";
 import type { PageMeta } from "@banijjik/web-client";
 import type { ReactElement } from "react";
 import { fetchPlatformResource } from "../api/platform-resource";
@@ -77,23 +77,23 @@ export async function AuditPage({
   const [operator, translator] = await Promise.all([loadOperator(), getTranslator()]);
   const { t } = translator;
   if (!holdsPermission(operator, PLATFORM_PERMISSION_KEY.AUDIT_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const query = parseAuditQuery(searchParams);
   const entries = await fetchPlatformResource<PlatformAuditLogSummary[], PageMeta>(
     auditApiPath(query),
   );
   return (
-    <>
-      <PageHeader
-        title={t("platform.audit.title")}
-        filters={
-          <>
-            <FilterChips chips={targetChips(query, t)} navLabel={t("platform.filter.label")} />
-            <OrganizationFilter query={query} t={t} />
-          </>
-        }
-      />
+    <PageLayout
+      subtitle={t("platform.audit.subtitle")}
+      title={t("platform.audit.title")}
+      filters={
+        <>
+          <FilterChips chips={targetChips(query, t)} navLabel={t("platform.filter.label")} />
+          <OrganizationFilter query={query} t={t} />
+        </>
+      }
+    >
       <AuditList
         rows={entries.data.map((entry) => toRow(entry, translator))}
         labels={{
@@ -117,6 +117,6 @@ export async function AuditPage({
           current: t("platform.page.current", { page: formatCount(query.page, translator.locale) }),
         }}
       />
-    </>
+    </PageLayout>
   );
 }

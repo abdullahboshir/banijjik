@@ -1,5 +1,6 @@
 import type { PlatformModuleOverrideResponse } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
+import { PageSection } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { formatDate } from "../lib/format";
 import { pickLabels } from "../lib/labels";
@@ -36,8 +37,7 @@ export function ModulesSection({
 }: ModulesSectionProps): ReactElement {
   const { t } = translator;
   return (
-    <section className="rounded-md border border-default bg-surface p-4">
-      <h2 className="mb-3 text-title font-semibold text-primary">{t("platform.modules.title")}</h2>
+    <PageSection title={t("platform.modules.title")} help={t("platform.modules.help")}>
       <OverrideList
         organizationId={organizationId}
         rows={overrides.map((override) => toRow(override, translator))}
@@ -51,6 +51,6 @@ export function ModulesSection({
           empty: t("platform.modules.empty"),
         }}
       />
-    </section>
+    </PageSection>
   );
 }

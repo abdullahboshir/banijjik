@@ -59,7 +59,10 @@ export function FieldsSection(props: FieldsSectionProps): ReactElement {
   }
 
   return (
-    <IndustrySection title={t("platform.industry.section.fields")}>
+    <IndustrySection
+      title={t("platform.industry.section.fields")}
+      help={t("platform.industry.section.fields.help")}
+    >
       <FieldGroups
         fields={fields}
         locale={locale}

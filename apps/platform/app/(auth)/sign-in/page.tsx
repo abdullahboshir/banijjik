@@ -1,4 +1,4 @@
-import { PageHeader } from "@banijjik/ui";
+import { PageLayout } from "@banijjik/ui";
 import { SESSION_UNAVAILABLE_REASON, safeNextPath } from "@banijjik/web-client";
 import type { ReactElement } from "react";
 import { SignInForm } from "../../../src/auth/sign-in-form";
@@ -12,14 +12,13 @@ export default async function SignInPage({
   const { next, reason } = await searchParams;
   const { t } = await getTranslator();
   return (
-    <>
-      <PageHeader title={t("platform.signIn.title")} />
+    <PageLayout title={t("platform.signIn.title")}>
       {reason === SESSION_UNAVAILABLE_REASON ? (
         <p role="alert" className="text-small text-danger">
           {t("auth.session_unavailable")}
         </p>
       ) : null}
       <SignInForm nextPath={safeNextPath(next)} />
-    </>
+    </PageLayout>
   );
 }

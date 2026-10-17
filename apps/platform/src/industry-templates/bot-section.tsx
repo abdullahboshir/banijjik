@@ -49,7 +49,10 @@ export function BotSection({
   }
 
   return (
-    <IndustrySection title={t("platform.industry.section.bot")}>
+    <IndustrySection
+      title={t("platform.industry.section.bot")}
+      help={t("platform.industry.section.bot.help")}
+    >
       <BotTextFields
         canWrite={canWrite}
         personaLabel={t("platform.industry.field.personaKey")}

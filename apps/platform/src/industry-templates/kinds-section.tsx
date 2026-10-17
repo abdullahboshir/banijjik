@@ -63,7 +63,10 @@ export function KindsSection({
   const [kinds, setKinds] = useState<OfferingKind[]>([...enabledKinds]);
   const [modules, setModules] = useState<ModuleKey[]>([...allowedModuleKeys]);
   return (
-    <IndustrySection title={t("platform.industry.section.kinds")}>
+    <IndustrySection
+      title={t("platform.industry.section.kinds")}
+      help={t("platform.industry.section.kinds.help")}
+    >
       <div className="grid gap-x-4 sm:grid-cols-2">
         {KINDS.map((kind) => (
           <Checkbox

@@ -20,7 +20,7 @@ export async function PackageFormPage({
   const canRead = holdsPermission(operator, PLATFORM_PERMISSION_KEY.PACKAGE_READ);
   const canWrite = holdsPermission(operator, PLATFORM_PERMISSION_KEY.PACKAGE_WRITE);
   if (!canRead || (packageId === undefined && !canWrite)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const existing =
     packageId === undefined

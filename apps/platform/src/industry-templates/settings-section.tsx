@@ -123,7 +123,10 @@ function SettingList(props: {
 }): ReactElement {
   const t = labelsTranslator(props.labels);
   return (
-    <IndustrySection title={t("platform.industry.section.settings")}>
+    <IndustrySection
+      title={t("platform.industry.section.settings")}
+      help={t("platform.industry.section.settings.help")}
+    >
       {props.rows.map((row) => (
         <SettingRowFields
           key={row.definition.settingKey}

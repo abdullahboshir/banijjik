@@ -10,5 +10,5 @@ export default async function PanelHomePage(): Promise<ReactElement> {
   const [operator, { t }] = await Promise.all([loadOperator(), getTranslator()]);
   const [firstEntry] = navigationEntriesFor(operator, t);
   if (firstEntry) redirect(firstEntry.href);
-  return <EmptyState message={t("state.permissionDenied")} />;
+  return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
 }

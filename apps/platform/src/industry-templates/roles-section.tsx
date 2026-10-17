@@ -65,7 +65,10 @@ export function RolesSection(props: RolesSectionProps): ReactElement {
     ...props.configuration.resourceTypes,
   ]);
   return (
-    <IndustrySection title={t("platform.industry.section.roles")}>
+    <IndustrySection
+      title={t("platform.industry.section.roles")}
+      help={t("platform.industry.section.roles.help")}
+    >
       <ChoiceList
         values={Object.values(CONTACT_ROLE)}
         selected={roles}

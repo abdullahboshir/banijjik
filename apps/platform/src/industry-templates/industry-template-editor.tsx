@@ -10,7 +10,11 @@ import { type ComponentType, type ReactElement } from "react";
 import { useEditorActions } from "./editor-actions";
 import type { EditorSectionsProps } from "./editor-sections";
 import { labelsTranslator, type IndustryLabels } from "./industry-labels";
-import { templateRefusesRemoval, templateStatusActions } from "./template-status";
+import {
+  templateLockMessageKey,
+  templateRefusesRemoval,
+  templateStatusActions,
+} from "./template-status";
 
 async function loadSections(): Promise<ComponentType<EditorSectionsProps>> {
   const loaded = await import("./editor-sections");
@@ -31,17 +35,18 @@ export function IndustryTemplateEditor({
   locale: "bn" | "en";
 }): ReactElement {
   const t = labelsTranslator(labels);
-  const refusesRemoval = templateRefusesRemoval(template.status);
+  const refusesRemoval = templateRefusesRemoval(template);
+  const lockMessageKey = templateLockMessageKey(template);
   const actions = templateStatusActions(template.status, canWrite);
   const { savePatch, saveStatus, sheet } = useEditorActions(template, labels);
   const Sections = useLazyComponent(loadSections, true);
   return (
     <div className="flex flex-col gap-3">
-      {refusesRemoval ? (
+      {lockMessageKey === undefined ? null : (
         <p role="status" className="text-small text-secondary">
-          {t(`platform.industry.locked.${template.status}`)}
+          {t(lockMessageKey)}
         </p>
-      ) : null}
+      )}
       {!canWrite ? (
         <p className="text-small text-secondary">{t("platform.industry.readOnly")}</p>
       ) : null}

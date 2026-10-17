@@ -5,7 +5,7 @@ import {
   type PlatformRole,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { EmptyState, PageHeader, type StatusTone } from "@banijjik/ui";
+import { EmptyState, PageLayout, type StatusTone } from "@banijjik/ui";
 import type { PageMeta } from "@banijjik/web-client";
 import type { ReactElement } from "react";
 import { fetchPlatformResource } from "../api/platform-resource";
@@ -85,7 +85,7 @@ export async function OperatorsPage({
   const [viewer, translator] = await Promise.all([loadOperator(), getTranslator()]);
   const { t } = translator;
   if (!holdsPermission(viewer, PLATFORM_PERMISSION_KEY.OPERATOR_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const query = parseOperatorQuery(searchParams);
   const labels = pickLabels(t, OPERATOR_LABEL_KEYS);
@@ -94,14 +94,12 @@ export async function OperatorsPage({
   );
   const canWrite = holdsPermission(viewer, PLATFORM_PERMISSION_KEY.OPERATOR_WRITE);
   return (
-    <>
-      <PageHeader
-        title={labels["platform.operators.title"]}
-        actions={canWrite ? <OperatorAddButton labels={labels} /> : undefined}
-        filters={
-          <FilterChips chips={statusChips(query, t)} navLabel={t("platform.filter.label")} />
-        }
-      />
+    <PageLayout
+      subtitle={t("platform.operators.subtitle")}
+      title={labels["platform.operators.title"]}
+      actions={canWrite ? <OperatorAddButton labels={labels} /> : undefined}
+      filters={<FilterChips chips={statusChips(query, t)} navLabel={t("platform.filter.label")} />}
+    >
       <OperatorList
         rows={operators.data.map((operator) => toRow(operator, viewer, t))}
         labels={labels}
@@ -117,6 +115,6 @@ export async function OperatorsPage({
           current: t("platform.page.current", { page: formatCount(query.page, translator.locale) }),
         }}
       />
-    </>
+    </PageLayout>
   );
 }

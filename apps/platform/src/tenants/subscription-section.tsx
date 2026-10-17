@@ -1,5 +1,6 @@
 import type { PlatformPackageResponse, PlatformSubscriptionResponse } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
+import { PageSection } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { formatDate } from "../lib/format";
 import { subscriptionTone } from "../lib/status-tones";
@@ -39,10 +40,7 @@ export function SubscriptionSection({
 }: SubscriptionSectionProps): ReactElement {
   const { t, locale } = translator;
   return (
-    <section className="rounded-md border border-default bg-surface p-4">
-      <h2 className="mb-3 text-title font-semibold text-primary">
-        {t("platform.subscription.title")}
-      </h2>
+    <PageSection title={t("platform.subscription.title")} help={t("platform.subscription.help")}>
       {subscription ? (
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Fact term={t("platform.subscription.status")}>
@@ -70,6 +68,6 @@ export function SubscriptionSection({
       ) : (
         <p className="text-body text-secondary">{t("platform.subscription.none")}</p>
       )}
-    </section>
+    </PageSection>
   );
 }

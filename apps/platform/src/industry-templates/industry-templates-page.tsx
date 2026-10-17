@@ -1,6 +1,6 @@
 import { PLATFORM_PERMISSION_KEY, type PlatformIndustryTemplateSummary } from "@banijjik/contracts";
 import type { Locale, Translator } from "@banijjik/i18n";
-import { EmptyState, PageHeader, buttonVariants, type StatusTone } from "@banijjik/ui";
+import { EmptyState, PageLayout, buttonVariants, type StatusTone } from "@banijjik/ui";
 import type { PageMeta } from "@banijjik/web-client";
 import Link from "next/link";
 import type { ReactElement } from "react";
@@ -69,7 +69,7 @@ export async function IndustryTemplatesPage({
   const [operator, translator] = await Promise.all([loadOperator(), getTranslator()]);
   const { t, locale } = translator;
   if (!holdsPermission(operator, PLATFORM_PERMISSION_KEY.INDUSTRY_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const query = parseIndustryTemplateQuery(searchParams);
   const page = await fetchPlatformResource<PlatformIndustryTemplateSummary[], PageMeta>(
@@ -77,20 +77,18 @@ export async function IndustryTemplatesPage({
   );
   const canWrite = holdsPermission(operator, PLATFORM_PERMISSION_KEY.INDUSTRY_WRITE);
   return (
-    <>
-      <PageHeader
-        title={t("platform.industries.title")}
-        actions={
-          canWrite ? (
-            <Link href="/industry-templates/new" className={buttonVariants({ variant: "primary" })}>
-              {t("platform.industries.new")}
-            </Link>
-          ) : null
-        }
-        filters={
-          <FilterChips chips={statusChips(query, t)} navLabel={t("platform.filter.label")} />
-        }
-      />
+    <PageLayout
+      subtitle={t("platform.industries.subtitle")}
+      title={t("platform.industries.title")}
+      actions={
+        canWrite ? (
+          <Link href="/industry-templates/new" className={buttonVariants({ variant: "primary" })}>
+            {t("platform.industries.new")}
+          </Link>
+        ) : null
+      }
+      filters={<FilterChips chips={statusChips(query, t)} navLabel={t("platform.filter.label")} />}
+    >
       <IndustryTemplateList
         rows={page.data.map((template) => toRow(template, locale, t))}
         labels={{
@@ -114,6 +112,6 @@ export async function IndustryTemplatesPage({
           current: t("platform.page.current", { page: formatCount(query.page, locale) }),
         }}
       />
-    </>
+    </PageLayout>
   );
 }

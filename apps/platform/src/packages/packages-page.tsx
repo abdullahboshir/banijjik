@@ -4,7 +4,7 @@ import {
   type PlatformPackageResponse,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { EmptyState, PageHeader, buttonVariants } from "@banijjik/ui";
+import { EmptyState, PageLayout, PageSection, buttonVariants } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { fetchPlatformResource } from "../api/platform-resource";
@@ -48,17 +48,18 @@ function toRow(pkg: PlatformPackageResponse, translator: Translator): PackageRow
 
 function Group({
   title,
+  help,
   packages,
   translator,
 }: {
   title: string;
+  help: string;
   packages: PlatformPackageResponse[];
   translator: Translator;
 }): ReactElement {
   const { t } = translator;
   return (
-    <section className="mb-6">
-      <h2 className="mb-2 text-title font-semibold text-primary">{title}</h2>
+    <PageSection title={title} help={help}>
       <PackageTable
         rows={packages.map((pkg) => toRow(pkg, translator))}
         labels={{
@@ -69,7 +70,7 @@ function Group({
           empty: t("platform.packages.empty"),
         }}
       />
-    </section>
+    </PageSection>
   );
 }
 
@@ -78,32 +79,34 @@ export async function PackagesPage(): Promise<ReactElement> {
   const [operator, translator] = await Promise.all([loadOperator(), getTranslator()]);
   const { t } = translator;
   if (!holdsPermission(operator, PLATFORM_PERMISSION_KEY.PACKAGE_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const packages = (await fetchPlatformResource<PlatformPackageResponse[]>(ALL_PACKAGES_PATH)).data;
   const canWrite = holdsPermission(operator, PLATFORM_PERMISSION_KEY.PACKAGE_WRITE);
   return (
-    <>
-      <PageHeader
-        title={t("platform.packages.title")}
-        actions={
-          canWrite ? (
-            <Link href="/packages/new" className={buttonVariants({ variant: "primary" })}>
-              {t("platform.packages.new")}
-            </Link>
-          ) : null
-        }
-      />
+    <PageLayout
+      subtitle={t("platform.packages.subtitle")}
+      title={t("platform.packages.title")}
+      actions={
+        canWrite ? (
+          <Link href="/packages/new" className={buttonVariants({ variant: "primary" })}>
+            {t("platform.packages.new")}
+          </Link>
+        ) : null
+      }
+    >
       <Group
         title={t("platform.packages.base")}
+        help={t("platform.packages.base.help")}
         packages={packages.filter((pkg) => !pkg.isAddOn)}
         translator={translator}
       />
       <Group
         title={t("platform.packages.addOns")}
+        help={t("platform.packages.addOns.help")}
         packages={packages.filter((pkg) => pkg.isAddOn)}
         translator={translator}
       />
-    </>
+    </PageLayout>
   );
 }

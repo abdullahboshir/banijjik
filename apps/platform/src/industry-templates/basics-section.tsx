@@ -57,7 +57,10 @@ export function BasicsSection({
   const [draftDescription, setDescription] = useState(description);
   const [draftIcon, setIcon] = useState(iconKey);
   return (
-    <IndustrySection title={t("platform.industry.section.basics")}>
+    <IndustrySection
+      title={t("platform.industry.section.basics")}
+      help={t("platform.industry.section.basics.help")}
+    >
       <BasicsFields
         t={t}
         canWrite={canWrite}

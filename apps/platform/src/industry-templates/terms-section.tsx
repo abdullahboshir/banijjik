@@ -63,7 +63,10 @@ export function TermsSection({
   }
 
   return (
-    <IndustrySection title={t("platform.industry.section.terms")}>
+    <IndustrySection
+      title={t("platform.industry.section.terms")}
+      help={t("platform.industry.section.terms.help")}
+    >
       {rows.map((row) => (
         <TermRowFields
           key={row.key}

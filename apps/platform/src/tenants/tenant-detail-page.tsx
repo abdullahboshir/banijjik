@@ -126,7 +126,7 @@ export async function TenantDetailPage({
   const [operator, translator] = await Promise.all([loadOperator(), getTranslator()]);
   const { t, locale } = translator;
   if (!holdsPermission(operator, PLATFORM_PERMISSION_KEY.TENANT_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const canReadPackages = holdsPermission(operator, PLATFORM_PERMISSION_KEY.PACKAGE_READ);
   const canChangeIndustry = holdsPermission(operator, PLATFORM_PERMISSION_KEY.INDUSTRY_WRITE);
@@ -140,13 +140,13 @@ export async function TenantDetailPage({
     (kind) => kind !== "changePackage" || canReadPackages,
   );
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <TenantHeading detail={detail} locale={locale} t={t} />
       <TenantActions
         actions={actions}
         context={buildContext({ tenant: detail, packages, industryTemplates, translator })}
       />
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <SubscriptionSection
           subscription={detail.subscription}
           packages={packages}
@@ -159,6 +159,6 @@ export async function TenantDetailPage({
           translator={translator}
         />
       </div>
-    </>
+    </div>
   );
 }

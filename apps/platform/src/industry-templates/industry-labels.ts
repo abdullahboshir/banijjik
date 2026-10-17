@@ -26,6 +26,10 @@ const STATIC_LABEL_KEYS = [
   "platform.industry.section.settings",
   "platform.industry.section.roles",
   "platform.industry.section.bot",
+  ...["basics", "kinds", "terms", "fields", "settings", "roles", "bot"].map(
+    (section) => `platform.industry.section.${section}.help`,
+  ),
+  "platform.industry.locked.IN_USE",
   "platform.industry.action.save",
   "platform.industry.action.publish",
   "platform.industry.action.retire",

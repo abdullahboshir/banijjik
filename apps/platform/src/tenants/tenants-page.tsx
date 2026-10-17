@@ -1,5 +1,5 @@
 import { PLATFORM_PERMISSION_KEY, type PlatformOrganizationSummary } from "@banijjik/contracts";
-import { EmptyState, PageHeader } from "@banijjik/ui";
+import { EmptyState, PageLayout } from "@banijjik/ui";
 import type { PageMeta } from "@banijjik/web-client";
 import type { ReactElement } from "react";
 import { fetchPlatformResource } from "../api/platform-resource";
@@ -63,27 +63,27 @@ export async function TenantsPage({
   const [operator, translator] = await Promise.all([loadOperator(), getTranslator()]);
   const { t } = translator;
   if (!holdsPermission(operator, PLATFORM_PERMISSION_KEY.TENANT_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const query = parseTenantQuery(searchParams);
   const tenants = await fetchPlatformResource<PlatformOrganizationSummary[], PageMeta>(
     tenantsApiPath(query),
   );
   return (
-    <>
-      <PageHeader
-        title={t("platform.tenants.title")}
-        filters={
-          <>
-            <FilterChips chips={statusChips(query, t)} navLabel={t("platform.filter.label")} />
-            <TenantSearch
-              initialText={query.q ?? ""}
-              status={query.status}
-              label={t("platform.tenants.search")}
-            />
-          </>
-        }
-      />
+    <PageLayout
+      subtitle={t("platform.tenants.subtitle")}
+      title={t("platform.tenants.title")}
+      filters={
+        <>
+          <FilterChips chips={statusChips(query, t)} navLabel={t("platform.filter.label")} />
+          <TenantSearch
+            initialText={query.q ?? ""}
+            status={query.status}
+            label={t("platform.tenants.search")}
+          />
+        </>
+      }
+    >
       <TenantList
         rows={tenants.data.map((tenant) => toRow(tenant, translator))}
         labels={{
@@ -107,6 +107,6 @@ export async function TenantsPage({
           current: t("platform.page.current", { page: formatCount(query.page, translator.locale) }),
         }}
       />
-    </>
+    </PageLayout>
   );
 }

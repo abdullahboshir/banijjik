@@ -1,5 +1,5 @@
 import { PLATFORM_PERMISSION_KEY, type PlatformIndustryTemplateSummary } from "@banijjik/contracts";
-import { EmptyState, PageHeader } from "@banijjik/ui";
+import { EmptyState, PageLayout } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { fetchPlatformResource } from "../api/platform-resource";
 import { holdsPermission } from "../auth/permissions";
@@ -13,15 +13,17 @@ export async function NewIndustryPage(): Promise<ReactElement> {
   const [operator, translator] = await Promise.all([loadOperator(), getTranslator()]);
   const { t, locale } = translator;
   if (!holdsPermission(operator, PLATFORM_PERMISSION_KEY.INDUSTRY_WRITE)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const templates = await fetchPlatformResource<PlatformIndustryTemplateSummary[]>(
     "/platform/industry-templates?limit=100",
   );
   return (
-    <>
-      <PageHeader title={t("platform.industries.new")} />
+    <PageLayout
+      title={t("platform.industries.new")}
+      subtitle={t("platform.industries.new.subtitle")}
+    >
       <NewIndustryForm templates={templates.data} labels={buildIndustryLabels(t)} locale={locale} />
-    </>
+    </PageLayout>
   );
 }

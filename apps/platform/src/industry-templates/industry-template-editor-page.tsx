@@ -22,7 +22,7 @@ export async function IndustryTemplateEditorPage({
   const [operator, translator] = await Promise.all([loadOperator(), getTranslator()]);
   const { t, locale } = translator;
   if (!holdsPermission(operator, PLATFORM_PERMISSION_KEY.INDUSTRY_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const [template, definitions] = await Promise.all([
     fetchPlatformResource<PlatformIndustryTemplateDetail>(
@@ -32,7 +32,7 @@ export async function IndustryTemplateEditorPage({
   ]);
   const detail = template.data;
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <DetailHeader
         title={detail.name[locale]}
         backHref="/industry-templates"
@@ -52,6 +52,6 @@ export async function IndustryTemplateEditorPage({
         labels={buildIndustryLabels(t)}
         locale={locale}
       />
-    </>
+    </div>
   );
 }
