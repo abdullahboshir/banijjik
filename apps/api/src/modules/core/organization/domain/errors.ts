@@ -18,6 +18,15 @@ export function invalidFields(
   return new DomainRuleError({ code: ERROR_CODE.VALIDATION_ERROR, details: { fields } });
 }
 
+/** The caller may not read sensitive values, so they may not set or clear one either (ADR-107). */
+export function customFieldSensitiveForbidden(fieldKeys: readonly string[]): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.FORBIDDEN,
+    messageKey: "errors.custom_field_sensitive_forbidden",
+    details: { fieldKeys },
+  });
+}
+
 /** The slug already belongs to an organization, or was taken a moment ago by a concurrent request. */
 export class SlugTakenError extends DomainRuleError {
   constructor() {

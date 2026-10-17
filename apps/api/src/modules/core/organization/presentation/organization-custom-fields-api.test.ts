@@ -274,6 +274,23 @@ describe("PATCH /profile with custom fields", () => {
     expect(reread.body.data.customFields).toEqual({ tier: "GOLD" });
   });
 
+  it("lets the owner, who holds the profile edit at every location, set and clear a sensitive key", async () => {
+    const world = await aWorld();
+
+    const set = await world.alice.call("patch", profilePath(world), {
+      customFields: { tax_note: "secret-123" },
+      version: 1,
+    });
+    const cleared = await world.alice.call("patch", profilePath(world), {
+      customFields: { tax_note: null },
+      version: 2,
+    });
+
+    expect(set.status).toBe(200);
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.data.customFields).toEqual({});
+  });
+
   it("refuses a caller who may not edit the profile, and does not leak into /me/orgs", async () => {
     const world = await aWorld();
     await world.alice.call("patch", profilePath(world), {
@@ -339,15 +356,65 @@ describe("PATCH /members/{memberId} with custom fields", () => {
 
   it("hides the sensitive value from the answer of a manager's own update too", async () => {
     const world = await aWorld();
+    await world.alice.call("patch", memberPath(world), {
+      customFields: { medical_notes: "asthma" },
+      version: 1,
+    });
     const manager = await aManagerAtAllLocations(world);
 
     const response = await manager.call("patch", memberPath(world), {
-      customFields: { medical_notes: "asthma", nid: "AB-1" },
-      version: 1,
+      customFields: { nid: "AB-1" },
+      version: 2,
     });
 
     expect(response.status).toBe(200);
     expect(response.body.data.customFields).toEqual({ nid: "AB-1" });
+  });
+
+  it("answers 403 to a manager without readSensitive who sets or clears a sensitive key, and writes nothing", async () => {
+    const world = await aWorld();
+    await world.alice.call("patch", memberPath(world), {
+      customFields: { medical_notes: "asthma" },
+      version: 1,
+    });
+    const manager = await aManagerAtAllLocations(world);
+
+    const setting = await manager.call("patch", memberPath(world), {
+      customFields: { medical_notes: "overwritten", nid: "AB-1" },
+      version: 2,
+    });
+    const clearing = await manager.call("patch", memberPath(world), {
+      customFields: { medical_notes: null },
+      version: 2,
+    });
+    const stored = await world.alice.call("get", memberPath(world));
+
+    expect(setting.status).toBe(403);
+    expect(setting.body.error.messageKey).toBe("errors.custom_field_sensitive_forbidden");
+    expect(setting.body.error.details.fieldKeys).toEqual(["medical_notes"]);
+    expect(clearing.status).toBe(403);
+    expect(stored.body.data).toMatchObject({
+      customFields: { medical_notes: "asthma" },
+      version: 2,
+    });
+  });
+
+  it("still lets that manager change a non-sensitive key, and the owner change both", async () => {
+    const world = await aWorld();
+    const manager = await aManagerAtAllLocations(world);
+
+    const byManager = await manager.call("patch", memberPath(world), {
+      customFields: { nid: "AB-1" },
+      version: 1,
+    });
+    const byOwner = await world.alice.call("patch", memberPath(world), {
+      customFields: { nid: "AB-2", medical_notes: "asthma" },
+      version: 2,
+    });
+
+    expect(byManager.status).toBe(200);
+    expect(byOwner.status).toBe(200);
+    expect(byOwner.body.data.customFields).toEqual({ nid: "AB-2", medical_notes: "asthma" });
   });
 
   it("records the member change without the sensitive value", async () => {

@@ -159,6 +159,7 @@
   "account.signOut": "Sign out",
   "errors.location_in_use": "This location still has team members assigned or pending invitations. Move them first.",
   "errors.location_is_default": "The default location cannot be archived.",
+  "errors.custom_field_sensitive_forbidden": "You may not change a sensitive detail you are not allowed to read.",
   "errors.owner_is_protected": "The business owner cannot be changed, suspended or removed here.",
   "errors.cannot_change_self": "You cannot change your own access.",
   "errors.role_not_grantable": "You cannot give this role. It is the owner role, archived, or has permissions you do not have.",

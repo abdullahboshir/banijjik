@@ -60,6 +60,7 @@ export class UpdateMemberUseCase {
               stored: existing.customFields,
               requested: input.customFields,
               fields,
+              canWriteSensitive: await sensitiveAccess.mayReadMemberSensitive(),
             });
       const edited = existing.withChanges({
         ...input.changes,

@@ -80,6 +80,7 @@ export class UpdateProfileUseCase {
             stored: existing.customFields,
             requested: input.customFields,
             fields,
+            canWriteSensitive: await sensitiveAccess.mayReadOrganizationSensitive(),
           });
     const edited = existing.withProfileChanges({
       ...(input.name === undefined ? {} : { name: input.name }),

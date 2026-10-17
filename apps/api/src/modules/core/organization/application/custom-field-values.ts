@@ -15,7 +15,11 @@ import {
 } from "@banijjik/validation";
 import { diffAuditFields, type AuditFields } from "../../../../kernel/audit/index.js";
 import type { StoredCustomFields } from "../domain/custom-field-values.js";
-import { invalidFields, type DomainRuleError } from "../domain/errors.js";
+import {
+  customFieldSensitiveForbidden,
+  invalidFields,
+  type DomainRuleError,
+} from "../domain/errors.js";
 
 const REQUEST_PATH_PREFIX = "customFields";
 
@@ -94,6 +98,16 @@ function mergedValues(
   return merged;
 }
 
+/** Setting or clearing (`null`) a sensitive value needs the same permission as reading it (ADR-107). */
+function assertSensitiveKeysAllowed(
+  requested: Readonly<Record<string, unknown>>,
+  fields: readonly EffectiveCustomField[],
+): void {
+  const sensitive = new Set(fields.filter((field) => field.isSensitive).map((f) => f.fieldKey));
+  const refused = Object.keys(requested).filter((fieldKey) => sensitive.has(fieldKey));
+  if (refused.length > 0) throw customFieldSensitiveForbidden(refused);
+}
+
 /**
  * Validates the requested values with the same builder the admin form uses (card 2.3) and merges
  * them over the stored ones: an absent key keeps its value, `null` removes it (a required field
@@ -103,8 +117,11 @@ export function mergeCustomFieldValues(input: {
   readonly stored: Readonly<Record<string, unknown>>;
   readonly requested: Readonly<Record<string, unknown>>;
   readonly fields: readonly EffectiveCustomField[];
+  /** False when the caller may not read sensitive values: any sensitive key in the request is then a 403. */
+  readonly canWriteSensitive: boolean;
 }): MergedCustomFields {
   const { stored, requested, fields } = input;
+  if (!input.canWriteSensitive) assertSensitiveKeysAllowed(requested, fields);
   const schema = buildCustomFieldValuesSchema(fields, {
     audience: CUSTOM_FIELD_AUDIENCE.ADMIN,
     mode: CUSTOM_FIELD_VALUE_MODE.UPDATE,
