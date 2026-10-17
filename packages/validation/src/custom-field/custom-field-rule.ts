@@ -1,4 +1,5 @@
 import type {
+  ContactRole,
   CustomFieldType,
   IndustryTemplateContactLink,
   CustomFieldValidationBounds,
@@ -38,6 +39,8 @@ export interface CustomFieldRule {
   readonly validation?: CustomFieldValidationBounds;
   /** A REFERENCE field with a link also accepts `{ create: { name, phone } }` instead of a contact id (ADR-073). */
   readonly link?: IndustryTemplateContactLink;
+  /** Contact fields only: the field belongs to these roles. Absent means every role (ADR-113). */
+  readonly appliesToContactRoles?: readonly ContactRole[];
 }
 
 export interface CustomFieldValuesOptions {
@@ -48,6 +51,24 @@ export interface CustomFieldValuesOptions {
    * contact module replaced it with an id, so a stored value is always a UUID (ADR-110).
    */
   readonly acceptsContactLinkCreate?: boolean;
+  /**
+   * Only the contact use cases set this: a field limited to other roles is not required and a value
+   * sent for it is refused as not applicable. Without it every field applies (ADR-113).
+   */
+  readonly contactRoles?: readonly ContactRole[];
+}
+
+/** The message key of a value sent for a field the contact's roles do not use. */
+export const NOT_APPLICABLE_MESSAGE_KEY = "validation.not_applicable";
+
+/** Whether a contact with these roles uses the field. A field without roles belongs to every contact. */
+export function fieldAppliesToContactRoles(
+  field: Pick<CustomFieldRule, "appliesToContactRoles">,
+  contactRoles: readonly ContactRole[],
+): boolean {
+  const limit = field.appliesToContactRoles;
+  if (limit === undefined) return true;
+  return limit.some((role) => contactRoles.includes(role));
 }
 
 export function isVisibleTo(field: CustomFieldRule, audience: CustomFieldAudience): boolean {

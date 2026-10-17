@@ -53,6 +53,7 @@
   "validation.invalid_type": "This value has the wrong type",
   "validation.invalid_format": "This value is not in the right format",
   "validation.custom": "This value is not valid",
+  "validation.not_applicable": "This detail does not apply to this kind of contact.",
   "validation.required": "This field is required",
   "validation.invalid_value": "This value is not one of the allowed choices",
   "validation.unrecognized_keys": "This data has fields that are not allowed",

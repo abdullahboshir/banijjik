@@ -48,6 +48,8 @@ export interface IndustryTemplateCustomField {
   readonly optionLabels?: Readonly<Record<string, LocalizedText>> | undefined;
   readonly referenceEntity?: "contact" | "member" | undefined;
   readonly link?: IndustryTemplateContactLink | undefined;
+  /** Contact fields only: the roles the field belongs to. Absent means every role (ADR-113). */
+  readonly appliesToContactRoles?: readonly ContactRole[] | undefined;
 }
 
 /** A sample modifier group the tenant can edit (ADR-072). Prices are integer minor units. */

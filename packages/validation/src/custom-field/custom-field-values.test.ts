@@ -341,3 +341,47 @@ describe("contact-link reference fields", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("fields limited to contact roles", () => {
+  const classLevel = rule({
+    fieldKey: "class_level",
+    fieldType: CUSTOM_FIELD_TYPE.TEXT,
+    isRequired: true,
+    appliesToContactRoles: ["CUSTOMER", "LEAD"],
+  });
+  const everyone = rule({ fieldKey: "note", fieldType: CUSTOM_FIELD_TYPE.TEXT, isRequired: true });
+
+  function parseFor(roles: readonly ("CUSTOMER" | "RELATED")[] | undefined, value: unknown) {
+    const schema = z.strictObject({
+      customFields: buildCustomFieldValuesSchema([classLevel, everyone], {
+        audience: CUSTOM_FIELD_AUDIENCE.ADMIN,
+        mode: CUSTOM_FIELD_VALUE_MODE.CREATE,
+        ...(roles === undefined ? {} : { contactRoles: roles }),
+      }),
+    });
+    return schema.safeParse({ customFields: value });
+  }
+
+  it("requires the field for a contact of one of its roles", () => {
+    expect(parseFor(["CUSTOMER"], { note: "x" }).success).toBe(false);
+    expect(parseFor(["CUSTOMER"], { note: "x", class_level: "5" }).success).toBe(true);
+  });
+
+  it("does not require it for another role and refuses a value sent for it as not applicable", () => {
+    expect(parseFor(["RELATED"], { note: "x" }).success).toBe(true);
+
+    const refused = parseFor(["RELATED"], { note: "x", class_level: "5" });
+
+    expect(refused.success).toBe(false);
+    expect(!refused.success && refused.error.issues[0]).toMatchObject({
+      path: ["customFields", "class_level"],
+      message: "validation.not_applicable",
+    });
+  });
+
+  it("applies a field without roles to every role, and every field when no roles are given", () => {
+    expect(parseFor(["RELATED"], {}).success).toBe(false);
+    expect(parseFor(undefined, { note: "x" }).success).toBe(false);
+    expect(parseFor(undefined, { note: "x", class_level: "5" }).success).toBe(true);
+  });
+});

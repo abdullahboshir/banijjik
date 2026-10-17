@@ -53,6 +53,7 @@
   "validation.invalid_type": "মানটির ধরন ঠিক নয়",
   "validation.invalid_format": "মানটির ফরম্যাট ঠিক নয়",
   "validation.custom": "মানটি সঠিক নয়",
+  "validation.not_applicable": "এই তথ্য এই ধরনের যোগাযোগের জন্য প্রযোজ্য নয়।",
   "validation.required": "এই ঘরটি পূরণ করা আবশ্যক",
   "validation.invalid_value": "মানটি অনুমোদিত বিকল্পগুলোর কোনোটি নয়",
   "validation.unrecognized_keys": "তথ্যে এমন ঘর আছে যা অনুমোদিত নয়",

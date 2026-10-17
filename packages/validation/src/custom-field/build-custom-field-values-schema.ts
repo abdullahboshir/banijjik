@@ -2,7 +2,9 @@ import { NEVER, z, type ZodType } from "zod";
 import { fieldValueSchema } from "./field-value-schema.js";
 import {
   CUSTOM_FIELD_VALUE_MODE,
+  fieldAppliesToContactRoles,
   isVisibleTo,
+  NOT_APPLICABLE_MESSAGE_KEY,
   type CustomFieldRule,
   type CustomFieldValuesOptions,
 } from "./custom-field-rule.js";
@@ -19,7 +21,15 @@ export function buildCustomFieldValuesSchema(
   fields: readonly CustomFieldRule[],
   options: CustomFieldValuesOptions,
 ): ZodType {
-  const visible = fields.filter((field) => isVisibleTo(field, options.audience));
+  const shown = fields.filter((field) => isVisibleTo(field, options.audience));
+  const { contactRoles } = options;
+  const visible =
+    contactRoles === undefined
+      ? shown
+      : shown.filter((field) => fieldAppliesToContactRoles(field, contactRoles));
+  const notApplicable = new Set(
+    shown.filter((field) => !visible.includes(field)).map((field) => field.fieldKey),
+  );
   // Null prototype: `key in shape` would also be true for constructor, toString and similar.
   const shape: Record<string, ZodType> = Object.create(null);
   for (const field of visible) {
@@ -37,7 +47,16 @@ export function buildCustomFieldValuesSchema(
     }
     const unknownKeys = Object.keys(input).filter((key) => !Object.hasOwn(shape, key));
     for (const key of unknownKeys) {
-      context.addIssue({ code: "unrecognized_keys", keys: [key], path: [key], input });
+      if (notApplicable.has(key)) {
+        context.addIssue({
+          code: "custom",
+          message: NOT_APPLICABLE_MESSAGE_KEY,
+          path: [key],
+          input,
+        });
+      } else {
+        context.addIssue({ code: "unrecognized_keys", keys: [key], path: [key], input });
+      }
     }
     if (unknownKeys.length > 0) return NEVER;
     const parsed = known.safeParse(input);

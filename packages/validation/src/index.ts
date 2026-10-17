@@ -113,7 +113,9 @@ export { buildCustomFieldValuesSchema } from "./custom-field/build-custom-field-
 export {
   CUSTOM_FIELD_AUDIENCE,
   CUSTOM_FIELD_VALUE_MODE,
+  fieldAppliesToContactRoles,
   isVisibleTo,
+  NOT_APPLICABLE_MESSAGE_KEY,
 } from "./custom-field/custom-field-rule.js";
 export type {
   CustomFieldAudience,

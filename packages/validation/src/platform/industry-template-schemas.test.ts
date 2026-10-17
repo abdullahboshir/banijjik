@@ -54,6 +54,20 @@ describe("industryTemplateConfigurationSchema", () => {
       "a resource whose term is missing",
       { resourceTypes: [{ resourceTypeKey: "ROOM", termKey: "resource.ROOM", isMember: false }] },
     ],
+    [
+      "contact roles on a field of another entity",
+      {
+        customFields: [changedField({ entityType: "member", appliesToContactRoles: ["CUSTOMER"] })],
+      },
+    ],
+    [
+      "an empty role list on a field",
+      { customFields: [changedField({ appliesToContactRoles: [] })] },
+    ],
+    [
+      "a contact link while RELATED is not a template role",
+      { customFields: [guardianLinkField()] },
+    ],
     ["a duplicate contact role", { contactRoleKeys: ["CUSTOMER", "CUSTOMER"] }],
     ["an empty contact role list", { contactRoleKeys: [] }],
     ["a modifier whose max is below its min", { modifierGroupsSeed: [brokenModifier()] }],
@@ -64,6 +78,19 @@ describe("industryTemplateConfigurationSchema", () => {
       ...override,
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts roles on a contact field and a contact link when RELATED is a template role", () => {
+    const result = industryTemplateConfigurationSchema.safeParse({
+      ...aConfiguration(),
+      contactRoleKeys: ["CUSTOMER", "RELATED"],
+      customFields: [
+        changedField({ appliesToContactRoles: ["CUSTOMER"] }),
+        { ...guardianLinkField(), fieldKey: "guardian", appliesToContactRoles: ["CUSTOMER"] },
+      ],
+    });
+
+    expect(result.success).toBe(true);
   });
 });
 
@@ -83,6 +110,13 @@ function memberLinkField(): object {
 function contactLinkOnOtherEntity(): object {
   return {
     ...changedField({ fieldType: "REFERENCE", referenceEntity: "contact", entityType: "member" }),
+    link: { relationKey: "GUARDIAN_OF", createIfMissingByPhone: true, defaultBillTo: false },
+  };
+}
+
+function guardianLinkField(): object {
+  return {
+    ...changedField({ fieldType: "REFERENCE", referenceEntity: "contact" }),
     link: { relationKey: "GUARDIAN_OF", createIfMissingByPhone: true, defaultBillTo: false },
   };
 }

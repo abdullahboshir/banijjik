@@ -1,3 +1,4 @@
+import type { ContactRole } from "../contact/contact-role.js";
 import type { OfferingKind } from "../modules/offering-kind.js";
 import type { IndustryTemplateContactLink, LocalizedText } from "../platform/industry-template.js";
 import type { CustomFieldEntityType } from "./custom-field-entity-type.js";
@@ -43,6 +44,8 @@ export interface CustomFieldDefinitionCreateRequest {
   readonly optionLabels?: Readonly<Record<string, LocalizedText>> | undefined;
   readonly validation?: CustomFieldValidationBounds | undefined;
   readonly referenceEntity?: "contact" | "member" | undefined;
+  /** Contact fields only. Absent means every role (ADR-113). */
+  readonly appliesToContactRoles?: readonly ContactRole[] | undefined;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
@@ -57,6 +60,8 @@ export interface CustomFieldDefinitionUpdateRequest {
   readonly options?: readonly string[] | undefined;
   readonly optionLabels?: Readonly<Record<string, LocalizedText>> | undefined;
   readonly validation?: CustomFieldValidationBounds | undefined;
+  /** A list sets the roles; `null` goes back to every role (ADR-113). */
+  readonly appliesToContactRoles?: readonly ContactRole[] | null | undefined;
   readonly visibility?: CustomFieldVisibility | undefined;
   readonly botAsk?: boolean | undefined;
   readonly isSearchable?: boolean | undefined;
@@ -109,6 +114,8 @@ export interface EffectiveCustomField {
   readonly referenceEntity?: "contact" | "member";
   /** Set on a template REFERENCE field that creates or links a contact (ADR-073). Organization fields never carry it. */
   readonly link?: IndustryTemplateContactLink;
+  /** Contact fields only: the roles the field belongs to. Absent means every role (ADR-113). */
+  readonly appliesToContactRoles?: readonly ContactRole[];
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;

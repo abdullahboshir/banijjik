@@ -1,4 +1,5 @@
 import {
+  CONTACT_ROLE,
   CUSTOM_FIELD_ENTITY_TYPE,
   CUSTOM_FIELD_TYPE,
   OFFERING_KIND,
@@ -46,6 +47,11 @@ const optionListSchema = z
   .min(1)
   .max(OPTION_LIST_MAX);
 
+const contactRolesSchema = z
+  .array(z.enum(CONTACT_ROLE))
+  .min(1)
+  .refine((roles) => new Set(roles).size === roles.length);
+
 const entityTypeSchema = z.enum(CUSTOM_FIELD_ENTITY_TYPE);
 const offeringKindSchema = z.enum(OFFERING_KIND);
 
@@ -56,6 +62,7 @@ interface FieldShape {
   readonly options?: readonly string[] | undefined;
   readonly optionLabels?: Readonly<Record<string, unknown>> | undefined;
   readonly referenceEntity?: string | undefined;
+  readonly appliesToContactRoles?: readonly string[] | undefined;
 }
 
 function optionsAreUnique(options: readonly string[] | undefined): boolean {
@@ -71,16 +78,26 @@ function optionLabelsMatch(field: FieldShape): boolean {
   return options.every((option) => field.optionLabels?.[option] !== undefined);
 }
 
-/** SELECT needs options; REFERENCE needs a target; offeringKind belongs only on offering. */
-function fieldIsConsistent(field: FieldShape): boolean {
+/** Roles belong to contact fields only (ADR-113). */
+function rolesBelongToContactField(field: FieldShape): boolean {
+  return field.appliesToContactRoles === undefined || field.entityType === "contact";
+}
+
+/** Options: a select has some, the others have none, and the labels match them. */
+function optionsAreConsistent(field: FieldShape): boolean {
   const needsOptions = field.fieldType === "SELECT" || field.fieldType === "MULTI_SELECT";
   const hasOptions = field.options !== undefined && field.options.length > 0;
   if (needsOptions !== hasOptions) return false;
   if (!needsOptions && field.optionLabels !== undefined) return false;
-  if (!optionLabelsMatch(field)) return false;
-  if (!optionsAreUnique(field.options)) return false;
+  return optionLabelsMatch(field) && optionsAreUnique(field.options);
+}
+
+/** SELECT needs options; REFERENCE needs a target; offeringKind belongs only on offering. */
+function fieldIsConsistent(field: FieldShape): boolean {
+  if (!optionsAreConsistent(field)) return false;
   const isReference = field.fieldType === CUSTOM_FIELD_TYPE.REFERENCE;
   if (isReference !== (field.referenceEntity !== undefined)) return false;
+  if (!rolesBelongToContactField(field)) return false;
   if (field.entityType === CUSTOM_FIELD_ENTITY_TYPE.offering)
     return field.offeringKind !== undefined;
   return field.offeringKind === undefined;
@@ -100,6 +117,7 @@ const createRequestSchema = z
       .optional(),
     validation: boundsSchema.optional(),
     referenceEntity: z.enum(["contact", "member"]).optional(),
+    appliesToContactRoles: contactRolesSchema.optional(),
     visibility: visibilitySchema,
     botAsk: z.boolean(),
     isSearchable: z.boolean(),
@@ -123,6 +141,7 @@ const updateRequestSchema = z.strictObject({
     .record(z.string().trim().min(1).max(OPTION_MAX_LENGTH), localizedTextSchema)
     .optional(),
   validation: boundsSchema.optional(),
+  appliesToContactRoles: contactRolesSchema.nullable().optional(),
   visibility: visibilitySchema.optional(),
   botAsk: z.boolean().optional(),
   isSearchable: z.boolean().optional(),

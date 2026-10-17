@@ -51,6 +51,11 @@ const customFieldSchema = z.strictObject({
   optionLabels: z.record(z.string().trim().min(1).max(OPTION_MAX), localizedTextSchema).optional(),
   referenceEntity: z.enum(["contact", "member"]).optional(),
   link: contactLinkSchema.optional(),
+  appliesToContactRoles: z
+    .array(z.enum(CONTACT_ROLE))
+    .min(1)
+    .refine((roles) => new Set(roles).size === roles.length)
+    .optional(),
 });
 
 const modifierOptionSchema = z.strictObject({
@@ -81,6 +86,7 @@ interface FieldShape {
   readonly optionLabels?: Readonly<Record<string, unknown>> | undefined;
   readonly referenceEntity?: string | undefined;
   readonly link?: unknown;
+  readonly appliesToContactRoles?: readonly string[] | undefined;
 }
 
 /** SELECT needs options; REFERENCE needs a target; other types carry neither. */
@@ -108,6 +114,20 @@ function optionLabelsMatch(field: FieldShape): boolean {
 function linkMatchesReference(field: FieldShape): boolean {
   if (field.link === undefined) return true;
   return field.referenceEntity === "contact" && field.entityType === "contact";
+}
+
+/** Roles limit only a contact field: other entities have no roles (ADR-113). */
+function rolesBelongToContactField(field: FieldShape): boolean {
+  return field.appliesToContactRoles === undefined || field.entityType === "contact";
+}
+
+/** The contact module creates a linked contact with the role RELATED, so a template with a link must list it (ADR-113). */
+function linksHaveRelatedRole(value: {
+  readonly contactRoleKeys: readonly string[];
+  readonly customFields: readonly FieldShape[];
+}): boolean {
+  const hasLink = value.customFields.some((field) => field.link !== undefined);
+  return !hasLink || value.contactRoleKeys.includes(CONTACT_ROLE.RELATED);
 }
 
 export const industryTemplateConfigurationSchema = z
@@ -146,6 +166,10 @@ export const industryTemplateConfigurationSchema = z
   .refine((value) => value.customFields.every(customFieldIsConsistent), { path: ["customFields"] })
   .refine((value) => value.customFields.every(optionLabelsMatch), { path: ["customFields"] })
   .refine((value) => value.customFields.every(linkMatchesReference), { path: ["customFields"] })
+  .refine((value) => value.customFields.every(rolesBelongToContactField), {
+    path: ["customFields"],
+  })
+  .refine(linksHaveRelatedRole, { path: ["contactRoleKeys"] })
   .refine(
     (value) =>
       value.modifierGroupsSeed === undefined ||

@@ -16,9 +16,11 @@ const REPORTED_VALIDATION_CODES = [
   "custom",
 ] as const;
 
-export const VALIDATION_MESSAGE_KEYS: readonly string[] = REPORTED_VALIDATION_CODES.map(
-  (code) => `validation.${code}`,
-);
+export const VALIDATION_MESSAGE_KEYS: readonly string[] = [
+  ...REPORTED_VALIDATION_CODES.map((code) => `validation.${code}`),
+  // Not a Zod code: a custom field value sent for a field the contact's roles do not use (ADR-113).
+  "validation.not_applicable",
+];
 
 /** Fallback key for a Zod issue code that is not in the list above. */
 export const VALIDATION_FALLBACK_MESSAGE_KEY = "validation.custom";
