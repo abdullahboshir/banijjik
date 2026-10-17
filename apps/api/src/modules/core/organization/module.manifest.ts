@@ -59,6 +59,17 @@ export const organizationManifest = defineModule({
       settingsTopicKey: SETTINGS_TOPIC.BUSINESS,
     },
     {
+      menuKey: "organization.branding",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.organization.branding",
+      path: "settings/branding",
+      iconKey: "palette",
+      permissionKey: PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
+      order: 15,
+      settingsTopicKey: SETTINGS_TOPIC.BUSINESS,
+    },
+    {
       menuKey: "organization.locations",
       surface: SURFACE.ADMIN,
       groupKey: "settings",

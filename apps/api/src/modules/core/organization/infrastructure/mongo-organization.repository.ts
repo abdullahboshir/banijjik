@@ -75,6 +75,7 @@ export class MongoOrganizationRepository
           profile: organization.profile,
           customFields: { ...organization.customFields },
           customFieldSearch: organization.customFieldSearch.map((entry) => ({ ...entry })),
+          branding: organization.branding,
           updatedByUserId: actorUserId,
         },
       },

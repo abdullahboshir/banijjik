@@ -38,6 +38,9 @@ function toMyOrganization(
     name: organization.name,
     status: organization.status,
     roleKeys: roleKeysOf(member, keysByRoleId),
+    ...(organization.branding.logoFileId === undefined
+      ? {}
+      : { logoFileId: organization.branding.logoFileId }),
   };
 }
 

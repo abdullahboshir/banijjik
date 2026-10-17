@@ -155,6 +155,7 @@ describe("the entitlement gate", () => {
     expect(config.body.data.menu.map((entry: { menuKey: string }) => entry.menuKey)).toEqual([
       "contact.contacts",
       "organization.profile",
+      "organization.branding",
       "organization.staff",
       "iam.roles",
       "settings.general",
@@ -354,6 +355,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
       PERMISSION_KEY.IAM_ROLE_READ,
       PERMISSION_KEY.CONTACT_CONTACT_READ,
+      PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
       PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
       PERMISSION_KEY.ORGANIZATION_MEMBER_READ,
       PERMISSION_KEY.IAM_ROLE_READ,

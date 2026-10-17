@@ -8,4 +8,6 @@ export interface MyOrganization {
   readonly name: string;
   readonly status: OrganizationStatus;
   readonly roleKeys: readonly string[];
+  /** The logo file, when the business has one; the transformer turns it into a thumbnail address (card 3.12). */
+  readonly logoFileId?: string;
 }

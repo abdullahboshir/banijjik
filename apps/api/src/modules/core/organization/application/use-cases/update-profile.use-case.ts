@@ -9,8 +9,9 @@ import type { OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { ClearableChanges } from "../../domain/clearable.js";
 import { recordNotFound } from "../../domain/errors.js";
-import type { Organization } from "../../domain/organization.entity.js";
+import type { Organization, OrganizationBranding } from "../../domain/organization.entity.js";
 import { diffAuditFields, type AuditFields } from "../../../../../kernel/audit/index.js";
+import { assertBrandingAllowed } from "../branding-check.js";
 import { viewOrganization, type ProfileView } from "../custom-field-view.js";
 import { assertFileValuesUsable } from "../custom-field-file-values.js";
 import { mergeCustomFieldValues, type MergedCustomFields } from "../custom-field-values.js";
@@ -33,6 +34,8 @@ export interface UpdateProfileInput {
   readonly profile?: ClearableChanges<OrganizationProfileFields>;
   /** Per key: a value sets it, `null` clears it, an absent key leaves it. Validated against the organization fields. */
   readonly customFields?: Readonly<Record<string, unknown>>;
+  /** Per key: a value sets it, `null` clears it, an absent key leaves it. Colours and the logo are checked here (ADR-114). */
+  readonly branding?: ClearableChanges<OrganizationBranding>;
 }
 
 export interface UpdateProfileDependencies {
@@ -60,6 +63,10 @@ function auditFieldsOf(organization: Organization): AuditFields {
     "profile.address.thana": profile.address?.thana,
     "profile.address.district": profile.address?.district,
     "profile.address.postalCode": profile.address?.postalCode,
+    "branding.logoFileId": organization.branding.logoFileId,
+    "branding.primaryColor": organization.branding.primaryColor,
+    "branding.accentColor": organization.branding.accentColor,
+    "branding.tagline": organization.branding.tagline,
   };
 }
 
@@ -76,6 +83,9 @@ export class UpdateProfileUseCase {
       this.dependencies;
     const existing = await organizations.findById(input.organizationId);
     if (existing === undefined) throw recordNotFound();
+    if (input.branding !== undefined) {
+      await assertBrandingAllowed({ changes: input.branding, fileReferences });
+    }
     const fields = await customFields.forEntity(input.organizationId, "organization");
     if (input.customFields !== undefined) {
       await assertFileValuesUsable({
@@ -98,6 +108,7 @@ export class UpdateProfileUseCase {
       ...(input.defaultLocale === undefined ? {} : { defaultLocale: input.defaultLocale }),
       ...(input.profile === undefined ? {} : { profile: input.profile }),
       ...(merged === undefined ? {} : { customFields: merged }),
+      ...(input.branding === undefined ? {} : { branding: input.branding }),
     });
     const saved = await unitOfWork.run(async () => {
       const updated = await organizations.update(edited, input.version, input.actorUserId);

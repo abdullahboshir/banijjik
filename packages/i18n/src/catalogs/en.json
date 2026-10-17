@@ -226,5 +226,6 @@
   "form.file.change": "Change PDF",
   "form.file.remove": "Remove PDF",
   "form.file.uploading": "Uploading…",
-  "form.file.attached": "PDF attached"
+  "form.file.attached": "PDF attached",
+  "validation.color_low_contrast": "This colour is hard to read on white. Choose a darker one"
 }

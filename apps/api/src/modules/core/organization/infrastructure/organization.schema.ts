@@ -15,6 +15,7 @@ import {
 } from "@banijjik/contracts";
 import { Schema } from "mongoose";
 import type { CustomFieldSearchEntry } from "../domain/custom-field-values.js";
+import type { OrganizationBranding } from "../domain/organization.entity.js";
 import {
   auditFields,
   domainIdField,
@@ -45,6 +46,8 @@ export interface OrganizationDocument {
   /** Missing on organizations created before card 2.7a: read as no values. */
   customFields?: Record<string, unknown>;
   customFieldSearch?: CustomFieldSearchEntry[];
+  /** Missing on organizations created before card 3.12: read as no branding. */
+  branding?: OrganizationBranding;
   configVersion: number;
   rolesVersion: number;
   /** Guard counter that serializes limit-checked creates, see OrganizationLimitLock. Not part of any cache key. */
@@ -64,6 +67,16 @@ const profileSchema = new Schema<OrganizationProfileFields>(
     email: { type: String },
     address: { type: addressSchema },
     tradeLicenseNumber: { type: String },
+  },
+  SUB_SCHEMA_OPTIONS,
+);
+
+const brandingSchema = new Schema<OrganizationBranding>(
+  {
+    logoFileId: { type: String },
+    primaryColor: { type: String },
+    accentColor: { type: String },
+    tagline: { type: String },
   },
   SUB_SCHEMA_OPTIONS,
 );
@@ -96,6 +109,7 @@ export const organizationSchema = new Schema<OrganizationDocument>(
     profile: { type: profileSchema },
     customFields: { type: Schema.Types.Mixed },
     customFieldSearch: { type: [customFieldSearchSchema] },
+    branding: { type: brandingSchema },
     configVersion: { type: Number, required: true },
     rolesVersion: { type: Number, required: true, default: 1 },
     limitWriteVersion: { type: Number, default: 0 },

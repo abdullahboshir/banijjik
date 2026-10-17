@@ -27,6 +27,14 @@ const DEFAULT_TIMEZONE = "Asia/Dhaka";
 const INITIAL_CONFIG_VERSION = 1;
 const INITIAL_ROLES_VERSION = 1;
 
+/** The business's own look (card 3.12, ADR-114). A missing key means "not set": consumers use the platform defaults. */
+export interface OrganizationBranding {
+  readonly logoFileId?: string;
+  readonly primaryColor?: string;
+  readonly accentColor?: string;
+  readonly tagline?: string;
+}
+
 export interface OrganizationProps {
   readonly organizationId: OrganizationId;
   readonly slug: string;
@@ -44,6 +52,7 @@ export interface OrganizationProps {
   /** Values of the organization custom fields; the endpoint validated them against the effective fields (ADR-107). */
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly customFieldSearch: readonly CustomFieldSearchEntry[];
+  readonly branding: OrganizationBranding;
   readonly configVersion: number;
   /** Bumped by every role change; part of the permission cache key (card 1.4). */
   readonly rolesVersion: number;
@@ -62,6 +71,8 @@ export interface OrganizationProfileChanges {
   readonly profile?: ClearableChanges<OrganizationProfileFields>;
   /** The merged values and search entries, already validated against the organization fields. */
   readonly customFields?: StoredCustomFields;
+  /** Per key: a value sets it, `null` clears it, an absent key leaves it. */
+  readonly branding?: ClearableChanges<OrganizationBranding>;
 }
 
 export interface NewOrganizationInput {
@@ -110,6 +121,7 @@ export class Organization implements OrganizationProps {
   readonly profile: OrganizationProfileFields;
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly customFieldSearch: readonly CustomFieldSearchEntry[];
+  readonly branding: OrganizationBranding;
   readonly configVersion: number;
   /** Bumped by every role change; part of the permission cache key (card 1.4). */
   readonly rolesVersion: number;
@@ -134,6 +146,7 @@ export class Organization implements OrganizationProps {
     this.profile = props.profile;
     this.customFields = props.customFields;
     this.customFieldSearch = props.customFieldSearch;
+    this.branding = props.branding;
     this.configVersion = props.configVersion;
     this.rolesVersion = props.rolesVersion;
     this.version = props.version;
@@ -163,6 +176,7 @@ export class Organization implements OrganizationProps {
       profile: {},
       customFields: {},
       customFieldSearch: [],
+      branding: {},
       configVersion: INITIAL_CONFIG_VERSION,
       rolesVersion: INITIAL_ROLES_VERSION,
       version: 1,
@@ -186,6 +200,7 @@ export class Organization implements OrganizationProps {
       profile: applyClearableChanges(this.profile, changes.profile ?? {}),
       customFields: changes.customFields?.values ?? this.customFields,
       customFieldSearch: changes.customFields?.search ?? this.customFieldSearch,
+      branding: applyClearableChanges(this.branding, changes.branding ?? {}),
     });
   }
 

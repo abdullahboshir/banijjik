@@ -33,6 +33,7 @@ export class ProfileController {
       ...(body.defaultLocale === undefined ? {} : { defaultLocale: body.defaultLocale }),
       ...(body.profile === undefined ? {} : { profile: body.profile }),
       ...(body.customFields === undefined ? {} : { customFields: body.customFields }),
+      ...(body.branding === undefined ? {} : { branding: body.branding }),
     });
     sendData(response, toProfileResponse(view));
   };

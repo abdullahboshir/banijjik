@@ -226,5 +226,6 @@
   "form.file.change": "PDF বদলান",
   "form.file.remove": "PDF সরান",
   "form.file.uploading": "আপলোড হচ্ছে…",
-  "form.file.attached": "PDF যুক্ত আছে"
+  "form.file.attached": "PDF যুক্ত আছে",
+  "validation.color_low_contrast": "এই রং সাদা জমিতে পড়তে কঠিন। আরও গাঢ় রং বেছে নিন"
 }

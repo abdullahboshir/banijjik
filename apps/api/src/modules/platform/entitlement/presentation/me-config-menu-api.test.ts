@@ -13,6 +13,7 @@ registerIamApiModels();
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ORGANIZATION_MENU_KEYS = {
   profile: "organization.profile",
+  branding: "organization.branding",
   locations: "organization.locations",
   staff: "organization.staff",
   roles: "iam.roles",
@@ -58,6 +59,7 @@ describe("the settings menu of the organization module", () => {
     expect(menuKeys).toEqual([
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      ORGANIZATION_MENU_KEYS.branding,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
@@ -83,6 +85,7 @@ describe("the settings menu of the organization module", () => {
     expect(withTwo).toEqual([
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      ORGANIZATION_MENU_KEYS.branding,
       ORGANIZATION_MENU_KEYS.locations,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
@@ -92,6 +95,7 @@ describe("the settings menu of the organization module", () => {
     expect(withOneAgain).toEqual([
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      ORGANIZATION_MENU_KEYS.branding,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
