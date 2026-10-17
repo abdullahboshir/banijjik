@@ -138,4 +138,40 @@ describe("the contact-link field of a coaching student", () => {
     expect(response.status).toBe(400);
     expect(await countContactsByName(world, "Orphan Guardian")).toBe(0);
   });
+
+  it("links one guardian when two students with the same new guardian phone are created at once", async () => {
+    const world = await aCoachingWorld();
+    const sameGuardian = { create: { name: "Shared Guardian", phone: "01712349004" } };
+
+    const results = await Promise.all([
+      world.alice.call("post", contactsPath(world.organizationA), student("Twin A", sameGuardian)),
+      world.alice.call("post", contactsPath(world.organizationA), student("Twin B", sameGuardian)),
+    ]);
+
+    expect(results.map((result) => result.status)).toEqual([201, 201]);
+    expect(results[0]?.body.data.customFields.guardian).toBe(
+      results[1]?.body.data.customFields.guardian,
+    );
+    expect(await countContactsByName(world, "Shared Guardian")).toBe(1);
+  });
+
+  it("refuses a student whose own phone is the guardian's phone, at customFields.guardian", async () => {
+    const world = await aCoachingWorld();
+
+    const response = await world.alice.call(
+      "post",
+      contactsPath(world.organizationA),
+      student(
+        "Self Linked",
+        { create: { name: "Same Person", phone: "01712349005" } },
+        {
+          phoneE164: "+8801712349005",
+        },
+      ),
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.details.fields[0].path).toBe("customFields.guardian");
+    expect(await countContactsByName(world, "Same Person")).toBe(0);
+  });
 });

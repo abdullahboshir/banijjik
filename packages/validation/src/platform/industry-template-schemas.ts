@@ -104,9 +104,10 @@ function optionLabelsMatch(field: FieldShape): boolean {
   return options.every((option) => field.optionLabels?.[option] !== undefined);
 }
 
+/** A contact link is resolved only by the contact module, so only a `contact` field may carry one (ADR-110). */
 function linkMatchesReference(field: FieldShape): boolean {
   if (field.link === undefined) return true;
-  return field.referenceEntity === "contact";
+  return field.referenceEntity === "contact" && field.entityType === "contact";
 }
 
 export const industryTemplateConfigurationSchema = z

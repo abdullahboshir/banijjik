@@ -1,3 +1,4 @@
+import { newId } from "@banijjik/ids";
 import { SYSTEM_ROLE_KEY, type SystemRoleKey } from "@banijjik/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { registerIamApiModels, startIamApi } from "../../../../test-support/iam-api-harness.js";
@@ -411,5 +412,55 @@ describe("sensitive custom fields and permissions", () => {
 
     expect(response.status).toBe(403);
     expect(allowed.status).toBe(201);
+  });
+});
+
+describe("audit and idempotency", () => {
+  it("shows that a name or phone changed without holding the real values", async () => {
+    const world = await aWorld();
+    const created = await createContact(world, { name: "Before Name", phoneE164: "01712345020" });
+    const { contactId } = created.body.data;
+
+    await world.alice.call("patch", contactsPath(world.organizationA, `/${contactId}`), {
+      name: "After Name",
+      phoneE164: "01712345021",
+      version: 1,
+    });
+
+    const entry = await harness.connections.tenantShared
+      .collection("audit_logs")
+      .findOne({ entityId: contactId, action: "contact.contact.updated" });
+    expect(entry?.["changes"]).toMatchObject({
+      name: { from: "[redacted]", to: "[redacted]" },
+      phoneE164: { from: "[redacted]", to: "[redacted]" },
+    });
+    const text = JSON.stringify(entry);
+    for (const secret of ["Before Name", "After Name", "01712345020", "01712345021"]) {
+      expect(text).not.toContain(secret);
+    }
+  });
+
+  it("answers a repeated Idempotency-Key with the first 201, not a duplicate 409", async () => {
+    const world = await aWorld();
+    const key = newId();
+    const send = () =>
+      world.alice.callWith({
+        method: "post",
+        path: contactsPath(world.organizationA),
+        body: {
+          contactType: "PERSON",
+          contactRoles: CUSTOMER_ROLES,
+          name: "Retry",
+          phoneE164: "01712345022",
+        },
+        idempotencyKey: key,
+      });
+
+    const first = await send();
+    const second = await send();
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect(second.body.data.contactId).toBe(first.body.data.contactId);
   });
 });

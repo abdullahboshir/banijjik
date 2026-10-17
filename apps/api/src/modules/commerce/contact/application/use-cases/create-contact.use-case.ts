@@ -12,7 +12,7 @@ import { resolveContactLinks, syncLinkRelations } from "../contact-links.js";
 import { recordContactCreated } from "../contact-records.js";
 import type { ContactWriteDependencies } from "../contact-dependencies.js";
 import { mergeCustomFieldValues } from "../custom-field-values.js";
-import { asDuplicateAnswer, assertNotDuplicate } from "../duplicate-guard.js";
+import { assertNotDuplicate, runWithLinkRetry } from "../duplicate-guard.js";
 import { requireHomeLocation } from "../home-location.js";
 import type { HomeLocationLookup } from "../ports/settings-and-locations.js";
 import type { ContactActorInput } from "./contact-actor-input.js";
@@ -63,14 +63,10 @@ export class CreateContactUseCase {
             homeLocationId: input.homeLocationId,
             allowedLocationIds: input.allowedLocationIds,
           });
-    try {
-      const saved = await unitOfWork.run(() =>
-        this.createInside(input, { fields, homeLocationId, dedupeMode }),
-      );
-      return await viewContact(this.dependencies, saved, fields);
-    } catch (error) {
-      throw await asDuplicateAnswer(this.dependencies, error);
-    }
+    const saved = await runWithLinkRetry(this.dependencies, input.phoneE164, () =>
+      unitOfWork.run(() => this.createInside(input, { fields, homeLocationId, dedupeMode })),
+    );
+    return viewContact(this.dependencies, saved, fields);
   }
 
   private async createInside(
@@ -86,6 +82,7 @@ export class CreateContactUseCase {
     });
     const requested = await resolveContactLinks(this.dependencies, {
       ...input,
+      ownerPhoneE164: input.phoneE164,
       requested: input.customFields ?? {},
       fields,
     });

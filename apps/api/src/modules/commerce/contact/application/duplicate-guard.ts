@@ -47,3 +47,26 @@ export async function asDuplicateAnswer(
   const winner = await dependencies.contacts.findActiveByPhone(error.phoneE164);
   return winner === undefined ? error : contactDuplicate(winner.contactId);
 }
+
+const MAX_ATTEMPTS = 2;
+
+/**
+ * Runs one write. If the unique index refuses a phone that is not the contact's own, a concurrent
+ * request created the linked guardian first; the transaction aborted, so the whole unit runs once
+ * more and now finds and links that guardian. The contact's own phone is the duplicate answer.
+ */
+export async function runWithLinkRetry<Result>(
+  dependencies: Pick<ContactWriteDependencies, "contacts">,
+  ownPhoneE164: string | undefined,
+  attempt: () => Promise<Result>,
+): Promise<Result> {
+  for (let tries = 1; ; tries += 1) {
+    try {
+      return await attempt();
+    } catch (error) {
+      const isLinkRace =
+        error instanceof ContactPhoneTakenError && error.phoneE164 !== ownPhoneE164;
+      if (!isLinkRace || tries >= MAX_ATTEMPTS) throw await asDuplicateAnswer(dependencies, error);
+    }
+  }
+}

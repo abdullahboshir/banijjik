@@ -98,6 +98,7 @@ async function resolveOne(
     readonly fieldKey: string;
     readonly value: unknown;
     readonly ownerId?: ContactId | undefined;
+    readonly ownerPhoneE164?: string | undefined;
   },
 ): Promise<unknown> {
   const { fieldKey, value } = input;
@@ -108,6 +109,10 @@ async function resolveOne(
   const parsed = contactLinkCreateSchema.safeParse(value);
   // Null clears the field and a malformed object is left for the value builder to refuse at its own path.
   if (!parsed.success) return value;
+  // A contact cannot be its own guardian: the phone would belong to both.
+  if (parsed.data.create.phone === input.ownerPhoneE164) {
+    throw invalidField(pathOf(fieldKey), "validation.invalid_value");
+  }
   return findOrCreateLinkedContact(dependencies, actor, parsed.data.create);
 }
 
@@ -123,6 +128,8 @@ export async function resolveContactLinks(
     readonly requested: Readonly<Record<string, unknown>>;
     readonly fields: readonly EffectiveCustomField[];
     readonly ownerId?: ContactId | undefined;
+    /** The phone of the contact that owns the field; a link cannot create a contact with it. */
+    readonly ownerPhoneE164?: string | undefined;
   },
 ): Promise<Record<string, unknown>> {
   const resolved: Record<string, unknown> = { ...input.requested };
@@ -133,6 +140,7 @@ export async function resolveContactLinks(
       fieldKey,
       value,
       ownerId: input.ownerId,
+      ownerPhoneE164: input.ownerPhoneE164,
     });
   }
   return resolved;

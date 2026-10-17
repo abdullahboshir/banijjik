@@ -28,11 +28,13 @@ function parse(
   fields: readonly CustomFieldRule[],
   value: unknown,
   mode: "CREATE" | "UPDATE" = "CREATE",
+  acceptsContactLinkCreate = false,
 ) {
   const schema = z.strictObject({
     customFields: buildCustomFieldValuesSchema(fields, {
       audience: CUSTOM_FIELD_AUDIENCE.ADMIN,
       mode: mode === "CREATE" ? CUSTOM_FIELD_VALUE_MODE.CREATE : CUSTOM_FIELD_VALUE_MODE.UPDATE,
+      acceptsContactLinkCreate,
     }),
   });
   return schema.safeParse({ customFields: value });
@@ -302,28 +304,39 @@ describe("contact-link reference fields", () => {
     link,
   });
 
-  it("accepts a contact id or a create input with the phone as E.164", () => {
+  it("accepts a create input with the phone as E.164 only when the form asks for it", () => {
     const create = { create: { name: "Rahim", phone: "01712345678" } };
 
-    const result = parse([guardian], { guardian: create });
+    const result = parse([guardian], { guardian: create }, "CREATE", true);
 
     expect(result.success).toBe(true);
-    expect(result.success && result.data.customFields.guardian).toEqual({
-      create: { name: "Rahim", phone: "+8801712345678" },
+    expect(result.success && (result.data as { customFields: unknown }).customFields).toEqual({
+      guardian: { create: { name: "Rahim", phone: "+8801712345678" } },
     });
+    expect(parse([guardian], { guardian: create }).success).toBe(false);
     expect(parse([guardian], { guardian: newId() }).success).toBe(true);
   });
 
   it("refuses the create input on a reference field without a link", () => {
     const plain = rule({ fieldKey: "friend", fieldType: CUSTOM_FIELD_TYPE.REFERENCE });
 
-    const result = parse([plain], { friend: { create: { name: "Rahim", phone: "01712345678" } } });
+    const result = parse(
+      [plain],
+      { friend: { create: { name: "Rahim", phone: "01712345678" } } },
+      "CREATE",
+      true,
+    );
 
     expect(issuePaths(result)).toContain("customFields.friend");
   });
 
   it("refuses a create input with a bad phone", () => {
-    const result = parse([guardian], { guardian: { create: { name: "Rahim", phone: "123" } } });
+    const result = parse(
+      [guardian],
+      { guardian: { create: { name: "Rahim", phone: "123" } } },
+      "CREATE",
+      true,
+    );
 
     expect(result.success).toBe(false);
   });

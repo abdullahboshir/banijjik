@@ -23,7 +23,11 @@ export function buildCustomFieldValuesSchema(
   // Null prototype: `key in shape` would also be true for constructor, toString and similar.
   const shape: Record<string, ZodType> = Object.create(null);
   for (const field of visible) {
-    shape[field.fieldKey] = fieldValueSchema(field, options.mode);
+    shape[field.fieldKey] = fieldValueSchema(
+      field,
+      options.mode,
+      options.acceptsContactLinkCreate === true,
+    );
   }
   const known = z.object(shape);
   return z.unknown().transform((input, context) => {

@@ -85,12 +85,12 @@ function urlValue(): ZodType {
 }
 
 /** Only a contact-link field takes `{ create }`; every other reference stays a plain id (ADR-073). */
-function referenceValue(field: CustomFieldRule): ZodType {
-  if (field.link === undefined) return uuidV7Schema;
+function referenceValue(field: CustomFieldRule, acceptsCreate: boolean): ZodType {
+  if (field.link === undefined || !acceptsCreate) return uuidV7Schema;
   return z.union([uuidV7Schema, contactLinkCreateSchema]);
 }
 
-function valueOfType(field: CustomFieldRule): ZodType {
+function valueOfType(field: CustomFieldRule, acceptsCreate: boolean): ZodType {
   const parsers: Record<CustomFieldType, () => ZodType> = {
     [CUSTOM_FIELD_TYPE.TEXT]: () => textValue(field),
     [CUSTOM_FIELD_TYPE.LONG_TEXT]: () => longTextValue(field),
@@ -107,14 +107,18 @@ function valueOfType(field: CustomFieldRule): ZodType {
     [CUSTOM_FIELD_TYPE.URL]: () => urlValue(),
     [CUSTOM_FIELD_TYPE.FILE]: () => uuidV7Schema,
     [CUSTOM_FIELD_TYPE.IMAGE]: () => uuidV7Schema,
-    [CUSTOM_FIELD_TYPE.REFERENCE]: () => referenceValue(field),
+    [CUSTOM_FIELD_TYPE.REFERENCE]: () => referenceValue(field, acceptsCreate),
   };
   return parsers[field.fieldType]();
 }
 
 /** On UPDATE an absent key leaves the stored value. `null` clears an optional field and is refused for a required one. */
-export function fieldValueSchema(field: CustomFieldRule, mode: "CREATE" | "UPDATE"): ZodType {
-  const parsed = valueOfType(field);
+export function fieldValueSchema(
+  field: CustomFieldRule,
+  mode: "CREATE" | "UPDATE",
+  acceptsContactLinkCreate = false,
+): ZodType {
+  const parsed = valueOfType(field, acceptsContactLinkCreate);
   if (mode === "UPDATE") {
     return field.isRequired ? parsed.optional() : parsed.nullable().optional();
   }

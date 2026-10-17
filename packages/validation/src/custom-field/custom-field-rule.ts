@@ -43,6 +43,11 @@ export interface CustomFieldRule {
 export interface CustomFieldValuesOptions {
   readonly audience: CustomFieldAudience;
   readonly mode: CustomFieldValueMode;
+  /**
+   * Admin forms set this so a contact-link field may carry `{ create }`. The server validates after the
+   * contact module replaced it with an id, so a stored value is always a UUID (ADR-110).
+   */
+  readonly acceptsContactLinkCreate?: boolean;
 }
 
 export function isVisibleTo(field: CustomFieldRule, audience: CustomFieldAudience): boolean {

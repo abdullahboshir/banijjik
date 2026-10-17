@@ -49,6 +49,7 @@ describe("industryTemplateConfigurationSchema", () => {
     ["a select without options", { customFields: [changedField({ fieldType: "SELECT" })] }],
     ["a reference without a target", { customFields: [changedField({ fieldType: "REFERENCE" })] }],
     ["a link on a member reference", { customFields: [memberLinkField()] }],
+    ["a contact link on a field of another entity", { customFields: [contactLinkOnOtherEntity()] }],
     [
       "a resource whose term is missing",
       { resourceTypes: [{ resourceTypeKey: "ROOM", termKey: "resource.ROOM", isMember: false }] },
@@ -74,6 +75,14 @@ function changedField(override: object): object {
 function memberLinkField(): object {
   return {
     ...changedField({ fieldType: "REFERENCE", referenceEntity: "member" }),
+    link: { relationKey: "GUARDIAN_OF", createIfMissingByPhone: true, defaultBillTo: false },
+  };
+}
+
+/** The reference points at a contact, but the field belongs to a member: only the contact module resolves links. */
+function contactLinkOnOtherEntity(): object {
+  return {
+    ...changedField({ fieldType: "REFERENCE", referenceEntity: "contact", entityType: "member" }),
     link: { relationKey: "GUARDIAN_OF", createIfMissingByPhone: true, defaultBillTo: false },
   };
 }

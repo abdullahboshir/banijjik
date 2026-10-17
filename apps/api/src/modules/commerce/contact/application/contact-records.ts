@@ -5,9 +5,8 @@ import {
   type AuditChanges,
 } from "@banijjik/contracts";
 import { CONTACT_EVENT_TYPE, type ContactEventType } from "@banijjik/contracts/contact";
-import { diffAuditFields } from "../../../../kernel/audit/index.js";
 import type { Contact } from "../domain/contact.entity.js";
-import { contactAuditFields } from "./contact-audit-fields.js";
+import { contactAuditChanges } from "./contact-audit-fields.js";
 import type { ContactWriteDependencies } from "./contact-dependencies.js";
 
 type RecordingDependencies = Pick<ContactWriteDependencies, "audit" | "events">;
@@ -41,7 +40,7 @@ export function recordContactCreated(
     action: AUDIT_ACTION.CONTACT_CREATED,
     eventType: CONTACT_EVENT_TYPE.CONTACT_CREATED,
     contact,
-    changes: { ...diffAuditFields({}, contactAuditFields(contact)), ...customFieldChanges },
+    changes: { ...contactAuditChanges(undefined, contact), ...customFieldChanges },
   });
 }
 
@@ -59,7 +58,7 @@ export function recordContactUpdated(
     eventType: CONTACT_EVENT_TYPE.CONTACT_UPDATED,
     contact: change.after,
     changes: {
-      ...diffAuditFields(contactAuditFields(change.before), contactAuditFields(change.after)),
+      ...contactAuditChanges(change.before, change.after),
       ...change.customFieldChanges,
     },
   });
@@ -83,7 +82,7 @@ export function recordContactEnded(
       : CONTACT_EVENT_TYPE.CONTACT_ARCHIVED,
     contact: change.after,
     changes: {
-      ...diffAuditFields(contactAuditFields(change.before), contactAuditFields(change.after)),
+      ...contactAuditChanges(change.before, change.after),
       ...(change.reason === undefined ? {} : { reason: { to: change.reason } }),
     },
   });

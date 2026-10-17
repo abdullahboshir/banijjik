@@ -13,7 +13,7 @@ import { recordContactUpdated } from "../contact-records.js";
 import type { ContactDetailView } from "../contact-view.js";
 import { viewContact } from "../contact-view.js";
 import { mergeCustomFieldValues, type MergedCustomFields } from "../custom-field-values.js";
-import { asDuplicateAnswer, assertNotDuplicate } from "../duplicate-guard.js";
+import { assertNotDuplicate, runWithLinkRetry } from "../duplicate-guard.js";
 import { requireHomeLocation } from "../home-location.js";
 import type { HomeLocationLookup } from "../ports/settings-and-locations.js";
 import type { ContactActorInput } from "./contact-actor-input.js";
@@ -59,14 +59,11 @@ export class UpdateContactUseCase {
     const fields = await customFields.forContacts(input.organizationId);
     const dedupeMode = await dedupeModes.read(input.organizationId);
     const homeLocationId = await this.requireHomeLocationIfSet(input);
-    try {
-      const saved = await unitOfWork.run(() =>
-        this.updateInside(input, fields, { homeLocationId, dedupeMode }),
-      );
-      return await viewContact(this.dependencies, saved, fields);
-    } catch (error) {
-      throw await asDuplicateAnswer(this.dependencies, error);
-    }
+    const ownPhone = typeof input.phoneE164 === "string" ? input.phoneE164 : undefined;
+    const saved = await runWithLinkRetry(this.dependencies, ownPhone, () =>
+      unitOfWork.run(() => this.updateInside(input, fields, { homeLocationId, dedupeMode })),
+    );
+    return viewContact(this.dependencies, saved, fields);
   }
 
   private async requireHomeLocationIfSet(
@@ -102,6 +99,8 @@ export class UpdateContactUseCase {
               requested: input.customFields,
               fields,
               ownerId: existing.contactId,
+              ownerPhoneE164:
+                input.phoneE164 === undefined ? existing.phoneE164 : (input.phoneE164 ?? undefined),
             }),
             fields,
             mode: "UPDATE",
