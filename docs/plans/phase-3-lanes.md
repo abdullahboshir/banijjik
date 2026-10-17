@@ -45,7 +45,7 @@ Wave 1 merged on 2026-10-17: 3.0, 3.1a, 3.13 (3.1b moved after 3.1c). Main was p
 | 2 | **3.2a** catalog API (`docs/plans/3.2a.md`, T1) → **3.2b** catalog screens (`docs/plans/3.2b.md`) | `banijjik-1.7b` | 3.2a → ADR-116, 3.2b → ADR-117 if needed |
 | 3 | **3.12** business branding (`docs/plans/3.12.md`, T2) → **3.8a** ordered event streams (`docs/plans/3.8a.md`, T1) | `banijjik-lead` | 3.12 → ADR-114, 3.8a → ADR-115 |
 
-Each folder starts with `git switch main` (the `banijjik` folder first deletes its untracked `apps/admin/AGENTS.md` and `apps/platform/AGENTS.md`, which main now tracks), then `npm install`, then a new branch `s/<card>-<slug>`.
+Each session creates its branch straight from the shared local main: `git switch -c s/<card>-<slug> main` (a worktree cannot check out `main` while another folder has it), then runs `npm install` and builds the workspace packages.
 
 ### Files owned by one card (wave 2)
 | File or area | Owner | Others |
