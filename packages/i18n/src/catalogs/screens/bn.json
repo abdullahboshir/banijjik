@@ -298,7 +298,7 @@
   "fields.form.sortOrder": "ক্রম",
   "fields.form.locked": "বদলানো যায় না",
   "fields.hide.title": "ঘর লুকান",
-  "fields.hide.description": "ঘরটি ফর্ম থেকে সরে যাবে। সংরক্ষিত মান থাকবে। এই পর্দা থেকে এখনো ঘরটি আবার দেখানো যায় না।",
+  "fields.hide.description": "ঘরটি ফর্ম থেকে সরে যাবে। সংরক্ষিত মান থাকবে, আর এখান থেকে আবার দেখানো যাবে।",
   "fields.archive.title": "ঘর আর্কাইভ করুন",
   "fields.archive.description": "ঘরটি ফর্ম থেকে সরে যাবে। সংরক্ষিত মান থাকবে।",
   "fields.type.TEXT": "ছোট লেখা",
@@ -355,5 +355,9 @@
   "module.workflow": "ওয়ার্কফ্লো",
   "module.academic": "একাডেমিক",
   "module.clinical": "ক্লিনিক্যাল",
-  "module.kitchen-display": "কিচেন ডিসপ্লে"
+  "module.kitchen-display": "কিচেন ডিসপ্লে",
+  "fields.show": "আবার দেখান",
+  "fields.show.title": "ঘর দেখান",
+  "fields.show.description": "ঘরটি আগে সংরক্ষিত মানসহ ফর্মে ফিরে আসবে।",
+  "fields.trait.hidden": "লুকানো"
 }

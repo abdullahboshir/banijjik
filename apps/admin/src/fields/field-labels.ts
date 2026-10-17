@@ -13,6 +13,8 @@ export interface FieldLabels {
   customizeTitle: string;
   hideTitle: string;
   hideDescription: string;
+  showTitle: string;
+  showDescription: string;
   archiveTitle: string;
   archiveDescription: string;
   formFields: {
@@ -42,8 +44,10 @@ export interface FieldListLabels {
   edit: string;
   customize: string;
   hide: string;
+  show: string;
   archive: string;
   empty: string;
+  hidden: string;
   scopeIndustry: string;
   scopeOrganization: string;
   required: string;
@@ -89,6 +93,8 @@ export function fieldLabelsOf(t: Translator["t"]): FieldLabels {
     customizeTitle: t("fields.form.customize.title"),
     hideTitle: t("fields.hide.title"),
     hideDescription: t("fields.hide.description"),
+    showTitle: t("fields.show.title"),
+    showDescription: t("fields.show.description"),
     archiveTitle: t("fields.archive.title"),
     archiveDescription: t("fields.archive.description"),
     formFields: {
@@ -120,6 +126,8 @@ export function fieldListLabelsOf(t: Translator["t"]): FieldListLabels {
     edit: t("fields.edit"),
     customize: t("fields.customize"),
     hide: t("fields.hide"),
+    show: t("fields.show"),
+    hidden: t("fields.trait.hidden"),
     archive: t("fields.archive"),
     empty: t("fields.empty"),
     scopeIndustry: t("fields.scope.INDUSTRY"),

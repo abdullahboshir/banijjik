@@ -17,7 +17,7 @@ import { formOfField } from "./field-state";
 import type { FieldLabels } from "./field-labels";
 import type { FieldRowView } from "./field-rows";
 
-export type FieldRowAction = "edit" | "customize" | "hide" | "archive";
+export type FieldRowAction = "edit" | "customize" | "hide" | "show" | "archive";
 
 export interface FieldDialogsProps {
   organizationId: string;
@@ -129,12 +129,14 @@ function ConfirmChange({
   title,
   description,
   confirmLabel,
+  tone = "danger",
 }: {
   props: FieldDialogsProps;
   run: () => Promise<unknown>;
   title: string;
   description: string;
   confirmLabel: string;
+  tone?: "danger" | "default";
 }): ReactElement {
   const { labels, onClose } = props;
   const { t } = useTranslator();
@@ -171,8 +173,35 @@ function ConfirmChange({
       confirmLabel={confirmLabel}
       cancelLabel={labels.cancel}
       closeLabel={labels.close}
-      tone="danger"
+      tone={tone}
       onConfirm={() => void confirm()}
+    />
+  );
+}
+
+/** Hides a template field, or shows a hidden one again: the same preference row, `isHidden` on or off. */
+function VisibilityConfirm(props: FieldDialogsProps): ReactElement {
+  const { organizationId, field, labels, action } = props;
+  const isHiding = action === "hide";
+  return (
+    <ConfirmChange
+      props={props}
+      title={`${isHiding ? labels.hideTitle : labels.showTitle}: ${field.label}`}
+      description={isHiding ? labels.hideDescription : labels.showDescription}
+      confirmLabel={isHiding ? labels.hideTitle : labels.showTitle}
+      tone={isHiding ? "danger" : "default"}
+      run={() =>
+        updateFieldPreferences(organizationId, {
+          preferences: [
+            {
+              entityType: field.entityType,
+              fieldKey: field.fieldKey,
+              isHidden: isHiding,
+              ...(field.version > 0 ? { version: field.version } : {}),
+            },
+          ],
+        })
+      }
     />
   );
 }
@@ -193,28 +222,7 @@ export function FieldDialogs(props: FieldDialogsProps): ReactElement {
     );
   }
   if (action === "customize") return <CustomizeSheet {...props} />;
-  if (action === "hide") {
-    return (
-      <ConfirmChange
-        props={props}
-        title={`${labels.hideTitle}: ${field.label}`}
-        description={labels.hideDescription}
-        confirmLabel={labels.hideTitle}
-        run={() =>
-          updateFieldPreferences(organizationId, {
-            preferences: [
-              {
-                entityType: field.entityType,
-                fieldKey: field.fieldKey,
-                isHidden: true,
-                ...(field.version > 0 ? { version: field.version } : {}),
-              },
-            ],
-          })
-        }
-      />
-    );
-  }
+  if (action === "hide" || action === "show") return <VisibilityConfirm {...props} />;
   return (
     <ConfirmChange
       props={props}

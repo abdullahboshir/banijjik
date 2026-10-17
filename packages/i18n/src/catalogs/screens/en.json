@@ -298,7 +298,7 @@
   "fields.form.sortOrder": "Order",
   "fields.form.locked": "Cannot be changed",
   "fields.hide.title": "Hide field",
-  "fields.hide.description": "The field disappears from forms. Saved values stay. This screen cannot show it again yet.",
+  "fields.hide.description": "The field disappears from forms. Saved values stay, and you can show it again here.",
   "fields.archive.title": "Archive field",
   "fields.archive.description": "The field disappears from forms. Saved values stay.",
   "fields.type.TEXT": "Short text",
@@ -355,5 +355,9 @@
   "module.workflow": "Workflow",
   "module.academic": "Academic",
   "module.clinical": "Clinical",
-  "module.kitchen-display": "Kitchen display"
+  "module.kitchen-display": "Kitchen display",
+  "fields.show": "Show again",
+  "fields.show.title": "Show field",
+  "fields.show.description": "The field comes back in forms, with the values saved earlier.",
+  "fields.trait.hidden": "Hidden"
 }

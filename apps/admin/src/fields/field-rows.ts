@@ -40,6 +40,9 @@ export interface FieldRowView {
   canCustomize: boolean;
   /** A template field that is not required: hide. */
   canHide: boolean;
+  /** A template field the business hid: it is listed greyed so it can be shown again. */
+  isHidden: boolean;
+  canShow: boolean;
 }
 
 function labelFor(field: EffectiveCustomField, locale: Locale): string {
@@ -58,6 +61,7 @@ export interface FieldRowContext {
 function toRow(field: EffectiveCustomField, context: FieldRowContext): FieldRowView {
   const { abilities, locale, t } = context;
   const isOwn = field.scope === CUSTOM_FIELD_SCOPE.ORGANIZATION;
+  const isHidden = field.isHidden === true;
   return {
     entityType: field.entityType,
     fieldKey: field.fieldKey,
@@ -77,8 +81,10 @@ function toRow(field: EffectiveCustomField, context: FieldRowContext): FieldRowV
     customFieldDefinitionId: field.customFieldDefinitionId,
     canEdit: isOwn && abilities.canUpdate,
     canArchive: isOwn && abilities.canArchive,
-    canCustomize: !isOwn && abilities.canUpdate,
-    canHide: !isOwn && abilities.canUpdate && !field.isRequired,
+    canCustomize: !isOwn && !isHidden && abilities.canUpdate,
+    canHide: !isOwn && !isHidden && abilities.canUpdate && !field.isRequired,
+    isHidden,
+    canShow: isHidden && abilities.canUpdate,
   };
 }
 

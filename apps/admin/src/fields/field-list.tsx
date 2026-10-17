@@ -32,6 +32,7 @@ function Traits({ row, labels }: { row: FieldRowView; labels: FieldListLabels })
         label={row.scope === "INDUSTRY" ? labels.scopeIndustry : labels.scopeOrganization}
         tone={row.scope === "INDUSTRY" ? "neutral" : "info"}
       />
+      {row.isHidden ? <SourceBadge label={labels.hidden} tone="warning" /> : null}
       {row.isRequired ? <SourceBadge label={labels.required} tone="warning" /> : null}
       {row.isSensitive ? <SourceBadge label={labels.sensitive} tone="warning" /> : null}
       {row.botAsk ? <SourceBadge label={labels.botAsk} /> : null}
@@ -57,6 +58,7 @@ function RowActions({
     { action: "edit", label: labels.edit, isAllowed: row.canEdit, isDanger: false },
     { action: "customize", label: labels.customize, isAllowed: row.canCustomize, isDanger: false },
     { action: "hide", label: labels.hide, isAllowed: row.canHide, isDanger: true },
+    { action: "show", label: labels.show, isAllowed: row.canShow, isDanger: false },
     { action: "archive", label: labels.archive, isAllowed: row.canArchive, isDanger: true },
   ];
   const shown = buttons.filter((button) => button.isAllowed);

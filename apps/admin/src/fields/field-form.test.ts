@@ -25,6 +25,8 @@ function aRow(overrides: Partial<FieldRowView> = {}): FieldRowView {
     canArchive: true,
     canCustomize: false,
     canHide: false,
+    isHidden: false,
+    canShow: false,
     ...overrides,
   };
 }

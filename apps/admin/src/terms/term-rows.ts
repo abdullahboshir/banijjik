@@ -29,10 +29,25 @@ function languageOf(language: TermView["bn"], t: Translator["t"]): TermLanguageV
   };
 }
 
-/** A key with no friendly name (like `offering.SERVICE`) shows as itself. */
-function termLabelOf(termKey: string, t: Translator["t"]): string {
+function knownLabel(termKey: string, t: Translator["t"]): string | undefined {
   const labelKey = `terms.key.${termKey}`;
-  return t(labelKey) === labelKey ? termKey : t(labelKey);
+  const text = t(labelKey);
+  return text === labelKey ? undefined : text;
+}
+
+const KIND_SEPARATOR = ".";
+
+/**
+ * A term has a name in the catalog, or is a base term plus a kind (`offering.SERVICE`): the base name
+ * with the kind after it. A key nothing explains shows as itself rather than hiding a term.
+ */
+export function termLabelOf(termKey: string, t: Translator["t"]): string {
+  const direct = knownLabel(termKey, t);
+  if (direct !== undefined) return direct;
+  const [base = "", ...kind] = termKey.split(KIND_SEPARATOR);
+  const baseLabel = knownLabel(base, t);
+  if (baseLabel === undefined || kind.length === 0) return termKey;
+  return `${baseLabel} · ${kind.join(KIND_SEPARATOR)}`;
 }
 
 export function toTermRows(

@@ -9,7 +9,7 @@ import { banglaText, banglaTranslator } from "../auth/test-helpers";
 import { ApiError } from "../lib/api/api-error";
 import { accessFixture, type AccessOptions } from "../settings/test-fixtures";
 import { termSheetLabelsOf } from "./term-labels";
-import { toTermRows } from "./term-rows";
+import { termLabelOf, toTermRows } from "./term-rows";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -62,6 +62,23 @@ beforeEach(() => {
   refresh.mockReset();
   requireOrgAccess.mockReset();
   fetchBusinessResource.mockReset();
+});
+
+describe("termLabelOf", () => {
+  it("names a base term from the catalog", () => {
+    expect(termLabelOf("offering", t)).toBe(banglaText("terms.key.offering"));
+  });
+
+  it("names a term with a kind as the base name followed by the kind", () => {
+    expect(termLabelOf("offering.SERVICE", t)).toBe(
+      `${banglaText("terms.key.offering")} · SERVICE`,
+    );
+  });
+
+  it("shows a key nothing explains as itself", () => {
+    expect(termLabelOf("mystery.KIND", t)).toBe("mystery.KIND");
+    expect(termLabelOf("mystery", t)).toBe("mystery");
+  });
 });
 
 describe("TermEditSheet", () => {

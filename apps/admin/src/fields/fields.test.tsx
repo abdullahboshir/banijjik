@@ -132,6 +132,25 @@ describe("toFieldRows", () => {
   });
 });
 
+describe("a hidden template field", () => {
+  const HIDDEN_FIELD = { ...TEMPLATE_FIELD, isHidden: true as const, version: 2 };
+
+  it("is listed as hidden and can only be shown again", () => {
+    expect(rowOf(HIDDEN_FIELD)).toMatchObject({
+      isHidden: true,
+      canShow: true,
+      canHide: false,
+      canCustomize: false,
+    });
+  });
+
+  it("cannot be shown again without the update permission", () => {
+    const none = { canCreate: false, canUpdate: false, canArchive: false };
+
+    expect(rowOf(HIDDEN_FIELD, none)).toMatchObject({ isHidden: true, canShow: false });
+  });
+});
+
 describe("FieldFormSheet", () => {
   function renderSheet(props: { field?: ReturnType<typeof rowOf>; onClose?: () => void }) {
     const onClose = props.onClose ?? vi.fn();
@@ -242,7 +261,10 @@ describe("FieldFormSheet", () => {
 });
 
 describe("FieldDialogs", () => {
-  function renderDialog(field: ReturnType<typeof rowOf>, action: "customize" | "hide" | "archive") {
+  function renderDialog(
+    field: ReturnType<typeof rowOf>,
+    action: "customize" | "hide" | "show" | "archive",
+  ) {
     const onClose = vi.fn();
     inProvider(
       <FieldDialogs
@@ -304,6 +326,20 @@ describe("FieldDialogs", () => {
     await userEvent.click(screen.getByRole("button", { name: labels.hideTitle }));
 
     expect(await screen.findByText(banglaText("errors.custom_field_required"))).toBeTruthy();
+  });
+
+  it("shows a hidden template field again with the version of its preference", async () => {
+    updateFieldPreferences.mockResolvedValue({});
+    const onClose = renderDialog(rowOf({ ...TEMPLATE_FIELD, isHidden: true, version: 2 }), "show");
+
+    await userEvent.click(screen.getByRole("button", { name: labels.showTitle }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(updateFieldPreferences).toHaveBeenCalledWith("org-1", {
+      preferences: [
+        { entityType: "member", fieldKey: "emergency_contact", isHidden: false, version: 2 },
+      ],
+    });
   });
 
   it("archives a business field with its version", async () => {

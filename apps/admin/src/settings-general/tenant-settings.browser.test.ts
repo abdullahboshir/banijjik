@@ -223,6 +223,31 @@ describe("an owner manages the business from the settings pages", () => {
   });
 });
 
+describe("a hidden template field can be shown again", () => {
+  it("lists it as hidden, and after Show again it is back in the staff edit sheet", async () => {
+    const page = await ownerPage();
+    await gotoWhenHydrated(page, "/acme/settings/fields?entity=member", "main button");
+    const hiddenRow = await rowTextOf(page, TEMPLATE_FIELD_BN);
+    await clickInRow(page, TEMPLATE_FIELD_BN, message("fields.show"));
+    await waitForDialogSettled(page);
+    await clickInDialog(page, message("fields.show.title"));
+    await waitForSheetClosed(page);
+
+    await gotoWhenHydrated(page, "/acme/settings/staff", "main button");
+    await clickButtonContaining(page, "রহিম উদ্দিন");
+    await page.waitForFunction(() => /\/settings\/staff\/[0-9a-f-]{36}$/.test(location.pathname));
+    await clickByName(page, message("staff.action.editDetails"));
+    await waitForDialogSettled(page);
+    const sheet = await page.evaluate(
+      () => document.querySelector("[role=dialog]")?.textContent ?? "",
+    );
+    await closePage(page);
+
+    expect(hiddenRow).toContain(message("fields.trait.hidden"));
+    expect(sheet).toContain(TEMPLATE_FIELD_BN);
+  });
+});
+
 describe("a staff member sees the pages without edit buttons", () => {
   it("opens settings, words, fields and modules read-only", async () => {
     const ownerSide = await ownerPage();
