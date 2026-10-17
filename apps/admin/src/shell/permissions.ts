@@ -19,3 +19,13 @@ export function holdsPermissionEverywhere(
 ): boolean {
   return permissions.allLocations.includes(permissionKey);
 }
+
+/** True when the caller holds the key at this one location, or at every location. */
+export function holdsPermissionAt(
+  permissions: CallerPermissionsResponse,
+  permissionKey: PermissionKey,
+  locationId: string,
+): boolean {
+  if (permissions.allLocations.includes(permissionKey)) return true;
+  return permissions.byLocation[locationId]?.includes(permissionKey) ?? false;
+}

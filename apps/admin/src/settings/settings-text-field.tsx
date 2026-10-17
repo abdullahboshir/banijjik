@@ -16,6 +16,8 @@ export interface SettingsTextFieldProps {
   autoComplete?: ComponentProps<"input">["autoComplete"] | undefined;
   onChange: (value: string) => void;
   onBlur?: (() => void) | undefined;
+  /** A value that is fixed after it is first saved. */
+  disabled?: boolean | undefined;
 }
 
 function describedBy(fieldId: string, hasHint: boolean, hasError: boolean): string | undefined {
@@ -47,6 +49,7 @@ export function SettingsTextField(props: SettingsTextFieldProps): ReactElement {
         value={props.value}
         onChange={(event) => props.onChange(event.target.value)}
         onBlur={props.onBlur}
+        disabled={props.disabled}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(fieldId, Boolean(hint), Boolean(error))}
       />

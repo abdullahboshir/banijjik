@@ -153,6 +153,7 @@ export {
   MAX_TERM_CHANGES_PER_BATCH,
   moduleKeyParamsSchema,
   moduleSwitchRequestSchema,
+  TERM_TEXT_MAX_LENGTH,
   settingsQuerySchema,
   updateSettingsRequestSchema,
   updateTermsRequestSchema,
