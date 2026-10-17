@@ -139,7 +139,7 @@ export async function RoleDetailPage({
   const { t } = translator;
   const { permissions, permissionDefinitions: definitions } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.IAM_ROLE_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const { organizationId } = access.organization;
   const role = await loadRole(organizationId, roleId);

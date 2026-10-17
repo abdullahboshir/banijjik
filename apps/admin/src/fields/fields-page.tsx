@@ -94,7 +94,7 @@ export async function FieldsPage({
   const [translator, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
   const { t, locale } = translator;
   if (!holdsPermission(access.config.permissions, PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const entityTypes = entityTypesOf(access);
   const entityType = chosenEntity(searchParams["entity"], entityTypes);

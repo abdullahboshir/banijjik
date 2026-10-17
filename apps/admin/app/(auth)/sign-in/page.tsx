@@ -1,4 +1,4 @@
-import { PageHeader } from "@banijjik/ui";
+import { PageLayout } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { SESSION_UNAVAILABLE_REASON, safeNextPath } from "../../../src/auth/safe-next-path";
@@ -14,8 +14,7 @@ export default async function SignInPage({
   const nextPath = safeNextPath(next);
   const { t } = await getTranslator();
   return (
-    <>
-      <PageHeader title={t("auth.signIn.title")} />
+    <PageLayout title={t("auth.signIn.title")}>
       {reason === SESSION_UNAVAILABLE_REASON ? (
         <p role="alert" className="text-small text-danger">
           {t("auth.session_unavailable")}
@@ -31,6 +30,6 @@ export default async function SignInPage({
           {t("auth.signIn.toSignUp")}
         </Link>
       </p>
-    </>
+    </PageLayout>
   );
 }

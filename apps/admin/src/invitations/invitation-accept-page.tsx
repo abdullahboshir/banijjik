@@ -4,7 +4,7 @@ import {
   type MeResponse,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { buttonVariants, EmptyState, PageHeader } from "@banijjik/ui";
+import { buttonVariants, EmptyState, PageLayout } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { buildSignInPath } from "../auth/safe-next-path";
@@ -67,8 +67,7 @@ export async function InvitationAcceptPage({ token }: { token: string }): Promis
   ]);
   if (!preview) return <EmptyState message={t("accept.invalid")} />;
   return (
-    <>
-      <PageHeader title={t("accept.title")} />
+    <PageLayout title={t("accept.title")}>
       <p className="text-body text-primary">
         {t("accept.body", {
           inviter: preview.invitedByDisplayName,
@@ -96,6 +95,6 @@ export async function InvitationAcceptPage({ token }: { token: string }): Promis
       ) : (
         <SignedOutActions token={token} t={t} />
       )}
-    </>
+    </PageLayout>
   );
 }

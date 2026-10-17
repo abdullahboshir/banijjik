@@ -82,7 +82,7 @@ export async function InvitationsPage({ orgSlug }: { orgSlug: string }): Promise
   const { t, locale } = translator;
   const { permissions } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_MEMBER_INVITE)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const { organizationId } = access.organization;
   const [invitations, lookups] = await Promise.all([

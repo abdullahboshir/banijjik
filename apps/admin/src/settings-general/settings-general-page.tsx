@@ -144,7 +144,7 @@ export async function SettingsGeneralPage({
 }): Promise<ReactElement> {
   const [{ t }, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
   if (!holdsPermission(access.config.permissions, PERMISSION_KEY.SETTINGS_SETTING_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const { organizationId } = access.organization;
   const [business, locations] = await Promise.all([

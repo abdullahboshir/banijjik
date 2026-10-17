@@ -14,7 +14,7 @@ export async function TermsPage({ orgSlug }: { orgSlug: string }): Promise<React
   const [{ t }, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
   const { permissions } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.SETTINGS_SETTING_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const { organizationId } = access.organization;
   const result = await fetchBusinessResource<TermsResponse>(`/orgs/${organizationId}/terms`);

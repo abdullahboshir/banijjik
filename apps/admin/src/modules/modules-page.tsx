@@ -19,7 +19,7 @@ export async function ModulesPage({ orgSlug }: { orgSlug: string }): Promise<Rea
   const [{ t }, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
   const { permissions } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.SETTINGS_SETTING_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const { organizationId } = access.organization;
   const result = await fetchBusinessResource<TenantModuleView[]>(

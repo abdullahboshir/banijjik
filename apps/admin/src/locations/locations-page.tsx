@@ -78,7 +78,7 @@ export async function LocationsPage({
   const [{ t, locale }, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
   const { permissions, limits, terms } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_LOCATION_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const status = parseStatus(searchParams["status"]);
   const { organizationId } = access.organization;

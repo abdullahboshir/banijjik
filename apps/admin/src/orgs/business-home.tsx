@@ -4,7 +4,7 @@ import {
   type MyOrganizationSummary,
 } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
-import { EmptyState, PageHeader, TopBar } from "@banijjik/ui";
+import { EmptyState, PageLayout, TopBar } from "@banijjik/ui";
 import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
 import { getTranslator } from "../lib/i18n/get-translator";
@@ -47,17 +47,18 @@ export async function BusinessHome({
         actions={<AccountMenuContainer userName={me.name} organizations={organizations} />}
       />
       <main className="mx-auto w-full max-w-3xl p-4 md:p-6">
-        <PageHeader title={t("orgs.title")} />
-        <BusinessList
-          rows={toBusinessRows(organizations, t)}
-          labels={{
-            nameColumn: t("orgs.column.name"),
-            rolesColumn: t("orgs.column.roles"),
-            statusColumn: t("orgs.column.status"),
-            suspended: t("orgs.status.suspended"),
-            empty: <EmptyState message={t("orgs.empty")} />,
-          }}
-        />
+        <PageLayout title={t("orgs.title")} subtitle={t("orgs.subtitle")}>
+          <BusinessList
+            rows={toBusinessRows(organizations, t)}
+            labels={{
+              nameColumn: t("orgs.column.name"),
+              rolesColumn: t("orgs.column.roles"),
+              statusColumn: t("orgs.column.status"),
+              suspended: t("orgs.status.suspended"),
+              empty: <EmptyState message={t("orgs.empty")} />,
+            }}
+          />
+        </PageLayout>
       </main>
     </>
   );

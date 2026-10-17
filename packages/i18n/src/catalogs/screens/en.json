@@ -398,5 +398,7 @@
   "settings.general.group.other.help": "More settings for your business.",
   "fields.subtitle": "Choose what details you keep on each kind of record.",
   "modules.subtitle": "See which features are turned on for your business.",
-  "invitations.subtitle": "The invitations you sent and where each one stands."
+  "invitations.subtitle": "The invitations you sent and where each one stands.",
+  "home.greeting": "Welcome, {name}",
+  "orgs.subtitle": "Choose the business you want to open."
 }

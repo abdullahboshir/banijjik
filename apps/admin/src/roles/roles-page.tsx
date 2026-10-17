@@ -19,7 +19,7 @@ export async function RolesPage({ orgSlug }: { orgSlug: string }): Promise<React
   const { t } = translator;
   const { permissions, permissionDefinitions } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.IAM_ROLE_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const { organizationId } = access.organization;
   const roles = await fetchBusinessResource<RoleSummary[]>(

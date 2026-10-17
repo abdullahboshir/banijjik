@@ -185,7 +185,7 @@ export async function StaffDetailPage({
   const { t } = translator;
   const { permissions } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_MEMBER_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const { organizationId } = access.organization;
   const [memberResult, lookups] = await Promise.all([

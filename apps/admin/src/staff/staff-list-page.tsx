@@ -173,7 +173,7 @@ export async function StaffListPage({
   const [{ t }, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
   const { permissions } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_MEMBER_READ)) {
-    return <EmptyState message={t("state.permissionDenied")} />;
+    return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const query = parseStaffQuery(searchParams);
   const { organizationId } = access.organization;

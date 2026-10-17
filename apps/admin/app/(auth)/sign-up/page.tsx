@@ -1,4 +1,4 @@
-import { PageHeader } from "@banijjik/ui";
+import { PageLayout } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { safeNextPath } from "../../../src/auth/safe-next-path";
@@ -14,8 +14,7 @@ export default async function SignUpPage({
   const nextPath = safeNextPath(next);
   const { t } = await getTranslator();
   return (
-    <>
-      <PageHeader title={t("auth.signUp.title")} />
+    <PageLayout title={t("auth.signUp.title")}>
       <SignUpForm nextPath={nextPath} />
       <p className="text-body text-secondary">
         {t("auth.signUp.prompt")}{" "}
@@ -26,6 +25,6 @@ export default async function SignUpPage({
           {t("auth.signUp.toSignIn")}
         </Link>
       </p>
-    </>
+    </PageLayout>
   );
 }
