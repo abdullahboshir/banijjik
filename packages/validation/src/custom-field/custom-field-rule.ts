@@ -1,5 +1,6 @@
 import type {
   CustomFieldType,
+  IndustryTemplateContactLink,
   CustomFieldValidationBounds,
   CustomFieldVisibility,
 } from "@banijjik/contracts";
@@ -35,6 +36,8 @@ export interface CustomFieldRule {
   readonly isSearchable: boolean;
   readonly options?: readonly string[];
   readonly validation?: CustomFieldValidationBounds;
+  /** A REFERENCE field with a link also accepts `{ create: { name, phone } }` instead of a contact id (ADR-073). */
+  readonly link?: IndustryTemplateContactLink;
 }
 
 export interface CustomFieldValuesOptions {

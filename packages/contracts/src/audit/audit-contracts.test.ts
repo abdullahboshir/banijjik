@@ -25,6 +25,7 @@ describe("audit vocabulary", () => {
       "setting",
       "termOverride",
       "moduleOverride",
+      "contact",
     ]);
   });
 });

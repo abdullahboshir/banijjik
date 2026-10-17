@@ -27,6 +27,10 @@ export const AUDIT_ACTION = {
   SETTING_CHANGED: "settings.setting.changed",
   TERM_CHANGED: "settings.term.changed",
   MODULE_TOGGLED: "settings.module.toggled",
+  CONTACT_CREATED: "contact.contact.created",
+  CONTACT_UPDATED: "contact.contact.updated",
+  CONTACT_ARCHIVED: "contact.contact.archived",
+  CONTACT_ANONYMIZED: "contact.contact.anonymized",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -43,6 +47,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "setting",
   "termOverride",
   "moduleOverride",
+  "contact",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

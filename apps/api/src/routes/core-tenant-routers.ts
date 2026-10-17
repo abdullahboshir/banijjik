@@ -1,7 +1,7 @@
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { StorageConfig } from "../config/index.js";
-import type { Router } from "express";
-import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
+import type { RequestHandler, Router } from "express";
+import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import type { ModuleRegistry } from "../kernel/modules/index.js";
 import type { Clock } from "../kernel/time/index.js";
@@ -21,12 +21,15 @@ import {
   buildTenantModuleSwitch,
   type OrgConfigService,
 } from "../modules/platform/entitlement/index.js";
+import { buildContactTenantRouter } from "./contact-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
   readonly clock: Clock;
   readonly audit: AuditRecorder;
   readonly permission: PermissionMiddlewareFactory;
+  readonly permissions: Pick<PermissionGate, "locationsWith">;
+  readonly idempotency: RequestHandler;
   readonly orgConfig: OrgConfigService;
   readonly registry: ModuleRegistry;
   readonly manifests: readonly ModuleManifest[];
@@ -41,9 +44,10 @@ export interface CoreTenantRouters {
   readonly fileRouter: Router;
   /** PUBLIC files without a session; mounted outside the tenant pipeline by routes/v1.ts. */
   readonly publicFileRouter: Router;
+  readonly contactRouter: Router;
 }
 
-/** Custom-field, settings and file routers (cards 2.3, 2.4 and 3.0). The file module also builds the public router. */
+/** Custom-field, settings, file and contact routers (cards 2.3, 2.4, 3.0 and 3.1a). The file module also builds the public router. */
 export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenantRouters {
   const { clock, audit, permission, orgConfig } = input;
   const customFieldRouter = buildCustomFieldModule({
@@ -77,11 +81,21 @@ export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenant
     storage: input.storage,
     ...(input.fileOverrides === undefined ? {} : { overrides: input.fileOverrides }),
   });
+  const contactRouter = buildContactTenantRouter({
+    clock,
+    audit,
+    permission,
+    permissions: input.permissions,
+    idempotency: input.idempotency,
+    orgConfig,
+    manifests: input.manifests,
+  });
   return {
     customFieldRouter,
     settingsRouter,
     fileRouter: files.tenantRouter,
     publicFileRouter: files.publicRouter,
+    contactRouter,
   };
 }
 

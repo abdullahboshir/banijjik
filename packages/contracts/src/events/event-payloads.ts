@@ -1,3 +1,5 @@
+import type { ContactEventPayload } from "../contact/contact-contracts.js";
+import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
@@ -71,4 +73,8 @@ export interface EventPayloadMap {
   readonly [SETTINGS_EVENT_TYPE.SETTING_CHANGED]: SettingChangedPayload;
   readonly [SETTINGS_EVENT_TYPE.TERM_CHANGED]: TermChangedPayload;
   readonly [SETTINGS_EVENT_TYPE.MODULE_TOGGLED]: ModuleToggledPayload;
+  readonly [CONTACT_EVENT_TYPE.CONTACT_CREATED]: ContactEventPayload;
+  readonly [CONTACT_EVENT_TYPE.CONTACT_UPDATED]: ContactEventPayload;
+  readonly [CONTACT_EVENT_TYPE.CONTACT_ARCHIVED]: ContactEventPayload;
+  readonly [CONTACT_EVENT_TYPE.CONTACT_ANONYMIZED]: ContactEventPayload;
 }

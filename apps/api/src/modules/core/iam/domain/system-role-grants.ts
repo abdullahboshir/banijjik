@@ -18,6 +18,13 @@ export type GrantSpec =
   | { readonly only: readonly PermissionKey[] }
   | { readonly allExcept: readonly PermissionKey[] };
 
+/** Read, create and update: the daily work with contacts. Archive, anonymize and sensitive reads stay with the owner and manager. */
+const CONTACT_DAILY_KEYS: readonly PermissionKey[] = [
+  PERMISSION_KEY.CONTACT_CONTACT_READ,
+  PERMISSION_KEY.CONTACT_CONTACT_CREATE,
+  PERMISSION_KEY.CONTACT_CONTACT_UPDATE,
+];
+
 type ModuleGrants = Readonly<Record<SystemRoleKey, GrantSpec>>;
 
 /**
@@ -73,6 +80,14 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
       only: [PERMISSION_KEY.FILE_ASSET_CREATE, PERMISSION_KEY.FILE_ASSET_READ],
     },
     [SYSTEM_ROLE_KEY.RIDER]: "NONE",
+    [SYSTEM_ROLE_KEY.VIEWER]: "READ",
+  },
+  contact: {
+    [SYSTEM_ROLE_KEY.OWNER]: "ALL",
+    [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
+    [SYSTEM_ROLE_KEY.CASHIER]: { only: CONTACT_DAILY_KEYS },
+    [SYSTEM_ROLE_KEY.STAFF]: { only: CONTACT_DAILY_KEYS },
+    [SYSTEM_ROLE_KEY.RIDER]: "READ",
     [SYSTEM_ROLE_KEY.VIEWER]: "READ",
   },
   settings: {

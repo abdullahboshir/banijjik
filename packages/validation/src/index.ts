@@ -142,6 +142,21 @@ export {
   toCustomFieldPreferenceBatch,
   toCustomFieldUpdateRequest,
 } from "./custom-field/custom-field-request-schemas.js";
+export { contactLinkCreateSchema } from "./custom-field/contact-link-input.js";
+export type { ContactLinkCreateValue } from "./custom-field/contact-link-input.js";
+export {
+  contactAnonymizeRequestSchema,
+  contactCreateRequestSchema,
+  contactIdParamsSchema,
+  contactListQuerySchema,
+  contactUpdateRequestSchema,
+} from "./contact/contact.schema.js";
+export type {
+  ContactAnonymizeBody,
+  ContactCreateBody,
+  ContactListQuery,
+  ContactUpdateBody,
+} from "./contact/contact.schema.js";
 export { buildSettingValueSchema } from "./settings/build-setting-value-schema.js";
 export {
   STRUCTURED_SETTING_SCHEMAS,

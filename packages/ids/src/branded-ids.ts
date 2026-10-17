@@ -7,6 +7,7 @@ export type UserId = Id<"User">;
 export type OrganizationId = Id<"Organization">;
 export type LocationId = Id<"Location">;
 export type MemberId = Id<"Member">;
+export type ContactId = Id<"Contact">;
 export type RoleId = Id<"Role">;
 export type InvitationId = Id<"Invitation">;
 export type PackageId = Id<"Package">;

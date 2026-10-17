@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
@@ -16,6 +17,7 @@ describe("event types", () => {
       ...Object.values(ORGANIZATION_EVENT_TYPE),
       ...Object.values(CUSTOM_FIELD_EVENT_TYPE),
       ...Object.values(SETTINGS_EVENT_TYPE),
+      ...Object.values(CONTACT_EVENT_TYPE),
     ].sort();
 
     expect(Object.values(EVENT_TYPE).sort()).toEqual(expected);

@@ -30,6 +30,12 @@ export const PERMISSION_KEY = {
   SETTINGS_SETTING_UPDATE: "settings.setting.update",
   SETTINGS_TERM_UPDATE: "settings.term.update",
   SETTINGS_MODULE_UPDATE: "settings.module.update",
+  CONTACT_CONTACT_READ: "contact.contact.read",
+  CONTACT_CONTACT_CREATE: "contact.contact.create",
+  CONTACT_CONTACT_UPDATE: "contact.contact.update",
+  CONTACT_CONTACT_ARCHIVE: "contact.contact.archive",
+  CONTACT_CONTACT_ANONYMIZE: "contact.contact.anonymize",
+  CONTACT_CONTACT_READ_SENSITIVE: "contact.contact.readSensitive",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

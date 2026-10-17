@@ -289,3 +289,42 @@ describe("custom field value helpers", () => {
     ]);
   });
 });
+
+describe("contact-link reference fields", () => {
+  const link = {
+    relationKey: "GUARDIAN_OF",
+    createIfMissingByPhone: true,
+    defaultBillTo: true,
+  } as const;
+  const guardian = rule({
+    fieldKey: "guardian",
+    fieldType: CUSTOM_FIELD_TYPE.REFERENCE,
+    link,
+  });
+
+  it("accepts a contact id or a create input with the phone as E.164", () => {
+    const create = { create: { name: "Rahim", phone: "01712345678" } };
+
+    const result = parse([guardian], { guardian: create });
+
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.customFields.guardian).toEqual({
+      create: { name: "Rahim", phone: "+8801712345678" },
+    });
+    expect(parse([guardian], { guardian: newId() }).success).toBe(true);
+  });
+
+  it("refuses the create input on a reference field without a link", () => {
+    const plain = rule({ fieldKey: "friend", fieldType: CUSTOM_FIELD_TYPE.REFERENCE });
+
+    const result = parse([plain], { friend: { create: { name: "Rahim", phone: "01712345678" } } });
+
+    expect(issuePaths(result)).toContain("customFields.friend");
+  });
+
+  it("refuses a create input with a bad phone", () => {
+    const result = parse([guardian], { guardian: { create: { name: "Rahim", phone: "123" } } });
+
+    expect(result.success).toBe(false);
+  });
+});

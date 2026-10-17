@@ -3,6 +3,7 @@ import { z, type ZodType } from "zod";
 import { emailSchema } from "../email.js";
 import { phoneE164Schema } from "../phone.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
+import { contactLinkCreateSchema } from "./contact-link-input.js";
 import {
   CUSTOM_FIELD_DECIMAL_PATTERN,
   CUSTOM_FIELD_LONG_TEXT_MAX_LENGTH,
@@ -83,6 +84,12 @@ function urlValue(): ZodType {
   return z.string().max(CUSTOM_FIELD_URL_MAX_LENGTH).refine(isHttpUrl);
 }
 
+/** Only a contact-link field takes `{ create }`; every other reference stays a plain id (ADR-073). */
+function referenceValue(field: CustomFieldRule): ZodType {
+  if (field.link === undefined) return uuidV7Schema;
+  return z.union([uuidV7Schema, contactLinkCreateSchema]);
+}
+
 function valueOfType(field: CustomFieldRule): ZodType {
   const parsers: Record<CustomFieldType, () => ZodType> = {
     [CUSTOM_FIELD_TYPE.TEXT]: () => textValue(field),
@@ -100,7 +107,7 @@ function valueOfType(field: CustomFieldRule): ZodType {
     [CUSTOM_FIELD_TYPE.URL]: () => urlValue(),
     [CUSTOM_FIELD_TYPE.FILE]: () => uuidV7Schema,
     [CUSTOM_FIELD_TYPE.IMAGE]: () => uuidV7Schema,
-    [CUSTOM_FIELD_TYPE.REFERENCE]: () => uuidV7Schema,
+    [CUSTOM_FIELD_TYPE.REFERENCE]: () => referenceValue(field),
   };
   return parsers[field.fieldType]();
 }

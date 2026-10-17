@@ -3,16 +3,12 @@ import { Router, type RequestHandler } from "express";
 import type { AppConfig } from "../config/index.js";
 import { createEntitlementGate, createPermissionMiddleware } from "../kernel/access/index.js";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
-import {
-  authenticate,
-  createJoseAccessTokenVerifier,
-  requireCurrentUserId,
-} from "../kernel/auth/index.js";
+import { authenticate, createJoseAccessTokenVerifier } from "../kernel/auth/index.js";
 import { asSystemPort } from "../kernel/context/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { createIdempotencyMiddleware } from "../kernel/idempotency/index.js";
 import type { ModuleRegistry } from "../kernel/modules/index.js";
-import { PER_USER_LIMIT, perUserLimit, type RateLimiter } from "../kernel/rate-limit/index.js";
+import type { RateLimiter } from "../kernel/rate-limit/index.js";
 import type { RedisClient } from "../kernel/redis/index.js";
 import {
   locationAccess,
@@ -42,6 +38,7 @@ import {
   buildRolesVersionBumper,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
+import { registerContactModels } from "../modules/commerce/contact/index.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
   buildEntitlementTenantRouter,
@@ -65,6 +62,7 @@ import { registerCustomFieldModels } from "../modules/core/custom-field/index.js
 import { registerFileModels } from "../modules/core/file/index.js";
 import { buildCoreTenantRouters, type CoreTenantRouters } from "./core-tenant-routers.js";
 import { buildOrganizationTenant } from "./organization-tenant-routers.js";
+import { buildAdminUserLimit } from "./admin-user-limit.js";
 import {
   buildOrganizationConfigPorts,
   buildResolvedConfigSources,
@@ -110,6 +108,7 @@ export function registerModuleModels(): void {
   registerSaasBillingModels();
   registerEntitlementModels();
   registerCustomFieldModels();
+  registerContactModels();
   registerSettingsModels();
   registerFileModels();
 }
@@ -146,7 +145,14 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     orgConfig,
     requireUser: requireAdminUser,
   });
-  const coreRouters = buildCoreRouters({ dependencies, audit, orgConfig, access, registry });
+  const coreRouters = buildCoreRouters({
+    dependencies,
+    audit,
+    orgConfig,
+    access,
+    registry,
+    idempotency,
+  });
   // logout-all lives in the auth router but needs a session; the rest of /auth is public.
   router.use("/auth/logout-all", requireAdminUser);
   router.use("/auth", authRouter);
@@ -192,12 +198,15 @@ function buildCoreRouters(input: {
   readonly orgConfig: OrgConfigService;
   readonly access: AccessParts;
   readonly registry: ModuleRegistry;
+  readonly idempotency: RequestHandler;
 }): CoreTenantRouters {
   const { dependencies, access, registry } = input;
   return buildCoreTenantRouters({
     clock: dependencies.clock,
     audit: input.audit,
     permission: access.permission,
+    permissions: access.permissionGate,
+    idempotency: input.idempotency,
     orgConfig: input.orgConfig,
     registry,
     manifests: registry.all(),
@@ -228,20 +237,6 @@ function buildMyOrganizationsRouter(
     trialStarter: buildTrialStarter(dependencies.clock),
     industryTemplates: buildIndustryTemplateAvailability(),
   }).myOrganizationsRouter;
-}
-
-/** The per-user limit of business users: none without a limiter, otherwise one handler. */
-function buildAdminUserLimit(dependencies: V1Dependencies): readonly RequestHandler[] {
-  const { userRateLimiter, clock } = dependencies;
-  if (userRateLimiter === undefined) return [];
-  return [
-    perUserLimit({
-      limiter: userRateLimiter,
-      clock,
-      ...PER_USER_LIMIT.ADMIN_USER,
-      userKeyOf: requireCurrentUserId,
-    }),
-  ];
 }
 
 /** The resolver behind its cache: the entitlement gate and the config endpoint read through it. */
@@ -322,7 +317,7 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     permissions: permissionGate,
     permissionDefinitions: catalog.all(),
   });
-  const { customFieldRouter, settingsRouter, fileRouter } = input.coreRouters;
+  const { customFieldRouter, settingsRouter, fileRouter, contactRouter } = input.coreRouters;
   return [
     iamRouter,
     input.organizationRouter,
@@ -331,6 +326,7 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     customFieldRouter,
     settingsRouter,
     fileRouter,
+    contactRouter,
     ...tenantRouters,
     ...tenantRouterFactories.map((build) => build(permission)),
   ];

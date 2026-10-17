@@ -1,5 +1,5 @@
 import type { OfferingKind } from "../modules/offering-kind.js";
-import type { LocalizedText } from "../platform/industry-template.js";
+import type { IndustryTemplateContactLink, LocalizedText } from "../platform/industry-template.js";
 import type { CustomFieldEntityType } from "./custom-field-entity-type.js";
 import type { CustomFieldType } from "./custom-field-type.js";
 
@@ -107,6 +107,8 @@ export interface EffectiveCustomField {
   readonly optionLabels?: Readonly<Record<string, LocalizedText>>;
   readonly validation?: CustomFieldValidationBounds;
   readonly referenceEntity?: "contact" | "member";
+  /** Set on a template REFERENCE field that creates or links a contact (ADR-073). Organization fields never carry it. */
+  readonly link?: IndustryTemplateContactLink;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
