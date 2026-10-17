@@ -57,6 +57,7 @@ function buildTree() {
   // alias, which matches by prefix.
   const fileEntry = join(CONTRACTS_SOURCE, "file", "index.ts");
   const contactEntry = join(CONTRACTS_SOURCE, "contact", "index.ts");
+  const catalogEntry = join(CONTRACTS_SOURCE, "catalog", "index.ts");
   writeFileSync(
     join(treeRoot, "tsconfig.json"),
     JSON.stringify({
@@ -68,6 +69,7 @@ function buildTree() {
         paths: {
           "@banijjik/contracts/file": [fileEntry],
           "@banijjik/contracts/contact": [contactEntry],
+          "@banijjik/contracts/catalog": [catalogEntry],
           "@banijjik/contracts": [contractsEntry],
         },
       },
@@ -76,7 +78,7 @@ function buildTree() {
   );
   writeFileSync(
     join(treeRoot, "vitest.config.mjs"),
-    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
+    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
   );
 }
 

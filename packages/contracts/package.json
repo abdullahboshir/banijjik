@@ -18,6 +18,10 @@
     "./contact": {
       "types": "./dist/contact/index.d.ts",
       "default": "./dist/contact/index.js"
+    },
+    "./catalog": {
+      "types": "./dist/catalog/index.d.ts",
+      "default": "./dist/catalog/index.js"
     }
   },
   "files": [

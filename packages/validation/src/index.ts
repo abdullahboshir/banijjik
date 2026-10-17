@@ -203,3 +203,50 @@ export {
   fileVariantSchema,
   publicFileParamsSchema,
 } from "./file/file-request-schemas.js";
+export {
+  barcodeSchema,
+  moneySchema,
+  quantityRuleSchema,
+  skuSchema,
+  slugSchema,
+} from "./catalog/catalog-parts.js";
+export { parseKindDetails, parseVariantOverrides } from "./catalog/kind-details.js";
+export type { ParseIssue, ParseResult } from "./catalog/kind-details.js";
+export {
+  offeringCreateRequestSchema,
+  offeringIdParamsSchema,
+  offeringListQuerySchema,
+  offeringLocationClearQuerySchema,
+  offeringLocationParamsSchema,
+  offeringLocationRequestSchema,
+  offeringUpdateRequestSchema,
+  variantInputSchema,
+} from "./catalog/offering-schemas.js";
+export type {
+  OfferingCreateBody,
+  OfferingListQuery,
+  OfferingLocationBody,
+  OfferingUpdateBody,
+  VariantInput,
+} from "./catalog/offering-schemas.js";
+export {
+  categoryCreateRequestSchema,
+  categoryIdParamsSchema,
+  categoryListQuerySchema,
+  categoryUpdateRequestSchema,
+  modifierGroupCreateRequestSchema,
+  modifierGroupIdParamsSchema,
+  modifierGroupListQuerySchema,
+  modifierGroupUpdateRequestSchema,
+} from "./catalog/category-schemas.js";
+export type {
+  CategoryCreateBody,
+  CategoryListQuery,
+  CategoryUpdateBody,
+  ModifierGroupCreateBody,
+  ModifierGroupListQuery,
+  ModifierGroupUpdateBody,
+  ModifierOptionInput,
+} from "./catalog/category-schemas.js";
+export { synonymsUpdateRequestSchema } from "./catalog/synonym-schemas.js";
+export type { SynonymsUpdateBody } from "./catalog/synonym-schemas.js";

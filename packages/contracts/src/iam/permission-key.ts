@@ -36,6 +36,20 @@ export const PERMISSION_KEY = {
   CONTACT_CONTACT_ARCHIVE: "contact.contact.archive",
   CONTACT_CONTACT_ANONYMIZE: "contact.contact.anonymize",
   CONTACT_CONTACT_READ_SENSITIVE: "contact.contact.readSensitive",
+  CATALOG_OFFERING_READ: "catalog.offering.read",
+  CATALOG_OFFERING_CREATE: "catalog.offering.create",
+  CATALOG_OFFERING_UPDATE: "catalog.offering.update",
+  CATALOG_OFFERING_ARCHIVE: "catalog.offering.archive",
+  CATALOG_OFFERING_PUBLISH: "catalog.offering.publish",
+  CATALOG_CATEGORY_READ: "catalog.category.read",
+  CATALOG_CATEGORY_CREATE: "catalog.category.create",
+  CATALOG_CATEGORY_UPDATE: "catalog.category.update",
+  CATALOG_CATEGORY_ARCHIVE: "catalog.category.archive",
+  CATALOG_MODIFIER_GROUP_READ: "catalog.modifierGroup.read",
+  CATALOG_MODIFIER_GROUP_CREATE: "catalog.modifierGroup.create",
+  CATALOG_MODIFIER_GROUP_UPDATE: "catalog.modifierGroup.update",
+  CATALOG_MODIFIER_GROUP_ARCHIVE: "catalog.modifierGroup.archive",
+  CATALOG_SYNONYM_UPDATE: "catalog.synonym.update",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

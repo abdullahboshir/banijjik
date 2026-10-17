@@ -1,3 +1,5 @@
+import type { OfferingEventPayload } from "../catalog/catalog-contracts.js";
+import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
 import type { ContactEventPayload } from "../contact/contact-contracts.js";
 import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
@@ -77,4 +79,9 @@ export interface EventPayloadMap {
   readonly [CONTACT_EVENT_TYPE.CONTACT_UPDATED]: ContactEventPayload;
   readonly [CONTACT_EVENT_TYPE.CONTACT_ARCHIVED]: ContactEventPayload;
   readonly [CONTACT_EVENT_TYPE.CONTACT_ANONYMIZED]: ContactEventPayload;
+  readonly [CATALOG_EVENT_TYPE.OFFERING_CREATED]: OfferingEventPayload;
+  readonly [CATALOG_EVENT_TYPE.OFFERING_UPDATED]: OfferingEventPayload;
+  readonly [CATALOG_EVENT_TYPE.OFFERING_PUBLISHED]: OfferingEventPayload;
+  readonly [CATALOG_EVENT_TYPE.OFFERING_ARCHIVED]: OfferingEventPayload;
+  readonly [CATALOG_EVENT_TYPE.OFFERING_PRICE_CHANGED]: OfferingEventPayload;
 }

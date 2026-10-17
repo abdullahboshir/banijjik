@@ -31,6 +31,18 @@ export const AUDIT_ACTION = {
   CONTACT_UPDATED: "contact.contact.updated",
   CONTACT_ARCHIVED: "contact.contact.archived",
   CONTACT_ANONYMIZED: "contact.contact.anonymized",
+  OFFERING_CREATED: "catalog.offering.created",
+  OFFERING_UPDATED: "catalog.offering.updated",
+  OFFERING_PUBLISHED: "catalog.offering.published",
+  OFFERING_ARCHIVED: "catalog.offering.archived",
+  OFFERING_LOCATION_CHANGED: "catalog.offeringLocation.changed",
+  CATEGORY_CREATED: "catalog.category.created",
+  CATEGORY_UPDATED: "catalog.category.updated",
+  CATEGORY_ARCHIVED: "catalog.category.archived",
+  MODIFIER_GROUP_CREATED: "catalog.modifierGroup.created",
+  MODIFIER_GROUP_UPDATED: "catalog.modifierGroup.updated",
+  MODIFIER_GROUP_ARCHIVED: "catalog.modifierGroup.archived",
+  SYNONYMS_UPDATED: "catalog.synonym.updated",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -48,6 +60,11 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "termOverride",
   "moduleOverride",
   "contact",
+  "offering",
+  "offeringLocation",
+  "category",
+  "modifierGroup",
+  "searchSynonym",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 
