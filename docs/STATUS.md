@@ -96,7 +96,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | Card | Status | Note |
 |---|---|---|
 | 3.0 files and images | merged (2026-10-17, implemented with Claude Code (Sonnet 5.5), Claude T1 review passed; ADR-109 proposed) | storage port (local + S3), content-checked uploads, WebP variants, quota, public route, FILE and IMAGE custom-field inputs. Gaps: no reference tracking or GC, no virus scan, public route unthrottled and cached a year as immutable (a deleted public file can stay in browser and CDN caches), S3 driver not run against a real bucket, no browser test of the upload sheet |
-| 3.1a contacts API | planned (2026-10-17, `docs/plans/3.1a.md`, Opus; T1) | wave 1, after 2.8 is merged; phone-first dedupe, contact-link (COACHING guardian), search by custom field; ADR-110 |
+| 3.1a contacts API | implemented (awaiting review) (2026-10-17, Claude Code (Sonnet 5.5); T1) | branch `s/3.1a-contacts-api`; handoff `docs/handoffs/3.1a.md`; full verify run still pending; ADR-110 (proposed) 
 | 3.1b contacts screens | planned (2026-10-17, `docs/plans/3.1b.md`, Opus; T2) | after 3.1a is merged; list, add, detail, contact-link input |
 | 3.13 clear structure and visual design pass | planned (2026-10-17, `docs/plans/3.13.md`, Opus; T2) | wave 1, after 2.8 is merged; topic-wise settings home, titled sections, visual quality, phase 2 carry-overs, pilot usability check; ADR-112 |
 | 3.2 offerings catalog | todo | wave 2; ADR-098 stock components, units, quantity rules, modifiers |

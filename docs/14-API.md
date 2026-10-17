@@ -126,11 +126,11 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 ### 5.2 contact
 | Method & path | Permission | Flags | Notes |
 |---|---|---|---|
-| `GET /contacts` · `GET /contacts/{contactId}` | `contact.contact.read` | | `?role=&tag=&q=` (phone/name) |
-| `POST /contacts` | `contact.contact.create` | I | dedupe: returns `409 DUPLICATE` with `existingId`, or links when `?linkIfExists=true` |
-| `PATCH /contacts/{contactId}` · `POST /contacts/{contactId}/archive` | `contact.contact.update/archive` | | |
+| `GET /contacts` · `GET /contacts/{contactId}` | `contact.contact.read` | | `?q=&role=&tag=&status=&page=&limit=`; `q` = name prefix (Bangla-folded), phone in any typed form, or a searchable custom field value. Detail shows sensitive custom fields only with `contact.contact.readSensitive` (ADR-110) |
+| `POST /contacts` | `contact.contact.create` | I | dedupe: `409 CONFLICT` `errors.contact_duplicate` with `details.contactId` of the existing contact (ADR-110). A contact-link custom field may carry `{ create: { name, phone } }` |
+| `PATCH /contacts/{contactId}` · `POST /contacts/{contactId}/archive` | `contact.contact.update/archive` | | body has `version`; a sensitive custom field key without `readSensitive` is `403` |
 | `POST /contacts/{contactId}/merge` | `contact.contact.merge` | I | `{ mergeIntoContactId }` |
-| `POST /contacts/{contactId}/anonymize` | `contact.contact.anonymize` | A | |
+| `POST /contacts/{contactId}/anonymize` | `contact.contact.anonymize` | A | `{ version, reason }`; irreversible (ADR-110) |
 | `POST /contacts/import` · `GET /contacts/import/{importJobId}` | `contact.contact.create` | I | async job: upload → preview rows → commit |
 | `GET /contacts/{contactId}/store-credit` | `payment.storeCredit.read` | | balance + entries |
 
