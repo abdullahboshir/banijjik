@@ -153,6 +153,7 @@ describe("the entitlement gate", () => {
     expect(config.body.data.modules).not.toContain("workflow");
     // The workflow probe entries are gone; the organization, settings and fields entries stay (Locations is hidden with one location).
     expect(config.body.data.menu.map((entry: { menuKey: string }) => entry.menuKey)).toEqual([
+      "contact.contacts",
       "organization.profile",
       "organization.staff",
       "settings.general",
@@ -331,6 +332,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
     expect(response.body.data.modules).toEqual([
       "ai",
       "audit",
+      "contact",
       "custom-field",
       "file",
       "iam",
@@ -350,6 +352,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
     ).toEqual([
       PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
       PERMISSION_KEY.IAM_ROLE_READ,
+      PERMISSION_KEY.CONTACT_CONTACT_READ,
       PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
       PERMISSION_KEY.ORGANIZATION_MEMBER_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
@@ -377,12 +380,14 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
       PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_READ,
       PERMISSION_KEY.FILE_ASSET_READ,
+      PERMISSION_KEY.CONTACT_CONTACT_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
     ]);
     expect(
       response.body.data.menu.map((entry: { permissionKey: string }) => entry.permissionKey),
     ).toEqual([
       PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
+      PERMISSION_KEY.CONTACT_CONTACT_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,

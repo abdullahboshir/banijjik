@@ -17,6 +17,9 @@ const ORGANIZATION_MENU_KEYS = {
   staff: "organization.staff",
 } as const;
 /** Settings and fields entries every member who may read them sees (card 2.7b). */
+// The owner and staff hold contact.contact.read, so the contacts entry leads their menu.
+const CONTACTS_MENU_KEY = "contact.contacts";
+
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
   "settings.terms",
@@ -52,6 +55,7 @@ describe("the settings menu of the organization module", () => {
     const menuKeys = await menuKeysOf(world.bob, world.organizationB);
 
     expect(menuKeys).toEqual([
+      CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.staff,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
@@ -75,6 +79,7 @@ describe("the settings menu of the organization module", () => {
 
     expect(created.status).toBe(201);
     expect(withTwo).toEqual([
+      CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.locations,
       ORGANIZATION_MENU_KEYS.staff,
@@ -82,6 +87,7 @@ describe("the settings menu of the organization module", () => {
     ]);
     expect(archived.status).toBe(200);
     expect(withOneAgain).toEqual([
+      CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.staff,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
@@ -93,7 +99,7 @@ describe("the settings menu of the organization module", () => {
 
     const menuKeys = await menuKeysOf(world.sam, world.organizationA);
 
-    expect(menuKeys).toEqual(READ_ONLY_SETTINGS_MENU_KEYS);
+    expect(menuKeys).toEqual([CONTACTS_MENU_KEY, ...READ_ONLY_SETTINGS_MENU_KEYS]);
   });
 });
 
