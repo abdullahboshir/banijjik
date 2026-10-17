@@ -15,6 +15,7 @@ const ORGANIZATION_MENU_KEYS = {
   profile: "organization.profile",
   locations: "organization.locations",
   staff: "organization.staff",
+  roles: "iam.roles",
 } as const;
 /** Settings and fields entries every member who may read them sees (card 2.7b). */
 // The owner and staff hold contact.contact.read, so the contacts entry leads their menu.
@@ -58,6 +59,7 @@ describe("the settings menu of the organization module", () => {
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.staff,
+      ORGANIZATION_MENU_KEYS.roles,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
     ]);
   });
@@ -83,6 +85,7 @@ describe("the settings menu of the organization module", () => {
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.locations,
       ORGANIZATION_MENU_KEYS.staff,
+      ORGANIZATION_MENU_KEYS.roles,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
     ]);
     expect(archived.status).toBe(200);
@@ -90,6 +93,7 @@ describe("the settings menu of the organization module", () => {
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.staff,
+      ORGANIZATION_MENU_KEYS.roles,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
     ]);
   });

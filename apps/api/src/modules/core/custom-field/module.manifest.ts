@@ -3,6 +3,7 @@ import {
   MODULE_CLASS,
   MODULE_KEY,
   PERMISSION_KEY,
+  SETTINGS_TOPIC,
   SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
@@ -34,6 +35,7 @@ export const customFieldManifest = defineModule({
       iconKey: "inbox",
       permissionKey: PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_READ,
       order: 80,
+      settingsTopicKey: SETTINGS_TOPIC.ADVANCED,
     },
   ],
   settings: [],

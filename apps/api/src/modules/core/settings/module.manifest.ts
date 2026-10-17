@@ -3,6 +3,7 @@ import {
   MODULE_KEY,
   PERMISSION_KEY,
   SETTINGS_EVENT_TYPE,
+  SETTINGS_TOPIC,
   SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
@@ -44,6 +45,7 @@ export const settingsManifest = defineModule({
       iconKey: "settings",
       permissionKey: PERMISSION_KEY.SETTINGS_SETTING_READ,
       order: 50,
+      settingsTopicKey: SETTINGS_TOPIC.BUSINESS,
     },
     {
       menuKey: "settings.terms",
@@ -54,6 +56,7 @@ export const settingsManifest = defineModule({
       iconKey: "tag",
       permissionKey: PERMISSION_KEY.SETTINGS_SETTING_READ,
       order: 60,
+      settingsTopicKey: SETTINGS_TOPIC.BUSINESS,
     },
     {
       menuKey: "settings.modules",
@@ -64,6 +67,7 @@ export const settingsManifest = defineModule({
       iconKey: "package",
       permissionKey: PERMISSION_KEY.SETTINGS_SETTING_READ,
       order: 70,
+      settingsTopicKey: SETTINGS_TOPIC.ADVANCED,
     },
   ],
   settings: [],

@@ -3,6 +3,7 @@ import {
   LIMIT_KEY_VALUES,
   MODULE_CLASS,
   MENU_VISIBILITY,
+  SETTINGS_TOPIC,
   OFFERING_KIND,
   SEQUENCE_KEY,
   SURFACE,
@@ -68,6 +69,7 @@ const menuEntrySchema = z
     order: z.number().int(),
     requiresKind: offeringKindSchema.optional(),
     visibility: z.enum(Object.values(MENU_VISIBILITY)).optional(),
+    settingsTopicKey: z.enum(Object.values(SETTINGS_TOPIC)).optional(),
   })
   .strict();
 

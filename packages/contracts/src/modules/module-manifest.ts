@@ -4,7 +4,7 @@ import type { PermissionDefinition } from "../iam/permission-definition.js";
 import type { PermissionKey } from "../iam/permission-key.js";
 import type { Surface } from "../iam/surface.js";
 import type { SequenceKey } from "../system/sequence-key.js";
-import type { MenuVisibility } from "./menu-visibility.js";
+import type { MenuVisibility, SettingsTopic } from "./menu-visibility.js";
 import type { ModuleClass } from "./module-class.js";
 import type { ModuleKey } from "./module-key.js";
 import type { OfferingKind } from "./offering-kind.js";
@@ -29,6 +29,8 @@ export interface MenuEntry {
   readonly requiresKind?: OfferingKind;
   /** Defaults to ALWAYS. MULTIPLE_ACTIVE_LOCATIONS hides the entry while the organization has one active location. */
   readonly visibility?: MenuVisibility;
+  /** Settings entries only: the topic card of the settings home that lists this page (ADR-112). */
+  readonly settingsTopicKey?: SettingsTopic;
 }
 
 /** Route path prefixes by surface. A prefix is a full v1 path such as `/orgs/:organizationId/roles`. */

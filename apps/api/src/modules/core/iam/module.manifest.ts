@@ -4,6 +4,8 @@ import {
   MODULE_KEY,
   PERMISSION_KEY,
   permissionDefinition,
+  SETTINGS_TOPIC,
+  SURFACE,
 } from "@banijjik/contracts";
 import { defineModule } from "../../../kernel/modules/index.js";
 
@@ -23,7 +25,20 @@ export const iamManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.IAM_ROLE_ARCHIVE),
   ],
   routes: { admin: ["/auth", "/me", "/orgs/:organizationId/roles"] },
-  menu: [],
+  // Order 40 sits between the staff (30) and settings (50) entries of the settings group.
+  menu: [
+    {
+      menuKey: "iam.roles",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.iam.roles",
+      path: "settings/roles",
+      iconKey: "users",
+      permissionKey: PERMISSION_KEY.IAM_ROLE_READ,
+      order: 40,
+      settingsTopicKey: SETTINGS_TOPIC.TEAM,
+    },
+  ],
   settings: [],
   customFieldEntities: [],
   botTools: [],

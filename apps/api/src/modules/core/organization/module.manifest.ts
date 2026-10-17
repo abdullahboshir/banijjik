@@ -1,5 +1,6 @@
 import {
   LIMIT_KEY,
+  SETTINGS_TOPIC,
   MENU_VISIBILITY,
   MODULE_CLASS,
   MODULE_KEY,
@@ -55,6 +56,7 @@ export const organizationManifest = defineModule({
       iconKey: "settings",
       permissionKey: PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
       order: 10,
+      settingsTopicKey: SETTINGS_TOPIC.BUSINESS,
     },
     {
       menuKey: "organization.locations",
@@ -66,6 +68,7 @@ export const organizationManifest = defineModule({
       iconKey: "globe",
       permissionKey: PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
       order: 20,
+      settingsTopicKey: SETTINGS_TOPIC.TEAM,
       visibility: MENU_VISIBILITY.MULTIPLE_ACTIVE_LOCATIONS,
     },
     {
@@ -77,6 +80,7 @@ export const organizationManifest = defineModule({
       iconKey: "users",
       permissionKey: PERMISSION_KEY.ORGANIZATION_MEMBER_READ,
       order: 30,
+      settingsTopicKey: SETTINGS_TOPIC.TEAM,
     },
   ],
   // Number formatting reads these in cards 2.2 and 2.7. defaultLocale stays a profile field.
