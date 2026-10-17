@@ -91,8 +91,28 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 2.7b tenant UI: settings, terms, fields and modules | merged (2026-10-17, implemented with Claude Code (Sonnet 5.5), Claude merge check passed; ADR-108 proposed) | branch `s/2.7b-tenant-settings-ui`; handoff `docs/handoffs/2.7b.md`; ADR-108 proposed (`GET /settings` also returns `definitions`). Full verify passed. A hidden template field can be shown again (management list marks it `isHidden`). Not merged, not pushed |
 | Phase 2 review | todo | Opus, after 2.6, 2.7a and 2.7b; `docs/handoffs/phase-2-review.md` |
 
-## Phases 3–8
-Track here once Phase 2 is done (copy the cards from the roadmap).
+## Phase 3 (build order of `03-ROADMAP.md`, ADR-099)
+| Card | Status | Note |
+|---|---|---|
+| 3.0 files and images | todo | wave 1; FILE and IMAGE custom-field inputs |
+| 3.1 contacts | todo | wave 1; contact-link input (COACHING guardian), search by custom field |
+| 3.13 clear structure and visual design pass | todo | wave 1; topic-wise settings home, titled sections, visual quality, pilot usability check |
+| 3.2 offerings catalog | todo | wave 2; ADR-098 stock components, units, quantity rules, modifiers |
+| 3.12 business branding | todo | wave 2; logo and colours per business, default website theme |
+| 3.4 pricing and tax | todo |  |
+| 3.6 booking core | todo | lane B |
+| 3.7 enrollment core | todo | lane B |
+| 3.8 payments, accounting engine, expenses | todo | lane C; per-organization event ordering first |
+| 3.8b bookkeeping add-on UI | todo |  |
+| 3.3 inventory ledger | todo | lane A; ADR-098 inventory items |
+| 3.5 orders | todo | lane A |
+| 3.9 POS | todo |  |
+| 3.11 staff commission | todo | ADR-100 |
+| 3.10 reports and dashboard | todo | last |
+| Phase 3 review | todo | |
+
+## Phases 4–8
+Track here once Phase 3 is done (copy the cards from the roadmap).
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.

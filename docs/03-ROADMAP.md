@@ -31,7 +31,7 @@ Phases are sequential: a later phase depends on the earlier one, so two **phases
 | 10 | 1.3 tenant enforcement | 1.8 platform skeleton | |
 | 11 | 1.6 module registry | 1.7 admin shell | 1.7 can mock `/me/config` until 1.6 merges |
 
-From Phase 2 on, pairs are chosen when planning (the PLAN session lists the next safe pair). Planned so far (2026-10-14): 2.3 ‖ 2.4, then 2.6 ‖ 2.7; 3.1 ‖ 3.2, with 4.1 as an optional third lane; then lane A (3.3 → 3.5 → 3.9), lane B (3.6 → 3.7) and lane C (3.8) side by side. Each extra session works in its own folder, heavy test runs never overlap on the owner's machine, and verification of parallel branches runs on GitHub CI through a pull request. **A PLAN session may plan both cards of a pair** in one sitting, writing two plan files, so both implement sessions can start at once.
+From Phase 2 on, pairs are chosen when planning (the PLAN session lists the next safe pair). Planned so far (2026-10-17): 2.3 ‖ 2.4, then 2.6 ‖ 2.7; Phase 3 wave 1 = 3.0 ‖ 3.1 ‖ 3.13, wave 2 = 3.2 ‖ 3.12 (4.1 as an optional extra lane); then lane A (3.3 → 3.5 → 3.9), lane B (3.6 → 3.7) and lane C (3.8) side by side. Each extra session works in its own folder, heavy test runs never overlap on the owner's machine, and verification of parallel branches runs on GitHub CI through a pull request. **A PLAN session may plan both cards of a pair** in one sitting, writing two plan files, so both implement sessions can start at once.
 
 ---
 
@@ -176,11 +176,19 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 ## Phase 3: Core business (port from manoxen; all kinds). Needs D3, D8.
 Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API and admin UI.
 
-**Order (ADR-099, service businesses first):** 3.1 ‖ 3.2 (a pair) → 3.4 → lane B (3.6 → 3.7) and lane C (3.8 accounting, payments, dues) → 3.9 POS ‖ lane A (3.3 → 3.5) → 3.11 → 3.10 last. The numbers stay as names; this is the build order.
+**Order (ADR-099, service businesses first; updated 2026-10-17):** wave 1: 3.0 ‖ 3.1 ‖ 3.13 → wave 2: 3.2 ‖ 3.12 → 3.4 → lane B (3.6 → 3.7) and lane C (3.8 accounting, payments, dues) → 3.9 POS ‖ lane A (3.3 → 3.5) → 3.11 → 3.10 last. The numbers stay as names; this is the build order.
+
+**Carried over from Phase 2** (each lands in the card named):
+- FILE and IMAGE custom-field inputs (2.5 gap) → 3.0; the REFERENCE and contact-link input, which unblocks COACHING's required `guardian` (2.5 note) → 3.1.
+- Search by custom field value (index exists since 2.7a, no endpoint) → 3.1 for contacts.
+- A draft template in use shows no lock in the panel (2.6 R1-3) → 3.13.
+- Per-organization event ordering → required before 3.8 (ADR-090 note).
 
 
+
+**3.0 Files and images** (SYSTEM `file`: upload through a storage port (local disk in development, object storage in production), image resizing and variants, size and type limits, virus-scan hook, per-organization quota from the package limits; the FILE and IMAGE custom-field inputs; used by business logos, offering images and attachments). M: `modules/file`. Moved out of 3.2 so logos and images have one owner.
 **3.1 Contacts** (customers/suppliers/students/patients via `terms`; tags; custom fields). M: `modules/contacts`
-**3.2 Offerings catalog** (all kinds, variants, categories, units from the contracts unit registry, `quantityRule` for loose sale, stock components that link variants to inventory items (ADR-098), modifiers (ADR-072), images, per-location availability/price, synonyms per org for search). M: `modules/catalog`
+**3.2 Offerings catalog** (uses 3.0 for images; all kinds, variants, categories, units from the contracts unit registry, `quantityRule` for loose sale, stock components that link variants to inventory items (ADR-098), modifiers (ADR-072), images, per-location availability/price, synonyms per org for search). M: `modules/catalog`
 **3.3 Inventory ledger** (InventoryItem with a base unit (ADR-098), StockMovement and InventoryLevel per inventory item, reservation per stock component, packs and loose sale from one stock, kits and recipes, services that use up products, adjustment, transfer, low stock, moving average cost). M: `modules/supply`, `modules/inventory`
 **3.4 Pricing & tax** (price resolution for all kinds, promotions as rules, tax classes; money in minor units). M: `modules/pricing`
 **3.5 Orders** (PRODUCT requests: state machine from D3, invoice, returns/refunds, COD; one transaction for order + stock + journal). M: `modules/sales` + guides 15, 16, 21
@@ -190,13 +198,18 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **3.8b Bookkeeping add-on UI** (OPTIONAL `bookkeeping`: chart of accounts, journal view, manual entries, trial balance, P&L, balance sheet; reads the `accounting` ledger; ADR-051).
 **3.9 POS** (`/pos` PWA, device ↔ location binding, shift/register, Z-report, receipt print, fast search; sells products and services). M: `modules/pos`
 **3.10 Reports & dashboard** (daily summaries per location via events, for orders, bookings and enrollments; package-aware home). M: `modules/analytics`
+**3.12 Business branding** (each business has its own identity: logo (profile `logoFileId`, through 3.0), brand colours (a primary and an accent colour, validated for readable contrast, from presets or a custom value) and a short tagline. Shown in the admin top bar, on receipts and invoices (3.5, 3.9), and used as the **default theme of the business's website** (4.1, 4.5, 4.6): every business's website carries its own logo and colours. The platform's own brand (P2) is separate.)
+**3.13 Clear structure and visual design pass** (`packages/ui` and the app shells; can run beside other cards because it changes look and layout, not APIs):
+  - **Topic-wise structure, easy for any owner to understand:** a settings home grouped by topic (Business, Team, Website, Sales and catalogue, Payments, Automation, Advanced), each topic a card with a one-line explanation; every page split into titled sections with short help text; one consistent page layout (header, sections, sticky actions).
+  - **Visual quality:** type scale, spacing, colour use, cards, icons, empty-state illustrations, loading skeletons, a friendlier dashboard frame for 3.10.
+  - Usability check on a phone with two or three pilot owners (P3) before it is called done.
 **3.11 Staff commission** (OPTIONAL `commission`, ADR-100: rules per member or role and per offering, category or kind; performer on booking and order lines; append-only accruals; payouts posted through `accounting`).
 - Phase done: a salon, a gym and a coaching centre from templates take bookings and enrollments, sell services and products at the counter, collect fees and dues, and pay staff commission, with correct numbers in reports; **and** a product seller runs a full day (stock in → POS + online orders → returns → day close), including loose and packed sale from one stock. No industry-specific code.
 
 ---
 
 ## Phase 4: Tenant website (design: `06-AUTOMATION-AND-ACCOUNTS.md §8`)
-**4.1 Theme engine** (design tokens, theme model, section library with variants, page JSON schema, region lock levels; sections declared in manifests).
+**4.1 Theme engine** (design tokens, theme model, section library with variants, page JSON schema, region lock levels; sections declared in manifests). A business's theme starts from its branding (3.12: logo and colours), so every business's website looks like that business; industry templates (`websiteTemplateKeys`) give the layout and sections.
 **4.2 Storefront app** (subdomain + custom domain via edge custom hostnames → org (ADR-031), render page JSON + tokens server-side, SEO, CDN cache). M: `modules/storefront`, guide 38
 **4.3 Shop & booking flow** (browse offerings of all kinds, cart/checkout COD for products, slot booking for services/rentals, plan enrollment, server-side re-pricing, order/booking tracking).
 **4.4 Platform template builder** (`apps/platform`: build/publish templates per industry, set lock levels).

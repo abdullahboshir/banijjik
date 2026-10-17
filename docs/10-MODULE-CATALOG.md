@@ -106,7 +106,7 @@ Inputs: the org's `PlatformSubscription`, its base and add-on `Package`s, its `M
 | `custom-field` | core/custom-field | SYSTEM | 2.3 | | | | | CustomFieldDefinition |
 | `settings` | core/settings | SYSTEM | 2.4 | | | | | SettingValue, TermOverride |
 | `audit` | core/audit | SYSTEM | 1.5 | | | | | AuditLog |
-| `file` | core/file | SYSTEM | 3.2 | | | | | FileAsset |
+| `file` | core/file | SYSTEM | 3.0 | | | | | FileAsset |
 | `notification` | core/notification | SYSTEM | 5.13 | | | | | in-app notifications, email sending |
 | `accounting` | commerce/accounting | SYSTEM | 3.8 | | | | | Account, JournalEntry (posting engine, no menu) |
 | `contact` | commerce/contact | CORE | 3.1 | | | | | Contact, CustomerAccount, CustomerSession |
