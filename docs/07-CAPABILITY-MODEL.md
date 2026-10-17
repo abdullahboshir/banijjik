@@ -49,7 +49,7 @@ The registry auto-builds all of these from the manifests:
 - **Effective modules** for an org:
   `(base package ∪ add-ons) ∪ platform grants − platform revokes − tenant-disabled optional modules`
   Then modules not allowed for the industry template are dropped, and so is any module whose dependency is missing (a paid dependency is never auto-enabled). Exact algorithm, module classes and access modes: `10-MODULE-CATALOG.md §1–§3, §8` (ADR-049).
-- **One resolver**, `resolveOrgConfig(orgId)` → `{ modules, kinds, fields, settings, menu, botTools, sections, limits, terms }`, cached in Redis with a version, invalidated on any change. **The API, admin UI, storefront and bot all use this one result.** No surface computes its own answer.
+- **One resolver**, `resolveOrgConfig(orgId)` → `{ modules, kinds, fields, settings, menu, botTools, sections, limits, terms }`, cached in process memory (an LRU) under `(organizationId, configVersion, templateVersion, registryHash)`; every config, term, setting or custom-field write bumps `configVersion` and every template edit bumps `templateVersion`, so a change is never served stale (ADR-091, ADR-104). **The API, admin UI, storefront and bot all use this one result.** No surface computes its own answer.
 - **Generated contract tests (mandatory):** for every manifest, the test suite turns the module off and asserts:
   - every route returns 403
   - the menu has no entry

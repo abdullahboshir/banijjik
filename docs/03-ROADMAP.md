@@ -169,6 +169,7 @@ Each card produces a doc. The owner reviews and approves it (status `done` only 
 **2.5 Dynamic form renderer** (`packages/ui`). Core + custom fields from definitions, mobile-first, the same Zod builder on the client, `terms` for labels.
 **2.6 Platform UI: template, module and field builders.**
 **2.7 Tenant UI: settings + tenant-level custom fields** (within platform limits).
+**2.8 Terms in visible labels** (Phase 2 review F1: menu entries and entity page titles read the business's terms; the convention for Phase 3).
 - Phase done: a **new industry** with new fields and new terms is created **from the Platform Panel alone**, and its tenants see the right menu, labels and forms with server-side validation. No deploy is needed. CI proves no code reads `industry` outside the resolver.
 
 ---
