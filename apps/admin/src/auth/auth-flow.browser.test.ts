@@ -151,7 +151,7 @@ describe("a browser that never delivers the access cookie", () => {
     await page.goto(`${ADMIN_ORIGIN}/acme`, { waitUntil: "networkidle0" });
     await waitForPath(page, "/sign-in");
     await waitForHydration(page, SUBMIT_BUTTON);
-    const alert = await readText(page, "main > [role=alert]");
+    const alert = await readText(page, "main [role=alert]");
     const reason = await page.evaluate(() => new URLSearchParams(location.search).get("reason"));
     const cookieNames = (await page.cookies(ADMIN_ORIGIN)).map((cookie) => cookie.name);
     await closePage(page);
