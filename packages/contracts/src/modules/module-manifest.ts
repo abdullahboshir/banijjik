@@ -16,6 +16,11 @@ export interface MenuEntry {
   readonly surface: Surface;
   readonly groupKey: string;
   readonly labelTermKey: string;
+  /**
+   * The business term this entry is named after (`location`, `contact`, …). When the business has a text for
+   * it in the user's language, that text is the label; otherwise the message key `labelTermKey` is (ADR-104).
+   */
+  readonly termKey?: string;
   readonly path: string;
   readonly iconKey: string;
   readonly permissionKey: PermissionKey;

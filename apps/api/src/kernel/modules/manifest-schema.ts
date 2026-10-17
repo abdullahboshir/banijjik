@@ -9,6 +9,7 @@ import {
   EVENT_TYPE,
   type ModuleManifest,
 } from "@banijjik/contracts";
+import { TERM_KEY_PATTERN } from "@banijjik/validation";
 import { z } from "zod";
 import { ManifestError } from "./manifest-error.js";
 
@@ -60,6 +61,7 @@ const menuEntrySchema = z
     surface: surfaceSchema,
     groupKey: z.string().min(1),
     labelTermKey: z.string().min(1),
+    termKey: z.string().regex(TERM_KEY_PATTERN).optional(),
     path: z.string().min(1),
     iconKey: z.string().min(1),
     permissionKey: z.string().min(1),

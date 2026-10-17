@@ -1,6 +1,7 @@
 import { SURFACE, type MenuEntry, type PreferredLocale } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
 import type { SidebarGroup } from "@banijjik/ui";
+import { termLabel, type TermTexts } from "@banijjik/web-client";
 
 /** Admin groups in the order of 10-MODULE-CATALOG section 6; a group the list does not know goes last. */
 export const MENU_GROUP_ORDER: readonly string[] = [
@@ -25,7 +26,7 @@ export interface MenuGroupOptions {
   menu: readonly MenuEntry[];
   orgSlug: string;
   /** Resolved terms (`config.terms`). A missing key or language falls back to the catalog. */
-  terms: Readonly<Record<string, { readonly bn?: string; readonly en?: string }>>;
+  terms: TermTexts;
   locale: PreferredLocale;
   t: Translator["t"];
 }
@@ -51,6 +52,16 @@ function hrefOf(orgSlug: string, path: string): string {
   return `/${orgSlug}/${path.replace(/^\/+/, "")}`;
 }
 
+/** An entry named after a term shows the business's word for it; any other entry, or a missing term, shows the catalog message. */
+function labelOf(
+  entry: MenuEntry,
+  context: Pick<MenuGroupOptions, "terms" | "locale" | "t">,
+): string {
+  const message = context.t(entry.labelTermKey);
+  if (entry.termKey === undefined) return message;
+  return termLabel(context.terms, entry.termKey, { locale: context.locale, fallback: message });
+}
+
 function toSidebarGroups(options: MenuGroupOptions): SidebarGroup[] {
   const { menu, orgSlug, terms, locale, t } = options;
   const groups = new Map<string, SidebarGroup>();
@@ -62,7 +73,7 @@ function toSidebarGroups(options: MenuGroupOptions): SidebarGroup[] {
     };
     group.entries.push({
       menuKey: entry.menuKey,
-      label: terms[entry.labelTermKey]?.[locale] ?? t(entry.labelTermKey),
+      label: labelOf(entry, { terms, locale, t }),
       href: hrefOf(orgSlug, entry.path),
       iconKey: entry.iconKey,
       isActive: false,

@@ -123,6 +123,7 @@ New enum, permission key, module key, error code or event name: add it to contra
 ## Errors & i18n
 - No user-facing literal strings in API or UI code. Use i18n keys: `sales.order.not_found`.
 - Domain errors are typed classes that carry a contracts error code.
+- A module's menu entry and page titles for an entity name its term key (`contact`, `offering`, `order`, `booking`, `enrollment`, `resource`, `location`): set `termKey` on the `MenuEntry` and read the term with `termLabel` from `@banijjik/web-client`, with the catalog message as the fallback. Sentences take it as a `{term}` value. Labels never hard-code "Customer" or "Product" (ADR-104).
 
 ## Data
 - Every tenant model applies the tenant plugin. Location-scoped models also apply the location plugin.

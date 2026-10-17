@@ -3,6 +3,20 @@ import { defineModule } from "./define-module.js";
 import { ManifestError } from "./manifest-error.js";
 import { aManifest } from "../../test-support/manifest-fixtures.js";
 
+function menuEntryWithTerm(termKey: string) {
+  return {
+    menuKey: "workflow.flows",
+    surface: "ADMIN",
+    groupKey: "settings",
+    labelTermKey: "menu.workflow.flows",
+    termKey,
+    path: "settings/flows",
+    iconKey: "settings",
+    permissionKey: "workflow.flow.read",
+    order: 10,
+  };
+}
+
 describe("defineModule", () => {
   it("returns a deeply frozen copy and leaves the caller object untouched", () => {
     const original = aManifest("workflow", { routes: { admin: ["/orgs/:organizationId/flows"] } });
@@ -13,6 +27,15 @@ describe("defineModule", () => {
     expect(Object.isFrozen(defined)).toBe(true);
     expect(Object.isFrozen(defined.routes.admin)).toBe(true);
     expect(Object.isFrozen(original)).toBe(false);
+  });
+
+  it("accepts a menu entry named after a term, with or without a kind", () => {
+    for (const termKey of ["location", "offering.SERVICE"]) {
+      // Safe: the test builds a menu entry for a manifest the runtime check will accept.
+      const manifest = { ...aManifest(), menu: [menuEntryWithTerm(termKey)] } as never;
+
+      expect(() => defineModule(manifest)).not.toThrow();
+    }
   });
 
   it.each([
@@ -26,6 +49,8 @@ describe("defineModule", () => {
     ["an unknown limit key", { limitKeys: ["seats"] }],
     ["an unknown event type", { events: { emits: ["made.up"], consumes: [] } }],
     ["an unexpected field", { colour: "red" }],
+    ["a menu entry whose term key is not a term key", { menu: [menuEntryWithTerm("Location")] }],
+    ["a menu entry whose term key has a dot and no kind", { menu: [menuEntryWithTerm("a.b")] }],
   ])("refuses %s", (_label, change) => {
     // Safe: the test builds a deliberately invalid manifest to prove the runtime check.
     const broken = { ...aManifest(), ...change } as never;

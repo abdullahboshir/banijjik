@@ -304,3 +304,16 @@ export async function seedTemplateField(
     await client.close();
   }
 }
+
+/** Adds a second location to a seeded business through the real API: the Locations menu entry needs two. */
+export async function seedLocation(
+  person: SeededPerson,
+  slug: string,
+  name: string,
+): Promise<void> {
+  const organizationId = await organizationIdOf(person, slug);
+  await callApi(`/orgs/${organizationId}/locations`, {
+    cookies: person.cookies,
+    body: { name, locationType: "STORE" },
+  });
+}

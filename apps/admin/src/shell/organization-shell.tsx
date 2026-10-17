@@ -65,7 +65,7 @@ const UTC = "UTC";
  */
 export async function OrganizationShell(props: OrganizationShellProps): Promise<ReactElement> {
   const { orgSlug, me, organizations, config } = props;
-  const { t } = await getTranslator();
+  const { t, locale } = await getTranslator();
   const current = organizations.find((organization) => organization.slug === orgSlug);
   if (!current) notFound();
   const topBar = (
@@ -92,7 +92,8 @@ export async function OrganizationShell(props: OrganizationShellProps): Promise<
     menu: config?.menu ?? [],
     orgSlug,
     terms: config?.terms ?? {},
-    locale: me.preferredLocale,
+    // The language the page is drawn in, so the menu words agree with the text beside them (ADR-055).
+    locale,
     t,
   });
   const banners = config ? bannerStatesOf(config, new Date(), props.timeZone ?? UTC) : [];

@@ -44,39 +44,47 @@ describe("buildMenuGroups", () => {
     expect(groups[1]?.entries[0]?.href).toBe("/acme/settings/profile");
   });
 
-  it("labels entries from the business's terms first, then the catalog key", () => {
-    const [, settings] = buildMenuGroups({
-      menu: [{ ...staff, labelTermKey: "menu.organization.staff" }],
-      orgSlug: "acme",
-      terms: {},
-      locale: "bn",
-      t,
+  describe("labels", () => {
+    const locations = {
+      ...staff,
+      menuKey: "organization.locations",
+      labelTermKey: "menu.organization.locations",
+      termKey: "location",
+    };
+    const OUTLET = { location: { bn: "আউটলেট", en: "Outlet" } };
+
+    function labelOf(options: {
+      entry: typeof staff;
+      terms: Parameters<typeof buildMenuGroups>[0]["terms"];
+      locale: "bn" | "en";
+    }): string | undefined {
+      const groups = buildMenuGroups({ menu: [options.entry], orgSlug: "acme", ...options, t });
+      return groups[1]?.entries[0]?.label;
+    }
+
+    it("shows the business's word for an entry named after a term, in the user's language", () => {
+      expect(labelOf({ entry: locations, terms: OUTLET, locale: "bn" })).toBe("আউটলেট");
+      expect(labelOf({ entry: locations, terms: OUTLET, locale: "en" })).toBe("Outlet");
     });
-    expect(settings?.entries[0]?.label).toBe("কর্মী ও ভূমিকা");
-    const [, overridden] = buildMenuGroups({
-      menu: [{ ...staff, labelTermKey: "menu.organization.staff" }],
-      orgSlug: "acme",
-      terms: { "menu.organization.staff": { bn: "টিম", en: "Team" } },
-      locale: "bn",
-      t,
+
+    it("shows the catalog message when the business has no such term or no text in that language", () => {
+      expect(labelOf({ entry: locations, terms: {}, locale: "bn" })).toBe("শাখা");
+      expect(
+        labelOf({ entry: locations, terms: { location: { en: "Outlet" } }, locale: "bn" }),
+      ).toBe("শাখা");
     });
-    expect(overridden?.entries[0]?.label).toBe("টিম");
-    const [, english] = buildMenuGroups({
-      menu: [{ ...staff, labelTermKey: "menu.organization.staff" }],
-      orgSlug: "acme",
-      terms: { "menu.organization.staff": { bn: "টিম", en: "Team" } },
-      locale: "en",
-      t,
+
+    it("shows the catalog message for an entry without a term key, even if a term shares its message key", () => {
+      const withoutTerm = { ...staff, labelTermKey: "menu.organization.staff" };
+
+      expect(
+        labelOf({
+          entry: withoutTerm,
+          terms: { "menu.organization.staff": { bn: "টিম", en: "Team" } },
+          locale: "bn",
+        }),
+      ).toBe("কর্মী ও ভূমিকা");
     });
-    expect(english?.entries[0]?.label).toBe("Team");
-    const [, missingLanguage] = buildMenuGroups({
-      menu: [{ ...staff, labelTermKey: "menu.organization.staff" }],
-      orgSlug: "acme",
-      terms: { "menu.organization.staff": { en: "Team" } },
-      locale: "bn",
-      t,
-    });
-    expect(missingLanguage?.entries[0]?.label).toBe("কর্মী ও ভূমিকা");
   });
 
   it("feeds the bottom nav: Home and More are always there, entries reach the More list", () => {

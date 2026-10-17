@@ -33,6 +33,8 @@ export interface AccessOptions {
   sensitiveKeys?: readonly string[];
   /** The effective custom fields of `/me/config`, by entity type. */
   fields?: Record<string, EffectiveCustomField[]>;
+  /** The business's terms of `/me/config`, by term key. */
+  terms?: Record<string, { bn: string; en: string }>;
 }
 
 /** An `OrgAccess` for the server pages of the settings screens, built from the few facts they read. */
@@ -50,6 +52,7 @@ export function accessFixture(options: AccessOptions = {}): OrgAccess {
       permissions,
       permissionDefinitions: allDefinitions(options.sensitiveKeys),
       fields: options.fields ?? {},
+      terms: options.terms ?? {},
     },
     canWrite: options.canWrite ?? true,
     timeZone: "Asia/Dhaka",

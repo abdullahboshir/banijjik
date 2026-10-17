@@ -1,5 +1,6 @@
 import { LOCATION_TYPE, type LocationType } from "@banijjik/contracts";
-import type { Translator } from "@banijjik/i18n";
+import type { Locale, Translator } from "@banijjik/i18n";
+import { termLabel, type TermTexts } from "@banijjik/web-client";
 import type { LocationFormState } from "./location-state";
 
 export interface LocationFormLabels {
@@ -25,6 +26,14 @@ export interface LocationArchiveLabels {
   conflict: string;
 }
 
+/**
+ * The word for a location: the business's term `location` in the user's language, or the catalog word.
+ * "Add {term}" and "No {term} found" read it, so a renamed term shows on every locations screen (ADR-104).
+ */
+export function locationTermOf(terms: TermTexts, locale: Locale, t: Translator["t"]): string {
+  return termLabel(terms, "location", { locale, fallback: t("locations.term") });
+}
+
 export function locationTypeLabels(t: Translator["t"]): Record<LocationType, string> {
   return {
     [LOCATION_TYPE.STORE]: t("locations.type.store"),
@@ -33,10 +42,14 @@ export function locationTypeLabels(t: Translator["t"]): Record<LocationType, str
 }
 
 /** `limit` is the location limit of the package, from the business config; null means no limit. */
-export function locationFormLabelsOf(t: Translator["t"], limit: number | null): LocationFormLabels {
+export function locationFormLabelsOf(
+  t: Translator["t"],
+  limit: number | null,
+  term: string,
+): LocationFormLabels {
   return {
-    createTitle: t("locations.form.create.title"),
-    editTitle: t("locations.form.edit.title"),
+    createTitle: t("locations.form.create.title", { term }),
+    editTitle: t("locations.form.edit.title", { term }),
     close: t("shell.closeMenu"),
     submit: t("common.save"),
     conflict: t("settings.conflict"),

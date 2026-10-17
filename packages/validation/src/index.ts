@@ -103,6 +103,7 @@ export {
   platformIndustryTemplateParamsSchema,
   toIndustryTemplateConfiguration,
 } from "./platform/industry-template-schemas.js";
+export { TERM_KEY_PATTERN } from "./platform/industry-template-schemas.js";
 export type {
   IndustryTemplateConfigurationOutput,
   IndustryTemplateSeed,

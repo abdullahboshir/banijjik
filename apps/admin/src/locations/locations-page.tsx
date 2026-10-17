@@ -3,11 +3,12 @@ import type { Translator } from "@banijjik/i18n";
 import { EmptyState, PageHeader } from "@banijjik/ui";
 import Link from "next/link";
 import type { ReactElement } from "react";
+import { termLabel } from "@banijjik/web-client";
 import { fetchBusinessResource } from "../lib/api/server-resource";
 import { getTranslator } from "../lib/i18n/get-translator";
 import { requireOrgAccess } from "../shell/org-access";
 import { holdsPermissionEverywhere, holdsPermission } from "../shell/permissions";
-import { locationFormLabelsOf } from "./location-labels";
+import { locationFormLabelsOf, locationTermOf } from "./location-labels";
 import { LocationList, type LocationListLabels } from "./location-list";
 import { toLocationRows } from "./location-rows";
 import { NewLocationButton } from "./new-location-button";
@@ -52,7 +53,7 @@ function StatusChips({
   );
 }
 
-function listLabelsOf(t: Translator["t"]): LocationListLabels {
+function listLabelsOf(t: Translator["t"], term: string): LocationListLabels {
   return {
     name: t("locations.column.name"),
     type: t("locations.column.type"),
@@ -62,7 +63,7 @@ function listLabelsOf(t: Translator["t"]): LocationListLabels {
     edit: t("locations.edit"),
     archive: t("locations.archive"),
     defaultMark: t("locations.default"),
-    empty: t("locations.empty"),
+    empty: t("locations.empty", { term }),
   };
 }
 
@@ -74,8 +75,8 @@ export async function LocationsPage({
   orgSlug: string;
   searchParams: Record<string, string | string[] | undefined>;
 }): Promise<ReactElement> {
-  const [{ t }, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
-  const { permissions, limits } = access.config;
+  const [{ t, locale }, access] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
+  const { permissions, limits, terms } = access.config;
   if (!holdsPermission(permissions, PERMISSION_KEY.ORGANIZATION_LOCATION_READ)) {
     return <EmptyState message={t("state.permissionDenied")} />;
   }
@@ -84,7 +85,8 @@ export async function LocationsPage({
   const locations = await fetchBusinessResource<LocationResponse[]>(
     `/orgs/${organizationId}/locations?status=${status}&limit=${PAGE_SIZE}`,
   );
-  const formLabels = locationFormLabelsOf(t, limits.locations);
+  const term = locationTermOf(terms, locale, t);
+  const formLabels = locationFormLabelsOf(t, limits.locations, term);
   const canCreate =
     access.canWrite &&
     holdsPermissionEverywhere(permissions, PERMISSION_KEY.ORGANIZATION_LOCATION_CREATE);
@@ -99,12 +101,12 @@ export async function LocationsPage({
   return (
     <>
       <PageHeader
-        title={t("locations.title")}
+        title={termLabel(terms, "location", { locale, fallback: t("locations.title") })}
         actions={
           canCreate ? (
             <NewLocationButton
               organizationId={organizationId}
-              label={t("locations.add")}
+              label={t("locations.add", { term })}
               labels={formLabels}
             />
           ) : null
@@ -114,7 +116,7 @@ export async function LocationsPage({
       <LocationList
         organizationId={organizationId}
         rows={toLocationRows(locations.data, abilities, t)}
-        labels={listLabelsOf(t)}
+        labels={listLabelsOf(t, term)}
         formLabels={formLabels}
       />
     </>

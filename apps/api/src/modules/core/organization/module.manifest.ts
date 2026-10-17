@@ -61,6 +61,7 @@ export const organizationManifest = defineModule({
       surface: SURFACE.ADMIN,
       groupKey: "settings",
       labelTermKey: "menu.organization.locations",
+      termKey: "location",
       path: "settings/locations",
       iconKey: "globe",
       permissionKey: PERMISSION_KEY.ORGANIZATION_LOCATION_READ,

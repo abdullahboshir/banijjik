@@ -141,7 +141,13 @@ export async function ProfilePage({ orgSlug }: { orgSlug: string }): Promise<Rea
       <FactList title={t("profile.section.business")} facts={businessFacts(profile, t)} t={t} />
       <FactList title={t("profile.section.address")} facts={addressFacts(profile, t)} t={t} />
       <CustomFieldDetailList {...customFieldParts.list} />
-      <ProfileLocationsSection access={access} locations={locations} t={t} orgSlug={orgSlug} />
+      <ProfileLocationsSection
+        access={access}
+        locations={locations}
+        t={t}
+        locale={translator.locale}
+        orgSlug={orgSlug}
+      />
       <FactList title={t("profile.section.fixed")} facts={fixedFacts(profile, t)} t={t} />
       <p className="text-small text-secondary">{t("profile.fixed.hint")}</p>
     </>

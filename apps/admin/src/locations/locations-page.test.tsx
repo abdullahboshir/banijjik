@@ -26,6 +26,11 @@ vi.mock("../lib/api/server-resource", () => ({
 
 const { LocationsPage } = await import("./locations-page");
 
+/** A message that carries the {term} placeholder, as the page fills it: the catalog word unless a term is given. */
+function withTerm(messageKey: string, term = banglaText("locations.term")): string {
+  return banglaTranslator().t(messageKey, { term });
+}
+
 const ALL_WRITES = [
   PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
   PERMISSION_KEY.ORGANIZATION_LOCATION_CREATE,
@@ -88,13 +93,13 @@ describe("LocationsPage", () => {
   it("shows the empty sentence when there are no locations", async () => {
     await renderPage({ keys: ALL_WRITES }, []);
 
-    expect(screen.getByText(banglaText("locations.empty"))).not.toBeNull();
+    expect(screen.getByText(withTerm("locations.empty"))).not.toBeNull();
   });
 
   it("offers add, edit and archive to someone with every permission at every location", async () => {
     await renderPage({ keys: ALL_WRITES });
 
-    expect(screen.getByRole("button", { name: banglaText("locations.add") })).not.toBeNull();
+    expect(screen.getByRole("button", { name: withTerm("locations.add") })).not.toBeNull();
     expect(screen.getAllByRole("button", { name: banglaText("locations.edit") })).toHaveLength(4);
     expect(screen.getAllByRole("button", { name: banglaText("locations.archive") })).toHaveLength(
       4,
@@ -104,7 +109,7 @@ describe("LocationsPage", () => {
   it("shows a member limited to some locations the list without create, edit or archive", async () => {
     await renderPage({ limitedKeys: ALL_WRITES });
 
-    expect(screen.queryByRole("button", { name: banglaText("locations.add") })).toBeNull();
+    expect(screen.queryByRole("button", { name: withTerm("locations.add") })).toBeNull();
     expect(screen.queryByRole("button", { name: banglaText("locations.edit") })).toBeNull();
     expect(screen.queryByRole("button", { name: banglaText("locations.archive") })).toBeNull();
   });
@@ -112,7 +117,7 @@ describe("LocationsPage", () => {
   it("hides every write action in read-only mode", async () => {
     await renderPage({ keys: ALL_WRITES, canWrite: false });
 
-    expect(screen.queryByRole("button", { name: banglaText("locations.add") })).toBeNull();
+    expect(screen.queryByRole("button", { name: withTerm("locations.add") })).toBeNull();
     expect(screen.queryByRole("button", { name: banglaText("locations.archive") })).toBeNull();
   });
 
@@ -120,5 +125,27 @@ describe("LocationsPage", () => {
     await renderPage({});
 
     expect(screen.getByText(banglaText("state.permissionDenied"))).not.toBeNull();
+  });
+});
+
+describe("LocationsPage with a renamed term", () => {
+  const OUTLET = { location: { bn: "আউটলেট", en: "Outlet" } };
+
+  it("shows the business's word in the title, the add button and the empty sentence", async () => {
+    await renderPage({ keys: ALL_WRITES, terms: OUTLET }, []);
+
+    expect(screen.getAllByText("আউটলেট").length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("button", { name: withTerm("locations.add", "আউটলেট") }),
+    ).not.toBeNull();
+    expect(screen.getByText(withTerm("locations.empty", "আউটলেট"))).not.toBeNull();
+    expect(screen.queryByText(banglaText("locations.title"))).toBeNull();
+  });
+
+  it("falls back to the catalog words when the business has no term", async () => {
+    await renderPage({ keys: ALL_WRITES }, []);
+
+    expect(screen.getByText(banglaText("locations.title"))).not.toBeNull();
+    expect(screen.getByRole("button", { name: withTerm("locations.add") })).not.toBeNull();
   });
 });

@@ -11,7 +11,8 @@ import { industryTemplateKeySchema } from "../industry-template-key.schema.js";
 import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 
-const TERM_KEY_PATTERN = /^[a-z]+(\.[A-Z]+)?$/;
+/** A template term key: a base word, optionally with an offering kind (offering.SERVICE). */
+export const TERM_KEY_PATTERN = /^[a-z]+(\.[A-Z]+)?$/;
 const SETTING_KEY_PATTERN = /^[a-z]+(\.[a-zA-Z]+)+$/;
 const FIELD_KEY_PATTERN = /^[a-z][a-z0-9_]{1,39}$/;
 const ICON_KEY_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;

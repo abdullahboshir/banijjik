@@ -1,9 +1,15 @@
 import { PERMISSION_KEY, type LocationResponse } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
 import { buttonVariants } from "@banijjik/ui";
+import { termLabel } from "@banijjik/web-client";
 import Link from "next/link";
 import type { ReactElement } from "react";
-import { locationFormLabelsOf, locationTypeLabels } from "../locations/location-labels";
+import type { Locale } from "@banijjik/i18n";
+import {
+  locationFormLabelsOf,
+  locationTermOf,
+  locationTypeLabels,
+} from "../locations/location-labels";
 import { NewLocationButton } from "../locations/new-location-button";
 import type { OrgAccess } from "../shell/org-access";
 import { holdsPermission, holdsPermissionEverywhere } from "../shell/permissions";
@@ -15,6 +21,7 @@ export interface ProfileLocationsSectionProps {
   /** Absent when the caller may not read locations: the section is then left out. */
   locations: LocationResponse[] | undefined;
   orgSlug: string;
+  locale: Locale;
   t: Translator["t"];
 }
 
@@ -23,9 +30,10 @@ export interface ProfileLocationsSectionProps {
  * adds a second one, since the Locations menu entry appears only with two or more active locations.
  */
 export function ProfileLocationsSection(props: ProfileLocationsSectionProps): ReactElement | null {
-  const { access, locations, orgSlug, t } = props;
+  const { access, locations, orgSlug, locale, t } = props;
   if (!locations) return null;
-  const { permissions, limits } = access.config;
+  const { permissions, limits, terms } = access.config;
+  const term = locationTermOf(terms, locale, t);
   const typeLabels = locationTypeLabels(t);
   const canCreate =
     access.canWrite &&
@@ -36,7 +44,7 @@ export function ProfileLocationsSection(props: ProfileLocationsSectionProps): Re
   return (
     <section className="mb-6" aria-labelledby="profile-locations-title">
       <h2 id="profile-locations-title" className="mb-2 text-title font-semibold text-primary">
-        {t("profile.locations.title")}
+        {termLabel(terms, "location", { locale, fallback: t("profile.locations.title") })}
       </h2>
       <ul className="mb-3 flex flex-col gap-2">
         {locations.map((location) => (
@@ -55,9 +63,9 @@ export function ProfileLocationsSection(props: ProfileLocationsSectionProps): Re
         {canCreate ? (
           <NewLocationButton
             organizationId={access.organization.organizationId}
-            label={t("profile.locations.add")}
+            label={t("profile.locations.add", { term })}
             variant="secondary"
-            labels={locationFormLabelsOf(t, limits.locations)}
+            labels={locationFormLabelsOf(t, limits.locations, term)}
           />
         ) : null}
         {hasPage ? (

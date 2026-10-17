@@ -109,7 +109,9 @@ describe("ProfilePage", () => {
 
     expect(screen.getByText(/মূল দোকান/)).not.toBeNull();
     expect(
-      screen.getByRole("button", { name: banglaText("profile.locations.add") }),
+      screen.getByRole("button", {
+        name: banglaTranslator().t("profile.locations.add", { term: banglaText("locations.term") }),
+      }),
     ).not.toBeNull();
   });
 
@@ -118,7 +120,11 @@ describe("ProfilePage", () => {
       location("l1", "মূল দোকান"),
     ]);
 
-    expect(screen.queryByRole("button", { name: banglaText("profile.locations.add") })).toBeNull();
+    expect(
+      screen.queryByRole("button", {
+        name: banglaTranslator().t("profile.locations.add", { term: banglaText("locations.term") }),
+      }),
+    ).toBeNull();
   });
 
   it("leaves the Locations section out when the caller may not read locations", async () => {

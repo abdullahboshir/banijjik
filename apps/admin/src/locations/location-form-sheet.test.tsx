@@ -22,7 +22,7 @@ const { locationFormLabelsOf } = await import("./location-labels");
 const { EMPTY_LOCATION_FORM } = await import("./location-state");
 
 const { t } = banglaTranslator();
-const labels = locationFormLabelsOf(t, 2);
+const labels = locationFormLabelsOf(t, 2, "লোকেশন");
 
 function renderSheet(
   location?: { locationId: string; version: number },
