@@ -17,7 +17,7 @@ import type { IndustryTemplate } from "../../domain/industry-template.entity.js"
 import type { IndustryTemplateWriteDependencies } from "./industry-template-write-dependencies.js";
 import { auditFieldsOf, sameConfiguration } from "./industry-template-audit-fields.js";
 import { assertRegisteredSettingDefaults } from "../registered-settings.js";
-import { toIndustryTemplateDetail } from "./industry-template-presenter.js";
+import { isTemplateInUse, toIndustryTemplateDetail } from "./industry-template-presenter.js";
 
 export interface UpdateIndustryTemplateInput {
   readonly actorUserId: UserId;
@@ -49,7 +49,11 @@ export class UpdateIndustryTemplateUseCase {
     const saved = await this.dependencies.unitOfWork.run(() =>
       this.save({ existing, edited, input, configurationChanged }),
     );
-    return toIndustryTemplateDetail(saved, this.dependencies.settings);
+    return toIndustryTemplateDetail(
+      saved,
+      this.dependencies.settings,
+      await isTemplateInUse(this.dependencies.usage, saved),
+    );
   }
 
   private async save(command: {

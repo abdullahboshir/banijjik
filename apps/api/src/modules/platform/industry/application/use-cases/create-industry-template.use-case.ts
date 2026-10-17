@@ -60,7 +60,8 @@ export class CreateIndustryTemplateUseCase {
       now: this.dependencies.clock.now(),
     });
     await this.persist(created, input);
-    return toIndustryTemplateDetail(created, this.dependencies.settings);
+    // A template that was just created cannot be in use yet.
+    return toIndustryTemplateDetail(created, this.dependencies.settings, false);
   }
 
   private async persist(

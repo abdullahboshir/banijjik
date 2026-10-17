@@ -4,6 +4,7 @@ import type {
   PlatformIndustryTemplateSummary,
 } from "@banijjik/contracts";
 import type { IndustryTemplate } from "../../domain/industry-template.entity.js";
+import type { OrganizationTemplateUsage } from "./industry-template-write-dependencies.js";
 import { pendingSettingKeysOf, type SettingCatalog } from "../registered-settings.js";
 
 export function toIndustryTemplateCard(template: IndustryTemplate): IndustryTemplateCard {
@@ -31,9 +32,18 @@ export function toIndustryTemplateSummary(
   };
 }
 
+/** Whether any organization already uses the template's key. */
+export async function isTemplateInUse(
+  usage: OrganizationTemplateUsage,
+  template: IndustryTemplate,
+): Promise<boolean> {
+  return (await usage.countByTemplateKey(template.industryTemplateKey)) > 0;
+}
+
 export function toIndustryTemplateDetail(
   template: IndustryTemplate,
   settings: SettingCatalog,
+  isInUse: boolean,
 ): PlatformIndustryTemplateDetail {
   return {
     ...toIndustryTemplateSummary(template),
@@ -41,5 +51,6 @@ export function toIndustryTemplateDetail(
     configuration: template.configuration,
     createdAt: template.createdAt.toISOString(),
     pendingSettingKeys: pendingSettingKeysOf(template.configuration.settingsDefaults, settings),
+    isInUse,
   };
 }

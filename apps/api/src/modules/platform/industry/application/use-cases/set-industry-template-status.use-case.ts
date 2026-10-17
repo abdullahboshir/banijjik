@@ -10,7 +10,7 @@ import { diffAuditFields } from "../../../../../kernel/audit/index.js";
 import { industryTemplateNotFound } from "../../domain/errors.js";
 import type { IndustryTemplate } from "../../domain/industry-template.entity.js";
 import type { IndustryTemplateWriteDependencies } from "./industry-template-write-dependencies.js";
-import { toIndustryTemplateDetail } from "./industry-template-presenter.js";
+import { isTemplateInUse, toIndustryTemplateDetail } from "./industry-template-presenter.js";
 
 export interface SetIndustryTemplateStatusInput {
   readonly actorUserId: UserId;
@@ -27,11 +27,19 @@ export class SetIndustryTemplateStatusUseCase {
   async execute(input: SetIndustryTemplateStatusInput): Promise<PlatformIndustryTemplateDetail> {
     const existing = await this.requireTemplate(input.industryTemplateId);
     if (existing.status === input.target) {
-      return toIndustryTemplateDetail(existing, this.dependencies.settings);
+      return this.detailOf(existing);
     }
     const next = this.transition(existing, input.target);
     const saved = await this.dependencies.unitOfWork.run(() => this.save(existing, next, input));
-    return toIndustryTemplateDetail(saved, this.dependencies.settings);
+    return this.detailOf(saved);
+  }
+
+  private async detailOf(template: IndustryTemplate): Promise<PlatformIndustryTemplateDetail> {
+    return toIndustryTemplateDetail(
+      template,
+      this.dependencies.settings,
+      await isTemplateInUse(this.dependencies.usage, template),
+    );
   }
 
   private transition(existing: IndustryTemplate, target: IndustryTemplateStatus): IndustryTemplate {

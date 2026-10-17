@@ -120,7 +120,11 @@ export function buildIndustryPlatformRouter(
   };
   const controller = new PlatformIndustryTemplateController({
     listTemplates: new ListPlatformIndustryTemplatesUseCase(templates),
-    getTemplate: new GetIndustryTemplateUseCase(templates, dependencies.settings),
+    getTemplate: new GetIndustryTemplateUseCase(
+      templates,
+      dependencies.settings,
+      dependencies.usage,
+    ),
     createTemplate: new CreateIndustryTemplateUseCase(writes),
     updateTemplate: new UpdateIndustryTemplateUseCase(writes),
     setStatus: new SetIndustryTemplateStatusUseCase(writes),

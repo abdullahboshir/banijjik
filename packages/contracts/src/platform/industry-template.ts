@@ -124,6 +124,11 @@ export interface PlatformIndustryTemplateDetail extends PlatformIndustryTemplate
    * Computed on read; not stored.
    */
   readonly pendingSettingKeys: readonly string[];
+  /**
+   * At least one organization uses this template's key (ADR-112). A draft in use refuses removals like a
+   * published one, so the editor shows its lock banner for it too.
+   */
+  readonly isInUse: boolean;
 }
 
 /**

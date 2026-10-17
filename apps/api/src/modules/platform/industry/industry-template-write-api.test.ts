@@ -345,6 +345,40 @@ describe("PATCH /platform/industry-templates", () => {
   });
 });
 
+describe("isInUse on the template detail", () => {
+  it("is false for an unused draft and true once an organization is moved onto it", async () => {
+    const created = await createFrom("SALON", "FLAG_DRAFT");
+    const draft = detailOf(created);
+    const before = await operator.call("get", `/industry-templates/${draft.industryTemplateId}`);
+    const owner = await newActor(harness.app);
+    const { organizationId } = await createOrganizationAs(owner, harness.connections, {
+      industryTemplateKey: "RETAIL",
+    });
+    const moved = await operator.call(
+      "post",
+      `/organizations/${organizationId}/change-industry-template`,
+      { industryTemplateKey: "FLAG_DRAFT", reason: "pilot on a draft" },
+    );
+    const after = await operator.call("get", `/industry-templates/${draft.industryTemplateId}`);
+    const renamed = await operator.call(
+      "patch",
+      `/industry-templates/${draft.industryTemplateId}`,
+      {
+        version: after.body.data.version,
+        reason: "reword the description",
+        description: { bn: "নতুন বর্ণনা", en: "New description" },
+      },
+    );
+
+    expect(created.body.data.isInUse).toBe(false);
+    expect(before.body.data.isInUse).toBe(false);
+    expect(moved.status).toBe(200);
+    expect(after.body.data.isInUse).toBe(true);
+    expect(renamed.status).toBe(200);
+    expect(renamed.body.data.isInUse).toBe(true);
+  });
+});
+
 describe("publish and retire", () => {
   it("publishes for signup, retires new signups, and publishes again", async () => {
     const created = detailOf(await createFrom("RETAIL", "SIGNUP_SHOP"));
