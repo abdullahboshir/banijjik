@@ -26,7 +26,7 @@ export function FormField({
   children,
 }: FormFieldProps): ReactElement {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <label htmlFor={htmlFor} className="text-small font-semibold text-primary">
         {label}
         {required ? (

@@ -39,7 +39,11 @@ function DataTable<Row>({ columns, rows, rowKey, onRowSelect }: RowsProps<Row>):
       <thead className="bg-subtle text-secondary">
         <tr>
           {columns.map((column) => (
-            <th key={column.columnKey} scope="col" className={cn("px-3 py-2", alignClass(column))}>
+            <th
+              key={column.columnKey}
+              scope="col"
+              className={cn("px-3 py-3 font-semibold", alignClass(column))}
+            >
               {column.header}
             </th>
           ))}
@@ -60,7 +64,7 @@ function DataTable<Row>({ columns, rows, rowKey, onRowSelect }: RowsProps<Row>):
             )}
           >
             {columns.map((column) => (
-              <td key={column.columnKey} className={cn("px-3 py-3", alignClass(column))}>
+              <td key={column.columnKey} className={cn("px-3 py-4", alignClass(column))}>
                 {column.cell(row)}
               </td>
             ))}

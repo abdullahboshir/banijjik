@@ -23,7 +23,7 @@ export function StatusBadge({ requestType, status, label }: StatusBadgeProps): R
     <span
       data-tone={tone}
       className={cn(
-        "inline-flex items-center rounded-full border bg-surface px-2 py-0.5 text-caption font-semibold",
+        "inline-flex items-center rounded-full border bg-surface px-2.5 py-0.5 text-caption font-semibold",
         TONE_CLASS[tone],
       )}
     >
