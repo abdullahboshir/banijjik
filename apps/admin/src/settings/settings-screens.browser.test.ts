@@ -49,9 +49,12 @@ const ROLE_PERMISSIONS = [
   PERMISSION_KEY.ORGANIZATION_MEMBER_READ,
   PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
 ];
-/** A message with the {term} placeholder, filled with the catalog's word for a location (no term renamed here). */
+/** The seeded business is on the retail template, whose own word for a location is "শাখা" (card 2.8). */
+const TEMPLATE_LOCATION_TERM = "শাখা";
+
+/** A message with the {term} placeholder, filled with the word the business uses for a location. */
 function withLocationTerm(messageKey: string): string {
-  return message(messageKey).replace("{term}", message("locations.term"));
+  return message(messageKey).replace("{term}", TEMPLATE_LOCATION_TERM);
 }
 
 const LOCATIONS_LINK = 'a[href="/acme/settings/locations"]';
