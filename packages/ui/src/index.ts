@@ -26,8 +26,6 @@ export {
 export type { CheckboxProps, FormFieldProps, SubmitBarProps } from "./components/form.js";
 export { MoneyText } from "./components/money-text.js";
 export type { MoneyTextProps } from "./components/money-text.js";
-export { PageHeader } from "./components/page-header.js";
-export type { PageHeaderProps } from "./components/page-header.js";
 export { QuickCreateSheet } from "./components/quick-create-sheet.js";
 export type { QuickCreateAction, QuickCreateSheetProps } from "./components/quick-create-sheet.js";
 export { Sheet, SheetContent } from "./components/sheet.js";

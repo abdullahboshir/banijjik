@@ -4,7 +4,7 @@ import { AppShell } from "./app-shell.js";
 import { EmptyState } from "./empty-state.js";
 import { FormField, TextInput, formFieldMessageId } from "./form.js";
 import { MoneyText } from "./money-text.js";
-import { PageHeader } from "./page-header.js";
+import { PageLayout } from "./page-layout.js";
 import { Skeleton } from "./skeleton.js";
 import { StatusBadge } from "./status-badge.js";
 import { TopBar } from "./top-bar.js";
@@ -67,7 +67,7 @@ describe("page pieces", () => {
 
   it("renders the page title as the main heading with actions and filters", () => {
     render(
-      <PageHeader title="অর্ডারসমূহ" actions={<button>নতুন</button>} filters={<p>ফিল্টার</p>} />,
+      <PageLayout title="অর্ডারসমূহ" actions={<button>নতুন</button>} filters={<p>ফিল্টার</p>} />,
     );
     expect(screen.getByRole("heading", { level: 1, name: "অর্ডারসমূহ" })).not.toBeNull();
     expect(screen.getByText("ফিল্টার")).not.toBeNull();
