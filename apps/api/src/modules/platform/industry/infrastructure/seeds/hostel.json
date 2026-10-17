@@ -28,7 +28,7 @@
     "bookkeeping"
   ],
   "configuration": {
-    "contactRoleKeys": ["CUSTOMER"],
+    "contactRoleKeys": ["CUSTOMER", "RELATED"],
     "relationKeys": ["GUARDIAN_OF"],
     "resourceTypes": [
       {
@@ -46,6 +46,10 @@
       "contact": {
         "bn": "বোর্ডার",
         "en": "Resident"
+      },
+      "contact.RELATED": {
+        "bn": "অভিভাবক",
+        "en": "Guardian"
       },
       "offering": {
         "bn": "পণ্য",
@@ -103,7 +107,8 @@
         "label": {
           "bn": "অভিভাবক",
           "en": "Guardian"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -121,7 +126,8 @@
         "label": {
           "bn": "শিক্ষাপ্রতিষ্ঠান বা কর্মস্থল",
           "en": "Institution or workplace"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -139,7 +145,8 @@
         "label": {
           "bn": "জাতীয় পরিচয় বা শিক্ষার্থী আইডি",
           "en": "National or student ID"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -172,7 +179,8 @@
             "bn": "নিরামিষ",
             "en": "Vegetarian"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       }
     ],
     "settingsDefaults": {

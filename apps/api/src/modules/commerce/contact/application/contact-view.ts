@@ -27,6 +27,11 @@ export async function viewContact(
   return {
     contact,
     relatedNames,
-    customFields: readableCustomFields({ stored: contact.customFields, fields, canReadSensitive }),
+    customFields: readableCustomFields({
+      stored: contact.customFields,
+      fields,
+      contactRoles: contact.contactRoles,
+      canReadSensitive,
+    }),
   };
 }

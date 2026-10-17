@@ -1,5 +1,6 @@
 import {
   CUSTOM_FIELD_DEFINITION_STATUS,
+  type ContactRole,
   CUSTOM_FIELD_SCOPE,
   type CustomFieldEntityType,
   type EffectiveCustomField,
@@ -90,6 +91,13 @@ function toIndustryField(input: {
   return { ...industryFieldOf({ entityType, field, index, preference }), ...hiddenMark(isHidden) };
 }
 
+/** The roles a contact field belongs to; absent means every role (ADR-113). */
+function rolesOf(roles: readonly ContactRole[] | undefined): {
+  appliesToContactRoles?: readonly ContactRole[];
+} {
+  return roles === undefined ? {} : { appliesToContactRoles: roles };
+}
+
 function hiddenMark(isHidden: boolean): { isHidden?: true } {
   return isHidden ? { isHidden: true } : {};
 }
@@ -127,6 +135,7 @@ function optionalIndustryParts(field: IndustryTemplateCustomField): Partial<Effe
     ...(field.optionLabels === undefined ? {} : { optionLabels: field.optionLabels }),
     ...(field.referenceEntity === undefined ? {} : { referenceEntity: field.referenceEntity }),
     ...(field.link === undefined ? {} : { link: field.link }),
+    ...rolesOf(field.appliesToContactRoles),
   };
 }
 
@@ -160,5 +169,6 @@ function optionalDefinitionParts(definition: CustomFieldDefinition): Partial<Eff
     ...(definition.referenceEntity === undefined
       ? {}
       : { referenceEntity: definition.referenceEntity }),
+    ...rolesOf(definition.appliesToContactRoles),
   };
 }

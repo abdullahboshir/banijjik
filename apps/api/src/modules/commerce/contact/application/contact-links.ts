@@ -1,12 +1,17 @@
 import {
   CONTACT_ROLE,
   CUSTOM_FIELD_TYPE,
+  type ContactRole,
   type EffectiveCustomField,
   type IndustryTemplateContactLink,
 } from "@banijjik/contracts";
 import { CONTACT_SOURCE, CONTACT_STATUS, CONTACT_TYPE } from "@banijjik/contracts/contact";
 import { asId, isUuidV7, type ContactId, type OrganizationId, type UserId } from "@banijjik/ids";
-import { contactLinkCreateSchema, type ContactLinkCreateValue } from "@banijjik/validation";
+import {
+  contactLinkCreateSchema,
+  fieldAppliesToContactRoles,
+  type ContactLinkCreateValue,
+} from "@banijjik/validation";
 import { Contact } from "../domain/contact.entity.js";
 import { invalidField } from "../domain/errors.js";
 import type { ContactWriteDependencies } from "./contact-dependencies.js";
@@ -29,12 +34,16 @@ function pathOf(fieldKey: string): string {
 }
 
 /** The contact-link fields the admin form shows: a REFERENCE to a contact that carries a `link` (ADR-073). */
-export function linkFieldsOf(fields: readonly EffectiveCustomField[]): LinkField[] {
+export function linkFieldsOf(
+  fields: readonly EffectiveCustomField[],
+  contactRoles: readonly ContactRole[],
+): LinkField[] {
   return fields.flatMap((field) =>
     field.fieldType === CUSTOM_FIELD_TYPE.REFERENCE &&
     field.referenceEntity === "contact" &&
     field.link !== undefined &&
-    field.visibility.admin
+    field.visibility.admin &&
+    fieldAppliesToContactRoles(field, contactRoles)
       ? [{ fieldKey: field.fieldKey, link: field.link }]
       : [],
   );
@@ -50,7 +59,8 @@ async function createLinkedContact(
     contactType: CONTACT_TYPE.PERSON,
     name: spec.name,
     phoneE164: spec.phone,
-    contactRoles: [CONTACT_ROLE.CUSTOMER],
+    // A linked person is known through the contact that names them: a guardian, not a customer (ADR-113).
+    contactRoles: [CONTACT_ROLE.RELATED],
     source: CONTACT_SOURCE.LINKED,
     createdByUserId: actor.actorUserId,
     now: dependencies.clock.now(),
@@ -127,13 +137,15 @@ export async function resolveContactLinks(
   input: LinkActor & {
     readonly requested: Readonly<Record<string, unknown>>;
     readonly fields: readonly EffectiveCustomField[];
+    /** The roles of the contact that owns the fields: only fields that apply to them are links. */
+    readonly contactRoles: readonly ContactRole[];
     readonly ownerId?: ContactId | undefined;
     /** The phone of the contact that owns the field; a link cannot create a contact with it. */
     readonly ownerPhoneE164?: string | undefined;
   },
 ): Promise<Record<string, unknown>> {
   const resolved: Record<string, unknown> = { ...input.requested };
-  for (const { fieldKey } of linkFieldsOf(input.fields)) {
+  for (const { fieldKey } of linkFieldsOf(input.fields, input.contactRoles)) {
     const value = input.requested[fieldKey];
     if (value === undefined || value === null) continue;
     resolved[fieldKey] = await resolveOne(dependencies, input, {
@@ -174,11 +186,12 @@ export async function syncLinkRelations(
     readonly actorUserId: UserId;
     readonly ownerId: ContactId;
     readonly fields: readonly EffectiveCustomField[];
+    readonly contactRoles: readonly ContactRole[];
     readonly before: Readonly<Record<string, unknown>>;
     readonly after: Readonly<Record<string, unknown>>;
   },
 ): Promise<void> {
-  for (const { fieldKey, link } of linkFieldsOf(input.fields)) {
+  for (const { fieldKey, link } of linkFieldsOf(input.fields, input.contactRoles)) {
     const previous = input.before[fieldKey];
     const current = input.after[fieldKey];
     if (previous === current) continue;

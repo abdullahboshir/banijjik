@@ -15,12 +15,14 @@ import type { Clock } from "../kernel/time/index.js";
 import { buildContactRouter } from "../modules/commerce/contact/index.js";
 import type {
   ContactCustomFieldReader,
+  ContactRoleCatalog,
   DedupeModeReader,
   SensitiveValueAccess,
 } from "../modules/commerce/contact/index.js";
 import { buildEffectiveCustomFieldReader } from "../modules/core/custom-field/index.js";
 import { buildLocationLookup } from "../modules/core/organization/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
+import { buildIndustryContactRoleReader } from "../modules/platform/industry/index.js";
 
 export interface ContactRouterInput {
   readonly clock: Clock;
@@ -68,6 +70,12 @@ function contactFieldsOf(): ContactCustomFieldReader {
   };
 }
 
+/** Adapts the industry template to the contact port: the roles the template lists (ADR-113). */
+function roleCatalogOf(): ContactRoleCatalog {
+  const roles = buildIndustryContactRoleReader();
+  return { allowedRoles: (organizationId) => roles.forOrganization(organizationId) };
+}
+
 /** The contact router, mounted on the tenant pipeline (card 3.1a). */
 export function buildContactTenantRouter(input: ContactRouterInput): Router {
   return buildContactRouter({
@@ -78,6 +86,7 @@ export function buildContactTenantRouter(input: ContactRouterInput): Router {
     customFields: contactFieldsOf(),
     sensitiveAccess: sensitiveAccessOf(input.permissions),
     dedupeModes: dedupeModesOf(input),
+    roleCatalog: roleCatalogOf(),
     locations: buildLocationLookup(),
   });
 }

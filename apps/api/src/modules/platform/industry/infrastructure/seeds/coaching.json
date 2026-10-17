@@ -29,7 +29,7 @@
     "bookkeeping"
   ],
   "configuration": {
-    "contactRoleKeys": ["CUSTOMER", "LEAD"],
+    "contactRoleKeys": ["CUSTOMER", "LEAD", "RELATED", "SUPPLIER"],
     "relationKeys": ["GUARDIAN_OF"],
     "resourceTypes": [
       {
@@ -47,6 +47,10 @@
       "contact": {
         "bn": "ছাত্র-ছাত্রী",
         "en": "Student"
+      },
+      "contact.RELATED": {
+        "bn": "অভিভাবক",
+        "en": "Guardian"
       },
       "offering": {
         "bn": "পণ্য",
@@ -172,7 +176,8 @@
             "bn": "অন্যান্য",
             "en": "Other"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "contact",
@@ -209,7 +214,8 @@
             "bn": "সাধারণ",
             "en": "General"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "contact",
@@ -227,7 +233,8 @@
         "label": {
           "bn": "স্কুলের নাম",
           "en": "School name"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "contact",
@@ -251,7 +258,8 @@
         "label": {
           "bn": "অভিভাবক",
           "en": "Guardian"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "enrollment",

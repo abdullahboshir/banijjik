@@ -116,7 +116,14 @@ export class MongoCustomFieldDefinitionRepository implements CustomFieldDefiniti
             ? {}
             : { optionLabels: definition.optionLabels }),
           ...(definition.validation === undefined ? {} : { validation: definition.validation }),
+          ...(definition.appliesToContactRoles === undefined
+            ? {}
+            : { appliesToContactRoles: [...definition.appliesToContactRoles] }),
         },
+        // Going back to every role removes the list.
+        ...(definition.appliesToContactRoles === undefined
+          ? { $unset: { appliesToContactRoles: 1 } }
+          : {}),
       },
     });
     return toCustomFieldDefinition(saved);

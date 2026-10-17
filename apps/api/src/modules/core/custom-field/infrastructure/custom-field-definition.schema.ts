@@ -1,7 +1,9 @@
 import {
   CUSTOM_FIELD_DEFINITION_STATUS,
   CUSTOM_FIELD_ENTITY_TYPE,
+  CONTACT_ROLE,
   CUSTOM_FIELD_TYPE,
+  type ContactRole,
   type CustomFieldDefinitionStatus,
   type CustomFieldEntityType,
   type CustomFieldType,
@@ -35,6 +37,7 @@ export interface CustomFieldDefinitionDocument {
   optionLabels?: Readonly<Record<string, LocalizedText>>;
   validation?: CustomFieldValidationBounds;
   referenceEntity?: "contact" | "member";
+  appliesToContactRoles?: ContactRole[];
   visibility: CustomFieldVisibility;
   botAsk: boolean;
   isSearchable: boolean;
@@ -98,6 +101,11 @@ export const customFieldDefinitionSchema = new Schema<CustomFieldDefinitionDocum
     optionLabels: { type: Schema.Types.Mixed },
     validation: { type: boundsSchema },
     referenceEntity: { type: String, enum: ["contact", "member"] },
+    // No default: an empty list would read as "no role" instead of "every role".
+    appliesToContactRoles: {
+      type: [{ type: String, enum: Object.values(CONTACT_ROLE) }],
+      default: undefined,
+    },
     visibility: { type: visibilitySchema, required: true },
     botAsk: { type: Boolean, required: true },
     isSearchable: { type: Boolean, required: true },

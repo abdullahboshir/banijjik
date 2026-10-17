@@ -133,7 +133,8 @@
             "bn": "পাইকারি",
             "en": "Wholesale"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       }
     ],
     "settingsDefaults": {

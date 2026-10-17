@@ -11,6 +11,9 @@ export function definitionAuditFields(definition: CustomFieldDefinition): AuditF
     sortOrder: definition.sortOrder,
     status: definition.status,
     ...(definition.options === undefined ? {} : { options: [...definition.options] }),
+    ...(definition.appliesToContactRoles === undefined
+      ? {}
+      : { appliesToContactRoles: [...definition.appliesToContactRoles] }),
   };
 }
 

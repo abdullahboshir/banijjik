@@ -14,6 +14,7 @@ import type { ContactWriteDependencies } from "../contact-dependencies.js";
 import { mergeCustomFieldValues } from "../custom-field-values.js";
 import { assertNotDuplicate, runWithLinkRetry } from "../duplicate-guard.js";
 import { requireHomeLocation } from "../home-location.js";
+import { assertRolesAllowed } from "../role-guard.js";
 import type { HomeLocationLookup } from "../ports/settings-and-locations.js";
 import type { ContactActorInput } from "./contact-actor-input.js";
 
@@ -53,8 +54,12 @@ export class CreateContactUseCase {
   constructor(private readonly dependencies: CreateContactDependencies) {}
 
   async execute(input: CreateContactInput): Promise<ContactDetailView> {
-    const { unitOfWork, customFields, locations, dedupeModes } = this.dependencies;
+    const { unitOfWork, customFields, locations, dedupeModes, roleCatalog } = this.dependencies;
     const fields = await customFields.forContacts(input.organizationId);
+    await assertRolesAllowed(roleCatalog, {
+      organizationId: input.organizationId,
+      roles: input.contactRoles,
+    });
     const dedupeMode = await dedupeModes.read(input.organizationId);
     const homeLocationId =
       input.homeLocationId === undefined
@@ -91,6 +96,7 @@ export class CreateContactUseCase {
       requested,
       fields,
       mode: "CREATE",
+      contactRoles: input.contactRoles,
       canWriteSensitive: await sensitiveAccess.maySeeSensitive(),
     });
     const contact = Contact.create({
@@ -115,6 +121,7 @@ export class CreateContactUseCase {
       actorUserId: input.actorUserId,
       ownerId: contact.contactId,
       fields,
+      contactRoles: input.contactRoles,
       before: {},
       after: merged.values,
     });

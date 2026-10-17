@@ -15,6 +15,7 @@ import { viewContact } from "../contact-view.js";
 import { mergeCustomFieldValues, type MergedCustomFields } from "../custom-field-values.js";
 import { assertNotDuplicate, runWithLinkRetry } from "../duplicate-guard.js";
 import { requireHomeLocation } from "../home-location.js";
+import { assertRolesAllowed } from "../role-guard.js";
 import type { HomeLocationLookup } from "../ports/settings-and-locations.js";
 import type { ContactActorInput } from "./contact-actor-input.js";
 
@@ -55,8 +56,15 @@ export class UpdateContactUseCase {
   constructor(private readonly dependencies: UpdateContactDependencies) {}
 
   async execute(input: UpdateContactInput): Promise<ContactDetailView> {
-    const { unitOfWork, customFields, dedupeModes } = this.dependencies;
+    const { unitOfWork, customFields, dedupeModes, roleCatalog } = this.dependencies;
     const fields = await customFields.forContacts(input.organizationId);
+    // Only a role being set is checked: a role the template dropped later does not block other edits.
+    if (input.contactRoles !== undefined) {
+      await assertRolesAllowed(roleCatalog, {
+        organizationId: input.organizationId,
+        roles: input.contactRoles,
+      });
+    }
     const dedupeMode = await dedupeModes.read(input.organizationId);
     const homeLocationId = await this.requireHomeLocationIfSet(input);
     const ownPhone = typeof input.phoneE164 === "string" ? input.phoneE164 : undefined;
@@ -88,6 +96,8 @@ export class UpdateContactUseCase {
     const existing = await contacts.findById(input.contactId);
     if (existing === undefined) throw contactNotFound();
     await this.assertNoNewDuplicate(input, existing, dedupeMode);
+    // The fields are validated for the roles the contact has after this edit (ADR-113).
+    const contactRoles = input.contactRoles ?? existing.contactRoles;
     const merged =
       input.customFields === undefined
         ? undefined
@@ -98,12 +108,14 @@ export class UpdateContactUseCase {
               actorUserId: input.actorUserId,
               requested: input.customFields,
               fields,
+              contactRoles,
               ownerId: existing.contactId,
               ownerPhoneE164:
                 input.phoneE164 === undefined ? existing.phoneE164 : (input.phoneE164 ?? undefined),
             }),
             fields,
             mode: "UPDATE",
+            contactRoles,
             canWriteSensitive: await sensitiveAccess.maySeeSensitive(),
           });
     const edited = existing.withChanges(changesOf(input, homeLocationId, merged));
@@ -117,6 +129,7 @@ export class UpdateContactUseCase {
       actorUserId: input.actorUserId,
       ownerId: updated.contactId,
       fields,
+      contactRoles,
       before: existing.customFields,
       after: updated.customFields,
     });

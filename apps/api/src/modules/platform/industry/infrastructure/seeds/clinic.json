@@ -28,7 +28,7 @@
     "bookkeeping"
   ],
   "configuration": {
-    "contactRoleKeys": ["CUSTOMER"],
+    "contactRoleKeys": ["CUSTOMER", "RELATED", "SUPPLIER"],
     "relationKeys": ["GUARDIAN_OF"],
     "resourceTypes": [
       {
@@ -46,6 +46,10 @@
       "contact": {
         "bn": "রোগী",
         "en": "Patient"
+      },
+      "contact.RELATED": {
+        "bn": "আত্মীয়",
+        "en": "Relative"
       },
       "offering": {
         "bn": "পণ্য",
@@ -97,7 +101,8 @@
         "label": {
           "bn": "বয়স (বছর)",
           "en": "Age (years)"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -130,7 +135,8 @@
             "bn": "অন্যান্য",
             "en": "Other"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -183,7 +189,8 @@
             "bn": "ও-",
             "en": "O-"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -201,7 +208,8 @@
         "label": {
           "bn": "অ্যালার্জি",
           "en": "Allergies"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -219,7 +227,8 @@
         "label": {
           "bn": "দীর্ঘমেয়াদি সমস্যা",
           "en": "Long-term conditions"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "booking",

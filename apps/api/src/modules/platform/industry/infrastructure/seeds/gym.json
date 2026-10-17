@@ -36,7 +36,7 @@
     "enrollment"
   ],
   "configuration": {
-    "contactRoleKeys": ["CUSTOMER", "LEAD"],
+    "contactRoleKeys": ["CUSTOMER", "LEAD", "RELATED", "SUPPLIER"],
     "relationKeys": [],
     "resourceTypes": [
       {
@@ -59,6 +59,10 @@
       "contact": {
         "bn": "মেম্বার",
         "en": "Member"
+      },
+      "contact.RELATED": {
+        "bn": "জরুরি যোগাযোগ",
+        "en": "Emergency contact"
       },
       "offering": {
         "bn": "পণ্য",
@@ -106,7 +110,8 @@
         "label": {
           "bn": "ওজন (কেজি)",
           "en": "Weight (kg)"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "contact",
@@ -124,7 +129,8 @@
         "label": {
           "bn": "উচ্চতা (সেমি)",
           "en": "Height (cm)"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "contact",
@@ -161,7 +167,8 @@
             "bn": "পুনর্বাসন",
             "en": "Rehabilitation"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "contact",
@@ -179,7 +186,8 @@
         "label": {
           "bn": "জরুরি যোগাযোগ",
           "en": "Emergency contact"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "contact",
@@ -197,7 +205,8 @@
         "label": {
           "bn": "স্বাস্থ্যের নোট",
           "en": "Medical notes"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER", "LEAD"]
       },
       {
         "entityType": "enrollment",

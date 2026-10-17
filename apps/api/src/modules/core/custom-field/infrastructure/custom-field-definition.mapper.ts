@@ -41,6 +41,9 @@ export function toCustomFieldDefinitionDocument(
     ...(definition.referenceEntity === undefined
       ? {}
       : { referenceEntity: definition.referenceEntity }),
+    ...(definition.appliesToContactRoles === undefined
+      ? {}
+      : { appliesToContactRoles: [...definition.appliesToContactRoles] }),
   };
 }
 
@@ -61,6 +64,10 @@ export function toCustomFieldDefinition(
     optionLabels: withoutEmpty(stored.optionLabels),
     validation: withoutEmpty(stored.validation),
     referenceEntity: withoutEmpty(stored.referenceEntity),
+    appliesToContactRoles:
+      stored.appliesToContactRoles?.length === 0
+        ? undefined
+        : withoutEmpty(stored.appliesToContactRoles),
     visibility: stored.visibility,
     botAsk: stored.botAsk,
     isSearchable: stored.isSearchable,

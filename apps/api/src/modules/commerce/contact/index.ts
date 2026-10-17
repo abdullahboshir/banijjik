@@ -10,6 +10,7 @@ import type {
   SensitiveValueAccess,
 } from "./application/ports/custom-field-ports.js";
 import type {
+  ContactRoleCatalog,
   DedupeModeReader,
   HomeLocationLookup,
 } from "./application/ports/settings-and-locations.js";
@@ -29,6 +30,7 @@ export { contactManifest } from "./module.manifest.js";
 export { registerContactModels } from "./infrastructure/register-contact-models.js";
 export type {
   ContactCustomFieldReader,
+  ContactRoleCatalog,
   SensitiveValueAccess,
   DedupeModeReader,
   HomeLocationLookup,
@@ -45,6 +47,7 @@ export interface ContactTenantDependencies {
   readonly sensitiveAccess: SensitiveValueAccess;
   readonly dedupeModes: DedupeModeReader;
   readonly locations: HomeLocationLookup;
+  readonly roleCatalog: ContactRoleCatalog;
 }
 
 /** Composition root: repository, use cases and router are wired here and nowhere else. */
@@ -59,6 +62,7 @@ export function buildContactRouter(dependencies: ContactTenantDependencies): Rou
     customFields: dependencies.customFields,
     sensitiveAccess: dependencies.sensitiveAccess,
     dedupeModes: dependencies.dedupeModes,
+    roleCatalog: dependencies.roleCatalog,
   };
   const withLocations = { ...write, locations: dependencies.locations };
   const controller = new ContactController({

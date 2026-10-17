@@ -175,3 +175,102 @@ describe("the contact-link field of a coaching student", () => {
     expect(await countContactsByName(world, "Same Person")).toBe(0);
   });
 });
+
+describe("contact roles on a coaching organization", () => {
+  async function createRelated(world: TwoOrganizations, name: string, role = "RELATED") {
+    return world.alice.call("post", contactsPath(world.organizationA), {
+      contactType: "PERSON",
+      name,
+      contactRoles: [role],
+    });
+  }
+
+  it("creates a related person and a supplier by hand without class level or guardian", async () => {
+    const world = await aCoachingWorld();
+
+    const related = await createRelated(world, "Aunt Rina");
+    const supplier = await createRelated(world, "Book Seller", "SUPPLIER");
+
+    expect(related.status).toBe(201);
+    expect(supplier.status).toBe(201);
+  });
+
+  it("still needs class level and guardian for a customer", async () => {
+    const world = await aCoachingWorld();
+
+    const response = await world.alice.call("post", contactsPath(world.organizationA), {
+      contactType: "PERSON",
+      name: "No Fields Student",
+      contactRoles: ["CUSTOMER"],
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("creates the linked guardian as RELATED and lists it with ?role=RELATED", async () => {
+    const world = await aCoachingWorld();
+    await world.alice.call(
+      "post",
+      contactsPath(world.organizationA),
+      student("Student Roles", { create: { name: "Guardian Roles", phone: "01712349010" } }),
+    );
+
+    const related = await world.alice.call(
+      "get",
+      contactsPath(world.organizationA, "?role=RELATED"),
+    );
+    const customers = await world.alice.call(
+      "get",
+      contactsPath(world.organizationA, "?role=CUSTOMER"),
+    );
+
+    expect(related.body.data.map((row: { name: string }) => row.name)).toEqual(["Guardian Roles"]);
+    expect(related.body.data[0].contactRoles).toEqual(["RELATED"]);
+    expect(customers.body.data.map((row: { name: string }) => row.name)).toEqual(["Student Roles"]);
+  });
+
+  it("refuses a value for a field that does not apply to the contact's roles", async () => {
+    const world = await aCoachingWorld();
+
+    const response = await world.alice.call("post", contactsPath(world.organizationA), {
+      contactType: "PERSON",
+      name: "Related With Class",
+      contactRoles: ["RELATED"],
+      customFields: { class_level: "CLASS_5" },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.details.fields[0]).toEqual({
+      path: "customFields.class_level",
+      messageKey: "validation.not_applicable",
+    });
+  });
+
+  it("does not force the fields when a role is added, and keeps and hides values that stop applying", async () => {
+    const world = await aCoachingWorld();
+    const related = await createRelated(world, "Becomes Student");
+    const relatedPath = contactsPath(world.organizationA, `/${related.body.data.contactId}`);
+
+    const added = await world.alice.call("patch", relatedPath, {
+      contactRoles: ["RELATED", "CUSTOMER"],
+      version: 1,
+    });
+    const filled = await world.alice.call("patch", relatedPath, {
+      customFields: { class_level: "SSC" },
+      version: 2,
+    });
+    const onlyRelated = await world.alice.call("patch", relatedPath, {
+      contactRoles: ["RELATED"],
+      version: 3,
+    });
+    const customerAgain = await world.alice.call("patch", relatedPath, {
+      contactRoles: ["CUSTOMER"],
+      version: 4,
+    });
+
+    expect(added.status).toBe(200);
+    expect(filled.body.data.customFields).toEqual({ class_level: "SSC" });
+    expect(onlyRelated.body.data.customFields).toEqual({});
+    expect(customerAgain.body.data.customFields).toEqual({ class_level: "SSC" });
+  });
+});

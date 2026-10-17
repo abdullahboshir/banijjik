@@ -464,3 +464,21 @@ describe("audit and idempotency", () => {
     expect(second.body.data.contactId).toBe(first.body.data.contactId);
   });
 });
+
+describe("roles within the template's list", () => {
+  it("refuses a role the template does not list with 400 at contactRoles", async () => {
+    const world = await aWorld();
+
+    const created = await createContact(world, { name: "Guardian", contactRoles: ["RELATED"] });
+    const ok = await createContact(world, { name: "Buyer" });
+    const updated = await world.alice.call(
+      "patch",
+      contactsPath(world.organizationA, `/${ok.body.data.contactId}`),
+      { contactRoles: ["RELATED"], version: 1 },
+    );
+
+    expect(created.status).toBe(400);
+    expect(created.body.error.details.fields[0].path).toBe("contactRoles");
+    expect(updated.status).toBe(400);
+  });
+});

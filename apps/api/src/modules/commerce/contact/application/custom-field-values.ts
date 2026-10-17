@@ -3,11 +3,13 @@ import {
   VALIDATION_FALLBACK_MESSAGE_KEY,
   VALIDATION_MESSAGE_KEYS,
   type AuditChanges,
+  type ContactRole,
   type AuditValue,
   type EffectiveCustomField,
 } from "@banijjik/contracts";
 import {
   buildCustomFieldValuesSchema,
+  fieldAppliesToContactRoles,
   CUSTOM_FIELD_AUDIENCE,
   CUSTOM_FIELD_VALUE_MODE,
   redactSensitive,
@@ -35,14 +37,26 @@ function toMessageKey(code: string): string {
     : VALIDATION_FALLBACK_MESSAGE_KEY;
 }
 
+/** A custom issue may carry its own key (`validation.not_applicable`); any other issue is named by its Zod code. */
+function messageKeyOf(issue: { readonly code: string; readonly message?: string }): string {
+  if (issue.message !== undefined && VALIDATION_MESSAGE_KEYS.includes(issue.message)) {
+    return issue.message;
+  }
+  return toMessageKey(issue.code);
+}
+
 /** The same shape as a schema failure (14-API.md section 3), with the path `customFields.<key>`. */
 function validationFailure(
-  issues: readonly { readonly path: readonly PropertyKey[]; readonly code: string }[],
+  issues: readonly {
+    readonly path: readonly PropertyKey[];
+    readonly code: string;
+    readonly message?: string;
+  }[],
 ): DomainRuleError {
   return invalidFields(
     issues.map((issue) => ({
       path: [REQUEST_PATH_PREFIX, ...issue.path.map(String)].join("."),
-      messageKey: toMessageKey(issue.code),
+      messageKey: messageKeyOf(issue),
     })),
   );
 }
@@ -116,6 +130,8 @@ export function mergeCustomFieldValues(input: {
   readonly requested: Readonly<Record<string, unknown>>;
   readonly fields: readonly EffectiveCustomField[];
   readonly mode: CustomFieldValueMode;
+  /** The roles of the contact after this write: a field limited to other roles is not required and not accepted. */
+  readonly contactRoles: readonly ContactRole[];
   /** False when the caller may not read sensitive values: any sensitive key in the request is then a 403. */
   readonly canWriteSensitive: boolean;
 }): MergedCustomFields {
@@ -124,6 +140,7 @@ export function mergeCustomFieldValues(input: {
   const schema = buildCustomFieldValuesSchema(fields, {
     audience: CUSTOM_FIELD_AUDIENCE.ADMIN,
     mode: input.mode === "CREATE" ? CUSTOM_FIELD_VALUE_MODE.CREATE : CUSTOM_FIELD_VALUE_MODE.UPDATE,
+    contactRoles: input.contactRoles,
   });
   const parsed = schema.safeParse(requested);
   if (!parsed.success) throw validationFailure(parsed.error.issues);
@@ -140,9 +157,13 @@ export function mergeCustomFieldValues(input: {
 export function readableCustomFields(input: {
   readonly stored: Readonly<Record<string, unknown>>;
   readonly fields: readonly EffectiveCustomField[];
+  readonly contactRoles: readonly ContactRole[];
   readonly canReadSensitive: boolean;
 }): Record<string, unknown> {
-  const visibleFields = input.fields.filter((field) => field.visibility.admin);
+  // A field the contact's roles do not use is treated like a hidden one: stored, not returned (ADR-113).
+  const visibleFields = input.fields.filter(
+    (field) => field.visibility.admin && fieldAppliesToContactRoles(field, input.contactRoles),
+  );
   const visibleKeys = new Set(visibleFields.map((field) => field.fieldKey));
   const current = Object.fromEntries(
     Object.entries(input.stored).filter(([fieldKey]) => visibleKeys.has(fieldKey)),

@@ -15,6 +15,10 @@ import { CreateIndustryTemplateUseCase } from "./application/use-cases/create-in
 import { EnsureSeedIndustryTemplatesUseCase } from "./application/use-cases/ensure-seed-industry-templates.use-case.js";
 import { GetIndustryTemplateUseCase } from "./application/use-cases/get-industry-template.use-case.js";
 import {
+  ReadIndustryContactRolesUseCase,
+  type IndustryContactRoleReader,
+} from "./application/use-cases/read-industry-contact-roles.use-case.js";
+import {
   ReadIndustryCustomFieldsUseCase,
   type IndustryCustomFieldReader,
 } from "./application/use-cases/read-industry-custom-fields.use-case.js";
@@ -164,6 +168,19 @@ export type { IndustryCustomFieldReader };
 export function buildIndustryCustomFieldReader(): IndustryCustomFieldReader {
   const organizations = buildOrganizationConfigSource();
   return new ReadIndustryCustomFieldsUseCase(new MongoIndustryTemplateRepository(), {
+    findTemplateKey: async (organizationId) => {
+      const snapshot = await organizations.find(organizationId);
+      return snapshot?.industryTemplateKey;
+    },
+  });
+}
+
+export type { IndustryContactRoleReader };
+
+/** The contact roles the active organization's template allows (ADR-113). */
+export function buildIndustryContactRoleReader(): IndustryContactRoleReader {
+  const organizations = buildOrganizationConfigSource();
+  return new ReadIndustryContactRolesUseCase(new MongoIndustryTemplateRepository(), {
     findTemplateKey: async (organizationId) => {
       const snapshot = await organizations.find(organizationId);
       return snapshot?.industryTemplateKey;

@@ -1,5 +1,6 @@
 import {
   CUSTOM_FIELD_DEFINITION_STATUS,
+  type ContactRole,
   CUSTOM_FIELD_TYPE,
   type CustomFieldDefinitionStatus,
   type CustomFieldEntityType,
@@ -29,6 +30,8 @@ export interface CustomFieldDefinitionProps {
   readonly optionLabels: Readonly<Record<string, LocalizedText>> | undefined;
   readonly validation: CustomFieldValidationBounds | undefined;
   readonly referenceEntity: "contact" | "member" | undefined;
+  /** Contact fields only; absent means every role (ADR-113). */
+  readonly appliesToContactRoles: readonly ContactRole[] | undefined;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
@@ -54,6 +57,7 @@ export interface NewCustomFieldDefinitionInput {
   readonly optionLabels?: Readonly<Record<string, LocalizedText>> | undefined;
   readonly validation?: CustomFieldValidationBounds | undefined;
   readonly referenceEntity?: "contact" | "member" | undefined;
+  readonly appliesToContactRoles?: readonly ContactRole[] | undefined;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
@@ -69,6 +73,8 @@ export interface CustomFieldDefinitionChanges {
   readonly options?: readonly string[] | undefined;
   readonly optionLabels?: Readonly<Record<string, LocalizedText>> | undefined;
   readonly validation?: CustomFieldValidationBounds | undefined;
+  /** A list sets the roles; null goes back to every role. */
+  readonly appliesToContactRoles?: readonly ContactRole[] | null | undefined;
   readonly visibility?: CustomFieldVisibility | undefined;
   readonly botAsk?: boolean | undefined;
   readonly isSearchable?: boolean | undefined;
@@ -104,6 +110,8 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
   readonly optionLabels: Readonly<Record<string, LocalizedText>> | undefined;
   readonly validation: CustomFieldValidationBounds | undefined;
   readonly referenceEntity: "contact" | "member" | undefined;
+  /** Contact fields only; absent means every role (ADR-113). */
+  readonly appliesToContactRoles: readonly ContactRole[] | undefined;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
@@ -129,6 +137,7 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
     this.optionLabels = props.optionLabels;
     this.validation = props.validation;
     this.referenceEntity = props.referenceEntity;
+    this.appliesToContactRoles = props.appliesToContactRoles;
     this.visibility = props.visibility;
     this.botAsk = props.botAsk;
     this.isSearchable = props.isSearchable;
@@ -156,6 +165,7 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
       optionLabels: input.optionLabels,
       validation: input.validation,
       referenceEntity: input.referenceEntity,
+      appliesToContactRoles: input.appliesToContactRoles,
       visibility: input.visibility,
       botAsk: input.botAsk,
       isSearchable: input.isSearchable,
@@ -198,6 +208,7 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
       options,
       optionLabels: changes.optionLabels ?? this.optionLabels,
       validation: changes.validation ?? this.validation,
+      appliesToContactRoles: this.nextRoles(changes.appliesToContactRoles),
       visibility: changes.visibility ?? this.visibility,
       botAsk: changes.botAsk ?? this.botAsk,
       isSearchable: changes.isSearchable ?? this.isSearchable,
@@ -216,6 +227,17 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
       updatedAt: now,
       updatedByUserId: actorUserId,
     });
+  }
+
+  /** Roles belong to contact fields only; null goes back to every role (ADR-113). */
+  private nextRoles(
+    roles: readonly ContactRole[] | null | undefined,
+  ): readonly ContactRole[] | undefined {
+    if (roles === undefined) return this.appliesToContactRoles;
+    if (roles !== null && this.entityType !== "contact") {
+      throw invalidField("appliesToContactRoles", "validation.invalid_value");
+    }
+    return roles ?? undefined;
   }
 
   private nextOptions(options: readonly string[] | undefined): readonly string[] | undefined {
@@ -243,6 +265,7 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
       optionLabels: this.optionLabels,
       validation: this.validation,
       referenceEntity: this.referenceEntity,
+      appliesToContactRoles: this.appliesToContactRoles,
       visibility: this.visibility,
       botAsk: this.botAsk,
       isSearchable: this.isSearchable,

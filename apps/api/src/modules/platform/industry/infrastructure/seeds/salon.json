@@ -35,7 +35,7 @@
     "booking"
   ],
   "configuration": {
-    "contactRoleKeys": ["CUSTOMER", "SUPPLIER"],
+    "contactRoleKeys": ["CUSTOMER", "SUPPLIER", "RELATED"],
     "relationKeys": [],
     "resourceTypes": [
       {
@@ -123,7 +123,8 @@
             "bn": "সংবেদনশীল",
             "en": "Sensitive"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -156,7 +157,8 @@
             "bn": "কোঁকড়ানো",
             "en": "Curly"
           }
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -174,7 +176,8 @@
         "label": {
           "bn": "অ্যালার্জি",
           "en": "Allergies"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "contact",
@@ -193,7 +196,8 @@
         "label": {
           "bn": "পছন্দের স্টাইলিস্ট",
           "en": "Preferred stylist"
-        }
+        },
+        "appliesToContactRoles": ["CUSTOMER"]
       },
       {
         "entityType": "booking",
