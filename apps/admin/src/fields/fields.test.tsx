@@ -10,7 +10,7 @@ import { banglaText, banglaTranslator } from "../auth/test-helpers";
 import { effectiveField } from "../custom-fields/test-fixtures";
 import { ApiError } from "../lib/api/api-error";
 import { accessFixture, type AccessOptions } from "../settings/test-fixtures";
-import { emptyFieldForm, formOfField } from "./field-form";
+import { emptyFieldForm, formOfField } from "./field-state";
 import { fieldLabelsOf } from "./field-labels";
 import { toFieldRows } from "./field-rows";
 

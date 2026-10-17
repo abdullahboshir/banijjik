@@ -24,5 +24,6 @@ manifest. This module does not know those keys.
   `settings.module.toggled` event and one `configVersion` bump.
 - **Resolver:** `buildResolvedTermTexts` and `buildClientSettingsSource` are the ports the
   resolver calls with the effective module set. They do not read `OrgConfigReader`.
-- **Not here:** a settings or terms screen (card 2.7). Unregistered template setting keys are
+- **Menu and screens (card 2.7b, ADR-108):** the manifest declares the menu entries `settings.general`, `settings.terms` and `settings.modules` (group `settings`, orders 50 to 70, permission `settings.setting.read`); the admin app draws the screens. `GET` and `PATCH /settings` also return `definitions` (value spec and `allowsLocationOverride` per returned key) so a client draws inputs from the registry.
+- **Not here:** Unregistered template setting keys are
   ignored until their module declares them.

@@ -265,3 +265,42 @@ export async function seedCustomFields(
     });
   }
 }
+
+/** A custom field the template brings, in the shape of the template configuration. */
+export interface SeededTemplateField {
+  entityType: "organization" | "member";
+  fieldKey: string;
+  fieldType: "TEXT";
+  isRequired: boolean;
+  label: { bn: string; en: string };
+}
+
+/**
+ * Adds a custom field to the seeded templates, and bumps the business's config version so
+ * the API rebuilds its cached config. No API edits a published template that tenants use (ADR-101).
+ */
+export async function seedTemplateField(
+  stack: BrowserStack,
+  slug: string,
+  field: SeededTemplateField,
+): Promise<void> {
+  const client = await MongoClient.connect(stack.mongoUri);
+  try {
+    const platform = client.db("browser_platform");
+    // Every seeded template gets the field, so the test never names the template the business uses.
+    await platform.collection("industry_templates").updateMany({}, {
+      $push: {
+        "configuration.customFields": {
+          ...field,
+          botAsk: false,
+          visibility: { admin: true, storefront: false, bot: false },
+          isSearchable: false,
+          isSensitive: false,
+        },
+      },
+    } as never);
+    await platform.collection("organizations").updateOne({ slug }, { $inc: { configVersion: 1 } });
+  } finally {
+    await client.close();
+  }
+}

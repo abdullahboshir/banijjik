@@ -9,14 +9,13 @@ import { SettingsTextField } from "../settings/settings-text-field";
 import { SheetFeedback } from "../settings/sheet-feedback";
 import { useSheetSubmit, type SheetSendResult } from "../settings/use-sheet-submit";
 import { useTranslator } from "@banijjik/web-client/client";
+import { buildFieldCreate, buildFieldUpdate } from "./field-form";
 import {
-  buildFieldCreate,
-  buildFieldUpdate,
   FIELD_FORM_NAMES,
   FIELD_TYPE_CHOICES,
   needsOptions,
   type FieldFormState,
-} from "./field-form";
+} from "./field-state";
 import type { FieldLabels } from "./field-labels";
 import type { FieldRowView } from "./field-rows";
 

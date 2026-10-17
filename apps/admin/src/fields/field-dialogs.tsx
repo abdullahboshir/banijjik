@@ -12,7 +12,8 @@ import { SettingsTextField } from "../settings/settings-text-field";
 import { SheetFeedback } from "../settings/sheet-feedback";
 import { useSheetSubmit, type SheetSendResult } from "../settings/use-sheet-submit";
 import { FieldFormSheet } from "./field-form-sheet";
-import { buildPreferenceChange, formOfField } from "./field-form";
+import { buildPreferenceChange } from "./field-form";
+import { formOfField } from "./field-state";
 import type { FieldLabels } from "./field-labels";
 import type { FieldRowView } from "./field-rows";
 

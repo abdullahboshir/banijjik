@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildFieldCreate,
-  buildFieldUpdate,
-  buildPreferenceChange,
-  emptyFieldForm,
-  formOfField,
-} from "./field-form";
+import { buildFieldCreate, buildFieldUpdate, buildPreferenceChange } from "./field-form";
+import { emptyFieldForm, formOfField } from "./field-state";
 import type { FieldRowView } from "./field-rows";
 
 function aRow(overrides: Partial<FieldRowView> = {}): FieldRowView {

@@ -3,7 +3,7 @@
 import type { CustomFieldEntityType } from "@banijjik/contracts";
 import type { ComponentType, ReactElement } from "react";
 import { LazySheetButton } from "../settings/lazy-sheet-button";
-import { emptyFieldForm } from "./field-form";
+import { emptyFieldForm } from "./field-state";
 import type { FieldFormSheetProps } from "./field-form-sheet";
 import type { FieldLabels } from "./field-labels";
 
