@@ -677,3 +677,63 @@ describe("setting defaults against the registry", () => {
     expect(detailOf(accepted).pendingSettingKeys).toContain("sales.returnWindowDays");
   });
 });
+
+describe("contact roles in template writes (ADR-113)", () => {
+  async function patchConfiguration(template: TemplateDetail, configuration: object) {
+    return operator.call("patch", `/industry-templates/${template.industryTemplateId}`, {
+      version: template.version,
+      reason: "roles",
+      configuration,
+    });
+  }
+
+  it("accepts RELATED and changed field roles on a published template, and lists a removed role", async () => {
+    const published = detailOf(await publish(detailOf(await createFrom("RETAIL", "ROLE_SHOP"))));
+    const retail = seed("RETAIL").configuration;
+    const withRelated = {
+      ...retail,
+      contactRoleKeys: [...retail.contactRoleKeys, "RELATED"],
+      customFields: retail.customFields.map((field) =>
+        field.entityType === "contact"
+          ? { ...field, appliesToContactRoles: ["CUSTOMER", "LEAD"] }
+          : field,
+      ),
+    };
+
+    const added = await patchConfiguration(published, withRelated);
+    const removed = await patchConfiguration(detailOf(added), retail);
+
+    expect(added.status).toBe(200);
+    expect(removed.status).toBe(422);
+    expect(removed.body.error.details.removed).toEqual(["contactRole:RELATED"]);
+  });
+
+  it("refuses roles on a field of another entity and a contact link without RELATED", async () => {
+    const created = detailOf(await createFrom("RETAIL", "BAD_ROLE_SHOP"));
+    const retail = seed("RETAIL").configuration;
+    const field = retail.customFields.find((entry) => entry.entityType === "contact");
+    if (field === undefined) throw new Error("RETAIL has a contact field");
+    const memberField = { ...field, entityType: "member", appliesToContactRoles: ["CUSTOMER"] };
+    const plain: Record<string, unknown> = { ...field };
+    delete plain["options"];
+    delete plain["optionLabels"];
+    const linkField = {
+      ...plain,
+      fieldKey: "buddy",
+      fieldType: "REFERENCE",
+      referenceEntity: "contact",
+      link: { relationKey: "GUARDIAN_OF", createIfMissingByPhone: true, defaultBillTo: false },
+    };
+
+    const onMember = await patchConfiguration(created, { ...retail, customFields: [memberField] });
+    const withoutRelated = await patchConfiguration(created, {
+      ...retail,
+      customFields: [linkField],
+    });
+
+    expect(onMember.status).toBe(400);
+    expect(withoutRelated.status).toBe(400);
+    expect(onMember.body.error.details.fields[0].path).toBe("configuration.customFields");
+    expect(withoutRelated.body.error.details.fields[0].path).toBe("configuration.contactRoleKeys");
+  });
+});

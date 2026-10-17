@@ -186,3 +186,32 @@ describe("removedKindsAndModules", () => {
     ).toEqual(["kind:SERVICE", "module:booking"]);
   });
 });
+
+describe("contact roles in a template change (ADR-113)", () => {
+  const CONTACT_FIELD = { ...NOTE_FIELD, entityType: "contact", offeringKind: undefined };
+
+  it("treats a new role, a new field role limit and a changed one as additions", () => {
+    const before = {
+      ...BEFORE,
+      configuration: configuration({ customFields: [CONTACT_FIELD] }),
+    };
+    const withLimit = {
+      ...BEFORE,
+      configuration: configuration({
+        contactRoleKeys: ["CUSTOMER", "SUPPLIER", "RELATED"],
+        customFields: [{ ...CONTACT_FIELD, appliesToContactRoles: ["CUSTOMER"] }],
+      }),
+    };
+    const changedLimit = {
+      ...withLimit,
+      configuration: configuration({
+        contactRoleKeys: ["CUSTOMER", "SUPPLIER", "RELATED"],
+        customFields: [{ ...CONTACT_FIELD, appliesToContactRoles: ["CUSTOMER", "RELATED"] }],
+      }),
+    };
+
+    expect(removedByTemplateChange(before, withLimit)).toEqual([]);
+    expect(removedByTemplateChange(withLimit, changedLimit)).toEqual([]);
+    expect(removedByTemplateChange(withLimit, before)).toEqual(["contactRole:RELATED"]);
+  });
+});
