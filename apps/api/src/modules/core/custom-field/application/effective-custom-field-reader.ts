@@ -16,11 +16,29 @@ export interface EffectiveReaderDependencies {
 export class EffectiveCustomFieldReaderService implements EffectiveCustomFieldReader {
   constructor(private readonly dependencies: EffectiveReaderDependencies) {}
 
-  async forEntity(
+  forEntity(
     organizationId: OrganizationId,
     entityType: CustomFieldEntityType,
     offeringKind?: OfferingKind,
   ): Promise<ReturnType<typeof mergeEffectiveFields>> {
+    return this.read({ organizationId, entityType, offeringKind, includeHidden: false });
+  }
+
+  forManagement(
+    organizationId: OrganizationId,
+    entityType: CustomFieldEntityType,
+    offeringKind?: OfferingKind,
+  ): Promise<ReturnType<typeof mergeEffectiveFields>> {
+    return this.read({ organizationId, entityType, offeringKind, includeHidden: true });
+  }
+
+  private async read(request: {
+    readonly organizationId: OrganizationId;
+    readonly entityType: CustomFieldEntityType;
+    readonly offeringKind: OfferingKind | undefined;
+    readonly includeHidden: boolean;
+  }): Promise<ReturnType<typeof mergeEffectiveFields>> {
+    const { organizationId, entityType, offeringKind } = request;
     const [industryFields, preferences, definitions] = await Promise.all([
       this.dependencies.industry.forOrganization(organizationId),
       this.dependencies.preferences.listFor(entityType, offeringKind),
@@ -32,6 +50,7 @@ export class EffectiveCustomFieldReaderService implements EffectiveCustomFieldRe
       industryFields,
       preferences,
       definitions,
+      includeHidden: request.includeHidden,
     });
   }
 }

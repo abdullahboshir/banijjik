@@ -203,9 +203,46 @@ describe("custom field API", () => {
     const hair = afterPrefer.body.data.find(
       (field: { fieldKey: string }) => field.fieldKey === "hair_type",
     );
-    expect(keys).not.toContain("skin_type");
+    // The management list keeps a hidden template field, marked, so it can be shown again (ADR-108).
+    const skin = afterPrefer.body.data.find(
+      (field: { fieldKey: string }) => field.fieldKey === "skin_type",
+    );
+    expect(skin).toMatchObject({ isHidden: true });
     expect(keys[0]).toBe("preferred_stylist");
     expect(hair.label).toMatchObject({ bn: "চুল", en: "Hair" });
+  });
+
+  it("keeps a hidden template field out of /me/config and shows it in the list until it is shown again", async () => {
+    const world = await aWorld();
+    await useTemplate(world.organizationA, "SALON");
+    const path = fieldsPath(world.organizationA);
+    await world.alice.call("patch", `${path}/preferences`, {
+      preferences: [{ entityType: "contact", fieldKey: "skin_type", isHidden: true }],
+    });
+
+    const config = await world.alice.call("get", `/orgs/${world.organizationA}/me/config`);
+    const hiddenList = await world.alice.call("get", `${path}?entityType=contact`);
+    const row = hiddenList.body.data.find(
+      (field: { fieldKey: string }) => field.fieldKey === "skin_type",
+    );
+    const shown = await world.alice.call("patch", `${path}/preferences`, {
+      preferences: [
+        { entityType: "contact", fieldKey: "skin_type", isHidden: false, version: row.version },
+      ],
+    });
+    const shownList = await world.alice.call("get", `${path}?entityType=contact`);
+    const shownRow = shownList.body.data.find(
+      (field: { fieldKey: string }) => field.fieldKey === "skin_type",
+    );
+
+    const configKeys = (config.body.data.fields.contact ?? []).map(
+      (field: { fieldKey: string }) => field.fieldKey,
+    );
+    expect(configKeys).not.toContain("skin_type");
+    expect(row).toMatchObject({ isHidden: true });
+    expect(shown.status).toBe(200);
+    expect(shownRow).toBeDefined();
+    expect(shownRow).not.toHaveProperty("isHidden");
   });
 
   it("audits every row of a preference batch and bumps the config once", async () => {

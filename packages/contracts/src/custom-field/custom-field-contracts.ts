@@ -115,6 +115,12 @@ export interface EffectiveCustomField {
   readonly customFieldDefinitionId?: string;
   readonly version: number;
   readonly status: CustomFieldDefinitionStatus;
+  /**
+   * Set (true) only on a template field the business hid, and only in the management list
+   * (`GET /custom-fields`), so the business can show it again (ADR-108). Forms and `/me/config`
+   * never carry a hidden field.
+   */
+  readonly isHidden?: true;
 }
 
 /** Ids only. A consumer reads the definition through this module (ADR-090). */

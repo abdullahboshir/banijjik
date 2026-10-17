@@ -48,6 +48,8 @@ export function mergeEffectiveFields(input: {
   readonly industryFields: readonly IndustryTemplateCustomField[];
   readonly preferences: readonly CustomFieldPreference[];
   readonly definitions: readonly CustomFieldDefinition[];
+  /** Keep a template field the business hid, marked `isHidden` (the management list only). */
+  readonly includeHidden?: boolean;
 }): EffectiveCustomField[] {
   const preferences = new Map(
     input.preferences.map((preference) => [
@@ -60,7 +62,13 @@ export function mergeEffectiveFields(input: {
       (field) => field.entityType === input.entityType && sameOffering(field, input.offeringKind),
     )
     .map((field, index) =>
-      toIndustryField({ entityType: input.entityType, field, index, preferences }),
+      toIndustryField({
+        entityType: input.entityType,
+        field,
+        index,
+        preferences,
+        includeHidden: input.includeHidden === true,
+      }),
     )
     .filter((field): field is EffectiveCustomField => field !== undefined)
     .sort(byOrder);
@@ -73,10 +81,26 @@ function toIndustryField(input: {
   readonly field: IndustryTemplateCustomField;
   readonly index: number;
   readonly preferences: ReadonlyMap<string, CustomFieldPreference>;
+  readonly includeHidden: boolean;
 }): EffectiveCustomField | undefined {
   const { entityType, field, index, preferences } = input;
   const preference = preferences.get(preferenceKey(entityType, field.offeringKind, field.fieldKey));
-  if (preference?.isHidden === true) return undefined;
+  const isHidden = preference?.isHidden === true;
+  if (isHidden && !input.includeHidden) return undefined;
+  return { ...industryFieldOf({ entityType, field, index, preference }), ...hiddenMark(isHidden) };
+}
+
+function hiddenMark(isHidden: boolean): { isHidden?: true } {
+  return isHidden ? { isHidden: true } : {};
+}
+
+function industryFieldOf(input: {
+  readonly entityType: CustomFieldEntityType;
+  readonly field: IndustryTemplateCustomField;
+  readonly index: number;
+  readonly preference: CustomFieldPreference | undefined;
+}): EffectiveCustomField {
+  const { entityType, field, index, preference } = input;
   return {
     scope: CUSTOM_FIELD_SCOPE.INDUSTRY,
     isEditable: false,

@@ -27,7 +27,8 @@ export class ListCustomFieldsUseCase {
 
   async execute(input: ListCustomFieldsInput): Promise<CustomFieldPage> {
     if (!(await this.availability.isOffered(input.entityType))) throw recordNotFound();
-    const fields = await this.reader.forEntity(
+    // The management list shows hidden template fields so a business can show them again (ADR-108).
+    const fields = await this.reader.forManagement(
       input.organizationId,
       input.entityType,
       input.offeringKind,

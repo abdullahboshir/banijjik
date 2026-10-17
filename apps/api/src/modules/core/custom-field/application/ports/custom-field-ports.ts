@@ -41,7 +41,14 @@ export interface CustomFieldAvailability {
 }
 
 export interface EffectiveCustomFieldReader {
+  /** What forms, `/me/config` and value checks use: a hidden template field is not in it. */
   forEntity(
+    organizationId: OrganizationId,
+    entityType: CustomFieldEntityType,
+    offeringKind?: OfferingKind,
+  ): Promise<readonly EffectiveCustomField[]>;
+  /** The management list: also the template fields the business hid, marked `isHidden`, so they can be shown again. */
+  forManagement(
     organizationId: OrganizationId,
     entityType: CustomFieldEntityType,
     offeringKind?: OfferingKind,
