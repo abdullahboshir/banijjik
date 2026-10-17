@@ -417,6 +417,30 @@ describe("PATCH /members/{memberId} with custom fields", () => {
     expect(byOwner.body.data.customFields).toEqual({ nid: "AB-2", medical_notes: "asthma" });
   });
 
+  it("keeps a sensitive and searchable field out of the search entries", async () => {
+    const world = await aWorld();
+    await defineFields(world, [
+      {
+        entityType: "member",
+        fieldKey: "secret_id",
+        fieldType: "TEXT",
+        isSensitive: true,
+        isSearchable: true,
+      },
+    ]);
+
+    await world.alice.call("patch", memberPath(world), {
+      customFields: { secret_id: "TOP-SECRET", nid: "AB-1" },
+      version: 1,
+    });
+
+    const row = await harness.connections.platform
+      .collection("members")
+      .findOne({ memberId: world.samMemberId });
+    expect(row?.["customFields"]).toMatchObject({ secret_id: "TOP-SECRET" });
+    expect(row?.["customFieldSearch"]).toEqual([{ fieldKey: "nid", value: "ab-1" }]);
+  });
+
   it("records the member change without the sensitive value", async () => {
     const world = await aWorld();
 

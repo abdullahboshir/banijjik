@@ -268,6 +268,19 @@ describe("custom field value helpers", () => {
     expect(redactSensitive(values, fields, true)).toEqual(values);
   });
 
+  it("never indexes a sensitive field, even when it is searchable", () => {
+    const sensitiveSearchable = [
+      rule({
+        fieldKey: "nid",
+        fieldType: CUSTOM_FIELD_TYPE.TEXT,
+        isSearchable: true,
+        isSensitive: true,
+      }),
+    ];
+
+    expect(toSearchEntries({ nid: "AB-1" }, sensitiveSearchable)).toEqual([]);
+  });
+
   it("lower-cases searchable values and skips the rest", () => {
     expect(toSearchEntries({ note: "Hi", secret: "private", tags: ["Ab", "C"] }, fields)).toEqual([
       { fieldKey: "note", value: "hi" },

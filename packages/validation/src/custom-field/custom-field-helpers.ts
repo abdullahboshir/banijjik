@@ -24,14 +24,18 @@ function searchText(value: unknown): string[] {
 
 /**
  * Lower-cased strings for the searchable fields, ready for an entity's `customFieldSearch` array
- * (ADR-015, ADR-102). Non-searchable fields are left out.
+ * (ADR-015, ADR-102). Non-searchable fields are left out, and so is every sensitive field even when
+ * it is searchable: a sensitive field is never searchable by value (ADR-107), because the entries
+ * are a plain, indexed copy that would bypass the redaction.
  */
 export function toSearchEntries(
   values: Readonly<Record<string, unknown>>,
   fields: readonly CustomFieldRule[],
 ): { fieldKey: string; value: string }[] {
   const searchable = new Set(
-    fields.filter((field) => field.isSearchable).map((field) => field.fieldKey),
+    fields
+      .filter((field) => field.isSearchable && !field.isSensitive)
+      .map((field) => field.fieldKey),
   );
   const entries: { fieldKey: string; value: string }[] = [];
   for (const [fieldKey, value] of Object.entries(values)) {
