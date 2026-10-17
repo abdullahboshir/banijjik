@@ -3,6 +3,7 @@ import {
   MODULE_CLASS,
   MODULE_KEY,
   PERMISSION_KEY,
+  SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
 import { defineModule } from "../../../kernel/modules/index.js";
@@ -23,7 +24,18 @@ export const customFieldManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_ARCHIVE),
   ],
   routes: { admin: ["/orgs/:organizationId/custom-fields"] },
-  menu: [],
+  menu: [
+    {
+      menuKey: "customField.fields",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.customField.fields",
+      path: "settings/fields",
+      iconKey: "inbox",
+      permissionKey: PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_READ,
+      order: 80,
+    },
+  ],
   settings: [],
   customFieldEntities: [],
   botTools: [],

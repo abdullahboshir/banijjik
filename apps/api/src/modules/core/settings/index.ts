@@ -86,6 +86,7 @@ export function buildSettingsTenantRouter(dependencies: SettingsTenantRouterDepe
       readTerms,
     }),
     modules: dependencies.modules,
+    catalog,
   });
   return buildSettingsRouter(controller, dependencies.permission);
 }

@@ -135,6 +135,27 @@ async function replaceRetailDefaults(settingsDefaults: Record<string, unknown>):
 }
 
 describe("GET /settings", () => {
+  it("describes each returned key with its value spec and whether a location may override it (ADR-108)", async () => {
+    const world = await aWorld();
+
+    const response = await world.alice.call(
+      "get",
+      settingsPath(world.organizationA, "?keys=organization.digitScript,notification.probeFlag"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.definitions).toEqual({
+      "notification.probeFlag": { value: { kind: "BOOLEAN" }, allowsLocationOverride: true },
+      "organization.digitScript": {
+        value: { kind: "ENUM", values: ["LATIN", "BENGALI"] },
+        allowsLocationOverride: false,
+      },
+    });
+    expect(Object.keys(response.body.data.definitions)).toEqual(
+      Object.keys(response.body.data.settings),
+    );
+  });
+
   it("resolves effective keys in order and hides keys no module has registered", async () => {
     const world = await aWorld();
 

@@ -10,6 +10,7 @@ import type { RequestHandler } from "express";
 import { readTenantCaller } from "../../../../kernel/access/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
 import type { TenantModuleSwitch } from "../../../platform/entitlement/index.js";
+import type { RegisteredSetting } from "../application/setting-catalog.js";
 import type { GetSettingsUseCase } from "../application/use-cases/get-settings.use-case.js";
 import type { GetTermsUseCase } from "../application/use-cases/get-terms.use-case.js";
 import type { UpdateSettingsUseCase } from "../application/use-cases/update-settings.use-case.js";
@@ -22,6 +23,8 @@ export interface SettingsControllerDependencies {
   readonly getTerms: GetTermsUseCase;
   readonly updateTerms: UpdateTermsUseCase;
   readonly modules: TenantModuleSwitch;
+  /** The registered settings, so a response can carry each key's value spec (ADR-108). */
+  readonly catalog: ReadonlyMap<string, RegisteredSetting>;
 }
 
 /** `GET` and `PATCH /orgs/{organizationId}/settings` (14-API, ADR-103). */
@@ -37,7 +40,7 @@ export class SettingsController {
       ...(query.keys === undefined ? {} : { keys: query.keys }),
       ...(query.location === undefined ? {} : { locationId: query.location }),
     });
-    sendData(response, toSettingsResponse(resolved));
+    sendData(response, toSettingsResponse(resolved, this.dependencies.catalog));
   };
 
   readonly updateSettings: RequestHandler = async (request, response) => {
@@ -49,7 +52,7 @@ export class SettingsController {
       reach: allowedLocationIds,
       items: body.items,
     });
-    sendData(response, toSettingsResponse(resolved));
+    sendData(response, toSettingsResponse(resolved, this.dependencies.catalog));
   };
 
   readonly getTerms: RequestHandler = async (_request, response) => {

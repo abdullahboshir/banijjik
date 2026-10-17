@@ -16,6 +16,13 @@ const ORGANIZATION_MENU_KEYS = {
   locations: "organization.locations",
   staff: "organization.staff",
 } as const;
+/** Settings and fields entries every member who may read them sees (card 2.7b). */
+const READ_ONLY_SETTINGS_MENU_KEYS = [
+  "settings.general",
+  "settings.terms",
+  "settings.modules",
+  "customField.fields",
+];
 
 let harness: IamApiHarness;
 
@@ -44,7 +51,11 @@ describe("the settings menu of the organization module", () => {
 
     const menuKeys = await menuKeysOf(world.bob, world.organizationB);
 
-    expect(menuKeys).toEqual([ORGANIZATION_MENU_KEYS.profile, ORGANIZATION_MENU_KEYS.staff]);
+    expect(menuKeys).toEqual([
+      ORGANIZATION_MENU_KEYS.profile,
+      ORGANIZATION_MENU_KEYS.staff,
+      ...READ_ONLY_SETTINGS_MENU_KEYS,
+    ]);
   });
 
   it("shows Locations on the next config after a second location is created, and hides it again after the archive", async () => {
@@ -67,17 +78,22 @@ describe("the settings menu of the organization module", () => {
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.locations,
       ORGANIZATION_MENU_KEYS.staff,
+      ...READ_ONLY_SETTINGS_MENU_KEYS,
     ]);
     expect(archived.status).toBe(200);
-    expect(withOneAgain).toEqual([ORGANIZATION_MENU_KEYS.profile, ORGANIZATION_MENU_KEYS.staff]);
+    expect(withOneAgain).toEqual([
+      ORGANIZATION_MENU_KEYS.profile,
+      ORGANIZATION_MENU_KEYS.staff,
+      ...READ_ONLY_SETTINGS_MENU_KEYS,
+    ]);
   });
 
-  it("gives a staff member no settings entries", async () => {
+  it("gives a staff member only the read-only settings and fields entries", async () => {
     const world = await aWorld();
 
     const menuKeys = await menuKeysOf(world.sam, world.organizationA);
 
-    expect(menuKeys).toEqual([]);
+    expect(menuKeys).toEqual(READ_ONLY_SETTINGS_MENU_KEYS);
   });
 });
 

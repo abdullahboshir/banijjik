@@ -195,5 +195,9 @@
   "customFields.hiddenHint": "Some details are hidden from you. They stay as they are.",
   "customFields.yes": "Yes",
   "customFields.no": "No",
-  "staff.action.editDetails": "Edit details"
+  "staff.action.editDetails": "Edit details",
+  "menu.settings.general": "Settings",
+  "menu.settings.terms": "Words",
+  "menu.settings.modules": "Modules",
+  "menu.customField.fields": "Fields & forms"
 }

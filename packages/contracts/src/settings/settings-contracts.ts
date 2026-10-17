@@ -1,6 +1,7 @@
 import { defineEnum } from "../define-enum.js";
 import type { ModuleClass } from "../modules/module-class.js";
 import type { ModuleKey } from "../modules/module-key.js";
+import type { SettingValueSpec } from "./setting-definition.js";
 
 /** Where a resolved value came from (ADR-016). Location is first, system default is last. */
 export const SETTING_VALUE_SOURCE = defineEnum(["LOCATION", "ORGANIZATION", "INDUSTRY", "SYSTEM"]);
@@ -14,9 +15,16 @@ export interface ResolvedSetting {
   readonly version?: number;
 }
 
-/** `GET /settings`. A keyed read, bounded by the registry, not a paged list. */
+/** What a client needs to draw an input for one setting: its value spec and whether a location may override it (ADR-108). */
+export interface SettingDescriptor {
+  readonly value: SettingValueSpec;
+  readonly allowsLocationOverride: boolean;
+}
+
+/** `GET /settings`. A keyed read, bounded by the registry, not a paged list. `definitions` has the same keys as `settings`. */
 export interface SettingsResponse {
   readonly settings: Readonly<Record<string, ResolvedSetting>>;
+  readonly definitions: Readonly<Record<string, SettingDescriptor>>;
 }
 
 /** One item of `PATCH /settings`. `value: null` deletes the stored row so resolution falls back. */

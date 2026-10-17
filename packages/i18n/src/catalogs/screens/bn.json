@@ -195,5 +195,9 @@
   "customFields.hiddenHint": "কিছু তথ্য আপনার কাছ থেকে লুকানো আছে। সেগুলো যেমন আছে তেমনই থাকবে।",
   "customFields.yes": "হ্যাঁ",
   "customFields.no": "না",
-  "staff.action.editDetails": "তথ্য সম্পাদনা"
+  "staff.action.editDetails": "তথ্য সম্পাদনা",
+  "menu.settings.general": "সেটিংস",
+  "menu.settings.terms": "শব্দ ও নাম",
+  "menu.settings.modules": "মডিউল",
+  "menu.customField.fields": "ঘর ও ফর্ম"
 }

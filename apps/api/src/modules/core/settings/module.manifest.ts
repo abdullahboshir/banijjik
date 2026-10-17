@@ -3,6 +3,7 @@ import {
   MODULE_KEY,
   PERMISSION_KEY,
   SETTINGS_EVENT_TYPE,
+  SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
 import { defineModule } from "../../../kernel/modules/index.js";
@@ -32,7 +33,39 @@ export const settingsManifest = defineModule({
       "/orgs/:organizationId/modules",
     ],
   },
-  menu: [],
+  // Order 50 to 70 follows the organization entries (10 to 30) in the settings group (10 section 6).
+  menu: [
+    {
+      menuKey: "settings.general",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.settings.general",
+      path: "settings/general",
+      iconKey: "settings",
+      permissionKey: PERMISSION_KEY.SETTINGS_SETTING_READ,
+      order: 50,
+    },
+    {
+      menuKey: "settings.terms",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.settings.terms",
+      path: "settings/terms",
+      iconKey: "tag",
+      permissionKey: PERMISSION_KEY.SETTINGS_SETTING_READ,
+      order: 60,
+    },
+    {
+      menuKey: "settings.modules",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.settings.modules",
+      path: "settings/modules",
+      iconKey: "package",
+      permissionKey: PERMISSION_KEY.SETTINGS_SETTING_READ,
+      order: 70,
+    },
+  ],
   settings: [],
   customFieldEntities: [],
   botTools: [],
