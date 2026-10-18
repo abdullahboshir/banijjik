@@ -1,6 +1,6 @@
 # 16 · Matrimony track: directory listings, customer accounts and credits
 
-Status: **design, awaiting owner approval** (binding once approved, like the D docs) · Author: Opus 5.5 (Claude) · Date: 2026-10-18 · Decision: ADR-118
+Status: **approved by the owner on 2026-10-18** (binding, like the D docs) · Author: Opus 5.5 (Claude) · Date: 2026-10-18 · Decision: ADR-118
 
 ## 1. Why and what
 The owner wants to run a matrimony website like OrdhekDeen (অর্ধেকদ্বীন) on banijjik:

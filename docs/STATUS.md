@@ -119,8 +119,8 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
 | Card | Status | Note |
 |---|---|---|
-| M.0 design approval | waiting for the owner | open owner decisions in doc 16 §6: SMS provider, pricing, photo policy, eligibility text, domain, legal review |
-| M.1 customer accounts and OTP | todo | session 3 after 3.8a |
+| M.0 design approval | done (2026-10-18, owner approved doc 16) | open owner decisions in doc 16 §6 remain: SMS provider, pricing, photo policy, eligibility text, domain, legal review |
+| M.1 customer accounts and OTP | planned (2026-10-18, `docs/plans/M.1.md`, Opus; T1) | session 3, after 3.1b is merged; storefront surface, OTP by SMS through the outbox, `contact.customerLogin` switch, block; ADR-119 |
 | M.2 directory API | todo | |
 | M.3 admin moderation screens | todo | |
 | M.4 credits and connections | todo | |
