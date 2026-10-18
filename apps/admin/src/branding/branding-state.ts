@@ -1,12 +1,13 @@
 import {
+  BRAND_CHECKS,
   BRAND_COLOR_PRESETS,
   BRANDING_RULES,
   type OrganizationProfileResponse,
 } from "@banijjik/contracts";
 import type { ProfileUpdateBody } from "@banijjik/validation";
-import { contrastRatio, isReadablePrimaryColor, isVisibleAccentColor } from "@banijjik/validation";
 import type { FieldErrors } from "../auth/field-errors";
 
+const { contrastRatio, isReadablePrimaryColor, isVisibleAccentColor } = BRAND_CHECKS;
 const WHITE = "#ffffff";
 const RATIO_DIGITS = 1;
 export const INVALID_COLOUR_KEY = "branding.colours.invalid";

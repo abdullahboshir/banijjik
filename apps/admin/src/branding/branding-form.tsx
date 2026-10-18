@@ -10,16 +10,23 @@ import {
   TextInput,
   formFieldMessageId,
 } from "@banijjik/ui";
-import { useTranslator } from "@banijjik/web-client/client";
-import { useState, type FormEvent, type ReactElement } from "react";
+import { useLazyComponent, useTranslator } from "@banijjik/web-client/client";
+import { useState, type ComponentType, type FormEvent, type ReactElement } from "react";
 import { ConflictNotice } from "../settings/conflict-notice";
+import type { FormFailure } from "../settings/form-failure";
 import { FormMessage } from "../settings/form-message";
-import { BrandingPreview } from "./branding-preview";
+import type { BrandingPreviewProps } from "./branding-preview";
 import { fillTemplate, type BrandingLabels } from "./branding-labels";
 import { INVALID_COLOUR_KEY, buildBrandingUpdate, type BrandingFormState } from "./branding-state";
 import { ColourFields } from "./colour-fields";
 import { useBrandingSave } from "./use-branding-save";
 import { useLogoUpload } from "./use-logo-upload";
+
+/** The preview card loads after the first scripts: it sits below the fields, and the page stays within its script budget (13-UX section 11). */
+async function loadPreview(): Promise<ComponentType<BrandingPreviewProps>> {
+  const loaded = await import("./branding-preview");
+  return loaded.BrandingPreview;
+}
 
 export interface BrandingFormProps {
   organizationId: string;
@@ -108,12 +115,35 @@ function TaglineSection(
   );
 }
 
+/** A version conflict asks for a reload; any other refusal that belongs to no box shows under the form. */
+function SaveFailure(props: {
+  failure: FormFailure | undefined;
+  labels: BrandingLabels;
+  onReload: () => void;
+}): ReactElement {
+  const { failure, labels } = props;
+  if (failure === undefined) return <></>;
+  return (
+    <>
+      {failure.isConflict ? (
+        <ConflictNotice
+          message={labels.conflict}
+          reloadLabel={labels.reload}
+          onReload={props.onReload}
+        />
+      ) : null}
+      <FormMessage failure={failure} />
+    </>
+  );
+}
+
 /**
  * The branding page's form (plan 3.12 decision 6): logo, colours and tagline with a live preview.
  * Save sends only what changed through the profile endpoint; a version conflict asks for a reload.
  */
 export function BrandingForm(props: BrandingFormProps): ReactElement {
   const { t } = useTranslator();
+  const Preview = useLazyComponent(loadPreview, true);
   const { initial, canEdit, labels } = props;
   const [state, setState] = useState<BrandingFormState>(initial);
   const saving = useBrandingSave({
@@ -151,15 +181,10 @@ export function BrandingForm(props: BrandingFormProps): ReactElement {
         errorText={taglineError ? errorText(taglineError) : undefined}
         onTagline={(tagline) => change({ tagline })}
       />
-      <BrandingPreview businessName={props.businessName} state={state} labels={labels} />
-      {saving.failure.isConflict ? (
-        <ConflictNotice
-          message={labels.conflict}
-          reloadLabel={labels.reload}
-          onReload={saving.reload}
-        />
-      ) : null}
-      <FormMessage failure={saving.failure} />
+      {Preview === null ? null : (
+        <Preview businessName={props.businessName} state={state} labels={labels} />
+      )}
+      <SaveFailure failure={saving.failure} labels={labels} onReload={saving.reload} />
       {canEdit ? (
         <StickyActionBar label={labels.actions}>
           <Button type="submit" isLoading={saving.isSaving} disabled={!hasChanges}>

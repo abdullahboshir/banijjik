@@ -1,15 +1,10 @@
 "use client";
 
 import { BRANDING_RULES } from "@banijjik/contracts";
-import { PageSection } from "@banijjik/ui";
-import Image from "next/image";
+import { LogoImage, PageSection } from "@banijjik/ui";
 import type { CSSProperties, ReactElement } from "react";
 import type { BrandingLabels } from "./branding-labels";
 import { checkColour, type BrandingFormState } from "./branding-state";
-
-/** The logo is a public file the API already resized; next/image only needs a box to keep the layout still. */
-const LOGO_WIDTH = 128;
-const LOGO_HEIGHT = 48;
 
 export interface BrandingPreviewProps {
   businessName: string;
@@ -52,12 +47,9 @@ export function BrandingPreview({
       >
         <div className="flex items-center gap-3">
           {state.logoUrl ? (
-            <Image
+            <LogoImage
               src={state.logoUrl}
               alt={businessName}
-              width={LOGO_WIDTH}
-              height={LOGO_HEIGHT}
-              unoptimized
               className="h-12 w-auto max-w-32 object-contain"
             />
           ) : null}

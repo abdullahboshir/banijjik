@@ -96,6 +96,8 @@ export type {
 } from "./components/custom-field-types.js";
 export { parseMoneyInput } from "./format/parse-money-input.js";
 export type { ParsedMoney } from "./format/parse-money-input.js";
+export { LogoImage } from "./components/logo-image.js";
+export type { LogoImageProps } from "./components/logo-image.js";
 export { PageLayout } from "./components/page-layout.js";
 export type { PageLayoutProps } from "./components/page-layout.js";
 export { PageSection } from "./components/page-section.js";

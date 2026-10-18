@@ -1,5 +1,6 @@
+import { BRAND_CHECKS } from "@banijjik/contracts";
 import { FILE_PURPOSE } from "@banijjik/contracts/file";
-import { isReadablePrimaryColor, isVisibleAccentColor } from "@banijjik/validation";
+const { isReadablePrimaryColor, isVisibleAccentColor } = BRAND_CHECKS;
 import { invalidFields } from "../domain/errors.js";
 import type { ClearableChanges } from "../domain/clearable.js";
 import type { OrganizationBranding } from "../domain/organization.entity.js";

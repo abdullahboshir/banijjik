@@ -1,14 +1,6 @@
 "use client";
 
-import { FILE_PURPOSE } from "@banijjik/contracts/file";
-import { publicFileUrl, uploadFile } from "@banijjik/web-client";
 import { useState } from "react";
-import { knownMessageKeyOrInternal } from "../auth/field-errors";
-import { API_BASE_URL } from "../config/api-base-url";
-import { apiFetch } from "../lib/api/api-client";
-import { ApiError } from "../lib/api/api-error";
-
-const PREVIEW_VARIANT = "medium";
 
 export interface LogoUpload {
   isUploading: boolean;
@@ -20,7 +12,8 @@ export interface LogoUpload {
 
 /**
  * The upload runs the moment a file is picked, like the custom field images; the file becomes the
- * logo only when the form is saved, where the API checks it again (ADR-114).
+ * logo only when the form is saved, where the API checks it again (ADR-114). The upload code loads on
+ * the first pick, so the page's first scripts stay small (13-UX section 11).
  */
 export function useLogoUpload(
   organizationId: string,
@@ -32,17 +25,10 @@ export function useLogoUpload(
   async function run(file: File): Promise<void> {
     setIsUploading(true);
     setErrorKey(undefined);
-    try {
-      const uploaded = await uploadFile(apiFetch, {
-        organizationId,
-        purpose: FILE_PURPOSE.LOGO,
-        file,
-      });
-      onUploaded(uploaded.fileId, publicFileUrl(API_BASE_URL, uploaded.fileId, PREVIEW_VARIANT));
-    } catch (error) {
-      if (!(error instanceof ApiError)) throw error;
-      setErrorKey(knownMessageKeyOrInternal(error.messageKey));
-    }
+    const { uploadLogo } = await import("./branding-actions");
+    const outcome = await uploadLogo(organizationId, file);
+    if (outcome.ok) onUploaded(outcome.fileId, outcome.previewUrl);
+    else setErrorKey(outcome.errorKey);
     setIsUploading(false);
   }
 

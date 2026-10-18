@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ElementHandle, Page } from "puppeteer-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { gotoWhenHydrated, message, waitForText } from "../test-support/browser-helpers";
+import { gotoWhenHydrated, message, waitForTextIn } from "../test-support/browser-helpers";
 import {
   clickByName,
   closePage,
@@ -66,7 +66,8 @@ describe("the branding page", () => {
       (button) => getComputedStyle(button).backgroundColor,
     );
     await clickByName(page, message("branding.save"));
-    await waitForText(page, message("branding.saved"));
+    // The toast, not the page text: the text also sits in the streamed payload before the save is done.
+    await waitForTextIn(page, "[data-sonner-toaster]", message("branding.saved"));
     await gotoWhenHydrated(page, "/acme/settings/branding", "#branding-tagline");
     const topBarLogo = await page.$eval("header img", (image) => ({
       src: (image as HTMLImageElement).src,
@@ -105,9 +106,18 @@ describe("the branding page", () => {
     );
     await gotoWhenHydrated(page, "/acme/settings/branding", "#branding-logo");
     await clickByName(page, message("branding.colours.custom"));
-    await page.click("#branding-primary", { clickCount: 3 });
+    // The first test saved a preset, so the box holds a colour: select all and clear it before typing.
+    await page.focus("#branding-primary");
+    await page.keyboard.down("Control");
+    await page.keyboard.press("KeyA");
+    await page.keyboard.up("Control");
+    await page.keyboard.press("Backspace");
     await page.type("#branding-primary", "#ffffff");
-    await waitForText(page, message("branding.colours.contrast.low").split("{ratio}")[0] ?? "");
+    await waitForTextIn(
+      page,
+      "main",
+      message("branding.colours.contrast.low").split("{ratio}")[0] ?? "",
+    );
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );

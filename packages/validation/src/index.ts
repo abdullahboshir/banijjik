@@ -26,11 +26,6 @@ export { auditLogListQuerySchema } from "./audit/audit-log-list.schema.js";
 export type { AuditLogListQuery } from "./audit/audit-log-list.schema.js";
 export { idempotencyKeySchema } from "./idempotency/idempotency-key.schema.js";
 export { profileUpdateRequestSchema } from "./organization/profile.schema.js";
-export {
-  contrastRatio,
-  isReadablePrimaryColor,
-  isVisibleAccentColor,
-} from "./organization/color-contrast.js";
 export type { ProfileUpdateBody } from "./organization/profile.schema.js";
 export {
   locationCreateRequestSchema,

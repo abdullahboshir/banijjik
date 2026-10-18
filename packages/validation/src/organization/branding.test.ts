@@ -1,7 +1,7 @@
-import { BRAND_COLOR_PRESETS, BRANDING_RULES } from "@banijjik/contracts";
+import { BRAND_CHECKS, BRAND_COLOR_PRESETS, BRANDING_RULES } from "@banijjik/contracts";
 import { describe, expect, it } from "vitest";
 import { brandingUpdateSchema } from "./branding.schema.js";
-import { contrastRatio, isReadablePrimaryColor, isVisibleAccentColor } from "./color-contrast.js";
+const { contrastRatio, isReadablePrimaryColor, isVisibleAccentColor } = BRAND_CHECKS;
 import { profileUpdateRequestSchema } from "./profile.schema.js";
 
 describe("contrastRatio", () => {
