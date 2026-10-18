@@ -25,7 +25,7 @@ Inputs: `00`, `01`, `04` (ADRs), `05` (conventions), `06`, `07`, `08`. New decis
 | **Assignment** | "This member has this role at this location (or ALL locations)." | embedded in `Member.assignments` |
 | **Invitation** | A pending offer for someone to become a member. | `Invitation`, `invitationId` |
 | **Contact** | A person or company the business deals with: customer, supplier, lead, guardian. One per real party per org (ADR-039). | `Contact`, `contactId` |
-| **Contact role** | Why the org knows this contact: `CUSTOMER`, `SUPPLIER`, `LEAD`. Labels come from terms. | `contactRoles[]` |
+| **Contact role** | Why the org knows this contact: `CUSTOMER`, `SUPPLIER`, `LEAD`, `RELATED` (a person known through another contact: guardian, parent, emergency contact, relative; ADR-113). Labels come from terms (`contact.<ROLE>`). | `contactRoles[]` |
 | **Customer account** | A contact's login to one org's storefront or portal (phone OTP). Not a User. | `CustomerAccount`, `customerAccountId` |
 | **Offering** | Anything the org sells. Always has a kind. | `Offering`, `offeringId` |
 | **Kind** | Closed code primitive of an offering: `PRODUCT`, `SERVICE`, `PLAN`, `RENTAL`, `EVENT` (ADR-034). | `kind` |
@@ -537,5 +537,5 @@ Owner-decided (2026-10-09) and recorded as **Accepted**; the rest are **Accepted
 ## 9. Owner answers (2026-10-09)
 - **Q1. Fractional quantities:** yes, in Phase 3. POS supports weight/volume entry (kg, litre) using integer quantities in unit precision (ADR-047).
 - **Q2. Shared family phone:** the guardian's contact holds the phone; the child is a contact without a phone, linked by `GUARDIAN_OF`. `phoneE164` stays unique per org.
-- **Q3. Contact roles:** `CUSTOMER | SUPPLIER | LEAD` is enough for launch. New roles are added to the contracts enum when needed.
+- **Q3. Contact roles:** `CUSTOMER | SUPPLIER | LEAD | RELATED` (RELATED added by card 3.1c, ADR-113). New roles are added to the contracts enum when needed.
 - **Q4. Location types:** `STORE | WAREHOUSE` is enough. An online-only seller's default location is a STORE that simply has no POS device.

@@ -25,7 +25,7 @@ interface IndustryTemplateSeed {
   iconKey: string;                          // lucide icon name
   enabledKinds: OfferingKind[];
   allowedModuleKeys: ModuleKey[];           // CORE/OPTIONAL modules that fit; SYSTEM always on
-  contactRoleKeys: ContactRole[];
+  contactRoleKeys: ContactRole[];           // CUSTOMER, SUPPLIER, LEAD, RELATED (a template with a contact link lists RELATED)
   relationKeys: string[];                   // GUARDIAN_OF, …
   resourceTypes: { resourceTypeKey: string; termKey: string; isMember: boolean }[];
   terms: Record<TermKey, { bn: string; en: string }>;
@@ -39,6 +39,7 @@ interface IndustryTemplateSeed {
 ```
 
 ### 1.1 Custom field seed shorthand
+A `contact` field may carry `appliesToContactRoles` (non-empty, absent = every role; ADR-113). Seed values (card 3.1c): COACHING contact fields `["CUSTOMER","LEAD"]`, roles + `RELATED`, `SUPPLIER`, term `contact.RELATED` Guardian; GYM `["CUSTOMER","LEAD"]`, + `RELATED`, `SUPPLIER`, term Emergency contact; CLINIC `["CUSTOMER"]`, + `RELATED`, `SUPPLIER`, term Relative; SALON `["CUSTOMER"]`, + `RELATED`; HOSTEL `["CUSTOMER"]`, + `RELATED`, term Guardian; RETAIL `customer_type` `["CUSTOMER"]`.
 Tables below use: **Entity** (`contact`, `offering`+kind, `order`, `booking`, `enrollment`, `member`, `resource`) · **Key** · **Type** (16 types, `01 §5`) · **Req** (required) · **Bot** (`botAsk`: the bot collects it before `create_request`) · **Vis** (visibility: A = admin, S = storefront form, B = bot can read/say it) · **Flags** (`search` = searchable, `sens` = sensitive, permission-gated) · **Options**.
 
 Core fields (name, phone, address, price, variants, times…) are **not** listed. They exist for every template.
