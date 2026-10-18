@@ -419,7 +419,7 @@ describe("FieldFormSheet roles", () => {
         organizationId="org-1"
         entityType={entityType}
         initial={emptyFieldForm(30)}
-        labels={fieldLabelsOf(t, { terms: TERMS, locale: "bn" })}
+        labels={fieldLabelsOf(t, { terms: TERMS, locale: "bn", roleKeys: ["CUSTOMER", "RELATED"] })}
         onClose={vi.fn()}
       />,
     );
@@ -428,7 +428,11 @@ describe("FieldFormSheet roles", () => {
   it("offers the contact roles on a contact field, named by the business's terms, and sends the chosen ones", async () => {
     createCustomField.mockResolvedValue({});
     renderContactSheet("contact");
-    const roleLabels = fieldLabelsOf(t, { terms: TERMS, locale: "bn" });
+    const roleLabels = fieldLabelsOf(t, {
+      terms: TERMS,
+      locale: "bn",
+      roleKeys: ["CUSTOMER", "RELATED"],
+    });
 
     await userEvent.type(
       screen.getByLabelText(new RegExp(roleLabels.formFields.fieldKey)),
@@ -452,5 +456,12 @@ describe("FieldFormSheet roles", () => {
     renderContactSheet("member");
 
     expect(screen.queryByRole("checkbox", { name: "অভিভাবক" })).toBeNull();
+  });
+
+  it("offers only the roles the template lists", () => {
+    renderContactSheet("contact");
+
+    expect(screen.getAllByRole("checkbox", { name: /গ্রাহক|অভিভাবক/u })).toHaveLength(2);
+    expect(screen.queryByRole("checkbox", { name: banglaText("contactRole.SUPPLIER") })).toBeNull();
   });
 });

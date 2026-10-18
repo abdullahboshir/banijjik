@@ -1,3 +1,4 @@
+import type { ContactRole } from "../contact/contact-role.js";
 import type { EffectiveCustomField } from "../custom-field/custom-field-contracts.js";
 import type { MenuEntry } from "../modules/module-manifest.js";
 import type { ModuleKey } from "../modules/module-key.js";
@@ -53,6 +54,8 @@ export interface ResolvedOrgConfigResponse {
   readonly settings: Readonly<Record<string, unknown>>;
   /** Effective custom fields, keyed by entity type. Empty when no effective module declares one. */
   readonly fields: Readonly<Record<string, readonly EffectiveCustomField[]>>;
+  /** The contact roles the template allows: a contact form offers these (ADR-113). */
+  readonly contactRoleKeys: readonly ContactRole[];
   readonly permissions: CallerPermissionsResponse;
   /** Every permission of the effective modules, so a client never hard-codes which ones are sensitive. */
   readonly permissionDefinitions: readonly PermissionDefinitionResponse[];

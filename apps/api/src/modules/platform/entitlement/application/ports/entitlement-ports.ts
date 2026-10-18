@@ -1,4 +1,9 @@
-import type { IndustryTemplateKey, ModuleKey, OfferingKind } from "@banijjik/contracts";
+import type {
+  ContactRole,
+  IndustryTemplateKey,
+  ModuleKey,
+  OfferingKind,
+} from "@banijjik/contracts";
 import type { ModuleOverrideRecord } from "../../domain/module-override.js";
 
 /** The overrides of one organization, expired ones included: the resolver decides what is active. */
@@ -9,6 +14,8 @@ export interface ModuleOverrideReader {
 /** What the resolver needs from an industry template (09 section 4.6). */
 export interface IndustryTemplateView {
   readonly allowedModuleKeys: readonly ModuleKey[];
+  /** The roles a contact of this template may have (ADR-113). */
+  readonly contactRoleKeys: readonly ContactRole[];
   readonly enabledKinds: readonly OfferingKind[];
   readonly templateVersion: number;
 }

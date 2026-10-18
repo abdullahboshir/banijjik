@@ -1,4 +1,5 @@
 import {
+  CONTACT_ROLE,
   MODULE_KEY_VALUES,
   OFFERING_KIND,
   type ModuleKey,
@@ -12,6 +13,7 @@ import type {
 function permissiveView(templateVersion: number): IndustryTemplateView {
   return {
     allowedModuleKeys: MODULE_KEY_VALUES,
+    contactRoleKeys: Object.values(CONTACT_ROLE),
     enabledKinds: Object.values(OFFERING_KIND),
     templateVersion,
   };

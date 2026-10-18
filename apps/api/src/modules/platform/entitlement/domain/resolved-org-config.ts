@@ -1,4 +1,5 @@
 import type {
+  ContactRole,
   EffectiveCustomField,
   LimitMap,
   LocalizedText,
@@ -34,6 +35,8 @@ export interface ResolvedOrgConfig {
   readonly settings: Readonly<Record<string, unknown>>;
   /** Effective custom fields keyed by entity type (ADR-104). */
   readonly fields: Readonly<Record<string, readonly EffectiveCustomField[]>>;
+  /** The contact roles the template allows (ADR-113). */
+  readonly contactRoleKeys: readonly ContactRole[];
   /** Template terms with tenant overrides. Both languages are always present (ADR-104). */
   readonly terms: Readonly<Record<string, LocalizedText>>;
   readonly subscription: SubscriptionSnapshot | undefined;

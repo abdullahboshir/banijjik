@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CONTACT_ROLE,
   type ContactRole,
   type CustomFieldEntityType,
   type CustomFieldType,
@@ -162,10 +161,10 @@ function RoleFields({ form, labels, onChange }: PartProps): ReactElement {
       hint={labels.formFields.allRoles}
     >
       <div id="field-roles" className="flex flex-col gap-2">
-        {Object.values(CONTACT_ROLE).map((role) => (
+        {labels.roles.map(({ role, label }) => (
           <Checkbox
             key={role}
-            label={labels.roles[role]}
+            label={label}
             checked={chosen.includes(role)}
             onChange={(event) => toggle(role, event.target.checked)}
           />

@@ -34,8 +34,11 @@ export interface FieldLabels {
     appliesToRoles: string;
     allRoles: string;
   };
-  /** The name of each contact role: the business's term `contact.<ROLE>` when it has one (ADR-113). */
-  roles: Record<ContactRole, string>;
+  /**
+   * The roles the template allows, each named by the business's term `contact.<ROLE>` when it has
+   * one (ADR-113). A contact field can be limited to these.
+   */
+  roles: { role: ContactRole; label: string }[];
   lockedHint: string;
   types: Record<CustomFieldType, string>;
 }
@@ -90,18 +93,23 @@ const FIELD_TYPES: readonly CustomFieldType[] = [
 export interface RoleTextSource {
   terms: TermTexts;
   locale: Locale;
+  /** The template's `contactRoleKeys` from `/me/config`. */
+  roleKeys: readonly ContactRole[];
 }
 
-function roleLabelsOf(t: Translator["t"], source?: RoleTextSource): Record<ContactRole, string> {
-  const labels = {} as Record<ContactRole, string>;
-  for (const role of Object.values(CONTACT_ROLE)) {
+function roleLabelsOf(
+  t: Translator["t"],
+  source?: RoleTextSource,
+): { role: ContactRole; label: string }[] {
+  const roles = source?.roleKeys ?? Object.values(CONTACT_ROLE);
+  return roles.map((role) => {
     const fallback = t(`contactRole.${role}`);
-    labels[role] =
+    const label =
       source === undefined
         ? fallback
         : termLabel(source.terms, `contact.${role}`, { locale: source.locale, fallback });
-  }
-  return labels;
+    return { role, label };
+  });
 }
 
 export function fieldLabelsOf(t: Translator["t"], roleTexts?: RoleTextSource): FieldLabels {

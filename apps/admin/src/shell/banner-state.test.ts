@@ -23,6 +23,7 @@ function config(overrides: Partial<ResolvedOrgConfigResponse>): ResolvedOrgConfi
     terms: {},
     settings: {},
     fields: {},
+    contactRoleKeys: [],
     permissions: { allLocations: [], byLocation: {} },
     permissionDefinitions: [],
     ...overrides,

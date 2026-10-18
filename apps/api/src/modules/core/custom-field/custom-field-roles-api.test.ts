@@ -99,4 +99,12 @@ describe("custom fields limited to contact roles", () => {
     );
     expect(field.appliesToContactRoles).toEqual(["CUSTOMER"]);
   });
+
+  it("carries the contact roles the template allows in /me/config, next to terms and fields", async () => {
+    const world = await aWorld();
+
+    const config = await world.alice.call("get", `/orgs/${world.organizationA}/me/config`);
+
+    expect(config.body.data.contactRoleKeys).toEqual(["CUSTOMER", "SUPPLIER", "LEAD"]);
+  });
 });

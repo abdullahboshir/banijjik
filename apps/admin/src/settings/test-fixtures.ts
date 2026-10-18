@@ -50,6 +50,7 @@ export function accessFixture(options: AccessOptions = {}): OrgAccess {
       accessMode: ACCESS_MODE.FULL,
       limits: { locations: options.locationLimit ?? null },
       permissions,
+      contactRoleKeys: ["CUSTOMER", "SUPPLIER", "LEAD"],
       permissionDefinitions: allDefinitions(options.sensitiveKeys),
       fields: options.fields ?? {},
       terms: options.terms ?? {},

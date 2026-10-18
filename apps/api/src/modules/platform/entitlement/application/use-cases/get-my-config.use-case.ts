@@ -118,6 +118,7 @@ export class GetMyConfigUseCase {
       terms: config.terms,
       settings: config.settings,
       fields: config.fields,
+      contactRoleKeys: config.contactRoleKeys,
       permissions,
       permissionDefinitions: describeDefinitions(
         this.dependencies.permissionDefinitions,

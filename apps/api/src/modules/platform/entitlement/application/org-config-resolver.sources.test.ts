@@ -55,7 +55,12 @@ describe("OrgConfigResolver sources", () => {
       organizationId: "org",
       configVersion: 1,
       templateKey: SEED_INDUSTRY_TEMPLATE_KEY.RETAIL,
-      template: { allowedModuleKeys: [], enabledKinds: [], templateVersion: 1 },
+      template: {
+        allowedModuleKeys: [],
+        contactRoleKeys: [],
+        enabledKinds: [],
+        templateVersion: 1,
+      },
     });
 
     expect(resolved.modules).toEqual([MODULE_KEY.IAM]);

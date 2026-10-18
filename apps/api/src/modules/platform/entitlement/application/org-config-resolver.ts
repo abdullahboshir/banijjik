@@ -141,6 +141,7 @@ export class OrgConfigResolver {
       storefrontSections: storefrontSectionsOf(manifests, moduleKeys),
       settings,
       fields: resolvedFields,
+      contactRoleKeys: request.template.contactRoleKeys,
       terms: resolvedTerms,
       subscription: toSubscriptionSnapshot(resolved.subscription),
       validUntil: earliestExpiry(resolved.overrides),
