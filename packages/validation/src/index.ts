@@ -81,6 +81,17 @@ export type {
   PlatformPackageUpdateBody,
   PlatformReasonBody,
 } from "./platform/platform-schemas.js";
+export {
+  platformDeadOutboxListQuerySchema,
+  platformDeadOutboxParamsSchema,
+  platformEventDeadLetterListQuerySchema,
+  platformEventDeadLetterParamsSchema,
+  platformEventSkipRequestSchema,
+} from "./platform/event-schemas.js";
+export type {
+  PlatformEventDeadLetterListQuery,
+  PlatformEventSkipBody,
+} from "./platform/event-schemas.js";
 export { maskIdentifier } from "./text/mask-identifier.js";
 export {
   platformOperatorCreateRequestSchema,

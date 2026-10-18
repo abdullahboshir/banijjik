@@ -34,6 +34,7 @@ import {
   buildEntitlementPlatformRouter,
   buildModuleOverrideLister,
 } from "../modules/platform/entitlement/index.js";
+import { buildOperationsRouters } from "../modules/platform/operations/index.js";
 import { buildPackagePlatformRouter } from "../modules/platform/package/index.js";
 import {
   buildIndustryPlatformRouter,
@@ -217,6 +218,9 @@ function buildPlatformRouter(input: PlatformRouterInput): Router {
   );
   mountPackageAndOperatorRoutes(router, input, manifests);
   mountIndustryRoutes(router, input);
+  const operations = buildOperationsRouters({ permission: platformPermission, platformAudit });
+  router.use("/event-dead-letters", operations.deadLetters);
+  router.use("/dead-outbox-events", operations.deadOutbox);
   router.use(buildPlatformAuditRouter({ permission: platformPermission }));
   router.use(buildIamPlatformMeRouter());
   return router;

@@ -6,5 +6,9 @@ import type { ContactEventType } from "@banijjik/contracts/contact";
  * makes the change (the kernel refuses otherwise), so the event exists exactly when the change does.
  */
 export interface EventPublisher {
-  publish<Type extends ContactEventType>(type: Type, payload: EventPayloadMap[Type]): Promise<void>;
+  publish<Type extends ContactEventType>(
+    type: Type,
+    payload: EventPayloadMap[Type],
+    options?: { readonly orderingKey?: string },
+  ): Promise<void>;
 }

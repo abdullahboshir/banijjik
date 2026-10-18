@@ -93,6 +93,27 @@ describe("POST /contacts", () => {
     );
   });
 
+  it("numbers the events of one contact in order, so ordered handlers see them in sequence", async () => {
+    const world = await aWorld();
+
+    const created = await createContact(world, { name: "Karim", phoneE164: "01712345002" });
+    const { contactId, version } = created.body.data;
+    await world.alice.call("patch", `/orgs/${world.organizationA}/contacts/${contactId}`, {
+      version,
+      name: "Karim Uddin",
+    });
+
+    const events = await harness.connections.platform
+      .collection("outbox_events")
+      .find({ orderingKey: `contact:${contactId}` })
+      .sort({ streamSequence: 1 })
+      .toArray();
+    expect(events.map((event) => [event["type"], event["streamSequence"]])).toEqual([
+      ["contact.contact.created", 1],
+      ["contact.contact.updated", 2],
+    ]);
+  });
+
   it("refuses a contact with neither a name nor a phone", async () => {
     const world = await aWorld();
 

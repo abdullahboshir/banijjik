@@ -9,6 +9,7 @@ export const MODULE_KEY = {
   ENTITLEMENT: "entitlement",
   SAAS_BILLING: "saas-billing",
   TENANT_ADMIN: "tenant-admin",
+  OPERATIONS: "operations",
   AI: "ai",
   IAM: "iam",
   ORGANIZATION: "organization",

@@ -27,7 +27,12 @@ async function record(
     entityId: contact.contactId,
     changes: entry.changes,
   });
-  await dependencies.events.publish(entry.eventType, { contactId: contact.contactId });
+  // The events of one contact stay in order for ORDERED handlers (card 3.8a, ADR-115).
+  await dependencies.events.publish(
+    entry.eventType,
+    { contactId: contact.contactId },
+    { orderingKey: `contact:${contact.contactId}` },
+  );
 }
 
 /** One audit entry and one event for a new contact. Call inside the unit of work. */

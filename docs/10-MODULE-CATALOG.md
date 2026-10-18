@@ -14,7 +14,7 @@ Every module has exactly one class. The class decides how the resolver treats it
 
 | Class | Meaning | In packages? | Tenant can disable? | Template can exclude? | Examples |
 |---|---|---|---|---|---|
-| `PLATFORM` | Serves the platform panel only. Never part of an org's config. | No | No | No | `industry`, `package`, `entitlement`, `saas-billing`, `tenant-admin` |
+| `PLATFORM` | Serves the platform panel only. Never part of an org's config. | No | No | No | `industry`, `package`, `entitlement`, `saas-billing`, `tenant-admin`, `operations` |
 | `SYSTEM` | Infrastructure every org needs to work. Always on. | No (implicit) | No | No | `iam`, `organization`, `settings`, `audit`, `accounting` |
 | `CORE` | Business basics every base package includes. | Yes: every base package must contain all CORE modules (validated on save) | No | Yes (via `allowedModuleKeys` and kinds) | `contact`, `catalog`, `sales`, `booking`, `expense` |
 | `OPTIONAL` | Sold through a package or add-on, or granted by the platform. | Yes | Only if the manifest says `tenantCanDisable: true` | Yes | `pos`, `website`, `bot`, `bookkeeping` |
@@ -100,6 +100,7 @@ Inputs: the org's `PlatformSubscription`, its base and add-on `Package`s, its `M
 | `entitlement` | platform/entitlement | PLATFORM | 1.6 | `package` | | | | ModuleOverride, resolver |
 | `saas-billing` | platform/saas-billing | PLATFORM | 1.6 / 6.2 | `package` | | | | PlatformSubscription, platform invoices |
 | `tenant-admin` | platform/tenant-admin | PLATFORM | 1.8 | `organization` | | | | — (uses other modules' APIs) |
+| `operations` | platform/operations | PLATFORM | 3.8a | | | | | — (owns no data: replays and skips what the event kernel could not deliver, ADR-115) |
 | `ai` | platform/ai | SYSTEM | 5.7 | | | | | — (LLM gateway, no routes, no menu) |
 | `iam` | core/iam | SYSTEM | 1.1 / 1.4 | | | | | User, RefreshSession, PlatformOperator, Role |
 | `organization` | core/organization | SYSTEM | 1.2 | `iam` | | | | Organization, slug history, Location, Member, Invitation |
