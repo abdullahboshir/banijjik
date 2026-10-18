@@ -1,4 +1,4 @@
-import type { StorefrontMeResponse } from "@banijjik/contracts/contact";
+import { CUSTOMER_OTP_RULES, type StorefrontMeResponse } from "@banijjik/contracts/contact";
 import type { CustomerAccountId, OrganizationId } from "@banijjik/ids";
 import type { CustomerSession } from "../../domain/customer-session.js";
 import { customerAccountNotFound, customerSessionNotValid } from "../../domain/errors.js";
@@ -38,12 +38,22 @@ export class RefreshCustomerSessionUseCase {
     return session;
   }
 
-  /** A token that was already replaced is a copy in use: end the whole session. */
+  /**
+   * A token that was replaced a moment ago is two requests racing: refuse, keep the session. A token
+   * replaced longer ago is a copy in use: end the whole session.
+   */
   private async rejectUnknown(tokenHash: string): Promise<never> {
     const { sessions } = this.dependencies;
     const replaced = await sessions.findByPreviousTokenHash(tokenHash);
-    if (replaced !== undefined) await sessions.deleteById(replaced.customerSessionId);
+    if (replaced !== undefined && !this.isWithinGrace(replaced)) {
+      await sessions.deleteById(replaced.customerSessionId);
+    }
     throw customerSessionNotValid();
+  }
+
+  private isWithinGrace(replaced: CustomerSession): boolean {
+    const ageMs = this.dependencies.clock.now().getTime() - replaced.lastUsedAt.getTime();
+    return ageMs <= CUSTOMER_OTP_RULES.refreshReuseGraceSeconds * 1000;
   }
 
   private async rotate(

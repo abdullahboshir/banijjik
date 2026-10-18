@@ -45,6 +45,7 @@ export const AUDIT_ACTION = {
   SYNONYMS_UPDATED: "catalog.synonym.updated",
   CUSTOMER_ACCOUNT_BLOCKED: "contact.customerAccount.blocked",
   CUSTOMER_ACCOUNT_UNBLOCKED: "contact.customerAccount.unblocked",
+  CUSTOMER_ACCOUNT_ENDED: "contact.customerAccount.ended",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];

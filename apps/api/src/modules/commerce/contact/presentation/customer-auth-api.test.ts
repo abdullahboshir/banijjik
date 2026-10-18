@@ -147,10 +147,23 @@ describe("customer sign-in with a phone code", () => {
     expect(afterLogout.status).toBe(401);
   });
 
-  it("treats a refresh token that was already replaced as theft and ends the session", async () => {
+  it("refuses a refresh token replaced a moment ago without ending the session (two requests racing)", async () => {
     const world = await aWorldWithLoginOn();
     const customer = await signIn(world);
     const next = readCustomerCookies(await refreshCall(world, customer.session));
+
+    const race = await refreshCall(world, customer.session);
+    const successor = await refreshCall(world, next);
+
+    expect(race.status).toBe(401);
+    expect(successor.status).toBe(204);
+  });
+
+  it("treats a refresh token replaced longer ago as theft and ends the session", async () => {
+    const world = await aWorldWithLoginOn();
+    const customer = await signIn(world);
+    const next = readCustomerCookies(await refreshCall(world, customer.session));
+    harness.clock.advanceSeconds(11);
 
     const replay = await refreshCall(world, customer.session);
     const successor = await refreshCall(world, next);

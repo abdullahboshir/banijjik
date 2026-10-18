@@ -155,6 +155,8 @@ export const CUSTOMER_OTP_RULES = {
   sendsPerIp: { limit: 10, windowSeconds: 3600 },
   verifiesPerIp: { limit: 20, windowSeconds: 3600 },
   sessionDays: 30,
+  /** A refresh token shown again this soon after its replacement is a race of two requests, not theft (as for admin sessions). */
+  refreshReuseGraceSeconds: 10,
   accessTokenSeconds: 900,
 } as const;
 

@@ -215,9 +215,15 @@ describe("blocking a website login", () => {
 });
 
 describe("ending a contact ends its website login", () => {
-  it("deletes the account and its sessions when the contact is anonymized", async () => {
+  it("deletes the account and its sessions when the contact is anonymized, with an audit entry and an event", async () => {
     const world = await aWorldWithCustomer();
     const contactPath = `/orgs/${world.organizations.organizationA}/contacts/${world.contactId}`;
+    const auditBefore = await countAuditRows(harness.connections, {
+      action: "contact.customerAccount.ended",
+    });
+    const eventsBefore = await countOutboxRows(harness.connections, {
+      type: "contact.customerAccount.ended",
+    });
 
     const anonymized = await world.organizations.alice.call("post", `${contactPath}/anonymize`, {
       version: 1,
@@ -235,6 +241,12 @@ describe("ending a contact ends its website login", () => {
     expect(refresh.status).toBe(401);
     expect(account.status).toBe(404);
     expect(again.verifyResponse.body.data.contactId).not.toBe(world.contactId);
+    expect(
+      await countAuditRows(harness.connections, { action: "contact.customerAccount.ended" }),
+    ).toBe(auditBefore + 1);
+    expect(
+      await countOutboxRows(harness.connections, { type: "contact.customerAccount.ended" }),
+    ).toBe(eventsBefore + 1);
   });
 
   it("does the same when the contact is archived", async () => {

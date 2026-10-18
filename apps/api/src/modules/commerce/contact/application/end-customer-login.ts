@@ -1,3 +1,5 @@
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
+import { CONTACT_EVENT_TYPE } from "@banijjik/contracts/contact";
 import type { ContactId } from "@banijjik/ids";
 import type { ContactWriteDependencies } from "./contact-dependencies.js";
 
@@ -7,11 +9,20 @@ import type { ContactWriteDependencies } from "./contact-dependencies.js";
  * (erasure), and it frees the phone for a new contact (ADR-119). Call inside the unit of work.
  */
 export async function endCustomerLogin(
-  dependencies: Pick<ContactWriteDependencies, "customerAccounts" | "customerSessions">,
+  dependencies: Pick<
+    ContactWriteDependencies,
+    "customerAccounts" | "customerSessions" | "audit" | "events"
+  >,
   contactId: ContactId,
 ): Promise<void> {
-  const { customerAccounts, customerSessions } = dependencies;
+  const { customerAccounts, customerSessions, audit, events } = dependencies;
   const customerAccountId = await customerAccounts.deleteByContactId(contactId);
   if (customerAccountId === undefined) return;
   await customerSessions.deleteAllOfAccount(customerAccountId);
+  await audit.record({
+    action: AUDIT_ACTION.CUSTOMER_ACCOUNT_ENDED,
+    entityType: AUDIT_ENTITY_TYPE.customerAccount,
+    entityId: customerAccountId,
+  });
+  await events.publish(CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_ENDED, { customerAccountId, contactId });
 }
