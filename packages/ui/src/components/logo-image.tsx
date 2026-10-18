@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { PublicImage } from "./public-image.js";
 
 export interface LogoImageProps {
   src: string;
@@ -6,10 +7,7 @@ export interface LogoImageProps {
   className?: string;
 }
 
-/**
- * A business logo. It is a public file the API has already resized (ADR-109), so a plain image is enough;
- * the Next image component would add its client code to every page that draws the shell (13-UX section 11).
- */
+/** A business logo: a public image that loads at once, because it sits in the first screen. */
 export function LogoImage({ src, alt, className }: LogoImageProps): ReactElement {
-  return <img src={src} alt={alt} className={className} />;
+  return <PublicImage src={src} alt={alt} loading="eager" {...(className ? { className } : {})} />;
 }
