@@ -21,3 +21,15 @@ export type {
 export { platformPermission, requirePlatformRoles } from "./platform-permission.middleware.js";
 export type { PlatformPermissionMiddlewareFactory } from "./platform-permission.middleware.js";
 export { requirePlatformOperatorId } from "./require-platform-operator.js";
+export { createCustomerTokenIssuer, createCustomerTokenVerifier } from "./customer-access-token.js";
+export type {
+  CustomerTokenClaims,
+  CustomerTokenIssuer,
+  CustomerTokenOptions,
+  CustomerTokenVerifier,
+} from "./customer-access-token.js";
+export { cacheAccountStatus } from "./customer-account-gate.js";
+export type { CustomerAccountStatusReader } from "./customer-account-gate.js";
+export { authenticateCustomer } from "./authenticate-customer.middleware.js";
+export type { AuthenticateCustomerOptions } from "./authenticate-customer.middleware.js";
+export { requireCurrentCustomerAccountId } from "./require-current-customer-account-id.js";

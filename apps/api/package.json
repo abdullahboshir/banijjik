@@ -29,6 +29,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",
     "@banijjik/contracts": "*",
+    "@banijjik/i18n": "*",
     "@banijjik/ids": "*",
     "@banijjik/validation": "*",
     "@node-rs/argon2": "^2.2.2",

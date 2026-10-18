@@ -4,6 +4,7 @@ import { createCloseDatabasesTask, type DatabaseConnections } from "./kernel/db/
 import { eventHandlerRegistry, startEventProcessing } from "./kernel/events/index.js";
 import type { ShutdownTask } from "./kernel/lifecycle/shutdown.js";
 import { createCloseRedisTask, createQueueRedisClient } from "./kernel/redis/index.js";
+import { registerContactHandlers } from "./routes/contact-event-handlers.js";
 import { buildEventModuleEffectiveness } from "./routes/module-effectiveness.js";
 import { systemClock } from "./kernel/time/index.js";
 
@@ -19,6 +20,7 @@ export function startWorker(
   connections: DatabaseConnections,
 ): readonly ShutdownTask[] {
   const redis = createQueueRedisClient(config.redisUrl);
+  registerContactHandlers(config);
   const processing = startEventProcessing({
     redis,
     registry: eventHandlerRegistry,

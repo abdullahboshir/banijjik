@@ -9,6 +9,7 @@ import {
   CONTACT_DEDUPE_MODE,
   CONTACT_DEDUPE_SETTING_KEY,
   CONTACT_EVENT_TYPE,
+  CUSTOMER_LOGIN_SETTING_KEY,
 } from "@banijjik/contracts/contact";
 import { defineModule } from "../../../kernel/modules/index.js";
 
@@ -28,6 +29,8 @@ export const contactManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.CONTACT_CONTACT_ARCHIVE),
     permissionDefinition(PERMISSION_KEY.CONTACT_CONTACT_ANONYMIZE, { isSensitive: true }),
     permissionDefinition(PERMISSION_KEY.CONTACT_CONTACT_READ_SENSITIVE, { isSensitive: true }),
+    permissionDefinition(PERMISSION_KEY.CONTACT_CUSTOMER_ACCOUNT_READ),
+    permissionDefinition(PERMISSION_KEY.CONTACT_CUSTOMER_ACCOUNT_BLOCK),
   ],
   routes: { admin: ["/orgs/:organizationId/contacts"] },
   menu: [
@@ -51,6 +54,13 @@ export const contactManifest = defineModule({
       allowsLocationOverride: false,
       isClientVisible: true,
     },
+    {
+      settingKey: CUSTOMER_LOGIN_SETTING_KEY,
+      value: { kind: "BOOLEAN" },
+      systemDefault: false,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
   ],
   customFieldEntities: ["contact"],
   botTools: [],
@@ -61,6 +71,9 @@ export const contactManifest = defineModule({
       CONTACT_EVENT_TYPE.CONTACT_UPDATED,
       CONTACT_EVENT_TYPE.CONTACT_ARCHIVED,
       CONTACT_EVENT_TYPE.CONTACT_ANONYMIZED,
+      CONTACT_EVENT_TYPE.CUSTOMER_OTP_REQUESTED,
+      CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_BLOCKED,
+      CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_UNBLOCKED,
     ],
     consumes: [],
   },

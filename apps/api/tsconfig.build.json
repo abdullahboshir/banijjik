@@ -9,6 +9,9 @@
       "path": "../../packages/ids"
     },
     {
+      "path": "../../packages/i18n"
+    },
+    {
       "path": "../../packages/contracts"
     },
     {

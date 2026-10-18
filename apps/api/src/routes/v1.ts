@@ -40,6 +40,7 @@ import {
 } from "../modules/core/organization/index.js";
 import { registerCatalogModels } from "../modules/commerce/catalog/index.js";
 import { registerContactModels } from "../modules/commerce/contact/index.js";
+import { buildStorefrontRouter } from "./storefront.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
   buildEntitlementTenantRouter,
@@ -159,6 +160,7 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   router.use("/me", adminGuards, meRouter);
   // The invitation link: public preview, signed-in accept. Outside the tenant pipeline.
   router.use("/invitations", organizationTenant.invitationLinkRouter);
+  router.use("/storefront", buildStorefront(dependencies, { audit, orgConfig, registry }));
   mountPlatformApi(router, {
     dependencies,
     verifier,
@@ -184,6 +186,21 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     ),
   );
   return router;
+}
+
+/** The public customer API: its own pipeline, outside admin sign-in and membership (card M.1). */
+function buildStorefront(
+  dependencies: V1Dependencies,
+  parts: { audit: AuditRecorder; orgConfig: OrgConfigService; registry: ModuleRegistry },
+): Router {
+  return buildStorefrontRouter({
+    config: dependencies.config,
+    clock: dependencies.clock,
+    rateLimiter: dependencies.rateLimiter,
+    audit: parts.audit,
+    orgConfig: parts.orgConfig,
+    manifests: parts.registry.all(),
+  });
 }
 
 /** Custom-field, settings and file routers; the file module also yields the public router. */

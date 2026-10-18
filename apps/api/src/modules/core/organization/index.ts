@@ -15,6 +15,8 @@ import type { ActorProfileReader, SystemRoleProvisioner } from "./application/po
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
 import type { OrganizationCurrencyReader } from "./application/ports/organization-currency-reader.js";
+import type { StorefrontOrganizationReader } from "./application/ports/storefront-organization-reader.js";
+import { MongoStorefrontOrganizationReader } from "./infrastructure/mongo-storefront-organization.reader.js";
 import type { TrialStarter } from "./application/ports/trial-starter.js";
 import type { IndustryTemplateAvailability } from "./application/ports/industry-template-availability.js";
 import type { IndustryTemplateMove } from "./application/ports/industry-template-move.js";
@@ -256,4 +258,14 @@ export type { OrganizationCurrencyReader } from "./application/ports/organizatio
 /** The currency of an organization, for modules that price things (card 3.2a). */
 export function buildOrganizationCurrencyReader(): OrganizationCurrencyReader {
   return new MongoOrganizationCurrencyReader();
+}
+
+export type {
+  StorefrontOrganization,
+  StorefrontOrganizationReader,
+} from "./application/ports/storefront-organization-reader.js";
+
+/** Finds an ACTIVE business for the public site (card M.1). */
+export function buildStorefrontOrganizationReader(): StorefrontOrganizationReader {
+  return new MongoStorefrontOrganizationReader();
 }

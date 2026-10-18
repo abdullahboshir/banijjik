@@ -7,6 +7,8 @@ export interface RequestContext {
   readonly userId?: string;
   readonly organizationId?: string;
   readonly memberId?: string;
+  /** Set by authenticateCustomer() on storefront routes only; never together with a user or member (ADR-045). */
+  readonly customerAccountId?: string;
   /** `<memberVersion>.<rolesVersion>`, read fresh on every tenant request; keys the permission cache. */
   readonly accessVersion?: string;
   /** Organization.configVersion, read fresh on every tenant request; keys the resolved-config cache. */

@@ -56,7 +56,8 @@ export interface NewContactInput {
   readonly homeLocationId?: LocationId | undefined;
   readonly customFields?: StoredCustomFields | undefined;
   readonly source: ContactSource;
-  readonly createdByUserId: UserId;
+  /** `null` when the customer created the contact by signing in, not staff (M.1). */
+  readonly createdByUserId: UserId | null;
   readonly now: Date;
 }
 

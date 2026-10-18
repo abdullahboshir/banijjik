@@ -58,3 +58,41 @@ export class ContactPhoneTakenError extends DomainRuleError {
     this.name = "ContactPhoneTakenError";
   }
 }
+
+/** One answer for a wrong, expired, used or replaced code, so nobody learns which it was (ADR-119). */
+export function otpInvalid(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.VALIDATION_ERROR,
+    messageKey: "errors.otp_invalid",
+  });
+}
+
+/** Only after a correct code, so the answer reveals nothing to a stranger. */
+export function customerAccountBlocked(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.FORBIDDEN,
+    messageKey: "errors.customer_account_blocked",
+  });
+}
+
+/** Customer sign-in is off for this business, or the business has no public site (M.1). */
+export function storefrontNotAvailable(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.NOT_FOUND,
+    messageKey: "errors.storefront_not_available",
+  });
+}
+
+/** Too many codes asked for one phone: the caller may try again after `retryAfterSeconds`. */
+export function tooManyCodes(retryAfterSeconds: number): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.RATE_LIMITED, retryAfterSeconds });
+}
+
+export function customerAccountNotFound(): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.NOT_FOUND });
+}
+
+/** A refresh token that is unknown, expired, replaced or belongs to a blocked account. */
+export function customerSessionNotValid(): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.UNAUTHENTICATED });
+}

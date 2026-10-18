@@ -2,6 +2,7 @@ import type { ContactId } from "@banijjik/ids";
 import { contactNotFound } from "../../domain/errors.js";
 import type { ContactWriteDependencies } from "../contact-dependencies.js";
 import { recordContactEnded } from "../contact-records.js";
+import { endCustomerLogin } from "../end-customer-login.js";
 import type { ContactDetailView } from "../contact-view.js";
 import { viewContact } from "../contact-view.js";
 import type { ContactActorInput } from "./contact-actor-input.js";
@@ -25,6 +26,7 @@ export class ArchiveContactUseCase {
       const existing = await contacts.findById(input.contactId);
       if (existing === undefined) throw contactNotFound();
       const updated = await contacts.update(existing.archive(), input.version, input.actorUserId);
+      await endCustomerLogin(this.dependencies, existing.contactId);
       await recordContactEnded(this.dependencies, {
         before: existing,
         after: updated,
@@ -48,6 +50,7 @@ export class AnonymizeContactUseCase {
       if (existing === undefined) throw contactNotFound();
       const anonymous = existing.anonymize(clock.now());
       const updated = await contacts.update(anonymous, input.version, input.actorUserId);
+      await endCustomerLogin(this.dependencies, existing.contactId);
       await recordContactEnded(this.dependencies, {
         before: existing,
         after: updated,

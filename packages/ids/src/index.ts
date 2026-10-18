@@ -4,8 +4,11 @@ export { asId, InvalidIdError } from "./branded-ids.js";
 export type {
   CategoryId,
   ContactId,
+  CustomerAccountId,
+  CustomerSessionId,
   ModifierGroupId,
   OfferingId,
+  OtpChallengeId,
   Id,
   IndustryTemplateId,
   InvitationId,
