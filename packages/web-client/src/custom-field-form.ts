@@ -25,7 +25,6 @@ import {
   type CustomFieldValuesOptions,
 } from "@banijjik/validation";
 
-/** Reference values still wait for the contact module (card 3.1b); file and image have inputs since card 3.0. */
 /**
  * A reference field has an input only when it links a contact (card 3.1b, ADR-073); any other
  * reference stays pending.
