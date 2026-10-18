@@ -34,6 +34,7 @@ import {
 } from "./contact-form-props";
 import { contactTermOf, roleLabelOf, type ContactWords } from "./contact-labels";
 import { addressLabelsOf, contactActionLabelsOf } from "./contact-detail-labels";
+import { WebsiteLogin } from "./website-login";
 
 function Fact(props: { label: string; children: ReactElement | string }): ReactElement {
   return (
@@ -309,6 +310,7 @@ export async function ContactDetailPage({
       <PageSection title={t("contacts.relations.title")} help={t("contacts.relations.help")}>
         <RelationList contact={contact} basePath={basePath} t={t} />
       </PageSection>
+      <WebsiteLogin access={access} contact={contact} translator={translator} />
       <DetailActions access={access} translator={translator} data={data} />
     </div>
   );

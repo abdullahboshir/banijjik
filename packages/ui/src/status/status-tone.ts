@@ -86,7 +86,8 @@ export const STATUS_TONE_TABLE: ToneTable = {
     success: ["ACTIVE"],
     info: [],
     warning: [],
-    danger: [],
+    // A BLOCKED website login (card M.1) uses the contact table: it is the only danger state here.
+    danger: ["BLOCKED"],
     neutral: ["ARCHIVED"],
   },
   OFFERING: {

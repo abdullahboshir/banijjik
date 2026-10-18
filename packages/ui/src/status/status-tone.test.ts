@@ -53,6 +53,7 @@ const DOC_ROWS: [StatusRequestType, StatusTone, string][] = [
   ["ROLE", "neutral", "ARCHIVED"],
   ["CONTACT", "success", "ACTIVE"],
   ["CONTACT", "neutral", "ARCHIVED"],
+  ["CONTACT", "danger", "BLOCKED"],
   ["OFFERING", "success", "ACTIVE"],
   ["OFFERING", "warning", "DRAFT"],
   ["OFFERING", "neutral", "ARCHIVED"],
