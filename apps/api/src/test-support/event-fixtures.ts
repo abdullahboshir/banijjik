@@ -17,24 +17,37 @@ export interface PublishedTestEvent {
   readonly eventId: string;
   readonly type: string;
   readonly organizationId: string | null;
+  /** The event's number in its stream; null when no ordering key was given. */
+  readonly streamSequence: number | null;
 }
 
-async function publishInContext(organizationId: string | null): Promise<void> {
+async function publishInContext(
+  organizationId: string | null,
+  orderingKey: string | undefined,
+): Promise<void> {
   const context = { requestId: newId(), ...(organizationId === null ? {} : { organizationId }) };
+  const options = orderingKey === undefined ? {} : { orderingKey };
   await runWithRequestContext(context, () =>
-    withTransaction(() => publishEvent(EVENT_TYPE.USER_REGISTERED, { userId: newId() })),
+    withTransaction(() => publishEvent(EVENT_TYPE.USER_REGISTERED, { userId: newId() }, options)),
   );
 }
 
 /**
  * Publishes one `iam.user.registered` the way a use case does: inside a transaction, in a request
- * context of the given organization (or none). Call it one at a time: the newest outbox row is returned.
+ * context of the given organization (or none), with an ordering key when given. Call it one at a
+ * time: the newest outbox row is returned.
  */
 export async function publishTestEvent(
   organizationId: string | null = null,
+  orderingKey?: string,
 ): Promise<PublishedTestEvent> {
-  await publishInContext(organizationId);
+  await publishInContext(organizationId, orderingKey);
   const row = await outboxModel().findOne({}).sort({ createdAt: -1 }).lean<OutboxEventDocument>();
   if (row === null) throw new Error("the event was not written");
-  return { eventId: row.eventId, type: row.type, organizationId: row.organizationId };
+  return {
+    eventId: row.eventId,
+    type: row.type,
+    organizationId: row.organizationId,
+    streamSequence: row.streamSequence,
+  };
 }

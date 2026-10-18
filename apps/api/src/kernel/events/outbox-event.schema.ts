@@ -21,6 +21,10 @@ export interface OutboxEventDocument {
   actorUserId: string | null;
   requestId: string;
   payload: Record<string, unknown>;
+  /** The record whose events stay in order, such as `order:<orderId>`; null for an unordered event (card 3.8a). */
+  orderingKey: string | null;
+  /** The event's number in its stream, 1, 2, 3 in publishing order; null without a key. */
+  streamSequence: number | null;
   status: OutboxStatus;
   dispatchAttempts: number;
   nextAttemptAt: Date;
@@ -45,6 +49,8 @@ const outboxEventSchema = new Schema<OutboxEventDocument>(
     actorUserId: { type: String, default: null },
     requestId: { type: String, required: true },
     payload: { type: Schema.Types.Mixed, required: true },
+    orderingKey: { type: String, default: null },
+    streamSequence: { type: Number, default: null },
     status: {
       type: String,
       required: true,
@@ -62,8 +68,8 @@ const outboxEventSchema = new Schema<OutboxEventDocument>(
 );
 
 outboxEventSchema.index({ eventId: 1 }, { unique: true });
-// The dispatcher's claim query: pending events that are due.
-outboxEventSchema.index({ status: 1, nextAttemptAt: 1 });
+// The dispatcher's claim query: pending events that are due, the lower stream sequence first (ADR-115).
+outboxEventSchema.index({ status: 1, nextAttemptAt: 1, streamSequence: 1 });
 // Dispatched events are kept for a month for diagnosis; DEAD ones have no dispatchedAt and stay.
 outboxEventSchema.index(
   { dispatchedAt: 1 },

@@ -177,7 +177,8 @@ function handlerKeyOf(manifest: ModuleManifest): string {
   return `contract.${camel}Probe`;
 }
 
-export type HandlerOutcome = "HANDLED" | "SKIPPED_MODULE_OFF" | "ALREADY_PROCESSED";
+export type HandlerOutcome =
+  "HANDLED" | "SKIPPED_MODULE_OFF" | "ALREADY_PROCESSED" | "WAITING_FOR_EARLIER_EVENT";
 
 /** Assertion 6 helper: publishes one event for the organization and runs the module's probe handler through the real runner. */
 export async function runProbeHandler(
@@ -192,6 +193,7 @@ export async function runProbeHandler(
     handlerKey,
     moduleKey: manifest.key,
     eventType: manifest.events.consumes[0] ?? EVENT_TYPE.USER_REGISTERED,
+    ordering: "UNORDERED",
     handle: async () => void (calls += 1),
   });
   const event = await publishTestEvent(organizationId);

@@ -20,6 +20,8 @@ export interface EventProcessingOptions {
   readonly queuePrefix?: string;
   /** First retry delay of a failed handler. Tests shorten it. */
   readonly retryBaseDelayMs?: number;
+  /** First wait of a job that is ahead of its stream (ADR-115). Tests shorten it. */
+  readonly streamWaitBaseDelayMs?: number;
 }
 
 export interface EventProcessing {
@@ -43,6 +45,9 @@ export function startEventProcessing(options: EventProcessingOptions): EventProc
     connection: redis,
     registry,
     effectiveness: options.effectiveness,
+    ...(options.streamWaitBaseDelayMs === undefined
+      ? {}
+      : { streamWaitBaseDelayMs: options.streamWaitBaseDelayMs }),
     ...prefix,
   });
   const dispatcher = new OutboxDispatcher({

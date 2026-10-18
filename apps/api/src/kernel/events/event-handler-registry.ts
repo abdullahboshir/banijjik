@@ -7,12 +7,19 @@ import {
 } from "@banijjik/contracts";
 import { AppError } from "../http/app-error.js";
 
+export type HandlerOrdering = "ORDERED" | "UNORDERED";
+
 export interface EventHandler<Type extends EventType = EventType> {
   /** `<module>.<purpose>`, unique across the application. It names the job, so it has no ":" (BullMQ job ids). */
   readonly handlerKey: string;
   /** The module that owns the handler: it runs for an organization only while this module is effective there. */
   readonly moduleKey: ModuleKey;
   readonly eventType: Type;
+  /**
+   * ORDERED: events with an `orderingKey` reach the handler in stream order, each exactly once (ADR-115).
+   * UNORDERED: any order, as before. Every handler states it, so nobody gets ordering by accident.
+   */
+  readonly ordering: HandlerOrdering;
   handle(envelope: EventEnvelope<EventPayloadMap[Type]>): Promise<void>;
 }
 

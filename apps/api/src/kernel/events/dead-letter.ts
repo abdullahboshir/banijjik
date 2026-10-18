@@ -1,3 +1,4 @@
+import { EVENT_DEAD_LETTER_STATUS } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
 import { models } from "../db/index.js";
 import { reportError } from "../observability/report-error.js";
@@ -8,15 +9,18 @@ import {
 } from "./dead-letter.schema.js";
 import type { EventJobData } from "./event-job.js";
 import { summarizeError } from "./error-summary.js";
+import type { EventStreamCoordinates } from "./stream-of-event.js";
 
 export interface FinalFailure {
   readonly data: EventJobData;
   readonly attempts: number;
   readonly error: unknown;
+  /** Where the event sits in its stream, when its handler is ORDERED (ADR-115). */
+  readonly stream?: EventStreamCoordinates;
 }
 
 async function writeDeadLetter(failure: FinalFailure): Promise<void> {
-  const { data, attempts, error } = failure;
+  const { data, attempts, error, stream } = failure;
   await models({})
     .get<EventDeadLetterDocument>(EVENT_DEAD_LETTER_MODEL_NAME)
     .updateOne(
@@ -24,9 +28,17 @@ async function writeDeadLetter(failure: FinalFailure): Promise<void> {
       {
         $set: {
           type: data.type,
+          organizationId: data.organizationId,
+          // A job that fails again after a replay is waiting for an operator again.
+          status: EVENT_DEAD_LETTER_STATUS.FAILED,
+          orderingKey: stream?.orderingKey ?? null,
+          streamSequence: stream?.streamSequence ?? null,
           attempts,
           lastError: summarizeError(error),
           failedAt: systemClock.now(),
+          resolvedAt: null,
+          resolvedByPlatformOperatorId: null,
+          resolutionReason: null,
         },
         $setOnInsert: { eventDeadLetterId: newId() },
       },

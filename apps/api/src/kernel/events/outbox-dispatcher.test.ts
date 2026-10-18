@@ -55,6 +55,7 @@ function registryWith(...handlerKeys: string[]): EventHandlerRegistry {
       handlerKey,
       moduleKey: MODULE_KEY.IAM,
       eventType: EVENT_TYPE.USER_REGISTERED,
+      ordering: "UNORDERED",
       handle: async () => undefined,
     });
   }

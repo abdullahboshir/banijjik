@@ -42,6 +42,7 @@ function registryWithProbe(moduleKey: ModuleKey, handlerKey: string): ProbeHandl
     handlerKey,
     moduleKey,
     eventType: EVENT_TYPE.USER_REGISTERED,
+    ordering: "UNORDERED",
     handle: async () => void (calls += 1),
   });
   return { registry, calls: () => calls };

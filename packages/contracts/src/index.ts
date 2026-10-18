@@ -120,8 +120,7 @@ export type {
 export { AUDIT_ACTION, AUDIT_ENTITY_TYPE, REDACTED_AUDIT_VALUE } from "./audit/audit-action.js";
 export type { AuditAction, AuditEntityType } from "./audit/audit-action.js";
 export type { AuditChanges, AuditLogSummary, AuditValue } from "./audit/audit-contracts.js";
-export { EVENT_TYPE } from "./events/event-type.js";
-export type { EventType } from "./events/event-type.js";
+export { EVENT_TYPE, type EventType } from "./events/event-type.js";
 export type { EventEnvelope } from "./events/event-envelope.js";
 export type {
   EventPayloadMap,
@@ -134,20 +133,16 @@ export type {
   RolePayload,
   UserRegisteredPayload,
 } from "./events/event-payloads.js";
-export { OUTBOX_STATUS } from "./events/outbox-status.js";
-export type { OutboxStatus } from "./events/outbox-status.js";
+export { OUTBOX_STATUS, type OutboxStatus } from "./events/outbox-status.js";
 export { isModuleKey, MODULE_KEY, MODULE_KEY_VALUES } from "./modules/module-key.js";
 export type { ModuleKey } from "./modules/module-key.js";
-export { MODULE_CLASS } from "./modules/module-class.js";
-export type { ModuleClass } from "./modules/module-class.js";
+export { MODULE_CLASS, type ModuleClass } from "./modules/module-class.js";
 export { MODULE_CLASS_BY_KEY } from "./modules/module-class-by-key.js";
-export { OFFERING_KIND } from "./modules/offering-kind.js";
-export type { OfferingKind } from "./modules/offering-kind.js";
+export { OFFERING_KIND, type OfferingKind } from "./modules/offering-kind.js";
 export { MENU_VISIBILITY, SETTINGS_TOPIC } from "./modules/menu-visibility.js";
 export type { MenuVisibility, SettingsTopic } from "./modules/menu-visibility.js";
 export type { MenuEntry, ModuleManifest, ModuleRoutes } from "./modules/module-manifest.js";
-export { ACCESS_MODE } from "./entitlement/access-mode.js";
-export type { AccessMode } from "./entitlement/access-mode.js";
+export { ACCESS_MODE, type AccessMode } from "./entitlement/access-mode.js";
 export { SUBSCRIPTION_STATUS } from "./entitlement/subscription-status.js";
 export type { SubscriptionStatus } from "./entitlement/subscription-status.js";
 export { MODULE_OVERRIDE_EFFECT } from "./entitlement/module-override-effect.js";
@@ -213,6 +208,11 @@ export type {
 export { PLATFORM_MESSAGE_KEYS, PLATFORM_RULE_KEY } from "./platform/platform-message-keys.js";
 export type { PlatformRuleKey } from "./platform/platform-message-keys.js";
 export type { PlatformOperatorSummary } from "./platform/platform-operator.js";
+export {
+  EVENT_DEAD_LETTER_STATUS,
+  type PlatformDeadLetter,
+  type PlatformDeadOutboxEvent,
+} from "./platform/event-dead-letter.js";
 export type {
   PlatformChangePackageRequest,
   PlatformExtendTrialRequest,

@@ -7,7 +7,13 @@ function aHandler(
   handlerKey: string,
   eventType: EventType = EVENT_TYPE.USER_REGISTERED,
 ): EventHandler {
-  return { handlerKey, moduleKey: MODULE_KEY.IAM, eventType, handle: async () => undefined };
+  return {
+    handlerKey,
+    moduleKey: MODULE_KEY.IAM,
+    eventType,
+    ordering: "UNORDERED",
+    handle: async () => undefined,
+  };
 }
 
 describe("EventHandlerRegistry", () => {

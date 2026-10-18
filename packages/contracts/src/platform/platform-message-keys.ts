@@ -12,6 +12,9 @@ export const PLATFORM_RULE_KEY = {
   INDUSTRY_TEMPLATE_CHANGE_NOT_ADDITIVE: "INDUSTRY_TEMPLATE_CHANGE_NOT_ADDITIVE",
   INDUSTRY_TEMPLATE_STATUS_INVALID: "INDUSTRY_TEMPLATE_STATUS_INVALID",
   INDUSTRY_TEMPLATE_SETTING_INVALID: "INDUSTRY_TEMPLATE_SETTING_INVALID",
+  EVENT_DEAD_LETTER_NOT_FAILED: "EVENT_DEAD_LETTER_NOT_FAILED",
+  EVENT_STREAM_NOT_AT_EVENT: "EVENT_STREAM_NOT_AT_EVENT",
+  OUTBOX_EVENT_NOT_DEAD: "OUTBOX_EVENT_NOT_DEAD",
 } as const;
 
 export type PlatformRuleKey = (typeof PLATFORM_RULE_KEY)[keyof typeof PLATFORM_RULE_KEY];
@@ -33,4 +36,7 @@ export const PLATFORM_MESSAGE_KEYS: readonly string[] = [
   "errors.industry_template_change_not_additive",
   "errors.industry_template_status_invalid",
   "errors.industry_template_setting_invalid",
+  "errors.event_dead_letter_not_failed",
+  "errors.event_stream_not_at_event",
+  "errors.outbox_event_not_dead",
 ];

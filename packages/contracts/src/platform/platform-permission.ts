@@ -19,6 +19,8 @@ export const PLATFORM_PERMISSION_KEY = {
   OPERATOR_WRITE: "platform.operator.write",
   INDUSTRY_READ: "platform.industry.read",
   INDUSTRY_WRITE: "platform.industry.write",
+  EVENTS_READ: "platform.events.read",
+  EVENTS_REPLAY: "platform.events.replay",
 } as const;
 
 export type PlatformPermissionKey =

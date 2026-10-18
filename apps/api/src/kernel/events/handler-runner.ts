@@ -13,13 +13,21 @@ import { systemClock } from "../time/index.js";
 import type { EventHandler, EventHandlerRegistry } from "./event-handler-registry.js";
 import type { EventJobData } from "./event-job.js";
 import type { ModuleEffectiveness } from "./module-effectiveness.js";
+import {
+  advancePosition,
+  checkSequence,
+  readPosition,
+  type StreamPositionKey,
+} from "./stream-position.js";
 import { OUTBOX_EVENT_MODEL_NAME, type OutboxEventDocument } from "./outbox-event.schema.js";
 import {
   PROCESSED_EVENT_MODEL_NAME,
   type ProcessedEventDocument,
 } from "./processed-event.schema.js";
 
-export type HandlerRunResult = "HANDLED" | "ALREADY_PROCESSED" | "SKIPPED_MODULE_OFF";
+/** WAITING_FOR_EARLIER_EVENT: an ORDERED handler got an event whose stream has an earlier, unhandled event (ADR-115). */
+export type HandlerRunResult =
+  "HANDLED" | "ALREADY_PROCESSED" | "SKIPPED_MODULE_OFF" | "WAITING_FOR_EARLIER_EVENT";
 
 function toEnvelope(event: OutboxEventDocument): EventEnvelope<EventPayloadMap[EventType]> {
   return {
@@ -90,6 +98,55 @@ async function runOnce(
   });
 }
 
+interface OrderedDelivery {
+  readonly key: StreamPositionKey;
+  readonly streamSequence: number;
+}
+
+/** The stream coordinates of an event for an ORDERED handler; undefined for an unordered handler or a keyless event. */
+function orderedDeliveryOf(
+  handler: EventHandler,
+  event: OutboxEventDocument,
+): OrderedDelivery | undefined {
+  const { orderingKey, streamSequence } = event;
+  if (handler.ordering !== "ORDERED" || orderingKey === null || streamSequence === null) {
+    return undefined;
+  }
+  const key = { handlerKey: handler.handlerKey, organizationId: event.organizationId, orderingKey };
+  return { key, streamSequence };
+}
+
+/**
+ * Runs an ORDERED handler on an event of a stream (ADR-115). Only the next event runs; the effect,
+ * the processed marker and the position commit in one transaction. An event the handler already
+ * passed is a repeat. An event ahead of the position has to wait for the earlier ones. A handler
+ * whose module is off still moves the position, so switching a module off never blocks a stream.
+ */
+async function runOrdered(input: {
+  readonly handler: EventHandler;
+  readonly event: OutboxEventDocument;
+  readonly delivery: OrderedDelivery;
+  readonly isAllowed: boolean;
+}): Promise<HandlerRunResult> {
+  const { handler, event, delivery, isAllowed } = input;
+  return withTransaction(async () => {
+    const check = checkSequence(await readPosition(delivery.key), delivery.streamSequence);
+    if (check === "ALREADY_HANDLED") return "ALREADY_PROCESSED";
+    if (check === "AHEAD") return "WAITING_FOR_EARLIER_EVENT";
+    if (!isAllowed) {
+      await advancePosition(delivery.key, delivery.streamSequence);
+      return "SKIPPED_MODULE_OFF";
+    }
+    const isFirstTime = await recordMarker({
+      eventId: event.eventId,
+      handlerKey: handler.handlerKey,
+    });
+    if (isFirstTime) await handler.handle(toEnvelope(event));
+    await advancePosition(delivery.key, delivery.streamSequence);
+    return isFirstTime ? "HANDLED" : "ALREADY_PROCESSED";
+  });
+}
+
 /**
  * A handler of a module that is off for the event's organization is skipped and its job completes
  * (no marker, no retry). User-level events have no organization, so they always run.
@@ -127,7 +184,10 @@ export async function runEventHandler(
   if (handler === undefined) throw new Error(`no handler registered for ${data.handlerKey}`);
   const event = await loadEvent(data.eventId);
   return runInEventContext(event, async () => {
-    if (!(await isHandlerAllowed(handler, event, effectiveness))) return "SKIPPED_MODULE_OFF";
+    const isAllowed = await isHandlerAllowed(handler, event, effectiveness);
+    const delivery = orderedDeliveryOf(handler, event);
+    if (delivery !== undefined) return runOrdered({ handler, event, delivery, isAllowed });
+    if (!isAllowed) return "SKIPPED_MODULE_OFF";
     return runOnce(handler, event);
   });
 }

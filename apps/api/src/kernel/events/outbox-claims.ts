@@ -35,7 +35,7 @@ export async function claimNextEvent(now: Date): Promise<OutboxEventDocument | n
         $or: [{ lockedUntil: null }, { lockedUntil: { $lte: now } }],
       },
       { $set: { lockedUntil: new Date(now.getTime() + CLAIM_LOCK_MS) } },
-      { sort: { nextAttemptAt: 1 }, returnDocument: "after" },
+      { sort: { nextAttemptAt: 1, streamSequence: 1 }, returnDocument: "after" },
     )
     .lean<OutboxEventDocument>();
 }

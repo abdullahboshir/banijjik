@@ -55,7 +55,13 @@ function handlerOf(
   handlerKey: string,
   handle: EventHandler["handle"],
 ): EventHandler<typeof EVENT_TYPE.USER_REGISTERED> {
-  return { handlerKey, moduleKey: MODULE_KEY.IAM, eventType: EVENT_TYPE.USER_REGISTERED, handle };
+  return {
+    handlerKey,
+    moduleKey: MODULE_KEY.IAM,
+    eventType: EVENT_TYPE.USER_REGISTERED,
+    ordering: "UNORDERED",
+    handle,
+  };
 }
 
 function countMarkers(eventId: string, handlerKey: string): Promise<number> {

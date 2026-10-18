@@ -22,6 +22,9 @@ export const PLATFORM_AUDIT_ACTION = {
   INDUSTRY_TEMPLATE_PUBLISHED: "platform.industryTemplate.published",
   INDUSTRY_TEMPLATE_RETIRED: "platform.industryTemplate.retired",
   ORGANIZATION_INDUSTRY_TEMPLATE_CHANGED: "platform.organization.industryTemplateChanged",
+  EVENT_DEAD_LETTER_REPLAYED: "platform.eventDeadLetter.replayed",
+  EVENT_DEAD_LETTER_SKIPPED: "platform.eventDeadLetter.skipped",
+  OUTBOX_EVENT_REPLAYED: "platform.outboxEvent.replayed",
 } as const;
 
 export type PlatformAuditAction =
@@ -35,6 +38,8 @@ export const PLATFORM_AUDIT_TARGET_TYPE = defineEnum([
   "module_override",
   "platform_operator",
   "industry_template",
+  "event_dead_letter",
+  "outbox_event",
 ]);
 export type PlatformAuditTargetType =
   (typeof PLATFORM_AUDIT_TARGET_TYPE)[keyof typeof PLATFORM_AUDIT_TARGET_TYPE];
