@@ -240,6 +240,9 @@ export class MongoSynonymRepository implements SynonymRepository {
     entries: SynonymBookDocument["entries"],
     actorUserId: UserId,
   ): Promise<SynonymBook> {
+    // Read first: after a duplicate-key error the transaction is over and cannot be asked anything.
+    const current = await this.read();
+    if (current.version > 0) throw conflict({ currentVersion: current.version });
     try {
       await this.model().create(
         [
@@ -254,9 +257,7 @@ export class MongoSynonymRepository implements SynonymRepository {
         sessionOption(getActiveSession()),
       );
     } catch (error) {
-      // The organization already has a list: the caller wrote against a stale version 0.
-      if (isDuplicateKeyError(error))
-        throw conflict({ currentVersion: (await this.read()).version });
+      if (isDuplicateKeyError(error)) throw conflict({});
       throw error;
     }
     return { entries, version: 1 };
