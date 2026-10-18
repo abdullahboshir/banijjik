@@ -84,7 +84,7 @@ describe("creating a package", () => {
       isAddOn: false,
       status: PACKAGE_STATUS.ACTIVE,
       version: 1,
-      unbuiltModuleKeys: [MODULE_KEY.SALES, MODULE_KEY.CATALOG],
+      unbuiltModuleKeys: [MODULE_KEY.SALES],
     });
     expect(await auditActions(response.body.data.packageId)).toEqual([
       PLATFORM_AUDIT_ACTION.PACKAGE_CREATED,

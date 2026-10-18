@@ -52,6 +52,7 @@ const BOOKING_PROBE = defineModule({
 const RETAIL_MODULES = [
   "ai",
   "audit",
+  "catalog",
   "contact",
   "custom-field",
   "file",
@@ -63,6 +64,7 @@ const SALON_MODULES = [
   "ai",
   "audit",
   "booking",
+  "catalog",
   "contact",
   "custom-field",
   "file",

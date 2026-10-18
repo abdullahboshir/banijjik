@@ -21,6 +21,12 @@ const ORGANIZATION_MENU_KEYS = {
 /** Settings and fields entries every member who may read them sees (card 2.7b). */
 // The owner and staff hold contact.contact.read, so the contacts entry leads their menu.
 const CONTACTS_MENU_KEY = "contact.contacts";
+// Every role reads the catalog (card 3.2a), so its three entries sit in every menu.
+const CATALOG_MENU_KEYS = {
+  offerings: "catalog.offerings",
+  categories: "catalog.categories",
+  modifierGroups: "catalog.modifierGroups",
+} as const;
 
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
@@ -57,9 +63,12 @@ describe("the settings menu of the organization module", () => {
     const menuKeys = await menuKeysOf(world.bob, world.organizationB);
 
     expect(menuKeys).toEqual([
+      CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.branding,
+      CATALOG_MENU_KEYS.categories,
+      CATALOG_MENU_KEYS.modifierGroups,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
@@ -83,19 +92,25 @@ describe("the settings menu of the organization module", () => {
 
     expect(created.status).toBe(201);
     expect(withTwo).toEqual([
+      CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.branding,
+      CATALOG_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.locations,
+      CATALOG_MENU_KEYS.modifierGroups,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
     ]);
     expect(archived.status).toBe(200);
     expect(withOneAgain).toEqual([
+      CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.branding,
+      CATALOG_MENU_KEYS.categories,
+      CATALOG_MENU_KEYS.modifierGroups,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
@@ -107,7 +122,13 @@ describe("the settings menu of the organization module", () => {
 
     const menuKeys = await menuKeysOf(world.sam, world.organizationA);
 
-    expect(menuKeys).toEqual([CONTACTS_MENU_KEY, ...READ_ONLY_SETTINGS_MENU_KEYS]);
+    expect(menuKeys).toEqual([
+      CATALOG_MENU_KEYS.offerings,
+      CONTACTS_MENU_KEY,
+      CATALOG_MENU_KEYS.categories,
+      CATALOG_MENU_KEYS.modifierGroups,
+      ...READ_ONLY_SETTINGS_MENU_KEYS,
+    ]);
   });
 });
 

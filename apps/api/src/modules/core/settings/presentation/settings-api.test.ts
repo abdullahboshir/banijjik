@@ -163,6 +163,8 @@ describe("GET /settings", () => {
 
     expect(response.status).toBe(200);
     expect(Object.keys(settingsOf(response))).toEqual([
+      "catalog.defaultStockTracked",
+      "catalog.defaultUnitKey",
       "contact.dedupeOn",
       "notification.probeFlag",
       "notification.probeShape",
