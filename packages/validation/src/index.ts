@@ -228,6 +228,7 @@ export {
   offeringIdParamsSchema,
   offeringListQuerySchema,
   offeringLocationClearQuerySchema,
+  offeringLocationListQuerySchema,
   offeringLocationParamsSchema,
   offeringLocationRequestSchema,
   offeringUpdateRequestSchema,
@@ -237,6 +238,7 @@ export type {
   OfferingCreateBody,
   OfferingListQuery,
   OfferingLocationBody,
+  OfferingLocationListQuery,
   OfferingUpdateBody,
   VariantInput,
 } from "./catalog/offering-schemas.js";

@@ -3,6 +3,7 @@ import type {
   OfferingCreateBody,
   OfferingListQuery,
   OfferingLocationBody,
+  OfferingLocationListQuery,
   OfferingUpdateBody,
   VersionedTransitionBody,
 } from "@banijjik/validation";
@@ -14,6 +15,7 @@ import type { GetOfferingUseCase } from "../application/use-cases/get-offering.u
 import type { ListOfferingsUseCase } from "../application/use-cases/list-offerings.use-case.js";
 import type {
   ClearOfferingLocationUseCase,
+  ListOfferingLocationsUseCase,
   SetOfferingLocationUseCase,
 } from "../application/use-cases/offering-location.use-cases.js";
 import type {
@@ -32,6 +34,7 @@ export interface OfferingControllerDependencies {
   readonly updateOffering: UpdateOfferingUseCase;
   readonly publishOffering: PublishOfferingUseCase;
   readonly archiveOffering: ArchiveOfferingUseCase;
+  readonly listLocations: ListOfferingLocationsUseCase;
   readonly setLocation: SetOfferingLocationUseCase;
   readonly clearLocation: ClearOfferingLocationUseCase;
 }
@@ -102,6 +105,19 @@ export class OfferingController {
 
   readonly archive: RequestHandler = async (request, response) => {
     sendData(response, await this.dependencies.archiveOffering.execute(this.transition(request)));
+  };
+
+  readonly listLocations: RequestHandler = async (request, response) => {
+    const { page, limit, locationId } = readQuery<OfferingLocationListQuery>(response);
+    const { allowedLocationIds } = readTenantCaller();
+    const result = await this.dependencies.listLocations.execute({
+      offeringId: readOfferingId(request),
+      page,
+      limit,
+      allowedLocationIds,
+      ...(locationId === undefined ? {} : { locationId }),
+    });
+    sendData(response, result.items, { meta: { page, limit, hasNext: result.hasNext } });
   };
 
   readonly setLocation: RequestHandler = async (request, response) => {

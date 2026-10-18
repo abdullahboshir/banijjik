@@ -55,6 +55,13 @@ export interface OfferingLocationRepository {
   /** Creates or replaces the row for `(offeringId, variantId, locationId)`. */
   save(row: OfferingLocationRow, actorUserId: UserId): Promise<void>;
   remove(key: { offeringId: string; variantId?: string; locationId: string }): Promise<boolean>;
+  /** One page of the rows of one offering, optionally of one location (the editor reads one at a time). */
+  listForOffering(request: {
+    readonly offeringId: string;
+    readonly locationId?: string | undefined;
+    readonly page: number;
+    readonly limit: number;
+  }): Promise<Page<OfferingLocationRow>>;
   /** The rows of one location for these offerings (one batched read). */
   forLocation(
     offeringIds: readonly string[],

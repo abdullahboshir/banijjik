@@ -191,6 +191,12 @@ export const offeringLocationClearQuerySchema = z.strictObject({
   variantId: uuidV7Schema.optional(),
 });
 
+/** `?locationId=&page=&limit=` of `GET /offerings/{offeringId}/locations`. */
+export const offeringLocationListQuerySchema = paginationQuerySchema.extend({
+  locationId: uuidV7Schema.optional(),
+});
+export type OfferingLocationListQuery = z.output<typeof offeringLocationListQuerySchema>;
+
 /**
  * `?q=&kind=&status=&categoryId=&location=&page=&limit=` of `GET /offerings`. Without `status` the
  * list shows DRAFT and ACTIVE offerings; ARCHIVED ones are asked for by name.

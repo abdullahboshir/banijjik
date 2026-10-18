@@ -32,6 +32,7 @@ import {
 } from "./application/use-cases/modifier-group.use-cases.js";
 import {
   ClearOfferingLocationUseCase,
+  ListOfferingLocationsUseCase,
   SetOfferingLocationUseCase,
 } from "./application/use-cases/offering-location.use-cases.js";
 import {
@@ -118,6 +119,7 @@ export function buildCatalogRouter(dependencies: CatalogTenantDependencies): Rou
     updateOffering: new UpdateOfferingUseCase(write),
     publishOffering: new PublishOfferingUseCase(write),
     archiveOffering: new ArchiveOfferingUseCase(write),
+    listLocations: new ListOfferingLocationsUseCase(write),
     setLocation: new SetOfferingLocationUseCase(write),
     clearLocation: new ClearOfferingLocationUseCase(write),
   });

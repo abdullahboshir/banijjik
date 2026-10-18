@@ -17,6 +17,7 @@ import {
 import type { Offering } from "../../domain/offering.entity.js";
 import type { CatalogDependencies } from "../catalog-dependencies.js";
 import { orderingKeyOf } from "../offering-records.js";
+import type { Page } from "../ports/offering-repository.js";
 
 export interface OfferingLocationInput {
   readonly organizationId: OrganizationId;
@@ -155,5 +156,48 @@ export class ClearOfferingLocationUseCase {
         hasPriceEffect: true,
       });
     });
+  }
+}
+
+export interface ListOfferingLocationsInput {
+  readonly offeringId: OfferingId;
+  readonly locationId?: string | undefined;
+  readonly page: number;
+  readonly limit: number;
+  /** The locations the caller's role reaches for `catalog.offering.read`. */
+  readonly allowedLocationIds: readonly string[] | "ALL";
+}
+
+/**
+ * The per-location rows of one offering, a page at a time. Rows of locations the caller does not
+ * reach are never returned; asking for such a location by name is a 403, like the list filter.
+ */
+export class ListOfferingLocationsUseCase {
+  constructor(
+    private readonly dependencies: Pick<CatalogDependencies, "offerings" | "locationRows">,
+  ) {}
+
+  async execute(input: ListOfferingLocationsInput): Promise<Page<OfferingLocationResponse>> {
+    const { offerings, locationRows } = this.dependencies;
+    const { allowedLocationIds, locationId } = input;
+    if (
+      locationId !== undefined &&
+      allowedLocationIds !== "ALL" &&
+      !allowedLocationIds.includes(locationId)
+    ) {
+      throw locationForbidden();
+    }
+    if ((await offerings.findById(input.offeringId)) === undefined) throw recordNotFound();
+    const page = await locationRows.listForOffering(input);
+    return {
+      hasNext: page.hasNext,
+      items: page.items.map((row) => ({
+        offeringId: row.offeringId,
+        variantId: row.variantId ?? null,
+        locationId: row.locationId,
+        isAvailable: row.isAvailable,
+        priceOverride: row.priceOverride ?? null,
+      })),
+    };
   }
 }

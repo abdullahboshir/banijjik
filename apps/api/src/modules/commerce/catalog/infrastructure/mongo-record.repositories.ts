@@ -120,6 +120,22 @@ function locationKey(key: {
 }
 
 /** Per-location rows are ORGANIZATION_AND_LOCATION: the plugin also keeps them inside the caller's locations. */
+function toLocationRow(document: OfferingLocationDocument): OfferingLocationRow {
+  return {
+    offeringId: document.offeringId,
+    variantId: document.variantId ?? undefined,
+    locationId: document.locationId,
+    isAvailable: document.isAvailable,
+    priceOverride:
+      document.priceOverride === undefined
+        ? undefined
+        : {
+            amount: document.priceOverride.amount,
+            currency: document.priceOverride.currency as "BDT",
+          },
+  };
+}
+
 export class MongoOfferingLocationRepository implements OfferingLocationRepository {
   /**
    * Updates the row, or inserts it when there is none. Not an upsert: for a caller limited to some
@@ -190,19 +206,32 @@ export class MongoOfferingLocationRepository implements OfferingLocationReposito
         sessionOption(getActiveSession()),
       )
       .lean<OfferingLocationDocument[]>();
-    return documents.map((document) => ({
-      offeringId: document.offeringId,
-      variantId: document.variantId ?? undefined,
-      locationId: document.locationId,
-      isAvailable: document.isAvailable,
-      priceOverride:
-        document.priceOverride === undefined
-          ? undefined
-          : {
-              amount: document.priceOverride.amount,
-              currency: document.priceOverride.currency as "BDT",
-            },
-    }));
+    return documents.map(toLocationRow);
+  }
+
+  async listForOffering(request: {
+    offeringId: string;
+    locationId?: string | undefined;
+    page: number;
+    limit: number;
+  }): Promise<Page<OfferingLocationRow>> {
+    const documents = await this.model()
+      .find(
+        {
+          offeringId: request.offeringId,
+          ...(request.locationId === undefined ? {} : { locationId: request.locationId }),
+        },
+        null,
+        sessionOption(getActiveSession()),
+      )
+      .sort({ variantId: 1, locationId: 1 })
+      .skip((request.page - 1) * request.limit)
+      .limit(request.limit + 1)
+      .lean<OfferingLocationDocument[]>();
+    return {
+      items: documents.slice(0, request.limit).map(toLocationRow),
+      hasNext: documents.length > request.limit,
+    };
   }
 
   private model() {

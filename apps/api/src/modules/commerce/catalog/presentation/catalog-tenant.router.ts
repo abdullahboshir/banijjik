@@ -12,6 +12,7 @@ import {
   offeringIdParamsSchema,
   offeringListQuerySchema,
   offeringLocationClearQuerySchema,
+  offeringLocationListQuerySchema,
   offeringLocationParamsSchema,
   offeringLocationRequestSchema,
   offeringUpdateRequestSchema,
@@ -78,6 +79,12 @@ function mountOfferings(router: Router, input: CatalogRouterDependencies): void 
     permission(PERMISSION_KEY.CATALOG_OFFERING_ARCHIVE),
     validate({ params, body: transition }),
     controller.archive,
+  );
+  router.get(
+    "/offerings/:offeringId/locations",
+    permission(PERMISSION_KEY.CATALOG_OFFERING_READ),
+    validate({ params, query: offeringLocationListQuerySchema }),
+    controller.listLocations,
   );
   router.put(
     "/offerings/:offeringId/locations/:locationId",
