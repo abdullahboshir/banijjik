@@ -16,6 +16,7 @@ import {
 } from "../../domain/errors.js";
 import type { Offering } from "../../domain/offering.entity.js";
 import type { CatalogDependencies } from "../catalog-dependencies.js";
+import { orderingKeyOf } from "../offering-records.js";
 
 export interface OfferingLocationInput {
   readonly organizationId: OrganizationId;
@@ -79,9 +80,11 @@ async function recordChange(
     },
   });
   if (change.hasPriceEffect) {
-    await dependencies.events.publish(CATALOG_EVENT_TYPE.OFFERING_PRICE_CHANGED, {
-      offeringId: input.offeringId,
-    });
+    await dependencies.events.publish(
+      CATALOG_EVENT_TYPE.OFFERING_PRICE_CHANGED,
+      { offeringId: input.offeringId },
+      { orderingKey: orderingKeyOf(input.offeringId) },
+    );
   }
 }
 

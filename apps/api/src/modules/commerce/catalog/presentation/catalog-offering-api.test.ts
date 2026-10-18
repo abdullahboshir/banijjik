@@ -401,6 +401,33 @@ describe("publishing and archiving", () => {
   });
 });
 
+describe("the events of one offering", () => {
+  it("numbers them in order in the offering's own stream, so ordered handlers see them in sequence", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const created = await world.alice.call("post", offeringsPath(world.organizationA), {
+      kind: "PRODUCT",
+      name: "Rice",
+      price: money(100),
+    });
+    const { offeringId } = created.body.data;
+    const base = offeringsPath(world.organizationA, `/${offeringId}`);
+    await world.alice.call("post", `${base}/publish`, { version: 1 });
+    await world.alice.call("post", `${base}/archive`, { version: 2 });
+
+    const events = await harness.connections.platform
+      .collection("outbox_events")
+      .find({ orderingKey: `offering:${offeringId}` })
+      .sort({ streamSequence: 1 })
+      .toArray();
+
+    expect(events.map((event) => [event["type"], event["streamSequence"]])).toEqual([
+      ["catalog.offering.created", 1],
+      ["catalog.offering.published", 2],
+      ["catalog.offering.archived", 3],
+    ]);
+  });
+});
+
 describe("who may use the catalog", () => {
   it("lets a rider and a cashier read but not create", async () => {
     const world = await worldFor(harness, RETAIL);

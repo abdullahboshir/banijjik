@@ -48,7 +48,11 @@ export interface DefaultUnitReader {
  * makes the change (the kernel refuses otherwise), so the event exists exactly when the change does.
  */
 export interface EventPublisher {
-  publish<Type extends CatalogEventType>(type: Type, payload: EventPayloadMap[Type]): Promise<void>;
+  publish<Type extends CatalogEventType>(
+    type: Type,
+    payload: EventPayloadMap[Type],
+    options?: { readonly orderingKey?: string },
+  ): Promise<void>;
 }
 
 /** Runs several repository calls as one all-or-nothing unit. */

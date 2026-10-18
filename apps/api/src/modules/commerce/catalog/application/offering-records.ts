@@ -10,6 +10,11 @@ import type { Offering } from "../domain/offering.entity.js";
 import { hasPriceChange, type Variant } from "../domain/variant.js";
 import type { CatalogDependencies } from "./catalog-dependencies.js";
 
+/** One stream per offering: its created, updated, published, archived and price events arrive in order. */
+export function orderingKeyOf(offeringId: string): string {
+  return `offering:${offeringId}`;
+}
+
 type RecordingDependencies = Pick<CatalogDependencies, "audit" | "events">;
 
 function variantFields(variants: readonly Variant[]): Record<string, string | number | undefined> {
@@ -66,7 +71,12 @@ async function record(
     entityId: offering.offeringId,
     changes: entry.changes,
   });
-  await dependencies.events.publish(entry.eventType, { offeringId: offering.offeringId });
+  // The events of one offering stay in order for ORDERED handlers (card 3.8a, ADR-115).
+  await dependencies.events.publish(
+    entry.eventType,
+    { offeringId: offering.offeringId },
+    { orderingKey: orderingKeyOf(offering.offeringId) },
+  );
 }
 
 /** One audit entry and one event for a new offering. Call inside the unit of work. */
@@ -102,9 +112,11 @@ export async function recordOfferingUpdated(
     },
   });
   if (hasPriceChange(change.before.variants, change.after.variants)) {
-    await dependencies.events.publish(CATALOG_EVENT_TYPE.OFFERING_PRICE_CHANGED, {
-      offeringId: change.after.offeringId,
-    });
+    await dependencies.events.publish(
+      CATALOG_EVENT_TYPE.OFFERING_PRICE_CHANGED,
+      { offeringId: change.after.offeringId },
+      { orderingKey: orderingKeyOf(change.after.offeringId) },
+    );
   }
 }
 
