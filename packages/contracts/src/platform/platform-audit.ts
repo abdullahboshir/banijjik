@@ -22,7 +22,7 @@ export const PLATFORM_AUDIT_ACTION = {
   INDUSTRY_TEMPLATE_PUBLISHED: "platform.industryTemplate.published",
   INDUSTRY_TEMPLATE_RETIRED: "platform.industryTemplate.retired",
   ORGANIZATION_INDUSTRY_TEMPLATE_CHANGED: "platform.organization.industryTemplateChanged",
-  EVENT_DEAD_LETTER_REPLAYED: "platform.eventDeadLetter.replayed",
+  EVENT_DEAD_LETTER_REPLAY_REQUESTED: "platform.eventDeadLetter.replayRequested",
   EVENT_DEAD_LETTER_SKIPPED: "platform.eventDeadLetter.skipped",
   OUTBOX_EVENT_REPLAYED: "platform.outboxEvent.replayed",
 } as const;

@@ -65,7 +65,7 @@ export class ReplayDeadLetterUseCase {
     return unitOfWork.run(async () => {
       const { before, after } = doneOrThrow(await operations.replayDeadLetter(input));
       await platformAudit.record({
-        action: PLATFORM_AUDIT_ACTION.EVENT_DEAD_LETTER_REPLAYED,
+        action: PLATFORM_AUDIT_ACTION.EVENT_DEAD_LETTER_REPLAY_REQUESTED,
         targetType: PLATFORM_AUDIT_TARGET_TYPE.event_dead_letter,
         targetId: after.eventDeadLetterId,
         ...(after.organizationId === null ? {} : { organizationId: after.organizationId }),

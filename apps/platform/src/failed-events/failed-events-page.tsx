@@ -34,6 +34,7 @@ import {
 
 const STATUS_TONES: Record<EventDeadLetterStatus, StatusTone> = {
   [EVENT_DEAD_LETTER_STATUS.FAILED]: "danger",
+  [EVENT_DEAD_LETTER_STATUS.REPLAY_REQUESTED]: "warning",
   [EVENT_DEAD_LETTER_STATUS.REPLAYED]: "info",
   [EVENT_DEAD_LETTER_STATUS.SKIPPED]: "neutral",
 };

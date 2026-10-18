@@ -73,7 +73,7 @@ describe("GET /platform/event-dead-letters", () => {
     const failedOnly = await superAdmin.call("get", "/event-dead-letters?status=FAILED&limit=100");
     const replayedOnly = await superAdmin.call(
       "get",
-      "/event-dead-letters?status=REPLAYED&limit=100",
+      "/event-dead-letters?status=REPLAY_REQUESTED&limit=100",
     );
 
     expect(paged.status).toBe(200);
@@ -101,17 +101,17 @@ describe("GET /platform/event-dead-letters", () => {
 });
 
 describe("replaying a dead letter", () => {
-  it("marks it REPLAYED and writes one platform audit entry", async () => {
+  it("marks it REPLAY_REQUESTED, not REPLAYED, and writes one platform audit entry", async () => {
     const id = await failedLetter();
 
     const response = await superAdmin.call("post", `/event-dead-letters/${id}/replay`);
 
     expect(response.status).toBe(200);
-    expect(response.body.data).toMatchObject({ eventDeadLetterId: id, status: "REPLAYED" });
+    expect(response.body.data).toMatchObject({ eventDeadLetterId: id, status: "REPLAY_REQUESTED" });
     const rows = await auditRowsOf(id);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      action: PLATFORM_AUDIT_ACTION.EVENT_DEAD_LETTER_REPLAYED,
+      action: PLATFORM_AUDIT_ACTION.EVENT_DEAD_LETTER_REPLAY_REQUESTED,
       targetType: "event_dead_letter",
     });
   });

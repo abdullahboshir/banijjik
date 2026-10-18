@@ -15,6 +15,7 @@ export const FAILED_EVENT_LABEL_KEYS = [
   "platform.failedEvents.waiting",
   "platform.failedEvents.noOrganization",
   "platform.failedEvents.status.FAILED",
+  "platform.failedEvents.status.REPLAY_REQUESTED",
   "platform.failedEvents.status.REPLAYED",
   "platform.failedEvents.status.SKIPPED",
   "platform.failedEvents.action.replay",

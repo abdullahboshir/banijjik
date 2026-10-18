@@ -50,18 +50,39 @@ export class DeadLetterReplayer {
     await this.currentTick;
   }
 
-  /** Queues every replay that is waiting. Returns how many it queued. */
+  /** Queues every replay that was requested. Returns how many it queued. */
   async replayPending(): Promise<number> {
     const rows = await deadLetters()
-      .find({ status: EVENT_DEAD_LETTER_STATUS.REPLAYED, requeuedAt: null })
+      .find({ status: EVENT_DEAD_LETTER_STATUS.REPLAY_REQUESTED })
       .limit(BATCH_SIZE)
       .lean<EventDeadLetterDocument[]>();
     let queued = 0;
     for (const row of rows) {
-      await this.requeue(row);
-      queued += 1;
+      if (await this.tryRequeue(row)) queued += 1;
     }
     return queued;
+  }
+
+  /**
+   * Re-adds the job, then (and only then) says REPLAYED. A failure is reported and the row stays
+   * REPLAY_REQUESTED, so the next poll tries again; one bad row never stops the others.
+   */
+  private async tryRequeue(row: EventDeadLetterDocument): Promise<boolean> {
+    try {
+      await this.requeue(row);
+      return true;
+    } catch (error) {
+      reportError(error, { eventId: row.eventId, handlerKey: row.handlerKey });
+      getLogger().error(
+        {
+          event: "events.dead_letter_replay_failed",
+          eventId: row.eventId,
+          handlerKey: row.handlerKey,
+        },
+        "failed event handler could not be queued again, will retry",
+      );
+      return false;
+    }
   }
 
   private async requeue(row: EventDeadLetterDocument): Promise<void> {
@@ -76,8 +97,11 @@ export class DeadLetterReplayer {
       organizationId: row.organizationId ?? null,
     });
     await deadLetters().updateOne(
-      { eventDeadLetterId: row.eventDeadLetterId, status: EVENT_DEAD_LETTER_STATUS.REPLAYED },
-      { $set: { requeuedAt: systemClock.now() } },
+      {
+        eventDeadLetterId: row.eventDeadLetterId,
+        status: EVENT_DEAD_LETTER_STATUS.REPLAY_REQUESTED,
+      },
+      { $set: { status: EVENT_DEAD_LETTER_STATUS.REPLAYED, requeuedAt: systemClock.now() } },
     );
     getLogger().info(
       { event: "events.dead_letter_replayed", eventId: row.eventId, handlerKey: row.handlerKey },

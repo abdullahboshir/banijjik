@@ -320,7 +320,7 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
     await jobs.enqueue(jobOf(second));
 
     isBroken = false;
-    await withTransaction(() =>
+    const requested = await withTransaction(() =>
       replayDeadLetter({ eventDeadLetterId: letter.eventDeadLetterId, operatorId: newId() }),
     );
     await waitFor("both events to be handled in order", async () =>
@@ -333,6 +333,7 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
       .findOne({ eventDeadLetterId: letter.eventDeadLetterId })
       .lean<EventDeadLetterDocument>();
     expect(row?.status).toBe("REPLAYED");
+    expect(requested.kind === "DONE" && requested.after.status).toBe("REPLAY_REQUESTED");
     expect(row?.requeuedAt).toBeInstanceOf(Date);
   });
 

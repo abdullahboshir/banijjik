@@ -110,7 +110,7 @@ describe("listing dead letters", () => {
       page: { page: 1, limit: 10 },
     });
     const onlyReplayed = await listDeadLetters({
-      status: EVENT_DEAD_LETTER_STATUS.REPLAYED,
+      status: EVENT_DEAD_LETTER_STATUS.REPLAY_REQUESTED,
       page: { page: 1, limit: 10 },
     });
 
@@ -120,7 +120,7 @@ describe("listing dead letters", () => {
 });
 
 describe("replaying a dead letter", () => {
-  it("marks it REPLAYED for the worker to queue, with who and when", async () => {
+  it("marks it REPLAY_REQUESTED, not REPLAYED, until the worker queues it, with who and when", async () => {
     const id = await failedLetter();
 
     const result = await inTransaction(() =>
@@ -133,7 +133,7 @@ describe("replaying a dead letter", () => {
       .findOne({ eventDeadLetterId: id })
       .lean<EventDeadLetterDocument>();
     expect(row).toMatchObject({
-      status: "REPLAYED",
+      status: "REPLAY_REQUESTED",
       resolvedByPlatformOperatorId: OPERATOR_ID,
       requeuedAt: null,
     });

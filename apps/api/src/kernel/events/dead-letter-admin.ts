@@ -120,7 +120,10 @@ async function findDeadLetter(eventDeadLetterId: string): Promise<EventDeadLette
     .lean<EventDeadLetterDocument>();
 }
 
-/** Marks a failed handler job to be queued again with fresh attempts; the worker's replayer does the queueing. */
+/**
+ * Asks for a failed handler job to be queued again with fresh attempts. Nothing is replayed yet: the
+ * status is REPLAY_REQUESTED (with who and when) until the worker's replayer has added the job.
+ */
 export async function replayDeadLetter(input: {
   readonly eventDeadLetterId: string;
   readonly operatorId: string;
@@ -133,7 +136,7 @@ export async function replayDeadLetter(input: {
       { eventDeadLetterId: input.eventDeadLetterId, status: EVENT_DEAD_LETTER_STATUS.FAILED },
       {
         $set: {
-          status: EVENT_DEAD_LETTER_STATUS.REPLAYED,
+          status: EVENT_DEAD_LETTER_STATUS.REPLAY_REQUESTED,
           resolvedAt: systemClock.now(),
           resolvedByPlatformOperatorId: input.operatorId,
           requeuedAt: null,

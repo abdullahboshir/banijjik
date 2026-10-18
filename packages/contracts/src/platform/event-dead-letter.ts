@@ -2,10 +2,16 @@ import { defineEnum } from "../define-enum.js";
 
 /**
  * Where a dead-lettered handler job stands (card 3.8a, ADR-115). FAILED waits for an operator.
- * REPLAYED means the job was queued again. SKIPPED means an operator gave up on it with a reason,
+ * REPLAY_REQUESTED means an operator asked for a replay and the worker has not queued the job again yet
+ * (the API says nothing is replayed until it is). REPLAYED means the job was queued again. SKIPPED means an operator gave up on it with a reason,
  * so the handler's effect never happened and must be fixed by hand.
  */
-export const EVENT_DEAD_LETTER_STATUS = defineEnum(["FAILED", "REPLAYED", "SKIPPED"]);
+export const EVENT_DEAD_LETTER_STATUS = defineEnum([
+  "FAILED",
+  "REPLAY_REQUESTED",
+  "REPLAYED",
+  "SKIPPED",
+]);
 
 export type EventDeadLetterStatus =
   (typeof EVENT_DEAD_LETTER_STATUS)[keyof typeof EVENT_DEAD_LETTER_STATUS];
