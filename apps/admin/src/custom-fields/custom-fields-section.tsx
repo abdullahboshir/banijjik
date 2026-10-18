@@ -4,6 +4,8 @@ import type { ReactElement } from "react";
 import { CustomFieldsEditor } from "./custom-fields-editor";
 import type { CustomFieldsFormProps, CustomFieldsFormState } from "./use-custom-fields-form";
 
+const NO_NAMES: Record<string, string> = {};
+
 export interface CustomFieldsSectionProps {
   idPrefix: string;
   organizationId: string;
@@ -29,6 +31,7 @@ export function CustomFieldsSection({
         values={form.values}
         errors={form.errors}
         currencyCode={props.currencyCode}
+        linkedNames={props.linkedNames ?? NO_NAMES}
         onChange={form.setValue}
       />
       {form.hasHiddenFields ? (

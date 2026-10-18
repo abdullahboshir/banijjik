@@ -21,6 +21,8 @@ export interface CustomFieldsFormProps {
   title: string;
   /** Said when some fields are left out because this person may not read them. */
   hiddenHint: string;
+  /** Names of contacts the stored values link to (contactId to name), for the contact-link input. */
+  linkedNames?: Record<string, string>;
 }
 
 const NOTHING_TO_SEND: CustomFieldsResult = { ok: true, customFields: {} };

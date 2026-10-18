@@ -6,8 +6,13 @@ import {
 import type { Locale, Translator } from "@banijjik/i18n";
 import { formatMoney, formatPhoneForDisplay } from "@banijjik/ui";
 
-/** Reference values have no screen yet, so they are not shown (card 2.7a). */
-const PENDING_FIELD_TYPES = new Set<string>([CUSTOM_FIELD_TYPE.REFERENCE]);
+/** A reference is shown only when it links a contact (card 3.1b); any other has no screen yet (card 2.7a). */
+function isPendingReference(field: EffectiveCustomField): boolean {
+  return (
+    field.fieldType === CUSTOM_FIELD_TYPE.REFERENCE &&
+    !(field.referenceEntity === "contact" && field.link !== undefined)
+  );
+}
 
 const UPLOADED_FIELD_TYPES = new Set<string>([CUSTOM_FIELD_TYPE.FILE, CUSTOM_FIELD_TYPE.IMAGE]);
 
@@ -18,7 +23,12 @@ export interface DetailRow {
   text: string | undefined;
   /** True for a sensitive value this person may not read; the row says so instead of "Not set". */
   isHidden: boolean;
+  /** Where the value leads, for a linked contact. */
+  href?: string;
 }
+
+/** A linked contact's name and the page that shows it, by contact id. */
+export type LinkedContacts = Readonly<Record<string, { name: string; href: string }>>;
 
 export interface DetailRowsInput {
   fields: readonly EffectiveCustomField[];
@@ -29,6 +39,8 @@ export interface DetailRowsInput {
   timeZone: string;
   currencyCode: string;
   t: Translator["t"];
+  /** The contacts the values link to; a link whose contact is unknown shows as not set. */
+  linkedContacts?: LinkedContacts;
 }
 
 export function labelOf(label: LocalizedText, locale: Locale): string {
@@ -75,17 +87,32 @@ function valueText(field: EffectiveCustomField, value: unknown, input: DetailRow
   return "";
 }
 
+function linkedRowOf(
+  field: EffectiveCustomField,
+  value: unknown,
+  input: DetailRowsInput,
+): { text: string | undefined; href?: string } | undefined {
+  if (field.fieldType !== CUSTOM_FIELD_TYPE.REFERENCE) return undefined;
+  const linked = typeof value === "string" ? input.linkedContacts?.[value] : undefined;
+  return linked === undefined ? { text: undefined } : { text: linked.name, href: linked.href };
+}
+
 /** Admin-visible fields in order, each with its saved value; sensitive ones are marked hidden for a person who may not read them. */
 export function detailRowsOf(input: DetailRowsInput): DetailRow[] {
   const rows: DetailRow[] = [];
   for (const field of input.fields) {
-    if (!field.visibility.admin || PENDING_FIELD_TYPES.has(field.fieldType)) continue;
+    if (!field.visibility.admin || isPendingReference(field)) continue;
     const label = labelOf(field.label, input.locale);
     if (field.isSensitive && !input.canSeeSensitive) {
       rows.push({ fieldKey: field.fieldKey, label, text: undefined, isHidden: true });
       continue;
     }
     const value = input.values[field.fieldKey];
+    const linked = linkedRowOf(field, value, input);
+    if (linked !== undefined) {
+      rows.push({ fieldKey: field.fieldKey, label, isHidden: false, ...linked });
+      continue;
+    }
     const text = value === undefined || value === null ? undefined : valueText(field, value, input);
     rows.push({ fieldKey: field.fieldKey, label, text: text || undefined, isHidden: false });
   }

@@ -1,7 +1,7 @@
 import type { EffectiveCustomField } from "@banijjik/contracts";
 import type { Translator } from "@banijjik/i18n";
 import type { CustomFieldDetailListProps } from "./custom-field-detail-list";
-import { detailRowsOf } from "./custom-field-display";
+import { detailRowsOf, type LinkedContacts } from "./custom-field-display";
 import type { CustomFieldsFormProps } from "./use-custom-fields-form";
 
 export interface CustomFieldPartsInput {
@@ -14,6 +14,8 @@ export interface CustomFieldPartsInput {
   translator: Translator;
   timeZone: string;
   currencyCode: string;
+  /** The contacts the values link to, for contact-link fields. */
+  linkedContacts?: LinkedContacts;
 }
 
 export interface CustomFieldParts {
@@ -37,6 +39,7 @@ export function customFieldPartsOf(input: CustomFieldPartsInput): CustomFieldPar
         timeZone: input.timeZone,
         currencyCode: input.currencyCode,
         t,
+        ...(input.linkedContacts === undefined ? {} : { linkedContacts: input.linkedContacts }),
       }),
       notSetLabel: t("profile.notSet"),
       hiddenLabel: t("customFields.hidden"),
@@ -48,6 +51,9 @@ export function customFieldPartsOf(input: CustomFieldPartsInput): CustomFieldPar
       currencyCode: input.currencyCode,
       title: t("customFields.title"),
       hiddenHint: t("customFields.hiddenHint"),
+      linkedNames: Object.fromEntries(
+        Object.entries(input.linkedContacts ?? {}).map(([id, linked]) => [id, linked.name]),
+      ),
     },
   };
 }

@@ -4,6 +4,7 @@ import type { EffectiveCustomField } from "@banijjik/contracts";
 import { CustomFieldInputs, currencySymbolOf } from "@banijjik/ui";
 import { toFieldDescriptors, useTranslator } from "@banijjik/web-client/client";
 import { useMemo, type ReactElement } from "react";
+import { searchContacts } from "../contacts/contact-api";
 import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { useCustomFieldFiles } from "./use-custom-field-files";
 
@@ -17,6 +18,8 @@ export interface CustomFieldsEditorProps {
   /** Message key per field key. */
   errors: Readonly<Record<string, string | undefined>>;
   currencyCode: string;
+  /** Names of already linked contacts, for the contact-link input. */
+  linkedNames?: Readonly<Record<string, string>>;
   onChange: (fieldKey: string, value: unknown) => void;
 }
 
@@ -34,6 +37,22 @@ export function CustomFieldsEditor(props: CustomFieldsEditorProps): ReactElement
     imageLabels: model.imageLabels,
     fileLabels: model.fileLabels,
   });
+  const { organizationId, linkedNames } = props;
+  const contactLink = useMemo(
+    () => ({
+      search: async (text: string) => {
+        const rows = await searchContacts(organizationId, text);
+        return rows.map((row) => ({
+          contactId: row.contactId,
+          name: row.name ?? row.phoneE164 ?? "",
+          phone: row.phoneE164 ?? undefined,
+        }));
+      },
+      nameOf: (contactId: string) => linkedNames?.[contactId],
+      labels: model.contactLinkLabels,
+    }),
+    [organizationId, linkedNames, model.contactLinkLabels],
+  );
   if (props.fields.length === 0) return null;
   const messages = Object.fromEntries(
     Object.entries({ ...props.errors, ...files.uploadErrors }).map(([fieldKey, messageKey]) => [
@@ -53,6 +72,7 @@ export function CustomFieldsEditor(props: CustomFieldsEditorProps): ReactElement
       chooseLabel={model.chooseLabel}
       notEditableText={model.notEditableText}
       files={files.support}
+      contactLink={contactLink}
     />
   );
 }

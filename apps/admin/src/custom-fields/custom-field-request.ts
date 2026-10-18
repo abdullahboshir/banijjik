@@ -1,11 +1,13 @@
-import { CUSTOM_FIELD_TYPE, type EffectiveCustomField } from "@banijjik/contracts";
+import type { EffectiveCustomField } from "@banijjik/contracts";
 import { CUSTOM_FIELD_AUDIENCE, CUSTOM_FIELD_VALUE_MODE } from "@banijjik/validation";
-import { toRequestValues, validateCustomFieldValues } from "@banijjik/web-client/client";
+import {
+  isPendingField,
+  toRequestValues,
+  validateCustomFieldValues,
+} from "@banijjik/web-client/client";
 
 const REQUIRED_MESSAGE_KEY = "validation.required";
 const REQUEST_PATH_PREFIX = "customFields.";
-/** Reference values still have no input (card 3.1b); file and image have since card 3.0. */
-const PENDING_FIELD_TYPES = new Set<string>([CUSTOM_FIELD_TYPE.REFERENCE]);
 
 export interface CustomFieldsInput {
   fields: readonly EffectiveCustomField[];
@@ -55,7 +57,7 @@ function requiredErrors(
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const field of fields) {
-    if (!field.isRequired || PENDING_FIELD_TYPES.has(field.fieldType)) continue;
+    if (!field.isRequired || isPendingField(field)) continue;
     if (isCleared(values[field.fieldKey])) errors[field.fieldKey] = REQUIRED_MESSAGE_KEY;
   }
   return errors;
@@ -93,6 +95,8 @@ export function buildCustomFieldsRequest(
     ...validateCustomFieldValues(editable, request, {
       audience: CUSTOM_FIELD_AUDIENCE.ADMIN,
       mode: CUSTOM_FIELD_VALUE_MODE.UPDATE,
+      // The form may send { create } for a contact link; the server turns it into an id (ADR-110).
+      acceptsContactLinkCreate: true,
     }),
     ...requiredErrors(editable, input.values),
   };
