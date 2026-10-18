@@ -12,6 +12,7 @@ import { getTranslator } from "../lib/i18n/get-translator";
 import { AccountMenuContainer } from "./account-menu-container";
 import { bannerStatesOf } from "./banner-state";
 import { BrandLogo } from "./brand-logo";
+import { BusinessLogo } from "./business-logo";
 import { buildMenuGroups, settingsHomeHref } from "./menu-groups";
 import { ShellNavigation } from "./shell-navigation";
 import { ShellSidebar } from "./shell-sidebar";
@@ -70,7 +71,16 @@ export async function OrganizationShell(props: OrganizationShellProps): Promise<
   if (!current) notFound();
   const topBar = (
     <TopBar
-      logo={<BrandLogo />}
+      logo={
+        current.logoUrl ? (
+          <BusinessLogo
+            logoUrl={current.logoUrl}
+            alt={t("shell.businessLogo", { name: current.name })}
+          />
+        ) : (
+          <BrandLogo />
+        )
+      }
       organizationName={current.name}
       actions={
         <AccountMenuContainer

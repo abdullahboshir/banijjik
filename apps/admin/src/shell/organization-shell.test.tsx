@@ -12,9 +12,12 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/acme",
 }));
 vi.mock("../lib/i18n/get-translator", async () => {
-  const { createTranslator } = await import("@banijjik/i18n");
+  const { createTranslator, SCREEN_CATALOGS } = await import("@banijjik/i18n");
   return {
-    getTranslator: () => Promise.resolve(createTranslator({ locale: "bn", brandName: "Example" })),
+    getTranslator: () =>
+      Promise.resolve(
+        createTranslator({ locale: "bn", brandName: "Example", catalogs: SCREEN_CATALOGS }),
+      ),
   };
 });
 vi.mock("./account-menu-container", () => ({ AccountMenuContainer: () => null }));
@@ -44,6 +47,40 @@ function organization(slug: string, status: "ACTIVE" | "SUSPENDED"): MyOrganizat
 }
 
 describe("OrganizationShell", () => {
+  it("shows the business logo in the top bar when it has one, named after the business", async () => {
+    const withLogo = {
+      ...organization("acme", "ACTIVE"),
+      logoUrl: "/api/v1/public/files/file-1/thumb",
+    };
+    render(
+      await OrganizationShell({
+        orgSlug: "acme",
+        me,
+        organizations: [withLogo],
+        children: <p>পৃষ্ঠা</p>,
+      }),
+    );
+
+    const logo = screen.getByRole("img", {
+      name: banglaText("shell.businessLogo").replace("{name}", "ব্যবসা acme"),
+    });
+    expect(logo.getAttribute("src")).toContain("/api/v1/public/files/file-1/thumb");
+  });
+
+  it("keeps the product name in the top bar when the business has no logo", async () => {
+    render(
+      await OrganizationShell({
+        orgSlug: "acme",
+        me,
+        organizations: [organization("acme", "ACTIVE")],
+        children: <p>পৃষ্ঠা</p>,
+      }),
+    );
+
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByText("ব্যবসা acme")).not.toBeNull();
+  });
+
   it("shows the business name in the top bar and its page inside the shell", async () => {
     render(
       await OrganizationShell({
