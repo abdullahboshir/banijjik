@@ -301,6 +301,8 @@
   "fields.form.searchable": "খোঁজা যায়",
   "fields.form.botAsk": "চ্যাটবট এটি জিজ্ঞেস করে",
   "fields.form.sortOrder": "ক্রম",
+  "fields.form.appliesToRoles": "যাদের জন্য",
+  "fields.form.allRoles": "সব ধরনের যোগাযোগ। কিছু না বাছলে তাই থাকবে।",
   "fields.form.locked": "বদলানো যায় না",
   "fields.hide.title": "ঘর লুকান",
   "fields.hide.description": "ঘরটি ফর্ম থেকে সরে যাবে। সংরক্ষিত মান থাকবে, আর এখান থেকে আবার দেখানো যাবে।",

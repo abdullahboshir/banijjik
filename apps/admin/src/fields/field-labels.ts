@@ -1,5 +1,6 @@
-import type { CustomFieldType } from "@banijjik/contracts";
-import type { Translator } from "@banijjik/i18n";
+import { CONTACT_ROLE, type ContactRole, type CustomFieldType } from "@banijjik/contracts";
+import type { Locale, Translator } from "@banijjik/i18n";
+import { termLabel, type TermTexts } from "@banijjik/web-client";
 
 /** All text of the field screens, translated on the server; the client sheets get it as props. */
 export interface FieldLabels {
@@ -30,7 +31,11 @@ export interface FieldLabels {
     isSearchable: string;
     botAsk: string;
     sortOrder: string;
+    appliesToRoles: string;
+    allRoles: string;
   };
+  /** The name of each contact role: the business's term `contact.<ROLE>` when it has one (ADR-113). */
+  roles: Record<ContactRole, string>;
   lockedHint: string;
   types: Record<CustomFieldType, string>;
 }
@@ -81,7 +86,25 @@ const FIELD_TYPES: readonly CustomFieldType[] = [
   "REFERENCE",
 ];
 
-export function fieldLabelsOf(t: Translator["t"]): FieldLabels {
+/** The terms and language that name the contact roles; without them the catalog names are used. */
+export interface RoleTextSource {
+  terms: TermTexts;
+  locale: Locale;
+}
+
+function roleLabelsOf(t: Translator["t"], source?: RoleTextSource): Record<ContactRole, string> {
+  const labels = {} as Record<ContactRole, string>;
+  for (const role of Object.values(CONTACT_ROLE)) {
+    const fallback = t(`contactRole.${role}`);
+    labels[role] =
+      source === undefined
+        ? fallback
+        : termLabel(source.terms, `contact.${role}`, { locale: source.locale, fallback });
+  }
+  return labels;
+}
+
+export function fieldLabelsOf(t: Translator["t"], roleTexts?: RoleTextSource): FieldLabels {
   return {
     close: t("shell.closeMenu"),
     save: t("common.save"),
@@ -110,7 +133,10 @@ export function fieldLabelsOf(t: Translator["t"]): FieldLabels {
       isSearchable: t("fields.form.searchable"),
       botAsk: t("fields.form.botAsk"),
       sortOrder: t("fields.form.sortOrder"),
+      appliesToRoles: t("fields.form.appliesToRoles"),
+      allRoles: t("fields.form.allRoles"),
     },
+    roles: roleLabelsOf(t, roleTexts),
     lockedHint: t("fields.form.locked"),
     types: fieldTypeLabelsOf(t),
   };

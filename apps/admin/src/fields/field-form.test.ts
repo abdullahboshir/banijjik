@@ -18,6 +18,7 @@ function aRow(overrides: Partial<FieldRowView> = {}): FieldRowView {
     isSearchable: false,
     botAsk: false,
     options: ["A_POS", "B_POS"],
+    appliesToContactRoles: [],
     sortOrder: 20,
     version: 3,
     customFieldDefinitionId: "definition-1",
@@ -160,5 +161,40 @@ describe("buildPreferenceChange", () => {
     expect(buildPreferenceChange(same, template)).toEqual({ ok: true, body: undefined });
     expect(buildPreferenceChange({ ...same, labelEn: " " }, template).ok).toBe(false);
     expect(buildPreferenceChange({ ...same, sortOrder: "1.5" }, template).ok).toBe(false);
+  });
+});
+
+describe("contact field roles", () => {
+  const contactRow = aRow({ entityType: "contact", fieldType: "TEXT", options: [] });
+
+  it("adds the chosen roles to the create body of a contact field only", () => {
+    const form = {
+      ...emptyFieldForm(30),
+      fieldKey: "school_name",
+      labelBn: "স্কুল",
+      labelEn: "School",
+      appliesToContactRoles: ["CUSTOMER" as const],
+    };
+
+    const forContact = buildFieldCreate(form, "contact");
+    const forMember = buildFieldCreate(form, "member");
+
+    expect(forContact.ok && forContact.body.appliesToContactRoles).toEqual(["CUSTOMER"]);
+    expect(forMember.ok && forMember.body).not.toHaveProperty("appliesToContactRoles");
+  });
+
+  it("sends the new roles on update, null for 'every role', and nothing when unchanged", () => {
+    const form = formOfField(contactRow);
+
+    const set = buildFieldUpdate({ ...form, appliesToContactRoles: ["LEAD"] }, contactRow);
+    const cleared = buildFieldUpdate(
+      { ...form, appliesToContactRoles: [] },
+      { ...contactRow, appliesToContactRoles: ["LEAD"] },
+    );
+    const same = buildFieldUpdate(form, contactRow);
+
+    expect(set.ok && set.body).toMatchObject({ appliesToContactRoles: ["LEAD"] });
+    expect(cleared.ok && cleared.body).toMatchObject({ appliesToContactRoles: null });
+    expect(same.ok && same.body).toBeUndefined();
   });
 });

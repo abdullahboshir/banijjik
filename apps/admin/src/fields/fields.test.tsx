@@ -409,3 +409,48 @@ describe("FieldsPage", () => {
     expect(screen.getByText(banglaText("state.permissionDenied"))).not.toBeNull();
   });
 });
+
+describe("FieldFormSheet roles", () => {
+  const TERMS = { "contact.RELATED": { bn: "অভিভাবক", en: "Guardian" } };
+
+  function renderContactSheet(entityType: "contact" | "member") {
+    inProvider(
+      <FieldFormSheet
+        organizationId="org-1"
+        entityType={entityType}
+        initial={emptyFieldForm(30)}
+        labels={fieldLabelsOf(t, { terms: TERMS, locale: "bn" })}
+        onClose={vi.fn()}
+      />,
+    );
+  }
+
+  it("offers the contact roles on a contact field, named by the business's terms, and sends the chosen ones", async () => {
+    createCustomField.mockResolvedValue({});
+    renderContactSheet("contact");
+    const roleLabels = fieldLabelsOf(t, { terms: TERMS, locale: "bn" });
+
+    await userEvent.type(
+      screen.getByLabelText(new RegExp(roleLabels.formFields.fieldKey)),
+      "school_name",
+    );
+    await userEvent.type(screen.getByLabelText(new RegExp(roleLabels.formFields.labelBn)), "স্কুল");
+    await userEvent.type(
+      screen.getByLabelText(new RegExp(roleLabels.formFields.labelEn)),
+      "School",
+    );
+    await userEvent.click(screen.getByRole("checkbox", { name: "অভিভাবক" }));
+    await userEvent.click(screen.getByRole("button", { name: roleLabels.save }));
+
+    await waitFor(() => expect(createCustomField).toHaveBeenCalled());
+    expect(createCustomField.mock.calls[0]?.[1]).toMatchObject({
+      appliesToContactRoles: ["RELATED"],
+    });
+  });
+
+  it("shows no roles on a field of another record type", () => {
+    renderContactSheet("member");
+
+    expect(screen.queryByRole("checkbox", { name: "অভিভাবক" })).toBeNull();
+  });
+});

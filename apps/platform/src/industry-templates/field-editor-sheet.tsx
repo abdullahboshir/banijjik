@@ -1,8 +1,13 @@
 "use client";
 
-import { CUSTOM_FIELD_TYPE, type IndustryTemplateCustomField } from "@banijjik/contracts";
+import {
+  CUSTOM_FIELD_TYPE,
+  type ContactRole,
+  type IndustryTemplateCustomField,
+} from "@banijjik/contracts";
 import { FieldFlagFields, FieldIdentityFields, OptionFields } from "./field-editor-parts";
 import { ReferenceFields } from "./field-reference-fields";
+import { RoleFields } from "./field-role-fields";
 import { useState, type ReactElement } from "react";
 import { FormSheet } from "../forms/form-sheet";
 import { customFieldIsValid } from "./custom-field-is-valid";
@@ -14,6 +19,8 @@ export interface FieldEditorSheetProps {
   field: IndustryTemplateCustomField;
   isExisting: boolean;
   isTypeLocked: boolean;
+  /** The roles the template lists: a contact field can be limited to these. */
+  contactRoleKeys: readonly ContactRole[];
   labels: IndustryLabels;
   onApply: (field: IndustryTemplateCustomField) => void;
   onClose: () => void;
@@ -55,6 +62,14 @@ export function FieldEditorSheet(props: FieldEditorSheetProps): ReactElement {
       />
       <FieldFlagFields draft={draft} labels={props.labels} onChange={setDraft} />
       {isSelect ? <OptionFields draft={draft} labels={props.labels} onChange={setDraft} /> : null}
+      {draft.entityType === "contact" ? (
+        <RoleFields
+          draft={draft}
+          contactRoleKeys={props.contactRoleKeys}
+          labels={props.labels}
+          onChange={setDraft}
+        />
+      ) : null}
       {isReference ? (
         <ReferenceFields draft={draft} labels={props.labels} onChange={setDraft} />
       ) : null}
@@ -77,6 +92,7 @@ function normalizedField(draft: IndustryTemplateCustomField): IndustryTemplateCu
     isSearchable: draft.isSearchable,
     isSensitive: draft.isSensitive,
     label: draft.label,
+    ...rolesOf(draft),
     ...(isSelect ? { options: draft.options ?? [], optionLabels: draft.optionLabels } : {}),
     ...(isReference && draft.referenceEntity !== undefined
       ? { referenceEntity: draft.referenceEntity }
@@ -85,4 +101,14 @@ function normalizedField(draft: IndustryTemplateCustomField): IndustryTemplateCu
       ? { link: draft.link }
       : {}),
   };
+}
+
+/** Roles belong to contact fields only; a field without any keeps no property (every role). */
+function rolesOf(
+  draft: IndustryTemplateCustomField,
+): Pick<IndustryTemplateCustomField, "appliesToContactRoles"> {
+  if (draft.entityType !== "contact") return {};
+  return draft.appliesToContactRoles === undefined
+    ? {}
+    : { appliesToContactRoles: draft.appliesToContactRoles };
 }

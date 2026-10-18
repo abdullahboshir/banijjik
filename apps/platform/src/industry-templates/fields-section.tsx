@@ -89,6 +89,7 @@ export function FieldsSection(props: FieldsSectionProps): ReactElement {
               field={target.field}
               isExisting={target.isExisting}
               isTypeLocked={refusesRemoval}
+              contactRoleKeys={configuration.contactRoleKeys}
               labels={labels}
               onApply={apply}
               onClose={() => setTarget(undefined)}

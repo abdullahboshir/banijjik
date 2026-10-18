@@ -301,6 +301,8 @@
   "fields.form.searchable": "Searchable",
   "fields.form.botAsk": "The chatbot asks for it",
   "fields.form.sortOrder": "Order",
+  "fields.form.appliesToRoles": "Used for",
+  "fields.form.allRoles": "Every kind of contact. Choose none to keep it so.",
   "fields.form.locked": "Cannot be changed",
   "fields.hide.title": "Hide field",
   "fields.hide.description": "The field disappears from forms. Saved values stay, and you can show it again here.",

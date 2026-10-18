@@ -1,6 +1,11 @@
 "use client";
 
-import type { CustomFieldEntityType, CustomFieldType } from "@banijjik/contracts";
+import {
+  CONTACT_ROLE,
+  type ContactRole,
+  type CustomFieldEntityType,
+  type CustomFieldType,
+} from "@banijjik/contracts";
 import { Button, Checkbox, FormField, Sheet, SheetContent, Textarea } from "@banijjik/ui";
 import { useState, type FormEvent, type ReactElement } from "react";
 import { createCustomField, updateCustomField } from "../lib/api/tenant-config-api";
@@ -142,6 +147,34 @@ function TraitFields({ form, labels, errors, onChange }: PartProps): ReactElemen
   );
 }
 
+/** Which contact roles use the field; nothing chosen means every role (ADR-113). */
+function RoleFields({ form, labels, onChange }: PartProps): ReactElement {
+  const chosen = form.appliesToContactRoles;
+  function toggle(role: ContactRole, isOn: boolean): void {
+    onChange({
+      appliesToContactRoles: isOn ? [...chosen, role] : chosen.filter((item) => item !== role),
+    });
+  }
+  return (
+    <FormField
+      label={labels.formFields.appliesToRoles}
+      htmlFor="field-roles"
+      hint={labels.formFields.allRoles}
+    >
+      <div id="field-roles" className="flex flex-col gap-2">
+        {Object.values(CONTACT_ROLE).map((role) => (
+          <Checkbox
+            key={role}
+            label={labels.roles[role]}
+            checked={chosen.includes(role)}
+            onChange={(event) => toggle(role, event.target.checked)}
+          />
+        ))}
+      </div>
+    </FormField>
+  );
+}
+
 /**
  * Adds a business field, or edits one. Key and type are locked after create and an option can only be
  * added (ADR-102). Loaded on the first tap of "Add field" or "Edit".
@@ -186,6 +219,7 @@ export function FieldFormSheet(props: FieldFormSheetProps): ReactElement {
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
           <IdentityFields {...part} />
           <OptionsField {...part} />
+          {entityType === "contact" ? <RoleFields {...part} /> : null}
           <TraitFields {...part} />
           <SheetFeedback state={state} conflict={labels.conflict} reload={labels.reload} />
           <Button type="submit" isLoading={state.isSaving}>

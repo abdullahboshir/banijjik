@@ -85,6 +85,9 @@ export function buildFieldCreate(
     isSearchable: form.isSearchable,
     isSensitive: form.isSensitive,
     sortOrder: sortOrderOf(form.sortOrder),
+    ...(entityType === "contact" && form.appliesToContactRoles.length > 0
+      ? { appliesToContactRoles: form.appliesToContactRoles }
+      : {}),
   };
   const parsed = customFieldDefinitionCreateRequestSchema.safeParse(candidate);
   if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error.issues, form) };
@@ -102,6 +105,12 @@ function optionsPart(options: string[] | undefined): { options?: string[] } {
   return options === undefined ? {} : { options };
 }
 
+function rolesChanged(form: FieldFormState, row: FieldRowView): boolean {
+  if (row.entityType !== "contact") return false;
+  const before = [...row.appliesToContactRoles].sort().join(",");
+  return [...form.appliesToContactRoles].sort().join(",") !== before;
+}
+
 /** The switches, label and order the person changed, compared with the saved field. */
 function changedParts(form: FieldFormState, row: FieldRowView): Record<string, unknown> {
   const parts: Record<string, unknown> = {};
@@ -114,6 +123,11 @@ function changedParts(form: FieldFormState, row: FieldRowView): Record<string, u
   }
   if (sortOrderOf(form.sortOrder) !== row.sortOrder)
     parts["sortOrder"] = sortOrderOf(form.sortOrder);
+  if (rolesChanged(form, row)) {
+    // An empty choice goes back to every role, which the API reads as null.
+    parts["appliesToContactRoles"] =
+      form.appliesToContactRoles.length === 0 ? null : form.appliesToContactRoles;
+  }
   return parts;
 }
 

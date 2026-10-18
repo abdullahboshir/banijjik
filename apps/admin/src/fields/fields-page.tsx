@@ -104,7 +104,7 @@ export async function FieldsPage({
     `/orgs/${organizationId}/custom-fields?entityType=${entityType}&limit=${PAGE_SIZE}`,
   );
   const abilities = abilitiesOf(access);
-  const formLabels = fieldLabelsOf(t);
+  const formLabels = fieldLabelsOf(t, { terms: access.config.terms, locale });
   return (
     <PageLayout
       subtitle={t("fields.subtitle")}

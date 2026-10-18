@@ -1,4 +1,4 @@
-import { CUSTOM_FIELD_TYPE, type CustomFieldType } from "@banijjik/contracts";
+import { CUSTOM_FIELD_TYPE, type ContactRole, type CustomFieldType } from "@banijjik/contracts";
 import type { FieldErrors } from "../auth/field-errors";
 import type { FieldRowView } from "./field-rows";
 
@@ -32,6 +32,8 @@ export interface FieldFormState {
   /** One option per line. */
   optionsText: string;
   sortOrder: string;
+  /** Contact fields only. Empty means every role. */
+  appliesToContactRoles: ContactRole[];
 }
 
 export const FIELD_FORM_NAMES: readonly string[] = [
@@ -58,6 +60,7 @@ export function emptyFieldForm(sortOrder: number): FieldFormState {
     botAsk: false,
     optionsText: "",
     sortOrder: String(sortOrder),
+    appliesToContactRoles: [],
   };
 }
 
@@ -73,6 +76,7 @@ export function formOfField(row: FieldRowView): FieldFormState {
     botAsk: row.botAsk,
     optionsText: row.options.join("\n"),
     sortOrder: String(row.sortOrder),
+    appliesToContactRoles: [...row.appliesToContactRoles],
   };
 }
 

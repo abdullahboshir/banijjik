@@ -1,5 +1,6 @@
 import {
   CUSTOM_FIELD_SCOPE,
+  type ContactRole,
   type CustomFieldEntityType,
   type CustomFieldScope,
   type CustomFieldType,
@@ -29,6 +30,8 @@ export interface FieldRowView {
   isSearchable: boolean;
   botAsk: boolean;
   options: string[];
+  /** Contact fields only. Empty means every role. */
+  appliesToContactRoles: ContactRole[];
   sortOrder: number;
   /** The definition's version, or the preference row's (0 when the business has none yet). */
   version: number;
@@ -58,6 +61,16 @@ export interface FieldRowContext {
   t: Translator["t"];
 }
 
+/** The choices and contact roles of a field as plain lists; empty roles mean every role. */
+function optionsAndRolesOf(
+  field: EffectiveCustomField,
+): Pick<FieldRowView, "options" | "appliesToContactRoles"> {
+  return {
+    options: [...(field.options ?? [])],
+    appliesToContactRoles: [...(field.appliesToContactRoles ?? [])],
+  };
+}
+
 function toRow(field: EffectiveCustomField, context: FieldRowContext): FieldRowView {
   const { abilities, locale, t } = context;
   const isOwn = field.scope === CUSTOM_FIELD_SCOPE.ORGANIZATION;
@@ -75,7 +88,7 @@ function toRow(field: EffectiveCustomField, context: FieldRowContext): FieldRowV
     isSensitive: field.isSensitive,
     isSearchable: field.isSearchable,
     botAsk: field.botAsk,
-    options: [...(field.options ?? [])],
+    ...optionsAndRolesOf(field),
     sortOrder: field.sortOrder,
     version: field.version,
     customFieldDefinitionId: field.customFieldDefinitionId,
