@@ -46,6 +46,7 @@ Variant `price` means something different per kind:
 | `EVENT` | `salesCloseMinutesBefore` (default 0), `allowWaitlist` (bool, default false). Sessions are separate `EventSession` records (§5.5). | — |
 
 - `kind` is immutable. A kind-specific field on the wrong kind is a validation error.
+- `depositRule` (SERVICE) is `{ required: NONE | FIXED | PERCENT | FULL, value? }` like the `booking.deposit.*` settings of section 5.4: `value` is minor units for FIXED and a whole percent (1 to 100) for PERCENT, absent otherwise. Card 3.2a stores it; booking (3.6) interprets it.
 - Long stays (hostel monthly rent) are `PLAN` (enrollment with a bed resource), not `RENTAL`. RENTAL is for short, priced-per-unit-of-time stays.
 - New `EventSession` entity (booking module, location scope): `eventSessionId`, `offeringId`, `startsAt`, `endsAt`, `capacity`, `resourceIds[]`, `status` (`SCHEDULED \| CANCELLED \| COMPLETED`).
 

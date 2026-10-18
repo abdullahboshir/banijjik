@@ -137,13 +137,13 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 ### 5.3 catalog, inventory, pricing
 | Method & path | Permission | Flags | Notes |
 |---|---|---|---|
-| `GET /offerings` · `GET /offerings/{offeringId}` | `catalog.offering.read` | | `?kind=&status=&categoryId=&q=` |
-| `POST /offerings` · `PATCH /offerings/{offeringId}` | `catalog.offering.create/update` | I (POST) | kind-specific `kindDetails` validated per kind |
-| `POST /offerings/{offeringId}/publish` · `/archive` | `catalog.offering.publish/archive` | | DRAFT → ACTIVE (`11`, ADR-026) |
-| `PUT /offerings/{offeringId}/locations/{locationId}` | `catalog.offering.update` | L | availability / price override per variant |
-| `GET/POST/PATCH /categories[/{categoryId}]` | `catalog.category.*` | | |
-| `GET/POST/PATCH /modifier-groups[/{modifierGroupId}]` | `catalog.modifierGroup.*` | | ADR-072 |
-| `GET/PUT /search-synonyms` | `catalog.synonym.update` | | |
+| `GET /offerings` · `GET /offerings/{offeringId}` | `catalog.offering.read` | | `?q=&kind=&status=&categoryId=&location=&page=&limit=`; without `status`: DRAFT and ACTIVE. Lean rows `{ offeringId, kind, name, slug, status, firstImageUrl, priceFrom, variantCount, categoryIds, isAvailable (with `location`), updatedAt }`. `q` = folded name prefix, offering synonyms, organization synonyms (both ways), exact SKU, exact barcode |
+| `POST /offerings` · `PATCH /offerings/{offeringId}` | `catalog.offering.create/update` | I (POST) | kind-specific `kindDetails` validated per kind (a field of another kind is `400`); `variants` is the full list (ids kept, a missing one archived); no `variants` + `price` (+ `unitKey`) = one "Default" variant; `kind` is not editable; `409` for a taken SKU (`details.offeringId`) or slug; `422 LIMIT_REACHED` past the package limit; `422 STOCK_COMPONENTS_NEED_INVENTORY` for any stock component until card 3.3 |
+| `POST /offerings/{offeringId}/publish` · `/archive` | `catalog.offering.publish/archive` | | body `{ version }`; DRAFT → ACTIVE (`11`, ADR-026), publishing an ACTIVE one is `200` with no write |
+| `PUT` · `DELETE /offerings/{offeringId}/locations/{locationId}` | `catalog.offering.update` | L | body `{ variantId?, isAvailable, priceOverride? }`; a price override needs `variantId`; `DELETE ?variantId=` returns to the defaults (`204`); a location outside the caller's reach is `403` |
+| `GET/POST/PATCH /categories[/{categoryId}]` · `POST /categories/{categoryId}/archive` | `catalog.category.*` | | flat list sorted by `sortOrder`; at most 3 levels, no cycle; archive refused (`422 CATEGORY_IN_USE` with counts) while ACTIVE offerings or child categories use it |
+| `GET/POST/PATCH /modifier-groups[/{modifierGroupId}]` · `POST /modifier-groups/{modifierGroupId}/archive` | `catalog.modifierGroup.*` | | ADR-072; `options` is the full list on PATCH (a missing option is archived) |
+| `GET/PUT /catalog/synonyms` | read: `catalog.offering.read`; `PUT`: `catalog.synonym.update` | | `{ entries[{ term, synonyms[] }], version }` (at most 200 terms; `version` 0 when none yet; `409` when stale) |
 | `POST /offerings/import` · `GET /offerings/import/{importJobId}` · `POST /offerings/import/{importJobId}/commit` | `catalog.offering.create` | I | CSV/Excel/photo/PDF → drafts → review → commit (card 5.11) |
 | `GET /stock?location=` · `GET /stock/{offeringId}/{variantId}` | `inventory.stock.read` | L | levels incl. reserved/damaged/average cost (cost needs `report.profit.read`) |
 | `GET /stock-movements` | `inventory.movement.read` | L | |

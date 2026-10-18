@@ -348,6 +348,7 @@ Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fiel
 - **ModifierGroup** (catalog, org, ADR-072): `modifierGroupId`, `name`, `selection` (`SINGLE | MULTIPLE`), `isRequired`, `minSelect`, `maxSelect`, `options[{ modifierOptionId, name, priceDelta: Money, status }]`. No stock of its own.
 - **SearchSynonym** (catalog, org): `searchSynonymId`, `term`, `synonyms[]` (`08 §4`).
 - **OfferingSocialLink** (catalog, org): `offeringSocialLinkId`, `offeringId`, `platform` (`FACEBOOK \| INSTAGRAM`), `externalPostId`, `externalAdId?`, `channelId`. Unique `(organizationId, platform, externalPostId)`.
+- 3.2a notes (ADR-116): money is `{ amount, currency }`; `variants[].overrides` holds only the fields 11 section 2 lets the kind override; archived variants stay in the list with `status ARCHIVED`; variants without options differ by name; the stored `nameSearch` and `searchTerms` are folded copies for prefix search; the organization keeps one `SearchSynonymBook` (`search_synonyms`) and an `OfferingCounter` (`offering_counters`).
 - Indexes: `{ organizationId, offeringId }` unique, `{ organizationId, slug }` unique, `{ organizationId, kind, status, updatedAt }`, `{ organizationId, "variants.sku" }` unique partial, `{ organizationId, "variants.barcode" }` partial, `{ organizationId, categoryIds }`.
 - Events: `catalog.offering.created`, `.updated`, `.published` (DRAFT → ACTIVE), `.archived`, `.priceChanged`.
 
