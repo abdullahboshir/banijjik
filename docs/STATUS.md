@@ -123,7 +123,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | Card | Status | Note |
 |---|---|---|
 | M.0 design approval | done (2026-10-18, owner approved doc 16) | open owner decisions in doc 16 §6 remain: SMS provider, pricing, photo policy, eligibility text, domain, legal review |
-| M.1 customer accounts and OTP | planned (2026-10-18, `docs/plans/M.1.md`, Opus; T1) | session 3, after 3.1b is merged; storefront surface, OTP by SMS through the outbox, `contact.customerLogin` switch, block; ADR-119 |
+| M.1 customer accounts and OTP | code done on `s/m1-customer-accounts` (2026-10-18, rebased on main a5440e1); full verify and T1 review pending | handoff `docs/handoffs/M.1.md`; ADR-119 Accepted (proposed); deviations awaiting approval |
 | M.2 directory API | todo | |
 | M.3 admin moderation screens | todo | |
 | M.4 credits and connections | todo | |
