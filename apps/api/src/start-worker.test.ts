@@ -10,7 +10,7 @@ import { getLogger } from "./kernel/logger/index.js";
 registerEventModels();
 
 describe("startWorker", () => {
-  it("returns the shutdown tasks in the order dispatcher, worker, queue, redis, databases", async () => {
+  it("returns the shutdown tasks in the order dispatcher, replayer, worker, queue, redis, databases", async () => {
     installTestLogger();
     const connections = await connectTestDatabases();
     await initializeModels();
@@ -27,6 +27,7 @@ describe("startWorker", () => {
 
     expect(names).toEqual([
       "stop-dispatcher",
+      "stop-replayer",
       "close-worker",
       "close-queue",
       "close-redis",

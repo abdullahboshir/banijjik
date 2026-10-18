@@ -106,7 +106,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.4 pricing and tax | todo |  |
 | 3.6 booking core | todo | lane B |
 | 3.7 enrollment core | todo | lane B |
-| 3.8a ordered event streams | planned (2026-10-17, `docs/plans/3.8a.md`, Opus; T1) | wave 2, after 3.12 in session 3; ordered per stream, replay and skip of failed events, platform screen; ADR-115 |
+| 3.8a ordered event streams | implemented (awaiting review) (2026-10-18, `s/3.8a-ordered-event-streams`, `docs/handoffs/3.8a.md`, Claude Code Sonnet 5.5; T1) | verify: lint, format, test:tools, both browser suites green; turbo 28 of 29, the one failure (start-worker shutdown order) fixed and re-run alone; BullMQ DelayedError probed (attemptsMade unchanged, attemptsStarted counts pickups); new platform module `operations`; replay is REPLAY_REQUESTED until the worker re-adds the job; ADR-115 Accepted (proposed) |
 | 3.8 payments, accounting engine, expenses | todo | lane C; per-organization event ordering first |
 | 3.8b bookkeeping add-on UI | todo |  |
 | 3.3 inventory ledger | todo | lane A; ADR-098 inventory items |
