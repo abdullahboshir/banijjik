@@ -7,6 +7,7 @@ import { createTranslator } from "@banijjik/i18n";
 import { CUSTOM_FIELD_AUDIENCE, CUSTOM_FIELD_VALUE_MODE } from "@banijjik/validation";
 import { describe, expect, it } from "vitest";
 import {
+  fieldsForContactRoles,
   toFieldDescriptors,
   toRequestValues,
   validateCustomFieldValues,
@@ -181,5 +182,64 @@ describe("file and image fields", () => {
         options,
       ),
     ).toEqual({});
+  });
+});
+
+describe("contact-link fields (card 3.1b)", () => {
+  const guardian = field(CUSTOM_FIELD_TYPE.REFERENCE, {
+    fieldKey: "guardian",
+    isRequired: true,
+    referenceEntity: "contact",
+    link: { relationKey: "GUARDIAN_OF", createIfMissingByPhone: true, defaultBillTo: true },
+  });
+  const memberReference = field(CUSTOM_FIELD_TYPE.REFERENCE, {
+    fieldKey: "buddy",
+    referenceEntity: "member",
+  });
+
+  it("gives a contact-link reference an input and leaves any other reference pending", () => {
+    const model = toFieldDescriptors([guardian, memberReference], "en", translator.t);
+
+    expect(model.fields.map((item) => [item.fieldKey, item.inputKind])).toEqual([
+      ["guardian", "CONTACT_LINK"],
+    ]);
+    expect(model.pendingFieldKeys).toEqual(["buddy"]);
+    expect(model.contactLinkLabels.createNew).toBeDefined();
+  });
+
+  it("sends the link value in the request and still leaves a pending reference out", () => {
+    const create = { create: { name: "Rina", phone: "01712340000" } };
+
+    const request = toRequestValues(
+      { guardian: create, buddy: "x" },
+      [guardian, memberReference],
+      CUSTOM_FIELD_VALUE_MODE.CREATE,
+    );
+
+    expect(request).toEqual({ guardian: create });
+  });
+
+  it("accepts { create } for the admin form only when asked", () => {
+    const create = { guardian: { create: { name: "Rina", phone: "01712340000" } } };
+    const options = { audience: CUSTOM_FIELD_AUDIENCE.ADMIN, mode: CUSTOM_FIELD_VALUE_MODE.CREATE };
+
+    expect(validateCustomFieldValues([guardian], create, options)).toEqual({
+      guardian: expect.any(String),
+    });
+    expect(
+      validateCustomFieldValues([guardian], create, { ...options, acceptsContactLinkCreate: true }),
+    ).toEqual({});
+  });
+
+  it("leaves out a field that applies to other roles", () => {
+    const classLevel = field(CUSTOM_FIELD_TYPE.TEXT, {
+      fieldKey: "class_level",
+      appliesToContactRoles: ["CUSTOMER"],
+    });
+
+    expect(
+      fieldsForContactRoles([classLevel, guardian], ["RELATED"]).map((item) => item.fieldKey),
+    ).toEqual(["guardian"]);
+    expect(fieldsForContactRoles([classLevel], ["CUSTOMER", "RELATED"])).toHaveLength(1);
   });
 });

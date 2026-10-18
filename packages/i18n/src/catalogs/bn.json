@@ -257,5 +257,14 @@
   "errors.modifier_group_selection_invalid": "সর্বনিম্ন, সর্বোচ্চ ও আবশ্যিক সেটিং বাছাইগুলোর সাথে মেলেনি।",
   "errors.event_dead_letter_not_failed": "এই ইভেন্টটি আগেই আবার চালানো বা বাদ দেওয়া হয়েছে।",
   "errors.event_stream_not_at_event": "এর আগের ইভেন্টগুলো এখনো সম্পন্ন হয়নি, তাই এটি বাদ দেওয়া যায় না। আগে সেগুলো দেখুন।",
-  "errors.outbox_event_not_dead": "এই ইভেন্টটি পাঠানো না-যাওয়া অবস্থায় নেই।"
+  "errors.outbox_event_not_dead": "এই ইভেন্টটি পাঠানো না-যাওয়া অবস্থায় নেই।",
+  "form.contactLink.search": "নাম বা ফোন দিয়ে খুঁজুন",
+  "form.contactLink.noResults": "কাউকে পাওয়া যায়নি",
+  "form.contactLink.createNew": "নতুন ব্যক্তি যোগ করুন",
+  "form.contactLink.name": "নাম",
+  "form.contactLink.phone": "ফোন",
+  "form.contactLink.change": "বদলান",
+  "form.contactLink.remove": "সরান",
+  "form.contactLink.linked": "যুক্ত: {name}",
+  "form.contactLink.willCreate": "এই ব্যক্তি নতুন যোগাযোগ হিসেবে যোগ হবে।"
 }

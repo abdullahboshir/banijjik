@@ -257,5 +257,14 @@
   "errors.modifier_group_selection_invalid": "The minimum, maximum and required settings do not agree with the choices.",
   "errors.event_dead_letter_not_failed": "This event was already run again or skipped.",
   "errors.event_stream_not_at_event": "Earlier events of its stream are not done yet, so it cannot be skipped. Look at those first.",
-  "errors.outbox_event_not_dead": "This event is not in the not-dispatched state."
+  "errors.outbox_event_not_dead": "This event is not in the not-dispatched state.",
+  "form.contactLink.search": "Search by name or phone",
+  "form.contactLink.noResults": "No contact found",
+  "form.contactLink.createNew": "Add a new person",
+  "form.contactLink.name": "Name",
+  "form.contactLink.phone": "Phone",
+  "form.contactLink.change": "Change",
+  "form.contactLink.remove": "Remove",
+  "form.contactLink.linked": "Linked: {name}",
+  "form.contactLink.willCreate": "This person will be added as a new contact."
 }

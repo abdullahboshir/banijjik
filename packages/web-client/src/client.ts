@@ -11,6 +11,8 @@ export { ShellLink } from "./shell-link.js";
 export { useLazyComponent } from "./use-lazy-component.js";
 export { useLocaleChange } from "./use-locale-change.js";
 export {
+  fieldsForContactRoles,
+  isPendingField,
   toFieldDescriptors,
   toRequestValues,
   validateCustomFieldValues,

@@ -82,12 +82,20 @@ export type {
 export { AccountMenuTrigger } from "./components/account-menu-trigger.js";
 export type { AccountMenuTriggerProps } from "./components/account-menu-trigger.js";
 export { CustomFieldInputs } from "./components/custom-field-inputs.js";
+export { ContactLinkInput } from "./components/contact-link-input.js";
+export type {
+  ContactLinkCandidate,
+  ContactLinkInputProps,
+  ContactLinkLabels,
+  ContactLinkValue,
+} from "./components/contact-link-input.js";
 export { FileInput } from "./components/file-input.js";
 export type { FileInputLabels, FileInputProps } from "./components/file-input.js";
 export { ImageInput } from "./components/image-input.js";
 export type { ImageInputLabels, ImageInputProps } from "./components/image-input.js";
 export type {
   CustomFieldDescriptor,
+  CustomFieldContactLinkSupport,
   CustomFieldFileSupport,
   CustomFieldInputKind,
   CustomFieldInputsProps,

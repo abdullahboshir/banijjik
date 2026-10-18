@@ -1,3 +1,4 @@
+import type { ContactLinkCandidate, ContactLinkLabels } from "./contact-link-input.js";
 import type { FileInputLabels } from "./file-input.js";
 import type { ImageInputLabels } from "./image-input.js";
 
@@ -17,6 +18,7 @@ export const CUSTOM_FIELD_INPUT_KIND = [
   "URL",
   "IMAGE",
   "FILE",
+  "CONTACT_LINK",
 ] as const;
 
 export type CustomFieldInputKind = (typeof CUSTOM_FIELD_INPUT_KIND)[number];
@@ -55,6 +57,17 @@ export interface CustomFieldFileSupport {
   readonly sendsCredentials: boolean;
 }
 
+/**
+ * What a contact-link field needs from the app: the contact search. The package keeps no API knowledge
+ * (card 3.1b, ADR-073).
+ */
+export interface CustomFieldContactLinkSupport {
+  readonly search: (query: string) => Promise<readonly ContactLinkCandidate[]>;
+  /** The name of an already linked contact, when the app knows it. */
+  readonly nameOf?: ((contactId: string) => string | undefined) | undefined;
+  readonly labels: ContactLinkLabels;
+}
+
 export interface PendingCustomField {
   readonly fieldKey: string;
   readonly label: string;
@@ -63,6 +76,8 @@ export interface PendingCustomField {
 export interface CustomFieldInputsProps {
   /** Required when a descriptor has the IMAGE or FILE kind. */
   readonly files?: CustomFieldFileSupport | undefined;
+  /** Required when a descriptor has the CONTACT_LINK kind. */
+  readonly contactLink?: CustomFieldContactLinkSupport | undefined;
   readonly fields: readonly CustomFieldDescriptor[];
   readonly pendingFields?: readonly PendingCustomField[] | undefined;
   readonly values: Readonly<Record<string, unknown>>;

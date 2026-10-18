@@ -13,6 +13,7 @@ import {
   TextLikeControl,
   type CustomFieldControlProps,
 } from "./custom-field-controls.js";
+import { ContactLinkControl } from "./custom-field-contact-control.js";
 import { FileControl, ImageControl } from "./custom-field-file-controls.js";
 import type {
   CustomFieldInputKind,
@@ -33,6 +34,7 @@ interface FieldRowProps {
   readonly moneyFractionDigits: number;
   readonly chooseLabel: string;
   readonly files: CustomFieldInputsProps["files"];
+  readonly contactLink: CustomFieldInputsProps["contactLink"];
 }
 
 function FieldRow(props: FieldRowProps): ReactElement {
@@ -62,6 +64,7 @@ function FieldRow(props: FieldRowProps): ReactElement {
         moneyFractionDigits={props.moneyFractionDigits}
         chooseLabel={props.chooseLabel}
         files={props.files}
+        contactLink={props.contactLink}
       />
     </FormField>
   );
@@ -83,6 +86,7 @@ const CONTROLS: Record<CustomFieldInputKind, (props: CustomFieldControlProps) =>
   URL: TextLikeControl,
   IMAGE: ImageControl,
   FILE: FileControl,
+  CONTACT_LINK: ContactLinkControl,
 };
 
 function PendingFieldNote({
@@ -113,6 +117,7 @@ export function CustomFieldInputs({
   chooseLabel,
   notEditableText,
   files,
+  contactLink,
 }: CustomFieldInputsProps): ReactElement {
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
@@ -129,6 +134,7 @@ export function CustomFieldInputs({
           moneyFractionDigits={moneyFractionDigits}
           chooseLabel={chooseLabel}
           files={files}
+          contactLink={contactLink}
         />
       ))}
       {pendingFields.map((field) => (

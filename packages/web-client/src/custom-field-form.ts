@@ -1,6 +1,7 @@
 import {
   CUSTOM_FIELD_TYPE,
   VALIDATION_FALLBACK_MESSAGE_KEY,
+  type ContactRole,
   VALIDATION_MESSAGE_KEYS,
   type CustomFieldType,
   type EffectiveCustomField,
@@ -10,6 +11,7 @@ import type { Locale, Translator } from "@banijjik/i18n";
 import type {
   CustomFieldDescriptor,
   CustomFieldInputKind,
+  ContactLinkLabels,
   FileInputLabels,
   ImageInputLabels,
   PendingCustomField,
@@ -17,13 +19,36 @@ import type {
 import {
   buildCustomFieldValuesSchema,
   CUSTOM_FIELD_VALUE_MODE,
+  fieldAppliesToContactRoles,
   type CustomFieldRule,
   type CustomFieldValueMode,
   type CustomFieldValuesOptions,
 } from "@banijjik/validation";
 
 /** Reference values still wait for the contact module (card 3.1b); file and image have inputs since card 3.0. */
-const PENDING_FIELD_TYPES = new Set<CustomFieldType>([CUSTOM_FIELD_TYPE.REFERENCE]);
+/**
+ * A reference field has an input only when it links a contact (card 3.1b, ADR-073); any other
+ * reference stays pending.
+ */
+export function isPendingField(field: EffectiveCustomField): boolean {
+  if (field.fieldType !== CUSTOM_FIELD_TYPE.REFERENCE) return false;
+  return !isContactLink(field);
+}
+
+function isContactLink(field: EffectiveCustomField): boolean {
+  return field.referenceEntity === "contact" && field.link !== undefined;
+}
+
+/**
+ * The fields that apply to a contact with these roles (card 3.1c): one limited to other roles is left
+ * out of the form, so it is neither shown, required nor sent. A field without roles applies to all.
+ */
+export function fieldsForContactRoles(
+  fields: readonly EffectiveCustomField[],
+  contactRoles: readonly ContactRole[],
+): EffectiveCustomField[] {
+  return fields.filter((field) => fieldAppliesToContactRoles(field, contactRoles));
+}
 
 /** Presentation kinds. NUMBER and CURRENCY keep the contract names and map to integer and money inputs. */
 const INPUT_KIND_BY_TYPE: Readonly<Record<CustomFieldType, CustomFieldInputKind | undefined>> = {
@@ -53,6 +78,7 @@ export interface CustomFieldFormModel {
   readonly notEditableText: string;
   readonly imageLabels: ImageInputLabels;
   readonly fileLabels: FileInputLabels;
+  readonly contactLinkLabels: ContactLinkLabels;
 }
 
 function preferredLabel(label: LocalizedText, locale: Locale): string {
@@ -66,7 +92,7 @@ function toDescriptor(
   field: EffectiveCustomField,
   locale: Locale,
 ): CustomFieldDescriptor | undefined {
-  const inputKind = INPUT_KIND_BY_TYPE[field.fieldType];
+  const inputKind = isContactLink(field) ? "CONTACT_LINK" : INPUT_KIND_BY_TYPE[field.fieldType];
   if (inputKind === undefined) return undefined;
   const maxLength = field.validation?.maxLength;
   return {
@@ -97,7 +123,7 @@ export function toFieldDescriptors(
   t: Translator["t"],
 ): CustomFieldFormModel {
   const visible = fields.filter((field) => field.visibility.admin);
-  const pending = visible.filter((field) => PENDING_FIELD_TYPES.has(field.fieldType));
+  const pending = visible.filter(isPendingField);
   const descriptors = visible
     .map((field) => toDescriptor(field, locale))
     .filter((field): field is CustomFieldDescriptor => field !== undefined);
@@ -121,6 +147,17 @@ export function toFieldDescriptors(
       uploading: t("form.file.uploading"),
       attached: t("form.file.attached"),
     },
+    contactLinkLabels: {
+      search: t("form.contactLink.search"),
+      noResults: t("form.contactLink.noResults"),
+      createNew: t("form.contactLink.createNew"),
+      name: t("form.contactLink.name"),
+      phone: t("form.contactLink.phone"),
+      change: t("form.contactLink.change"),
+      remove: t("form.contactLink.remove"),
+      linked: t("form.contactLink.linked"),
+      willCreate: t("form.contactLink.willCreate"),
+    },
   };
 }
 
@@ -134,6 +171,10 @@ function toRule(field: EffectiveCustomField): CustomFieldRule {
     isSearchable: field.isSearchable,
     ...(field.options === undefined ? {} : { options: field.options }),
     ...(field.validation === undefined ? {} : { validation: field.validation }),
+    ...(field.link === undefined ? {} : { link: field.link }),
+    ...(field.appliesToContactRoles === undefined
+      ? {}
+      : { appliesToContactRoles: field.appliesToContactRoles }),
   };
 }
 
@@ -185,7 +226,7 @@ export function toRequestValues(
 ): Record<string, unknown> {
   const request: Record<string, unknown> = {};
   for (const field of fields) {
-    if (!field.visibility.admin || PENDING_FIELD_TYPES.has(field.fieldType)) continue;
+    if (!field.visibility.admin || isPendingField(field)) continue;
     const value = values[field.fieldKey];
     if (!isCleared(value)) {
       request[field.fieldKey] = value;
