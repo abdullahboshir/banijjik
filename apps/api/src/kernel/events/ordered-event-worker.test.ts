@@ -19,8 +19,9 @@ import {
   type RedisTestScope,
 } from "../../test-support/test-redis.js";
 import { waitFor } from "../../test-support/wait-for.js";
-import { initializeModels, models } from "../db/index.js";
+import { initializeModels, models, withTransaction } from "../db/index.js";
 import type { DatabaseConnections } from "../db/database-connections.js";
+import { replayDeadLetter, skipDeadLetter } from "./dead-letter-admin.js";
 import {
   EVENT_DEAD_LETTER_MODEL_NAME,
   type EventDeadLetterDocument,
@@ -246,5 +247,115 @@ describeWithRedis("ordered event handlers on the worker", (redisUrl) => {
     expect(ledger.handled).toEqual([]);
     expect(ledger.tries.get(2)).toBeUndefined();
     expect(await deadLetters()).toHaveLength(1);
+  });
+});
+
+describeWithRedis("replay and skip of a dead-lettered event on the worker", (redisUrl) => {
+  let scope: RedisTestScope;
+  let processing: EventProcessing | undefined;
+  let queue: Queue<EventJobData> | undefined;
+
+  beforeEach(() => {
+    scope = createRedisTestScope(redisUrl);
+  });
+
+  afterEach(async () => {
+    if (queue !== undefined) await queue.close();
+    queue = undefined;
+    if (processing !== undefined) {
+      for (const task of processing.shutdownTasks) await task.run();
+      processing = undefined;
+    }
+    await scope.dispose();
+  });
+
+  function start(registry: EventHandlerRegistry): BullMqEventJobQueue {
+    processing = startEventProcessing({
+      redis: scope.client,
+      registry,
+      effectiveness: { isEffective: async () => true },
+      clock: new MutableClock(new Date()),
+      pollIntervalMs: 50,
+      queuePrefix: scope.prefix,
+      retryBaseDelayMs: SHORT_DELAY_MS,
+      streamWaitBaseDelayMs: SHORT_DELAY_MS,
+    });
+    queue = new Queue<EventJobData>(EVENT_QUEUE_NAME, {
+      connection: scope.client,
+      prefix: scope.prefix,
+    });
+    return new BullMqEventJobQueue({ queue, retryBaseDelayMs: SHORT_DELAY_MS });
+  }
+
+  async function failedLetterOf(event: PublishedTestEvent): Promise<EventDeadLetterDocument> {
+    return waitFor("the dead letter", async () => {
+      const row = await models({})
+        .get<EventDeadLetterDocument>(EVENT_DEAD_LETTER_MODEL_NAME)
+        .findOne({ eventId: event.eventId, status: "FAILED" })
+        .lean<EventDeadLetterDocument>();
+      return row ?? undefined;
+    });
+  }
+
+  it("runs a replayed event again with fresh attempts, and the stream continues behind it", async () => {
+    const { first, second } = await publishPair();
+    let isBroken = true;
+    const ledger = orderedLedger();
+    const original = ledger.registry.find(HANDLER_KEY);
+    const registry = new EventHandlerRegistry();
+    registry.register({
+      handlerKey: HANDLER_KEY,
+      moduleKey: MODULE_KEY.IAM,
+      eventType: EVENT_TYPE.USER_REGISTERED,
+      ordering: "ORDERED",
+      handle: async (envelope) => {
+        const row = await outboxModel().findOne({ eventId: envelope.eventId }).lean();
+        if (row?.streamSequence === 1 && isBroken) throw new Error("not yet fixed");
+        await original?.handle(envelope);
+      },
+    });
+    const jobs = start(registry);
+    await jobs.enqueue(jobOf(first));
+    const letter = await failedLetterOf(first);
+    await jobs.enqueue(jobOf(second));
+
+    isBroken = false;
+    await withTransaction(() =>
+      replayDeadLetter({ eventDeadLetterId: letter.eventDeadLetterId, operatorId: newId() }),
+    );
+    await waitFor("both events to be handled in order", async () =>
+      ledger.handled.length === 2 ? true : undefined,
+    );
+
+    expect(ledger.handled).toEqual([1, 2]);
+    const row = await models({})
+      .get<EventDeadLetterDocument>(EVENT_DEAD_LETTER_MODEL_NAME)
+      .findOne({ eventDeadLetterId: letter.eventDeadLetterId })
+      .lean<EventDeadLetterDocument>();
+    expect(row?.status).toBe("REPLAYED");
+    expect(row?.requeuedAt).toBeInstanceOf(Date);
+  });
+
+  it("lets the stream continue after a skip, and never runs the skipped event", async () => {
+    const { first, second } = await publishPair();
+    const ledger = orderedLedger([1]);
+    const jobs = start(ledger.registry);
+    await jobs.enqueue(jobOf(first));
+    const letter = await failedLetterOf(first);
+    await jobs.enqueue(jobOf(second));
+
+    await withTransaction(() =>
+      skipDeadLetter({
+        eventDeadLetterId: letter.eventDeadLetterId,
+        operatorId: newId(),
+        reason: "posted by hand",
+      }),
+    );
+    await waitFor("the second event to be handled", async () =>
+      ledger.handled.length === 1 ? true : undefined,
+    );
+
+    expect(ledger.handled).toEqual([2]);
+    expect(ledger.tries.get(1)).toBe(EVENT_JOB_ATTEMPTS);
   });
 });

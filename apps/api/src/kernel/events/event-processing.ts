@@ -7,6 +7,7 @@ import type { EventJobData } from "./event-job.js";
 import { BullMqEventJobQueue, createEventQueue } from "./event-queue.js";
 import { createEventWorker } from "./event-worker.js";
 import type { ModuleEffectiveness } from "./module-effectiveness.js";
+import { DeadLetterReplayer } from "./dead-letter-replayer.js";
 import { OutboxDispatcher } from "./outbox-dispatcher.js";
 
 export interface EventProcessingOptions {
@@ -26,6 +27,7 @@ export interface EventProcessingOptions {
 
 export interface EventProcessing {
   readonly dispatcher: OutboxDispatcher;
+  readonly replayer: DeadLetterReplayer;
   readonly worker: Worker<EventJobData>;
   /** Stops the dispatcher, then the worker, then the queue. The caller adds Redis and the databases after them. */
   readonly shutdownTasks: readonly ShutdownTask[];
@@ -50,23 +52,32 @@ export function startEventProcessing(options: EventProcessingOptions): EventProc
       : { streamWaitBaseDelayMs: options.streamWaitBaseDelayMs }),
     ...prefix,
   });
+  const jobs = new BullMqEventJobQueue({
+    queue,
+    ...(options.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: options.retryBaseDelayMs }),
+  });
+  const replayer = new DeadLetterReplayer({
+    queue,
+    jobs,
+    ...(options.pollIntervalMs === undefined ? {} : { pollIntervalMs: options.pollIntervalMs }),
+  });
   const dispatcher = new OutboxDispatcher({
-    queue: new BullMqEventJobQueue({
-      queue,
-      ...(options.retryBaseDelayMs === undefined
-        ? {}
-        : { retryBaseDelayMs: options.retryBaseDelayMs }),
-    }),
+    queue: jobs,
     registry,
     clock,
     ...(options.pollIntervalMs === undefined ? {} : { pollIntervalMs: options.pollIntervalMs }),
   });
   dispatcher.start();
+  replayer.start();
   return {
     dispatcher,
+    replayer,
     worker,
     shutdownTasks: [
       { name: "stop-dispatcher", run: () => dispatcher.stop() },
+      { name: "stop-replayer", run: () => replayer.stop() },
       { name: "close-worker", run: () => worker.close() },
       { name: "close-queue", run: () => queue.close() },
     ],

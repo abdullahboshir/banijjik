@@ -37,6 +37,7 @@ async function writeDeadLetter(failure: FinalFailure): Promise<void> {
           lastError: summarizeError(error),
           failedAt: systemClock.now(),
           resolvedAt: null,
+          requeuedAt: null,
           resolvedByPlatformOperatorId: null,
           resolutionReason: null,
         },

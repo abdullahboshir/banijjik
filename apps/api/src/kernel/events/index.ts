@@ -10,3 +10,17 @@ export type { EventProcessing, EventProcessingOptions } from "./event-processing
 export { kernelEventPublisher, publishEvent } from "./publish-event.js";
 export type { PublishEventOptions } from "./publish-event.js";
 export { registerEventModels } from "./register-event-models.js";
+export {
+  listDeadLetters,
+  listDeadOutboxEvents,
+  replayDeadLetter,
+  replayDeadOutboxEvent,
+  skipDeadLetter,
+} from "./dead-letter-admin.js";
+export type {
+  DeadLetterAction,
+  DeadLetterPage,
+  DeadOutboxPage,
+  OutboxReplay,
+  PageQuery,
+} from "./dead-letter-admin.js";

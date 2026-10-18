@@ -25,6 +25,8 @@ export interface EventDeadLetterDocument {
   lastError: string;
   failedAt: Date;
   resolvedAt: Date | null;
+  /** When the worker queued a replayed job again; null while the replay waits for it. */
+  requeuedAt: Date | null;
   resolvedByPlatformOperatorId: string | null;
   /** Why an operator skipped it; absent for a replay. */
   resolutionReason: string | null;
@@ -53,6 +55,7 @@ const eventDeadLetterSchema = new Schema<EventDeadLetterDocument>(
     lastError: { type: String, required: true },
     failedAt: { type: Date, required: true },
     resolvedAt: { type: Date, default: null },
+    requeuedAt: { type: Date, default: null },
     resolvedByPlatformOperatorId: { type: String, default: null },
     resolutionReason: { type: String, default: null },
     ...auditFields,
@@ -66,6 +69,8 @@ eventDeadLetterSchema.index({ eventId: 1, handlerKey: 1 }, { unique: true });
 eventDeadLetterSchema.index({ failedAt: -1 });
 // The platform list: by status, newest first.
 eventDeadLetterSchema.index({ status: 1, failedAt: -1 });
+// The worker's replayer looks for replays that are not queued yet.
+eventDeadLetterSchema.index({ status: 1, requeuedAt: 1 });
 
 export function registerEventDeadLetterModel(): void {
   registerModel({
