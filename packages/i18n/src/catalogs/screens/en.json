@@ -453,5 +453,8 @@
   "branding.readOnly": "You are not allowed to change branding. You can only look at it here.",
   "branding.conflict": "Someone else changed this. Reopen the page and try again.",
   "branding.reload": "Reopen",
-  "shell.businessLogo": "{name} logo"
+  "shell.businessLogo": "{name} logo",
+  "menu.catalog.offerings": "Catalog",
+  "menu.catalog.categories": "Categories",
+  "menu.catalog.modifierGroups": "Add-ons"
 }

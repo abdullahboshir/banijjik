@@ -40,14 +40,14 @@ interface ProbeProfile {
 /**
  * Three probe modules registered only by the contract tests. They stand in for the modules that
  * do not exist yet and cover every off-path of 10-MODULE-CATALOG section 11:
- * - `catalog` is CORE and provides the PRODUCT kind;
+ * - `sales` is CORE and provides the PRODUCT kind (standing in for a CORE module; `catalog` is real since card 3.2a);
  * - `website` is OPTIONAL and is the dependency of `workflow`;
  * - `workflow` is OPTIONAL, tenant-disableable, needs `website` and the PRODUCT kind.
- * Their keys are catalogue keys no real module uses yet; change them when that module arrives.
+ * Their keys are catalogue keys no real module uses yet; change them when that module arrives (`sales` arrives with card 3.5).
  */
 const PROBE_PROFILES: readonly ProbeProfile[] = [
   {
-    key: MODULE_KEY.CATALOG,
+    key: MODULE_KEY.SALES,
     moduleClass: MODULE_CLASS.CORE,
     tenantCanDisable: false,
     dependsOn: [],

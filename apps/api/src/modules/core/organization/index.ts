@@ -14,6 +14,7 @@ import {
 import type { ActorProfileReader, SystemRoleProvisioner } from "./application/ports/iam-ports.js";
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
+import type { OrganizationCurrencyReader } from "./application/ports/organization-currency-reader.js";
 import type { TrialStarter } from "./application/ports/trial-starter.js";
 import type { IndustryTemplateAvailability } from "./application/ports/industry-template-availability.js";
 import type { IndustryTemplateMove } from "./application/ports/industry-template-move.js";
@@ -35,6 +36,7 @@ import { MongoActiveLocationCounter } from "./infrastructure/mongo-active-locati
 import { MongoLocationLookup } from "./infrastructure/mongo-location-lookup.js";
 import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
 import { MongoOrganizationConfigSource } from "./infrastructure/mongo-organization-config-source.js";
+import { MongoOrganizationCurrencyReader } from "./infrastructure/mongo-organization-currency.reader.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
 import { MongoMemberAccessReader } from "./infrastructure/mongo-member-access-reader.js";
 import { MongoMembershipDirectory } from "./infrastructure/mongo-membership-directory.js";
@@ -247,4 +249,11 @@ export function buildChangeIndustryTemplateUseCase(
 /** How many organizations use a template key, for the additive lock (ADR-101). */
 export function buildOrganizationTemplateUsage(): MongoOrganizationTemplateUsage {
   return new MongoOrganizationTemplateUsage();
+}
+
+export type { OrganizationCurrencyReader } from "./application/ports/organization-currency-reader.js";
+
+/** The currency of an organization, for modules that price things (card 3.2a). */
+export function buildOrganizationCurrencyReader(): OrganizationCurrencyReader {
+  return new MongoOrganizationCurrencyReader();
 }

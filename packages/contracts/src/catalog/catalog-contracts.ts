@@ -62,7 +62,7 @@ export const OFFERING_SLUG_MAX_LENGTH = 80;
 export interface QuantityRule {
   readonly min: number;
   readonly step: number;
-  readonly max?: number;
+  readonly max?: number | undefined;
 }
 
 export interface StockComponent {

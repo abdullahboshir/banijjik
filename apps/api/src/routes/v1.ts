@@ -38,6 +38,7 @@ import {
   buildRolesVersionBumper,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
+import { registerCatalogModels } from "../modules/commerce/catalog/index.js";
 import { registerContactModels } from "../modules/commerce/contact/index.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
@@ -109,6 +110,7 @@ export function registerModuleModels(): void {
   registerEntitlementModels();
   registerCustomFieldModels();
   registerContactModels();
+  registerCatalogModels();
   registerSettingsModels();
   registerFileModels();
 }
@@ -310,7 +312,8 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     permissions: permissionGate,
     permissionDefinitions: catalog.all(),
   });
-  const { customFieldRouter, settingsRouter, fileRouter, contactRouter } = input.coreRouters;
+  const { customFieldRouter, settingsRouter, fileRouter, contactRouter, catalogRouter } =
+    input.coreRouters;
   return [
     iamRouter,
     input.organizationRouter,
@@ -320,6 +323,7 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     settingsRouter,
     fileRouter,
     contactRouter,
+    catalogRouter,
     ...tenantRouters,
     ...tenantRouterFactories.map((build) => build(permission)),
   ];

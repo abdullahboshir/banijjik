@@ -9,6 +9,7 @@ import {
   KERNEL_ERROR_MESSAGE_KEYS,
   VALIDATION_MESSAGE_KEYS,
 } from "@banijjik/contracts";
+import { CATALOG_MESSAGE_KEYS } from "@banijjik/contracts/catalog";
 import { FILE_MESSAGE_KEYS } from "@banijjik/contracts/file";
 import { describe, expect, it, vi } from "vitest";
 import { BUNDLED_CATALOGS } from "./bundled-catalogs.js";
@@ -46,6 +47,7 @@ describe("bundled catalogs", () => {
       ...IDEMPOTENCY_MESSAGE_KEYS,
       ...ENTITLEMENT_MESSAGE_KEYS,
       ...FILE_MESSAGE_KEYS,
+      ...CATALOG_MESSAGE_KEYS,
     ];
     for (const locale of SUPPORTED_LOCALES) {
       for (const key of emittedKeys) {

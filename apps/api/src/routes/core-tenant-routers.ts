@@ -21,6 +21,7 @@ import {
   buildTenantModuleSwitch,
   type OrgConfigService,
 } from "../modules/platform/entitlement/index.js";
+import { buildCatalogTenantRouter } from "./catalog-tenant-router.js";
 import { buildContactTenantRouter } from "./contact-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
@@ -45,6 +46,7 @@ export interface CoreTenantRouters {
   /** PUBLIC files without a session; mounted outside the tenant pipeline by routes/v1.ts. */
   readonly publicFileRouter: Router;
   readonly contactRouter: Router;
+  readonly catalogRouter: Router;
 }
 
 /** Custom-field, settings, file and contact routers (cards 2.3, 2.4, 3.0 and 3.1a). The file module also builds the public router. */
@@ -90,12 +92,22 @@ export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenant
     orgConfig,
     manifests: input.manifests,
   });
+  const catalogRouter = buildCatalogTenantRouter({
+    clock,
+    audit,
+    permission,
+    permissions: input.permissions,
+    idempotency: input.idempotency,
+    orgConfig,
+    manifests: input.manifests,
+  });
   return {
     customFieldRouter,
     settingsRouter,
     fileRouter: files.tenantRouter,
     publicFileRouter: files.publicRouter,
     contactRouter,
+    catalogRouter,
   };
 }
 

@@ -453,5 +453,8 @@
   "branding.readOnly": "ব্র্যান্ডিং বদলানোর অনুমতি আপনার নেই। এখানে শুধু দেখতে পারবেন।",
   "branding.conflict": "অন্য কেউ এটি বদলে দিয়েছে। পাতাটি নতুন করে খুলে আবার চেষ্টা করুন।",
   "branding.reload": "নতুন করে খুলুন",
-  "shell.businessLogo": "{name}-এর লোগো"
+  "shell.businessLogo": "{name}-এর লোগো",
+  "menu.catalog.offerings": "ক্যাটালগ",
+  "menu.catalog.categories": "ক্যাটেগরি",
+  "menu.catalog.modifierGroups": "অ্যাড-অন"
 }
