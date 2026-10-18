@@ -105,6 +105,8 @@ export type {
 export { parseMoneyInput } from "./format/parse-money-input.js";
 export type { ParsedMoney } from "./format/parse-money-input.js";
 export { LogoImage } from "./components/logo-image.js";
+export { PublicImage } from "./components/public-image.js";
+export type { PublicImageProps } from "./components/public-image.js";
 export type { LogoImageProps } from "./components/logo-image.js";
 export { PageLayout } from "./components/page-layout.js";
 export type { PageLayoutProps } from "./components/page-layout.js";

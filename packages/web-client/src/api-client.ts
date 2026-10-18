@@ -6,7 +6,7 @@ export type { ApiResult } from "./parse-api-response.js";
 const IDEMPOTENCY_HEADER = "Idempotency-Key";
 
 export interface ApiRequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   /** JSON-encoded, except a FormData body, which is sent as multipart and gets its boundary from the browser. */
   body?: unknown;
   idempotencyKey?: string;
