@@ -40,6 +40,21 @@ export function optionKeyOf(optionValues: Readonly<Record<string, string>>): str
   return JSON.stringify(entries);
 }
 
+/**
+ * What tells two variants apart: their option values, or their name when they have none (a
+ * haircut for short hair and one for long hair differ only by name). Two active variants of an
+ * offering never share it.
+ */
+export function variantIdentityOf(variant: Variant): {
+  key: string;
+  path: "optionValues" | "name";
+} {
+  if (Object.keys(variant.optionValues).length > 0) {
+    return { key: `options:${optionKeyOf(variant.optionValues)}`, path: "optionValues" };
+  }
+  return { key: `name:${variant.name.toLowerCase()}`, path: "name" };
+}
+
 /** "XL / Red" for a variant with options, "Default" for one without. */
 export function derivedVariantName(optionValues: Readonly<Record<string, string>>): string {
   const values = Object.values(optionValues);

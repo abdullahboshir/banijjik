@@ -153,9 +153,12 @@ describe("the entitlement gate", () => {
     expect(config.body.data.modules).not.toContain("workflow");
     // The workflow probe entries are gone; the organization, settings and fields entries stay (Locations is hidden with one location).
     expect(config.body.data.menu.map((entry: { menuKey: string }) => entry.menuKey)).toEqual([
+      "catalog.offerings",
       "contact.contacts",
       "organization.profile",
       "organization.branding",
+      "catalog.categories",
+      "catalog.modifierGroups",
       "organization.staff",
       "iam.roles",
       "settings.general",
@@ -311,7 +314,8 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       registryHash: registry.registryHash,
       accessMode: ACCESS_MODE.FULL,
       isPastDue: false,
-      kinds: [],
+      // The catalog provides PRODUCT, so an organization with the catalog on has that kind.
+      kinds: ["PRODUCT"],
       terms: expect.objectContaining({
         contact: { bn: "গ্রাহক / গ্রাহকরা", en: "Customer / Customers" },
       }),
@@ -334,6 +338,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
     expect(response.body.data.modules).toEqual([
       "ai",
       "audit",
+      "catalog",
       "contact",
       "custom-field",
       "file",
@@ -354,9 +359,12 @@ describe("GET /orgs/{organizationId}/me/config", () => {
     ).toEqual([
       PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
       PERMISSION_KEY.IAM_ROLE_READ,
+      PERMISSION_KEY.CATALOG_OFFERING_READ,
       PERMISSION_KEY.CONTACT_CONTACT_READ,
       PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
       PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
+      PERMISSION_KEY.CATALOG_CATEGORY_READ,
+      PERMISSION_KEY.CATALOG_MODIFIER_GROUP_READ,
       PERMISSION_KEY.ORGANIZATION_MEMBER_READ,
       PERMISSION_KEY.IAM_ROLE_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
@@ -385,13 +393,19 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_READ,
       PERMISSION_KEY.FILE_ASSET_READ,
       PERMISSION_KEY.CONTACT_CONTACT_READ,
+      PERMISSION_KEY.CATALOG_OFFERING_READ,
+      PERMISSION_KEY.CATALOG_CATEGORY_READ,
+      PERMISSION_KEY.CATALOG_MODIFIER_GROUP_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
     ]);
     expect(
       response.body.data.menu.map((entry: { permissionKey: string }) => entry.permissionKey),
     ).toEqual([
       PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
+      PERMISSION_KEY.CATALOG_OFFERING_READ,
       PERMISSION_KEY.CONTACT_CONTACT_READ,
+      PERMISSION_KEY.CATALOG_CATEGORY_READ,
+      PERMISSION_KEY.CATALOG_MODIFIER_GROUP_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,

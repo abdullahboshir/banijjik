@@ -10,7 +10,7 @@ import {
 } from "@banijjik/contracts/catalog";
 import { newId } from "@banijjik/ids";
 import { invalidFields, stockComponentsNeedInventory, type FieldProblem } from "./errors.js";
-import { derivedVariantName, isActiveVariant, optionKeyOf, type Variant } from "./variant.js";
+import { derivedVariantName, isActiveVariant, variantIdentityOf, type Variant } from "./variant.js";
 
 /** A variant as the request describes it: optional fields are filled in here. */
 export interface VariantDraft {
@@ -104,13 +104,13 @@ function optionProblems(
   const seen = new Set<string>();
   const problems: FieldProblem[] = [];
   active.forEach((variant, index) => {
-    const key = optionKeyOf(variant.optionValues);
-    if (seen.has(key)) {
+    const identity = variantIdentityOf(variant);
+    if (seen.has(identity.key)) {
       const draftIndex = drafts.findIndex((draft) => draft.variantId === variant.variantId);
-      const path = `variants.${draftIndex >= 0 ? draftIndex : index}.optionValues`;
+      const path = `variants.${draftIndex >= 0 ? draftIndex : index}.${identity.path}`;
       problems.push({ path, messageKey: DUPLICATE_OPTIONS_KEY });
     }
-    seen.add(key);
+    seen.add(identity.key);
   });
   return problems;
 }
