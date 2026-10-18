@@ -36,6 +36,8 @@ export const PERMISSION_KEY = {
   CONTACT_CONTACT_ARCHIVE: "contact.contact.archive",
   CONTACT_CONTACT_ANONYMIZE: "contact.contact.anonymize",
   CONTACT_CONTACT_READ_SENSITIVE: "contact.contact.readSensitive",
+  CONTACT_CUSTOMER_ACCOUNT_READ: "contact.customerAccount.read",
+  CONTACT_CUSTOMER_ACCOUNT_BLOCK: "contact.customerAccount.block",
   CATALOG_OFFERING_READ: "catalog.offering.read",
   CATALOG_OFFERING_CREATE: "catalog.offering.create",
   CATALOG_OFFERING_UPDATE: "catalog.offering.update",

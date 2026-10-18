@@ -9,7 +9,7 @@ import { EVENT_TYPE } from "./event-type.js";
 import { OUTBOX_STATUS } from "./outbox-status.js";
 
 // The module segment is kebab-case, so `custom-field` is a legal event name (card 2.3).
-const EVENT_NAME_PATTERN = /^[a-z][a-z0-9-]*\.[a-z]+\.[a-z][A-Za-z]*(ed|d)$/;
+const EVENT_NAME_PATTERN = /^[a-z][a-z0-9-]*\.[a-z][A-Za-z]*\.[a-z][A-Za-z]*(ed|d)$/;
 
 describe("event types", () => {
   it("contains every module event exactly once", () => {

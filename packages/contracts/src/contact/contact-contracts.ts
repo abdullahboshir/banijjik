@@ -10,8 +10,11 @@ export type ContactType = (typeof CONTACT_TYPE)[keyof typeof CONTACT_TYPE];
 export const CONTACT_STATUS = defineEnum(["ACTIVE", "ARCHIVED"]);
 export type ContactStatus = (typeof CONTACT_STATUS)[keyof typeof CONTACT_STATUS];
 
-/** Where a contact came from. MANUAL is typed in by staff; LINKED is created through a contact-link field (ADR-073). */
-export const CONTACT_SOURCE = defineEnum(["MANUAL", "LINKED"]);
+/**
+ * Where a contact came from. MANUAL is typed in by staff; LINKED is created through a contact-link
+ * field (ADR-073); STOREFRONT is created when a customer signs in to the business's public site (M.1).
+ */
+export const CONTACT_SOURCE = defineEnum(["MANUAL", "LINKED", "STOREFRONT"]);
 export type ContactSource = (typeof CONTACT_SOURCE)[keyof typeof CONTACT_SOURCE];
 
 /** What makes a second contact a duplicate of the first (setting `contact.dedupeOn`). */
@@ -124,7 +127,76 @@ export interface ContactLinkCreateInput {
 }
 
 /** Message keys the contact endpoints can send to a client. Both catalogs need each. */
-export const CONTACT_API_MESSAGE_KEYS: readonly string[] = ["errors.contact_duplicate"];
+export const CONTACT_API_MESSAGE_KEYS: readonly string[] = [
+  "errors.contact_duplicate",
+  "errors.otp_invalid",
+  "errors.customer_account_blocked",
+  "errors.storefront_not_available",
+];
+
+/** Setting `contact.customerLogin` (BOOLEAN, default false): whether customers may sign in to the public site (M.1, ADR-119). */
+export const CUSTOMER_LOGIN_SETTING_KEY = "contact.customerLogin";
+
+/** A BLOCKED account cannot sign in and loses its sessions; staff can unblock it. */
+export const CUSTOMER_ACCOUNT_STATUS = defineEnum(["ACTIVE", "BLOCKED"]);
+export type CustomerAccountStatus =
+  (typeof CUSTOMER_ACCOUNT_STATUS)[keyof typeof CUSTOMER_ACCOUNT_STATUS];
+
+/** The customer's own cookies, apart from the admin ones (ADR-048, ADR-119). */
+export const STOREFRONT_ACCESS_COOKIE_NAME = "sf_access";
+export const STOREFRONT_REFRESH_COOKIE_NAME = "sf_refresh";
+
+/** The rules of the one-time code (ADR-119). */
+export const CUSTOMER_OTP_RULES = {
+  codeLength: 6,
+  expiresInSeconds: 300,
+  maxWrongAttempts: 5,
+  sendsPerPhone: { limit: 3, windowSeconds: 900 },
+  sendsPerIp: { limit: 10, windowSeconds: 3600 },
+  verifiesPerIp: { limit: 20, windowSeconds: 3600 },
+  sessionDays: 30,
+  accessTokenSeconds: 900,
+} as const;
+
+/** `POST …/auth/otp/send`: always answered with 202, whether or not an account exists. */
+export interface CustomerOtpSendResponse {
+  expiresInSeconds: number;
+}
+
+/** `GET …/me` of a signed-in customer. */
+export interface StorefrontMeResponse {
+  customerAccountId: string;
+  contactId: string;
+  phoneE164: string;
+  name: string | null;
+}
+
+/** `GET /contacts/{contactId}/customer-account`: what staff see of a customer's website login. */
+export interface CustomerAccountResponse {
+  customerAccountId: string;
+  contactId: string;
+  status: CustomerAccountStatus;
+  verifiedAt: string | null;
+  lastLoginAt: string | null;
+  blockedAt: string | null;
+  version: number;
+}
+
+/** `POST …/customer-account/block` and `/unblock`. */
+export interface CustomerAccountBlockRequest {
+  version: number;
+}
+
+/** Payload of `contact.customerOtp.requested`: ids only, never the phone or the code (ADR-119). */
+export interface CustomerOtpRequestedPayload {
+  readonly otpChallengeId: string;
+}
+
+/** Payload of the customer-account events: ids only. */
+export interface CustomerAccountEventPayload {
+  readonly customerAccountId: string;
+  readonly contactId: string;
+}
 
 /** Payload of every contact event: ids only, never the name or the phone. */
 export interface ContactEventPayload {

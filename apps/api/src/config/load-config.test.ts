@@ -26,8 +26,16 @@ const objectStorageEnv = {
   FILE_STORAGE_S3_SECRET_ACCESS_KEY: "test-only-secret-access-key",
 };
 
+/** Customer sign-in settings that production must give (card M.1). The values are fake. */
+const FAKE_OTP_SECRET = "test-only-otp-secret-0123456789abcdef0123";
+const customerLoginEnv = {
+  OTP_SECRET: FAKE_OTP_SECRET,
+  STOREFRONT_BASE_DOMAIN: "sites.example.com",
+};
+
 const productionEnv = {
   ...objectStorageEnv,
+  ...customerLoginEnv,
   AUTH_ACCESS_TOKEN_SECRET: FAKE_ACCESS_SECRET,
   NODE_ENV: "production",
   DB_PLATFORM_URL: "mongodb+srv://user:pw@cluster.example.com/platform",
@@ -70,6 +78,11 @@ describe("loadConfig", () => {
         sessionFamilyMaxDays: 90,
       },
       storage: { driver: "local", localRoot: expect.any(String) },
+      storefront: {
+        otpSecret: expect.any(String),
+        smsDriver: "test-inbox",
+        baseDomain: "localhost",
+      },
     });
     expect(Object.isFrozen(config)).toBe(true);
     expect(Object.isFrozen(config.storage)).toBe(true);
@@ -589,5 +602,100 @@ describe("loadConfig file storage (card 3.0)", () => {
 
     expect(error.message).not.toContain("test-only-secret-access-key");
     expect(error.message).not.toContain("test-only-access-key-id");
+  });
+});
+
+describe("loadConfig customer sign-in (card M.1)", () => {
+  it("works out of the box in development: the test inbox, localhost and a development secret", () => {
+    const config = loadConfig(validEnv);
+
+    expect(config.storefront).toEqual({
+      otpSecret: expect.any(String),
+      smsDriver: "test-inbox",
+      baseDomain: "localhost",
+    });
+    expect(Object.isFrozen(config.storefront)).toBe(true);
+  });
+
+  it("reads the three settings in production, lower-casing the domain, with SMS disabled until a provider exists", () => {
+    const config = loadConfig({ ...productionEnv, STOREFRONT_BASE_DOMAIN: "Sites.Example.COM" });
+
+    expect(config.storefront).toEqual({
+      otpSecret: FAKE_OTP_SECRET,
+      smsDriver: "disabled",
+      baseDomain: "sites.example.com",
+    });
+  });
+
+  it("refuses the test inbox in production", () => {
+    const error = catchConfigError({ ...productionEnv, SMS_DRIVER: "test-inbox" });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "SMS_DRIVER", problem: "INVALID" }),
+    ]);
+  });
+
+  it("refuses a missing, a short and a placeholder OTP_SECRET in production, and never prints it", () => {
+    const withoutSecret = Object.fromEntries(
+      Object.entries(productionEnv).filter(([key]) => key !== "OTP_SECRET"),
+    );
+
+    const missing = catchConfigError(withoutSecret);
+    const short = catchConfigError({ ...productionEnv, OTP_SECRET: "too-short-to-be-safe" });
+    const placeholder = catchConfigError({
+      ...productionEnv,
+      OTP_SECRET: "change-me-this-is-long-enough-0123456789abcdef",
+    });
+
+    expect(missing.issues).toEqual([
+      expect.objectContaining({ key: "OTP_SECRET", problem: "MISSING" }),
+    ]);
+    expect(short.issues).toEqual([
+      expect.objectContaining({ key: "OTP_SECRET", problem: "INVALID" }),
+    ]);
+    expect(placeholder.issues).toEqual([
+      expect.objectContaining({ key: "OTP_SECRET", problem: "INVALID" }),
+    ]);
+    expect(short.message).not.toContain("too-short-to-be-safe");
+    expect(placeholder.message).not.toContain("this-is-long-enough");
+  });
+
+  it("refuses a short OTP_SECRET outside production too", () => {
+    const error = catchConfigError({ ...validEnv, OTP_SECRET: "short" });
+
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "OTP_SECRET", problem: "INVALID" }),
+    ]);
+  });
+
+  it("refuses a missing STOREFRONT_BASE_DOMAIN in production, and a domain with a scheme or a port", () => {
+    const withoutDomain = Object.fromEntries(
+      Object.entries(productionEnv).filter(([key]) => key !== "STOREFRONT_BASE_DOMAIN"),
+    );
+
+    const missing = catchConfigError(withoutDomain);
+    const withScheme = catchConfigError({
+      ...productionEnv,
+      STOREFRONT_BASE_DOMAIN: "https://sites.example.com",
+    });
+    const withPort = catchConfigError({
+      ...productionEnv,
+      STOREFRONT_BASE_DOMAIN: "sites.example.com:3000",
+    });
+
+    expect(missing.issues).toEqual([
+      expect.objectContaining({ key: "STOREFRONT_BASE_DOMAIN", problem: "MISSING" }),
+    ]);
+    expect(withScheme.issues.map((issue) => issue.key)).toEqual(["STOREFRONT_BASE_DOMAIN"]);
+    expect(withPort.issues.map((issue) => issue.key)).toEqual(["STOREFRONT_BASE_DOMAIN"]);
+  });
+
+  it("accepts SMS_DRIVER=disabled in every environment", () => {
+    expect(loadConfig({ ...validEnv, SMS_DRIVER: "disabled" }).storefront.smsDriver).toBe(
+      "disabled",
+    );
+    expect(loadConfig({ ...productionEnv, SMS_DRIVER: "disabled" }).storefront.smsDriver).toBe(
+      "disabled",
+    );
   });
 });

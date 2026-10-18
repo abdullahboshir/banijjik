@@ -145,6 +145,33 @@ export const outboxPollIntervalRule: FieldRule<number> = {
   schema: positiveInteger(60_000),
 };
 
+/** Seals and hashes one-time codes (card M.1, ADR-119). Never logged. */
+export const otpSecretRule: FieldRule<string> = {
+  key: "OTP_SECRET",
+  hint: `must be a random string of at least ${MINIMUM_SECRET_LENGTH} characters`,
+  schema: z.string().min(MINIMUM_SECRET_LENGTH),
+};
+/** Outside production a fixed value keeps development working; it contains the placeholder marker, so production refuses it. */
+export const DEVELOPMENT_OTP_SECRET = "change-me-development-only-otp-secret-0123456789abcdef";
+
+/** `test-inbox` writes messages to a collection for tests; `disabled` sends nothing and turns customer sign-in off. */
+export const SMS_DRIVERS = ["test-inbox", "disabled"] as const;
+export const smsDriverRule: FieldRule<(typeof SMS_DRIVERS)[number]> = {
+  key: "SMS_DRIVER",
+  hint: "must be test-inbox or disabled",
+  schema: z.enum(SMS_DRIVERS),
+};
+export const SMS_TEST_INBOX_IN_PRODUCTION_HINT =
+  "the test inbox is for development and tests: production needs a real SMS provider, or disabled until one is chosen";
+
+const HOST_NAME_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i;
+/** The domain under which every business has its public site, `<slug>.<base domain>` (card M.1). */
+export const storefrontBaseDomainRule: FieldRule<string> = {
+  key: "STOREFRONT_BASE_DOMAIN",
+  hint: "must be a host name such as sites.example.com, without a scheme or a port",
+  schema: z.string().max(253).regex(HOST_NAME_PATTERN),
+};
+
 export const accessTokenSecretRule: FieldRule<string> = {
   key: "AUTH_ACCESS_TOKEN_SECRET",
   hint: `must be a random string of at least ${MINIMUM_SECRET_LENGTH} characters`,

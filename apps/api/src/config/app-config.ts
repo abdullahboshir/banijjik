@@ -10,6 +10,15 @@ export type StorageConfig =
       readonly secretAccessKey: string;
     };
 
+/** Customer sign-in on the public site (card M.1, ADR-119). Neither secret nor driver is ever logged. */
+export interface StorefrontConfig {
+  /** Seals and hashes one-time codes. */
+  readonly otpSecret: string;
+  readonly smsDriver: "test-inbox" | "disabled";
+  /** `<slug>.<baseDomain>` is the public host of a business. */
+  readonly baseDomain: string;
+}
+
 export interface AppConfig {
   readonly nodeEnv: "development" | "test" | "production";
   readonly port: number;
@@ -29,6 +38,7 @@ export interface AppConfig {
   readonly outboxPollIntervalMs?: number;
   readonly corsAllowedOrigins: readonly string[];
   readonly storage: StorageConfig;
+  readonly storefront: StorefrontConfig;
   readonly auth: {
     /** Signs access tokens. Never logged. */
     readonly accessTokenSecret: string;

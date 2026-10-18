@@ -43,6 +43,8 @@ export const AUDIT_ACTION = {
   MODIFIER_GROUP_UPDATED: "catalog.addon.updated",
   MODIFIER_GROUP_ARCHIVED: "catalog.addon.archived",
   SYNONYMS_UPDATED: "catalog.synonym.updated",
+  CUSTOMER_ACCOUNT_BLOCKED: "contact.customerAccount.blocked",
+  CUSTOMER_ACCOUNT_UNBLOCKED: "contact.customerAccount.unblocked",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -65,6 +67,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "category",
   "modifierGroup",
   "searchSynonym",
+  "customerAccount",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

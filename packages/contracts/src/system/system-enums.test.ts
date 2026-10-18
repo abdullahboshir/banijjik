@@ -16,6 +16,7 @@ describe("system enums", () => {
       "WEBHOOK_ROUTING",
       "SCHEDULED_JOB",
       "PUBLIC_FILE",
+      "STOREFRONT_RESOLVE",
     ]);
   });
 

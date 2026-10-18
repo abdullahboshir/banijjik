@@ -4,7 +4,7 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "./audit-action.js";
 describe("audit vocabulary", () => {
   it("names every action <module>.<entity>.<pastTenseVerb>", () => {
     for (const action of Object.values(AUDIT_ACTION)) {
-      expect(action).toMatch(/^[a-z-]+\.[a-z]+\.[a-z]+ed$/);
+      expect(action).toMatch(/^[a-z-]+\.[a-z][A-Za-z]*\.[a-z]+ed$/);
     }
   });
 
@@ -31,6 +31,7 @@ describe("audit vocabulary", () => {
       "category",
       "modifierGroup",
       "searchSynonym",
+      "customerAccount",
     ]);
   });
 });

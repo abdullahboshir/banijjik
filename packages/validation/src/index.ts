@@ -155,6 +155,18 @@ export {
   toCustomFieldPreferenceBatch,
   toCustomFieldUpdateRequest,
 } from "./custom-field/custom-field-request-schemas.js";
+export {
+  customerAccountBlockRequestSchema,
+  customerOtpSendRequestSchema,
+  customerOtpVerifyRequestSchema,
+  storefrontOrganizationParamsSchema,
+  storefrontResolveQuerySchema,
+} from "./contact/customer-account.schema.js";
+export type {
+  CustomerAccountBlockBody,
+  CustomerOtpSendBody,
+  CustomerOtpVerifyBody,
+} from "./contact/customer-account.schema.js";
 export { contactLinkCreateSchema } from "./custom-field/contact-link-input.js";
 export type { ContactLinkCreateValue } from "./custom-field/contact-link-input.js";
 export {

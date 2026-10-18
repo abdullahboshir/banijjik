@@ -23,7 +23,12 @@ const CONTACT_DAILY_KEYS: readonly PermissionKey[] = [
   PERMISSION_KEY.CONTACT_CONTACT_READ,
   PERMISSION_KEY.CONTACT_CONTACT_CREATE,
   PERMISSION_KEY.CONTACT_CONTACT_UPDATE,
+  // Cashiers and staff can see whether a customer has a website login; only the owner and manager block it (M.1).
+  PERMISSION_KEY.CONTACT_CUSTOMER_ACCOUNT_READ,
 ];
+
+/** Riders and viewers read contacts only: not the website login of a customer. */
+const CONTACT_READ_ONLY_KEYS: readonly PermissionKey[] = [PERMISSION_KEY.CONTACT_CONTACT_READ];
 
 type ModuleGrants = Readonly<Record<SystemRoleKey, GrantSpec>>;
 
@@ -87,8 +92,8 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
     [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
     [SYSTEM_ROLE_KEY.CASHIER]: { only: CONTACT_DAILY_KEYS },
     [SYSTEM_ROLE_KEY.STAFF]: { only: CONTACT_DAILY_KEYS },
-    [SYSTEM_ROLE_KEY.RIDER]: "READ",
-    [SYSTEM_ROLE_KEY.VIEWER]: "READ",
+    [SYSTEM_ROLE_KEY.RIDER]: { only: CONTACT_READ_ONLY_KEYS },
+    [SYSTEM_ROLE_KEY.VIEWER]: { only: CONTACT_READ_ONLY_KEYS },
   },
   catalog: {
     [SYSTEM_ROLE_KEY.OWNER]: "ALL",

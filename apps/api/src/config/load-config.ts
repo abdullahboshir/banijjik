@@ -1,4 +1,4 @@
-import { ConfigError, type AppConfig } from "./app-config.js";
+import { ConfigError, type AppConfig, type ConfigIssue } from "./app-config.js";
 import {
   ALLOW_LOCAL_SERVICES_HINT,
   PRODUCTION_LOCAL_HOST_HINT,
@@ -21,6 +21,7 @@ import {
 } from "./env.schema.js";
 import { isLocalHostUrl } from "./local-host.js";
 import { readStorageConfig } from "./read-storage-config.js";
+import { readStorefrontConfig } from "./read-storefront-config.js";
 import { readAuthConfig, readPlatformAdmin, type ConfigSection } from "./read-auth-config.js";
 import {
   collectIssues,
@@ -71,7 +72,7 @@ function readTrustedProxyHops(env: Environment, isProduction: boolean): FieldRes
   return readField(env, rule);
 }
 
-type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin" | "storage">;
+type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin" | "storage" | "storefront">;
 type ServerSettings = Pick<
   AppConfig,
   "port" | "logLevel" | "role" | "trustedProxyHops" | "corsAllowedOrigins"
@@ -154,32 +155,45 @@ function readBaseConfig(env: Environment): ConfigSection<BaseConfig> {
   }
   return { issues, value: { nodeEnv: nodeEnv.value, ...server.value, ...stores.value } };
 }
+type RuntimeSettings = Pick<AppConfig, "auth" | "storage" | "storefront">;
+
+/** The sections that production treats differently from development: sign-in, files and customer sign-in. */
+function readRuntimeSettings(env: Environment): {
+  readonly issues: readonly ConfigIssue[];
+  readonly value?: RuntimeSettings;
+} {
+  const isProduction = env["NODE_ENV"]?.trim() === "production";
+  const auth = readAuthConfig(env, isProduction);
+  const storage = readStorageConfig(env, isProduction);
+  const storefront = readStorefrontConfig(env, isProduction);
+  const issues = [...auth.issues, ...storage.issues, ...storefront.issues];
+  if (auth.value === undefined || storage.value === undefined || storefront.value === undefined) {
+    return { issues };
+  }
+  return {
+    issues,
+    value: { auth: auth.value, storage: storage.value, storefront: storefront.value },
+  };
+}
+
 /** Validates an environment object. Returns a frozen config or throws ConfigError. Never includes values in messages. */
 export function loadConfig(env: Environment): AppConfig {
   const base = readBaseConfig(env);
-  const auth = readAuthConfig(env, env["NODE_ENV"]?.trim() === "production");
+  const runtime = readRuntimeSettings(env);
   const platformAdmin = readPlatformAdmin(env);
-  const storage = readStorageConfig(env, env["NODE_ENV"]?.trim() === "production");
   const outboxPollInterval = readOptionalField(env, outboxPollIntervalRule);
   const issues = [
     ...base.issues,
-    ...auth.issues,
+    ...runtime.issues,
     ...platformAdmin.issues,
-    ...storage.issues,
     ...collectIssues([outboxPollInterval]),
   ];
-  if (
-    issues.length > 0 ||
-    base.value === undefined ||
-    auth.value === undefined ||
-    storage.value === undefined
-  ) {
+  if (issues.length > 0 || base.value === undefined || runtime.value === undefined) {
     throw new ConfigError(issues);
   }
   return Object.freeze({
     ...base.value,
-    auth: auth.value,
-    storage: storage.value,
+    ...runtime.value,
     ...(outboxPollInterval.value === undefined
       ? {}
       : { outboxPollIntervalMs: outboxPollInterval.value }),
