@@ -211,6 +211,21 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 
 ---
 
+## Track M: matrimony site on generic modules (ADR-118, design `docs/16-MATRIMONY-TRACK.md`)
+The owner's own matrimony website first, sellable to other bureaus later. Runs in its own lane (session 3) after card 3.8a, beside the service track of Phase 3. Plans are written just in time.
+**M.0 Owner approves the design.**
+**M.1 Customer accounts and phone OTP sign-in** (card 4.3a pulled forward; storefront token audience; OTP through the outbox).
+**M.2 Directory API** (listings, visibility tiers, moderation workflow, listing numbers, filters, geography registry, photo policy, template rules: minimum age, guardian phone not the own phone, consents).
+**M.3 Admin moderation screens.**
+**M.4 Credits and connections** (credit packs, append-only ledger, idempotent unlock, limits; events for accounting).
+**M.5 Manual payment verification for credit packs** (bKash/Nagad transaction id, staff queue; gateway 5.17 later).
+**M.6 Minimal storefront for directories** (home, search, listing page, sign-in, my listing form, connections, credits, static pages; theme from branding).
+**M.7 Trust and safety** (reports, blocks, bans, erasure, consent records, scraping limits).
+**M.8 MATRIMONY templates and notifications.**
+**M.9 Owner's site live** (domain, SMS provider, backups, pilot).
+
+---
+
 ## Phase 4: Tenant website (design: `06-AUTOMATION-AND-ACCOUNTS.md §8`)
 **4.1 Theme engine** (design tokens, theme model, section library with variants, page JSON schema, region lock levels; sections declared in manifests). A business's theme starts from its branding (3.12: logo and colours), so every business's website looks like that business; industry templates (`websiteTemplateKeys`) give the layout and sections.
 **4.2 Storefront app** (subdomain + custom domain via edge custom hostnames → org (ADR-031), render page JSON + tokens server-side, SEO, CDN cache). M: `modules/storefront`, guide 38

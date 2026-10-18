@@ -116,6 +116,20 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.10 reports and dashboard | todo | last |
 | Phase 3 review | todo | |
 
+## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
+| Card | Status | Note |
+|---|---|---|
+| M.0 design approval | waiting for the owner | open owner decisions in doc 16 §6: SMS provider, pricing, photo policy, eligibility text, domain, legal review |
+| M.1 customer accounts and OTP | todo | session 3 after 3.8a |
+| M.2 directory API | todo | |
+| M.3 admin moderation screens | todo | |
+| M.4 credits and connections | todo | |
+| M.5 manual payment verification | todo | |
+| M.6 minimal storefront | todo | |
+| M.7 trust and safety | todo | |
+| M.8 matrimony templates and notifications | todo | |
+| M.9 owner's site live | todo | |
+
 ## Phases 4–8
 Track here once Phase 3 is done (copy the cards from the roadmap).
 
