@@ -44,18 +44,19 @@ export function freshIp(): string {
 
 function startRequest(
   app: Express,
-  method: "get" | "post" | "patch" | "delete",
+  method: "get" | "post" | "put" | "patch" | "delete",
   path: string,
 ): Test {
   const agent = request(app);
   if (method === "get") return agent.get(path);
+  if (method === "put") return agent.put(path);
   if (method === "patch") return agent.patch(path);
   if (method === "delete") return agent.delete(path);
   return agent.post(path);
 }
 
 export interface ApiCall extends CallOptions {
-  readonly method: "get" | "post" | "patch" | "delete";
+  readonly method: "get" | "post" | "put" | "patch" | "delete";
   readonly path: string;
   readonly body?: object;
 }

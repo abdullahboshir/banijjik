@@ -41,7 +41,14 @@ export const catalogManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.CATALOG_MODIFIER_GROUP_ARCHIVE),
     permissionDefinition(PERMISSION_KEY.CATALOG_SYNONYM_UPDATE),
   ],
-  routes: { admin: ["/orgs/:organizationId/offerings", "/orgs/:organizationId/categories"] },
+  routes: {
+    admin: [
+      "/orgs/:organizationId/offerings",
+      "/orgs/:organizationId/categories",
+      "/orgs/:organizationId/modifier-groups",
+      "/orgs/:organizationId/catalog",
+    ],
+  },
   menu: [
     {
       menuKey: "catalog.offerings",

@@ -121,21 +121,49 @@ function locationKey(key: {
 
 /** Per-location rows are ORGANIZATION_AND_LOCATION: the plugin also keeps them inside the caller's locations. */
 export class MongoOfferingLocationRepository implements OfferingLocationRepository {
+  /**
+   * Updates the row, or inserts it when there is none. Not an upsert: for a caller limited to some
+   * locations the tenant plugin adds its own `locationId` condition, which MongoDB cannot combine
+   * with the key's `locationId` when it has to build the new document.
+   */
   async save(row: OfferingLocationRow, actorUserId: UserId): Promise<void> {
-    await this.model().updateOne(
-      locationKey(row),
-      {
-        $set: {
-          isAvailable: row.isAvailable,
-          updatedByUserId: actorUserId,
-          ...(row.priceOverride === undefined ? {} : { priceOverride: { ...row.priceOverride } }),
+    const session = sessionOption(getActiveSession());
+    const isUpdated = async (): Promise<boolean> => {
+      const result = await this.model().updateOne(
+        locationKey(row),
+        {
+          $set: {
+            isAvailable: row.isAvailable,
+            updatedByUserId: actorUserId,
+            ...(row.priceOverride === undefined ? {} : { priceOverride: { ...row.priceOverride } }),
+          },
+          ...(row.priceOverride === undefined ? { $unset: { priceOverride: 1 } } : {}),
+          $inc: { version: 1 },
         },
-        ...(row.priceOverride === undefined ? { $unset: { priceOverride: 1 } } : {}),
-        $inc: { version: 1 },
-        $setOnInsert: { offeringLocationId: newId(), createdByUserId: actorUserId },
-      },
-      { upsert: true, ...sessionOption(getActiveSession()) },
-    );
+        session,
+      );
+      return result.matchedCount > 0;
+    };
+    if (await isUpdated()) return;
+    try {
+      await this.model().create(
+        [
+          {
+            offeringLocationId: newId(),
+            ...locationKey(row),
+            isAvailable: row.isAvailable,
+            ...(row.priceOverride === undefined ? {} : { priceOverride: { ...row.priceOverride } }),
+            version: 1,
+            createdByUserId: actorUserId,
+            updatedByUserId: actorUserId,
+          },
+        ],
+        session,
+      );
+    } catch (error) {
+      // Two writers inserted at once: the other one's row exists now, so this write is an update.
+      if (!isDuplicateKeyError(error) || !(await isUpdated())) throw error;
+    }
   }
 
   async remove(key: {
