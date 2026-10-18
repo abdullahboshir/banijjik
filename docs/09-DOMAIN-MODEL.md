@@ -173,6 +173,7 @@ Owner `core/organization` · scope platform (it *is* the tenant) · versioned
 | `timezone` | IANA, e.g. `Asia/Dhaka` | |
 | `defaultLocale` | `bn \| en` | |
 | `profile` | `{ legalName?, legalType?, phoneE164?, email?, address?, logoFileId?, tradeLicenseNumber? }` | shown on invoices and storefront |
+| `branding` | `{ logoFileId?, primaryColor?, accentColor?, tagline? }` | the business's own look for customer-facing pages (card 3.12, ADR-114); colours are `#RRGGBB` and pass the contrast rules; the logo is a `LOGO` file |
 | `configVersion` | integer | bumped on any config change; part of the resolver cache key |
 | `rolesVersion` | integer | bumped in the same transaction as every role create, update or archive; part of the permission cache key (ADR-088) |
 | `customFields` | map | custom fields (entityType `organization`) |

@@ -289,6 +289,7 @@ describe("roles", () => {
     expect(menuPaths).toEqual([
       "/acme",
       "/acme/settings",
+      "/acme/settings/branding",
       "/acme/settings/profile",
       "/acme/settings/staff",
     ]);
