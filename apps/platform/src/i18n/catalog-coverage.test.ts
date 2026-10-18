@@ -18,6 +18,8 @@ import {
 } from "@banijjik/contracts";
 import { BUNDLED_CATALOGS, PLATFORM_SCREEN_CATALOGS, SUPPORTED_LOCALES } from "@banijjik/i18n";
 import { describe, expect, it } from "vitest";
+import { FAILED_EVENT_LABEL_KEYS } from "../failed-events/failed-event-labels";
+import { FAILED_EVENT_VIEWS } from "../failed-events/failed-event-query";
 import { PACKAGE_FORM_LABEL_KEYS } from "../packages/package-form-labels";
 import { MODULE_LABEL_KEYS, moduleClassLabelKey } from "../packages/module-catalog";
 import { REMOVED_ITEM_LABEL_KEYS } from "../industry-templates/removed-items";
@@ -58,6 +60,8 @@ function enumeratedKeys(): string[] {
     ...Object.values(MODULE_CLASS).map(moduleClassLabelKey),
     ...LIMIT_KEY_VALUES.map((limitKey) => `platform.limit.${limitKey}`),
     ...MODULE_LABEL_KEYS,
+    ...FAILED_EVENT_LABEL_KEYS,
+    ...FAILED_EVENT_VIEWS.map((view) => `platform.failedEvents.view.${view}`),
     ...TENANT_ACTION_LABEL_KEYS,
     ...REMOVE_OVERRIDE_LABEL_KEYS,
     ...PACKAGE_FORM_LABEL_KEYS,

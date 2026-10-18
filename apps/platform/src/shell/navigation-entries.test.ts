@@ -10,12 +10,13 @@ function hrefsFor(operator: Parameters<typeof navigationEntriesFor>[0]): string[
 }
 
 describe("navigationEntriesFor", () => {
-  it("shows tenants, packages, the audit log and operators to a super admin", () => {
+  it("shows tenants, packages, industries, the audit log, failed events and operators to a super admin", () => {
     expect(hrefsFor(SUPER_ADMIN)).toEqual([
       "/tenants",
       "/packages",
       "/industry-templates",
       "/audit",
+      "/failed-events",
       "/operators",
     ]);
   });
@@ -36,6 +37,13 @@ describe("navigationEntriesFor", () => {
 
   it("labels every entry in Bangla", () => {
     const labels = navigationEntriesFor(SUPER_ADMIN, t).map((entry) => entry.label);
-    expect(labels).toEqual(["টেন্যান্ট", "প্যাকেজ", "ইন্ডাস্ট্রি", "অডিট লগ", "অপারেটর"]);
+    expect(labels).toEqual([
+      "টেন্যান্ট",
+      "প্যাকেজ",
+      "ইন্ডাস্ট্রি",
+      "অডিট লগ",
+      "ব্যর্থ ইভেন্ট",
+      "অপারেটর",
+    ]);
   });
 });

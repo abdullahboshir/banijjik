@@ -47,6 +47,13 @@ const ENTRY_DEFINITIONS: readonly EntryDefinition[] = [
     permission: PLATFORM_PERMISSION_KEY.AUDIT_READ,
   },
   {
+    menuKey: "failedEvents",
+    labelKey: "platform.nav.failedEvents",
+    href: "/failed-events",
+    iconKey: "inbox",
+    permission: PLATFORM_PERMISSION_KEY.EVENTS_READ,
+  },
+  {
     menuKey: "operators",
     labelKey: "platform.nav.operators",
     href: "/operators",

@@ -42,16 +42,14 @@ export { LOCATION_STATUS, type LocationStatus } from "./organization/location-st
 export { MEMBER_STATUS, type MemberStatus } from "./organization/member-status.js";
 export { COUNTRY_CODE, type CountryCode } from "./organization/country-code.js";
 export { BRAND_CHECKS, BRAND_COLOR_PRESETS, BRANDING_RULES } from "./organization/branding.js";
-export { CURRENCY_CODE } from "./organization/currency-code.js";
-export type { CurrencyCode } from "./organization/currency-code.js";
+export { CURRENCY_CODE, type CurrencyCode } from "./organization/currency-code.js";
 export {
   INDUSTRY_TEMPLATE_KEY_PATTERN,
   SEED_INDUSTRY_TEMPLATE_KEY,
   isIndustryTemplateKey,
 } from "./organization/industry-template-key.js";
 export type { IndustryTemplateKey } from "./organization/industry-template-key.js";
-export { ALL_LOCATIONS } from "./organization/all-locations.js";
-export type { AllLocations } from "./organization/all-locations.js";
+export { ALL_LOCATIONS, type AllLocations } from "./organization/all-locations.js";
 export {
   normalizeOrganizationSlug,
   ORGANIZATION_NAME_MAX_LENGTH,
@@ -210,6 +208,7 @@ export type { PlatformRuleKey } from "./platform/platform-message-keys.js";
 export type { PlatformOperatorSummary } from "./platform/platform-operator.js";
 export {
   EVENT_DEAD_LETTER_STATUS,
+  type EventDeadLetterStatus,
   type PlatformDeadLetter,
   type PlatformDeadOutboxEvent,
 } from "./platform/event-dead-letter.js";

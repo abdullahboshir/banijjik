@@ -12,6 +12,7 @@ import type {
   PlatformReasonRequest,
   PlatformSessionResponse,
   PlatformSubscriptionResponse,
+  PlatformDeadLetter,
   PlatformIndustryTemplateDetail,
   PlatformIndustryTemplateSummary,
   PlatformSettingDefinition,
@@ -21,6 +22,7 @@ import {
   type ChangeIndustryTemplateBody,
   type IndustryTemplateStatusBody,
   type IndustryTemplateUpdateBody,
+  type PlatformEventSkipBody,
   type PlatformOperatorStatusBody,
   type PlatformOperatorUpdateBody,
 } from "@banijjik/validation";
@@ -116,6 +118,36 @@ export async function updatePackage(
     method: "PATCH",
     body: request,
   });
+  return result.data;
+}
+
+/** Queues a failed handler job again with fresh attempts (card 3.8a). */
+export async function replayDeadLetter(eventDeadLetterId: string): Promise<PlatformDeadLetter> {
+  const result = await apiFetch<PlatformDeadLetter>(
+    `/platform/event-dead-letters/${eventDeadLetterId}/replay`,
+    { method: "POST" },
+  );
+  return result.data;
+}
+
+/** Gives up on a failed handler job; the reason goes to the platform audit log. */
+export async function skipDeadLetter(
+  eventDeadLetterId: string,
+  request: PlatformEventSkipBody,
+): Promise<PlatformDeadLetter> {
+  const result = await apiFetch<PlatformDeadLetter>(
+    `/platform/event-dead-letters/${eventDeadLetterId}/skip`,
+    { method: "POST", body: request },
+  );
+  return result.data;
+}
+
+/** Puts an event that could not be dispatched back to PENDING. */
+export async function replayDeadOutboxEvent(eventId: string): Promise<{ eventId: string }> {
+  const result = await apiFetch<{ eventId: string }>(
+    `/platform/dead-outbox-events/${eventId}/replay`,
+    { method: "POST" },
+  );
   return result.data;
 }
 

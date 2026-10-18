@@ -154,7 +154,7 @@ describe("an operator at work, with a tenant's member in another tab", () => {
   it("shows the Platform band and the menu the operator's permissions allow", async () => {
     const text = await bodyText(operatorPage);
     expect(text).toContain(banglaText("platform.band"));
-    for (const key of ["tenants", "packages", "industries", "audit", "operators"]) {
+    for (const key of ["tenants", "packages", "industries", "audit", "failedEvents", "operators"]) {
       expect(text).toContain(banglaText(`platform.nav.${key}`));
     }
   });
@@ -284,6 +284,17 @@ describe("an operator at work, with a tenant's member in another tab", () => {
     await closePage(supportPage);
   });
 
+  it("opens the failed events page of a platform with nothing failed, with both views", async () => {
+    await gotoHydrated(operatorPage, "/failed-events", "h1");
+    const handlers = await bodyText(operatorPage);
+    await gotoHydrated(operatorPage, "/failed-events?view=outbox", "h1");
+    const outbox = await bodyText(operatorPage);
+
+    expect(handlers).toContain(banglaText("platform.failedEvents.title"));
+    expect(handlers).toContain(banglaText("platform.failedEvents.handlers.empty"));
+    expect(outbox).toContain(banglaText("platform.failedEvents.outbox.empty"));
+  });
+
   describe("initial JavaScript of the routes (13-UX section 11)", () => {
     const routes = (): string[] => [
       "/tenants",
@@ -293,6 +304,7 @@ describe("an operator at work, with a tenant's member in another tab", () => {
       "/industry-templates",
       "/industry-templates/new",
       "/audit",
+      "/failed-events",
       "/operators",
       "/sign-in",
     ];
@@ -350,6 +362,7 @@ describe("the panel on a phone (13-UX section 12: read-only use in an emergency)
       "/industry-templates/new",
       await industryDetailPath(page),
       "/audit",
+      "/failed-events",
       "/operators",
     ]) {
       await page.goto(`${PLATFORM_ORIGIN}${route}`, { waitUntil: "networkidle0" });
@@ -387,6 +400,7 @@ describe.skipIf(!screenshotDir)("screenshots in Bangla", () => {
       ["industry-new", "/industry-templates/new"],
       ["industry-detail", await industryDetailPath(page)],
       ["audit", "/audit"],
+      ["failed-events", "/failed-events"],
       ["operators", "/operators"],
     ];
     for (const [name, path] of pages) {

@@ -93,6 +93,11 @@ Code is written for the next human reader first and the compiler second. If a re
 - Tenant filtering can only be skipped via `runAsSystem(reason, fn)`. `reason` is a closed contracts enum: `AUTH_LOOKUP`, `PERMISSION_RESOLUTION`, `CONTEXT_SETUP`, `SEED`, `PLATFORM_ADMIN`, `MIGRATION`, `WEBHOOK_ROUTING`, `SCHEDULED_JOB`, `PUBLIC_FILE` (the unauthenticated serving of one public file, ADR-109).
 - Every call is logged with its reason. It is forbidden in module repositories, use cases and controllers, except platform-admin use cases. A platform write records an audit entry; a platform read does not (ADR-093).
 
+## Events and ordering (card 3.8a, ADR-115)
+- A publisher of an event that a ledger, a commission accrual or a summary reads passes an `orderingKey` (`<entity>:<domainId>`, for example `order:<orderId>`), so the events of one record reach ORDERED handlers in the order they happened.
+- Every `EventHandler` states `ordering: "ORDERED" | "UNORDERED"`. An ORDERED handler must be safe to repeat (the position and the processed marker make a repeat a no-op) and must not assume it will run before the next event of another stream.
+- A dead-lettered event of an ORDERED handler blocks its stream until an operator replays or skips it from the platform panel.
+
 ## Errors & observability, adapted from manoxen rule 19
 - No empty `catch {}`. No `catch (e) { console.log(e) }`. Either handle the error meaningfully, rethrow it, or report it through the central error reporter.
 - `console.*` is forbidden in app code. Use the logger.

@@ -254,5 +254,8 @@
   "errors.category_in_use": "এই ক্যাটেগরিতে এখনো আইটেম বা উপ-ক্যাটেগরি আছে।",
   "errors.category_too_deep": "ক্যাটেগরি সর্বোচ্চ তিন স্তরের হতে পারে।",
   "errors.category_cycle": "একটি ক্যাটেগরিকে নিজের ভেতরে রাখা যায় না।",
-  "errors.modifier_group_selection_invalid": "সর্বনিম্ন, সর্বোচ্চ ও আবশ্যিক সেটিং বাছাইগুলোর সাথে মেলেনি।"
+  "errors.modifier_group_selection_invalid": "সর্বনিম্ন, সর্বোচ্চ ও আবশ্যিক সেটিং বাছাইগুলোর সাথে মেলেনি।",
+  "errors.event_dead_letter_not_failed": "এই ইভেন্টটি আগেই আবার চালানো বা বাদ দেওয়া হয়েছে।",
+  "errors.event_stream_not_at_event": "এর আগের ইভেন্টগুলো এখনো সম্পন্ন হয়নি, তাই এটি বাদ দেওয়া যায় না। আগে সেগুলো দেখুন।",
+  "errors.outbox_event_not_dead": "এই ইভেন্টটি পাঠানো না-যাওয়া অবস্থায় নেই।"
 }

@@ -254,5 +254,8 @@
   "errors.category_in_use": "This category still has items or sub-categories.",
   "errors.category_too_deep": "Categories can be at most three levels deep.",
   "errors.category_cycle": "A category cannot be placed under itself.",
-  "errors.modifier_group_selection_invalid": "The minimum, maximum and required settings do not agree with the choices."
+  "errors.modifier_group_selection_invalid": "The minimum, maximum and required settings do not agree with the choices.",
+  "errors.event_dead_letter_not_failed": "This event was already run again or skipped.",
+  "errors.event_stream_not_at_event": "Earlier events of its stream are not done yet, so it cannot be skipped. Look at those first.",
+  "errors.outbox_event_not_dead": "This event is not in the not-dispatched state."
 }
