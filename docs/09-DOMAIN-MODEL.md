@@ -307,7 +307,9 @@ Owner `commerce/contact` · scope org · versioned
 | `verifiedAt`, `lastLoginAt` | Date? | |
 | STF | | |
 
-- Login: phone OTP per org (password optional later). Sessions in `CustomerSession` (`customerSessionId`, `customerAccountId`, `tokenHash`, `expiresAt`, TTL index), tenant DB.
+- Login: phone OTP per org (password optional later). Sessions in `CustomerSession` (`customerSessionId`, `customerAccountId`, `refreshTokenHash`, `previousRefreshTokenHash?`, `expiresAt` with a TTL index, `lastUsedAt`, `userAgentSummary?`), tenant DB; revoked by deletion.
+- `OtpChallenge` (tenant DB, one per phone): `otpChallengeId`, `phoneE164`, `codeHash` (HMAC with `OTP_SECRET`), `codeCiphertext?` (AES-256-GCM, removed after the SMS), `attempts`, `expiresAt` (TTL index), `consumedAt?`. Indexes `{ organizationId, phoneE164 }` unique. ADR-119.
+- Ending the contact (archive, anonymize) deletes the account and its sessions.
 - Security: a separate cookie bound to the storefront host and a separate token audience (`storefront`). The admin API rejects customer tokens and the storefront API rejects staff tokens. A customer account is never a User and never gets a Member.
 - Why per-org and not global: a shop's customers belong to that shop (`00` principle 8, ADR-040), there is no cross-shop tracking, a dedicated-DB move takes the accounts with it, and a stolen customer session can never reach another org. A future marketplace can add a federated "shopper" identity on top without changing this model.
 - Indexes: `{ organizationId, phoneE164 }` unique, `{ organizationId, contactId }` unique.

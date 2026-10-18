@@ -234,12 +234,17 @@ Public reads are cacheable (`Cache-Control` + CDN). Writes need the storefront c
 
 | Method & path | Auth | Flags | Notes |
 |---|---|---|---|
-| `GET /api/v1/storefront/resolve?host=` | public | | host/slug → `{ organizationId, siteVersion }` |
+| `GET /api/v1/storefront/resolve?host=` | public | rate | `<slug>.<STOREFRONT_BASE_DOMAIN>` → `{ organizationId }` (ADR-119; `siteVersion` comes with the site cards) |
 | `GET /site` · `GET /pages/{pageSlug}` | public | cache | published version only |
 | `GET /offerings?category=&q=&kind=` · `GET /offerings/{offeringSlug}` · `GET /categories` | public | cache | ACTIVE offerings, storefront-visible fields only |
 | `GET /availability?offeringSlug=&from=&to=` | public | | |
 | `POST /quotes` | public | | server pricing (manoxen `resolve-public-order-line-items` rule: never trust client prices) |
-| `POST /auth/otp/send` · `POST /auth/otp/verify` · `POST /auth/logout` | public | rate | CustomerAccount login (ADR-045) |
+| `POST /auth/otp/send` | public | rate | `{ phone }` → always `202 { expiresInSeconds }`; 3 per phone per 15 min, 10 per address per hour (ADR-119) |
+| `POST /auth/otp/verify` | public | rate | `{ phone, code }` → sets `sf_access` and `sf_refresh`, returns `StorefrontMeResponse`; wrong, expired or used code `400 errors.otp_invalid`; blocked `403`; 20 per address per hour |
+| `POST /auth/refresh` · `POST /auth/logout` | refresh cookie | | rotate the session; end it |
+| `GET /me` | customer | | `StorefrontMeResponse` |
+
+Every customer route answers `404 errors.storefront_not_available` while the business has `contact.customerLogin` off.
 | `POST /checkout` | customer or guest | I | `CheckoutRequest` (cart lines/bookings/enrollments, contact, address, payment choice) → PLACED order / HELD→REQUESTED booking / PENDING enrollment, shared `checkoutId` |
 | `POST /checkout/{checkoutId}/pay` | customer or guest | I | gateway redirect (card 5.17) |
 | `GET /me/requests` · `GET /me/requests/{requestType}/{requestId}` | customer | | order tracking, bookings, enrollments, dues |
