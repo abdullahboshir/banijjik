@@ -39,8 +39,8 @@
     "resourceTypes": [],
     "terms": {
       "contact": {
-        "bn": "গ্রাহক / গ্রাহকরা",
-        "en": "Customer / Customers"
+        "bn": "গ্রাহক",
+        "en": "Customer"
       },
       "offering": {
         "bn": "পণ্য",

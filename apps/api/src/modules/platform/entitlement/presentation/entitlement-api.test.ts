@@ -317,7 +317,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       // The catalog provides PRODUCT, so an organization with the catalog on has that kind.
       kinds: ["PRODUCT"],
       terms: expect.objectContaining({
-        contact: { bn: "গ্রাহক / গ্রাহকরা", en: "Customer / Customers" },
+        contact: { bn: "গ্রাহক", en: "Customer" },
       }),
       settings: {
         "organization.digitScript": "LATIN",

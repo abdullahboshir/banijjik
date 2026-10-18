@@ -112,7 +112,7 @@ describe("a retail business: add, find, edit, archive", () => {
     const page = await ownerPage();
     await gotoWhenHydrated(page, "/acme/contacts", "main button");
     await waitForTextIn(page, "h1", RETAIL_TERM);
-    await openAddSheet(page, "acme", RETAIL_TERM + " / গ্রাহকরা");
+    await openAddSheet(page, "acme", RETAIL_TERM);
     await page.type("#contact-name", CUSTOMER_NAME);
     await page.type("#contact-phone", "01712345678");
     await saveSheet(page);
@@ -135,7 +135,7 @@ describe("a retail business: add, find, edit, archive", () => {
 
   it("offers the existing contact when the phone is already known", async () => {
     const page = await ownerPage();
-    await openAddSheet(page, "acme", RETAIL_TERM + " / গ্রাহকরা");
+    await openAddSheet(page, "acme", RETAIL_TERM);
     await page.type("#contact-name", "অন্য নাম");
     await page.type("#contact-phone", "+8801712345678");
     await clickInDialog(page, message("common.save"));

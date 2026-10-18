@@ -49,7 +49,7 @@ Core fields (name, phone, address, price, variants, times…) are **not** listed
 
   | termKey | bn | en |
   |---|---|---|
-  | `contact` (sg/pl) | গ্রাহক / গ্রাহকরা | Customer / Customers |
+  | `contact` | গ্রাহক | Customer |
   | `offering` | পণ্য | Product |
   | `order` | অর্ডার | Order |
   | `booking` | বুকিং | Booking |
