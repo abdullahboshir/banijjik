@@ -483,7 +483,6 @@
   "contacts.form.phone.hint": "যেমন ০১৭১২৩৪৫৬৭৮",
   "contacts.form.email": "ইমেইল",
   "contacts.form.roles": "ধরন",
-  "contacts.form.nameOrPhone": "নাম বা ফোন নম্বর দিন",
   "contacts.form.duplicate": "এই ফোন নম্বরে আগেই একটি {term} আছে।",
   "contacts.form.duplicate.open": "সেটি খুলুন",
   "contacts.detail.back": "{term} তালিকায় ফিরুন",

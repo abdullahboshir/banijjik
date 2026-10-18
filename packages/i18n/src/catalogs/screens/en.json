@@ -483,7 +483,6 @@
   "contacts.form.phone.hint": "For example 01712345678",
   "contacts.form.email": "Email",
   "contacts.form.roles": "Kind",
-  "contacts.form.nameOrPhone": "Enter a name or a phone number",
   "contacts.form.duplicate": "A {term} with this phone number already exists.",
   "contacts.form.duplicate.open": "Open it",
   "contacts.detail.back": "Back to {term}",

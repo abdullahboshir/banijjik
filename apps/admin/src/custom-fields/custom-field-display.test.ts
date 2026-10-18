@@ -103,3 +103,50 @@ describe("detailRowsOf", () => {
     ]);
   });
 });
+
+describe("detailRowsOf contact links (card 3.1b)", () => {
+  const guardian = effectiveField({
+    fieldKey: "guardian",
+    fieldType: CUSTOM_FIELD_TYPE.REFERENCE,
+    entityType: "contact",
+    referenceEntity: "contact",
+    link: { relationKey: "GUARDIAN_OF", createIfMissingByPhone: true, defaultBillTo: true },
+  });
+  const memberReference = effectiveField({
+    fieldKey: "buddy",
+    fieldType: CUSTOM_FIELD_TYPE.REFERENCE,
+    referenceEntity: "member",
+  });
+  const input = {
+    fields: [guardian, memberReference],
+    locale: "bn" as const,
+    timeZone: "Asia/Dhaka",
+    currencyCode: "BDT",
+    canSeeSensitive: true,
+    t,
+  };
+
+  it("shows the linked contact's name with a link to the contact", () => {
+    const result = detailRowsOf({
+      ...input,
+      values: { guardian: "c-9", buddy: "m-1" },
+      linkedContacts: { "c-9": { name: "আব্দুল করিম", href: "/acme/contacts/c-9" } },
+    });
+
+    expect(result).toEqual([
+      {
+        fieldKey: "guardian",
+        label: "guardian",
+        text: "আব্দুল করিম",
+        href: "/acme/contacts/c-9",
+        isHidden: false,
+      },
+    ]);
+  });
+
+  it("shows a link whose contact is unknown as not set, and leaves other references out", () => {
+    const result = detailRowsOf({ ...input, values: { guardian: "gone" } });
+
+    expect(result.map((row) => [row.fieldKey, row.text])).toEqual([["guardian", undefined]]);
+  });
+});
