@@ -267,6 +267,5 @@
   "form.contactLink.remove": "Remove",
   "form.contactLink.linked": "Linked: {name}",
   "form.contactLink.willCreate": "This person will be added as a new contact.",
-  "contacts.form.nameOrPhone": "Enter a name or a phone number",
-  "validation.color_low_contrast": "This colour is hard to read on white. Choose a darker one"
+  "contacts.form.nameOrPhone": "Enter a name or a phone number"
 }

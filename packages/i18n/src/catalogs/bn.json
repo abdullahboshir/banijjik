@@ -267,6 +267,5 @@
   "form.contactLink.remove": "সরান",
   "form.contactLink.linked": "যুক্ত: {name}",
   "form.contactLink.willCreate": "এই ব্যক্তি নতুন যোগাযোগ হিসেবে যোগ হবে।",
-  "contacts.form.nameOrPhone": "নাম বা ফোন নম্বর দিন",
-  "validation.color_low_contrast": "এই রং সাদা জমিতে পড়তে কঠিন। আরও গাঢ় রং বেছে নিন"
+  "contacts.form.nameOrPhone": "নাম বা ফোন নম্বর দিন"
 }
