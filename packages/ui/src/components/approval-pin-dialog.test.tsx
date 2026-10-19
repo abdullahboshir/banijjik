@@ -37,13 +37,15 @@ describe("ApprovalPinDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "2" }));
     fireEvent.click(screen.getByRole("button", { name: "3" }));
     fireEvent.click(screen.getByRole("button", { name: "4" }));
-    expect(screen.getByLabelText("PIN")).toHaveValue("1234");
+    expect((screen.getByLabelText("PIN") as HTMLInputElement).value).toBe("1234");
   });
 
   it("shows the lock message and disables submit when locked", () => {
     renderDialog({ isLocked: true });
-    expect(screen.getByRole("alert")).toHaveTextContent("This PIN is locked");
-    expect(screen.getByRole("button", { name: "Approve" })).toBeDisabled();
+    expect(screen.getByRole("alert").textContent).toContain("This PIN is locked");
+    expect((screen.getByRole("button", { name: "Approve" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 
   it("submits the selected approver and PIN", () => {
