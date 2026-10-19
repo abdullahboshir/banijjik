@@ -17,7 +17,13 @@
   - Unit: codec, entity, token, status cache.
   - Admin: `website-login.test.tsx` (6).
   - The secrecy tests first assert that the searched logs, outbox and audit lists are not empty.
-- **Verified so far (light runs, real output):** api contact folder 86 passed; kernel/auth 21 passed; validation 238, contracts 71, ids 14, i18n 23, ui 223 passed; admin website-login + contact-actions 14 passed; typecheck and eslint clean on api and admin contacts. **The full verify (all workspaces, browser suites, route budget) has not been run yet; it waits for the lead's go and the owner's confirmation.**
+- **Verified with** (one heavy command at a time, with the lead's go and the owner's confirmation; unit suites `VITEST_MAX_WORKERS=2`, browser suites 1):
+  - `npm run lint`, `npm run format:check`: clean.
+  - `npx turbo run build typecheck test --force --env-mode=loose --concurrency=1 --continue`: 28 of 29 tasks on the first run. Four api failures: two `sync-indexes` spawned-process tests and the settings key list were **forced by this card** (production now requires `OTP_SECRET` and `STOREFRONT_BASE_DOMAIN`; the new setting `contact.customerLogin` is in the list). Fixed in `spawned-process.ts` and `settings-api.test.ts` with added lines only, no assertion weakened. `ordered-event-worker` ("runs a replayed event again") timed out under load; it passed alone and in the rerun (timing, not touched by this card).
+  - api, second full run: **198 files, 1759 passed, 1 skipped**. Other packages (first run): platform 123, admin 426, validation 238, ui 223, web-client 91, contracts 71, i18n 23, ids 14, lint-tests 274.
+  - `npm run test:tools`: 274 passed.
+  - admin browser: 66 passed, 8 skipped. platform browser: 16 passed, 2 skipped.
+  - Route size: the browser budget tests passed (the dialog loads lazily); I did not read the contact route's exact KiB figure.
 - **Deviations from plan (to approve):**
   1. `SYSTEM_REASON.STOREFRONT_RESOLVE` was added and then removed: Organization is platform data (tenancy NONE), so the lookup needs no system read and no new bypass file.
   2. Archive and anonymize **delete** the account (the plan said block): the account holds the phone number (erasure), and a blocked leftover would keep the phone unique index and stop a new contact from signing in.
