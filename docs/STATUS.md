@@ -112,7 +112,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.8 payments, dues, store credit | planned (2026-10-19, `docs/plans/3.8.md`, Opus; T1) | wave 3, after 3.4b and 3.6; manual bKash/Nagad reference uniqueness, refunds and reversals with approval, deposit enforcement; ADR-123 |
 | 3.8c accounting engine and expenses | implemented (awaiting review) | branch `s/3.8c-accounting-expenses`; handoff `docs/handoffs/3.8c.md`; ADR-124 proposed. SYSTEM accounting + CORE expense; ORDERED posting with ports/fakes until 3.8/3.6 adapters; catch-up seed exported (job schedule waits for 3.6). Full Done-means passed. Commits pending owner request |
 | 3.8b bookkeeping add-on UI | todo |  |
-| 3.3 inventory ledger | implemented (awaiting review) (2026-10-19, Cursor; ADR-125 proposed; `docs/handoffs/3.3.md`) | items, receipts, adjustments, one-step transfers, moving average, low stock, rebuild, `StockLedger` port; stock components on; lead clarifications in handoff + ADR-125 |
+| 3.3 inventory ledger | implemented (awaiting review) (2026-10-19, Cursor; ADR-125 proposed; R1 fixes; `docs/handoffs/3.3.md`) | cost micros moving average (R1-1); Done-means + both browsers green (R1-2); stock components on; lead clarifications in handoff + ADR-125 |
 | 3.5 orders | todo | lane A |
 | 3.9 POS | todo |  |
 | 3.11 staff commission | todo | ADR-100 |

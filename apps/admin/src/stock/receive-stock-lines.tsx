@@ -1,5 +1,6 @@
 "use client";
 
+import type { UnitKey } from "@banijjik/contracts/catalog";
 import { Button } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { emptyReceiptLine, type ReceiptLine } from "./receive-stock-form-lib";
@@ -11,7 +12,7 @@ export function ReceiveStockLines(props: {
   lines: ReceiptLine[];
   labels: ReceiveStockLabels;
   pickerLabels: ItemPickerLabels;
-  unitLabel: (unitKey: string) => string;
+  unitLabels: Record<UnitKey, string>;
   isSaving: boolean;
   onUpdate: (index: number, changes: Partial<ReceiptLine>) => void;
   onRemove: (index: number) => void;
@@ -27,7 +28,7 @@ export function ReceiveStockLines(props: {
           line={line}
           labels={props.labels}
           pickerLabels={props.pickerLabels}
-          unitLabel={props.unitLabel}
+          unitLabels={props.unitLabels}
           isSaving={props.isSaving}
           canRemove={props.lines.length > 1}
           onChange={(changes) => props.onUpdate(index, changes)}

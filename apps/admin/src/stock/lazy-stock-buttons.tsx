@@ -35,7 +35,7 @@ export function LazyReceiveStockButton(props: {
   defaultLocationId: string;
   labels: ReceiveStockLabels;
   pickerLabels: ItemPickerLabels;
-  unitLabel: (unitKey: string) => string;
+  unitLabels: Record<UnitKey, string>;
 }): ReactElement {
   return (
     <LazySheetButton
@@ -48,7 +48,7 @@ export function LazyReceiveStockButton(props: {
         defaultLocationId: props.defaultLocationId,
         labels: props.labels,
         pickerLabels: props.pickerLabels,
-        unitLabel: props.unitLabel,
+        unitLabels: props.unitLabels,
       }}
     />
   );

@@ -2,6 +2,7 @@
 
 import type { LocationResponse } from "@banijjik/contracts";
 import type { CurrencyCode } from "@banijjik/contracts";
+import type { UnitKey } from "@banijjik/contracts/catalog";
 import { Sheet, SheetContent } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { ReceiveStockForm } from "./receive-stock-form";
@@ -14,7 +15,7 @@ export interface ReceiveStockSheetProps {
   defaultLocationId: string;
   labels: ReceiveStockLabels;
   pickerLabels: ItemPickerLabels;
-  unitLabel: (unitKey: string) => string;
+  unitLabels: Record<UnitKey, string>;
   onClose: () => void;
 }
 

@@ -1,4 +1,3 @@
-import type { CurrencyCode } from "@banijjik/contracts";
 import { type Money } from "@banijjik/contracts/catalog";
 import {
   STOCK_MOVEMENT_REASON,
@@ -12,10 +11,13 @@ import {
   type StockMovementId,
   type UserId,
 } from "@banijjik/ids";
-import { nextMovingAverage } from "../domain/moving-average.js";
-import { microsToMinor, minorToMicros } from "../domain/money-math.js";
 import { insufficientStock } from "../domain/errors.js";
 import type { InventoryLevelRecord, StockMovementRecord } from "./ports/stock-records.js";
+import {
+  costMicrosOnMovement,
+  nextAverageUnitCostMicros,
+  outgoingUnitCostForMovement,
+} from "./stock-ledger-cost.helpers.js";
 
 export function movementDeltas(
   reason: StockMovementReason,
@@ -37,60 +39,6 @@ export function assertStockAvailable(input: {
   if (!input.allowNegativeStock && (input.nextOnHand < 0 || input.nextAvailable < 0)) {
     throw insufficientStock(input.inventoryItemId, input.previousAvailable);
   }
-}
-
-export function nextAverageUnitCostMicros(input: {
-  readonly existing: InventoryLevelRecord;
-  readonly reason: StockMovementReason;
-  readonly onHandDelta: number;
-  readonly unitCost: Money | undefined;
-  readonly unitCostMicros?: number;
-}): number {
-  const incomingMicros =
-    input.unitCostMicros ??
-    (input.unitCost === undefined ? undefined : minorToMicros(input.unitCost.amount));
-  const updatesAverage =
-    incomingMicros !== undefined &&
-    input.onHandDelta > 0 &&
-    (input.reason === STOCK_MOVEMENT_REASON.PURCHASE ||
-      input.reason === STOCK_MOVEMENT_REASON.OPENING ||
-      input.reason === STOCK_MOVEMENT_REASON.TRANSFER_IN ||
-      input.reason === STOCK_MOVEMENT_REASON.RETURN);
-  if (!updatesAverage || incomingMicros === undefined) {
-    return input.existing.averageUnitCostMicros;
-  }
-  return nextMovingAverage({
-    onHand: input.existing.onHand,
-    averageUnitCostMicros: input.existing.averageUnitCostMicros,
-    incomingQuantity: input.onHandDelta,
-    incomingUnitCostMicros: incomingMicros,
-  });
-}
-
-export function outgoingUnitCostForMovement(input: {
-  readonly onHandDelta: number;
-  readonly existing: InventoryLevelRecord;
-  readonly unitCost: Money | undefined;
-}): Money | undefined {
-  if (input.onHandDelta < 0) {
-    return {
-      amount: microsToMinor(input.existing.averageUnitCostMicros),
-      currency: input.existing.averageUnitCostCurrency as CurrencyCode,
-    };
-  }
-  return input.unitCost;
-}
-
-function costMicrosOnMovement(input: {
-  readonly onHandDelta: number;
-  readonly existing: InventoryLevelRecord;
-  readonly unitCost: Money | undefined;
-  readonly unitCostMicros?: number;
-}): number | undefined {
-  if (input.unitCostMicros !== undefined) return input.unitCostMicros;
-  if (input.onHandDelta < 0) return input.existing.averageUnitCostMicros;
-  if (input.unitCost === undefined) return undefined;
-  return minorToMicros(input.unitCost.amount);
 }
 
 export function buildStockMovementDocument(input: {

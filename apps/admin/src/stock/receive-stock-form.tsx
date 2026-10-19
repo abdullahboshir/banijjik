@@ -2,6 +2,7 @@
 
 import type { LocationResponse } from "@banijjik/contracts";
 import type { CurrencyCode } from "@banijjik/contracts";
+import type { UnitKey } from "@banijjik/contracts/catalog";
 import { Button } from "@banijjik/ui";
 import { useMemo, useState, type ReactElement } from "react";
 import { SheetFeedback } from "../settings/sheet-feedback";
@@ -19,7 +20,7 @@ export interface ReceiveStockFormProps {
   defaultLocationId: string;
   labels: ReceiveStockLabels;
   pickerLabels: ItemPickerLabels;
-  unitLabel: (unitKey: string) => string;
+  unitLabels: Record<UnitKey, string>;
   onClose: () => void;
 }
 
@@ -77,7 +78,7 @@ export function ReceiveStockForm(props: ReceiveStockFormProps): ReactElement {
         lines={lines}
         labels={props.labels}
         pickerLabels={props.pickerLabels}
-        unitLabel={props.unitLabel}
+        unitLabels={props.unitLabels}
         isSaving={submit.isSaving}
         onUpdate={(index, changes) =>
           setLines((current) => updateReceiptLine(current, index, changes))

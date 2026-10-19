@@ -7,6 +7,7 @@ import {
   openPage,
   PHONE_VIEWPORT,
   signInWithCookies,
+  waitForDialogSettled,
 } from "../test-support/browser-page";
 import {
   seedLocation,
@@ -43,7 +44,7 @@ async function ownerPage(): Promise<Page> {
 }
 
 async function typeInto(page: Page, selector: string, text: string): Promise<void> {
-  await page.waitForSelector(selector);
+  await page.waitForSelector(selector, { visible: true });
   await page.type(selector, text);
 }
 
@@ -53,23 +54,26 @@ describe("stock at two branches", () => {
 
     await gotoWhenHydrated(page, `/${ORG_SLUG}/catalog/stock`, "main");
     await clickByName(page, message("stock.item.create"));
+    await waitForDialogSettled(page);
     await typeInto(page, "#item-name", RICE_ITEM);
     await page.select("#item-unit", "GRAM");
     await clickByName(page, message("stock.item.createSubmit"));
+    await page.waitForSelector("[role=dialog]", { hidden: true });
     await waitForText(page, message("stock.list.empty"));
 
     await clickByName(page, message("stock.receive.open"));
+    await waitForDialogSettled(page);
     await typeInto(page, "#receive-item-0", RICE_ITEM);
     await page.waitForFunction(
       (name) =>
-        Array.from(document.querySelectorAll("main button")).some((button) =>
+        Array.from(document.querySelectorAll("[role=dialog] button")).some((button) =>
           button.textContent?.includes(name),
         ),
       {},
       RICE_ITEM,
     );
     await page.evaluate((name) => {
-      const button = Array.from(document.querySelectorAll("main button")).find((element) =>
+      const button = Array.from(document.querySelectorAll("[role=dialog] button")).find((element) =>
         element.textContent?.includes(name),
       );
       (button as HTMLElement | undefined)?.click();
@@ -96,6 +100,14 @@ describe("stock at two branches", () => {
     );
     await page.select("#transfer-to", secondLocationId);
     await typeInto(page, "#transfer-item-0", RICE_ITEM);
+    await page.waitForFunction(
+      (name) =>
+        Array.from(document.querySelectorAll("main button")).some((button) =>
+          button.textContent?.includes(name),
+        ),
+      {},
+      RICE_ITEM,
+    );
     await page.evaluate((name) => {
       const button = Array.from(document.querySelectorAll("main button")).find((element) =>
         element.textContent?.includes(name),

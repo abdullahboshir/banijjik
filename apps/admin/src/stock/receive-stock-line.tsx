@@ -1,5 +1,6 @@
 "use client";
 
+import type { UnitKey } from "@banijjik/contracts/catalog";
 import { Button, FormField, TextInput } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { InventoryItemPicker } from "./inventory-item-picker";
@@ -9,14 +10,18 @@ import type { ReceiptLine } from "./receive-stock-form-lib";
 
 function QuantityHint(props: {
   line: ReceiptLine;
-  unitLabel: (unitKey: string) => string;
+  unitLabels: Record<UnitKey, string>;
 }): ReactElement | null {
   if (props.line.item === undefined) return null;
   const quantity = Number(props.line.quantity.trim());
   if (!Number.isInteger(quantity) || quantity <= 0) return null;
   return (
     <p className="text-small text-secondary">
-      {quantityInUnitWords(quantity, props.line.item.baseUnitKey, props.unitLabel)}
+      {quantityInUnitWords(
+        quantity,
+        props.line.item.baseUnitKey,
+        (unitKey) => props.unitLabels[unitKey],
+      )}
     </p>
   );
 }
@@ -27,7 +32,7 @@ export function ReceiveStockLine(props: {
   line: ReceiptLine;
   labels: ReceiveStockLabels;
   pickerLabels: ItemPickerLabels;
-  unitLabel: (unitKey: string) => string;
+  unitLabels: Record<UnitKey, string>;
   isSaving: boolean;
   canRemove: boolean;
   onChange: (changes: Partial<ReceiptLine>) => void;
@@ -54,7 +59,7 @@ export function ReceiveStockLine(props: {
           onChange={(event) => props.onChange({ quantity: event.target.value })}
         />
       </FormField>
-      <QuantityHint line={line} unitLabel={props.unitLabel} />
+      <QuantityHint line={line} unitLabels={props.unitLabels} />
       <FormField label={labels.unitCost} htmlFor={`receive-cost-${index}`}>
         <TextInput
           id={`receive-cost-${index}`}

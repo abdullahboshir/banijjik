@@ -42,7 +42,7 @@ function LevelChips({
   return (
     <nav
       aria-label={t("settings.general.level.label")}
-      className="flex items-center gap-2 overflow-x-auto"
+      className="flex w-full min-w-0 items-center gap-2 overflow-x-auto"
     >
       {chips.map((chip) => {
         const isActive = chip.id === selectedId;

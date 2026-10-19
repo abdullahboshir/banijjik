@@ -4,6 +4,7 @@ import { BUNDLED_CATALOGS } from "@banijjik/i18n";
 import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { UNIT_KEY, type UnitKey } from "@banijjik/contracts/catalog";
 import { banglaText, banglaTranslator } from "../auth/test-helpers";
 
 const refresh = vi.fn();
@@ -59,7 +60,14 @@ function renderReceive(): void {
         defaultLocationId="loc-1"
         labels={labels}
         pickerLabels={pickerLabels}
-        unitLabel={(unitKey) => banglaText(`catalog.unit.${unitKey}`)}
+        unitLabels={
+          Object.fromEntries(
+            Object.values(UNIT_KEY).map((unitKey) => [
+              unitKey,
+              banglaText(`catalog.unit.${unitKey}`),
+            ]),
+          ) as Record<UnitKey, string>
+        }
         onClose={vi.fn()}
       />
     </I18nProvider>,

@@ -86,7 +86,9 @@ function CardBody<Row>({
   return (
     <div className="flex flex-col gap-1">
       {titleColumn ? (
-        <div className="text-body font-semibold text-primary">{titleColumn.cell(row)}</div>
+        <div className="min-w-0 break-words text-body font-semibold text-primary">
+          {titleColumn.cell(row)}
+        </div>
       ) : null}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-secondary">
         {detailColumns.map((column) => (

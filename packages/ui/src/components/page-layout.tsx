@@ -35,7 +35,7 @@ export function PageLayout({
           </div>
           {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
         </div>
-        {filters}
+        {filters ? <div className="min-w-0 w-full">{filters}</div> : null}
       </header>
       {children}
     </div>

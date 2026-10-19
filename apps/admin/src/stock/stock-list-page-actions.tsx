@@ -62,7 +62,7 @@ export function StockListPageActions(props: {
           defaultLocationId={props.locationId ?? ""}
           labels={receiveStockLabelsOf(props.t)}
           pickerLabels={pickerLabels}
-          unitLabel={(unitKey) => props.t(`catalog.unit.${unitKey}`)}
+          unitLabels={props.unitLabels}
         />
       ) : null}
     </>
