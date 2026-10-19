@@ -69,7 +69,7 @@ export const offeringAvailabilityQuerySchema = z.object({
 
 export const inventoryLevelsRebuildRequestSchema = z.object({
   locationId: uuidV7Schema.optional(),
-  fix: z.boolean(),
+  fix: z.boolean().default(false),
 });
 
 export type StockReceiptBody = z.infer<typeof stockReceiptRequestSchema>;
