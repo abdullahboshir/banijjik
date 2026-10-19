@@ -15,7 +15,7 @@ import { signOut } from "../auth/sign-out";
 import { ApiError } from "../lib/api/api-error";
 import { seedMyOrganizations } from "../lib/api/me-api";
 import { setLocaleAction } from "../lib/i18n/set-locale.action";
-import { ApprovalPinSection } from "./approval-pin-section";
+import { LazyApprovalPinSection } from "./lazy-approval-pin-section";
 import { initialsOf } from "./initials";
 import { LazyAccountMenu } from "./lazy-account-menu";
 
@@ -100,7 +100,7 @@ export function AccountMenuContainer(props: AccountMenuContainerProps): ReactEle
         onSignOut={handleSignOut}
         approvalPinSection={
           currentOrganization === undefined ? undefined : (
-            <ApprovalPinSection organizationId={currentOrganization.organizationId} />
+            <LazyApprovalPinSection organizationId={currentOrganization.organizationId} />
           )
         }
       />

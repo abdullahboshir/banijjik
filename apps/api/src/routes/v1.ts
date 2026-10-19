@@ -24,26 +24,23 @@ import {
 import type { MemberAccessReader, PermissionCatalog } from "../modules/core/iam/index.js";
 import {
   buildIamRouters,
-  buildIamTenantRouter,
-  buildOwnerSelfApprovalReader,
   buildPermissionCache,
   buildPermissionCatalog,
   buildPermissionGate,
   registerIamModels,
 } from "../modules/core/iam/index.js";
 import {
-  buildApprovalMemberStore,
   buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
   buildOrganizationRouters,
-  buildRolesVersionBumper,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
 import { registerCatalogModels } from "../modules/commerce/catalog/index.js";
 import { registerContactModels } from "../modules/commerce/contact/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
-import { buildSettingsResolver, registerSettingsModels } from "../modules/core/settings/index.js";
+import { registerSettingsModels } from "../modules/core/settings/index.js";
+import { buildIamTenantRouterFor } from "./iam-tenant-router.js";
 import {
   buildEntitlementTenantRouter,
   buildOrgConfigService,
@@ -314,21 +311,15 @@ interface TenantRoutersInput {
  */
 function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
   const { dependencies, audit, orgConfig, access } = input;
-  const { catalog, memberAccess, permissionGate, permission } = access;
+  const { catalog, permissionGate, permission } = access;
   const { clock, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
-  const iamRouter = buildIamTenantRouter({
-    catalog,
-    memberAccess,
-    rolesVersion: buildRolesVersionBumper(),
-    permission,
-    permissions: permissionGate,
+  const iamRouter = buildIamTenantRouterFor({
+    access,
     clock,
     audit,
     rateLimiter: dependencies.rateLimiter,
-    approvalMembers: buildApprovalMemberStore(),
-    ownerSelfApproval: buildOwnerSelfApprovalReader(
-      buildSettingsResolver({ orgConfig, manifests: input.registry.all() }),
-    ),
+    orgConfig,
+    manifests: input.registry.all(),
   });
   const auditRouter = buildAuditTenantRouter({ permission });
   const entitlementRouter = buildEntitlementTenantRouter({
