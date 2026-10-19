@@ -139,12 +139,37 @@ export function computeQuote(input: QuotePipelineInput): QuoteResponse {
       thresholds,
     }),
   );
-  // Order discount is allocated by line gross (11 §3), capped so a line never goes below zero.
-  const orderShares = allocateByLargestRemainder(
-    orderPool,
-    drafted.map((row) => row.lineGross),
-  ).map((share, index) => Math.min(share, drafted[index]?.afterManual ?? 0));
+  // Order discount is allocated by line gross (11 §3), capped so a line never goes below zero;
+  // anything capped off is re-allocated to lines that still have room (R1-1).
+  const orderShares = allocateOrderDiscount(orderPool, drafted);
 
   const lines = buildLineResults(drafted, orderShares, input);
   return { lines, totals: totalsOf(lines, input), approvalsRequired };
+}
+
+/**
+ * Spread `orderPool` across lines by line gross (largest remainder). When a share exceeds what a
+ * line can still take after promotions and manual discount, the leftover is given to lines that
+ * still have room — same weights, repeat until the pool is spent or no room remains.
+ */
+function allocateOrderDiscount(orderPool: number, drafted: readonly DraftedLine[]): number[] {
+  const allocated = drafted.map(() => 0);
+  let remaining = orderPool;
+  while (remaining > 0) {
+    const rooms = drafted.map((row, index) =>
+      Math.max(0, row.afterManual - (allocated[index] ?? 0)),
+    );
+    if (rooms.every((room) => room === 0)) break;
+    const weights = drafted.map((row, index) => ((rooms[index] ?? 0) > 0 ? row.lineGross : 0));
+    const shares = allocateByLargestRemainder(remaining, weights);
+    let given = 0;
+    for (let index = 0; index < drafted.length; index += 1) {
+      const add = Math.min(shares[index] ?? 0, rooms[index] ?? 0);
+      allocated[index] = (allocated[index] ?? 0) + add;
+      given += add;
+    }
+    if (given === 0) break;
+    remaining -= given;
+  }
+  return allocated;
 }

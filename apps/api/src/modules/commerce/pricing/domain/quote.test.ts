@@ -158,6 +158,30 @@ describe("quote math", () => {
     expect(parts.sort((a, b) => b - a)).toEqual([34, 33, 33]);
   });
 
+  it("re-allocates order-discount leftover when one line has little room left", () => {
+    // Line A is almost fully discounted (room 100); line B has full room (1000).
+    // Order discount 500 would give 250 each by gross, but A can only take 100 — the other
+    // 150 must move to B so the customer still gets the full 500.
+    const result = quote({
+      lines: [
+        line({
+          quantity: 1,
+          unitPriceMinor: 1000,
+          precision: 0,
+          manualDiscount: { type: "AMOUNT", value: 900 },
+        }),
+        line({ quantity: 1, unitPriceMinor: 1000, precision: 0 }),
+      ],
+      orderDiscount: { type: "AMOUNT", value: 500 },
+    });
+    const orderParts = result.lines.map(
+      (row) => row.lineDiscount.amount - row.manualDiscount.amount - row.promotionDiscount.amount,
+    );
+    expect(orderParts.reduce((sum, value) => sum + value, 0)).toBe(500);
+    expect(orderParts[0]).toBe(100);
+    expect(orderParts[1]).toBe(400);
+  });
+
   it("never drops a line below zero", () => {
     const result = quote({
       lines: [
