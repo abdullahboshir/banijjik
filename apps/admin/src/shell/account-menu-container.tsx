@@ -15,6 +15,7 @@ import { signOut } from "../auth/sign-out";
 import { ApiError } from "../lib/api/api-error";
 import { seedMyOrganizations } from "../lib/api/me-api";
 import { setLocaleAction } from "../lib/i18n/set-locale.action";
+import { ApprovalPinSection } from "./approval-pin-section";
 import { initialsOf } from "./initials";
 import { LazyAccountMenu } from "./lazy-account-menu";
 
@@ -74,6 +75,9 @@ export function AccountMenuContainer(props: AccountMenuContainerProps): ReactEle
   useEffect(() => seedMyOrganizations(queryClient, organizations), [queryClient, organizations]);
   const changeLocale = useLocaleChange(setLocaleAction);
   const handleSignOut = useSignOut(translator);
+  const currentOrganization = organizations.find(
+    (organization) => organization.slug === props.currentOrganizationSlug,
+  );
   return (
     <>
       <AccountMenuTrigger
@@ -94,6 +98,11 @@ export function AccountMenuContainer(props: AccountMenuContainerProps): ReactEle
         onLocaleChange={changeLocale}
         signOutLabel={t("account.signOut")}
         onSignOut={handleSignOut}
+        approvalPinSection={
+          currentOrganization === undefined ? undefined : (
+            <ApprovalPinSection organizationId={currentOrganization.organizationId} />
+          )
+        }
       />
     </>
   );

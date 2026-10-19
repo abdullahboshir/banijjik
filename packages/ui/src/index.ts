@@ -6,6 +6,11 @@ export { Button, buttonVariants } from "./components/button.js";
 export type { ButtonProps } from "./components/button.js";
 export { ConfirmDialog } from "./components/confirm-dialog.js";
 export type { ConfirmDialogProps } from "./components/confirm-dialog.js";
+export { ApprovalPinDialog } from "./components/approval-pin-dialog.js";
+export type {
+  ApprovalPinApproverOption,
+  ApprovalPinDialogProps,
+} from "./components/approval-pin-dialog.js";
 export { DataList } from "./components/data-list.js";
 export type { DataListColumn, DataListProps } from "./components/data-list.js";
 export { DetailHeader } from "./components/detail-header.js";

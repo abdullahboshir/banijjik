@@ -8,4 +8,5 @@ export const IAM_MESSAGE_KEYS: readonly string[] = [
   "validation.password_too_long",
   "validation.password_too_similar",
   "validation.identifier_required",
+  "validation.approval_pin_digits",
 ];

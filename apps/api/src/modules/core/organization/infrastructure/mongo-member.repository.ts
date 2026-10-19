@@ -98,8 +98,12 @@ export class MongoMemberRepository implements MemberRepository, MemberManagement
           customFields: { ...member.customFields },
           customFieldSearch: member.customFieldSearch.map((entry) => ({ ...entry })),
           updatedByUserId: actorUserId,
+          approvalPinFailedCount: member.approvalPinFailedCount,
           ...(member.jobTitle === undefined ? {} : { jobTitle: member.jobTitle }),
+          ...optionalSet("approvalPinHash", member.approvalPinHash),
+          ...optionalSet("approvalPinLockedUntil", member.approvalPinLockedUntil),
         },
+        ...approvalPinUnset(member),
       },
     });
     return toMember(saved);
@@ -115,4 +119,20 @@ export class MongoMemberRepository implements MemberRepository, MemberManagement
   private model() {
     return models({}).get<MemberDocument>(MEMBER_MODEL_NAME);
   }
+}
+
+function optionalSet<T>(key: string, value: T | undefined): Record<string, T> {
+  if (value === undefined) return {};
+  return { [key]: value };
+}
+
+/** Clears PIN fields that the domain entity no longer carries. */
+function approvalPinUnset(member: Member): { $unset?: Record<string, ""> } {
+  if (member.approvalPinHash === undefined) {
+    return { $unset: { approvalPinHash: "", approvalPinLockedUntil: "" } };
+  }
+  if (member.approvalPinLockedUntil === undefined) {
+    return { $unset: { approvalPinLockedUntil: "" } };
+  }
+  return {};
 }

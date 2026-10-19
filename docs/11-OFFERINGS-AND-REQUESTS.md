@@ -249,8 +249,8 @@ New append-only-by-period **EnrollmentPeriod** (enrollment, location scope): `en
   - payment REVERSAL
   - session-limit override
   - enrollment refund
-- **How:** the approver enters their PIN on the same device. Approvers are members with permission `sales.approval.grant` (OWNER, MANAGER by default). `Member.approvalPinHash` (new field, hashed like passwords, rate-limited, 5 failures → 15 min lock).
-- The server issues a short-lived (2 min), single-use **approval token** bound to `{ action, requestId, amount }`. The use case verifies and consumes it. The request records `approval { approverMemberId, approvedAt, action }`. An audit log entry is written in the same transaction.
+- **How:** the approver enters their PIN on the same device. Approvers are members with permission `iam.approval.grant` (OWNER, MANAGER by default; renamed from `sales.approval.grant` in ADR-121 because iam exists first). `Member.approvalPinHash` (hashed like passwords), `approvalPinFailedCount`, `approvalPinLockedUntil` (5 failures → 15 min lock).
+- The server issues a short-lived (2 min), single-use **approval token** bound to `{ action, subjectKey, amount }` (card 3.4b). The use case verifies and consumes it via `ApprovalVerifier`. The request records `approval { approverMemberId, approvedAt, action }`. An audit log entry is written in the same transaction.
 - Remote approval (push to the owner's phone) is a later card. The data shape above already supports it.
 
 ## 10. Journal posting matrix (module `accounting`, from events)

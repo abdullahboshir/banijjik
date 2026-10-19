@@ -26,6 +26,7 @@ import { buildSettingsRouter } from "./presentation/settings.router.js";
 export { registerSettingsModels } from "./infrastructure/register-settings-models.js";
 export { settingsManifest } from "./module.manifest.js";
 export type { LocationExistence };
+export type { SettingsResolver };
 
 export interface SettingsResolverDependencies {
   readonly orgConfig: OrgConfigReader;

@@ -33,13 +33,13 @@ const deepPackagePatterns = [
   "@banijjik/*/dist/**",
 ];
 
-// Matches every import source EXCEPT @banijjik/contracts (and its file and contact entries, ADR-109,
-// ADR-110), @banijjik/ids and relative paths. The plan asked for a negated group, but the `ignore`
+// Matches every import source EXCEPT @banijjik/contracts (and its file, contact, catalog and iam
+// entries), @banijjik/ids and relative paths. The plan asked for a negated group, but the `ignore`
 // library behind `group` cannot re-include a child of an ignored parent, so "!@banijjik/contracts"
 // never worked (measured); `regex` is the same allow-list. The entries exist because the root index
-// of @banijjik/contracts is at the line cap (cards 3.0, 3.1a, 3.2a).
+// of @banijjik/contracts is at the line cap (cards 3.0, 3.1a, 3.2a, 3.4b).
 const DOMAIN_FORBIDDEN_SOURCE =
-  "^(?!@banijjik/(?:contracts(?:/file|/contact|/catalog)?|ids)$)(?!\\.{1,2}(?:/|$))";
+  "^(?!@banijjik/(?:contracts(?:/file|/contact|/catalog|/iam)?|ids)$)(?!\\.{1,2}(?:/|$))";
 
 const DOMAIN_IMPORT_MESSAGE =
   "Domain code imports only @banijjik/contracts, @banijjik/ids and files of its own domain folder (ADR-011a).";

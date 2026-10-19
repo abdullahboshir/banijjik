@@ -134,6 +134,9 @@ export function buildMemberAccessReader(): MemberAccessReader {
   return new MongoMemberAccessReader();
 }
 
+/** Approval PIN fields on Member for iam (card 3.4b). */
+export { buildApprovalMemberStore } from "./infrastructure/mongo-approval-member-store.js";
+
 /** Bumps Organization.rolesVersion inside the surrounding transaction when a role changes. */
 export function buildRolesVersionBumper(): RolesVersionBumper {
   return new MongoRolesVersionBumper();

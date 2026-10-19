@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { cn } from "../lib/cn.js";
 import { Button } from "./button.js";
 import { Sheet, SheetContent } from "./sheet.js";
@@ -31,6 +31,8 @@ export interface AccountMenuProps {
   onLocaleChange: (localeKey: string) => void;
   signOutLabel: string;
   onSignOut: () => void;
+  /** Optional "Approval PIN" block for managers (card 3.4b). */
+  approvalPinSection?: ReactNode;
 }
 
 const SECTION_HEADING_CLASS = "text-small font-semibold text-secondary";
@@ -95,6 +97,7 @@ export function AccountMenu(props: AccountMenuProps): ReactElement {
           <h3 className={SECTION_HEADING_CLASS}>{props.languageHeading}</h3>
           <LanguageButtons languages={props.languages} onLocaleChange={props.onLocaleChange} />
         </section>
+        {props.approvalPinSection}
         <Button variant="secondary" className="w-full" onClick={props.onSignOut}>
           {props.signOutLabel}
         </Button>

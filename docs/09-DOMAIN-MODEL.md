@@ -220,7 +220,9 @@ Owner `core/organization` · scope org · versioned · custom fields (entityType
 | `status` | `INVITED \| ACTIVE \| SUSPENDED \| REMOVED` | REMOVED keeps history (requests reference `memberId`) |
 | `assignments` | `[{ locationId: LocationId \| "ALL", roleId }]` | ADR-005 |
 | `displayName` | string | how the org shows this staff member (may differ from `User.name`) |
-| `approvalPinHash` | string? | manager PIN for approvals, hashed, rate-limited (`11 §9`) |
+| `approvalPinHash` | string? | manager PIN for approvals, hashed (`11 §9`, ADR-121) |
+| `approvalPinFailedCount` | integer | wrong PIN attempts; reset on success |
+| `approvalPinLockedUntil` | Date? | set after 5 failures for 15 minutes |
 | `jobTitle` | string? | |
 | `employeeNumber` | string? | from the org sequence `MEMBER` |
 | `joinedAt` | Date | |

@@ -25,12 +25,14 @@ import type { MemberAccessReader, PermissionCatalog } from "../modules/core/iam/
 import {
   buildIamRouters,
   buildIamTenantRouter,
+  buildOwnerSelfApprovalReader,
   buildPermissionCache,
   buildPermissionCatalog,
   buildPermissionGate,
   registerIamModels,
 } from "../modules/core/iam/index.js";
 import {
+  buildApprovalMemberStore,
   buildMemberAccessReader,
   buildMembershipDirectory,
   buildMyOrganizationsReader,
@@ -41,7 +43,7 @@ import {
 import { registerCatalogModels } from "../modules/commerce/catalog/index.js";
 import { registerContactModels } from "../modules/commerce/contact/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
-import { registerSettingsModels } from "../modules/core/settings/index.js";
+import { buildSettingsResolver, registerSettingsModels } from "../modules/core/settings/index.js";
 import {
   buildEntitlementTenantRouter,
   buildOrgConfigService,
@@ -322,6 +324,11 @@ function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
     permissions: permissionGate,
     clock,
     audit,
+    rateLimiter: dependencies.rateLimiter,
+    approvalMembers: buildApprovalMemberStore(),
+    ownerSelfApproval: buildOwnerSelfApprovalReader(
+      buildSettingsResolver({ orgConfig, manifests: input.registry.all() }),
+    ),
   });
   const auditRouter = buildAuditTenantRouter({ permission });
   const entitlementRouter = buildEntitlementTenantRouter({

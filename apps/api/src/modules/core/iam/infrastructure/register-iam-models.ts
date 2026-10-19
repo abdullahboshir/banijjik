@@ -1,6 +1,11 @@
 import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { registerModel } from "../../../../kernel/db/index.js";
 import {
+  APPROVAL_TOKEN_COLLECTION_NAME,
+  APPROVAL_TOKEN_MODEL_NAME,
+  approvalTokenSchema,
+} from "./approval-token.schema.js";
+import {
   PLATFORM_OPERATOR_COLLECTION_NAME,
   PLATFORM_OPERATOR_MODEL_NAME,
   platformOperatorSchema,
@@ -13,7 +18,7 @@ import {
 import { ROLE_COLLECTION_NAME, ROLE_MODEL_NAME, roleSchema } from "./role.schema.js";
 import { USER_COLLECTION_NAME, USER_MODEL_NAME, userSchema } from "./user.schema.js";
 
-/** Registers the iam models (users, sessions, operators, roles). They live in the platform database: identity is not tenant data (ADR-043). */
+/** Registers the iam models (users, sessions, operators, roles, approval tokens). */
 export function registerIamModels(): void {
   registerModel({
     modelName: USER_MODEL_NAME,
@@ -41,6 +46,13 @@ export function registerIamModels(): void {
     collectionName: ROLE_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: roleSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    modelName: APPROVAL_TOKEN_MODEL_NAME,
+    collectionName: APPROVAL_TOKEN_COLLECTION_NAME,
+    database: DATABASE_KIND.TENANT,
+    schema: approvalTokenSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

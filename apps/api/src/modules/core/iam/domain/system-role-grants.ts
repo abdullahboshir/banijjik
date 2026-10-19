@@ -53,7 +53,14 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
   },
   iam: {
     [SYSTEM_ROLE_KEY.OWNER]: "ALL",
-    [SYSTEM_ROLE_KEY.MANAGER]: "READ",
+    // Role reads plus manager PIN approvals (ADR-121); create/update/archive stay with OWNER.
+    [SYSTEM_ROLE_KEY.MANAGER]: {
+      allExcept: [
+        PERMISSION_KEY.IAM_ROLE_CREATE,
+        PERMISSION_KEY.IAM_ROLE_UPDATE,
+        PERMISSION_KEY.IAM_ROLE_ARCHIVE,
+      ],
+    },
     [SYSTEM_ROLE_KEY.CASHIER]: "NONE",
     [SYSTEM_ROLE_KEY.STAFF]: "NONE",
     [SYSTEM_ROLE_KEY.RIDER]: "NONE",

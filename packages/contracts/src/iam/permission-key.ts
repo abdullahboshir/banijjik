@@ -7,6 +7,7 @@ export const PERMISSION_KEY = {
   IAM_ROLE_CREATE: "iam.role.create",
   IAM_ROLE_UPDATE: "iam.role.update",
   IAM_ROLE_ARCHIVE: "iam.role.archive",
+  IAM_APPROVAL_GRANT: "iam.approval.grant",
   ORGANIZATION_PROFILE_UPDATE: "organization.profile.update",
   ORGANIZATION_LOCATION_READ: "organization.location.read",
   ORGANIZATION_LOCATION_CREATE: "organization.location.create",

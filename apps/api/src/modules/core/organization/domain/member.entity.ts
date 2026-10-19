@@ -35,6 +35,10 @@ export interface MemberProps {
   /** The staff profile values (NID, blood group, ...), validated against the member fields (ADR-107). */
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly customFieldSearch: readonly CustomFieldSearchEntry[];
+  /** Manager PIN for approvals, hashed like passwords; never returned (11 §9, ADR-121). */
+  readonly approvalPinHash: string | undefined;
+  readonly approvalPinFailedCount: number;
+  readonly approvalPinLockedUntil: Date | undefined;
   readonly joinedAt: Date;
   readonly version: number;
   readonly createdAt: Date;
@@ -99,6 +103,9 @@ export class Member implements MemberProps {
   readonly employeeNumber: string | undefined;
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly customFieldSearch: readonly CustomFieldSearchEntry[];
+  readonly approvalPinHash: string | undefined;
+  readonly approvalPinFailedCount: number;
+  readonly approvalPinLockedUntil: Date | undefined;
   readonly joinedAt: Date;
   readonly version: number;
   readonly createdAt: Date;
@@ -117,6 +124,9 @@ export class Member implements MemberProps {
     this.employeeNumber = props.employeeNumber;
     this.customFields = props.customFields;
     this.customFieldSearch = props.customFieldSearch;
+    this.approvalPinHash = props.approvalPinHash;
+    this.approvalPinFailedCount = props.approvalPinFailedCount;
+    this.approvalPinLockedUntil = props.approvalPinLockedUntil;
     this.joinedAt = props.joinedAt;
     this.version = props.version;
     this.createdAt = props.createdAt;
@@ -139,6 +149,9 @@ export class Member implements MemberProps {
       employeeNumber: input.employeeNumber,
       customFields: {},
       customFieldSearch: [],
+      approvalPinHash: undefined,
+      approvalPinFailedCount: 0,
+      approvalPinLockedUntil: undefined,
       joinedAt: input.now,
       version: 1,
       createdAt: input.now,
@@ -199,6 +212,46 @@ export class Member implements MemberProps {
   private transition(allowedFrom: readonly MemberStatus[], to: MemberStatus): Member {
     if (!allowedFrom.includes(this.status)) throw invalidTransition(this.status);
     return new Member({ ...this, status: to });
+  }
+
+  /** Sets or replaces the approval PIN hash and clears failure lock state (ADR-121). */
+  withApprovalPin(pinHash: string): Member {
+    if (this.status === MEMBER_STATUS.REMOVED) throw invalidTransition(this.status);
+    return new Member({
+      ...this,
+      approvalPinHash: pinHash,
+      approvalPinFailedCount: 0,
+      approvalPinLockedUntil: undefined,
+    });
+  }
+
+  /** Removes the approval PIN and its lock counters. */
+  withoutApprovalPin(): Member {
+    if (this.status === MEMBER_STATUS.REMOVED) throw invalidTransition(this.status);
+    return new Member({
+      ...this,
+      approvalPinHash: undefined,
+      approvalPinFailedCount: 0,
+      approvalPinLockedUntil: undefined,
+    });
+  }
+
+  /** Records a wrong PIN; the fifth failure locks for `lockedUntil`. */
+  withPinFailure(failedCount: number, lockedUntil: Date | undefined): Member {
+    return new Member({
+      ...this,
+      approvalPinFailedCount: failedCount,
+      approvalPinLockedUntil: lockedUntil,
+    });
+  }
+
+  /** Clears failure counters after a correct PIN. */
+  withPinSuccess(): Member {
+    return new Member({
+      ...this,
+      approvalPinFailedCount: 0,
+      approvalPinLockedUntil: undefined,
+    });
   }
 
   /**

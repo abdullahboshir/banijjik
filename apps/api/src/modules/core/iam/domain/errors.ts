@@ -148,6 +148,32 @@ export class OperatorExistsError extends DomainRuleError {
   }
 }
 
+/** Wrong PIN, unknown approver, or no grant at the location — never say which (ADR-121). */
+export function approvalInvalid(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.APPROVAL_INVALID,
+    messageKey: "errors.approval_invalid",
+  });
+}
+
+/** Five wrong PINs locked this member's PIN for 15 minutes. */
+export function approvalPinLocked(retryAfterSeconds: number): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.APPROVAL_PIN_LOCKED,
+    messageKey: "errors.approval_pin_locked",
+    retryAfterSeconds,
+  });
+}
+
+/** The approval token is missing, expired, used, or does not match the expected action. */
+export function approvalRequired(action?: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.APPROVAL_REQUIRED,
+    messageKey: "errors.approval_required",
+    ...(action === undefined ? {} : { details: { action } }),
+  });
+}
+
 /** A person cannot change their own operator record; another SUPER_ADMIN must. */
 export class OwnOperatorAccessError extends DomainRuleError {
   constructor() {

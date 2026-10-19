@@ -64,7 +64,9 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | 403 | `ORG_READ_ONLY` | `accessMode = READ_ONLY` (ADR-053) |
 | 403 | `ORG_SUSPENDED` | org suspended by the platform |
 | 403 | `LOCATION_FORBIDDEN` | location outside the member's assignments |
-| 403 | `APPROVAL_REQUIRED` | approval token missing or invalid |
+| 403 | `APPROVAL_REQUIRED` | approval token missing or invalid when consuming |
+| 400 | `APPROVAL_INVALID` | wrong PIN, unknown approver, or no grant at the location (no hint which) |
+| 423 | `APPROVAL_PIN_LOCKED` | five wrong PINs; retry after `Retry-After` |
 | 404 | `NOT_FOUND` | also for resources of another org (never reveal existence) |
 | 409 | `CONFLICT` | version mismatch, or `errors.idempotency_in_progress` with `Retry-After` while the same key is still running |
 | 409 | `INVALID_TRANSITION` | transition not allowed from the current state; `details.currentStatus` |
@@ -94,8 +96,10 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | `POST /me/orgs` | user (verified identifier) | I | `OrganizationCreateRequest` (name, slug, industryTemplateKey, packageKey/trial, district) → org + location + roles + owner member + trial subscription (card 1.2 / 1.6 / 6.1). A well-formed key that is unknown, DRAFT or RETIRED is `422 INDUSTRY_TEMPLATE_NOT_AVAILABLE` (card 2.1a) |
 | `GET /industry-templates` | signed-in admin user | | Published templates only, ordered by key, both languages, hard cap 100 (card 2.1a). Not in the tenant pipeline. A platform-operator cookie is 401 |
 | `GET /orgs/{organizationId}/me/config` | member | | `ResolvedOrgConfigResponse`: modules, kinds, menu, limits, accessMode, permissions at each location. `terms` is `{ bn, en }` per template key (override or template text). `settings` is the client-visible organization-level values. `fields` is the effective custom fields per declared entity type (ADR-104) |
-| `POST /orgs/{organizationId}/me/approval-pin` | member with `sales.approval.grant` | | set/change own PIN |
-| `POST /orgs/{organizationId}/approvals` | member with `sales.approval.grant` (PIN on the same device) | | `ApprovalGrantRequest { action, requestId, amount, pin }` → `{ approvalToken, expiresAt }` |
+| `PUT /orgs/{organizationId}/me/approval-pin` | member with `iam.approval.grant` | | `ApprovalPinSetRequest { currentPassword, pin }` → `204`; re-checks the account password (ADR-121) |
+| `DELETE /orgs/{organizationId}/me/approval-pin` | member with `iam.approval.grant` | | removes the caller's PIN |
+| `GET /orgs/{organizationId}/approvers?locationId=` | any member | | `ApproverSummary[]` who hold `iam.approval.grant` at that location |
+| `POST /orgs/{organizationId}/approvals` | any member (approver's PIN) | | `ApprovalGrantRequest { action, subjectKey, amount?, locationId, approverMemberId, pin }` → `ApprovalGrantResponse`; rate-limited per IP and organization (ADR-121) |
 | `GET /invitations/{token}` · `POST /invitations/{token}/accept` | public (rate limited per IP) / user | | the preview returns `InvitationPreviewResponse` (organization name, inviter, masked identifier); accept answers `MyOrganizationSummary`. The token is a random secret, masked in logs. An unknown, expired, revoked or used token is 404; a signed-in user whose email or phone differs from the invited one gets 403 `errors.invitation_identifier_mismatch` (ADR-092) |
 
 ## 5. Tenant endpoints (prefix `/api/v1/orgs/{organizationId}`)

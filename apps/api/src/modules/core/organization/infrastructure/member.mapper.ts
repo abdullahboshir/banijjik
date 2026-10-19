@@ -43,6 +43,13 @@ export function toMemberDocument(member: Member): MemberDocument {
     updatedByUserId: null,
     ...(member.jobTitle === undefined ? {} : { jobTitle: member.jobTitle }),
     ...(member.employeeNumber === undefined ? {} : { employeeNumber: member.employeeNumber }),
+    ...(member.approvalPinHash === undefined ? {} : { approvalPinHash: member.approvalPinHash }),
+    ...(member.approvalPinFailedCount === 0
+      ? {}
+      : { approvalPinFailedCount: member.approvalPinFailedCount }),
+    ...(member.approvalPinLockedUntil === undefined
+      ? {}
+      : { approvalPinLockedUntil: member.approvalPinLockedUntil }),
   };
 }
 
@@ -59,6 +66,9 @@ export function toMember(document: MemberDocument): Member {
     employeeNumber: stored.employeeNumber,
     customFields: stored.customFields ?? {},
     customFieldSearch: stored.customFieldSearch ?? [],
+    approvalPinHash: stored.approvalPinHash,
+    approvalPinFailedCount: stored.approvalPinFailedCount ?? 0,
+    approvalPinLockedUntil: stored.approvalPinLockedUntil,
     joinedAt: stored.joinedAt,
     version: stored.version,
     createdAt: stored.createdAt,

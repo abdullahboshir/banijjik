@@ -29,6 +29,10 @@ export interface MemberDocument {
   /** Missing on members created before card 2.7a: read as no values. */
   customFields?: Record<string, unknown>;
   customFieldSearch?: CustomFieldSearchEntry[];
+  /** Missing before card 3.4b: no PIN. */
+  approvalPinHash?: string;
+  approvalPinFailedCount?: number;
+  approvalPinLockedUntil?: Date;
   joinedAt: Date;
   version: number;
   createdAt: Date;
@@ -65,6 +69,9 @@ export const memberSchema = new Schema<MemberDocument>(
     employeeNumber: { type: String },
     customFields: { type: Schema.Types.Mixed },
     customFieldSearch: { type: [customFieldSearchSchema] },
+    approvalPinHash: { type: String },
+    approvalPinFailedCount: { type: Number },
+    approvalPinLockedUntil: { type: Date },
     joinedAt: { type: Date, required: true },
     ...versionField,
     ...auditFields,

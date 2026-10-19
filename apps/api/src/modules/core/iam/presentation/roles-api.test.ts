@@ -85,6 +85,7 @@ describe("GET /roles", () => {
       (role) => role.roleKey === SYSTEM_ROLE_KEY.MANAGER,
     );
     expect(manager?.permissionKeys).toContain(PERMISSION_KEY.IAM_ROLE_READ);
+    expect(manager?.permissionKeys).toContain(PERMISSION_KEY.IAM_APPROVAL_GRANT);
     expect(manager?.permissionKeys).not.toContain(PERMISSION_KEY.IAM_ROLE_CREATE);
     expect(manager?.permissionKeys).not.toContain(PERMISSION_KEY.ORGANIZATION_OWNERSHIP_TRANSFER);
   });
