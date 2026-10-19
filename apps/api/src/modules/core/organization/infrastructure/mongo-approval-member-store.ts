@@ -1,4 +1,4 @@
-﻿import { MEMBER_STATUS } from "@banijjik/contracts";
+import { MEMBER_STATUS } from "@banijjik/contracts";
 import type { MemberId, UserId } from "@banijjik/ids";
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
 import type {
