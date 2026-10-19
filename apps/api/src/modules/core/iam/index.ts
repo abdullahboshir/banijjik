@@ -251,6 +251,9 @@ export type {
 export type {
   ApprovalMemberStore,
   ApprovalMemberView,
+  PinAttemptLimits,
+  ReservePinAttemptInput,
+  ReservedPinAttempt,
 } from "./application/ports/approval-member-store.js";
 export type {
   ApprovalConsumeExpected,

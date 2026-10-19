@@ -63,17 +63,29 @@ export class GrantApprovalUseCase {
       throw approvalInvalid();
     }
     await this.assertMayApprove(approver, input);
-    const now = clock.now();
-    const lockedUntil = approver.approvalPinLockedUntil;
-    if (lockedUntil !== undefined && lockedUntil.getTime() > now.getTime()) {
-      throw approvalPinLocked(secondsUntil(lockedUntil, now));
-    }
     if (approver.approvalPinHash === undefined) throw approvalInvalid();
+    const now = clock.now();
+    const reserved = await members.reservePinAttempt({
+      memberId: input.approverMemberId,
+      now,
+      actorUserId: input.actorUserId,
+      limits: {
+        maxFailures: APPROVAL_PIN_RULES.maxFailures,
+        lockMinutes: APPROVAL_PIN_RULES.lockMinutes,
+      },
+    });
+    if (reserved === undefined) {
+      throw approvalPinLocked(APPROVAL_PIN_RULES.lockMinutes * 60);
+    }
     const pinOk = await hasher.verify(approver.approvalPinHash, input.pin);
     if (!pinOk) {
-      await this.recordFailure(approver, input.actorUserId, now);
+      if (reserved.lockedUntil !== undefined) {
+        throw approvalPinLocked(secondsUntil(reserved.lockedUntil, now));
+      }
       throw approvalInvalid();
     }
+    // Refund the reserved failure slot before issuing the token (login-style consume/refund).
+    await members.clearPinFailures(input.approverMemberId, input.actorUserId);
     return this.issueToken(input, now);
   }
 
@@ -92,33 +104,11 @@ export class GrantApprovalUseCase {
     if (!(await ownerSelfApproval.isAllowed(input.organizationId))) throw approvalInvalid();
   }
 
-  private async recordFailure(
-    approver: ApprovalMemberView,
-    actorUserId: UserId,
-    now: Date,
-  ): Promise<void> {
-    const { members, unitOfWork } = this.dependencies;
-    const failedCount = approver.approvalPinFailedCount + 1;
-    const locks = failedCount >= APPROVAL_PIN_RULES.maxFailures;
-    const lockedUntil = locks
-      ? new Date(now.getTime() + APPROVAL_PIN_RULES.lockMinutes * 60_000)
-      : undefined;
-    await unitOfWork.run(async () => {
-      await members.recordPinAttempt(approver.memberId, { failedCount, lockedUntil }, actorUserId);
-    });
-    if (locks) throw approvalPinLocked(APPROVAL_PIN_RULES.lockMinutes * 60);
-  }
-
   private async issueToken(input: GrantApprovalInput, now: Date): Promise<GrantApprovalResult> {
-    const { members, tokens, tokenSecrets, unitOfWork, audit } = this.dependencies;
+    const { tokens, tokenSecrets, unitOfWork, audit } = this.dependencies;
     const issued = tokenSecrets.issue();
     const expiresAt = new Date(now.getTime() + APPROVAL_PIN_RULES.tokenTtlSeconds * 1000);
     await unitOfWork.run(async () => {
-      await members.recordPinAttempt(
-        input.approverMemberId,
-        { failedCount: 0, lockedUntil: undefined },
-        input.actorUserId,
-      );
       await tokens.insert({
         organizationId: input.organizationId,
         tokenHash: issued.tokenHash,

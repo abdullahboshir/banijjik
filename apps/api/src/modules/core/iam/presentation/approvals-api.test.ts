@@ -159,6 +159,43 @@ describe("POST /approvals", () => {
     expect(fifth.body.error.code).toBe(ERROR_CODE.APPROVAL_PIN_LOCKED);
   });
 
+  it("locks after parallel wrong PINs without verifying more than five (R1-1)", async () => {
+    const world = await aWorld();
+    const manager = await managerWithPin(world);
+    const responses = await Promise.all(
+      Array.from({ length: 10 }, (_, attempt) =>
+        world.sam.call("post", approvalsPath(world.organizationA), {
+          action: APPROVAL_ACTION.REFUND,
+          subjectKey: `order:parallel-${String(attempt)}`,
+          locationId: world.locationA1,
+          approverMemberId: manager.memberId,
+          pin: "0000",
+        }),
+      ),
+    );
+    const invalid = responses.filter((response) => response.status === 400);
+    const locked = responses.filter((response) => response.status === 423);
+    // Reserved slots verify (400 for counts 1–4, 423 for the 5th); the rest refuse without verify.
+    expect(invalid.length).toBeLessThanOrEqual(4);
+    expect(invalid.length + Math.min(locked.length, 1)).toBeLessThanOrEqual(5);
+    expect(locked.length).toBeGreaterThanOrEqual(5);
+    const stored = await harness.connections.platform
+      .collection("members")
+      .findOne({ memberId: manager.memberId });
+    expect(stored?.["approvalPinFailedCount"]).toBe(5);
+    expect(stored?.["approvalPinLockedUntil"]).toEqual(expect.any(Date));
+
+    const eleventh = await world.sam.call("post", approvalsPath(world.organizationA), {
+      action: APPROVAL_ACTION.REFUND,
+      subjectKey: "order:parallel-11",
+      locationId: world.locationA1,
+      approverMemberId: manager.memberId,
+      pin: "0000",
+    });
+    expect(eleventh.status).toBe(423);
+    expect(eleventh.body.error.code).toBe(ERROR_CODE.APPROVAL_PIN_LOCKED);
+  });
+
   it("answers 400 when the approver lacks the permission at that location", async () => {
     const world = await aWorld();
     const managerRoleId = await findSystemRoleId(

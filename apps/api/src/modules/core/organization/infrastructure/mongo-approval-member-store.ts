@@ -1,7 +1,14 @@
-import { MEMBER_STATUS } from "@banijjik/contracts";
+﻿import { MEMBER_STATUS } from "@banijjik/contracts";
 import type { MemberId, UserId } from "@banijjik/ids";
-import type { ApprovalMemberStore, ApprovalMemberView } from "../../iam/index.js";
+import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
+import type {
+  ApprovalMemberStore,
+  ApprovalMemberView,
+  ReservePinAttemptInput,
+  ReservedPinAttempt,
+} from "../../iam/index.js";
 import type { Member } from "../domain/member.entity.js";
+import { MEMBER_MODEL_NAME, type MemberDocument } from "./member.schema.js";
 import { MongoMemberRepository } from "./mongo-member.repository.js";
 
 function toView(member: Member): ApprovalMemberView {
@@ -58,17 +65,91 @@ export class MongoApprovalMemberStore implements ApprovalMemberStore {
     await this.members.update(member.withoutApprovalPin(), member.version, actorUserId);
   }
 
-  async recordPinAttempt(
-    memberId: MemberId,
-    next: { readonly failedCount: number; readonly lockedUntil: Date | undefined },
-    actorUserId: UserId,
-  ): Promise<void> {
-    const member = await this.requireMember(memberId);
-    const updated =
-      next.failedCount === 0
-        ? member.withPinSuccess()
-        : member.withPinFailure(next.failedCount, next.lockedUntil);
-    await this.members.update(updated, member.version, actorUserId);
+  async reservePinAttempt(input: ReservePinAttemptInput): Promise<ReservedPinAttempt | undefined> {
+    const expired = await this.reserveAfterExpiredLock(input);
+    if (expired !== undefined) return expired;
+    return this.reserveNextFailure(input);
+  }
+
+  async clearPinFailures(memberId: MemberId, actorUserId: UserId): Promise<void> {
+    const now = new Date();
+    await this.model().updateOne(
+      { memberId },
+      {
+        $set: { approvalPinFailedCount: 0, updatedAt: now, updatedByUserId: actorUserId },
+        $unset: { approvalPinLockedUntil: "" },
+      },
+      sessionOption(getActiveSession()),
+    );
+  }
+
+  /** Opens a new streak at 1 when the previous lock has expired. */
+  private async reserveAfterExpiredLock(
+    input: ReservePinAttemptInput,
+  ): Promise<ReservedPinAttempt | undefined> {
+    const { memberId, now, actorUserId } = input;
+    const updated = await this.model()
+      .findOneAndUpdate(
+        { memberId, approvalPinLockedUntil: { $lte: now } },
+        {
+          $set: {
+            approvalPinFailedCount: 1,
+            updatedAt: now,
+            updatedByUserId: actorUserId,
+          },
+          $unset: { approvalPinLockedUntil: "" },
+        },
+        { returnDocument: "after", ...sessionOption(getActiveSession()) },
+      )
+      .lean<MemberDocument>();
+    return updated === null ? undefined : { failedCount: 1, lockedUntil: undefined };
+  }
+
+  /** Increments the failure count when the PIN is not locked and slots remain. */
+  private async reserveNextFailure(
+    input: ReservePinAttemptInput,
+  ): Promise<ReservedPinAttempt | undefined> {
+    const { memberId, now, actorUserId, limits } = input;
+    const lockedUntil = new Date(now.getTime() + limits.lockMinutes * 60_000);
+    const updated = await this.model()
+      .findOneAndUpdate(
+        {
+          memberId,
+          $and: [
+            {
+              $or: [
+                { approvalPinLockedUntil: { $exists: false } },
+                { approvalPinLockedUntil: null },
+              ],
+            },
+            {
+              $or: [
+                { approvalPinFailedCount: { $exists: false } },
+                { approvalPinFailedCount: { $lt: limits.maxFailures } },
+              ],
+            },
+          ],
+        },
+        {
+          $inc: { approvalPinFailedCount: 1 },
+          $set: { updatedAt: now, updatedByUserId: actorUserId },
+        },
+        { returnDocument: "after", ...sessionOption(getActiveSession()) },
+      )
+      .lean<MemberDocument>();
+    if (updated === null) return undefined;
+    const failedCount = updated.approvalPinFailedCount ?? 0;
+    if (failedCount < limits.maxFailures) {
+      return { failedCount, lockedUntil: undefined };
+    }
+    await this.model().updateOne(
+      { memberId },
+      {
+        $set: { approvalPinLockedUntil: lockedUntil, updatedAt: now, updatedByUserId: actorUserId },
+      },
+      sessionOption(getActiveSession()),
+    );
+    return { failedCount, lockedUntil };
   }
 
   private async requireMember(memberId: MemberId): Promise<Member> {
@@ -77,6 +158,10 @@ export class MongoApprovalMemberStore implements ApprovalMemberStore {
       throw new Error("approval member missing after a successful read");
     }
     return member;
+  }
+
+  private model() {
+    return models({}).get<MemberDocument>(MEMBER_MODEL_NAME);
   }
 }
 
