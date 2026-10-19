@@ -4,18 +4,19 @@ import { isUnitKey, UNIT_KEY, type UnitKey } from "@banijjik/contracts/catalog";
 import type { TaxClassResponse } from "@banijjik/contracts/pricing";
 import { PageSection } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import { fillLabel } from "./catalog-labels";
+import type { ItemPickerLabels } from "../stock/stock-labels";
 import { ChoiceField, TextField, ToggleField, type SectionProps } from "./editor-fields";
-import type { OfferingFormState } from "./offering-form";
+import { EditorPriceDefaultRow } from "./editor-price-default-row";
 import { canSellLoose, looseCountingUnit } from "./quantity-rule";
+import { fillLabel } from "./catalog-labels";
 
 export interface PriceProps extends SectionProps {
+  organizationId: string;
   unitNames: Readonly<Record<UnitKey, string>>;
   currencySymbol: string;
   taxClasses: readonly TaxClassResponse[];
+  stockPickerLabels: ItemPickerLabels;
 }
-
-type FormRow = OfferingFormState["rows"][number];
 
 function LooseRule(props: PriceProps): ReactElement | null {
   const { form, labels, update, errors, isReadOnly, unitNames } = props;
@@ -57,52 +58,9 @@ function LooseRule(props: PriceProps): ReactElement | null {
   );
 }
 
-function DefaultVariantFields(props: {
-  row: FormRow;
-  labels: PriceProps["labels"];
-  errors: PriceProps["errors"];
-  isReadOnly: boolean;
-  currencySymbol: string;
-  updateRow: (patch: Partial<FormRow>) => void;
-}): ReactElement {
-  const { row, labels, errors, isReadOnly, currencySymbol, updateRow } = props;
-  return (
-    <>
-      <TextField
-        id="offering-price"
-        label={labels["field.price"]}
-        value={row.price}
-        inputMode="decimal"
-        hint={fillLabel(labels["field.priceHint"], { currency: currencySymbol })}
-        error={errors["price"]}
-        disabled={isReadOnly}
-        onChange={(price) => updateRow({ price })}
-      />
-      <TextField
-        id="offering-compare-at"
-        label={labels["field.compareAt"]}
-        value={row.compareAtPrice}
-        inputMode="decimal"
-        hint={labels["field.compareAtHint"]}
-        error={errors["compareAtPrice"]}
-        disabled={isReadOnly}
-        onChange={(compareAtPrice) => updateRow({ compareAtPrice })}
-      />
-      <TextField
-        id="offering-sku"
-        label={labels["field.sku"]}
-        value={row.sku}
-        error={errors["sku"]}
-        disabled={isReadOnly}
-        onChange={(sku) => updateRow({ sku })}
-      />
-    </>
-  );
-}
-
 /** The price of the one Default variant, and how the offering is counted. With options each row has its own price. */
 export function EditorPrice(props: PriceProps): ReactElement {
-  const { form, labels, update, errors, isReadOnly, unitNames, currencySymbol, taxClasses } = props;
+  const { form, labels, update, isReadOnly, unitNames, taxClasses } = props;
   const row = form.rows[0];
   function updateRow(patch: Partial<NonNullable<typeof row>>): void {
     if (row) update({ rows: [{ ...row, ...patch }, ...form.rows.slice(1)] });
@@ -135,14 +93,7 @@ export function EditorPrice(props: PriceProps): ReactElement {
         onChange={(taxClassKey) => update({ taxClassKey })}
       />
       {form.hasOptions || !row ? null : (
-        <DefaultVariantFields
-          row={row}
-          labels={labels}
-          errors={errors}
-          isReadOnly={isReadOnly}
-          currencySymbol={currencySymbol}
-          updateRow={updateRow}
-        />
+        <EditorPriceDefaultRow priceProps={props} row={row} updateRow={updateRow} />
       )}
       <LooseRule {...props} />
     </PageSection>

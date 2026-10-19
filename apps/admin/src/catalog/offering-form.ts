@@ -9,9 +9,11 @@ import {
   type Money,
   type OfferingResponse,
   type PlanStartRule,
+  type StockComponent,
   type UnitKey,
   type VariantResponse,
 } from "@banijjik/contracts/catalog";
+import type { InventoryItemListItem } from "@banijjik/contracts/inventory";
 import { moneyToInputText } from "@banijjik/web-client";
 import { quantityRuleToText } from "./quantity-rule";
 import { optionsOfRows, type OptionDraft, type OptionValues } from "./variant-generator";
@@ -37,6 +39,12 @@ export interface DetailsState {
   startDates: string;
 }
 
+export interface StockComponentDraft {
+  inventoryItemId: string;
+  quantity: string;
+  item?: InventoryItemListItem | undefined;
+}
+
 export interface VariantRow {
   variantId?: string | undefined;
   optionValues: OptionValues;
@@ -46,6 +54,7 @@ export interface VariantRow {
   barcode: string;
   /** The one value this kind lets a variant override: minutes, billing months or grams. */
   override: string;
+  stockComponents: StockComponentDraft[];
 }
 
 export interface OfferingFormState {
@@ -74,7 +83,22 @@ export const DEFAULT_BILLING_COUNT = "1";
 export const DEFAULT_SERVICE_MINUTES = "30";
 
 export function emptyRow(optionValues: OptionValues = {}): VariantRow {
-  return { optionValues, price: "", compareAtPrice: "", sku: "", barcode: "", override: "" };
+  return {
+    optionValues,
+    price: "",
+    compareAtPrice: "",
+    sku: "",
+    barcode: "",
+    override: "",
+    stockComponents: [],
+  };
+}
+
+function stockComponentsOf(components: readonly StockComponent[]): StockComponentDraft[] {
+  return components.map((component) => ({
+    inventoryItemId: component.inventoryItemId,
+    quantity: String(component.quantity),
+  }));
 }
 
 function emptyDetails(): DetailsState {
@@ -148,6 +172,7 @@ function rowOfVariant(kind: OfferingKind, variant: VariantResponse): VariantRow 
     sku: variant.sku ?? "",
     barcode: variant.barcode ?? "",
     override: overrideTextOf(kind, variant),
+    stockComponents: stockComponentsOf(variant.stockComponents),
   };
 }
 

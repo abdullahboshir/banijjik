@@ -3,6 +3,7 @@ import {
   PLAN_START_RULE,
   type Money,
   type QuantityRule,
+  type StockComponent,
   type UnitKey,
 } from "@banijjik/contracts/catalog";
 import { moneyFromInput } from "@banijjik/web-client";
@@ -30,6 +31,7 @@ export interface VariantPayload {
   unitKey: UnitKey;
   quantityRule?: QuantityRule;
   overrides?: Record<string, unknown>;
+  stockComponents?: StockComponent[];
 }
 
 /** What the form sends. A create adds `kind`; an update adds `version` and sends `null` to clear the description. */
@@ -164,6 +166,25 @@ function overridesOf(
   return { billingPeriod: { unit: state.details.billingUnit, count: value } };
 }
 
+function stockComponentsOf(
+  state: OfferingFormState,
+  row: VariantRow,
+  errors: FieldErrors,
+): StockComponent[] | undefined {
+  if (state.kind !== OFFERING_KIND.PRODUCT || row.stockComponents.length === 0) return undefined;
+  const components: StockComponent[] = [];
+  row.stockComponents.forEach((component, index) => {
+    const prefix = `stock-${index}`;
+    const quantity = wholeNumberOf(component.quantity);
+    if (component.inventoryItemId.trim() === "") errors[prefix] = REQUIRED_KEY;
+    if (quantity === undefined || quantity < 1) errors[prefix] = INVALID_KEY;
+    if (component.inventoryItemId.trim() !== "" && quantity !== undefined && quantity >= 1) {
+      components.push({ inventoryItemId: component.inventoryItemId.trim(), quantity });
+    }
+  });
+  return components.length > 0 ? components : undefined;
+}
+
 function ruleOf(state: OfferingFormState, errors: FieldErrors): QuantityRule | undefined {
   if (!state.isLoose || !canSellLoose(state.unitKey)) return undefined;
   const rule = quantityRuleFromText({ min: state.looseMin, step: state.looseStep });
@@ -180,6 +201,7 @@ function variantOf(
   const hasValues = Object.keys(row.optionValues).length > 0;
   const compareAtPrice = optionalMoney(row.compareAtPrice, "compareAtPrice", { currency, errors });
   const overrides = overridesOf(state, row, errors);
+  const stockComponents = stockComponentsOf(state, row, errors);
   return {
     ...(row.variantId ? { variantId: row.variantId } : {}),
     ...(hasValues
@@ -192,6 +214,7 @@ function variantOf(
     unitKey: state.unitKey,
     ...(rule ? { quantityRule: rule } : {}),
     ...(overrides ? { overrides } : {}),
+    ...(stockComponents ? { stockComponents } : {}),
   };
 }
 

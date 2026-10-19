@@ -1,11 +1,13 @@
 "use client";
 
-import { MAX_OPTION_NAMES_PER_VARIANT } from "@banijjik/contracts/catalog";
+import { MAX_OPTION_NAMES_PER_VARIANT, type UnitKey } from "@banijjik/contracts/catalog";
 import { Button, PageSection } from "@banijjik/ui";
 import { useState, type ReactElement } from "react";
+import type { ItemPickerLabels } from "../stock/stock-labels";
 import { fillLabel, type EditorLabels } from "./catalog-labels";
 import { TextField, ToggleField, type SectionProps } from "./editor-fields";
-import { emptyRow, overrideFieldOf, type VariantRow } from "./offering-form";
+import { EditorVariantRow } from "./editor-variant-row";
+import { emptyRow, type VariantRow } from "./offering-form";
 import {
   generateRows,
   variantNameOf,
@@ -15,6 +17,9 @@ import {
 
 export interface VariantsProps extends SectionProps {
   currencySymbol: string;
+  organizationId: string;
+  unitNames: Readonly<Record<UnitKey, string>>;
+  stockPickerLabels: ItemPickerLabels;
   /** The rows as loaded: a combination that comes back while typing gets its old id back (ADR-098). */
   originalRows: readonly VariantRow[];
 }
@@ -98,55 +103,6 @@ function OptionEditor(props: {
   );
 }
 
-function RowEditor(props: {
-  row: VariantRow;
-  index: number;
-  props: VariantsProps;
-  onChange: (row: VariantRow) => void;
-}): ReactElement {
-  const { row, index } = props;
-  const { form, labels, errors, isReadOnly, currencySymbol } = props.props;
-  const overrideField = overrideFieldOf(form.kind);
-  return (
-    <li className="flex flex-col gap-2 rounded-md border border-default p-3">
-      <p className="text-body font-semibold text-primary">{variantNameOf(row.optionValues)}</p>
-      <TextField
-        id={`variant-${index}-price`}
-        label={`${labels["field.price"]} (${currencySymbol})`}
-        value={row.price}
-        inputMode="decimal"
-        error={errors["variants"]}
-        disabled={isReadOnly}
-        onChange={(price) => props.onChange({ ...row, price })}
-      />
-      <TextField
-        id={`variant-${index}-sku`}
-        label={labels["field.sku"]}
-        value={row.sku}
-        disabled={isReadOnly}
-        onChange={(sku) => props.onChange({ ...row, sku })}
-      />
-      <TextField
-        id={`variant-${index}-barcode`}
-        label={labels["field.barcode"]}
-        value={row.barcode}
-        disabled={isReadOnly}
-        onChange={(barcode) => props.onChange({ ...row, barcode })}
-      />
-      {overrideField ? (
-        <TextField
-          id={`variant-${index}-override`}
-          label={labels[`options.override.${overrideField}`]}
-          value={row.override}
-          inputMode="numeric"
-          disabled={isReadOnly}
-          onChange={(override) => props.onChange({ ...row, override })}
-        />
-      ) : null}
-    </li>
-  );
-}
-
 function VariantRows(props: VariantsProps & { isCapped: boolean }): ReactElement {
   const { form, labels, update } = props;
   if (form.rows.length === 0 || form.options.length === 0) {
@@ -163,11 +119,11 @@ function VariantRows(props: VariantsProps & { isCapped: boolean }): ReactElement
       ) : null}
       <ul className="flex flex-col gap-2">
         {form.rows.map((row, index) => (
-          <RowEditor
+          <EditorVariantRow
             key={row.variantId ?? variantNameOf(row.optionValues)}
             row={row}
             index={index}
-            props={props}
+            variantsProps={props}
             onChange={(changed) =>
               update({ rows: form.rows.map((item, at) => (at === index ? changed : item)) })
             }

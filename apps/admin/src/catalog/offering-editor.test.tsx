@@ -26,6 +26,7 @@ const { default: OfferingEditor } = await import("./offering-editor");
 const { editorLabelsOf } = await import("./catalog-labels");
 const { newOfferingForm } = await import("./offering-form");
 const { unitLabels } = await import("./catalog-words");
+const { itemPickerLabelsOf } = await import("../stock/stock-labels");
 
 const { t } = banglaTranslator();
 const labels = editorLabelsOf(t);
@@ -48,6 +49,7 @@ function props(patch: Partial<Props> = {}): Props {
     taxClasses: [],
     locations: [],
     customFields: undefined,
+    stockPickerLabels: itemPickerLabelsOf(t),
     canWrite: true,
     canPublish: true,
     canArchive: true,

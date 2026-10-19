@@ -12,6 +12,7 @@ import { currencySymbolOf } from "@banijjik/ui";
 import { customFieldPartsOf } from "../custom-fields/custom-field-parts";
 import { holdsPermission, holdsPermissionEverywhere } from "../shell/permissions";
 import type { OrgAccess } from "../shell/org-access";
+import { itemPickerLabelsOf } from "../stock/stock-labels";
 import { editorLabelsOf } from "./catalog-labels";
 import type { CatalogLookups } from "./catalog-lookups";
 import { kindWord, unitLabels } from "./catalog-words";
@@ -72,6 +73,7 @@ export function buildEditorProps(input: {
     taxClasses: lookups.taxClasses,
     locations: lookups.locations.map(({ locationId, name }) => ({ locationId, name })),
     customFields: offeringFields.length > 0 ? parts.form : undefined,
+    stockPickerLabels: itemPickerLabelsOf(translator.t),
     ...editorPermissionsOf(access),
   };
 }

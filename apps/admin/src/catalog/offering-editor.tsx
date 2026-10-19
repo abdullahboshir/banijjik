@@ -20,6 +20,7 @@ import { API_BASE_URL } from "../config/api-base-url";
 import { CustomFieldsSection } from "../custom-fields/custom-fields-section";
 import type { CustomFieldsFormProps } from "../custom-fields/use-custom-fields-form";
 import { apiFetch } from "../lib/api/api-client";
+import type { ItemPickerLabels } from "../stock/stock-labels";
 import { transitionOffering } from "./offering-api";
 import type { EditorLabels } from "./catalog-labels";
 import { EditorBasics } from "./editor-basics";
@@ -57,6 +58,7 @@ export interface OfferingEditorProps {
   canWrite: boolean;
   canPublish: boolean;
   canArchive: boolean;
+  stockPickerLabels: ItemPickerLabels;
 }
 
 function ModifierGroupPicker(props: {
@@ -220,14 +222,19 @@ function EditorSections(props: {
       <EditorBasics {...section} categories={p.categories} uploader={uploader} />
       <EditorPrice
         {...section}
+        organizationId={p.organizationId}
         unitNames={p.unitNames}
         currencySymbol={p.currencySymbol}
         taxClasses={p.taxClasses}
+        stockPickerLabels={p.stockPickerLabels}
       />
       <EditorDetails {...section} currencySymbol={p.currencySymbol} />
       <EditorVariants
         {...section}
+        organizationId={p.organizationId}
         currencySymbol={p.currencySymbol}
+        unitNames={p.unitNames}
+        stockPickerLabels={p.stockPickerLabels}
         originalRows={p.initial.rows}
       />
       <ModifierGroupPicker props={p} form={form} update={update} />
