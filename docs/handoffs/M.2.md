@@ -1,6 +1,6 @@
 # Handoff: card M.2 · IMPLEMENT · 2026-10-19
 
-- **Branch / commit:** `s/m2-directory-api` in worktree `E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik-m2` (based on `main` ~`1331be1`). Not merged/pushed.
+- **Branch / commit:** `s/m2-directory-api` @ `12fb592` in worktree `E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik-m2` (based on `main` ~`1331be1`). Not merged/pushed.
 - **Model:** Cursor (Composer)
 - **Done:**
   - OPTIONAL module `commerce/directory` (`MODULE_KEY.DIRECTORY`, `tenantCanDisable: false`): Listing entity, statuses, storefront my-listing + public search, staff queue/approve/reject/hide/unhide
