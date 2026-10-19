@@ -174,6 +174,11 @@ describe("GET /settings", () => {
       "notification.probeShape",
       "organization.digitScript",
       "organization.numberGrouping",
+      "pricing.approval.discountAmountAbove",
+      "pricing.approval.discountPercentAbove",
+      "pricing.defaultTaxClassKey",
+      "pricing.rounding",
+      "pricing.taxInclusive",
     ]);
     expect(settingsOf(response)["organization.digitScript"]).toEqual({
       value: "LATIN",

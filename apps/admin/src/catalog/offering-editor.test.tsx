@@ -45,6 +45,7 @@ function props(patch: Partial<Props> = {}): Props {
     currencySymbol: "৳",
     categories: [],
     modifierGroups: [],
+    taxClasses: [],
     locations: [],
     customFields: undefined,
     canWrite: true,

@@ -12,6 +12,8 @@ export interface ChoiceOption {
 export interface SettingRowView {
   settingKey: string;
   label: string;
+  /** Optional longer help from `setting.<key>.description`. */
+  description: string | undefined;
   valueText: string;
   source: SettingValueSource;
   sourceLabel: string;
@@ -27,6 +29,12 @@ export interface SettingRowView {
   canEdit: boolean;
   /** A stored row at this level exists, so it can be removed. */
   canReset: boolean;
+}
+
+function descriptionOf(settingKey: string, t: Translator["t"]): string | undefined {
+  const key = `setting.${settingKey}.description`;
+  const text = t(key);
+  return text === key ? undefined : text;
 }
 
 export interface SettingRowsInput {
@@ -78,6 +86,7 @@ export function toSettingRows(input: SettingRowsInput): SettingRowView[] {
     rows.push({
       settingKey,
       label: t(`setting.${settingKey}`),
+      description: descriptionOf(settingKey, t),
       valueText: valueTextOf({ settingKey, spec, value: resolved.value }, t),
       source: resolved.source,
       sourceLabel: sourceLabelOf(resolved.source, t),

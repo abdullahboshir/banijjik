@@ -57,6 +57,8 @@ export interface OfferingFormState {
   categoryIds: string[];
   modifierGroupIds: string[];
   images: ImageState[];
+  /** Empty means the business default tax class (or 0% when that is empty). */
+  taxClassKey: string;
   unitKey: UnitKey;
   isLoose: boolean;
   looseMin: string;
@@ -100,6 +102,7 @@ export function newOfferingForm(kind: OfferingKind, unitKey: UnitKey): OfferingF
     categoryIds: [],
     modifierGroupIds: [],
     images: [],
+    taxClassKey: "",
     unitKey,
     isLoose: false,
     looseMin: "",
@@ -201,6 +204,7 @@ export function formFromOffering(offering: OfferingResponse): OfferingFormState 
     categoryIds: offering.categories.map((category) => category.referenceId),
     modifierGroupIds: offering.modifierGroups.map((group) => group.referenceId),
     images: offering.images.map((image) => ({ fileId: image.fileId, url: image.url })),
+    taxClassKey: offering.taxClassKey ?? "",
     unitKey: first?.unitKey ?? "PIECE",
     isLoose: first?.quantityRule != null,
     looseMin: rule.min,

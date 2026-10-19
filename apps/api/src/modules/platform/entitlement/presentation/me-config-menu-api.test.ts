@@ -22,16 +22,19 @@ const ORGANIZATION_MENU_KEYS = {
 // The owner and staff hold contact.contact.read, so the contacts entry leads their menu.
 const CONTACTS_MENU_KEY = "contact.contacts";
 // Every role reads the catalog (card 3.2a), so its three entries sit in every menu.
+// Promotions need pricing.promotion.read (OWNER/MANAGER/CASHIER/STAFF/VIEWER).
 const CATALOG_MENU_KEYS = {
   offerings: "catalog.offerings",
   categories: "catalog.categories",
   modifierGroups: "catalog.modifierGroups",
+  promotions: "catalog.promotions",
 } as const;
 const EXPENSE_MENU_KEYS = {
   expenses: "expense.expenses",
   categories: "expense.categories",
 } as const;
 const ACCOUNTING_TRIAL_BALANCE_MENU_KEY = "accounting.trialBalance";
+const TAX_CLASSES_MENU_KEY = "pricing.taxClasses";
 
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
@@ -41,7 +44,9 @@ const READ_ONLY_SETTINGS_MENU_KEYS = [
 ];
 /** Settings the owner (and manager) see beyond the read-only set; ledger read is OWNER/MANAGER only. */
 const OWNER_SETTINGS_MENU_KEYS = [
-  ...READ_ONLY_SETTINGS_MENU_KEYS,
+  READ_ONLY_SETTINGS_MENU_KEYS[0],
+  TAX_CLASSES_MENU_KEY,
+  ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
   ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
 ];
 
@@ -82,6 +87,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
+      CATALOG_MENU_KEYS.promotions,
       ORGANIZATION_MENU_KEYS.roles,
       ...OWNER_SETTINGS_MENU_KEYS,
     ]);
@@ -114,6 +120,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
+      CATALOG_MENU_KEYS.promotions,
       ORGANIZATION_MENU_KEYS.roles,
       ...OWNER_SETTINGS_MENU_KEYS,
     ]);
@@ -128,6 +135,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
+      CATALOG_MENU_KEYS.promotions,
       ORGANIZATION_MENU_KEYS.roles,
       ...OWNER_SETTINGS_MENU_KEYS,
     ]);
@@ -143,6 +151,7 @@ describe("the settings menu of the organization module", () => {
       CONTACTS_MENU_KEY,
       CATALOG_MENU_KEYS.categories,
       CATALOG_MENU_KEYS.modifierGroups,
+      CATALOG_MENU_KEYS.promotions,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
     ]);
   });

@@ -2,7 +2,7 @@ import { SYSTEM_REASON, TOKEN_AUDIENCE, type ModuleManifest } from "@banijjik/co
 import { Router, type RequestHandler } from "express";
 import type { AppConfig } from "../config/index.js";
 import { createEntitlementGate, createPermissionMiddleware } from "../kernel/access/index.js";
-import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
+import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import { authenticate, createJoseAccessTokenVerifier } from "../kernel/auth/index.js";
 import { asSystemPort } from "../kernel/context/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
@@ -36,6 +36,7 @@ import { registerAccountingModels } from "../modules/commerce/accounting/index.j
 import { registerCatalogModels } from "../modules/commerce/catalog/index.js";
 import { registerContactModels } from "../modules/commerce/contact/index.js";
 import { registerExpenseModels } from "../modules/commerce/expense/index.js";
+import { registerPricingModels } from "../modules/commerce/pricing/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
@@ -110,6 +111,7 @@ export function registerModuleModels(): void {
   registerCatalogModels();
   registerAccountingModels();
   registerExpenseModels();
+  registerPricingModels();
   registerSettingsModels();
   registerFileModels();
 }
@@ -172,18 +174,46 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     locationAccess(),
     createEntitlementGate({ registry, config: orgConfig }),
     buildTenantRouter(
-      buildTenantRouters({
-        dependencies,
-        audit,
-        orgConfig,
-        access,
-        registry,
-        organizationRouter: organizationTenant.tenantRouter,
-        coreRouters: core,
-      }),
+      buildTenantRouters(
+        tenantRoutersInput({
+          clock,
+          audit,
+          orgConfig,
+          access,
+          organizationRouter: organizationTenant.tenantRouter,
+          coreRouters: core,
+          dependencies,
+        }),
+      ),
     ),
   );
   return router;
+}
+
+function tenantRoutersInput(parts: {
+  readonly clock: Clock;
+  readonly audit: AuditRecorder;
+  readonly orgConfig: OrgConfigService;
+  readonly access: AccessParts;
+  readonly organizationRouter: Router;
+  readonly coreRouters: ReturnType<typeof buildCoreRouters>;
+  readonly dependencies: V1Dependencies;
+}) {
+  const { dependencies } = parts;
+  return {
+    clock: parts.clock,
+    audit: parts.audit,
+    orgConfig: parts.orgConfig,
+    access: parts.access,
+    organizationRouter: parts.organizationRouter,
+    coreRouters: parts.coreRouters,
+    ...(dependencies.tenantRouters === undefined
+      ? {}
+      : { tenantRouters: dependencies.tenantRouters }),
+    ...(dependencies.tenantRouterFactories === undefined
+      ? {}
+      : { tenantRouterFactories: dependencies.tenantRouterFactories }),
+  };
 }
 
 /** The public customer API: its own pipeline, outside admin sign-in and membership (card M.1). */
@@ -261,13 +291,6 @@ function buildResolvedConfigService(
     ...buildResolvedConfigSources(registry),
     templates: dependencies.templateReader ?? buildIndustryTemplateReader(dependencies.clock),
   });
-}
-
-interface AccessParts {
-  readonly catalog: PermissionCatalog;
-  readonly memberAccess: MemberAccessReader;
-  readonly permissionGate: PermissionGate;
-  readonly permission: PermissionMiddlewareFactory;
 }
 
 /** The permission catalogue, gate and `permission(key)` guard, built once from the registry (ADR-088, ADR-091). */

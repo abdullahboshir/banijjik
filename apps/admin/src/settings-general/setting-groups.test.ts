@@ -9,6 +9,7 @@ function row(settingKey: string): SettingRowView {
   return {
     settingKey,
     label: settingKey,
+    description: undefined,
     valueText: "",
     source: "SYSTEM",
     sourceLabel: "",

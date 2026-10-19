@@ -60,6 +60,7 @@ const RETAIL_MODULES = [
   "file",
   "iam",
   "organization",
+  "pricing",
   "settings",
 ];
 const SALON_MODULES = [
@@ -74,6 +75,7 @@ const SALON_MODULES = [
   "file",
   "iam",
   "organization",
+  "pricing",
   "settings",
 ];
 

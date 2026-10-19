@@ -65,6 +65,7 @@ grandTotal       = Σ lineNetTotal + deliveryCharge − store-credit is NOT a di
 ```
 - Every number above is stored on the line (`unitPrice`, `lineGross`, `lineDiscount`, `lineTax`, `lineNetTotal`) and on totals. The bot's `quote` tool and storefront checkout call this same pipeline (one implementation).
 - Price changes after creation never affect the request. Re-pricing happens only on an explicit edit while the request is still editable (§4).
+- **Card 3.4 / ADR-120:** `POST /quotes` (permission `catalog.offering.read`) runs this pipeline. An unknown or archived `taxClassKey` (on the offering or `pricing.defaultTaxClassKey`) is `422 TAX_CLASS_UNKNOWN`. Empty default class means 0%. Cash rounding (`pricing.rounding`) returns `roundingAdjustment`. Manual discounts above `pricing.approval.discountPercentAbove` or above `pricing.approval.discountAmountAbove` (0 = amount threshold off) populate `approvalsRequired` (PIN/token in 3.4b).
 
 ## 4. Order (module `sales`)
 
@@ -242,7 +243,7 @@ New append-only-by-period **EnrollmentPeriod** (enrollment, location scope): `en
 
 - **Where needed:**
   - refunds and return reversals (cashier/staff always; settings can exempt MANAGER)
-  - manual discounts above `pricing.approval.discountPercentAbove` (default 10%) or `pricing.approval.discountAmountAbove`
+  - manual discounts above `pricing.approval.discountPercentAbove` (default 10%) or `pricing.approval.discountAmountAbove` (default 0 = off; any value above 0 is the threshold in minor units)
   - price override at POS
   - store-credit manual adjustment
   - NOT_RECEIVED returns

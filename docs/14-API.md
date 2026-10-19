@@ -156,9 +156,10 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 | `POST /stock-adjustments` | `inventory.adjustment.create` | I L A* | reason required; large negative adjustments need approval (setting) |
 | `POST /stock-transfers` · `POST /stock-transfers/{stockTransferId}/receive` · `/cancel` | `inventory.transfer.create` | I L | two movements per leg, one txn each |
 | `POST /stock/damaged/write-off` | `inventory.adjustment.create` | I L A | DAMAGE_WRITE_OFF |
-| `GET/POST/PATCH /promotions[/{promotionId}]` · `POST /promotions/{promotionId}/archive` | `pricing.promotion.*` | | |
-| `GET/PATCH /tax-classes` | `pricing.taxClass.update` | | |
-| `POST /quotes` | any request-create permission | | `QuoteRequest` (lines/bookings/enrollments, delivery zone, promo code) → priced lines; the same pipeline the bot uses (`11 §3`) |
+| `GET/POST/PATCH /promotions[/{promotionId}]` · `POST /promotions/{promotionId}/archive` | `pricing.promotion.{read,create,update,archive}` | I* | create needs Idempotency-Key; list filter `?status=`; activate via PATCH `status` |
+| `GET /tax-classes` · `GET /tax-classes/{taxClassId}` | `catalog.offering.read` | | ACTIVE by default; `?status=` for archived (catalog editor and quote screens) |
+| `POST/PATCH /tax-classes[/{taxClassId}]` · `POST /tax-classes/{taxClassId}/archive` | `pricing.taxClass.update` | I* | create needs Idempotency-Key; OWNER/MANAGER; not in `/me/config` |
+| `POST /quotes` | `catalog.offering.read` | | `QuoteRequest` → priced lines (`11 §3` / ADR-120); unknown/archived tax class → `422 TAX_CLASS_UNKNOWN`; read-only |
 
 ### 5.4 sales (orders, returns)
 | Method & path | Permission | Flags | Notes |

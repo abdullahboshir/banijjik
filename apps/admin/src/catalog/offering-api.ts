@@ -19,10 +19,16 @@ export async function createOffering(
   organizationId: string,
   input: { kind: OfferingKind; body: OfferingBody; idempotencyKey: string },
 ): Promise<OfferingResponse> {
-  const { description, ...rest } = input.body;
+  // Create schema omits optional clears; null means "not set" on the form (same as description).
+  const { description, taxClassKey, ...rest } = input.body;
   const result = await apiFetch<OfferingResponse>(offeringsBase(organizationId), {
     method: "POST",
-    body: { kind: input.kind, ...rest, ...(description === null ? {} : { description }) },
+    body: {
+      kind: input.kind,
+      ...rest,
+      ...(description === null ? {} : { description }),
+      ...(taxClassKey === null ? {} : { taxClassKey }),
+    },
     idempotencyKey: input.idempotencyKey,
   });
   return result.data;

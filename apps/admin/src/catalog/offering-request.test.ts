@@ -25,6 +25,7 @@ describe("buildOfferingPayload for a simple product", () => {
     const body = payloadOf(productForm());
 
     expect(body.name).toBe("T-shirt");
+    expect(body.taxClassKey).toBeNull();
     expect(body.variants).toEqual([
       { price: { amount: 1250, currency: "BDT" }, sku: "TEE-1", unitKey: "PIECE" },
     ]);

@@ -20,4 +20,6 @@ export const CATALOG_MESSAGE_KEYS: readonly string[] = [
   "errors.category_too_deep",
   "errors.category_cycle",
   "errors.modifier_group_selection_invalid",
+  "errors.quote_quantity_invalid",
+  "errors.quote_modifier_invalid",
 ];

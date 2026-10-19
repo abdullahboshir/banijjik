@@ -5,6 +5,7 @@ import type {
   OrganizationProfileResponse,
 } from "@banijjik/contracts";
 import type { CategoryResponse, ModifierGroupResponse } from "@banijjik/contracts/catalog";
+import type { TaxClassResponse } from "@banijjik/contracts/pricing";
 import { fetchBusinessResource, fetchBusinessResourceIfAllowed } from "../lib/api/server-resource";
 import type { OrgAccess } from "../shell/org-access";
 
@@ -14,6 +15,7 @@ const LOOKUP_PAGE_SIZE = 100;
 export interface CatalogLookups {
   categories: CategoryResponse[];
   modifierGroups: ModifierGroupResponse[];
+  taxClasses: TaxClassResponse[];
   locations: LocationResponse[];
   currency: CurrencyCode;
 }
@@ -28,12 +30,15 @@ function baseOf(access: OrgAccess): string {
  */
 export async function loadCatalogLookups(access: OrgAccess): Promise<CatalogLookups> {
   const base = baseOf(access);
-  const [categories, modifierGroups, locations, profile] = await Promise.all([
+  const [categories, modifierGroups, taxClasses, locations, profile] = await Promise.all([
     fetchBusinessResourceIfAllowed<CategoryResponse[]>(
       `${base}/categories?limit=${LOOKUP_PAGE_SIZE}`,
     ),
     fetchBusinessResourceIfAllowed<ModifierGroupResponse[]>(
       `${base}/modifier-groups?limit=${LOOKUP_PAGE_SIZE}`,
+    ),
+    fetchBusinessResourceIfAllowed<TaxClassResponse[]>(
+      `${base}/tax-classes?limit=${LOOKUP_PAGE_SIZE}`,
     ),
     fetchBusinessResourceIfAllowed<LocationResponse[]>(
       `${base}/locations?status=ACTIVE&limit=${LOOKUP_PAGE_SIZE}`,
@@ -43,6 +48,7 @@ export async function loadCatalogLookups(access: OrgAccess): Promise<CatalogLook
   return {
     categories: categories ?? [],
     modifierGroups: modifierGroups ?? [],
+    taxClasses: taxClasses ?? [],
     locations: locations ?? [],
     currency: profile.data.currencyCode,
   };

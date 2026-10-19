@@ -331,7 +331,7 @@ Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fiel
 | `imageFileIds` | FileId[] | |
 | `variants` | `OfferingVariant[]` (embedded, 1–100) | see below |
 | `kindDetails` | discriminated union by kind | schemas in D3 (`durationMinutes`, `billingPeriod`, `rateUnit`, `startsAt`, `capacity`, …) |
-| `taxClassKey` | string? | card 3.4 |
+| `taxClassKey` | string? | kebab key of a TaxClass; catalog does not check it (ADR-120) |
 | `synonyms` | string[] | per-offering search words; org-wide ones in `SearchSynonym` |
 | `customFields` | map | |
 | `source`, `channelId?` | | lineage |
@@ -355,6 +355,13 @@ Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fiel
 - 3.2a notes (ADR-116): money is `{ amount, currency }`; `variants[].overrides` holds only the fields 11 section 2 lets the kind override; archived variants stay in the list with `status ARCHIVED`; variants without options differ by name; the stored `nameSearch` and `searchTerms` are folded copies for prefix search; the organization keeps one `SearchSynonymBook` (`search_synonyms`) and an `OfferingCounter` (`offering_counters`).
 - Indexes: `{ organizationId, offeringId }` unique, `{ organizationId, slug }` unique, `{ organizationId, kind, status, updatedAt }`, `{ organizationId, "variants.sku" }` unique partial, `{ organizationId, "variants.barcode" }` partial, `{ organizationId, categoryIds }`.
 - Events: `catalog.offering.created`, `.updated`, `.published` (DRAFT → ACTIVE), `.archived`, `.priceChanged`.
+
+### 5.3b TaxClass and Promotion (module `pricing`, ADR-120)
+Owner `commerce/pricing` · scope organization · versioned
+
+**TaxClass:** `taxClassId`, `taxClassKey` (kebab, unique per org, ≤ 40), `name`, `rateBasisPoints` (integer; 750 = 7.5%; 0 allowed), `status` (`ACTIVE \| ARCHIVED`), STF + `version`. List ACTIVE by default. Quote refuses unknown or archived keys (`422 TAX_CLASS_UNKNOWN`). Setting `pricing.defaultTaxClassKey` (TEXT ≤ 40, default empty = 0%) applies when the offering has no class; settings write does not check existence.
+
+**Promotion:** `promotionId`, `name`, `status` (`DRAFT \| ACTIVE \| ARCHIVED`), `priority` (higher first), `startsAt?`, `endsAt?`, `locationIds` (empty = all), `target` `{ scope: ALL \| KIND \| CATEGORY \| OFFERING \| VARIANT, ids[] }`, `benefit` `{ type: PERCENT \| AMOUNT_OFF \| FIXED_PRICE, value }` (PERCENT in basis points; others Money per sales unit), `minQuantity?`, `isStackable` (default false), `maxDiscountPerLine?: Money`, STF + `version`. Event: `pricing.promotion.changed`.
 
 ### 5.4 Resource
 Owner `commerce/booking` · scope location · versioned · custom fields (entityType `resource`)

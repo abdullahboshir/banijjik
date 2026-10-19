@@ -2,6 +2,8 @@ import { ACCOUNTING_EVENT_TYPE, EXPENSE_EVENT_TYPE } from "../accounting/account
 import { BOOKING_EVENT_TYPE, type BookingEventPayload } from "../booking/booking-event-type.js";
 import type { OfferingEventPayload } from "../catalog/catalog-contracts.js";
 import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
+import type { PromotionEventPayload } from "../pricing/pricing-contracts.js";
+import { PRICING_EVENT_TYPE } from "../pricing/pricing-event-type.js";
 import type {
   ContactEventPayload,
   CustomerAccountEventPayload,
@@ -116,4 +118,5 @@ export interface EventPayloadMap {
   readonly [PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED]: StoreCreditEventPayload;
   readonly [BOOKING_EVENT_TYPE.BOOKING_COMPLETED]: BookingEventPayload;
   readonly [BOOKING_EVENT_TYPE.BOOKING_CANCELLED]: BookingEventPayload;
+  readonly [PRICING_EVENT_TYPE.PROMOTION_CHANGED]: PromotionEventPayload;
 }

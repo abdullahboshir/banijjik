@@ -13,6 +13,8 @@ export type {
   JournalEntryId,
   ModifierGroupId,
   OfferingId,
+  PromotionId,
+  TaxClassId,
   OtpChallengeId,
   Id,
   IndustryTemplateId,

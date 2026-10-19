@@ -38,6 +38,8 @@ describe("audit vocabulary", () => {
       "expenseCategory",
       "journalEntry",
       "account",
+      "taxClass",
+      "promotion",
     ]);
   });
 });

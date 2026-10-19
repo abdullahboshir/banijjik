@@ -39,6 +39,8 @@ export interface OfferingPayload {
   categoryIds: string[];
   modifierGroupIds: string[];
   imageFileIds: string[];
+  /** `null` clears a stored class so the business default applies. */
+  taxClassKey: string | null;
   kindDetails: Record<string, unknown>;
   variants: VariantPayload[];
 }
@@ -224,6 +226,7 @@ export function buildOfferingPayload(
       categoryIds: state.categoryIds,
       modifierGroupIds: state.modifierGroupIds,
       imageFileIds: state.images.map((image) => image.fileId),
+      taxClassKey: state.taxClassKey.trim() === "" ? null : state.taxClassKey.trim(),
       kindDetails,
       variants,
     },

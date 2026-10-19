@@ -25,6 +25,7 @@ import { buildAccountingTenantRouter } from "./accounting-tenant-router.js";
 import { buildCatalogTenantRouter } from "./catalog-tenant-router.js";
 import { buildContactTenantRouter } from "./contact-tenant-router.js";
 import { buildExpenseTenantRouter } from "./expense-tenant-router.js";
+import { buildPricingTenantRouter } from "./pricing-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -51,6 +52,7 @@ export interface CoreTenantRouters {
   readonly catalogRouter: Router;
   readonly accountingRouter: Router;
   readonly expenseRouter: Router;
+  readonly pricingRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -103,7 +105,7 @@ function buildCommerceTenantRouters(
   input: CoreTenantRouterInput,
 ): Pick<
   CoreTenantRouters,
-  "contactRouter" | "catalogRouter" | "accountingRouter" | "expenseRouter"
+  "contactRouter" | "catalogRouter" | "pricingRouter" | "accountingRouter" | "expenseRouter"
 > {
   const shared = {
     clock: input.clock,
@@ -117,6 +119,7 @@ function buildCommerceTenantRouters(
   return {
     contactRouter: buildContactTenantRouter(shared),
     catalogRouter: buildCatalogTenantRouter(shared),
+    pricingRouter: buildPricingTenantRouter(shared),
     accountingRouter: buildAccountingTenantRouter({
       clock: input.clock,
       audit: input.audit,

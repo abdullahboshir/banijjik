@@ -45,6 +45,8 @@ export const EDITOR_LABEL_KEYS = [
   "field.priceHint",
   "field.compareAt",
   "field.compareAtHint",
+  "field.taxClass",
+  "field.taxClassNone",
   "field.unit",
   "field.sku",
   "field.barcode",

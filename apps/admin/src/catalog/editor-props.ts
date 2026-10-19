@@ -69,6 +69,7 @@ export function buildEditorProps(input: {
     currencySymbol: currencySymbolOf(lookups.currency),
     categories: lookups.categories,
     modifierGroups: lookups.modifierGroups,
+    taxClasses: lookups.taxClasses,
     locations: lookups.locations.map(({ locationId, name }) => ({ locationId, name })),
     customFields: offeringFields.length > 0 ? parts.form : undefined,
     ...editorPermissionsOf(access),

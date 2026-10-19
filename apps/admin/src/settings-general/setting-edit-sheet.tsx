@@ -51,6 +51,7 @@ function ValueInput({
       fieldId="setting-value"
       label={`${setting.label} · ${labels.valueField}`}
       value={text}
+      hint={setting.description}
       errorKey={errorKey}
       onChange={onChange}
     />

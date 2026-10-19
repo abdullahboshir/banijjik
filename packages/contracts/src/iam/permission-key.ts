@@ -58,6 +58,11 @@ export const PERMISSION_KEY = {
   EXPENSE_EXPENSE_CREATE: "expense.expense.create",
   EXPENSE_EXPENSE_VOID: "expense.expense.void",
   EXPENSE_CATEGORY_UPDATE: "expense.category.update",
+  PRICING_PROMOTION_READ: "pricing.promotion.read",
+  PRICING_PROMOTION_CREATE: "pricing.promotion.create",
+  PRICING_PROMOTION_UPDATE: "pricing.promotion.update",
+  PRICING_PROMOTION_ARCHIVE: "pricing.promotion.archive",
+  PRICING_TAX_CLASS_UPDATE: "pricing.taxClass.update",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

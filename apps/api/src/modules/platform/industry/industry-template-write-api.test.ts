@@ -53,6 +53,7 @@ const RETAIL_MODULES = [
   "file",
   "iam",
   "organization",
+  "pricing",
   "settings",
 ];
 const WITH_BOOKING = [
@@ -67,6 +68,7 @@ const WITH_BOOKING = [
   "file",
   "iam",
   "organization",
+  "pricing",
   "settings",
 ];
 

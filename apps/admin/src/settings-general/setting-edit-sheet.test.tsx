@@ -26,6 +26,7 @@ function row(overrides: Partial<SettingRowView> = {}): SettingRowView {
   return {
     settingKey: "organization.digitScript",
     label: "অঙ্ক",
+    description: undefined,
     valueText: "ইংরেজি",
     source: "SYSTEM",
     sourceLabel: "সিস্টেম ডিফল্ট",

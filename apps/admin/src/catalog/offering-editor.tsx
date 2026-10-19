@@ -8,6 +8,7 @@ import {
   type OfferingStatus,
   type UnitKey,
 } from "@banijjik/contracts/catalog";
+import type { TaxClassResponse } from "@banijjik/contracts/pricing";
 import { Button, PageSection, StickyActionBar } from "@banijjik/ui";
 import { publicFileUrl, uploadFile } from "@banijjik/web-client";
 import { useTranslator } from "@banijjik/web-client/client";
@@ -50,6 +51,7 @@ export interface OfferingEditorProps {
   currencySymbol: string;
   categories: readonly CategoryResponse[];
   modifierGroups: readonly ModifierGroupResponse[];
+  taxClasses: readonly TaxClassResponse[];
   locations: readonly { locationId: string; name: string }[];
   customFields: CustomFieldsFormProps | undefined;
   canWrite: boolean;
@@ -216,7 +218,12 @@ function EditorSections(props: {
   return (
     <>
       <EditorBasics {...section} categories={p.categories} uploader={uploader} />
-      <EditorPrice {...section} unitNames={p.unitNames} currencySymbol={p.currencySymbol} />
+      <EditorPrice
+        {...section}
+        unitNames={p.unitNames}
+        currencySymbol={p.currencySymbol}
+        taxClasses={p.taxClasses}
+      />
       <EditorDetails {...section} currencySymbol={p.currencySymbol} />
       <EditorVariants
         {...section}

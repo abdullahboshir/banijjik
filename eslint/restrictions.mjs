@@ -39,7 +39,7 @@ const deepPackagePatterns = [
 // "!@banijjik/contracts" never worked (measured); `regex` is the same allow-list. The entries exist
 // because the root index of @banijjik/contracts is at the line cap (cards 3.0, 3.1a, 3.2a, 3.4b, 3.8c).
 const DOMAIN_FORBIDDEN_SOURCE =
-  "^(?!@banijjik/(?:contracts(?:/file|/contact|/catalog|/iam|/accounting)?|ids)$)(?!\\.{1,2}(?:/|$))";
+  "^(?!@banijjik/(?:contracts(?:/file|/contact|/catalog|/iam|/accounting|/pricing)?|ids)$)(?!\.{1,2}(?:/|$))";
 
 const DOMAIN_IMPORT_MESSAGE =
   "Domain code imports only @banijjik/contracts, @banijjik/ids and files of its own domain folder (ADR-011a).";

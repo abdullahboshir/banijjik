@@ -289,3 +289,36 @@ export {
   type JournalListQuery,
   type TrialBalanceQuery,
 } from "./accounting/accounting-schemas.js";
+export type {
+  CategoryCreateBody,
+  CategoryListQuery,
+  CategoryUpdateBody,
+  ModifierGroupCreateBody,
+  ModifierGroupListQuery,
+  ModifierGroupUpdateBody,
+  ModifierOptionInput,
+} from "./catalog/category-schemas.js";
+export { synonymsUpdateRequestSchema } from "./catalog/synonym-schemas.js";
+export type { SynonymsUpdateBody } from "./catalog/synonym-schemas.js";
+export {
+  optionalTaxClassKeySchema,
+  promotionArchiveRequestSchema,
+  promotionCreateRequestSchema,
+  promotionIdParamsSchema,
+  promotionListQuerySchema,
+  promotionUpdateRequestSchema,
+  quoteRequestSchema,
+  taxClassArchiveRequestSchema,
+  taxClassCreateRequestSchema,
+  taxClassIdParamsSchema,
+  taxClassKeySchema,
+  taxClassListQuerySchema,
+  taxClassUpdateRequestSchema,
+  type PromotionCreateBody,
+  type PromotionListQuery,
+  type PromotionUpdateBody,
+  type QuoteBody,
+  type TaxClassCreateBody,
+  type TaxClassListQuery,
+  type TaxClassUpdateBody,
+} from "./pricing/pricing-schemas.js";

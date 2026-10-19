@@ -62,6 +62,25 @@ import {
 
 export { catalogManifest } from "./module.manifest.js";
 export { registerCatalogModels } from "./infrastructure/register-catalog-models.js";
+export {
+  buildCatalogQuoteReader,
+  type CatalogQuoteLineRequest,
+  type CatalogQuoteLineSource,
+  type CatalogQuoteReader,
+} from "./application/quote-catalog-reader.js";
+import {
+  buildCatalogQuoteReader,
+  type CatalogQuoteReader,
+} from "./application/quote-catalog-reader.js";
+
+/** Quote reader wired to the catalog repositories; pricing adapts this in routes. */
+export function buildDefaultCatalogQuoteReader(): CatalogQuoteReader {
+  return buildCatalogQuoteReader({
+    offerings: new MongoOfferingRepository(),
+    locationRows: new MongoOfferingLocationRepository(),
+    modifierGroups: new MongoModifierGroupRepository(),
+  });
+}
 export type {
   CatalogCustomFieldReader,
   DefaultUnitReader,

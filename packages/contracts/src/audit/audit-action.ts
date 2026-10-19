@@ -54,6 +54,12 @@ export const AUDIT_ACTION = {
   EXPENSE_VOIDED: "expense.expense.voided",
   EXPENSE_CATEGORY_UPDATED: "expense.category.updated",
   JOURNAL_POSTED: "accounting.journal.posted",
+  TAX_CLASS_CREATED: "pricing.taxClass.created",
+  TAX_CLASS_UPDATED: "pricing.taxClass.updated",
+  TAX_CLASS_ARCHIVED: "pricing.taxClass.archived",
+  PROMOTION_CREATED: "pricing.promotion.created",
+  PROMOTION_UPDATED: "pricing.promotion.updated",
+  PROMOTION_ARCHIVED: "pricing.promotion.archived",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -83,6 +89,8 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "expenseCategory",
   "journalEntry",
   "account",
+  "taxClass",
+  "promotion",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 
