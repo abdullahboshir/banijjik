@@ -103,11 +103,14 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.2a catalog API | merged (2026-10-18, implemented with Claude Code (Sonnet 5.5), Claude T1 review passed; ADR-116 proposed) | offerings of every kind, variants (full-list update, archive not delete), unit registry, categories, add-ons, images, branch rows (price override per variant), search with synonyms, SKU, barcode, offering limit counter; money `{ amount, currency }` (05-CONVENTIONS); stock components gated until 3.3. Note: an archived variant keeps its SKU, so the SKU stays taken |
 | 3.2b catalog screens | merged (2026-10-19, implemented with Claude Code (Sonnet 5.5), Claude merge check passed) | list, editor by kind with variants and loose rule, categories, add-ons, branch prices (new `GET /offerings/{offeringId}/locations`, paged); catalog events ordered by `offering:<offeringId>`; one `PublicImage` component. Gaps: SERVICE and PLAN become usable and get browser scenarios with 3.6 and 3.7; no category image, synonyms edited as text, photos reordered without drag and drop. Categories 169.0 and add-ons 168.9 KiB of 170 |
 | 3.12 business branding | merged (2026-10-18, implemented with Claude Code (Sonnet 5.5), Claude merge check passed; ADR-114 proposed) | logo (LOGO file), readable colours with presets (checks in contracts `BRAND_CHECKS`), tagline, preview, logo in the admin top bar and `/me/orgs`; branding route 169.4 KiB. **Pending: the phone usability check with pilot owners (owner)** |
-| 3.4 pricing and tax | todo |  |
-| 3.6 booking core | todo | lane B |
+| 3.4 pricing engine | planned (2026-10-19, `docs/plans/3.4.md`, Opus; T1) | wave 3; quote pipeline of 11 §3, tax classes, promotions, approval thresholds flagged; ADR-120 |
+| 3.4b manager approvals | planned (2026-10-19, `docs/plans/3.4b.md`, Opus; T1) | wave 3, beside 3.4; PIN, one-time approval token, `iam.approval.grant`; ADR-121 |
+| 3.6 booking core | planned (2026-10-19, `docs/plans/3.6.md`, Opus; T1) | wave 3, after 3.4; resources, availability, SERVICE bookings with 5-minute capacity buckets, `kernel/jobs`, provides the SERVICE kind; ADR-122 |
+| 3.6b rental and event bookings | todo | after 3.6 |
 | 3.7 enrollment core | todo | lane B |
 | 3.8a ordered event streams | merged (2026-10-18, implemented with Claude Code (Sonnet 5.5), Claude T1 review passed; ADR-115 proposed) | `orderingKey` streams, ORDERED/UNORDERED handlers, waits without spending attempts (BullMQ `attemptsMade`), module-off advances, dead letters FAILED → REPLAY_REQUESTED → REPLAYED or SKIPPED, platform `operations` module and Failed events screen (SUPER_ADMIN). Contact events carry `contact:<contactId>`; catalog events get `offering:<offeringId>` in 3.2b. Gaps: no production ORDERED handler yet (3.8 is the first), old dead letters have no status, the 24 h waiting warning is untested |
-| 3.8 payments, accounting engine, expenses | todo | lane C; per-organization event ordering first |
+| 3.8 payments, dues, store credit | planned (2026-10-19, `docs/plans/3.8.md`, Opus; T1) | wave 3, after 3.4b and 3.6; manual bKash/Nagad reference uniqueness, refunds and reversals with approval, deposit enforcement; ADR-123 |
+| 3.8c accounting engine and expenses | planned (2026-10-19, `docs/plans/3.8c.md`, Opus; T1) | wave 3, beside 3.6; system accounts, ORDERED posting handlers, trial balance, expenses; ADR-124 |
 | 3.8b bookkeeping add-on UI | todo |  |
 | 3.3 inventory ledger | todo | lane A; ADR-098 inventory items |
 | 3.5 orders | todo | lane A |

@@ -67,6 +67,40 @@ Shared add-only files are the same as wave 1.
 ### Merging order
 In the order the cards pass review; the reviewer rebases the later ones. 3.1b and 3.2b start only after their API card is merged. **Heavy test runs need the lead's "go"** (one at a time), as in wave 1.
 
+## Wave 3 (planned 2026-10-19 on `main 3c0165b`; implemented with Cursor or Claude Code)
+Wave 2 merged: 3.1c, 3.1b, 3.12, 3.2a, 3.2b, 3.8a (and track M card M.1 runs separately).
+
+| Order | Cards | Can run together | Plan | Tier | ADR |
+|---|---|---|---|---|---|
+| 1 | **3.4** pricing engine ‖ **3.4b** manager approvals | yes (pricing module vs iam) | `docs/plans/3.4.md`, `3.4b.md` | T1, T1 | 120, 121 |
+| 2 | **3.6** booking core (+ `kernel/jobs`) ‖ **3.8c** accounting engine and expenses | yes (booking vs accounting/expense; 3.8c's booking posting rule reads booking through its index once 3.6 is merged, so merge 3.6 first) | `3.6.md`, `3.8c.md` | T1, T1 | 122, 124 |
+| 3 | **3.8** payments, dues, store credit (+ deposit enforcement in booking) | after 3.4b and 3.6 | `3.8.md` | T1 | 123 |
+
+With one implementer at a time, the order is 3.4 → 3.4b → 3.6 → 3.8c → 3.8.
+
+**New cards created by these plans:**
+- **3.4b** (approvals, split out of 3.4)
+- **3.6b** (RENTAL and EVENT bookings, later)
+- **3.8c** (accounting engine and expenses, split out of 3.8)
+
+**Files owned by one card** (wave 3):
+
+| File or area | Owner |
+|---|---|
+| `kernel/jobs/**`, the worker start-up | 3.6 (3.8 adds its expiry job through the registry only) |
+| `core/iam/**` | 3.4b |
+| `commerce/catalog/**` | 3.4 adds only the tax class select in the admin editor; no API change |
+| `commerce/booking/**` | 3.6, then 3.8 adds the deposit port and `paymentStatus` on reads |
+| `commerce/contact/**` | 3.8 (store credit on the summary); M.1 owns the customer-account folder |
+
+Each card adds its own contracts subpath (`pricing`, `booking`, `payment`, `accounting`). The package `exports`, the domain lint exception and the new-module test aliases are shared lines: add only, and the later branch rebases.
+
+**Rules for every implementer** (Cursor included):
+- read AGENTS.md
+- follow the plan exactly; stop and ask on a gap
+- one heavy test run at a time on this machine
+- T1 cards get the Opus review before merge
+
 ## Whole-phase map
 Only wave 1 has full plans. A later card's plan is written when the cards it builds on have merged (rolling wave, `AGENTS.md`), so it matches the real code. This map fixes the order, the sessions and the gates so the owner can see the whole phase.
 
