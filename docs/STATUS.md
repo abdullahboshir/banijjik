@@ -123,7 +123,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | Card | Status | Note |
 |---|---|---|
 | M.0 design approval | done (2026-10-18, owner approved doc 16) | open owner decisions in doc 16 §6 remain: SMS provider, pricing, photo policy, eligibility text, domain, legal review |
-| M.1 customer accounts and OTP | code done on `s/m1-customer-accounts` (2026-10-18, rebased on main a5440e1); full verify and T1 review pending | handoff `docs/handoffs/M.1.md`; ADR-119 Accepted (proposed); deviations approved by the lead. Known gaps: SMS can send twice if the worker stops between send and clearing the sealed code; no live-worker test of the SMS handler; `contact.customerLogin` has no settings label; refresh cookie path `/api/v1/storefront` and the Origin rule go to M.6's plan |
+| M.1 customer accounts and OTP | merged (2026-10-19, implemented with Claude Code (Sonnet 5.5), Claude T1 review passed; ADR-119 proposed) | storefront surface and resolve, phone OTP (no enumeration, limits, sealed code cleared after SMS), `sf_access`/`sf_refresh` cookies with the `org` claim, refresh grace 10 s, `contact.customerLogin` switch, staff read and block, Website login section. SMS driver `test-inbox` or `disabled` until a provider is chosen (doc 16 §6). Gaps: SMS may send twice if the worker dies between send and clear; the storefront proxy must keep `/api/v1/storefront` (M.6) |
 | M.2 directory API | todo | |
 | M.3 admin moderation screens | todo | |
 | M.4 credits and connections | todo | |

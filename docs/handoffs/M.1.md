@@ -38,3 +38,8 @@
   - M.6 note: the refresh cookie path is `/api/v1/storefront`; the same-origin proxy must keep the path, and must not forward a browser `Origin` that `CORS_ALLOWED_ORIGINS` does not list (the API refuses it).
 - **Noticed outside the card:** none.
 - **Lead's decisions (2026-10-18):** deviations 1 to 5 approved. The three notes (refresh path and proxy, double SMS, setting label) are known gaps in STATUS; the proxy note goes to M.6's plan.
+
+## T1 review · 2026-10-19 · Opus 5.5 (Claude)
+- **Result: PASS.** Read: code generation (`randomInt`, zero-padded), HMAC bound to the phone, constant-time compare, AES-256-GCM sealed copy for the SMS handler, guesses reserved atomically before comparing (parallel guesses cannot exceed 5), challenge consumed inside the sign-in transaction, blocked accounts told only after a correct code, the storefront token with audience and `org` claim checked against the path's organization, account status gate.
+- Deviations accepted in review: no system read for the slug lookup (organizations are platform data), archive and anonymize delete the account and its sessions (audited, event), `@banijjik/i18n` in the api, `SMS_DRIVER=disabled`, refresh grace window copied from admin.
+- The reviewer rebased the branch onto main after 3.2b and the wave-3 plans (one conflict in the ui status-tone test list) and reran everything: lint and format:check clean; turbo build/typecheck/test --force 29/29 (api 1764 + 1 skipped, admin 495, validation 238, ui 227, platform 123, web-client 97, contracts 71, i18n 23, ids 14, lint-tests 274); test:tools 274; admin browser 81 passed / 8 skipped; platform browser 16 passed / 2 skipped.
