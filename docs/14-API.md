@@ -150,12 +150,14 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 | `GET/POST/PATCH /modifier-groups[/{modifierGroupId}]` · `POST /modifier-groups/{modifierGroupId}/archive` | `catalog.modifierGroup.*` | | ADR-072; `options` is the full list on PATCH (a missing option is archived) |
 | `GET/PUT /catalog/synonyms` | read: `catalog.offering.read`; `PUT`: `catalog.synonym.update` | | `{ entries[{ term, synonyms[] }], version }` (at most 200 terms; `version` 0 when none yet; `409` when stale) |
 | `POST /offerings/import` · `GET /offerings/import/{importJobId}` · `POST /offerings/import/{importJobId}/commit` | `catalog.offering.create` | I | CSV/Excel/photo/PDF → drafts → review → commit (card 5.11) |
-| `GET /stock?location=` · `GET /stock/{offeringId}/{variantId}` | `inventory.stock.read` | L | levels incl. reserved/damaged/average cost (cost needs `report.profit.read`) |
-| `GET /stock-movements` | `inventory.movement.read` | L | |
-| `POST /stock-receipts` | `inventory.adjustment.create` | I L | purchase/receive: lines with quantity + unit cost → PURCHASE movements + average cost update (ADR-069) |
-| `POST /stock-adjustments` | `inventory.adjustment.create` | I L A* | reason required; large negative adjustments need approval (setting) |
-| `POST /stock-transfers` · `POST /stock-transfers/{stockTransferId}/receive` · `/cancel` | `inventory.transfer.create` | I L | two movements per leg, one txn each |
-| `POST /stock/damaged/write-off` | `inventory.adjustment.create` | I L A | DAMAGE_WRITE_OFF |
+| `GET/POST /inventory-items` · `GET/PATCH /inventory-items/{inventoryItemId}` · `POST …/archive` | read: `inventory.stock.read`; writes: `inventory.item.update` | I (POST) | list `?q=&status=&page=&limit` (≤ 100); archive refused while on-hand anywhere (`422 INVENTORY_ITEM_HAS_STOCK`) or an ACTIVE variant lists it (`422 INVENTORY_ITEM_IN_USE`) (ADR-125) |
+| `GET /stock/levels?locationId=&q=&lowOnly=&page=&limit=` | `inventory.stock.read` | L | on hand, reserved, damaged, available, average cost, low badge |
+| `GET /stock/movements?inventoryItemId=&locationId=&from=&to=&page=&limit=` | `inventory.movement.read` | L | index `{ organizationId, locationId, inventoryItemId, occurredAt }` |
+| `POST /stock/receipts` | `inventory.adjustment.create` | I L | lines with quantity + unit cost → PURCHASE movements + moving average (ADR-069, ADR-125) |
+| `POST /stock/adjustments` | `inventory.adjustment.create` | I L A* | `ADJUSTMENT` or `DAMAGE_WRITE_OFF`; large negative above `inventory.adjustment.approvalAbove` needs approval token (`STOCK_ADJUSTMENT`) |
+| `POST /stock/transfers` | `inventory.transfer.create` | I L | one-step: TRANSFER_OUT + TRANSFER_IN in one transaction at the source average cost; both locations in the caller's reach (ADR-125) |
+| `GET /offerings/{offeringId}/availability?locationId=` | `inventory.stock.read` | L | per variant `floor(available / quantity)` over stock components |
+| `POST /inventory/levels/rebuild` | `inventory.item.update` at ALL locations | | `{ locationId?, fix }` (default report-only); rate-limited 1/org/minute; never touches movements (ADR-125) |
 | `GET/POST/PATCH /promotions[/{promotionId}]` · `POST /promotions/{promotionId}/archive` | `pricing.promotion.{read,create,update,archive}` | I* | create needs Idempotency-Key; list filter `?status=`; activate via PATCH `status` |
 | `GET /tax-classes` · `GET /tax-classes/{taxClassId}` | `catalog.offering.read` | | ACTIVE by default; `?status=` for archived (catalog editor and quote screens) |
 | `POST/PATCH /tax-classes[/{taxClassId}]` · `POST /tax-classes/{taxClassId}/archive` | `pricing.taxClass.update` | I* | create needs Idempotency-Key; OWNER/MANAGER; not in `/me/config` |

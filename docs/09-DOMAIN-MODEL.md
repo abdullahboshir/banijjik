@@ -448,7 +448,7 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | Entity | Owner | Scope | Key fields | Invariants |
 |---|---|---|---|---|
 | **Payment** | `commerce/payment` | location | `paymentId`, `paymentNumber`, `direction` (`IN \| REFUND \| REVERSAL`), `method` (`CASH`, `BKASH`, `NAGAD`, `CARD`, `BANK`, `GATEWAY`, `STORE_CREDIT`, `COD_COURIER`, `RIDER_CASH`), `amount: Money`, `externalReference?` (unique per org + method), `reversesPaymentId?`, `posSessionId?`, `allocations[{ requestType, requestId, enrollmentPeriodId?, amount: Money }]`, `contactId?`, `receivedByMemberId`, `businessDate`, `status` | Append-only: corrections are a REFUND or a reversal, never an edit. Sum of allocations ≤ amount. Requires `Idempotency-Key`. |
-| **InventoryItem** (ADR-098) | `commerce/inventory` | org | `inventoryItemId`, `name`, `sku?`, `barcode?`, `baseUnitKey` (contracts unit registry), `status` (`ACTIVE \| ARCHIVED`), STF + `version` | What is stocked. Created with a product (one item per variant by default) or on its own (shared stock, ingredients). Archived, never deleted, while movements reference it. |
+| **InventoryItem** (ADR-098, ADR-125) | `commerce/inventory` | org | `inventoryItemId`, `name`, `sku?`, `barcode?`, `baseUnitKey` (contracts unit registry), `lowStockThreshold?`, `status` (`ACTIVE \| ARCHIVED`), STF + `version` | What is stocked. Created with a product (one item per variant by default) or on its own (shared stock, ingredients). `baseUnitKey` is immutable once a movement exists. Archived, never deleted, while movements reference it. |
 | **StockMovement** | `commerce/inventory` | location | `stockMovementId`, `inventoryItemId`, `quantityDelta` (integer, base unit precision), `offeringId?` + `variantId?` (the sold variant, for reports), `stockState` (`SELLABLE | DAMAGED`), `reason` (`PURCHASE`, `SALE`, `RETURN`, `RETURN_DAMAGED`, `DAMAGE_WRITE_OFF`, `ADJUSTMENT`, `TRANSFER_OUT`, `TRANSFER_IN`, `OPENING`), `sourceType`, `sourceId`, `reversesStockMovementId?`, `unitCost?: Money`, `occurredAt`, `businessDate` | Append-only (ADR-014). One movement per stock component of a sold line (ADR-098). A transfer is two movements in one transaction. |
 | **InventoryLevel** | `commerce/inventory` | location | `inventoryItemId`, `onHand`, `reserved`, `damaged`, `available` (= onHand − reserved), `averageUnitCost: Money` (moving average, ADR-069), `version` | Projection; rebuildable from movements. Unique `(organizationId, locationId, inventoryItemId)`. |
 | **Account** | `commerce/accounting` | org | `accountId`, `accountCode`, `name`, `accountType` (`ASSET \| LIABILITY \| EQUITY \| INCOME \| EXPENSE`), `isSystem`, `status` | System accounts seeded per org by code (`SYSTEM_ACCOUNT_CODE`, ADR-124); never edited or deleted. |
@@ -501,7 +501,7 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | `platform/operations` | nothing of its own (acts on the event kernel's dead letters and outbox, ADR-115) |
 | `commerce/contact` | Contact, CustomerAccount, CustomerSession |
 | `commerce/catalog` | Offering, OfferingLocation, Category, ModifierGroup, SearchSynonym, OfferingSocialLink |
-| `commerce/inventory` | StockMovement, InventoryLevel |
+| `commerce/inventory` | InventoryItem, StockMovement, InventoryLevel, StockReservation |
 | `commerce/sales` | Order, SalesReturn |
 | `commerce/booking` | Resource, ResourceTimeOff, Booking, EventSession |
 | `commerce/enrollment` | Enrollment, EnrollmentPeriod, CheckIn |

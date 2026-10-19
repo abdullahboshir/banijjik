@@ -20,6 +20,7 @@ import {
 const BUSINESS_NAME = "আকমি ট্রেডার্স";
 const SECOND_LOCATION_NAME = "দ্বিতীয় শাখা";
 const RICE_ITEM = "চাল";
+const ORG_SLUG = `stock-${Date.now().toString(36)}`;
 
 let stack: BrowserStack;
 let owner: SeededPerson;
@@ -27,8 +28,8 @@ let owner: SeededPerson;
 beforeAll(async () => {
   stack = await startBrowserStack();
   owner = await seedPerson("রহিম উদ্দিন");
-  await seedOrganization(owner, "acme", BUSINESS_NAME);
-  await seedLocation(owner, "acme", SECOND_LOCATION_NAME);
+  await seedOrganization(owner, ORG_SLUG, BUSINESS_NAME);
+  await seedLocation(owner, ORG_SLUG, SECOND_LOCATION_NAME);
 }, 120_000);
 
 afterAll(async () => {
@@ -50,7 +51,7 @@ describe("stock at two branches", () => {
   it("receives rice, transfers half to the second branch, and shows both levels and value", async () => {
     const page = await ownerPage();
 
-    await gotoWhenHydrated(page, "/acme/catalog/stock", "main");
+    await gotoWhenHydrated(page, `/${ORG_SLUG}/catalog/stock`, "main");
     await clickByName(page, message("stock.item.create"));
     await typeInto(page, "#item-name", RICE_ITEM);
     await page.select("#item-unit", "GRAM");
@@ -82,7 +83,7 @@ describe("stock at two branches", () => {
     expect(text).toContain("1000");
     expect(text).toMatch(/50|৳/u);
 
-    await gotoWhenHydrated(page, "/acme/catalog/transfers", "#transfer-from");
+    await gotoWhenHydrated(page, `/${ORG_SLUG}/catalog/transfers`, "#transfer-from");
     const secondLocationId = await page.$eval(
       "#transfer-to",
       (select, name) => {
@@ -105,12 +106,12 @@ describe("stock at two branches", () => {
     await clickByName(page, message("stock.transfers.submit"));
     await waitForText(page, message("stock.transfers.title"));
 
-    await gotoWhenHydrated(page, `/acme/catalog/stock?location=${secondLocationId}`, "main");
+    await gotoWhenHydrated(page, `/${ORG_SLUG}/catalog/stock?location=${secondLocationId}`, "main");
     await waitForText(page, RICE_ITEM);
     text = await bodyText(page);
     expect(text).toContain("500");
 
-    await gotoWhenHydrated(page, "/acme/catalog/stock", "main");
+    await gotoWhenHydrated(page, `/${ORG_SLUG}/catalog/stock`, "main");
     text = await bodyText(page);
     expect(text).toContain("500");
 
