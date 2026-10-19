@@ -19,7 +19,7 @@ describe("buildPermissionCatalog", () => {
       manifest.permissions.map((permission) => permission.permissionKey),
     );
     expect(keys.sort()).toEqual(manifestKeys.sort());
-    expect(catalog.ofModule("iam")).toHaveLength(4);
+    expect(catalog.ofModule("iam")).toHaveLength(5);
     expect(catalog.has("iam.role.read")).toBe(true);
     expect(catalog.has("sales.order.read")).toBe(false);
   });
