@@ -1,5 +1,5 @@
 import { PERMISSION_KEY } from "@banijjik/contracts";
-import { journalListQuerySchema, trialBalanceQuerySchema } from "@banijjik/validation";
+import { journalListQuerySchema, trialBalanceQuerySchema } from "@banijjik/validation/accounting";
 import { Router } from "express";
 import type { PermissionMiddlewareFactory } from "../../../../kernel/access/index.js";
 import { validate } from "../../../../kernel/http/index.js";

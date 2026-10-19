@@ -10,7 +10,10 @@ import {
   type OrganizationId,
   type UserId,
 } from "@banijjik/ids";
-import type { ExpenseCategoryCreateBody, ExpenseCategoryUpdateBody } from "@banijjik/validation";
+import type {
+  ExpenseCategoryCreateBody,
+  ExpenseCategoryUpdateBody,
+} from "@banijjik/validation/accounting";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { ExpenseCategory } from "../../domain/expense-category.entity.js";

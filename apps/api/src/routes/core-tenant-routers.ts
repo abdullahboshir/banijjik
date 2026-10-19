@@ -68,7 +68,16 @@ function buildPlatformCoreRouters(
   "customFieldRouter" | "settingsRouter" | "fileRouter" | "publicFileRouter"
 > {
   const { clock, audit, permission, orgConfig } = input;
-  return buildSettingsTenantRouter({
+  const customFieldRouter = buildCustomFieldModule({
+    clock,
+    audit,
+    permission,
+    orgConfig,
+    registry: input.registry,
+    configVersion: buildConfigVersionBumper(),
+    productionManifests: MODULE_MANIFESTS,
+  }).router;
+  const settingsRouter = buildSettingsTenantRouter({
     permission,
     audit,
     orgConfig,
@@ -84,20 +93,6 @@ function buildPlatformCoreRouters(
       configVersion: buildConfigVersionBumper(),
     }),
   });
-}
-
-/** Custom-field, settings, file and contact routers (cards 2.3, 2.4, 3.0 and 3.1a). The file module also builds the public router. */
-export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenantRouters {
-  const { clock, audit, permission, orgConfig } = input;
-  const customFieldRouter = buildCustomFieldModule({
-    clock,
-    audit,
-    permission,
-    orgConfig,
-    registry: input.registry,
-    configVersion: buildConfigVersionBumper(),
-    productionManifests: MODULE_MANIFESTS,
-  }).router;
   const files = buildFileModule({
     clock,
     permission,
@@ -106,7 +101,7 @@ export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenant
   });
   return {
     customFieldRouter,
-    settingsRouter: buildSettingsRouter(input),
+    settingsRouter,
     fileRouter: files.tenantRouter,
     publicFileRouter: files.publicRouter,
   };

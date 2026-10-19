@@ -1,11 +1,18 @@
-import { CUSTOM_FIELD_TYPE } from "@banijjik/contracts";
-import { LISTING_FIELD_TIER } from "@banijjik/contracts/directory";
+import {
+  ALL_LOCATIONS,
+  CUSTOM_FIELD_TYPE,
+  REDACTED_AUDIT_VALUE,
+  SYSTEM_ROLE_KEY,
+} from "@banijjik/contracts";
+import { DIRECTORY_SEARCH_RULES, LISTING_FIELD_TIER } from "@banijjik/contracts/directory";
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { freshIp } from "../../../../test-support/auth-api-client.js";
 import { registerIamApiModels, startIamApi } from "../../../../test-support/iam-api-harness.js";
 import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
 import { ContractTemplateReader } from "../../../../test-support/module-contract/contract-template-reader.js";
 import { enableDirectoryForWorld } from "../../../../test-support/directory-world.js";
+import { addMemberWithAssignments, findSystemRoleId } from "../../../../test-support/rbac-world.js";
 import {
   asCustomerCookies,
   callStorefront,
@@ -235,5 +242,141 @@ describe("directory listings", () => {
     // Non-members get the same 404 as an unknown org (ADR-080); never 403 that reveals membership.
     const crossOrg = await world.bob.call("get", `/orgs/${world.organizationA}/directory/queue`);
     expect(crossOrg.status).toBe(404);
+  });
+
+  it("filters approved listings and uses the attribute index", async () => {
+    const world = await aDirectoryWorld();
+    const customer = await signInCustomer(harness, world.organizationA);
+    const cookies = asCustomerCookies(customer.session);
+    await callStorefront(harness.app, {
+      method: "put",
+      organizationId: world.organizationA,
+      suffix: "/my/listing",
+      cookies,
+      body: { customFields: { age_band: "25" } },
+    });
+    await callStorefront(harness.app, {
+      method: "post",
+      organizationId: world.organizationA,
+      suffix: "/my/listing/submit",
+      cookies,
+      body: { consents: [] },
+    });
+    const queue = await world.alice.call(
+      "get",
+      `/orgs/${world.organizationA}/directory/queue?status=SUBMITTED`,
+    );
+    await world.alice.call(
+      "post",
+      `/orgs/${world.organizationA}/directory/listings/${queue.body.data.items[0].listingId}/approve`,
+      { version: queue.body.data.items[0].version },
+    );
+
+    const hit = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/listings",
+      query: { "f.age_band": "25" },
+    });
+    const miss = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/listings",
+      query: { "f.age_band": "30" },
+    });
+    const refused = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/listings",
+      query: { "f.own_name": "secret" },
+    });
+    expect(hit.status).toBe(200);
+    expect(hit.body.data.items).toHaveLength(1);
+    expect(miss.body.data.items).toEqual([]);
+    expect(refused.status).toBe(400);
+
+    const plan = await harness.connections.tenantShared
+      .collection("listings")
+      .find({
+        organizationId: world.organizationA,
+        status: "APPROVED",
+        customFieldSearch: { $elemMatch: { fieldKey: "age_band", value: "25" } },
+      })
+      .explain("queryPlanner");
+    expect(JSON.stringify(plan.queryPlanner.winningPlan)).not.toContain("COLLSCAN");
+  });
+
+  it("answers 429 once search scrapes past the per-IP limit", async () => {
+    const world = await aDirectoryWorld();
+    const ip = freshIp();
+    let lastStatus = 0;
+    for (let index = 0; index < DIRECTORY_SEARCH_RULES.perIp.limit + 1; index += 1) {
+      const response = await callStorefront(harness.app, {
+        method: "get",
+        organizationId: world.organizationA,
+        suffix: "/listings",
+        ip,
+      });
+      lastStatus = response.status;
+      if (response.status === 429) break;
+    }
+    expect(lastStatus).toBe(429);
+  });
+
+  it("refuses a viewer on review and redacts personal values in the audit log", async () => {
+    const world = await aDirectoryWorld();
+    const customer = await signInCustomer(harness, world.organizationA);
+    const cookies = asCustomerCookies(customer.session);
+    await callStorefront(harness.app, {
+      method: "put",
+      organizationId: world.organizationA,
+      suffix: "/my/listing",
+      cookies,
+      body: {
+        customFields: { age_band: "25", own_name: "secret-name-xyz" },
+      },
+    });
+    await callStorefront(harness.app, {
+      method: "post",
+      organizationId: world.organizationA,
+      suffix: "/my/listing/submit",
+      cookies,
+      body: { consents: [] },
+    });
+    const queue = await world.alice.call(
+      "get",
+      `/orgs/${world.organizationA}/directory/queue?status=SUBMITTED`,
+    );
+    const listingId = queue.body.data.items[0].listingId as string;
+    const approved = await world.alice.call(
+      "post",
+      `/orgs/${world.organizationA}/directory/listings/${listingId}/approve`,
+      { version: queue.body.data.items[0].version },
+    );
+    expect(approved.status).toBe(200);
+
+    const viewerRole = await findSystemRoleId(
+      harness.connections,
+      world.organizationA,
+      SYSTEM_ROLE_KEY.VIEWER,
+    );
+    const viewer = await addMemberWithAssignments(harness.app, world.organizationA, [
+      { locationId: ALL_LOCATIONS, roleId: viewerRole },
+    ]);
+    const denied = await viewer.actor.call(
+      "post",
+      `/orgs/${world.organizationA}/directory/listings/${listingId}/approve`,
+      { version: approved.body.data.version },
+    );
+    expect(denied.status).toBe(403);
+
+    const audit = await harness.connections.tenantShared
+      .collection("audit_logs")
+      .find({ entityId: listingId })
+      .toArray();
+    expect(audit.length).toBeGreaterThan(0);
+    const blob = JSON.stringify(audit);
+    expect(blob).not.toContain("secret-name-xyz");
+    expect(blob).toContain(REDACTED_AUDIT_VALUE);
   });
 });

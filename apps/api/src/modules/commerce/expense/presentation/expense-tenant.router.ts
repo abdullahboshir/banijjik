@@ -8,7 +8,7 @@ import {
   expenseIdParamsSchema,
   expenseListQuerySchema,
   expenseVoidRequestSchema,
-} from "@banijjik/validation";
+} from "@banijjik/validation/accounting";
 import { Router, type RequestHandler } from "express";
 import type { PermissionMiddlewareFactory } from "../../../../kernel/access/index.js";
 import { validate } from "../../../../kernel/http/index.js";

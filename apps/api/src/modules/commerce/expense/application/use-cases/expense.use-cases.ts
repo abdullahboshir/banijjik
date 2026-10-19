@@ -14,7 +14,11 @@ import {
   type OrganizationId,
   type UserId,
 } from "@banijjik/ids";
-import type { ExpenseCreateBody, ExpenseListQuery, ExpenseVoidBody } from "@banijjik/validation";
+import type {
+  ExpenseCreateBody,
+  ExpenseListQuery,
+  ExpenseVoidBody,
+} from "@banijjik/validation/accounting";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";

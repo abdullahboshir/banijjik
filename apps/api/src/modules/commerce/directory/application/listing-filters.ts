@@ -4,6 +4,15 @@ import type { CustomFieldRule } from "@banijjik/validation";
 import { filterNotAllowed } from "../domain/errors.js";
 import type { ListingSearchFilter } from "./ports/listing-repository.js";
 
+const RANGE_SUFFIXES = [
+  ".min",
+  ".max",
+  ".ageMin",
+  ".ageMax",
+  ".districtKey",
+  ".upazilaKey",
+] as const;
+
 function ageToDateBounds(
   ageMin: number | undefined,
   ageMax: number | undefined,
@@ -21,15 +30,11 @@ function ageToDateBounds(
   return result;
 }
 
-function isRangeSuffix(body: string): boolean {
-  return (
-    body.endsWith(".min") ||
-    body.endsWith(".max") ||
-    body.endsWith(".ageMin") ||
-    body.endsWith(".ageMax") ||
-    body.endsWith(".districtKey") ||
-    body.endsWith(".upazilaKey")
-  );
+function rangeFieldKey(body: string): string | undefined {
+  for (const suffix of RANGE_SUFFIXES) {
+    if (body.endsWith(suffix)) return body.slice(0, -suffix.length);
+  }
+  return undefined;
 }
 
 function geoFilter(input: {
@@ -99,11 +104,14 @@ function valueFilter(input: {
     const values = Array.isArray(value) ? value.map(String) : [String(value)];
     return { fieldKey, value: "", anyOf: values.map((item) => item.toLowerCase()) };
   }
-  if (field.fieldType === CUSTOM_FIELD_TYPE.NUMBER) {
-    return numberFilter(fieldKey, rawQuery);
-  }
+  if (field.fieldType === CUSTOM_FIELD_TYPE.NUMBER) return numberFilter(fieldKey, rawQuery);
   if (field.fieldType === CUSTOM_FIELD_TYPE.DATE) {
     return dateFilter({ fieldKey, rawQuery, value, now });
+  }
+  if (field.fieldType === CUSTOM_FIELD_TYPE.GEO_BD) {
+    const divisionKey = rawQuery[`f.${fieldKey}.divisionKey`];
+    if (divisionKey === undefined) throw filterNotAllowed(fieldKey);
+    return geoFilter({ fieldKey, field, rawQuery, divisionKey });
   }
   return { fieldKey, value: String(value).toLowerCase() };
 }
@@ -117,22 +125,31 @@ export function listingFiltersFromQuery(
   const filterable = new Map(
     fields.filter((field) => field.isFilterable === true).map((field) => [field.fieldKey, field]),
   );
+  const seen = new Set<string>();
   const filters: ListingSearchFilter[] = [];
+
+  const pushField = (fieldKey: string, value: unknown): void => {
+    if (seen.has(fieldKey)) return;
+    seen.add(fieldKey);
+    const field = filterable.get(fieldKey);
+    if (field === undefined) throw filterNotAllowed(fieldKey);
+    filters.push(valueFilter({ fieldKey, field, value, rawQuery, now }));
+  };
+
   for (const [key, value] of Object.entries(rawQuery)) {
     if (!key.startsWith("f.")) continue;
     const body = key.slice(2);
-    if (isRangeSuffix(body)) continue;
     if (body.endsWith(".divisionKey")) {
-      const fieldKey = body.slice(0, -".divisionKey".length);
-      filters.push(
-        geoFilter({ fieldKey, field: filterable.get(fieldKey), rawQuery, divisionKey: value }),
-      );
+      pushField(body.slice(0, -".divisionKey".length), value);
+      continue;
+    }
+    const ranged = rangeFieldKey(body);
+    if (ranged !== undefined) {
+      pushField(ranged, value);
       continue;
     }
     if (body.includes(".")) continue;
-    const field = filterable.get(body);
-    if (field === undefined) throw filterNotAllowed(body);
-    filters.push(valueFilter({ fieldKey: body, field, value, rawQuery, now }));
+    pushField(body, value);
   }
   return filters;
 }

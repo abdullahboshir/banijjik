@@ -1,5 +1,5 @@
 import type { JournalEntryResponse } from "@banijjik/contracts/accounting";
-import type { JournalListQuery } from "@banijjik/validation";
+import type { JournalListQuery } from "@banijjik/validation/accounting";
 import type { JournalRepository } from "../ports/journal-repository.js";
 import { toJournalResponse } from "../post-journal.js";
 

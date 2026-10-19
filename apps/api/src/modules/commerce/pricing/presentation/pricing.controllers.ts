@@ -1,4 +1,5 @@
 import { asId, type PromotionId, type TaxClassId } from "@banijjik/ids";
+import type { VersionedTransitionBody } from "@banijjik/validation";
 import type {
   PromotionCreateBody,
   PromotionListQuery,
@@ -7,8 +8,7 @@ import type {
   TaxClassCreateBody,
   TaxClassListQuery,
   TaxClassUpdateBody,
-  VersionedTransitionBody,
-} from "@banijjik/validation";
+} from "@banijjik/validation/pricing";
 import type { RequestHandler, Response } from "express";
 import { readTenantCaller } from "../../../../kernel/access/index.js";
 import { sendData } from "../../../../kernel/http/index.js";

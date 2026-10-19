@@ -1,4 +1,4 @@
-import type { JournalListQuery, TrialBalanceQuery } from "@banijjik/validation";
+import type { JournalListQuery, TrialBalanceQuery } from "@banijjik/validation/accounting";
 import type { RequestHandler, Response } from "express";
 import { sendData } from "../../../../kernel/http/index.js";
 import type { GetTrialBalanceUseCase } from "../application/use-cases/get-trial-balance.use-case.js";

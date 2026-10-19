@@ -17,6 +17,14 @@
     "./directory": {
       "types": "./dist/directory/index.d.ts",
       "default": "./dist/directory/index.js"
+    },
+    "./pricing": {
+      "types": "./dist/pricing/index.d.ts",
+      "default": "./dist/pricing/index.js"
+    },
+    "./accounting": {
+      "types": "./dist/accounting/index.d.ts",
+      "default": "./dist/accounting/index.js"
     }
   },
   "files": [

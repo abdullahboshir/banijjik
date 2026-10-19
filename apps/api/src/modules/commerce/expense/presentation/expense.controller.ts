@@ -6,7 +6,7 @@ import type {
   ExpenseCreateBody,
   ExpenseListQuery,
   ExpenseVoidBody,
-} from "@banijjik/validation";
+} from "@banijjik/validation/accounting";
 import type { Request, RequestHandler } from "express";
 import { readTenantCaller } from "../../../../kernel/access/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
