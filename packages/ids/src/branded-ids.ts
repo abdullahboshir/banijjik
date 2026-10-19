@@ -29,6 +29,9 @@ export type ExpenseCategoryId = Id<"ExpenseCategory">;
 export type PaymentId = Id<"Payment">;
 export type BookingId = Id<"Booking">;
 export type StoreCreditEntryId = Id<"StoreCreditEntry">;
+export type InventoryItemId = Id<"InventoryItem">;
+export type StockMovementId = Id<"StockMovement">;
+export type StockReservationId = Id<"StockReservation">;
 
 export class InvalidIdError extends Error {
   constructor() {

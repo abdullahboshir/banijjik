@@ -38,7 +38,7 @@ describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
 
 describe("PERMISSION_KEY", () => {
   it("lists the keys of every built module", () => {
-    expect(Object.values(PERMISSION_KEY)).toHaveLength(60);
+    expect(Object.values(PERMISSION_KEY)).toHaveLength(65);
   });
 
   it("only holds keys that match the module.entity.action pattern", () => {
@@ -70,7 +70,7 @@ describe("PERMISSION_KEY", () => {
 
   it("has one label message key per permission", () => {
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.iam.role.read");
-    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(60);
+    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(65);
   });
 });
 

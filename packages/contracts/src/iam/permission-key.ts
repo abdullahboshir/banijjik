@@ -63,6 +63,11 @@ export const PERMISSION_KEY = {
   PRICING_PROMOTION_UPDATE: "pricing.promotion.update",
   PRICING_PROMOTION_ARCHIVE: "pricing.promotion.archive",
   PRICING_TAX_CLASS_UPDATE: "pricing.taxClass.update",
+  INVENTORY_STOCK_READ: "inventory.stock.read",
+  INVENTORY_ITEM_UPDATE: "inventory.item.update",
+  INVENTORY_ADJUSTMENT_CREATE: "inventory.adjustment.create",
+  INVENTORY_TRANSFER_CREATE: "inventory.transfer.create",
+  INVENTORY_MOVEMENT_READ: "inventory.movement.read",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

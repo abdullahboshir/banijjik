@@ -34,6 +34,10 @@
     "./pricing": {
       "types": "./dist/pricing/index.d.ts",
       "default": "./dist/pricing/index.js"
+    },
+    "./inventory": {
+      "types": "./dist/inventory/index.d.ts",
+      "default": "./dist/inventory/index.js"
     }
   },
   "files": [

@@ -11,6 +11,7 @@ export type {
   ExpenseCategoryId,
   ExpenseId,
   JournalEntryId,
+  InventoryItemId,
   ModifierGroupId,
   OfferingId,
   PromotionId,
@@ -28,5 +29,7 @@ export type {
   PlatformSubscriptionId,
   RoleId,
   StoreCreditEntryId,
+  StockMovementId,
+  StockReservationId,
   UserId,
 } from "./branded-ids.js";

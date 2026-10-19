@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./inventory": {
+      "types": "./dist/inventory/index.d.ts",
+      "default": "./dist/inventory/index.js"
     }
   },
   "files": [

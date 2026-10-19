@@ -60,6 +60,13 @@ export const AUDIT_ACTION = {
   PROMOTION_CREATED: "pricing.promotion.created",
   PROMOTION_UPDATED: "pricing.promotion.updated",
   PROMOTION_ARCHIVED: "pricing.promotion.archived",
+  INVENTORY_ITEM_CREATED: "inventory.item.created",
+  INVENTORY_ITEM_UPDATED: "inventory.item.updated",
+  INVENTORY_ITEM_ARCHIVED: "inventory.item.archived",
+  STOCK_RECEIVED: "inventory.stock.received",
+  STOCK_ADJUSTED: "inventory.stock.adjusted",
+  STOCK_TRANSFERRED: "inventory.stock.transferred",
+  INVENTORY_LEVELS_REBUILT: "inventory.level.rebuilt",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -91,6 +98,9 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "account",
   "taxClass",
   "promotion",
+  "inventoryItem",
+  "stockMovement",
+  "stockTransfer",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

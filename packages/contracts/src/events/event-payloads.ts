@@ -5,6 +5,12 @@ import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
 import type { PromotionEventPayload } from "../pricing/pricing-contracts.js";
 import { PRICING_EVENT_TYPE } from "../pricing/pricing-event-type.js";
 import type {
+  InventoryStockChangedPayload,
+  InventoryStockLowPayload,
+  InventoryTransferCompletedPayload,
+} from "../inventory/inventory-contracts.js";
+import { INVENTORY_EVENT_TYPE } from "../inventory/inventory-event-type.js";
+import type {
   ContactEventPayload,
   CustomerAccountEventPayload,
   CustomerOtpRequestedPayload,
@@ -119,4 +125,7 @@ export interface EventPayloadMap {
   readonly [BOOKING_EVENT_TYPE.BOOKING_COMPLETED]: BookingEventPayload;
   readonly [BOOKING_EVENT_TYPE.BOOKING_CANCELLED]: BookingEventPayload;
   readonly [PRICING_EVENT_TYPE.PROMOTION_CHANGED]: PromotionEventPayload;
+  readonly [INVENTORY_EVENT_TYPE.STOCK_CHANGED]: InventoryStockChangedPayload;
+  readonly [INVENTORY_EVENT_TYPE.STOCK_LOW]: InventoryStockLowPayload;
+  readonly [INVENTORY_EVENT_TYPE.TRANSFER_COMPLETED]: InventoryTransferCompletedPayload;
 }
