@@ -167,6 +167,7 @@ describe("GET /settings", () => {
       "catalog.defaultUnitKey",
       "contact.customerLogin",
       "contact.dedupeOn",
+      "iam.approval.ownerSelfApproval",
       "notification.probeFlag",
       "notification.probeShape",
       "organization.digitScript",
