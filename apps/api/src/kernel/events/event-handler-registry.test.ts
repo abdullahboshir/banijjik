@@ -31,6 +31,23 @@ describe("EventHandlerRegistry", () => {
     expect(registry.find("unknown.handler")).toBeUndefined();
   });
 
+  it("lists a handler for alsoHandles event types on a shared ORDERED stream", () => {
+    const registry = new EventHandlerRegistry();
+    const payments: EventHandler = {
+      handlerKey: "accounting.postPayments",
+      moduleKey: MODULE_KEY.ACCOUNTING,
+      eventType: EVENT_TYPE.PAYMENT_RECEIVED,
+      alsoHandles: [EVENT_TYPE.PAYMENT_REFUNDED, EVENT_TYPE.PAYMENT_REVERSED],
+      ordering: "ORDERED",
+      handle: async () => undefined,
+    };
+    registry.register(payments);
+
+    expect(registry.handlersFor(EVENT_TYPE.PAYMENT_RECEIVED)).toEqual([payments]);
+    expect(registry.handlersFor(EVENT_TYPE.PAYMENT_REFUNDED)).toEqual([payments]);
+    expect(registry.handlersFor(EVENT_TYPE.PAYMENT_REVERSED)).toEqual([payments]);
+  });
+
   it("throws when a handler key is registered twice", () => {
     const registry = new EventHandlerRegistry();
     registry.register(aHandler("notification.welcome"));

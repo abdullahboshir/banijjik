@@ -21,8 +21,10 @@ import {
   buildTenantModuleSwitch,
   type OrgConfigService,
 } from "../modules/platform/entitlement/index.js";
+import { buildAccountingTenantRouter } from "./accounting-tenant-router.js";
 import { buildCatalogTenantRouter } from "./catalog-tenant-router.js";
 import { buildContactTenantRouter } from "./contact-tenant-router.js";
+import { buildExpenseTenantRouter } from "./expense-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -47,10 +49,16 @@ export interface CoreTenantRouters {
   readonly publicFileRouter: Router;
   readonly contactRouter: Router;
   readonly catalogRouter: Router;
+  readonly accountingRouter: Router;
+  readonly expenseRouter: Router;
 }
 
-/** Custom-field, settings, file and contact routers (cards 2.3, 2.4, 3.0 and 3.1a). The file module also builds the public router. */
-export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenantRouters {
+function buildPlatformCoreRouters(
+  input: CoreTenantRouterInput,
+): Pick<
+  CoreTenantRouters,
+  "customFieldRouter" | "settingsRouter" | "fileRouter" | "publicFileRouter"
+> {
   const { clock, audit, permission, orgConfig } = input;
   const customFieldRouter = buildCustomFieldModule({
     clock,
@@ -83,31 +91,53 @@ export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenant
     storage: input.storage,
     ...(input.fileOverrides === undefined ? {} : { overrides: input.fileOverrides }),
   });
-  const contactRouter = buildContactTenantRouter({
-    clock,
-    audit,
-    permission,
-    permissions: input.permissions,
-    idempotency: input.idempotency,
-    orgConfig,
-    manifests: input.manifests,
-  });
-  const catalogRouter = buildCatalogTenantRouter({
-    clock,
-    audit,
-    permission,
-    permissions: input.permissions,
-    idempotency: input.idempotency,
-    orgConfig,
-    manifests: input.manifests,
-  });
   return {
     customFieldRouter,
     settingsRouter,
     fileRouter: files.tenantRouter,
     publicFileRouter: files.publicRouter,
-    contactRouter,
-    catalogRouter,
+  };
+}
+
+function buildCommerceTenantRouters(
+  input: CoreTenantRouterInput,
+): Pick<
+  CoreTenantRouters,
+  "contactRouter" | "catalogRouter" | "accountingRouter" | "expenseRouter"
+> {
+  const shared = {
+    clock: input.clock,
+    audit: input.audit,
+    permission: input.permission,
+    permissions: input.permissions,
+    idempotency: input.idempotency,
+    orgConfig: input.orgConfig,
+    manifests: input.manifests,
+  };
+  return {
+    contactRouter: buildContactTenantRouter(shared),
+    catalogRouter: buildCatalogTenantRouter(shared),
+    accountingRouter: buildAccountingTenantRouter({
+      clock: input.clock,
+      audit: input.audit,
+      permission: input.permission,
+    }),
+    expenseRouter: buildExpenseTenantRouter({
+      clock: input.clock,
+      audit: input.audit,
+      permission: input.permission,
+      idempotency: input.idempotency,
+      orgConfig: input.orgConfig,
+      manifests: input.manifests,
+    }),
+  };
+}
+
+/** Custom-field, settings, file and commerce routers (cards 2.3–3.8c). */
+export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenantRouters {
+  return {
+    ...buildPlatformCoreRouters(input),
+    ...buildCommerceTenantRouters(input),
   };
 }
 

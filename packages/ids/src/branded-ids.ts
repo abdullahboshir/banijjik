@@ -20,6 +20,13 @@ export type PackageId = Id<"Package">;
 export type PlatformSubscriptionId = Id<"PlatformSubscription">;
 export type ModuleOverrideId = Id<"ModuleOverride">;
 export type IndustryTemplateId = Id<"IndustryTemplate">;
+export type AccountId = Id<"Account">;
+export type JournalEntryId = Id<"JournalEntry">;
+export type ExpenseId = Id<"Expense">;
+export type ExpenseCategoryId = Id<"ExpenseCategory">;
+export type PaymentId = Id<"Payment">;
+export type BookingId = Id<"Booking">;
+export type StoreCreditEntryId = Id<"StoreCreditEntry">;
 
 export class InvalidIdError extends Error {
   constructor() {

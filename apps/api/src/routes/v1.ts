@@ -16,11 +16,7 @@ import {
   tenantContext,
 } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
-import {
-  buildAuditRecorder,
-  buildAuditTenantRouter,
-  registerAuditModels,
-} from "../modules/core/audit/index.js";
+import { buildAuditRecorder, registerAuditModels } from "../modules/core/audit/index.js";
 import type { MemberAccessReader, PermissionCatalog } from "../modules/core/iam/index.js";
 import {
   buildIamRouters,
@@ -36,13 +32,13 @@ import {
   buildOrganizationRouters,
   registerOrganizationModels,
 } from "../modules/core/organization/index.js";
+import { registerAccountingModels } from "../modules/commerce/accounting/index.js";
 import { registerCatalogModels } from "../modules/commerce/catalog/index.js";
 import { registerContactModels } from "../modules/commerce/contact/index.js";
+import { registerExpenseModels } from "../modules/commerce/expense/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
-import { buildIamTenantRouterFor } from "./iam-tenant-router.js";
 import {
-  buildEntitlementTenantRouter,
   buildOrgConfigService,
   registerEntitlementModels,
   type IndustryTemplateReader,
@@ -70,6 +66,7 @@ import {
 } from "./organization-config-ports.js";
 import { buildModuleRegistry } from "./module-registry.js";
 import { mountPlatformApi } from "./platform.js";
+import { buildTenantRouter, buildTenantRouters } from "./tenant-module-routers.js";
 
 export interface V1Dependencies {
   readonly config: AppConfig;
@@ -111,6 +108,8 @@ export function registerModuleModels(): void {
   registerCustomFieldModels();
   registerContactModels();
   registerCatalogModels();
+  registerAccountingModels();
+  registerExpenseModels();
   registerSettingsModels();
   registerFileModels();
 }
@@ -292,60 +291,4 @@ function buildAccessParts(options: {
     permissionGate,
     permission: createPermissionMiddleware(permissionGate),
   };
-}
-
-interface TenantRoutersInput {
-  readonly dependencies: V1Dependencies;
-  readonly audit: AuditRecorder;
-  readonly orgConfig: OrgConfigService;
-  readonly access: AccessParts;
-  readonly registry: ModuleRegistry;
-  readonly organizationRouter: Router;
-  readonly coreRouters: CoreTenantRouters;
-}
-
-/**
- * The permission check is a per-route guard (`permission(key)`), built once from the catalogue of
- * every registered manifest. Pipeline order: authenticate, tenantContext, locationAccess,
- * entitlement, permission, validate, controller (01 section 3).
- */
-function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
-  const { dependencies, audit, orgConfig, access } = input;
-  const { catalog, permissionGate, permission } = access;
-  const { clock, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
-  const iamRouter = buildIamTenantRouterFor({
-    access,
-    clock,
-    audit,
-    rateLimiter: dependencies.rateLimiter,
-    orgConfig,
-    manifests: input.registry.all(),
-  });
-  const auditRouter = buildAuditTenantRouter({ permission });
-  const entitlementRouter = buildEntitlementTenantRouter({
-    orgConfig,
-    permissions: permissionGate,
-    permissionDefinitions: catalog.all(),
-  });
-  const { customFieldRouter, settingsRouter, fileRouter, contactRouter, catalogRouter } =
-    input.coreRouters;
-  return [
-    iamRouter,
-    input.organizationRouter,
-    auditRouter,
-    entitlementRouter,
-    customFieldRouter,
-    settingsRouter,
-    fileRouter,
-    contactRouter,
-    catalogRouter,
-    ...tenantRouters,
-    ...tenantRouterFactories.map((build) => build(permission)),
-  ];
-}
-
-function buildTenantRouter(tenantRouters: readonly Router[]): Router {
-  const tenantRouter = Router({ mergeParams: true });
-  for (const moduleRouter of tenantRouters) tenantRouter.use(moduleRouter);
-  return tenantRouter;
 }

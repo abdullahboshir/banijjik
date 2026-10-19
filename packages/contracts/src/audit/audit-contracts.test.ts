@@ -34,6 +34,10 @@ describe("audit vocabulary", () => {
       "modifierGroup",
       "searchSynonym",
       "customerAccount",
+      "expense",
+      "expenseCategory",
+      "journalEntry",
+      "account",
     ]);
   });
 });

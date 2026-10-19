@@ -27,12 +27,22 @@ const CATALOG_MENU_KEYS = {
   categories: "catalog.categories",
   modifierGroups: "catalog.modifierGroups",
 } as const;
+const EXPENSE_MENU_KEYS = {
+  expenses: "expense.expenses",
+  categories: "expense.categories",
+} as const;
+const ACCOUNTING_TRIAL_BALANCE_MENU_KEY = "accounting.trialBalance";
 
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
   "settings.terms",
   "settings.modules",
   "customField.fields",
+];
+/** Settings the owner (and manager) see beyond the read-only set; ledger read is OWNER/MANAGER only. */
+const OWNER_SETTINGS_MENU_KEYS = [
+  ...READ_ONLY_SETTINGS_MENU_KEYS,
+  ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
 ];
 
 let harness: IamApiHarness;
@@ -68,10 +78,12 @@ describe("the settings menu of the organization module", () => {
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
+      EXPENSE_MENU_KEYS.expenses,
       CATALOG_MENU_KEYS.modifierGroups,
+      EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
-      ...READ_ONLY_SETTINGS_MENU_KEYS,
+      ...OWNER_SETTINGS_MENU_KEYS,
     ]);
   });
 
@@ -97,11 +109,13 @@ describe("the settings menu of the organization module", () => {
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
+      EXPENSE_MENU_KEYS.expenses,
       ORGANIZATION_MENU_KEYS.locations,
       CATALOG_MENU_KEYS.modifierGroups,
+      EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
-      ...READ_ONLY_SETTINGS_MENU_KEYS,
+      ...OWNER_SETTINGS_MENU_KEYS,
     ]);
     expect(archived.status).toBe(200);
     expect(withOneAgain).toEqual([
@@ -110,10 +124,12 @@ describe("the settings menu of the organization module", () => {
       ORGANIZATION_MENU_KEYS.profile,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
+      EXPENSE_MENU_KEYS.expenses,
       CATALOG_MENU_KEYS.modifierGroups,
+      EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
       ORGANIZATION_MENU_KEYS.roles,
-      ...READ_ONLY_SETTINGS_MENU_KEYS,
+      ...OWNER_SETTINGS_MENU_KEYS,
     ]);
   });
 

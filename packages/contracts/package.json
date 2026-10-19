@@ -26,6 +26,10 @@
     "./iam": {
       "types": "./dist/iam/index.d.ts",
       "default": "./dist/iam/index.js"
+    },
+    "./accounting": {
+      "types": "./dist/accounting/index.d.ts",
+      "default": "./dist/accounting/index.js"
     }
   },
   "files": [

@@ -163,10 +163,12 @@ describe("GET /settings", () => {
 
     expect(response.status).toBe(200);
     expect(Object.keys(settingsOf(response))).toEqual([
+      "accounting.fiscalYearStart",
       "catalog.defaultStockTracked",
       "catalog.defaultUnitKey",
       "contact.customerLogin",
       "contact.dedupeOn",
+      "expense.requireAttachmentAbove",
       "iam.approval.ownerSelfApproval",
       "notification.probeFlag",
       "notification.probeShape",

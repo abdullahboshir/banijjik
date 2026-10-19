@@ -158,13 +158,16 @@ describe("the entitlement gate", () => {
       "organization.profile",
       "organization.branding",
       "catalog.categories",
+      "expense.expenses",
       "catalog.modifierGroups",
+      "expense.categories",
       "organization.staff",
       "iam.roles",
       "settings.general",
       "settings.terms",
       "settings.modules",
       "customField.fields",
+      "accounting.trialBalance",
     ]);
     expect(restored.status).toBe(200);
   });
@@ -336,11 +339,13 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       },
     });
     expect(response.body.data.modules).toEqual([
+      "accounting",
       "ai",
       "audit",
       "catalog",
       "contact",
       "custom-field",
+      "expense",
       "file",
       "iam",
       "organization",
@@ -364,13 +369,16 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
       PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
       PERMISSION_KEY.CATALOG_CATEGORY_READ,
+      PERMISSION_KEY.EXPENSE_EXPENSE_READ,
       PERMISSION_KEY.CATALOG_MODIFIER_GROUP_READ,
+      PERMISSION_KEY.EXPENSE_CATEGORY_UPDATE,
       PERMISSION_KEY.ORGANIZATION_MEMBER_READ,
       PERMISSION_KEY.IAM_ROLE_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
       PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_READ,
+      PERMISSION_KEY.ACCOUNTING_LEDGER_READ,
     ]);
   });
 
@@ -396,6 +404,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.CATALOG_OFFERING_READ,
       PERMISSION_KEY.CATALOG_CATEGORY_READ,
       PERMISSION_KEY.CATALOG_MODIFIER_GROUP_READ,
+      PERMISSION_KEY.EXPENSE_EXPENSE_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
     ]);
     expect(
@@ -405,6 +414,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.CATALOG_OFFERING_READ,
       PERMISSION_KEY.CONTACT_CONTACT_READ,
       PERMISSION_KEY.CATALOG_CATEGORY_READ,
+      PERMISSION_KEY.EXPENSE_EXPENSE_READ,
       PERMISSION_KEY.CATALOG_MODIFIER_GROUP_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,

@@ -16,6 +16,11 @@ export interface EventHandler<Type extends EventType = EventType> {
   readonly moduleKey: ModuleKey;
   readonly eventType: Type;
   /**
+   * Extra event types the same handler consumes. Needed when one ORDERED handler follows a shared
+   * per-organization stream that carries several types (card 3.8c: paymentAccount, bookingAccount).
+   */
+  readonly alsoHandles?: readonly EventType[];
+  /**
    * ORDERED: events with an `orderingKey` reach the handler in stream order, each exactly once (ADR-115).
    * UNORDERED: any order, as before. Every handler states it, so nobody gets ordering by accident.
    */
@@ -60,7 +65,11 @@ export class EventHandlerRegistry {
   }
 
   handlersFor(eventType: string): readonly EventHandler[] {
-    return [...this.handlers.values()].filter((handler) => handler.eventType === eventType);
+    return [...this.handlers.values()].filter(
+      (handler) =>
+        handler.eventType === eventType ||
+        (handler.alsoHandles?.includes(eventType as EventType) ?? false),
+    );
   }
 }
 

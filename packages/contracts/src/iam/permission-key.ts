@@ -53,6 +53,11 @@ export const PERMISSION_KEY = {
   CATALOG_MODIFIER_GROUP_UPDATE: "catalog.modifierGroup.update",
   CATALOG_MODIFIER_GROUP_ARCHIVE: "catalog.modifierGroup.archive",
   CATALOG_SYNONYM_UPDATE: "catalog.synonym.update",
+  ACCOUNTING_LEDGER_READ: "accounting.ledger.read",
+  EXPENSE_EXPENSE_READ: "expense.expense.read",
+  EXPENSE_EXPENSE_CREATE: "expense.expense.create",
+  EXPENSE_EXPENSE_VOID: "expense.expense.void",
+  EXPENSE_CATEGORY_UPDATE: "expense.category.update",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];
@@ -106,4 +111,6 @@ export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
   PERMISSION_KEY.CUSTOM_FIELD_DEFINITION_ARCHIVE,
   PERMISSION_KEY.SETTINGS_TERM_UPDATE,
   PERMISSION_KEY.SETTINGS_MODULE_UPDATE,
+  // Trial balance and journal list are organization-wide (card 3.8c).
+  PERMISSION_KEY.ACCOUNTING_LEDGER_READ,
 ];

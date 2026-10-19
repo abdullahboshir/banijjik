@@ -1,0 +1,123 @@
+import { defineEnum } from "../define-enum.js";
+import type { CurrencyCode } from "../organization/currency-code.js";
+import type { SystemAccountCode } from "./system-account-code.js";
+
+/** Money in JSON: integer minor units plus currency (05-CONVENTIONS, ADR-013). */
+export interface Money {
+  readonly amount: number;
+  readonly currency: CurrencyCode;
+}
+
+export const ACCOUNT_TYPE = defineEnum(["ASSET", "LIABILITY", "EQUITY", "INCOME", "EXPENSE"]);
+export type AccountType = (typeof ACCOUNT_TYPE)[keyof typeof ACCOUNT_TYPE];
+
+export const ACCOUNT_STATUS = defineEnum(["ACTIVE", "ARCHIVED"]);
+export type AccountStatus = (typeof ACCOUNT_STATUS)[keyof typeof ACCOUNT_STATUS];
+
+/**
+ * Why a journal entry was posted. One entry per (sourceType, sourceId, postingKey) (11 §10).
+ * Later cards add ORDER, STOCK, RETURN and COD keys; the codes exist now.
+ */
+export const JOURNAL_SOURCE_TYPE = defineEnum([
+  "PAYMENT",
+  "BOOKING",
+  "EXPENSE",
+  "STORE_CREDIT",
+  "ORDER",
+  "STOCK",
+  "RETURN",
+  "COURIER",
+  "MANUAL",
+]);
+export type JournalSourceType = (typeof JOURNAL_SOURCE_TYPE)[keyof typeof JOURNAL_SOURCE_TYPE];
+
+/**
+ * Distinguishes multiple postings for the same source record (11 §10 matrix rows built in 3.8c).
+ * Rows for order, stock, return and COD arrive with their cards.
+ */
+export const POSTING_KEY = defineEnum([
+  "payment_in_advance",
+  "payment_in_after_revenue",
+  "payment_store_credit",
+  "overpayment_to_store_credit",
+  "refund_advance",
+  "refund_after_revenue",
+  "reversal",
+  "booking_completed",
+  "booking_completed_settle_advances",
+  "cancellation_fee",
+  "store_credit_expiry",
+  "expense_posted",
+  "expense_voided",
+  "rounding",
+]);
+export type PostingKey = (typeof POSTING_KEY)[keyof typeof POSTING_KEY];
+
+/** Whether allocated money sits as a liability (before revenue) or settles AR (after). */
+export const REVENUE_STATE = defineEnum(["BEFORE_REVENUE", "AFTER_REVENUE"]);
+export type RevenueState = (typeof REVENUE_STATE)[keyof typeof REVENUE_STATE];
+
+export const ACCOUNTING_FISCAL_YEAR_START_SETTING_KEY = "accounting.fiscalYearStart";
+
+/** Default fiscal year start: 1 July (Bangladesh common practice); day-of-year 1–366 as INTEGER. */
+export const ACCOUNTING_FISCAL_YEAR_START_DEFAULT = 182;
+
+export interface LocalizedAccountName {
+  readonly bn: string;
+  readonly en: string;
+}
+
+export interface AccountResponse {
+  readonly accountId: string;
+  readonly accountCode: string;
+  readonly name: LocalizedAccountName;
+  readonly accountType: AccountType;
+  readonly isSystem: boolean;
+  readonly status: AccountStatus;
+}
+
+export interface JournalLineResponse {
+  readonly accountId: string;
+  readonly accountCode: string;
+  readonly debit: Money;
+  readonly credit: Money;
+}
+
+export interface JournalEntryResponse {
+  readonly journalEntryId: string;
+  readonly entryNumber: string;
+  readonly businessDate: string;
+  readonly locationId: string | null;
+  readonly lines: readonly JournalLineResponse[];
+  readonly sourceType: JournalSourceType;
+  readonly sourceId: string;
+  readonly postingKey: PostingKey;
+  readonly reversesJournalEntryId: string | null;
+  readonly createdAt: string;
+}
+
+export interface TrialBalanceAccountRow {
+  readonly accountId: string;
+  readonly accountCode: string;
+  readonly name: LocalizedAccountName;
+  readonly accountType: AccountType;
+  readonly debitTotal: Money;
+  readonly creditTotal: Money;
+  readonly balance: Money;
+}
+
+export interface TrialBalanceResponse {
+  readonly asOf: string;
+  readonly accounts: readonly TrialBalanceAccountRow[];
+  readonly debitTotal: Money;
+  readonly creditTotal: Money;
+  /** True when debitTotal equals creditTotal (books balance). */
+  readonly balances: boolean;
+}
+
+/** System account seed row: code, type and i18n name keys resolved at seed time. */
+export interface SystemAccountSeed {
+  readonly accountCode: SystemAccountCode;
+  readonly accountType: AccountType;
+  readonly name: LocalizedAccountName;
+}

@@ -50,6 +50,10 @@ export const AUDIT_ACTION = {
   CUSTOMER_ACCOUNT_BLOCKED: "contact.customerAccount.blocked",
   CUSTOMER_ACCOUNT_UNBLOCKED: "contact.customerAccount.unblocked",
   CUSTOMER_ACCOUNT_ENDED: "contact.customerAccount.ended",
+  EXPENSE_CREATED: "expense.expense.created",
+  EXPENSE_VOIDED: "expense.expense.voided",
+  EXPENSE_CATEGORY_UPDATED: "expense.category.updated",
+  JOURNAL_POSTED: "accounting.journal.posted",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -75,6 +79,10 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "modifierGroup",
   "searchSynonym",
   "customerAccount",
+  "expense",
+  "expenseCategory",
+  "journalEntry",
+  "account",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

@@ -198,11 +198,12 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 | `POST /payments/{paymentId}/reverse` | `payment.payment.reverse` | I L A | |
 | `GET /dues` | `payment.due.read` | L | open requests with due, by contact |
 | `POST /contacts/{contactId}/store-credit/adjust` | `payment.storeCredit.adjust` | I A | |
-| `GET /expenses` · `POST /expenses` · `POST /expenses/{expenseId}/void` | `expense.expense.*` | I L A* (void) | |
-| `GET/POST/PATCH /expense-categories[/{expenseCategoryId}]` | `expense.category.update` | | |
-| `GET /accounts` · `POST /accounts` · `PATCH /accounts/{accountId}` | `bookkeeping.account.*` | | system accounts read-only |
-| `GET /journal-entries` · `POST /journal-entries` (manual) · `POST /journal-entries/{journalEntryId}/reverse` | `bookkeeping.journal.*` | I A (manual, reverse) | |
-| `GET /statements/{trial-balance\|profit-and-loss\|balance-sheet}?from=&to=` | `bookkeeping.statement.read` | | |
+| `GET /expenses` · `POST /expenses` · `POST /expenses/{expenseId}/void` | `expense.expense.*` | I L A* (void) | card 3.8c |
+| `GET/POST/PATCH /expense-categories[/{expenseCategoryId}]` | `expense.category.update` (reads with `expense.expense.read`) | | card 3.8c |
+| `GET /accounting/accounts` · `GET /accounting/journal` · `GET /accounting/trial-balance?asOf=` | `accounting.ledger.read` | | card 3.8c; no writes (manual entries are 3.8b) |
+| `GET /accounts` · `POST /accounts` · `PATCH /accounts/{accountId}` | `bookkeeping.account.*` | | 3.8b; system accounts read-only |
+| `GET /journal-entries` · `POST /journal-entries` (manual) · `POST /journal-entries/{journalEntryId}/reverse` | `bookkeeping.journal.*` | I A (manual, reverse) | 3.8b |
+| `GET /statements/{trial-balance\|profit-and-loss\|balance-sheet}?from=&to=` | `bookkeeping.statement.read` | | 3.8b |
 | `GET /reports/dashboard?location=&date=` | `report.dashboard.read` | L | package-aware widgets (`13 §3`) |
 | `GET /reports/{sales\|stock\|profit\|bookings\|enrollments\|dues}?from=&to=&location=&groupBy=` | `report.*.read` | L | reads daily summaries only |
 | `POST /reports/{reportKey}/export` | same + `*.export` | I | async CSV/XLSX job → file |

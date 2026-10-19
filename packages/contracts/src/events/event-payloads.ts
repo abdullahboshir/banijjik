@@ -1,3 +1,5 @@
+import { ACCOUNTING_EVENT_TYPE, EXPENSE_EVENT_TYPE } from "../accounting/accounting-event-type.js";
+import { BOOKING_EVENT_TYPE, type BookingEventPayload } from "../booking/booking-event-type.js";
 import type { OfferingEventPayload } from "../catalog/catalog-contracts.js";
 import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
 import type {
@@ -10,12 +12,25 @@ import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type
 import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
+import {
+  PAYMENT_EVENT_TYPE,
+  type PaymentEventPayload,
+  type StoreCreditEventPayload,
+} from "../payment/payment-event-type.js";
 import { SETTINGS_EVENT_TYPE } from "../settings/settings-event-type.js";
 import type {
   ModuleToggledPayload,
   SettingChangedPayload,
   TermChangedPayload,
 } from "../settings/settings-contracts.js";
+
+export interface JournalPostedPayload {
+  readonly journalEntryId: string;
+}
+
+export interface ExpenseEventPayload {
+  readonly expenseId: string;
+}
 
 /** Payloads carry identifiers only, never personal data: a consumer reads the rest through the owning module. */
 export interface UserRegisteredPayload {
@@ -92,4 +107,13 @@ export interface EventPayloadMap {
   readonly [CATALOG_EVENT_TYPE.OFFERING_PUBLISHED]: OfferingEventPayload;
   readonly [CATALOG_EVENT_TYPE.OFFERING_ARCHIVED]: OfferingEventPayload;
   readonly [CATALOG_EVENT_TYPE.OFFERING_PRICE_CHANGED]: OfferingEventPayload;
+  readonly [ACCOUNTING_EVENT_TYPE.JOURNAL_POSTED]: JournalPostedPayload;
+  readonly [EXPENSE_EVENT_TYPE.EXPENSE_POSTED]: ExpenseEventPayload;
+  readonly [EXPENSE_EVENT_TYPE.EXPENSE_VOIDED]: ExpenseEventPayload;
+  readonly [PAYMENT_EVENT_TYPE.PAYMENT_RECEIVED]: PaymentEventPayload;
+  readonly [PAYMENT_EVENT_TYPE.PAYMENT_REFUNDED]: PaymentEventPayload;
+  readonly [PAYMENT_EVENT_TYPE.PAYMENT_REVERSED]: PaymentEventPayload;
+  readonly [PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED]: StoreCreditEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_COMPLETED]: BookingEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_CANCELLED]: BookingEventPayload;
 }

@@ -2,10 +2,15 @@ export { newId } from "./new-id.js";
 export { isUuidV7, UUID_V7_PATTERN } from "./is-uuid-v7.js";
 export { asId, InvalidIdError } from "./branded-ids.js";
 export type {
+  AccountId,
+  BookingId,
   CategoryId,
   ContactId,
   CustomerAccountId,
   CustomerSessionId,
+  ExpenseCategoryId,
+  ExpenseId,
+  JournalEntryId,
   ModifierGroupId,
   OfferingId,
   OtpChallengeId,
@@ -17,7 +22,9 @@ export type {
   ModuleOverrideId,
   OrganizationId,
   PackageId,
+  PaymentId,
   PlatformSubscriptionId,
   RoleId,
+  StoreCreditEntryId,
   UserId,
 } from "./branded-ids.js";

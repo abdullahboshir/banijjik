@@ -282,7 +282,7 @@ System accounts are seeded per org with fixed `accountCode`s (contracts enum `SY
 
 - Every posting is idempotent: a unique index on `(organizationId, sourceType, sourceId, postingKey)`. A reversal posts the mirrored lines with `reversesJournalEntryId`.
 - Debits = credits is asserted before insert. A failed posting retries via the outbox, and after N attempts raises an alert. It never silently skips.
-- Card 3.8 owns the full test matrix: one test per row, plus a trial balance after a full day's scenario must net to zero.
+- Card 3.8c owns the built rows of the matrix (payments, bookings, expenses, store-credit expiry, rounding) and the full-day trial balance; order, stock, return and COD rows come with their cards (ADR-124).
 
 ## 11. Scheduled jobs (all `runAsSystem(SCHEDULED_JOB)`, idempotent, per org timezone)
 
