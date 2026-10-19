@@ -8,6 +8,41 @@ import type { AdjustStockLabels, ItemPickerLabels } from "./stock-labels";
 import { InventoryItemPicker } from "./inventory-item-picker";
 import type { AdjustLine } from "./adjust-stock-form-lib";
 
+function AdjustLineExtras(props: {
+  index: number;
+  line: AdjustLine;
+  labels: AdjustStockLabels;
+  isSaving: boolean;
+  onChange: (changes: Partial<AdjustLine>) => void;
+}): ReactElement {
+  const { index, line, labels } = props;
+  return (
+    <>
+      <FormField label={labels.reason} htmlFor={`adjust-reason-${index}`}>
+        <Select
+          id={`adjust-reason-${index}`}
+          value={line.reason}
+          disabled={props.isSaving}
+          onChange={(event) =>
+            props.onChange({ reason: event.target.value as AdjustLine["reason"] })
+          }
+        >
+          <option value={STOCK_ADJUSTMENT_REASON.ADJUSTMENT}>{labels.reasonAdjustment}</option>
+          <option value={STOCK_ADJUSTMENT_REASON.DAMAGE_WRITE_OFF}>{labels.reasonDamage}</option>
+        </Select>
+      </FormField>
+      <FormField label={labels.note} htmlFor={`adjust-note-${index}`}>
+        <TextInput
+          id={`adjust-note-${index}`}
+          value={line.note}
+          disabled={props.isSaving}
+          onChange={(event) => props.onChange({ note: event.target.value })}
+        />
+      </FormField>
+    </>
+  );
+}
+
 export function AdjustStockLine(props: {
   organizationId: string;
   index: number;
@@ -40,27 +75,13 @@ export function AdjustStockLine(props: {
           onChange={(event) => props.onChange({ quantityDelta: event.target.value })}
         />
       </FormField>
-      <FormField label={labels.reason} htmlFor={`adjust-reason-${index}`}>
-        <Select
-          id={`adjust-reason-${index}`}
-          value={line.reason}
-          disabled={props.isSaving}
-          onChange={(event) =>
-            props.onChange({ reason: event.target.value as AdjustLine["reason"] })
-          }
-        >
-          <option value={STOCK_ADJUSTMENT_REASON.ADJUSTMENT}>{labels.reasonAdjustment}</option>
-          <option value={STOCK_ADJUSTMENT_REASON.DAMAGE_WRITE_OFF}>{labels.reasonDamage}</option>
-        </Select>
-      </FormField>
-      <FormField label={labels.note} htmlFor={`adjust-note-${index}`}>
-        <TextInput
-          id={`adjust-note-${index}`}
-          value={line.note}
-          disabled={props.isSaving}
-          onChange={(event) => props.onChange({ note: event.target.value })}
-        />
-      </FormField>
+      <AdjustLineExtras
+        index={index}
+        line={line}
+        labels={labels}
+        isSaving={props.isSaving}
+        onChange={props.onChange}
+      />
       {props.canRemove ? (
         <Button
           type="button"

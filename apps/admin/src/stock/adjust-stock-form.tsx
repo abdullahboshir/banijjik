@@ -58,7 +58,7 @@ function AdjustStockLines(props: {
   );
 }
 
-export function AdjustStockForm(props: AdjustStockFormProps): ReactElement {
+function useAdjustFormState(props: AdjustStockFormProps) {
   const [locationId, setLocationId] = useState(props.defaultLocationId);
   const [lines, setLines] = useState<AdjustLine[]>(() => [emptyAdjustLine("0")]);
   const approval = useAdjustStockSubmit({
@@ -68,12 +68,15 @@ export function AdjustStockForm(props: AdjustStockFormProps): ReactElement {
     ...(props.onSuccess === undefined ? {} : { onSuccess: props.onSuccess }),
     ...(props.onClose === undefined ? {} : { onClose: props.onClose }),
   });
+  return { locationId, setLocationId, lines, setLines, approval };
+}
 
+export function AdjustStockForm(props: AdjustStockFormProps): ReactElement {
+  const { locationId, setLocationId, lines, setLines, approval } = useAdjustFormState(props);
   function onSubmit(event: FormEvent): void {
     event.preventDefault();
     void approval.submit.submit();
   }
-
   return (
     <>
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
