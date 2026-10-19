@@ -5,6 +5,7 @@ import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
 import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
+import { INVENTORY_EVENT_TYPE } from "../inventory/inventory-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
 import { PAYMENT_EVENT_TYPE } from "../payment/payment-event-type.js";
 import { PRICING_EVENT_TYPE } from "../pricing/pricing-event-type.js";
@@ -29,6 +30,7 @@ describe("event types", () => {
       ...Object.values(PAYMENT_EVENT_TYPE),
       ...Object.values(BOOKING_EVENT_TYPE),
       ...Object.values(PRICING_EVENT_TYPE),
+      ...Object.values(INVENTORY_EVENT_TYPE),
     ].sort();
 
     expect(Object.values(EVENT_TYPE).sort()).toEqual(expected);

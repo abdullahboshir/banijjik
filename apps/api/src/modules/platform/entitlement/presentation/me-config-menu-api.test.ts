@@ -28,6 +28,9 @@ const CATALOG_MENU_KEYS = {
   categories: "catalog.categories",
   modifierGroups: "catalog.modifierGroups",
   promotions: "catalog.promotions",
+  stock: "catalog.stock",
+  transfers: "catalog.transfers",
+  adjustments: "catalog.adjustments",
 } as const;
 const EXPENSE_MENU_KEYS = {
   expenses: "expense.expenses",
@@ -90,6 +93,12 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.promotions,
       ORGANIZATION_MENU_KEYS.roles,
       ...OWNER_SETTINGS_MENU_KEYS,
+      CATALOG_MENU_KEYS.stock,
+      ORGANIZATION_MENU_KEYS.roles,
+      CATALOG_MENU_KEYS.transfers,
+      READ_ONLY_SETTINGS_MENU_KEYS[0],
+      CATALOG_MENU_KEYS.adjustments,
+      ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
     ]);
   });
 
@@ -123,6 +132,12 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.promotions,
       ORGANIZATION_MENU_KEYS.roles,
       ...OWNER_SETTINGS_MENU_KEYS,
+      CATALOG_MENU_KEYS.stock,
+      ORGANIZATION_MENU_KEYS.roles,
+      CATALOG_MENU_KEYS.transfers,
+      READ_ONLY_SETTINGS_MENU_KEYS[0],
+      CATALOG_MENU_KEYS.adjustments,
+      ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
     ]);
     expect(archived.status).toBe(200);
     expect(withOneAgain).toEqual([
@@ -138,6 +153,12 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.promotions,
       ORGANIZATION_MENU_KEYS.roles,
       ...OWNER_SETTINGS_MENU_KEYS,
+      CATALOG_MENU_KEYS.stock,
+      ORGANIZATION_MENU_KEYS.roles,
+      CATALOG_MENU_KEYS.transfers,
+      READ_ONLY_SETTINGS_MENU_KEYS[0],
+      CATALOG_MENU_KEYS.adjustments,
+      ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
     ]);
   });
 
@@ -152,6 +173,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.categories,
       CATALOG_MENU_KEYS.modifierGroups,
       CATALOG_MENU_KEYS.promotions,
+      CATALOG_MENU_KEYS.stock,
       ...READ_ONLY_SETTINGS_MENU_KEYS,
     ]);
   });

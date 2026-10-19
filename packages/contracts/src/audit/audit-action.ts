@@ -66,7 +66,7 @@ export const AUDIT_ACTION = {
   STOCK_RECEIVED: "inventory.stock.received",
   STOCK_ADJUSTED: "inventory.stock.adjusted",
   STOCK_TRANSFERRED: "inventory.stock.transferred",
-  INVENTORY_LEVELS_REBUILT: "inventory.level.rebuilt",
+  INVENTORY_LEVELS_REBUILT: "inventory.level.recomputed",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];

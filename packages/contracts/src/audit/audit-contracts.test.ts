@@ -40,6 +40,9 @@ describe("audit vocabulary", () => {
       "account",
       "taxClass",
       "promotion",
+      "inventoryItem",
+      "stockMovement",
+      "stockTransfer",
     ]);
   });
 });

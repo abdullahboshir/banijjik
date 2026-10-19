@@ -146,7 +146,6 @@
       "enrollment.refundPolicy": "NONE",
       "pos.requireShift": true,
       "pos.allowCreditSale": true,
-      "inventory.lowStockDefault": 5,
       "catalog.defaultUnitKey": "PIECE",
       "bot.tone": "POLITE"
     },

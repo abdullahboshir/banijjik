@@ -307,7 +307,12 @@ describe("refusing a bad offering", () => {
 
   it("stores stock components on a product variant (item ids are validated by the inventory port)", async () => {
     const world = await worldFor(harness, RETAIL);
-    const itemId = "0198aaaa-0000-7000-8000-000000000001";
+    const item = await world.alice.call("post", `/orgs/${world.organizationA}/inventory-items`, {
+      name: "Rice grain",
+      baseUnitKey: "GRAM",
+    });
+    expect(item.status).toBe(201);
+    const itemId = item.body.data.inventoryItemId as string;
 
     const response = await world.alice.call("post", offeringsPath(world.organizationA), {
       kind: "PRODUCT",
