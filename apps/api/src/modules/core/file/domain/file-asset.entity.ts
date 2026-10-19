@@ -37,14 +37,16 @@ export interface FileAssetProps {
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly createdByUserId: UserId;
-  readonly updatedByUserId: UserId;
+  /** Null when a customer uploaded the file on the storefront (LISTING_PHOTO, ADR-127). */
+  readonly createdByUserId: UserId | null;
+  readonly updatedByUserId: UserId | null;
 }
 
 export interface NewFileAssetInput {
   readonly fileId: FileAssetId;
   readonly organizationId: OrganizationId;
-  readonly actorUserId: UserId;
+  /** Null for a storefront customer upload (same pattern as contact/listing audit fields). */
+  readonly actorUserId: UserId | null;
   readonly purpose: FilePurpose;
   readonly mimeType: string;
   readonly originalName: string;
@@ -139,10 +141,10 @@ export class FileAsset {
   get updatedAt(): Date {
     return this.props.updatedAt;
   }
-  get createdByUserId(): UserId {
+  get createdByUserId(): UserId | null {
     return this.props.createdByUserId;
   }
-  get updatedByUserId(): UserId {
+  get updatedByUserId(): UserId | null {
     return this.props.updatedByUserId;
   }
 

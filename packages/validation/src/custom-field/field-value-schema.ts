@@ -1,5 +1,7 @@
 import { CUSTOM_FIELD_TYPE, type CustomFieldType } from "@banijjik/contracts";
+import { isValidGeoBdValue } from "@banijjik/contracts/directory";
 import { z, type ZodType } from "zod";
+import { geoBdValueSchema } from "../directory/listing-schemas.js";
 import { emailSchema } from "../email.js";
 import { phoneE164Schema } from "../phone.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
@@ -90,6 +92,10 @@ function referenceValue(field: CustomFieldRule, acceptsCreate: boolean): ZodType
   return z.union([uuidV7Schema, contactLinkCreateSchema]);
 }
 
+function geoBdValue(): ZodType {
+  return geoBdValueSchema.refine(isValidGeoBdValue);
+}
+
 function valueOfType(field: CustomFieldRule, acceptsCreate: boolean): ZodType {
   const parsers: Record<CustomFieldType, () => ZodType> = {
     [CUSTOM_FIELD_TYPE.TEXT]: () => textValue(field),
@@ -108,6 +114,7 @@ function valueOfType(field: CustomFieldRule, acceptsCreate: boolean): ZodType {
     [CUSTOM_FIELD_TYPE.FILE]: () => uuidV7Schema,
     [CUSTOM_FIELD_TYPE.IMAGE]: () => uuidV7Schema,
     [CUSTOM_FIELD_TYPE.REFERENCE]: () => referenceValue(field, acceptsCreate),
+    [CUSTOM_FIELD_TYPE.GEO_BD]: () => geoBdValue(),
   };
   return parsers[field.fieldType]();
 }

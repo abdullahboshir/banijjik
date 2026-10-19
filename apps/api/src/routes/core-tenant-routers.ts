@@ -28,6 +28,7 @@ import { buildContactTenantRouter } from "./contact-tenant-router.js";
 import { buildExpenseTenantRouter } from "./expense-tenant-router.js";
 import { buildPricingTenantRouter } from "./pricing-tenant-router.js";
 import { buildInventoryTenantRouter } from "./inventory-tenant-router.js";
+import { buildDirectoryTenantRouter } from "./directory-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -57,6 +58,7 @@ export interface CoreTenantRouters {
   readonly expenseRouter: Router;
   readonly pricingRouter: Router;
   readonly inventoryRouter: Router;
+  readonly directoryRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -66,16 +68,7 @@ function buildPlatformCoreRouters(
   "customFieldRouter" | "settingsRouter" | "fileRouter" | "publicFileRouter"
 > {
   const { clock, audit, permission, orgConfig } = input;
-  const customFieldRouter = buildCustomFieldModule({
-    clock,
-    audit,
-    permission,
-    orgConfig,
-    registry: input.registry,
-    configVersion: buildConfigVersionBumper(),
-    productionManifests: MODULE_MANIFESTS,
-  }).router;
-  const settingsRouter = buildSettingsTenantRouter({
+  return buildSettingsTenantRouter({
     permission,
     audit,
     orgConfig,
@@ -91,6 +84,20 @@ function buildPlatformCoreRouters(
       configVersion: buildConfigVersionBumper(),
     }),
   });
+}
+
+/** Custom-field, settings, file and contact routers (cards 2.3, 2.4, 3.0 and 3.1a). The file module also builds the public router. */
+export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenantRouters {
+  const { clock, audit, permission, orgConfig } = input;
+  const customFieldRouter = buildCustomFieldModule({
+    clock,
+    audit,
+    permission,
+    orgConfig,
+    registry: input.registry,
+    configVersion: buildConfigVersionBumper(),
+    productionManifests: MODULE_MANIFESTS,
+  }).router;
   const files = buildFileModule({
     clock,
     permission,
@@ -99,7 +106,7 @@ function buildPlatformCoreRouters(
   });
   return {
     customFieldRouter,
-    settingsRouter,
+    settingsRouter: buildSettingsRouter(input),
     fileRouter: files.tenantRouter,
     publicFileRouter: files.publicRouter,
   };
@@ -113,6 +120,7 @@ function buildCommerceTenantRouters(
   | "catalogRouter"
   | "pricingRouter"
   | "inventoryRouter"
+  | "directoryRouter"
   | "accountingRouter"
   | "expenseRouter"
 > {
@@ -130,6 +138,7 @@ function buildCommerceTenantRouters(
     catalogRouter: buildCatalogTenantRouter(shared),
     pricingRouter: buildPricingTenantRouter(shared),
     inventoryRouter: buildInventoryTenantRouter({ ...shared, rateLimiter: input.rateLimiter }),
+    directoryRouter: buildDirectoryTenantRouter(shared),
     accountingRouter: buildAccountingTenantRouter({
       clock: input.clock,
       audit: input.audit,

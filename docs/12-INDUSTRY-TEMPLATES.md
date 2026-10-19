@@ -264,6 +264,11 @@ Lint guarantee: feature code never reads `industryTemplateKey` (ADR-033). Everyt
 - When `defaultBillTo`, new requests default `billToContactId` to the linked contact.
 - The bot collects the linked contact's name and phone.
 
+**Listing fields and directory block (ADR-127, card M.2):**
+- Entity `listing` fields may carry `listingTier` (`PUBLIC|MEMBERS|UNLOCKED|PRIVATE`), `isFilterable`, `sectionKey`, `minAgeYears` (DATE), `mustDifferFromAccountPhone` (PHONE). Filterable fields must be PUBLIC or MEMBERS.
+- Template `configuration.directory`: `sections`, `consents`, `rejectionReasons`, `listingNumberPrefix`. No seed template enables `directory` yet (M.8).
+- New field type `GEO_BD` validated against the BBS geography registry in contracts.
+
 **Resource on enrollment + security deposit (ADR-074, enrollment):**
 - `Enrollment.resourceIds?[]` (bed, locker) with capacity checks like bookings (one active enrollment per resource unit).
 - PLAN `kindDetails.securityDeposit?: Money`: collected as an advance (CUSTOMER_ADVANCES), refunded or retained on cancellation/expiry by explicit action (approval). Journal rows use the existing advance rows of `11 §10`.

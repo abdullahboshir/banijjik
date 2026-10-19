@@ -39,19 +39,28 @@ export function storefrontPath(organizationId: string, suffix: string): string {
 }
 
 export interface StorefrontCall {
-  readonly method: "get" | "post";
+  readonly method: "get" | "post" | "put" | "delete";
   readonly organizationId: string;
   readonly suffix: string;
   readonly body?: object;
   readonly cookies?: Record<string, string>;
   readonly ip?: string;
+  readonly query?: Record<string, string | number>;
 }
 
 /** A public call: no admin session, no Idempotency-Key (the storefront endpoints do not need one). */
 export function callStorefront(app: Express, call: StorefrontCall): Test {
+  const query =
+    call.query === undefined
+      ? ""
+      : `?${new URLSearchParams(
+          Object.fromEntries(
+            Object.entries(call.query).map(([key, value]) => [key, String(value)]),
+          ),
+        ).toString()}`;
   return callApi(app, {
     method: call.method,
-    path: `/api/v1${storefrontPath(call.organizationId, call.suffix)}`,
+    path: `/api/v1${storefrontPath(call.organizationId, call.suffix)}${query}`,
     idempotencyKey: null,
     ip: call.ip ?? freshIp(),
     ...(call.body === undefined ? {} : { body: call.body }),

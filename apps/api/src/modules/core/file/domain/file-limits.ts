@@ -14,5 +14,8 @@ export const UPLOAD_TIMEOUT_MS = 60 * MILLISECONDS_PER_SECOND;
 export const MAX_IMAGE_PIXELS = 40_000_000;
 /** Long side, in pixels, of each stored image size. */
 export const IMAGE_VARIANT_LONG_SIDE = { thumb: 200, medium: 800, large: 1600 } as const;
+/** Long side and blur sigma of the public listing-photo preview (ADR-127). */
+export const BLURRED_VARIANT_LONG_SIDE = 200;
+export const BLURRED_VARIANT_SIGMA = 18;
 /** Longest kept original file name; the name is only shown, never used as a path. */
 export const ORIGINAL_NAME_MAX_LENGTH = 120;

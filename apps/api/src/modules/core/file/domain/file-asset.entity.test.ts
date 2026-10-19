@@ -27,6 +27,7 @@ describe("FileAsset", () => {
     expect(aFile(FILE_PURPOSE.CUSTOM_FIELD_IMAGE).visibility).toBe(FILE_VISIBILITY.PRIVATE);
     expect(aFile(FILE_PURPOSE.CUSTOM_FIELD_FILE).visibility).toBe(FILE_VISIBILITY.PRIVATE);
     expect(aFile(FILE_PURPOSE.ATTACHMENT).visibility).toBe(FILE_VISIBILITY.PRIVATE);
+    expect(aFile(FILE_PURPOSE.LISTING_PHOTO).visibility).toBe(FILE_VISIBILITY.PRIVATE);
   });
 
   it("counts the stored size as the sum of its variants and keys objects under the organization", () => {

@@ -95,9 +95,10 @@ describe("POST /files", () => {
       "thumb",
       "medium",
       "large",
+      "blurred",
     ]);
     expect(file.url).toBe(`/api/v1/public/files/${file.fileId}/medium`);
-    for (const variantKey of ["thumb", "medium", "large"]) {
+    for (const variantKey of ["thumb", "medium", "large", "blurred"]) {
       const content = await downloadFile(
         harness.app,
         world.alice,
@@ -341,7 +342,8 @@ describe("DELETE /files/{fileId}", () => {
     const removed = await world.alice.call("delete", path);
 
     expect(removed.status).toBe(204);
-    expect(storedObjectCount()).toBe(objectsBefore - 3);
+    // Images store thumb, medium, large and blurred (ADR-127).
+    expect(storedObjectCount()).toBe(objectsBefore - 4);
     expect((await getWithoutSession(harness.app, url)).status).toBe(404);
     expect((await world.alice.call("get", path)).status).toBe(404);
     expect((await world.alice.call("delete", path)).status).toBe(404);

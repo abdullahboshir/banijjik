@@ -31,5 +31,6 @@ export type {
 export { cacheAccountStatus } from "./customer-account-gate.js";
 export type { CustomerAccountStatusReader } from "./customer-account-gate.js";
 export { authenticateCustomer } from "./authenticate-customer.middleware.js";
+export { authenticateCustomerOptional } from "./authenticate-customer-optional.middleware.js";
 export type { AuthenticateCustomerOptions } from "./authenticate-customer.middleware.js";
 export { requireCurrentCustomerAccountId } from "./require-current-customer-account-id.js";

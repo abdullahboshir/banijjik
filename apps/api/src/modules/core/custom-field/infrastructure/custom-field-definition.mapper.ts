@@ -11,6 +11,20 @@ function withoutEmpty<Value>(value: Value | null | undefined): Value | undefined
   return value;
 }
 
+function optionalListingFields(
+  definition: CustomFieldDefinition,
+): Partial<CustomFieldDefinitionDocument> {
+  return {
+    ...(definition.listingTier === undefined ? {} : { listingTier: definition.listingTier }),
+    ...(definition.isFilterable === undefined ? {} : { isFilterable: definition.isFilterable }),
+    ...(definition.sectionKey === undefined ? {} : { sectionKey: definition.sectionKey }),
+    ...(definition.minAgeYears === undefined ? {} : { minAgeYears: definition.minAgeYears }),
+    ...(definition.mustDifferFromAccountPhone === undefined
+      ? {}
+      : { mustDifferFromAccountPhone: definition.mustDifferFromAccountPhone }),
+  };
+}
+
 /** Optional fields that are absent are left out. `offeringKind` is stored as null so the unique index can see it. */
 export function toCustomFieldDefinitionDocument(
   definition: CustomFieldDefinition,
@@ -44,6 +58,7 @@ export function toCustomFieldDefinitionDocument(
     ...(definition.appliesToContactRoles === undefined
       ? {}
       : { appliesToContactRoles: [...definition.appliesToContactRoles] }),
+    ...optionalListingFields(definition),
   };
 }
 
@@ -68,6 +83,11 @@ export function toCustomFieldDefinition(
       stored.appliesToContactRoles?.length === 0
         ? undefined
         : withoutEmpty(stored.appliesToContactRoles),
+    listingTier: withoutEmpty(stored.listingTier),
+    isFilterable: withoutEmpty(stored.isFilterable),
+    sectionKey: withoutEmpty(stored.sectionKey),
+    minAgeYears: withoutEmpty(stored.minAgeYears),
+    mustDifferFromAccountPhone: withoutEmpty(stored.mustDifferFromAccountPhone),
     visibility: stored.visibility,
     botAsk: stored.botAsk,
     isSearchable: stored.isSearchable,

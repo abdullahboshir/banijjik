@@ -187,3 +187,21 @@ export function buildIndustryContactRoleReader(): IndustryContactRoleReader {
     },
   });
 }
+
+/** Template `configuration.directory` for the active organization (ADR-127). */
+export function buildDirectoryBlockReader(): {
+  directoryBlockOf(
+    organizationId: import("@banijjik/ids").OrganizationId,
+  ): Promise<import("@banijjik/contracts/directory").IndustryTemplateDirectoryBlock | undefined>;
+} {
+  const organizations = buildOrganizationConfigSource();
+  const templates = new MongoIndustryTemplateRepository();
+  return {
+    async directoryBlockOf(organizationId) {
+      const snapshot = await organizations.find(organizationId);
+      if (snapshot === undefined) return undefined;
+      const template = await templates.findByKey(snapshot.industryTemplateKey);
+      return template?.configuration.directory;
+    },
+  };
+}

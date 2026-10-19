@@ -2,7 +2,12 @@ import { FILE_VARIANT, type FileVariant } from "@banijjik/contracts/file";
 import sharp from "sharp";
 import type { ImageProcessor, ProcessedVariant } from "../application/ports/file-ports.js";
 import { fileTypeNotAllowed } from "../domain/errors.js";
-import { IMAGE_VARIANT_LONG_SIDE, MAX_IMAGE_PIXELS } from "../domain/file-limits.js";
+import {
+  BLURRED_VARIANT_LONG_SIDE,
+  BLURRED_VARIANT_SIGMA,
+  IMAGE_VARIANT_LONG_SIDE,
+  MAX_IMAGE_PIXELS,
+} from "../domain/file-limits.js";
 
 const IMAGE_VARIANTS: readonly FileVariant[] = [
   FILE_VARIANT.thumb,
@@ -22,11 +27,36 @@ async function encodeVariant(bytes: Buffer, variantKey: FileVariant): Promise<Pr
   return { variantKey, bytes: data, width: info.width, height: info.height };
 }
 
-/** Re-encodes every accepted image into the three stored sizes. Nothing of the original is kept. */
+/** Heavily blurred public preview for LISTING_PHOTO under BLURRED_PUBLIC (ADR-127). */
+async function encodeBlurredVariant(bytes: Buffer): Promise<ProcessedVariant> {
+  const { data, info } = await sharp(bytes, { limitInputPixels: MAX_IMAGE_PIXELS })
+    .rotate()
+    .resize({
+      width: BLURRED_VARIANT_LONG_SIDE,
+      height: BLURRED_VARIANT_LONG_SIDE,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .blur(BLURRED_VARIANT_SIGMA)
+    .webp()
+    .toBuffer({ resolveWithObject: true });
+  return {
+    variantKey: FILE_VARIANT.blurred,
+    bytes: data,
+    width: info.width,
+    height: info.height,
+  };
+}
+
+/** Re-encodes every accepted image into the three sizes plus a blurred preview. Nothing of the original is kept. */
 export class SharpImageProcessor implements ImageProcessor {
   async process(bytes: Buffer): Promise<readonly ProcessedVariant[]> {
     try {
-      return await Promise.all(IMAGE_VARIANTS.map((variant) => encodeVariant(bytes, variant)));
+      const [sized, blurred] = await Promise.all([
+        Promise.all(IMAGE_VARIANTS.map((variant) => encodeVariant(bytes, variant))),
+        encodeBlurredVariant(bytes),
+      ]);
+      return [...sized, blurred];
     } catch {
       // A file with an image header that will not decode (or is a decompression bomb) is not an image.
       throw fileTypeNotAllowed();

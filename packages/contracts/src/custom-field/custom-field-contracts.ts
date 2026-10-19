@@ -1,4 +1,5 @@
 import type { ContactRole } from "../contact/contact-role.js";
+import type { ListingFieldTier } from "../directory/listing-field-tier.js";
 import type { OfferingKind } from "../modules/offering-kind.js";
 import type { IndustryTemplateContactLink, LocalizedText } from "../platform/industry-template.js";
 import type { CustomFieldEntityType } from "./custom-field-entity-type.js";
@@ -46,6 +47,12 @@ export interface CustomFieldDefinitionCreateRequest {
   readonly referenceEntity?: "contact" | "member" | undefined;
   /** Contact fields only. Absent means every role (ADR-113). */
   readonly appliesToContactRoles?: readonly ContactRole[] | undefined;
+  /** Listing fields only (ADR-127). */
+  readonly listingTier?: ListingFieldTier | undefined;
+  readonly isFilterable?: boolean | undefined;
+  readonly sectionKey?: string | undefined;
+  readonly minAgeYears?: number | undefined;
+  readonly mustDifferFromAccountPhone?: boolean | undefined;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
@@ -62,6 +69,11 @@ export interface CustomFieldDefinitionUpdateRequest {
   readonly validation?: CustomFieldValidationBounds | undefined;
   /** A list sets the roles; `null` goes back to every role (ADR-113). */
   readonly appliesToContactRoles?: readonly ContactRole[] | null | undefined;
+  readonly listingTier?: ListingFieldTier | undefined;
+  readonly isFilterable?: boolean | undefined;
+  readonly sectionKey?: string | null | undefined;
+  readonly minAgeYears?: number | null | undefined;
+  readonly mustDifferFromAccountPhone?: boolean | undefined;
   readonly visibility?: CustomFieldVisibility | undefined;
   readonly botAsk?: boolean | undefined;
   readonly isSearchable?: boolean | undefined;
@@ -116,6 +128,12 @@ export interface EffectiveCustomField {
   readonly link?: IndustryTemplateContactLink;
   /** Contact fields only: the roles the field belongs to. Absent means every role (ADR-113). */
   readonly appliesToContactRoles?: readonly ContactRole[];
+  /** Listing fields only (ADR-127). */
+  readonly listingTier?: ListingFieldTier;
+  readonly isFilterable?: boolean;
+  readonly sectionKey?: string;
+  readonly minAgeYears?: number;
+  readonly mustDifferFromAccountPhone?: boolean;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;

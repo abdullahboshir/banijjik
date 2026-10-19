@@ -36,7 +36,8 @@ export interface UploadFileDependencies {
 
 export interface UploadFileInput {
   readonly organizationId: OrganizationId;
-  readonly actorUserId: UserId;
+  /** Null when a storefront customer uploads (LISTING_PHOTO). */
+  readonly actorUserId: UserId | null;
   readonly purpose: FilePurpose;
   readonly originalName: string;
   readonly bytes: Buffer;

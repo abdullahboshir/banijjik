@@ -12,6 +12,7 @@ export type {
   ExpenseId,
   JournalEntryId,
   InventoryItemId,
+  ListingId,
   ModifierGroupId,
   OfferingId,
   PromotionId,

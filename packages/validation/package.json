@@ -13,6 +13,10 @@
     "./inventory": {
       "types": "./dist/inventory/index.d.ts",
       "default": "./dist/inventory/index.js"
+    },
+    "./directory": {
+      "types": "./dist/directory/index.d.ts",
+      "default": "./dist/directory/index.js"
     }
   },
   "files": [

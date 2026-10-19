@@ -251,6 +251,11 @@ Public reads are cacheable (`Cache-Control` + CDN). Writes need the storefront c
 | `POST /auth/otp/verify` | public | rate | `{ phone, code }` → sets `sf_access` and `sf_refresh`, returns `StorefrontMeResponse`; wrong, expired or used code `400 errors.otp_invalid`; blocked `403`; 20 per address per hour |
 | `POST /auth/refresh` · `POST /auth/logout` | refresh cookie | | rotate the session; end it |
 | `GET /me` | customer | | `StorefrontMeResponse` |
+| `GET /my/listing` · `PUT /my/listing` · `POST /my/listing/submit` · `DELETE /my/listing` | customer | | own listing (all tiers); create/replace draft data; submit with consents; archive (ADR-127) |
+| `POST /my/listing/photos` | customer | | multipart upload, purpose `LISTING_PHOTO`; refused when `directory.photoPolicy` is `NONE` |
+| `GET /listings` · `GET /listings/{listingNumber}` | public / optional customer | rate | APPROVED only; PUBLIC fields always, MEMBERS when signed in; filters `f.<fieldKey>…`; never UNLOCKED/PRIVATE until M.4 |
+
+Staff (tenant, module `directory`): `GET /directory/queue`, `GET /directory/listings/{listingId}`, `POST …/approve`, `…/reject`, `…/hide`, `…/unhide` with permissions `directory.listing.{read,review,hide}`.
 
 Every customer route answers `404 errors.storefront_not_available` while the business has `contact.customerLogin` off.
 | `POST /checkout` | customer or guest | I | `CheckoutRequest` (cart lines/bookings/enrollments, contact, address, payment choice) → PLACED order / HELD→REQUESTED booking / PENDING enrollment, shared `checkoutId` |

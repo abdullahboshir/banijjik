@@ -23,6 +23,9 @@ export { registerFileModels } from "./infrastructure/register-file-models.js";
 export type { FileStorage } from "./application/ports/file-ports.js";
 export { buildFileReferenceReader } from "./file-reference-reader.js";
 export type { FileReferenceReader } from "./file-reference-reader.js";
+export { UploadFileUseCase } from "./application/use-cases/upload-file.use-case.js";
+export { readUpload } from "./presentation/read-upload.js";
+export type { ReadUploadOptions } from "./presentation/read-upload.js";
 
 export interface FileModuleDependencies {
   readonly clock: Clock;
@@ -34,6 +37,24 @@ export interface FileModuleDependencies {
     readonly uploadOptions?: ReadUploadOptions;
     readonly fileStorage?: FileStorage;
   };
+}
+
+/** Shared upload use case for tenant and storefront listing-photo paths (ADR-109, ADR-127). */
+export function buildUploadFileUseCase(input: {
+  readonly clock: Clock;
+  readonly storage: StorageConfig;
+  readonly overrides?: FileModuleDependencies["overrides"];
+}): UploadFileUseCase {
+  const overrides = input.overrides ?? {};
+  return new UploadFileUseCase({
+    assets: new MongoFileAssetRepository(),
+    storage: overrides.fileStorage ?? buildFileStorage(input.storage),
+    usage: new MongoFileUsageRepository(),
+    images: new SharpImageProcessor(),
+    unitOfWork: new MongoUnitOfWork(),
+    clock: input.clock,
+    quotaBytes: overrides.quotaBytes ?? ORGANIZATION_STORAGE_QUOTA_BYTES,
+  });
 }
 
 export function buildFileStorage(config: StorageConfig): FileStorage {

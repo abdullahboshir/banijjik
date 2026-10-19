@@ -9,6 +9,7 @@ export const CUSTOM_FIELD_ENTITY_TYPE = defineEnum([
   "location",
   "member",
   "contact",
+  "listing",
   "offering",
   "category",
   "order",

@@ -21,6 +21,7 @@ export const MODULE_KEY = {
   ACCOUNTING: "accounting",
   CONTACT: "contact",
   CATALOG: "catalog",
+  DIRECTORY: "directory",
   INVENTORY: "inventory",
   PRICING: "pricing",
   SALES: "sales",

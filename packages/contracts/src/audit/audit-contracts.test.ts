@@ -43,6 +43,7 @@ describe("audit vocabulary", () => {
       "inventoryItem",
       "stockMovement",
       "stockTransfer",
+      "listing",
     ]);
   });
 });

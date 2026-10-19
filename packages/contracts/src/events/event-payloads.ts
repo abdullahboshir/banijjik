@@ -18,6 +18,8 @@ import type {
 import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
+import type { ListingEventPayload } from "../directory/directory-contracts.js";
+import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
 import {
@@ -128,4 +130,11 @@ export interface EventPayloadMap {
   readonly [INVENTORY_EVENT_TYPE.STOCK_CHANGED]: InventoryStockChangedPayload;
   readonly [INVENTORY_EVENT_TYPE.STOCK_LOW]: InventoryStockLowPayload;
   readonly [INVENTORY_EVENT_TYPE.TRANSFER_COMPLETED]: InventoryTransferCompletedPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_SUBMITTED]: ListingEventPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_APPROVED]: ListingEventPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_REJECTED]: ListingEventPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_HIDDEN]: ListingEventPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_UNHIDDEN]: ListingEventPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_ARCHIVED]: ListingEventPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_UPDATED]: ListingEventPayload;
 }

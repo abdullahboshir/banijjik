@@ -12,6 +12,7 @@ import {
   type LocalizedText,
   type OfferingKind,
 } from "@banijjik/contracts";
+import { LISTING_FIELD_TIER, type ListingFieldTier } from "@banijjik/contracts/directory";
 import { Schema } from "mongoose";
 import {
   auditFields,
@@ -38,6 +39,11 @@ export interface CustomFieldDefinitionDocument {
   validation?: CustomFieldValidationBounds;
   referenceEntity?: "contact" | "member";
   appliesToContactRoles?: ContactRole[];
+  listingTier?: ListingFieldTier;
+  isFilterable?: boolean;
+  sectionKey?: string;
+  minAgeYears?: number;
+  mustDifferFromAccountPhone?: boolean;
   visibility: CustomFieldVisibility;
   botAsk: boolean;
   isSearchable: boolean;
@@ -106,6 +112,11 @@ export const customFieldDefinitionSchema = new Schema<CustomFieldDefinitionDocum
       type: [{ type: String, enum: Object.values(CONTACT_ROLE) }],
       default: undefined,
     },
+    listingTier: { type: String, enum: Object.values(LISTING_FIELD_TIER) },
+    isFilterable: { type: Boolean },
+    sectionKey: { type: String },
+    minAgeYears: { type: Number },
+    mustDifferFromAccountPhone: { type: Boolean },
     visibility: { type: visibilitySchema, required: true },
     botAsk: { type: Boolean, required: true },
     isSearchable: { type: Boolean, required: true },

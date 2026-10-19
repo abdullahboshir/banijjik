@@ -12,14 +12,19 @@ import { SharpImageProcessor } from "./sharp-image-processor.js";
 const processor = new SharpImageProcessor();
 
 describe("SharpImageProcessor", () => {
-  it("turns a JPEG into thumb, medium and large WebP variants with their longest side capped", async () => {
+  it("turns a JPEG into thumb, medium, large and blurred WebP variants with longest sides capped", async () => {
     const variants = await processor.process(await jpegWithExif(2400, 1800));
 
-    expect(variants.map((variant) => variant.variantKey)).toEqual(["thumb", "medium", "large"]);
+    expect(variants.map((variant) => variant.variantKey)).toEqual([
+      "thumb",
+      "medium",
+      "large",
+      "blurred",
+    ]);
     const sizes = await Promise.all(variants.map((variant) => sharp(variant.bytes).metadata()));
-    expect(sizes.map((meta) => meta.format)).toEqual(["webp", "webp", "webp"]);
-    expect(sizes.map((meta) => meta.width)).toEqual([200, 800, 1600]);
-    expect(sizes.map((meta) => meta.height)).toEqual([150, 600, 1200]);
+    expect(sizes.map((meta) => meta.format)).toEqual(["webp", "webp", "webp", "webp"]);
+    expect(sizes.map((meta) => meta.width)).toEqual([200, 800, 1600, 200]);
+    expect(sizes.map((meta) => meta.height)).toEqual([150, 600, 1200, 150]);
   });
 
   it("strips EXIF and GPS data from every variant", async () => {

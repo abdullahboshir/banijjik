@@ -316,6 +316,23 @@ Owner `commerce/contact` · scope org · versioned
 - Why per-org and not global: a shop's customers belong to that shop (`00` principle 8, ADR-040), there is no cross-shop tracking, a dedicated-DB move takes the accounts with it, and a stolen customer session can never reach another org. A future marketplace can add a federated "shopper" identity on top without changing this model.
 - Indexes: `{ organizationId, phoneE164 }` unique, `{ organizationId, contactId }` unique.
 
+### 5.2b Listing (ADR-127)
+Owner `commerce/directory` · scope org · versioned · custom fields (entityType `listing`)
+| Field | Type | Notes |
+|---|---|---|
+| `listingId` | ListingId | |
+| `listingNumber` | string | per-org sequence `LISTING`, shown as `<prefix>-<n>` |
+| `ownerCustomerAccountId` | CustomerAccountId | one non-archived listing per account when the setting says so |
+| `status` | `DRAFT \| SUBMITTED \| APPROVED \| REJECTED \| HIDDEN \| ARCHIVED` | see doc 16 §3.1 |
+| `customFields` / `customFieldSearch` | map / attribute entries | filterable fields only in search; never UNLOCKED/PRIVATE values |
+| `photoFileIds` | FileAssetId[] | purpose `LISTING_PHOTO`, PRIVATE |
+| `consentsAccepted` | `[{ consentKey, textVersionHash, acceptedAt }]` | |
+| `submittedAt`, `reviewedAt`, `reviewedByUserId`, `rejection`, `publishedAt` | | |
+| STF + `version` | | |
+
+- Visibility tiers and photo policy: ADR-127. Archive clears personal data and keeps the number.
+- Indexes: `{ organizationId, listingNumber }` unique; partial unique on owner for active statuses; attribute-pattern on `customFieldSearch`; queue and published sorts.
+
 ### 5.3 Offering
 Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fields (entityType `offering`, filtered by `kind`)
 | Field | Type | Notes |

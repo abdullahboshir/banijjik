@@ -6,7 +6,15 @@ import {
   RELATION_KEY,
   type IndustryTemplateConfiguration,
 } from "@banijjik/contracts";
+import {
+  DIRECTORY_CONSENT_KEY_PATTERN,
+  DIRECTORY_REASON_KEY_PATTERN,
+  DIRECTORY_SECTION_KEY_PATTERN,
+  LISTING_FIELD_TIER,
+  LISTING_NUMBER_PREFIX_MAX_LENGTH,
+} from "@banijjik/contracts/directory";
 import { z } from "zod";
+import { listingPropertiesBelong } from "../custom-field/listing-field-rules.js";
 import { industryTemplateKeySchema } from "../industry-template-key.schema.js";
 import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
@@ -56,6 +64,36 @@ const customFieldSchema = z.strictObject({
     .min(1)
     .refine((roles) => new Set(roles).size === roles.length)
     .optional(),
+  listingTier: z.enum(LISTING_FIELD_TIER).optional(),
+  isFilterable: z.boolean().optional(),
+  sectionKey: z.string().regex(DIRECTORY_SECTION_KEY_PATTERN).optional(),
+  minAgeYears: z.number().int().min(1).max(120).optional(),
+  mustDifferFromAccountPhone: z.boolean().optional(),
+});
+
+const directoryBlockSchema = z.strictObject({
+  sections: z
+    .array(
+      z.strictObject({
+        sectionKey: z.string().regex(DIRECTORY_SECTION_KEY_PATTERN),
+        label: localizedTextSchema,
+      }),
+    )
+    .min(1),
+  consents: z.array(
+    z.strictObject({
+      consentKey: z.string().regex(DIRECTORY_CONSENT_KEY_PATTERN),
+      text: localizedTextSchema,
+    }),
+  ),
+  rejectionReasons: z.array(
+    z.strictObject({
+      reasonKey: z.string().regex(DIRECTORY_REASON_KEY_PATTERN),
+      label: localizedTextSchema,
+      isFinal: z.boolean(),
+    }),
+  ),
+  listingNumberPrefix: z.string().trim().min(1).max(LISTING_NUMBER_PREFIX_MAX_LENGTH),
 });
 
 const modifierOptionSchema = z.strictObject({
@@ -87,6 +125,11 @@ interface FieldShape {
   readonly referenceEntity?: string | undefined;
   readonly link?: unknown;
   readonly appliesToContactRoles?: readonly string[] | undefined;
+  readonly listingTier?: string | undefined;
+  readonly isFilterable?: boolean | undefined;
+  readonly sectionKey?: string | undefined;
+  readonly minAgeYears?: number | undefined;
+  readonly mustDifferFromAccountPhone?: boolean | undefined;
 }
 
 /** SELECT needs options; REFERENCE needs a target; other types carry neither. */
@@ -121,6 +164,34 @@ function rolesBelongToContactField(field: FieldShape): boolean {
   return field.appliesToContactRoles === undefined || field.entityType === "contact";
 }
 
+function directoryBlockConsistent(value: {
+  readonly directory?:
+    | {
+        readonly sections: readonly { readonly sectionKey: string }[];
+        readonly consents: readonly { readonly consentKey: string }[];
+        readonly rejectionReasons: readonly { readonly reasonKey: string }[];
+      }
+    | undefined;
+  readonly customFields: readonly FieldShape[];
+}): boolean {
+  const block = value.directory;
+  if (block === undefined) return true;
+  const sectionKeys = block.sections.map((section) => section.sectionKey);
+  if (new Set(sectionKeys).size !== sectionKeys.length) return false;
+  if (new Set(block.consents.map((c) => c.consentKey)).size !== block.consents.length) return false;
+  if (
+    new Set(block.rejectionReasons.map((r) => r.reasonKey)).size !== block.rejectionReasons.length
+  )
+    return false;
+  const known = new Set(sectionKeys);
+  return value.customFields.every(
+    (field) =>
+      field.entityType !== "listing" ||
+      field.sectionKey === undefined ||
+      known.has(field.sectionKey),
+  );
+}
+
 /** The contact module creates a linked contact with the role RELATED, so a template with a link must list it (ADR-113). */
 function linksHaveRelatedRole(value: {
   readonly contactRoleKeys: readonly string[];
@@ -152,6 +223,7 @@ export const industryTemplateConfigurationSchema = z
       personaKey: z.string().regex(TOPIC_KEY_PATTERN),
       handoffTopics: z.array(z.string().trim().min(1).max(PLAIN_TEXT_MAX)).min(1),
     }),
+    directory: directoryBlockSchema.optional(),
   })
   .refine((value) => new Set(value.contactRoleKeys).size === value.contactRoleKeys.length, {
     path: ["contactRoleKeys"],
@@ -169,6 +241,10 @@ export const industryTemplateConfigurationSchema = z
   .refine((value) => value.customFields.every(rolesBelongToContactField), {
     path: ["customFields"],
   })
+  .refine((value) => value.customFields.every(listingPropertiesBelong), {
+    path: ["customFields"],
+  })
+  .refine(directoryBlockConsistent, { path: ["directory"] })
   .refine(linksHaveRelatedRole, { path: ["contactRoleKeys"] })
   .refine(
     (value) =>

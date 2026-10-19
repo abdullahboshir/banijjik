@@ -67,6 +67,8 @@ const INPUT_KIND_BY_TYPE: Readonly<Record<CustomFieldType, CustomFieldInputKind 
   [CUSTOM_FIELD_TYPE.FILE]: "FILE",
   [CUSTOM_FIELD_TYPE.IMAGE]: "IMAGE",
   [CUSTOM_FIELD_TYPE.REFERENCE]: undefined,
+  /** Storefront/admin listing forms for GEO_BD arrive with card M.3 / M.6. */
+  [CUSTOM_FIELD_TYPE.GEO_BD]: undefined,
 };
 
 export interface CustomFieldFormModel {

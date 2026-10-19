@@ -68,6 +68,9 @@ export const PERMISSION_KEY = {
   INVENTORY_ADJUSTMENT_CREATE: "inventory.adjustment.create",
   INVENTORY_TRANSFER_CREATE: "inventory.transfer.create",
   INVENTORY_MOVEMENT_READ: "inventory.movement.read",
+  DIRECTORY_LISTING_READ: "directory.listing.read",
+  DIRECTORY_LISTING_REVIEW: "directory.listing.review",
+  DIRECTORY_LISTING_HIDE: "directory.listing.hide",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

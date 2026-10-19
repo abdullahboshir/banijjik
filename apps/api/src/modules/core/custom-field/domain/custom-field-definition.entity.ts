@@ -10,7 +10,9 @@ import {
   type LocalizedText,
   type OfferingKind,
 } from "@banijjik/contracts";
+import type { ListingFieldTier } from "@banijjik/contracts/directory";
 import { newId, type Id, type OrganizationId, type UserId } from "@banijjik/ids";
+import { definitionSnapshot, listingFieldsFromChanges } from "./custom-field-definition-props.js";
 import { invalidField, optionsLocked, recordNotFound } from "./errors.js";
 
 export type CustomFieldDefinitionId = Id<"CustomFieldDefinition">;
@@ -32,6 +34,12 @@ export interface CustomFieldDefinitionProps {
   readonly referenceEntity: "contact" | "member" | undefined;
   /** Contact fields only; absent means every role (ADR-113). */
   readonly appliesToContactRoles: readonly ContactRole[] | undefined;
+  /** Listing fields only (ADR-127). */
+  readonly listingTier: ListingFieldTier | undefined;
+  readonly isFilterable: boolean | undefined;
+  readonly sectionKey: string | undefined;
+  readonly minAgeYears: number | undefined;
+  readonly mustDifferFromAccountPhone: boolean | undefined;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
@@ -58,6 +66,11 @@ export interface NewCustomFieldDefinitionInput {
   readonly validation?: CustomFieldValidationBounds | undefined;
   readonly referenceEntity?: "contact" | "member" | undefined;
   readonly appliesToContactRoles?: readonly ContactRole[] | undefined;
+  readonly listingTier?: ListingFieldTier | undefined;
+  readonly isFilterable?: boolean | undefined;
+  readonly sectionKey?: string | undefined;
+  readonly minAgeYears?: number | undefined;
+  readonly mustDifferFromAccountPhone?: boolean | undefined;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
@@ -75,6 +88,11 @@ export interface CustomFieldDefinitionChanges {
   readonly validation?: CustomFieldValidationBounds | undefined;
   /** A list sets the roles; null goes back to every role. */
   readonly appliesToContactRoles?: readonly ContactRole[] | null | undefined;
+  readonly listingTier?: ListingFieldTier | undefined;
+  readonly isFilterable?: boolean | undefined;
+  readonly sectionKey?: string | null | undefined;
+  readonly minAgeYears?: number | null | undefined;
+  readonly mustDifferFromAccountPhone?: boolean | undefined;
   readonly visibility?: CustomFieldVisibility | undefined;
   readonly botAsk?: boolean | undefined;
   readonly isSearchable?: boolean | undefined;
@@ -112,6 +130,11 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
   readonly referenceEntity: "contact" | "member" | undefined;
   /** Contact fields only; absent means every role (ADR-113). */
   readonly appliesToContactRoles: readonly ContactRole[] | undefined;
+  readonly listingTier: ListingFieldTier | undefined;
+  readonly isFilterable: boolean | undefined;
+  readonly sectionKey: string | undefined;
+  readonly minAgeYears: number | undefined;
+  readonly mustDifferFromAccountPhone: boolean | undefined;
   readonly visibility: CustomFieldVisibility;
   readonly botAsk: boolean;
   readonly isSearchable: boolean;
@@ -138,6 +161,11 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
     this.validation = props.validation;
     this.referenceEntity = props.referenceEntity;
     this.appliesToContactRoles = props.appliesToContactRoles;
+    this.listingTier = props.listingTier;
+    this.isFilterable = props.isFilterable;
+    this.sectionKey = props.sectionKey;
+    this.minAgeYears = props.minAgeYears;
+    this.mustDifferFromAccountPhone = props.mustDifferFromAccountPhone;
     this.visibility = props.visibility;
     this.botAsk = props.botAsk;
     this.isSearchable = props.isSearchable;
@@ -166,6 +194,11 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
       validation: input.validation,
       referenceEntity: input.referenceEntity,
       appliesToContactRoles: input.appliesToContactRoles,
+      listingTier: input.listingTier,
+      isFilterable: input.isFilterable,
+      sectionKey: input.sectionKey,
+      minAgeYears: input.minAgeYears,
+      mustDifferFromAccountPhone: input.mustDifferFromAccountPhone,
       visibility: input.visibility,
       botAsk: input.botAsk,
       isSearchable: input.isSearchable,
@@ -209,6 +242,7 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
       optionLabels: changes.optionLabels ?? this.optionLabels,
       validation: changes.validation ?? this.validation,
       appliesToContactRoles: this.nextRoles(changes.appliesToContactRoles),
+      ...listingFieldsFromChanges(this, changes),
       visibility: changes.visibility ?? this.visibility,
       botAsk: changes.botAsk ?? this.botAsk,
       isSearchable: changes.isSearchable ?? this.isSearchable,
@@ -252,31 +286,6 @@ export class CustomFieldDefinition implements CustomFieldDefinitionProps {
   }
 
   private snapshot(): CustomFieldDefinitionProps {
-    return {
-      customFieldDefinitionId: this.customFieldDefinitionId,
-      organizationId: this.organizationId,
-      entityType: this.entityType,
-      offeringKind: this.offeringKind,
-      fieldKey: this.fieldKey,
-      label: this.label,
-      fieldType: this.fieldType,
-      isRequired: this.isRequired,
-      options: this.options,
-      optionLabels: this.optionLabels,
-      validation: this.validation,
-      referenceEntity: this.referenceEntity,
-      appliesToContactRoles: this.appliesToContactRoles,
-      visibility: this.visibility,
-      botAsk: this.botAsk,
-      isSearchable: this.isSearchable,
-      isSensitive: this.isSensitive,
-      sortOrder: this.sortOrder,
-      status: this.status,
-      version: this.version,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      createdByUserId: this.createdByUserId,
-      updatedByUserId: this.updatedByUserId,
-    };
+    return definitionSnapshot(this);
   }
 }

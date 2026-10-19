@@ -2,6 +2,7 @@ import { defineEnum } from "../define-enum.js";
 import type { ContactRole } from "../contact/contact-role.js";
 import type { RelationKey } from "../contact/relation-key.js";
 import type { CustomFieldType } from "../custom-field/custom-field-type.js";
+import type { ListingFieldTier } from "../directory/listing-field-tier.js";
 import type { ModuleKey } from "../modules/module-key.js";
 import type { OfferingKind } from "../modules/offering-kind.js";
 
@@ -50,6 +51,40 @@ export interface IndustryTemplateCustomField {
   readonly link?: IndustryTemplateContactLink | undefined;
   /** Contact fields only: the roles the field belongs to. Absent means every role (ADR-113). */
   readonly appliesToContactRoles?: readonly ContactRole[] | undefined;
+  /** Listing fields only (ADR-127). Default PUBLIC when absent on a listing field. */
+  readonly listingTier?: ListingFieldTier | undefined;
+  /** Listing fields only: may appear in directory search filters. */
+  readonly isFilterable?: boolean | undefined;
+  /** Listing fields only: groups the multi-step form. */
+  readonly sectionKey?: string | undefined;
+  /** Listing DATE fields only: minimum age in whole years at submission. */
+  readonly minAgeYears?: number | undefined;
+  /** Listing PHONE fields only: must differ from the customer account phone. */
+  readonly mustDifferFromAccountPhone?: boolean | undefined;
+}
+
+/** Template-level directory rules (sections, consents, rejection reasons) — ADR-127. */
+export interface IndustryTemplateDirectorySection {
+  readonly sectionKey: string;
+  readonly label: LocalizedText;
+}
+
+export interface IndustryTemplateDirectoryConsent {
+  readonly consentKey: string;
+  readonly text: LocalizedText;
+}
+
+export interface IndustryTemplateDirectoryRejectionReason {
+  readonly reasonKey: string;
+  readonly label: LocalizedText;
+  readonly isFinal: boolean;
+}
+
+export interface IndustryTemplateDirectoryBlock {
+  readonly sections: readonly IndustryTemplateDirectorySection[];
+  readonly consents: readonly IndustryTemplateDirectoryConsent[];
+  readonly rejectionReasons: readonly IndustryTemplateDirectoryRejectionReason[];
+  readonly listingNumberPrefix: string;
 }
 
 /** A sample modifier group the tenant can edit (ADR-072). Prices are integer minor units. */
@@ -93,6 +128,8 @@ export interface IndustryTemplateConfiguration {
   readonly knowledgeSeed: readonly IndustryTemplateKnowledgeStarter[];
   readonly websiteTemplateKeys: readonly string[];
   readonly botDefaults: IndustryTemplateBotDefaults;
+  /** Present when the template configures the directory module (ADR-127). */
+  readonly directory?: IndustryTemplateDirectoryBlock | undefined;
 }
 
 /** One card of `GET /industry-templates` (signup). */

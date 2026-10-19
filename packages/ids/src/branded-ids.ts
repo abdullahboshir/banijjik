@@ -12,6 +12,7 @@ export type CustomerAccountId = Id<"CustomerAccount">;
 export type CustomerSessionId = Id<"CustomerSession">;
 export type OtpChallengeId = Id<"OtpChallenge">;
 export type OfferingId = Id<"Offering">;
+export type ListingId = Id<"Listing">;
 export type CategoryId = Id<"Category">;
 export type ModifierGroupId = Id<"ModifierGroup">;
 export type TaxClassId = Id<"TaxClass">;

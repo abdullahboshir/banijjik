@@ -211,6 +211,22 @@ export function buildCustomerAccountStatusReader(): CustomerAccountStatusReader 
   };
 }
 
+/** Account phone for directory submission rules (guardian phone must differ). */
+export function buildCustomerPhoneReader(): {
+  phoneOf(customerAccountId: CustomerAccountId): Promise<string | undefined>;
+} {
+  const accounts = new MongoCustomerAccountRepository();
+  const contacts = new MongoContactRepository();
+  return {
+    async phoneOf(customerAccountId) {
+      const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
+      if (account === undefined) return undefined;
+      const contact = await contacts.findById(account.contactId);
+      return contact?.phoneE164;
+    },
+  };
+}
+
 export interface ContactEventHandlerDependencies {
   readonly storefront: Pick<StorefrontConfig, "otpSecret" | "smsDriver">;
   readonly composer: OtpMessageComposer;

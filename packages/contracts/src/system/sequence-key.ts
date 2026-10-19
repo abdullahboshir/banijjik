@@ -9,6 +9,7 @@ export const SEQUENCE_KEY = defineEnum([
   "INVOICE",
   "JOURNAL",
   "MEMBER",
+  "LISTING",
   "EXPENSE",
   "TRANSFER",
   "ZREPORT",

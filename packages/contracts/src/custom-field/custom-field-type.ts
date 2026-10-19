@@ -1,6 +1,6 @@
 import { defineEnum } from "../define-enum.js";
 
-/** The sixteen custom field types (01-ARCHITECTURE section 5). */
+/** Custom field types (01-ARCHITECTURE section 5; GEO_BD added by ADR-127). */
 export const CUSTOM_FIELD_TYPE = defineEnum([
   "TEXT",
   "LONG_TEXT",
@@ -18,6 +18,7 @@ export const CUSTOM_FIELD_TYPE = defineEnum([
   "FILE",
   "IMAGE",
   "REFERENCE",
+  "GEO_BD",
 ]);
 
 export type CustomFieldType = (typeof CUSTOM_FIELD_TYPE)[keyof typeof CUSTOM_FIELD_TYPE];

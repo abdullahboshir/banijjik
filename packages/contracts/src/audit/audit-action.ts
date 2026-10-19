@@ -67,6 +67,14 @@ export const AUDIT_ACTION = {
   STOCK_ADJUSTED: "inventory.stock.adjusted",
   STOCK_TRANSFERRED: "inventory.stock.transferred",
   INVENTORY_LEVELS_REBUILT: "inventory.level.recomputed",
+  LISTING_CREATED: "directory.listing.created",
+  LISTING_UPDATED: "directory.listing.updated",
+  LISTING_SUBMITTED: "directory.listing.submitted",
+  LISTING_APPROVED: "directory.listing.approved",
+  LISTING_REJECTED: "directory.listing.rejected",
+  LISTING_CONCEALED: "directory.listing.concealed",
+  LISTING_REVEALED: "directory.listing.revealed",
+  LISTING_ARCHIVED: "directory.listing.archived",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -101,6 +109,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "inventoryItem",
   "stockMovement",
   "stockTransfer",
+  "listing",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

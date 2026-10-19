@@ -48,7 +48,7 @@ export function toFileAsset(document: FileAssetDocument): FileAsset {
     version: stored.version,
     createdAt: stored.createdAt,
     updatedAt: stored.updatedAt,
-    createdByUserId: asId<UserId>(stored.createdByUserId),
-    updatedByUserId: asId<UserId>(stored.updatedByUserId),
+    createdByUserId: stored.createdByUserId === null ? null : asId<UserId>(stored.createdByUserId),
+    updatedByUserId: stored.updatedByUserId === null ? null : asId<UserId>(stored.updatedByUserId),
   });
 }

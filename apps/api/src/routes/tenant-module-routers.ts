@@ -61,6 +61,7 @@ export function buildTenantRouters(input: TenantRoutersInput): readonly Router[]
     catalogRouter,
     pricingRouter,
     inventoryRouter,
+    directoryRouter,
     accountingRouter,
     expenseRouter,
   } = input.coreRouters;
@@ -81,6 +82,7 @@ export function buildTenantRouters(input: TenantRoutersInput): readonly Router[]
     catalogRouter,
     pricingRouter,
     inventoryRouter,
+    directoryRouter,
     expenseRouter,
     ...tenantRouters,
     ...tenantRouterFactories.map((build) => build(permission)),

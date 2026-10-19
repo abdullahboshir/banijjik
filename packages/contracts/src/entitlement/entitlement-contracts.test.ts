@@ -7,7 +7,7 @@ import { PAST_DUE_GRACE_DAYS, TRIAL_DAYS, TRIAL_PACKAGE_KEY } from "./trial-rule
 
 describe("module keys", () => {
   it("lists every module of 10-MODULE-CATALOG section 5, once each, in kebab-case", () => {
-    expect(MODULE_KEY_VALUES).toHaveLength(40);
+    expect(MODULE_KEY_VALUES).toHaveLength(41);
     expect(new Set(MODULE_KEY_VALUES).size).toBe(MODULE_KEY_VALUES.length);
     for (const key of MODULE_KEY_VALUES) expect(key).toMatch(/^[a-z]+(-[a-z]+)*$/);
   });

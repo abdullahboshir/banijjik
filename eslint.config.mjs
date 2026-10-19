@@ -115,6 +115,12 @@ export default defineConfig(
     },
   },
   {
+    // BBS administrative geography is a large static registry (ADR-127), not application logic.
+    name: "banijjik/bbs-geography-registry",
+    files: ["packages/contracts/src/directory/geo-bd-registry.ts"],
+    rules: { "max-lines": "off" },
+  },
+  {
     name: "banijjik/explicit-return-types",
     files: SOURCE_FILES,
     ignores: TEST_FILES,

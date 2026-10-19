@@ -128,6 +128,24 @@ function industryFieldOf(input: {
   };
 }
 
+function listingParts(field: {
+  readonly listingTier?: EffectiveCustomField["listingTier"];
+  readonly isFilterable?: boolean | undefined;
+  readonly sectionKey?: string | undefined;
+  readonly minAgeYears?: number | undefined;
+  readonly mustDifferFromAccountPhone?: boolean | undefined;
+}): Partial<EffectiveCustomField> {
+  return {
+    ...(field.listingTier === undefined ? {} : { listingTier: field.listingTier }),
+    ...(field.isFilterable === undefined ? {} : { isFilterable: field.isFilterable }),
+    ...(field.sectionKey === undefined ? {} : { sectionKey: field.sectionKey }),
+    ...(field.minAgeYears === undefined ? {} : { minAgeYears: field.minAgeYears }),
+    ...(field.mustDifferFromAccountPhone === undefined
+      ? {}
+      : { mustDifferFromAccountPhone: field.mustDifferFromAccountPhone }),
+  };
+}
+
 function optionalIndustryParts(field: IndustryTemplateCustomField): Partial<EffectiveCustomField> {
   return {
     ...(field.offeringKind === undefined ? {} : { offeringKind: field.offeringKind }),
@@ -136,6 +154,7 @@ function optionalIndustryParts(field: IndustryTemplateCustomField): Partial<Effe
     ...(field.referenceEntity === undefined ? {} : { referenceEntity: field.referenceEntity }),
     ...(field.link === undefined ? {} : { link: field.link }),
     ...rolesOf(field.appliesToContactRoles),
+    ...listingParts(field),
   };
 }
 
@@ -170,5 +189,6 @@ function optionalDefinitionParts(definition: CustomFieldDefinition): Partial<Eff
       ? {}
       : { referenceEntity: definition.referenceEntity }),
     ...rolesOf(definition.appliesToContactRoles),
+    ...listingParts(definition),
   };
 }

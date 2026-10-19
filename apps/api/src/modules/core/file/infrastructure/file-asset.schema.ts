@@ -41,8 +41,8 @@ export interface FileAssetDocument {
   version: number;
   createdAt: Date;
   updatedAt: Date;
-  createdByUserId: string;
-  updatedByUserId: string;
+  createdByUserId: string | null;
+  updatedByUserId: string | null;
 }
 
 const variantSchema = new Schema<FileVariantDocument>(

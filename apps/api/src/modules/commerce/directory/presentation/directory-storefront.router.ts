@@ -1,0 +1,196 @@
+import { DIRECTORY_SEARCH_RULES, LISTING_VIEWER } from "@banijjik/contracts/directory";
+import {
+  listingNumberParamsSchema,
+  listingSearchQuerySchema,
+  listingSubmitRequestSchema,
+  listingUpsertRequestSchema,
+} from "@banijjik/validation/directory";
+import { Router, type RequestHandler } from "express";
+import { getRequestContext } from "../../../../kernel/context/index.js";
+import { requireCurrentCustomerAccountId } from "../../../../kernel/auth/index.js";
+import { sendData, validate } from "../../../../kernel/http/index.js";
+import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
+import { readUpload, type ReadUploadOptions } from "../../../core/file/index.js";
+import type { GetMyListingUseCase } from "../application/use-cases/my-listing.use-cases.js";
+import type {
+  ArchiveMyListingUseCase,
+  SubmitMyListingUseCase,
+  UpsertMyListingUseCase,
+} from "../application/use-cases/my-listing.use-cases.js";
+import type {
+  GetPublicListingUseCase,
+  SearchListingsUseCase,
+} from "../application/use-cases/search-listings.use-case.js";
+import type { UploadListingPhotoUseCase } from "../application/use-cases/upload-listing-photo.use-case.js";
+import { asId, type OrganizationId } from "@banijjik/ids";
+
+const SEARCH_IP_BUCKET = "directory.search.ip";
+const SEARCH_ACCOUNT_BUCKET = "directory.search.account";
+const HTTP_CREATED = 201;
+
+export interface DirectoryStorefrontRouterDependencies {
+  readonly getMyListing: GetMyListingUseCase;
+  readonly upsertMyListing: UpsertMyListingUseCase;
+  readonly submitMyListing: SubmitMyListingUseCase;
+  readonly archiveMyListing: ArchiveMyListingUseCase;
+  readonly uploadListingPhoto: UploadListingPhotoUseCase;
+  readonly searchListings: SearchListingsUseCase;
+  readonly getPublicListing: GetPublicListingUseCase;
+  readonly limiter: RateLimiter;
+  readonly authenticateCustomer: RequestHandler;
+  readonly authenticateCustomerOptional: RequestHandler;
+  readonly uploadOptions?: ReadUploadOptions;
+}
+
+function organizationIdOf(): OrganizationId {
+  return asId<OrganizationId>(String(getRequestContext().organizationId));
+}
+
+function mountPublicRoutes(router: Router, input: DirectoryStorefrontRouterDependencies): void {
+  router.get(
+    "/listings",
+    rateLimit({
+      limiter: input.limiter,
+      bucket: SEARCH_IP_BUCKET,
+      ...DIRECTORY_SEARCH_RULES.perIp,
+    }),
+    input.authenticateCustomerOptional,
+    rateLimit({
+      limiter: input.limiter,
+      bucket: SEARCH_ACCOUNT_BUCKET,
+      ...DIRECTORY_SEARCH_RULES.perAccount,
+      keyOf: (request) => getRequestContext().customerAccountId ?? request.ip ?? "anon",
+    }),
+    validate({ query: listingSearchQuerySchema }),
+    async (_request, response) => {
+      const query = response.locals["validated"].query as Record<string, unknown> & {
+        page: number;
+        limit: number;
+        listingNumber?: string;
+      };
+      const viewer =
+        getRequestContext().customerAccountId === undefined
+          ? LISTING_VIEWER.PUBLIC
+          : LISTING_VIEWER.MEMBER;
+      sendData(
+        response,
+        await input.searchListings.execute({
+          organizationId: organizationIdOf(),
+          viewer,
+          page: query.page,
+          limit: query.limit,
+          ...(query.listingNumber === undefined ? {} : { listingNumber: query.listingNumber }),
+          rawQuery: query,
+        }),
+      );
+    },
+  );
+
+  router.get(
+    "/listings/:listingNumber",
+    input.authenticateCustomerOptional,
+    validate({ params: listingNumberParamsSchema }),
+    async (_request, response) => {
+      const { listingNumber } = response.locals["validated"].params as { listingNumber: string };
+      const viewer =
+        getRequestContext().customerAccountId === undefined
+          ? LISTING_VIEWER.PUBLIC
+          : LISTING_VIEWER.MEMBER;
+      sendData(
+        response,
+        await input.getPublicListing.execute({
+          organizationId: organizationIdOf(),
+          listingNumber,
+          viewer,
+        }),
+      );
+    },
+  );
+}
+
+function mountMyListingReadWrite(
+  router: Router,
+  input: DirectoryStorefrontRouterDependencies,
+): void {
+  router.get("/my/listing", input.authenticateCustomer, async (_request, response) => {
+    sendData(
+      response,
+      await input.getMyListing.execute({
+        organizationId: organizationIdOf(),
+        customerAccountId: requireCurrentCustomerAccountId(),
+      }),
+    );
+  });
+
+  router.put(
+    "/my/listing",
+    input.authenticateCustomer,
+    validate({ body: listingUpsertRequestSchema }),
+    async (_request, response) => {
+      sendData(
+        response,
+        await input.upsertMyListing.execute({
+          organizationId: organizationIdOf(),
+          customerAccountId: requireCurrentCustomerAccountId(),
+          body: response.locals["validated"].body,
+        }),
+      );
+    },
+  );
+
+  router.post(
+    "/my/listing/submit",
+    input.authenticateCustomer,
+    validate({ body: listingSubmitRequestSchema }),
+    async (_request, response) => {
+      const body = response.locals["validated"].body as {
+        consents: readonly { consentKey: string }[];
+      };
+      sendData(
+        response,
+        await input.submitMyListing.execute({
+          organizationId: organizationIdOf(),
+          customerAccountId: requireCurrentCustomerAccountId(),
+          consents: body.consents,
+        }),
+      );
+    },
+  );
+}
+
+function mountMyListingLifecycle(
+  router: Router,
+  input: DirectoryStorefrontRouterDependencies,
+): void {
+  router.delete("/my/listing", input.authenticateCustomer, async (_request, response) => {
+    await input.archiveMyListing.execute({
+      organizationId: organizationIdOf(),
+      customerAccountId: requireCurrentCustomerAccountId(),
+    });
+    response.status(204).end();
+  });
+
+  router.post("/my/listing/photos", input.authenticateCustomer, async (request, response) => {
+    const uploaded = await readUpload(request, input.uploadOptions);
+    sendData(
+      response,
+      await input.uploadListingPhoto.execute({
+        organizationId: organizationIdOf(),
+        customerAccountId: requireCurrentCustomerAccountId(),
+        originalName: uploaded.originalName,
+        bytes: uploaded.bytes,
+      }),
+      { status: HTTP_CREATED },
+    );
+  });
+}
+
+export function buildDirectoryStorefrontRouter(
+  input: DirectoryStorefrontRouterDependencies,
+): Router {
+  const router = Router({ mergeParams: true });
+  mountPublicRoutes(router, input);
+  mountMyListingReadWrite(router, input);
+  mountMyListingLifecycle(router, input);
+  return router;
+}

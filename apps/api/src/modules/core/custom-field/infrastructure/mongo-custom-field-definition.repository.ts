@@ -36,6 +36,52 @@ function slotFilter(slot: FieldSlot): {
   };
 }
 
+function definitionUpdateSet(
+  definition: CustomFieldDefinition,
+  actorUserId: UserId,
+): Record<string, unknown> {
+  const document = toCustomFieldDefinitionDocument(definition);
+  const {
+    label,
+    isRequired,
+    visibility,
+    botAsk,
+    isSearchable,
+    isSensitive,
+    sortOrder,
+    status,
+    options,
+    optionLabels,
+    validation,
+    appliesToContactRoles,
+    listingTier,
+    isFilterable,
+    sectionKey,
+    minAgeYears,
+    mustDifferFromAccountPhone,
+  } = document;
+  return {
+    label,
+    isRequired,
+    visibility,
+    botAsk,
+    isSearchable,
+    isSensitive,
+    sortOrder,
+    status,
+    updatedByUserId: actorUserId,
+    ...(options === undefined ? {} : { options }),
+    ...(optionLabels === undefined ? {} : { optionLabels }),
+    ...(validation === undefined ? {} : { validation }),
+    ...(appliesToContactRoles === undefined ? {} : { appliesToContactRoles }),
+    ...(listingTier === undefined ? {} : { listingTier }),
+    ...(isFilterable === undefined ? {} : { isFilterable }),
+    ...(sectionKey === undefined ? {} : { sectionKey }),
+    ...(minAgeYears === undefined ? {} : { minAgeYears }),
+    ...(mustDifferFromAccountPhone === undefined ? {} : { mustDifferFromAccountPhone }),
+  };
+}
+
 /** Organization-made fields. The tenant plugin adds the organization filter (ADR-087). */
 export class MongoCustomFieldDefinitionRepository implements CustomFieldDefinitionRepository {
   async insert(definition: CustomFieldDefinition): Promise<void> {
@@ -101,25 +147,7 @@ export class MongoCustomFieldDefinitionRepository implements CustomFieldDefiniti
       filter: { customFieldDefinitionId: definition.customFieldDefinitionId },
       expectedVersion,
       update: {
-        $set: {
-          label: definition.label,
-          isRequired: definition.isRequired,
-          visibility: definition.visibility,
-          botAsk: definition.botAsk,
-          isSearchable: definition.isSearchable,
-          isSensitive: definition.isSensitive,
-          sortOrder: definition.sortOrder,
-          status: definition.status,
-          updatedByUserId: actorUserId,
-          ...(definition.options === undefined ? {} : { options: [...definition.options] }),
-          ...(definition.optionLabels === undefined
-            ? {}
-            : { optionLabels: definition.optionLabels }),
-          ...(definition.validation === undefined ? {} : { validation: definition.validation }),
-          ...(definition.appliesToContactRoles === undefined
-            ? {}
-            : { appliesToContactRoles: [...definition.appliesToContactRoles] }),
-        },
+        $set: definitionUpdateSet(definition, actorUserId),
         // Going back to every role removes the list.
         ...(definition.appliesToContactRoles === undefined
           ? { $unset: { appliesToContactRoles: 1 } }

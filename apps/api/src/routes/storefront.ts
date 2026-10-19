@@ -9,6 +9,7 @@ import type { AppConfig } from "../config/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import {
   authenticateCustomer,
+  authenticateCustomerOptional,
   cacheAccountStatus,
   createCustomerTokenIssuer,
   createCustomerTokenVerifier,
@@ -22,12 +23,15 @@ import {
   buildContactStorefrontRouterFor,
   buildCustomerAccountStatusReader,
 } from "../modules/commerce/contact/index.js";
+import { buildDirectoryStorefrontRouterFor } from "../modules/commerce/directory/index.js";
 import {
   buildStorefrontOrganizationReader,
   type StorefrontOrganizationReader,
 } from "../modules/core/organization/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
+import type { FileModuleDependencies } from "../modules/core/file/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
+import { buildDirectoryAdapters } from "./directory-storefront-adapters.js";
 
 const RESOLVE_BUCKET = "storefront.resolve.ip";
 const SURFACE_BUCKET = "storefront.surface.ip";
@@ -46,6 +50,8 @@ export interface StorefrontRouterInput {
   readonly manifests: readonly ModuleManifest[];
   /** Tests shorten the account status cache. Production passes none. */
   readonly accountStatusMaxStaleSeconds?: number;
+  /** Same overrides as the tenant file module (listing photo uploads on the storefront). */
+  readonly fileOverrides?: FileModuleDependencies["overrides"];
 }
 
 function notAvailable(): AppError {
@@ -108,31 +114,20 @@ function customerLoginSwitch(input: StorefrontRouterInput): RequestHandler {
   };
 }
 
-/**
- * The public storefront API (14-API.md section 6, ADR-077), mounted once by routes/v1.ts. It has its
- * own pipeline: no admin sign-in, no membership. A request names a business in the path; the
- * business must be ACTIVE; the customer's token must be for that business (ADR-119).
- */
-export function buildStorefrontRouter(input: StorefrontRouterInput): Router {
+function mountOrganizationSurface(
+  router: Router,
+  input: StorefrontRouterInput,
+  organizations: StorefrontOrganizationReader,
+): void {
   const { config, clock, rateLimiter } = input;
-  const organizations = buildStorefrontOrganizationReader();
   const secret = config.auth.accessTokenSecret;
   const accounts = cacheAccountStatus(buildCustomerAccountStatusReader(), {
     clock,
     maxStaleSeconds: input.accountStatusMaxStaleSeconds ?? ACCOUNT_STATUS_MAX_STALE_SECONDS,
   });
-  const router = Router();
-  router.get(
-    "/resolve",
-    rateLimit({
-      limiter: rateLimiter,
-      bucket: RESOLVE_BUCKET,
-      limit: RESOLVE_PER_MINUTE,
-      windowSeconds: ONE_MINUTE_SECONDS,
-    }),
-    validate({ query: storefrontResolveQuerySchema }),
-    buildResolveHandler(organizations, config.storefront.baseDomain),
-  );
+  const verifier = createCustomerTokenVerifier({ secret, clock });
+  const customerAuth = authenticateCustomer({ verifier, accounts });
+  const customerAuthOptional = authenticateCustomerOptional({ verifier, accounts });
   router.use(
     "/orgs/:organizationId",
     rateLimit({
@@ -143,6 +138,20 @@ export function buildStorefrontRouter(input: StorefrontRouterInput): Router {
     }),
     validate({ params: storefrontOrganizationParamsSchema }),
     businessContext(organizations),
+    buildDirectoryStorefrontRouterFor({
+      clock,
+      audit: input.audit,
+      limiter: rateLimiter,
+      adapters: buildDirectoryAdapters({
+        orgConfig: input.orgConfig,
+        manifests: input.manifests,
+        clock,
+      }),
+      authenticateCustomer: customerAuth,
+      authenticateCustomerOptional: customerAuthOptional,
+      storage: config.storage,
+      ...(input.fileOverrides === undefined ? {} : { fileOverrides: input.fileOverrides }),
+    }),
     buildContactStorefrontRouterFor({
       clock,
       audit: input.audit,
@@ -156,11 +165,31 @@ export function buildStorefrontRouter(input: StorefrontRouterInput): Router {
       isSecureCookies: config.nodeEnv === "production",
       accessTokenSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
       requireCustomerLogin: customerLoginSwitch(input),
-      authenticateCustomer: authenticateCustomer({
-        verifier: createCustomerTokenVerifier({ secret, clock }),
-        accounts,
-      }),
+      authenticateCustomer: customerAuth,
     }),
   );
+}
+
+/**
+ * The public storefront API (14-API.md section 6, ADR-077), mounted once by routes/v1.ts. It has its
+ * own pipeline: no admin sign-in, no membership. A request names a business in the path; the
+ * business must be ACTIVE; the customer's token must be for that business (ADR-119).
+ */
+export function buildStorefrontRouter(input: StorefrontRouterInput): Router {
+  const { config, rateLimiter } = input;
+  const organizations = buildStorefrontOrganizationReader();
+  const router = Router();
+  router.get(
+    "/resolve",
+    rateLimit({
+      limiter: rateLimiter,
+      bucket: RESOLVE_BUCKET,
+      limit: RESOLVE_PER_MINUTE,
+      windowSeconds: ONE_MINUTE_SECONDS,
+    }),
+    validate({ query: storefrontResolveQuerySchema }),
+    buildResolveHandler(organizations, config.storefront.baseDomain),
+  );
+  mountOrganizationSurface(router, input, organizations);
   return router;
 }

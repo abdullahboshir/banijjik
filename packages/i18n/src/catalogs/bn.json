@@ -317,5 +317,19 @@
   "form.contactLink.remove": "সরান",
   "form.contactLink.linked": "যুক্ত: {name}",
   "form.contactLink.willCreate": "এই ব্যক্তি নতুন যোগাযোগ হিসেবে যোগ হবে।",
-  "contacts.form.nameOrPhone": "নাম বা ফোন নম্বর দিন"
+  "contacts.form.nameOrPhone": "নাম বা ফোন নম্বর দিন",
+  "permission.directory.listing.read": "ডিরেক্টরি তালিকা দেখা",
+  "permission.directory.listing.review": "ডিরেক্টরি তালিকা অনুমোদন বা প্রত্যাখ্যান",
+  "permission.directory.listing.hide": "প্রকাশিত তালিকা লুকানো বা দেখানো",
+  "menu.directory.queue": "তালিকার সারি",
+  "errors.directory_listing_not_found": "সেই তালিকা পাওয়া যায়নি।",
+  "errors.directory_listing_conflict": "তালিকা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
+  "errors.directory_one_listing_per_account": "এই অ্যাকাউন্টে ইতিমধ্যে একটি তালিকা আছে।",
+  "errors.directory_final_rejection": "এই তালিকা প্রত্যাখ্যান হয়েছে এবং আর জমা দেওয়া যাবে না।",
+  "errors.directory_photo_policy_none": "এই ব্যবসা তালিকার ছবি নেয় না।",
+  "errors.directory_invalid_transition": "তালিকা এই অবস্থায় যেতে পারে না।",
+  "errors.directory_under_min_age": "জন্মতারিখ ন্যূনতম বয়সের নিচে।",
+  "errors.directory_phone_must_differ": "এই ফোন নম্বর অ্যাকাউন্টের ফোনের থেকে আলাদা হতে হবে।",
+  "errors.directory_consent_required": "জমা দিতে সব প্রয়োজনীয় সম্মতি দিন।",
+  "errors.directory_filter_not_allowed": "এই ফিল্টার ব্যবহার করা যাবে না।"
 }

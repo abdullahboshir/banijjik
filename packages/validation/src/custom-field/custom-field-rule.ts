@@ -5,6 +5,7 @@ import type {
   CustomFieldValidationBounds,
   CustomFieldVisibility,
 } from "@banijjik/contracts";
+import type { ListingFieldTier } from "@banijjik/contracts/directory";
 
 /** Who is reading or writing the values. A field hidden from that audience is not in the schema. */
 export const CUSTOM_FIELD_AUDIENCE = {
@@ -41,6 +42,12 @@ export interface CustomFieldRule {
   readonly link?: IndustryTemplateContactLink;
   /** Contact fields only: the field belongs to these roles. Absent means every role (ADR-113). */
   readonly appliesToContactRoles?: readonly ContactRole[];
+  /** Listing fields only (ADR-127). */
+  readonly listingTier?: ListingFieldTier;
+  readonly isFilterable?: boolean;
+  readonly sectionKey?: string;
+  readonly minAgeYears?: number;
+  readonly mustDifferFromAccountPhone?: boolean;
 }
 
 export interface CustomFieldValuesOptions {

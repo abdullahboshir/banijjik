@@ -9,10 +9,12 @@ import {
   type CustomFieldListQuery,
   type CustomFieldPreferenceBatchRequest,
 } from "@banijjik/contracts";
+import { DIRECTORY_SECTION_KEY_PATTERN, LISTING_FIELD_TIER } from "@banijjik/contracts/directory";
 import { z } from "zod";
 import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 import { CUSTOM_FIELD_LONG_TEXT_MAX_LENGTH } from "./custom-field-limits.js";
+import { listingPropertiesBelong } from "./listing-field-rules.js";
 
 const FIELD_KEY_PATTERN = /^[a-z][a-z0-9_]{1,39}$/;
 const LABEL_MAX = 160;
@@ -63,6 +65,11 @@ interface FieldShape {
   readonly optionLabels?: Readonly<Record<string, unknown>> | undefined;
   readonly referenceEntity?: string | undefined;
   readonly appliesToContactRoles?: readonly string[] | undefined;
+  readonly listingTier?: string | undefined;
+  readonly isFilterable?: boolean | undefined;
+  readonly sectionKey?: string | undefined;
+  readonly minAgeYears?: number | undefined;
+  readonly mustDifferFromAccountPhone?: boolean | undefined;
 }
 
 function optionsAreUnique(options: readonly string[] | undefined): boolean {
@@ -98,6 +105,7 @@ function fieldIsConsistent(field: FieldShape): boolean {
   const isReference = field.fieldType === CUSTOM_FIELD_TYPE.REFERENCE;
   if (isReference !== (field.referenceEntity !== undefined)) return false;
   if (!rolesBelongToContactField(field)) return false;
+  if (!listingPropertiesBelong(field)) return false;
   if (field.entityType === CUSTOM_FIELD_ENTITY_TYPE.offering)
     return field.offeringKind !== undefined;
   return field.offeringKind === undefined;
@@ -118,6 +126,11 @@ const createRequestSchema = z
     validation: boundsSchema.optional(),
     referenceEntity: z.enum(["contact", "member"]).optional(),
     appliesToContactRoles: contactRolesSchema.optional(),
+    listingTier: z.enum(LISTING_FIELD_TIER).optional(),
+    isFilterable: z.boolean().optional(),
+    sectionKey: z.string().regex(DIRECTORY_SECTION_KEY_PATTERN).optional(),
+    minAgeYears: z.number().int().min(1).max(120).optional(),
+    mustDifferFromAccountPhone: z.boolean().optional(),
     visibility: visibilitySchema,
     botAsk: z.boolean(),
     isSearchable: z.boolean(),
@@ -142,6 +155,11 @@ const updateRequestSchema = z.strictObject({
     .optional(),
   validation: boundsSchema.optional(),
   appliesToContactRoles: contactRolesSchema.nullable().optional(),
+  listingTier: z.enum(LISTING_FIELD_TIER).optional(),
+  isFilterable: z.boolean().optional(),
+  sectionKey: z.string().regex(DIRECTORY_SECTION_KEY_PATTERN).nullable().optional(),
+  minAgeYears: z.number().int().min(1).max(120).nullable().optional(),
+  mustDifferFromAccountPhone: z.boolean().optional(),
   visibility: visibilitySchema.optional(),
   botAsk: z.boolean().optional(),
   isSearchable: z.boolean().optional(),

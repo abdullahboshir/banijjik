@@ -317,5 +317,19 @@
   "form.contactLink.remove": "Remove",
   "form.contactLink.linked": "Linked: {name}",
   "form.contactLink.willCreate": "This person will be added as a new contact.",
-  "contacts.form.nameOrPhone": "Enter a name or a phone number"
+  "contacts.form.nameOrPhone": "Enter a name or a phone number",
+  "permission.directory.listing.read": "View directory listings",
+  "permission.directory.listing.review": "Approve or reject directory listings",
+  "permission.directory.listing.hide": "Hide or unhide published listings",
+  "menu.directory.queue": "Listing queue",
+  "errors.directory_listing_not_found": "That listing was not found.",
+  "errors.directory_listing_conflict": "This listing could not be saved. Try again.",
+  "errors.directory_one_listing_per_account": "This account already has a listing.",
+  "errors.directory_final_rejection": "This listing was rejected and cannot be submitted again.",
+  "errors.directory_photo_policy_none": "This business does not accept listing photos.",
+  "errors.directory_invalid_transition": "This listing cannot move to that status.",
+  "errors.directory_under_min_age": "The date of birth is below the minimum age.",
+  "errors.directory_phone_must_differ": "This phone number must be different from the account phone.",
+  "errors.directory_consent_required": "Accept every required consent to submit.",
+  "errors.directory_filter_not_allowed": "That filter is not available."
 }

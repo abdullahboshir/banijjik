@@ -355,6 +355,7 @@
   "module.notification": "Notifications",
   "module.accounting": "Accounting",
   "module.contact": "Contacts",
+  "module.directory": "Directory",
   "module.catalog": "Catalog",
   "module.inventory": "Inventory",
   "module.pricing": "Pricing",

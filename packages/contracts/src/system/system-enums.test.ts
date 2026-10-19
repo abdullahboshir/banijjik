@@ -28,6 +28,7 @@ describe("system enums", () => {
       "INVOICE",
       "JOURNAL",
       "MEMBER",
+      "LISTING",
       "EXPENSE",
       "TRANSFER",
       "ZREPORT",
