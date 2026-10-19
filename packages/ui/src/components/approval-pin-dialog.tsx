@@ -54,7 +54,7 @@ export function ApprovalPinDialog(props: ApprovalPinDialogProps): ReactElement {
         <ApprovalStatus
           isLocked={props.isLocked === true}
           lockedMessage={props.lockedMessage}
-          errorMessage={props.errorMessage}
+          {...(props.errorMessage === undefined ? {} : { errorMessage: props.errorMessage })}
         />
         <ApprovalActions
           cancelLabel={props.cancelLabel}
