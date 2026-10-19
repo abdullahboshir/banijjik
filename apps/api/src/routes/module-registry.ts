@@ -15,6 +15,7 @@ import { catalogManifest } from "../modules/commerce/catalog/index.js";
 import { contactManifest } from "../modules/commerce/contact/index.js";
 import { expenseManifest } from "../modules/commerce/expense/index.js";
 import { pricingManifest } from "../modules/commerce/pricing/index.js";
+import { inventoryManifest } from "../modules/commerce/inventory/index.js";
 import { settingsManifest } from "../modules/core/settings/index.js";
 import { tenantAdminManifest } from "../modules/platform/tenant-admin/index.js";
 
@@ -37,6 +38,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   catalogManifest,
   expenseManifest,
   pricingManifest,
+  inventoryManifest,
 ];
 
 /**

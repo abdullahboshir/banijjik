@@ -305,25 +305,26 @@ describe("refusing a bad offering", () => {
     expect(tooMany.status).toBe(400);
   });
 
-  it("refuses stock components with 422 until inventory items exist", async () => {
+  it("stores stock components on a product variant (item ids are validated by the inventory port)", async () => {
     const world = await worldFor(harness, RETAIL);
+    const itemId = "0198aaaa-0000-7000-8000-000000000001";
 
     const response = await world.alice.call("post", offeringsPath(world.organizationA), {
       kind: "PRODUCT",
-      name: "Rice",
+      name: "Rice pack",
       variants: [
         {
           price: money(100),
           unitKey: "PIECE",
-          stockComponents: [
-            { inventoryItemId: "0198aaaa-0000-7000-8000-000000000001", quantity: 1 },
-          ],
+          stockComponents: [{ inventoryItemId: itemId, quantity: 1 }],
         },
       ],
     });
 
-    expect(response.status).toBe(422);
-    expect(response.body.error.details.ruleKey).toBe("STOCK_COMPONENTS_NEED_INVENTORY");
+    expect(response.status).toBe(201);
+    expect(response.body.data.variants[0].stockComponents).toEqual([
+      { inventoryItemId: itemId, quantity: 1 },
+    ]);
   });
 });
 

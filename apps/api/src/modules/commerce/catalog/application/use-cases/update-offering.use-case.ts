@@ -13,6 +13,7 @@ import { resolveKindDetails, resolveVariantDrafts } from "../kind-parts.js";
 import { recordOfferingUpdated } from "../offering-records.js";
 import { assertSkusFree, chooseSlug, explainIndexRefusal, skusOf } from "../offering-uniqueness.js";
 import { viewOffering } from "../offering-view.js";
+import { applyVariantStockRules } from "../variant-stock.js";
 
 export interface UpdateOfferingInput {
   readonly organizationId: OrganizationId;
@@ -90,13 +91,23 @@ export class UpdateOfferingUseCase {
         ? undefined
         : resolveKindDetails(current.kind, input.kindDetails);
     if (kindDetails !== undefined) assertKindDetailsCurrency(kindDetails, currency);
-    const variants =
-      input.variants === undefined
+    const drafts =
+      input.variants === undefined ? undefined : resolveVariantDrafts(current.kind, input.variants);
+    const mergedVariants =
+      drafts === undefined
         ? undefined
-        : mergeVariants({
-            existing: current.variants,
-            drafts: resolveVariantDrafts(current.kind, input.variants),
-            currency,
+        : mergeVariants({ existing: current.variants, drafts, currency });
+    const variants =
+      mergedVariants === undefined || drafts === undefined
+        ? undefined
+        : await applyVariantStockRules({
+            dependencies: this.dependencies,
+            organizationId: input.organizationId,
+            actorUserId: input.actorUserId,
+            kind: current.kind,
+            offeringName: input.name ?? current.name,
+            variants: mergedVariants,
+            drafts,
           });
     const slug = await this.slugFor(input, current);
     return changesOf(input, { slug, kindDetails, variants });

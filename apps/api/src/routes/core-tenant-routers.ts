@@ -4,6 +4,7 @@ import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import type { ModuleRegistry } from "../kernel/modules/index.js";
+import type { RateLimiter } from "../kernel/rate-limit/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildFileModule, type FileModuleDependencies } from "../modules/core/file/index.js";
 import { buildCustomFieldModule } from "../modules/core/custom-field/index.js";
@@ -26,6 +27,7 @@ import { buildCatalogTenantRouter } from "./catalog-tenant-router.js";
 import { buildContactTenantRouter } from "./contact-tenant-router.js";
 import { buildExpenseTenantRouter } from "./expense-tenant-router.js";
 import { buildPricingTenantRouter } from "./pricing-tenant-router.js";
+import { buildInventoryTenantRouter } from "./inventory-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -37,6 +39,7 @@ export interface CoreTenantRouterInput {
   readonly orgConfig: OrgConfigService;
   readonly registry: ModuleRegistry;
   readonly manifests: readonly ModuleManifest[];
+  readonly rateLimiter: RateLimiter;
   readonly storage: StorageConfig;
   /** Tests lower the quota, shorten the upload timeout or swap the storage. Production passes none. */
   readonly fileOverrides?: FileModuleDependencies["overrides"];
@@ -53,6 +56,7 @@ export interface CoreTenantRouters {
   readonly accountingRouter: Router;
   readonly expenseRouter: Router;
   readonly pricingRouter: Router;
+  readonly inventoryRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -105,7 +109,12 @@ function buildCommerceTenantRouters(
   input: CoreTenantRouterInput,
 ): Pick<
   CoreTenantRouters,
-  "contactRouter" | "catalogRouter" | "pricingRouter" | "accountingRouter" | "expenseRouter"
+  | "contactRouter"
+  | "catalogRouter"
+  | "pricingRouter"
+  | "inventoryRouter"
+  | "accountingRouter"
+  | "expenseRouter"
 > {
   const shared = {
     clock: input.clock,
@@ -120,6 +129,7 @@ function buildCommerceTenantRouters(
     contactRouter: buildContactTenantRouter(shared),
     catalogRouter: buildCatalogTenantRouter(shared),
     pricingRouter: buildPricingTenantRouter(shared),
+    inventoryRouter: buildInventoryTenantRouter({ ...shared, rateLimiter: input.rateLimiter }),
     accountingRouter: buildAccountingTenantRouter({
       clock: input.clock,
       audit: input.audit,

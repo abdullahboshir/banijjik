@@ -6,11 +6,14 @@ import {
 } from "@banijjik/contracts";
 import {
   UNIT_KEY,
+  CATALOG_DEFAULT_STOCK_TRACKED_SETTING_KEY,
   CATALOG_DEFAULT_UNIT_SETTING_KEY,
   isUnitKey,
   type UnitKey,
 } from "@banijjik/contracts/catalog";
+import { buildInventoryCatalogPorts } from "../modules/commerce/inventory/index.js";
 import { FILE_PURPOSE } from "@banijjik/contracts/file";
+import type { OrganizationId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type {
   LimitGuard,
@@ -95,6 +98,22 @@ function imagesOf(): OfferingImageChecker {
   return { isUsableImage: (fileId) => files.isUsable(fileId, FILE_PURPOSE.OFFERING_IMAGE) };
 }
 
+function defaultStockTrackedOf(input: CatalogRouterInput) {
+  const resolver = buildSettingsResolver({
+    orgConfig: input.orgConfig,
+    manifests: input.manifests,
+  });
+  return {
+    read: async (organizationId: OrganizationId) => {
+      const resolved = await resolver.resolve(organizationId, {
+        keys: [CATALOG_DEFAULT_STOCK_TRACKED_SETTING_KEY],
+      });
+      const value = resolved.get(CATALOG_DEFAULT_STOCK_TRACKED_SETTING_KEY)?.value;
+      return value === true;
+    },
+  };
+}
+
 function defaultUnitsOf(input: CatalogRouterInput): DefaultUnitReader {
   const resolver = buildSettingsResolver({
     orgConfig: input.orgConfig,
@@ -114,6 +133,7 @@ function defaultUnitsOf(input: CatalogRouterInput): DefaultUnitReader {
 /** The catalog router, mounted on the tenant pipeline (card 3.2a). */
 export function buildCatalogTenantRouter(input: CatalogRouterInput): Router {
   const limits: LimitGuard = buildLimitGuard(input.orgConfig);
+  const inventoryPorts = buildInventoryCatalogPorts();
   return buildCatalogRouter({
     clock: input.clock,
     audit: input.audit,
@@ -126,5 +146,8 @@ export function buildCatalogTenantRouter(input: CatalogRouterInput): Router {
     images: imagesOf(),
     locationLookup: buildLocationLookup(),
     defaultUnits: defaultUnitsOf(input),
+    inventoryComponents: inventoryPorts.inventoryComponents,
+    defaultStockItems: inventoryPorts.defaultStockItems,
+    defaultStockTracked: defaultStockTrackedOf(input),
   });
 }

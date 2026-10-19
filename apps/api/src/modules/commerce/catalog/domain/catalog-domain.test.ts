@@ -146,14 +146,14 @@ describe("mergeVariants", () => {
     ).toThrow(expect.objectContaining({ code: "VALIDATION_ERROR" }));
   });
 
-  it("refuses a stock component with a business rule until inventory items exist", () => {
-    expect(() =>
-      mergeVariants({
-        existing: [],
-        drafts: [draft({ stockComponents: [{ inventoryItemId: newId(), quantity: 1 }] })],
-        currency: BDT,
-      }),
-    ).toThrow(expect.objectContaining({ code: "BUSINESS_RULE" }));
+  it("keeps stock components on variants once inventory items exist (card 3.3)", () => {
+    const itemId = newId();
+    const merged = mergeVariants({
+      existing: [],
+      drafts: [draft({ stockComponents: [{ inventoryItemId: itemId, quantity: 1 }] })],
+      currency: BDT,
+    });
+    expect(merged[0]?.stockComponents).toEqual([{ inventoryItemId: itemId, quantity: 1 }]);
   });
 
   it("refuses more than 100 variants in total, archived ones included", () => {

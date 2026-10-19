@@ -13,6 +13,11 @@ import type {
   OrganizationCatalogContext,
   SensitiveValueAccess,
 } from "./application/ports/catalog-context-ports.js";
+import type { DefaultStockTrackedReader } from "./application/ports/default-stock-tracked-reader.js";
+import type {
+  DefaultStockItemPort,
+  InventoryComponentsPort,
+} from "./application/ports/inventory-ports.js";
 import {
   ArchiveCategoryUseCase,
   CreateCategoryUseCase,
@@ -89,6 +94,11 @@ export type {
   OrganizationCatalogContext,
   SensitiveValueAccess,
 };
+export type {
+  DefaultStockItemPort,
+  InventoryComponentsPort,
+} from "./application/ports/inventory-ports.js";
+export { MongoOfferingRepository } from "./infrastructure/mongo-offering.repository.js";
 
 export interface CatalogTenantDependencies {
   readonly clock: Clock;
@@ -104,6 +114,9 @@ export interface CatalogTenantDependencies {
   readonly images: OfferingImageChecker;
   readonly locationLookup: LocationLookup;
   readonly defaultUnits: DefaultUnitReader;
+  readonly inventoryComponents: InventoryComponentsPort;
+  readonly defaultStockItems: DefaultStockItemPort;
+  readonly defaultStockTracked: DefaultStockTrackedReader;
 }
 
 function writeDependencies(dependencies: CatalogTenantDependencies): CatalogDependencies {
@@ -125,6 +138,9 @@ function writeDependencies(dependencies: CatalogTenantDependencies): CatalogDepe
     images: dependencies.images,
     locationLookup: dependencies.locationLookup,
     defaultUnits: dependencies.defaultUnits,
+    inventoryComponents: dependencies.inventoryComponents,
+    defaultStockItems: dependencies.defaultStockItems,
+    defaultStockTracked: dependencies.defaultStockTracked,
   };
 }
 

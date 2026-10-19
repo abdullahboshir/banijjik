@@ -19,6 +19,8 @@ import type {
   OfferingLocationRepository,
   SynonymRepository,
 } from "./ports/record-ports.js";
+import type { DefaultStockTrackedReader } from "./ports/default-stock-tracked-reader.js";
+import type { DefaultStockItemPort, InventoryComponentsPort } from "./ports/inventory-ports.js";
 
 /** Everything a catalog use case may need: the data, the transaction, the trail and the other modules it reads. */
 export interface CatalogDependencies {
@@ -39,4 +41,7 @@ export interface CatalogDependencies {
   readonly images: OfferingImageChecker;
   readonly locationLookup: LocationLookup;
   readonly defaultUnits: DefaultUnitReader;
+  readonly inventoryComponents: InventoryComponentsPort;
+  readonly defaultStockItems: DefaultStockItemPort;
+  readonly defaultStockTracked: DefaultStockTrackedReader;
 }

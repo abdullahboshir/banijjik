@@ -13,6 +13,7 @@ import { resolveVariantDrafts } from "../kind-parts.js";
 import { recordOfferingCreated } from "../offering-records.js";
 import { assertSkusFree, chooseSlug, explainIndexRefusal, skusOf } from "../offering-uniqueness.js";
 import { viewOffering } from "../offering-view.js";
+import { applyVariantStockRules } from "../variant-stock.js";
 
 export interface CreateOfferingInput {
   readonly organizationId: OrganizationId;
@@ -90,14 +91,24 @@ export class CreateOfferingUseCase {
       explicitSlug: input.slug,
       offeringId: prepared.offeringId,
     });
-    const variants = await this.variantsOf(input, prepared.currency);
+    const { merged, drafts } = await this.variantsOf(input, prepared.currency);
+    const variants = await applyVariantStockRules({
+      dependencies: this.dependencies,
+      organizationId: input.organizationId,
+      actorUserId: input.actorUserId,
+      kind: input.kind,
+      offeringName: input.name,
+      variants: merged,
+      drafts,
+    });
     return unitOfWork.run(() => this.createInside(input, prepared, { slug, variants }));
   }
 
   private async variantsOf(input: CreateOfferingInput, currency: string) {
     const inputs: readonly VariantInput[] = input.variants ?? [await this.defaultVariant(input)];
     const drafts = resolveVariantDrafts(input.kind, inputs);
-    return mergeVariants({ existing: [], drafts, currency });
+    const merged = mergeVariants({ existing: [], drafts, currency });
+    return { merged, drafts };
   }
 
   private async defaultVariant(input: CreateOfferingInput): Promise<VariantInput> {

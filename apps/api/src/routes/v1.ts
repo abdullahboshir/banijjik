@@ -14,6 +14,7 @@ import {
   locationAccess,
   runInOrganizationContext,
   tenantContext,
+  type MembershipDirectory,
 } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildAuditRecorder, registerAuditModels } from "../modules/core/audit/index.js";
@@ -37,6 +38,7 @@ import { registerCatalogModels } from "../modules/commerce/catalog/index.js";
 import { registerContactModels } from "../modules/commerce/contact/index.js";
 import { registerExpenseModels } from "../modules/commerce/expense/index.js";
 import { registerPricingModels } from "../modules/commerce/pricing/index.js";
+import { registerInventoryModels } from "../modules/commerce/inventory/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
@@ -45,6 +47,7 @@ import {
   type IndustryTemplateReader,
   type OrgConfigService,
 } from "../modules/platform/entitlement/index.js";
+import { buildTenantRouters, type AccessParts } from "./tenant-routers.js";
 import { registerPackageModels } from "../modules/platform/package/index.js";
 import {
   buildIndustryTemplateAvailability,
@@ -112,6 +115,7 @@ export function registerModuleModels(): void {
   registerAccountingModels();
   registerExpenseModels();
   registerPricingModels();
+  registerInventoryModels();
   registerSettingsModels();
   registerFileModels();
 }
@@ -130,10 +134,8 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
   const router = Router();
   const verifier = createJoseAccessTokenVerifier({ secret: config.auth.accessTokenSecret, clock });
   const requireAdminUser = authenticate({ audience: TOKEN_AUDIENCE.ADMIN, verifier });
-  // Sign in first, then count the request against that user, before any database work (review M8).
   const adminGuards = [requireAdminUser, ...buildAdminUserLimit(dependencies)];
   const { authRouter, meRouter } = buildIamRouters(dependencies);
-  // Built once here: the idempotency middleware and the audit recorder are shared by the modules.
   const audit = buildAuditRecorder(clock);
   const idempotency = createIdempotencyMiddleware({ clock });
   const myOrganizationsRouter = buildMyOrganizationsRouter(dependencies, audit, idempotency);
@@ -149,16 +151,12 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     requireUser: requireAdminUser,
   });
   const core = buildCoreRouters({ dependencies, audit, orgConfig, access, registry, idempotency });
-  // logout-all lives in the auth router but needs a session; the rest of /auth is public.
   router.use("/auth/logout-all", requireAdminUser);
   router.use("/auth", authRouter);
-  // More specific path first, so /me/orgs never falls into the /me router.
   router.use("/me/orgs", adminGuards, myOrganizationsRouter);
   router.use("/industry-templates", adminGuards, buildPublishedIndustryTemplateRouter());
-  // PUBLIC files are served without a session (logos and product images for websites, ADR-109).
   router.use("/public", core.publicFileRouter);
   router.use("/me", adminGuards, meRouter);
-  // The invitation link: public preview, signed-in accept. Outside the tenant pipeline.
   router.use("/invitations", organizationTenant.invitationLinkRouter);
   router.use("/storefront", buildStorefront(dependencies, { audit, orgConfig, registry }));
   mountPlatformApi(router, {
@@ -167,12 +165,48 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
     registry,
     userRateLimiter: dependencies.userRateLimiter,
   });
+  mountTenantOrgApi(router, {
+    adminGuards,
+    membershipDirectory,
+    registry,
+    orgConfig,
+    clock,
+    rateLimiter: dependencies.rateLimiter,
+    audit,
+    access,
+    organizationRouter: organizationTenant.tenantRouter,
+    coreRouters: core,
+    tenantRouters: dependencies.tenantRouters ?? [],
+    tenantRouterFactories: dependencies.tenantRouterFactories ?? [],
+  });
+  return router;
+}
+
+function mountTenantOrgApi(
+  router: Router,
+  input: {
+    readonly adminGuards: readonly RequestHandler[];
+    readonly membershipDirectory: MembershipDirectory;
+    readonly registry: ModuleRegistry;
+    readonly orgConfig: OrgConfigService;
+    readonly clock: Clock;
+    readonly rateLimiter: RateLimiter;
+    readonly audit: AuditRecorder;
+    readonly access: AccessParts;
+    readonly organizationRouter: Router;
+    readonly coreRouters: CoreTenantRouters;
+    readonly tenantRouters: readonly Router[];
+    readonly tenantRouterFactories: readonly ((
+      permission: PermissionMiddlewareFactory,
+    ) => Router)[];
+  },
+): void {
   router.use(
     "/orgs/:organizationId",
-    adminGuards,
-    tenantContext({ directory: membershipDirectory }),
+    ...input.adminGuards,
+    tenantContext({ directory: input.membershipDirectory }),
     locationAccess(),
-    createEntitlementGate({ registry, config: orgConfig }),
+    createEntitlementGate({ registry: input.registry, config: input.orgConfig }),
     buildTenantRouter(
       buildTenantRouters(
         tenantRoutersInput({
@@ -187,7 +221,6 @@ export function buildV1Router(dependencies: V1Dependencies): Router {
       ),
     ),
   );
-  return router;
 }
 
 function tenantRoutersInput(parts: {
@@ -250,6 +283,7 @@ function buildCoreRouters(input: {
     orgConfig: input.orgConfig,
     registry,
     manifests: registry.all(),
+    rateLimiter: dependencies.rateLimiter,
     storage: dependencies.config.storage,
     ...(dependencies.fileOverrides === undefined
       ? {}

@@ -9,7 +9,7 @@ import {
   type VariantOverrides,
 } from "@banijjik/contracts/catalog";
 import { newId } from "@banijjik/ids";
-import { invalidFields, stockComponentsNeedInventory, type FieldProblem } from "./errors.js";
+import { invalidFields, type FieldProblem } from "./errors.js";
 import { derivedVariantName, isActiveVariant, variantIdentityOf, type Variant } from "./variant.js";
 
 /** A variant as the request describes it: optional fields are filled in here. */
@@ -120,7 +120,7 @@ function optionProblems(
  * known `variantId` keeps that id; one without gets a new id; an existing variant the request leaves
  * out is archived, never deleted, because orders and bookings point at its id. Rejects (400) an
  * unknown or repeated id, a foreign currency, repeated options or SKUs, and more than 100 variants
- * in total; rejects (422) any stock component until inventory items exist (card 3.3).
+ * in total. Stock components are validated through an inventory port in the use case (card 3.3).
  */
 export function mergeVariants(input: {
   readonly existing: readonly Variant[];
@@ -143,9 +143,6 @@ export function mergeVariants(input: {
     problems.push({ path: "variants", messageKey: TOO_MANY_KEY });
   }
   if (problems.length > 0) throw invalidFields(problems);
-  if (merged.some((variant) => variant.stockComponents.length > 0)) {
-    throw stockComponentsNeedInventory();
-  }
   return merged;
 }
 

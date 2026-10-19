@@ -1,6 +1,6 @@
 import type { OfferingKind } from "@banijjik/contracts";
 import type { OfferingStatus } from "@banijjik/contracts/catalog";
-import { OFFERING_STATUS } from "@banijjik/contracts/catalog";
+import { OFFERING_STATUS, VARIANT_STATUS } from "@banijjik/contracts/catalog";
 import { asId, type OfferingId, type UserId } from "@banijjik/ids";
 import { escapeRegExp } from "@banijjik/validation";
 import {
@@ -200,6 +200,25 @@ export class MongoOfferingRepository implements OfferingRepository {
       .countDocuments({ categoryIds: categoryId, status: OFFERING_STATUS.ACTIVE })
       .session(getActiveSession() ?? null)
       .exec();
+  }
+
+  async isInventoryItemUsedInActiveVariant(inventoryItemId: string): Promise<boolean> {
+    const document = await this.model()
+      .findOne(
+        {
+          status: OFFERING_STATUS.ACTIVE,
+          variants: {
+            $elemMatch: {
+              status: VARIANT_STATUS.ACTIVE,
+              "stockComponents.inventoryItemId": inventoryItemId,
+            },
+          },
+        },
+        { _id: 1 },
+        sessionOption(getActiveSession()),
+      )
+      .lean();
+    return document !== null;
   }
 
   private model() {
