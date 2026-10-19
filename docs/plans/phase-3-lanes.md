@@ -95,6 +95,8 @@ With one implementer at a time, the order is 3.4 → 3.4b → 3.6 → 3.8c → 3
 
 Each card adds its own contracts subpath (`pricing`, `booking`, `payment`, `accounting`). The package `exports`, the domain lint exception and the new-module test aliases are shared lines: add only, and the later branch rebases.
 
+**Added 2026-10-19 (plans ahead for parallel sessions):** `3.3` inventory (start now), `M.2` directory (start now, track M), `3.7` enrollment (after 3.4 and 3.6). Reserved ADRs: 3.3 → 125, 3.7 → 126, M.2 → 127. At most three implementers at a time on this machine; one heavy test run at a time.
+
 **Rules for every implementer** (Cursor included):
 - read AGENTS.md
 - follow the plan exactly; stop and ask on a gap

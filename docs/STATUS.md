@@ -107,12 +107,12 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.4b manager approvals | merged (2026-10-19, implemented with Cursor, Claude T1 review 2 passed; ADR-121 proposed) | member approval PIN (password to set, 5 failures lock 15 min, reserved atomically before verify), one-time approval token bound to action, subject and amount, `ApprovalVerifier.consume` in the caller transaction, owner self-approval setting, `ApprovalPinDialog`, PIN section in the account menu (loaded lazily). No production caller yet (3.5, 3.8, 3.9) |
 | 3.6 booking core | planned (2026-10-19, `docs/plans/3.6.md`, Opus; T1) | wave 3, after 3.4; resources, availability, SERVICE bookings with 5-minute capacity buckets, `kernel/jobs`, provides the SERVICE kind; ADR-122 |
 | 3.6b rental and event bookings | todo | after 3.6 |
-| 3.7 enrollment core | todo | lane B |
+| 3.7 enrollment core | planned (2026-10-19, `docs/plans/3.7.md`, Opus; T1) | after 3.4 and 3.6; PLAN kind, periods, renewals, overdue, check-in, guardian as payer; ADR-126 |
 | 3.8a ordered event streams | merged (2026-10-18, implemented with Claude Code (Sonnet 5.5), Claude T1 review passed; ADR-115 proposed) | `orderingKey` streams, ORDERED/UNORDERED handlers, waits without spending attempts (BullMQ `attemptsMade`), module-off advances, dead letters FAILED → REPLAY_REQUESTED → REPLAYED or SKIPPED, platform `operations` module and Failed events screen (SUPER_ADMIN). Contact events carry `contact:<contactId>`; catalog events get `offering:<offeringId>` in 3.2b. Gaps: no production ORDERED handler yet (3.8 is the first), old dead letters have no status, the 24 h waiting warning is untested |
 | 3.8 payments, dues, store credit | planned (2026-10-19, `docs/plans/3.8.md`, Opus; T1) | wave 3, after 3.4b and 3.6; manual bKash/Nagad reference uniqueness, refunds and reversals with approval, deposit enforcement; ADR-123 |
 | 3.8c accounting engine and expenses | planned (2026-10-19, `docs/plans/3.8c.md`, Opus; T1) | wave 3, beside 3.6; system accounts, ORDERED posting handlers, trial balance, expenses; ADR-124 |
 | 3.8b bookkeeping add-on UI | todo |  |
-| 3.3 inventory ledger | todo | lane A; ADR-098 inventory items |
+| 3.3 inventory ledger | planned (2026-10-19, `docs/plans/3.3.md`, Opus; T1) | can start now (catalog merged); items, receipts, adjustments, one-step transfers, moving average, low stock, `StockLedger` port for 3.5; stock components switched on; ADR-125 |
 | 3.5 orders | todo | lane A |
 | 3.9 POS | todo |  |
 | 3.11 staff commission | todo | ADR-100 |
@@ -124,7 +124,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 |---|---|---|
 | M.0 design approval | done (2026-10-18, owner approved doc 16) | open owner decisions in doc 16 §6 remain: SMS provider, pricing, photo policy, eligibility text, domain, legal review |
 | M.1 customer accounts and OTP | merged (2026-10-19, implemented with Claude Code (Sonnet 5.5), Claude T1 review passed; ADR-119 proposed) | storefront surface and resolve, phone OTP (no enumeration, limits, sealed code cleared after SMS), `sf_access`/`sf_refresh` cookies with the `org` claim, refresh grace 10 s, `contact.customerLogin` switch, staff read and block, Website login section. SMS driver `test-inbox` or `disabled` until a provider is chosen (doc 16 §6). Gaps: SMS may send twice if the worker dies between send and clear; the storefront proxy must keep `/api/v1/storefront` (M.6) |
-| M.2 directory API | todo | |
+| M.2 directory API | planned (2026-10-19, `docs/plans/M.2.md`, Opus; T1) | can start now (M.1 merged); listings, visibility tiers, moderation API, filters, GEO_BD registry, photo policy; ADR-127 |
 | M.3 admin moderation screens | todo | |
 | M.4 credits and connections | todo | |
 | M.5 manual payment verification | todo | |
