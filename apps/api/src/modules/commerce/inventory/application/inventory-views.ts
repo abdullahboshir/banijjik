@@ -4,6 +4,7 @@ import type {
   InventoryLevelRow,
   StockMovementResponse,
 } from "@banijjik/contracts/inventory";
+import { lineValueMinor, microsToMinor } from "../domain/money-math.js";
 import type { InventoryItem } from "../domain/inventory-item.entity.js";
 
 /** Movement fields the list and detail views need (no infrastructure import). */
@@ -70,6 +71,8 @@ export function toInventoryLevelRow(row: Record<string, unknown>): InventoryLeve
   const onHand = row["onHand"] as number;
   const reserved = row["reserved"] as number;
   const available = (row["available"] as number | undefined) ?? onHand - reserved;
+  const averageUnitCostMicros = row["averageUnitCostMicros"] as number;
+  const currency = row["averageUnitCostCurrency"] as Money["currency"];
   return {
     inventoryItemId: row["inventoryItemId"] as string,
     locationId: row["locationId"] as string,
@@ -81,8 +84,12 @@ export function toInventoryLevelRow(row: Record<string, unknown>): InventoryLeve
     damaged: row["damaged"] as number,
     available,
     averageUnitCost: {
-      amount: row["averageUnitCostAmount"] as number,
-      currency: row["averageUnitCostCurrency"] as Money["currency"],
+      amount: microsToMinor(averageUnitCostMicros),
+      currency,
+    },
+    inventoryValue: {
+      amount: lineValueMinor(averageUnitCostMicros, onHand),
+      currency,
     },
     lowStock: Boolean(row["lowStockActive"]),
   };

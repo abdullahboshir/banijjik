@@ -28,6 +28,8 @@ export interface ApplyMovementInput {
   readonly sourceId: string;
   readonly note?: string;
   readonly unitCost?: Money;
+  /** When set (e.g. transfers), average updates use micros without a minor round-trip. */
+  readonly unitCostMicros?: number;
   readonly offeringId?: string;
   readonly variantId?: string;
   readonly reversesStockMovementId?: string;
@@ -70,6 +72,7 @@ export class StockLedgerService {
       ...(input.variantId === undefined ? {} : { variantId: input.variantId }),
       ...(input.note === undefined ? {} : { note: input.note }),
       unitCost: input.unitCost,
+      ...(input.unitCostMicros === undefined ? {} : { unitCostMicros: input.unitCostMicros }),
       lowStockThreshold: input.lowStockThreshold,
       allowNegativeStock: input.allowNegativeStock,
       existing,

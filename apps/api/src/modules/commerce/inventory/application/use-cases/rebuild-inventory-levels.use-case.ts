@@ -79,7 +79,7 @@ async function applyProjectedLevels(input: {
       ...base,
       onHand: expected.onHand,
       damaged: expected.damaged,
-      averageUnitCostAmount: expected.averageUnitCostAmount,
+      averageUnitCostMicros: expected.averageUnitCostMicros,
       updatedAt: input.now,
       version: base.version + 1,
     };

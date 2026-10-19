@@ -79,6 +79,7 @@ export interface StockMovementDocument {
   reversesStockMovementId?: string;
   unitCostAmount?: number;
   unitCostCurrency?: string;
+  unitCostMicros?: number;
   offeringId?: string;
   variantId?: string;
   note?: string;
@@ -104,6 +105,7 @@ export const stockMovementSchema = new Schema<StockMovementDocument>(
     reversesStockMovementId: { type: String },
     unitCostAmount: { type: Number },
     unitCostCurrency: { type: String },
+    unitCostMicros: { type: Number },
     offeringId: { type: String },
     variantId: { type: String },
     note: { type: String },
@@ -134,7 +136,7 @@ export interface InventoryLevelDocument {
   onHand: number;
   reserved: number;
   damaged: number;
-  averageUnitCostAmount: number;
+  averageUnitCostMicros: number;
   averageUnitCostCurrency: string;
   lowStockActive: boolean;
   version: number;
@@ -150,7 +152,7 @@ export const inventoryLevelSchema = new Schema<InventoryLevelDocument>(
     onHand: { type: Number, required: true, default: 0 },
     reserved: { type: Number, required: true, default: 0 },
     damaged: { type: Number, required: true, default: 0 },
-    averageUnitCostAmount: { type: Number, required: true, default: 0 },
+    averageUnitCostMicros: { type: Number, required: true, default: 0 },
     averageUnitCostCurrency: { type: String, required: true },
     lowStockActive: { type: Boolean, required: true, default: false },
     ...versionField,

@@ -81,7 +81,10 @@ export interface InventoryLevelRow {
   readonly reserved: number;
   readonly damaged: number;
   readonly available: number;
+  /** Display average in minor units per base unit (half-up from micros). */
   readonly averageUnitCost: Money;
+  /** onHand × average in micros, rounded half up once to minor units (ADR-125). */
+  readonly inventoryValue: Money;
   readonly lowStock: boolean;
 }
 

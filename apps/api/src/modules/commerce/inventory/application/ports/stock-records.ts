@@ -18,6 +18,8 @@ export interface StockMovementRecord {
   readonly reversesStockMovementId?: string;
   readonly unitCostAmount?: number;
   readonly unitCostCurrency?: string;
+  /** Cost micros per base unit when the movement carries a unit cost (rebuild fidelity). */
+  readonly unitCostMicros?: number;
   readonly offeringId?: string;
   readonly variantId?: string;
   readonly note?: string;
@@ -37,7 +39,8 @@ export interface InventoryLevelRecord {
   readonly onHand: number;
   readonly reserved: number;
   readonly damaged: number;
-  readonly averageUnitCostAmount: number;
+  /** Moving average in cost micros (minor × 10000) per base unit (ADR-125). */
+  readonly averageUnitCostMicros: number;
   readonly averageUnitCostCurrency: string;
   readonly lowStockActive: boolean;
   readonly version: number;

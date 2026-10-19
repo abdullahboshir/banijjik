@@ -32,16 +32,12 @@ function toRow(
 ): StockRowView {
   const { t, locale } = context.translator;
   const unitLabel = (unitKey: UnitKey) => unitLabelOf(t, unitKey);
-  const valueAmount = row.onHand * row.averageUnitCost.amount;
   return {
     inventoryItemId: row.inventoryItemId,
     name: row.itemName,
     onHandText: quantityInUnitWords(row.onHand, row.baseUnitKey, unitLabel),
     availableText: quantityInUnitWords(row.available, row.baseUnitKey, unitLabel),
-    valueText: formatMoney(
-      { amount: valueAmount, currency: row.averageUnitCost.currency },
-      { locale },
-    ),
+    valueText: formatMoney(row.inventoryValue, { locale }),
     lowStock: row.lowStock,
     lowLabel: context.lowLabel,
   };

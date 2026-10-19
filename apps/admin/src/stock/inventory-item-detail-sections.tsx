@@ -73,13 +73,7 @@ export function ItemLevelsSection(props: {
                 {quantityInUnitWords(row.onHand, row.baseUnitKey, props.unitLabel)} ·{" "}
                 {props.labels.levelsAvailable}:{" "}
                 {quantityInUnitWords(row.available, row.baseUnitKey, props.unitLabel)} ·{" "}
-                {formatMoney(
-                  {
-                    amount: row.onHand * row.averageUnitCost.amount,
-                    currency: row.averageUnitCost.currency,
-                  },
-                  { locale: props.locale },
-                )}
+                {formatMoney(row.inventoryValue, { locale: props.locale })}
               </span>
             </li>
           ))}

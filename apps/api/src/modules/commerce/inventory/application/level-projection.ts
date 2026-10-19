@@ -1,12 +1,13 @@
 import { STOCK_MOVEMENT_REASON, type StockMovementReason } from "@banijjik/contracts/inventory";
 import { nextMovingAverage } from "../domain/moving-average.js";
+import { minorToMicros } from "../domain/money-math.js";
 import type { StockMovementRecord } from "./ports/stock-records.js";
 
 export interface ProjectedLevel {
   readonly onHand: number;
   readonly reserved: number;
   readonly damaged: number;
-  readonly averageUnitCostAmount: number;
+  readonly averageUnitCostMicros: number;
 }
 
 function deltasFor(
@@ -22,6 +23,12 @@ function deltasFor(
   return { onHandDelta: quantityDelta, damagedDelta: 0 };
 }
 
+function incomingCostMicros(movement: StockMovementRecord): number | undefined {
+  if (movement.unitCostMicros !== undefined) return movement.unitCostMicros;
+  if (movement.unitCostAmount === undefined) return undefined;
+  return minorToMicros(movement.unitCostAmount);
+}
+
 /** Replays movements in order to derive level projections (rebuild check). */
 export function projectLevelsFromMovements(
   movements: readonly StockMovementRecord[],
@@ -33,32 +40,33 @@ export function projectLevelsFromMovements(
       onHand: 0,
       reserved: 0,
       damaged: 0,
-      averageUnitCostAmount: 0,
+      averageUnitCostMicros: 0,
     };
     const { onHandDelta, damagedDelta } = deltasFor(movement.reason, movement.quantityDelta);
     const nextOnHand = existing.onHand + onHandDelta;
     const nextDamaged = existing.damaged + damagedDelta;
-    let averageUnitCostAmount = existing.averageUnitCostAmount;
+    let averageUnitCostMicros = existing.averageUnitCostMicros;
+    const incomingMicros = incomingCostMicros(movement);
     const updatesAverage =
-      movement.unitCostAmount !== undefined &&
+      incomingMicros !== undefined &&
       onHandDelta > 0 &&
       (movement.reason === STOCK_MOVEMENT_REASON.PURCHASE ||
         movement.reason === STOCK_MOVEMENT_REASON.OPENING ||
         movement.reason === STOCK_MOVEMENT_REASON.TRANSFER_IN ||
         movement.reason === STOCK_MOVEMENT_REASON.RETURN);
-    if (updatesAverage && movement.unitCostAmount !== undefined) {
-      averageUnitCostAmount = nextMovingAverage({
+    if (updatesAverage && incomingMicros !== undefined) {
+      averageUnitCostMicros = nextMovingAverage({
         onHand: existing.onHand,
-        averageUnitCostMinor: existing.averageUnitCostAmount,
+        averageUnitCostMicros: existing.averageUnitCostMicros,
         incomingQuantity: onHandDelta,
-        incomingUnitCostMinor: movement.unitCostAmount,
+        incomingUnitCostMicros: incomingMicros,
       });
     }
     map.set(key, {
       onHand: nextOnHand,
       reserved: existing.reserved,
       damaged: nextDamaged,
-      averageUnitCostAmount,
+      averageUnitCostMicros,
     });
   }
   return map;

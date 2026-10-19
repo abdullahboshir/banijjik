@@ -13,6 +13,7 @@ import {
   type OrganizationId,
   type UserId,
 } from "@banijjik/ids";
+import { microsToMinor } from "../domain/money-math.js";
 import type { InventoryDependencies } from "./inventory-dependencies.js";
 
 export interface StockLedgerReserveInput {
@@ -173,9 +174,10 @@ export class StockLedger {
           ? {}
           : {
               unitCost: {
-                amount: row.fromLevel.averageUnitCostAmount,
+                amount: microsToMinor(row.fromLevel.averageUnitCostMicros),
                 currency: row.fromLevel.averageUnitCostCurrency as Money["currency"],
               },
+              unitCostMicros: row.fromLevel.averageUnitCostMicros,
             }),
         lowStockThreshold: row.threshold,
         allowNegativeStock: input.allowNegativeStock,

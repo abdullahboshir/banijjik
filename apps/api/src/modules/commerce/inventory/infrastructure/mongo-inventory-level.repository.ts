@@ -58,7 +58,7 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
           onHand: document.onHand,
           reserved: document.reserved,
           damaged: document.damaged,
-          averageUnitCostAmount: document.averageUnitCostAmount,
+          averageUnitCostMicros: document.averageUnitCostMicros,
           averageUnitCostCurrency: document.averageUnitCostCurrency,
           lowStockActive: document.lowStockActive,
           updatedAt: document.updatedAt,
@@ -120,7 +120,7 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
       onHand: 0,
       reserved: 0,
       damaged: 0,
-      averageUnitCostAmount: 0,
+      averageUnitCostMicros: 0,
       averageUnitCostCurrency: input.currency,
       lowStockActive: false,
       version: 0,
@@ -162,7 +162,7 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
         onHand: number;
         reserved: number;
         damaged: number;
-        averageUnitCostAmount: number;
+        averageUnitCostMicros: number;
         averageUnitCostCurrency: string;
       }
     >
@@ -178,7 +178,7 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
           onHand: { $sum: "$onHand" },
           reserved: { $sum: "$reserved" },
           damaged: { $sum: "$damaged" },
-          averageUnitCostAmount: { $first: "$averageUnitCostAmount" },
+          averageUnitCostMicros: { $first: "$averageUnitCostMicros" },
           averageUnitCostCurrency: { $first: "$averageUnitCostCurrency" },
         },
       },
@@ -189,7 +189,7 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
         onHand: number;
         reserved: number;
         damaged: number;
-        averageUnitCostAmount: number;
+        averageUnitCostMicros: number;
         averageUnitCostCurrency: string;
       }
     >();
@@ -199,7 +199,7 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
         onHand: row.onHand,
         reserved: row.reserved,
         damaged: row.damaged,
-        averageUnitCostAmount: row.averageUnitCostAmount,
+        averageUnitCostMicros: row.averageUnitCostMicros,
         averageUnitCostCurrency: row.averageUnitCostCurrency,
       });
     }

@@ -65,6 +65,7 @@ describe("stock ledger API", () => {
     );
     expect(row.onHand).toBe(1500);
     expect(row.averageUnitCost.amount).toBe(60);
+    expect(row.inventoryValue.amount).toBe(90_000);
   });
 
   it("refuses negative stock by default on adjustment", async () => {

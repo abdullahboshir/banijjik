@@ -13,6 +13,7 @@ import {
   type UserId,
 } from "@banijjik/ids";
 import { nextMovingAverage } from "../domain/moving-average.js";
+import { microsToMinor, minorToMicros } from "../domain/money-math.js";
 import { insufficientStock } from "../domain/errors.js";
 import type { InventoryLevelRecord, StockMovementRecord } from "./ports/stock-records.js";
 
@@ -38,27 +39,31 @@ export function assertStockAvailable(input: {
   }
 }
 
-export function nextAverageUnitCost(input: {
+export function nextAverageUnitCostMicros(input: {
   readonly existing: InventoryLevelRecord;
   readonly reason: StockMovementReason;
   readonly onHandDelta: number;
   readonly unitCost: Money | undefined;
+  readonly unitCostMicros?: number;
 }): number {
+  const incomingMicros =
+    input.unitCostMicros ??
+    (input.unitCost === undefined ? undefined : minorToMicros(input.unitCost.amount));
   const updatesAverage =
-    input.unitCost !== undefined &&
+    incomingMicros !== undefined &&
     input.onHandDelta > 0 &&
     (input.reason === STOCK_MOVEMENT_REASON.PURCHASE ||
       input.reason === STOCK_MOVEMENT_REASON.OPENING ||
       input.reason === STOCK_MOVEMENT_REASON.TRANSFER_IN ||
       input.reason === STOCK_MOVEMENT_REASON.RETURN);
-  if (!updatesAverage || input.unitCost === undefined) {
-    return input.existing.averageUnitCostAmount;
+  if (!updatesAverage || incomingMicros === undefined) {
+    return input.existing.averageUnitCostMicros;
   }
   return nextMovingAverage({
     onHand: input.existing.onHand,
-    averageUnitCostMinor: input.existing.averageUnitCostAmount,
+    averageUnitCostMicros: input.existing.averageUnitCostMicros,
     incomingQuantity: input.onHandDelta,
-    incomingUnitCostMinor: input.unitCost.amount,
+    incomingUnitCostMicros: incomingMicros,
   });
 }
 
@@ -69,11 +74,23 @@ export function outgoingUnitCostForMovement(input: {
 }): Money | undefined {
   if (input.onHandDelta < 0) {
     return {
-      amount: input.existing.averageUnitCostAmount,
+      amount: microsToMinor(input.existing.averageUnitCostMicros),
       currency: input.existing.averageUnitCostCurrency as CurrencyCode,
     };
   }
   return input.unitCost;
+}
+
+function costMicrosOnMovement(input: {
+  readonly onHandDelta: number;
+  readonly existing: InventoryLevelRecord;
+  readonly unitCost: Money | undefined;
+  readonly unitCostMicros?: number;
+}): number | undefined {
+  if (input.unitCostMicros !== undefined) return input.unitCostMicros;
+  if (input.onHandDelta < 0) return input.existing.averageUnitCostMicros;
+  if (input.unitCost === undefined) return undefined;
+  return minorToMicros(input.unitCost.amount);
 }
 
 export function buildStockMovementDocument(input: {
@@ -91,6 +108,7 @@ export function buildStockMovementDocument(input: {
   readonly note?: string;
   readonly now: Date;
   readonly outgoingUnitCost: Money | undefined;
+  readonly unitCostMicros?: number;
 }): StockMovementRecord {
   const outgoingUnitCost = input.outgoingUnitCost;
   return {
@@ -109,6 +127,7 @@ export function buildStockMovementDocument(input: {
     ...(outgoingUnitCost === undefined
       ? {}
       : { unitCostAmount: outgoingUnitCost.amount, unitCostCurrency: outgoingUnitCost.currency }),
+    ...(input.unitCostMicros === undefined ? {} : { unitCostMicros: input.unitCostMicros }),
     ...(input.offeringId === undefined ? {} : { offeringId: input.offeringId }),
     ...(input.variantId === undefined ? {} : { variantId: input.variantId }),
     ...(input.note === undefined ? {} : { note: input.note }),
@@ -125,7 +144,7 @@ export function buildNextInventoryLevel(input: {
   readonly existing: InventoryLevelRecord;
   readonly nextOnHand: number;
   readonly nextDamaged: number;
-  readonly averageUnitCostAmount: number;
+  readonly averageUnitCostMicros: number;
   readonly nextAvailable: number;
   readonly threshold: number;
   readonly now: Date;
@@ -135,7 +154,7 @@ export function buildNextInventoryLevel(input: {
     ...input.existing,
     onHand: input.nextOnHand,
     damaged: input.nextDamaged,
-    averageUnitCostAmount: input.averageUnitCostAmount,
+    averageUnitCostMicros: input.averageUnitCostMicros,
     lowStockActive: isLow,
     updatedAt: input.now,
     version: input.existing.version + 1,
@@ -175,6 +194,7 @@ export function computeMovementOutcome(input: {
   readonly variantId?: string;
   readonly note?: string;
   readonly unitCost: Money | undefined;
+  readonly unitCostMicros?: number;
   readonly lowStockThreshold: number;
   readonly allowNegativeStock: boolean;
   readonly existing: InventoryLevelRecord;
@@ -186,7 +206,7 @@ export function computeMovementOutcome(input: {
     existing: input.existing,
     nextOnHand: quantities.nextOnHand,
     nextDamaged: quantities.nextDamaged,
-    averageUnitCostAmount: quantities.averageUnitCostAmount,
+    averageUnitCostMicros: quantities.averageUnitCostMicros,
     nextAvailable: quantities.nextAvailable,
     threshold: input.lowStockThreshold,
     now: input.now,
@@ -206,6 +226,7 @@ function movementQuantities(input: {
   readonly quantityDelta: number;
   readonly reason: StockMovementReason;
   readonly unitCost: Money | undefined;
+  readonly unitCostMicros?: number;
   readonly lowStockThreshold: number;
   readonly allowNegativeStock: boolean;
   readonly existing: InventoryLevelRecord;
@@ -213,7 +234,7 @@ function movementQuantities(input: {
   readonly nextOnHand: number;
   readonly nextDamaged: number;
   readonly nextAvailable: number;
-  readonly averageUnitCostAmount: number;
+  readonly averageUnitCostMicros: number;
   readonly lowStockCrossed: boolean;
 } {
   const previousAvailable = input.existing.onHand - input.existing.reserved;
@@ -228,18 +249,19 @@ function movementQuantities(input: {
     nextOnHand,
     nextAvailable,
   });
-  const averageUnitCostAmount = nextAverageUnitCost({
+  const averageUnitCostMicros = nextAverageUnitCostMicros({
     existing: input.existing,
     reason: input.reason,
     onHandDelta,
     unitCost: input.unitCost,
+    ...(input.unitCostMicros === undefined ? {} : { unitCostMicros: input.unitCostMicros }),
   });
   const lowStockCrossed = didCrossLowStock({
     previousAvailable,
     nextAvailable,
     threshold: input.lowStockThreshold,
   });
-  return { nextOnHand, nextDamaged, nextAvailable, averageUnitCostAmount, lowStockCrossed };
+  return { nextOnHand, nextDamaged, nextAvailable, averageUnitCostMicros, lowStockCrossed };
 }
 
 function buildMovementRecord(input: {
@@ -256,6 +278,7 @@ function buildMovementRecord(input: {
   readonly variantId?: string;
   readonly note?: string;
   readonly unitCost: Money | undefined;
+  readonly unitCostMicros?: number;
   readonly existing: InventoryLevelRecord;
   readonly now: Date;
 }): StockMovementRecord {
@@ -264,6 +287,12 @@ function buildMovementRecord(input: {
     onHandDelta,
     existing: input.existing,
     unitCost: input.unitCost,
+  });
+  const unitCostMicros = costMicrosOnMovement({
+    onHandDelta,
+    existing: input.existing,
+    unitCost: input.unitCost,
+    ...(input.unitCostMicros === undefined ? {} : { unitCostMicros: input.unitCostMicros }),
   });
   return buildStockMovementDocument({
     organizationId: input.organizationId,
@@ -282,5 +311,6 @@ function buildMovementRecord(input: {
     ...(input.note === undefined ? {} : { note: input.note }),
     now: input.now,
     outgoingUnitCost,
+    ...(unitCostMicros === undefined ? {} : { unitCostMicros }),
   });
 }

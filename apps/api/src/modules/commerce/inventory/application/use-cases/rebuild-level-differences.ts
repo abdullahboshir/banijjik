@@ -16,7 +16,7 @@ function fieldDifferences(
   const compare = [
     ["onHand", expected.onHand, actual?.onHand ?? 0],
     ["damaged", expected.damaged, actual?.damaged ?? 0],
-    ["averageUnitCostAmount", expected.averageUnitCostAmount, actual?.averageUnitCostAmount ?? 0],
+    ["averageUnitCostMicros", expected.averageUnitCostMicros, actual?.averageUnitCostMicros ?? 0],
   ] as const;
   const differences: LevelDifference[] = [];
   for (const [field, exp, act] of compare) {

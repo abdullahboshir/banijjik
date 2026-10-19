@@ -73,7 +73,7 @@ export interface InventoryLevelRepository {
         onHand: number;
         reserved: number;
         damaged: number;
-        averageUnitCostAmount: number;
+        averageUnitCostMicros: number;
         averageUnitCostCurrency: string;
       }
     >

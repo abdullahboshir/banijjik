@@ -3,6 +3,7 @@ import { INVENTORY_EVENT_TYPE, STOCK_MOVEMENT_REASON } from "@banijjik/contracts
 import type { Money } from "@banijjik/contracts/catalog";
 import { newId, type InventoryItemId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { AppError } from "../../../../../kernel/http/index.js";
+import { microsToMinor } from "../../domain/money-math.js";
 import type { InventoryDependencies } from "../inventory-dependencies.js";
 import { stockOrderingKey } from "../stock-ordering-key.js";
 import {
@@ -19,6 +20,7 @@ type PreparedTransferLine = {
   readonly item: Awaited<ReturnType<typeof loadStockLineItem>>["item"];
   readonly threshold: number;
   readonly unitCost: Money;
+  readonly unitCostMicros: number;
 };
 
 async function loadTransferLine(input: {
@@ -38,11 +40,12 @@ async function loadTransferLine(input: {
     locationId: input.fromLocationId,
     inventoryItemId: input.line.inventoryItemId,
   });
+  const unitCostMicros = fromLevel?.averageUnitCostMicros ?? 0;
   const unitCost = {
-    amount: fromLevel?.averageUnitCostAmount ?? 0,
+    amount: microsToMinor(unitCostMicros),
     currency: (fromLevel?.averageUnitCostCurrency ?? input.currency) as Money["currency"],
   };
-  return { line: input.line, item, threshold, unitCost };
+  return { line: input.line, item, threshold, unitCost, unitCostMicros };
 }
 
 export class TransferStockUseCase {
@@ -179,6 +182,7 @@ async function applyTransferLine(input: {
     locationId: input.input.fromLocationId,
     quantityDelta: -input.row.line.quantity,
     reason: STOCK_MOVEMENT_REASON.TRANSFER_OUT,
+    unitCostMicros: input.row.unitCostMicros,
   });
   await input.deps.stockLedger.applyMovement({
     ...movementBase,
@@ -186,5 +190,6 @@ async function applyTransferLine(input: {
     quantityDelta: input.row.line.quantity,
     reason: STOCK_MOVEMENT_REASON.TRANSFER_IN,
     unitCost: input.row.unitCost,
+    unitCostMicros: input.row.unitCostMicros,
   });
 }
