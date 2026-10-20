@@ -54,17 +54,19 @@ Implemented the core credit module infrastructure including contracts, validatio
 
 ## Known Issues / Type Errors
 
-The current code has type errors that need fixing:
+After commit `3e16524`, the following type errors remain (from latest typecheck):
 
-1. **Domain entity exports:** CreditPack, CreditEntry, CreditBalance, ListingUnlock are not exported from domain files
-2. **Kernel imports:** Some infrastructure files import kernel modules incorrectly (should use `../../../kernel/...`)
-3. **Contracts exports:** `CREDIT_SETTING_KEY`, `CREDIT_ERROR_CODE`, `CREDIT_EVENT_TYPE` may not be exported correctly
-4. **Settings spec:** Integer settings need `min` and `max` properties in the spec
-5. **Event type:** `LISTING_UNLOCKED` vs `UNLOCK_CREATED` naming mismatch
-6. **Mongo models:** Models need proper registration with the kernel model registry
-7. **Rate limit options:** API for rate limiting may have changed
-8. **Router adapters:** Directory storefront adapters missing `unlockReader` property
-9. **Validation schemas:** Need to properly export types from use case files
+1. **CustomerAccountId branding:** Many places still use `string` instead of branded `CustomerAccountId` type
+2. **CreditEntry structure:** Missing `fromPurchaseEntryId` field in contract vs schema mismatch
+3. **OrganizationId context:** `getRequestContext().organizationId` can be undefined in some repository methods
+4. **UnlockListItem mapping:** `GetMyUnlocksUseCase` returns `ListingUnlock[]` but should return `UnlockListItem[]` (needs listingNumber, customFields)
+5. **Model context:** Repository `models()` calls need proper context with non-undefined organizationId
+6. **Unlock input:** Router passes `listingNumber` but use case expects `listingId` - need conversion
+7. **Event types:** Manifest event types are strings but should be `EventType` enum
+8. **Module manifest storefrontSections:** Type mismatch - expects string not object
+9. **Missing directory index:** Directory module index doesn't export ports properly
+10. **AdjustCreditsUseCase:** Missing `approvalToken` field in input structure
+11. **Mongo document mapping:** Document mapping methods have type issues with organizationId being optional
 
 ## Remaining Work (Plan Requirements)
 
@@ -142,18 +144,23 @@ The current code has type errors that need fixing:
 5. `fd3f193` - Add system role grants for credit permissions
 6. `928d7b2` - Simplify unlock use case to accept listing data directly
 7. `2b9c0e3` - Add credit module to module class and validation
+8. `3e16524` - Fix credit module domain exports and repository model usage
 
 ## Next Steps for Next Session
 
-1. Fix type errors systematically (domain exports, kernel imports, contracts exports)
-2. Wire listing repository into unlock use case
-3. Wire settings reader for configuration values
-4. Add approval token verification
-5. Complete the test suite per plan
-6. Build admin UI
-7. Add i18n keys
-8. Write ADR-130 and update docs
-9. Full verification and handoff
+1. Fix remaining type errors (CustomerAccountId branding, organizationId context, event types)
+2. Fix UnlockListItem mapping to include listingNumber and customFields
+3. Fix model context usage in repositories (non-undefined organizationId)
+4. Fix unlock router to convert listingNumber to listingId
+5. Fix module manifest storefrontSections type
+6. Wire listing repository into unlock use case
+7. Wire settings reader for configuration values
+8. Add approval token verification
+9. Complete the test suite per plan
+10. Build admin UI
+11. Add i18n keys
+12. Write ADR-130 and update docs
+13. Full verification and handoff
 
 ## Notes
 
