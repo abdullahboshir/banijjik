@@ -32,3 +32,8 @@
   2. Mandatory **T1 REVIEW** (Opus) before merge.
   3. Stash `wip-unrelated-accounting-pricing-not-m2` may still exist; validation subpath pieces were applied into this branch.
 - **Next suggested card / pair:** M.2 REVIEW → merge; then M.3 (admin moderation)
+
+## T1 review · 2026-10-20 · Opus 5.5 (Claude)
+- **Result: PASS** (review 1 findings fixed by the implementer: index files within limits through subpaths, full verify).
+- Merged together with 3.8c, 3.4, 3.3 and M.2: the reviewer rebased the four branches into one line and fixed the integration (one router layout kept from 3.8c, duplicate tenant-router files removed, pricing and accounting validation schemas moved to subpaths so the root index stays within 300 lines, fixture types in two new tests, merged menu and settings-topic expectations). Uncommitted Cursor work was committed by the reviewer.
+- Verify on the combined branch: lint and format:check clean; turbo build/typecheck/test --force 29/29 (api 1905 + 1 skipped, admin 507, validation 244, ui 230, platform 123, web-client 97, contracts 74, i18n 24, ids 14, lint-tests 274); test:tools 274; admin browser 89 passed + the settings file rerun after the topic fix (12 passed); platform browser 16 passed / 2 skipped.
