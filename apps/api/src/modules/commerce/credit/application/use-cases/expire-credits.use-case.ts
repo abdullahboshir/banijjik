@@ -1,12 +1,12 @@
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
-import { newId } from "@banijjik/ids";
+import { newId, type CustomerAccountId } from "@banijjik/ids";
 
 export class ExpireCreditsUseCase {
   constructor(private readonly deps: CreditDependencies) {}
 
   async execute(): Promise<void> {
-    const today = this.deps.clock.now().toISOString().split("T")[0];
+    const today = this.deps.clock.now().toISOString().split("T")[0] ?? "";
     const expiredPurchases = await this.findExpiredPurchases(today);
 
     for (const { creditEntryId, customerAccountId } of expiredPurchases) {
@@ -24,11 +24,17 @@ export class ExpireCreditsUseCase {
 
   private async findExpiredPurchases(
     today: string,
-  ): Promise<readonly { creditEntryId: string; customerAccountId: string }[]> {
-    const entries = await this.deps.credit.listEntries("", { limit: 1000, offset: 0 });
+  ): Promise<readonly { creditEntryId: string; customerAccountId: CustomerAccountId }[]> {
+    const entries = await this.deps.credit.listEntries("" as CustomerAccountId, {
+      limit: 1000,
+      offset: 0,
+    });
     return entries
       .filter((e) => e.type === CREDIT_ENTRY_TYPE.PURCHASE && e.expiresOn && e.expiresOn < today)
-      .map((e) => ({ creditEntryId: e.creditEntryId, customerAccountId: e.customerAccountId }));
+      .map((e) => ({
+        creditEntryId: e.creditEntryId,
+        customerAccountId: e.customerAccountId as CustomerAccountId,
+      }));
   }
 
   private async calculateUnusedCredits(purchaseEntryId: string): Promise<number> {
@@ -40,7 +46,10 @@ export class ExpireCreditsUseCase {
   }
 
   private async findSpendsAttributedTo(purchaseEntryId: string): Promise<number> {
-    const entries = await this.deps.credit.listEntries("", { limit: 1000, offset: 0 });
+    const entries = await this.deps.credit.listEntries("" as CustomerAccountId, {
+      limit: 1000,
+      offset: 0,
+    });
     return entries
       .filter(
         (e) => e.type === CREDIT_ENTRY_TYPE.SPEND && e.fromPurchaseEntryId === purchaseEntryId,
@@ -49,7 +58,7 @@ export class ExpireCreditsUseCase {
   }
 
   private async createExpiryEntry(input: {
-    customerAccountId: string;
+    customerAccountId: CustomerAccountId;
     credits: number;
     fromPurchaseEntryId: string;
     businessDate: string;

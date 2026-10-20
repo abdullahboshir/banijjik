@@ -9,7 +9,7 @@ import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credi
 import type { CustomerAccountId, ListingId } from "@banijjik/ids";
 
 export interface UnlockListingInput {
-  readonly listingId: ListingId;
+  readonly listingNumber: string;
   readonly customerAccountId: CustomerAccountId;
   readonly ownerCustomerAccountId: CustomerAccountId;
   readonly idempotencyKey: string;
@@ -31,7 +31,7 @@ export class UnlockListingUseCase {
 
     const existingUnlock = await this.deps.unlocks.findExisting(
       input.customerAccountId,
-      input.listingId,
+      input.listingNumber as ListingId,
     );
     if (existingUnlock) {
       return this.idempotentResponse(existingUnlock, input.customerAccountId);
@@ -43,7 +43,7 @@ export class UnlockListingUseCase {
 
     return this.performUnlock({
       customerAccountId: input.customerAccountId,
-      listingId: input.listingId,
+      listingId: input.listingNumber as ListingId,
       unlockCost,
     });
   }
@@ -145,10 +145,10 @@ export class UnlockListingUseCase {
   }): {
     creditEntryId: string;
     customerAccountId: CustomerAccountId;
-    type: string;
+    type: "PURCHASE" | "SPEND" | "REFUND" | "EXPIRE" | "ADJUST";
     credits: number;
     expiresOn: string | null;
-    source: { sourceType: string; sourceId: string };
+    source: { sourceType: "PAYMENT" | "UNLOCK" | "ADJUSTMENT" | "EXPIRY_JOB"; sourceId: string };
     fromPurchaseEntryId: string | null;
     reason: string | null;
     createdByUserId: string | null;
@@ -156,7 +156,7 @@ export class UnlockListingUseCase {
     businessDate: string;
     createdAt: Date;
   } {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0] ?? "";
     const creditEntryId = newId();
     return {
       creditEntryId,

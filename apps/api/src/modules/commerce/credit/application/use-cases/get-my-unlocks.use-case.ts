@@ -1,5 +1,5 @@
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
-import type { UnlockListItem } from "@banijjik/contracts/credit";
+import type { ListingUnlock } from "@banijjik/contracts/credit";
 import type { CustomerAccountId } from "@banijjik/ids";
 
 export class GetMyUnlocksUseCase {
@@ -8,7 +8,7 @@ export class GetMyUnlocksUseCase {
   async execute(
     customerAccountId: CustomerAccountId,
     options: { limit: number; offset: number },
-  ): Promise<readonly UnlockListItem[]> {
+  ): Promise<readonly ListingUnlock[]> {
     return this.deps.unlocks.listByCustomer(customerAccountId, options);
   }
 }

@@ -26,5 +26,6 @@ export function buildDirectoryAdapters(input: {
     settings: directorySettingsFromResolver(settingsResolver),
     template: buildDirectoryBlockReader(),
     phones: buildCustomerPhoneReader(),
+    unlockReader: null,
   };
 }

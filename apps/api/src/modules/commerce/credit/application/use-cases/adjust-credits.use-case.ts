@@ -1,10 +1,10 @@
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
-import { newId } from "@banijjik/ids";
+import { newId, type CustomerAccountId } from "@banijjik/ids";
 import { getRequestContext } from "../../../../kernel/context/index.js";
 
 export interface AdjustCreditsInput {
-  readonly customerAccountId: string;
+  readonly customerAccountId: CustomerAccountId;
   readonly credits: number;
   readonly reason: string;
   readonly actorUserId: string | null;
@@ -26,7 +26,7 @@ export class AdjustCreditsUseCase {
       }
 
       const creditEntryId = newId();
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toISOString().split("T")[0] ?? "";
       const entry = {
         creditEntryId,
         customerAccountId: input.customerAccountId,
@@ -50,8 +50,9 @@ export class AdjustCreditsUseCase {
         delta: input.credits,
       });
 
+      const context = getRequestContext();
       await this.deps.audit.record({
-        organizationId: getRequestContext().organizationId,
+        organizationId: context.organizationId,
         action: "CREDIT_ADJUST",
         entityType: "CreditBalance",
         entityId: input.customerAccountId,

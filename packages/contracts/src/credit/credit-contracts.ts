@@ -62,6 +62,7 @@ export interface CreditEntry {
     readonly sourceType: CreditSourceType;
     readonly sourceId: string;
   };
+  readonly fromPurchaseEntryId: string | null;
   readonly reason: string | null;
   readonly createdByUserId: string | null;
   readonly occurredAt: string;

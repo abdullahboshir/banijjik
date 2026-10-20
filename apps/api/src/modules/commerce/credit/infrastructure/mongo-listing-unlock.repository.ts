@@ -5,11 +5,19 @@ import type { ListingUnlockRepository } from "../application/ports/listing-unloc
 import type { ListingUnlock } from "../../domain/index.js";
 import { LISTING_UNLOCK_MODEL_NAME, type ListingUnlockDocument } from "./listing-unlock.schema.js";
 
+function getOrganizationId(): string {
+  const context = getRequestContext();
+  if (!context.organizationId) {
+    throw new Error("Organization context required");
+  }
+  return context.organizationId;
+}
+
 export class MongoListingUnlockRepository implements ListingUnlockRepository {
   async insert(unlock: ListingUnlock): Promise<void> {
-    const Model = models({
-      organizationId: getRequestContext().organizationId,
-    }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
+    const Model = models({ organizationId: getOrganizationId() }).get<ListingUnlockDocument>(
+      LISTING_UNLOCK_MODEL_NAME,
+    );
     await Model.create([this.toDocument(unlock)], sessionOption(getActiveSession()));
   }
 
@@ -17,7 +25,7 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
     customerAccountId: CustomerAccountId,
     listingId: ListingId,
   ): Promise<ListingUnlock | null> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
     const doc = await Model.findOne({ organizationId, customerAccountId, listingId });
     return doc ? this.fromDocument(doc) : null;
@@ -27,7 +35,7 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
     customerAccountId: CustomerAccountId,
     listingId: ListingId,
   ): Promise<ListingUnlock | null> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
     const doc = await Model.findOne({ organizationId, customerAccountId, listingId });
     return doc ? this.fromDocument(doc) : null;
@@ -37,7 +45,7 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
     customerAccountId: CustomerAccountId,
     options: { limit: number; offset: number },
   ): Promise<readonly ListingUnlock[]> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
     const docs = await Model.find({ organizationId, customerAccountId })
       .sort({ unlockedAt: -1 })
@@ -47,13 +55,13 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
   }
 
   async countByListing(listingId: ListingId): Promise<number> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
     return Model.countDocuments({ organizationId, listingId });
   }
 
   async countByCustomerToday(customerAccountId: CustomerAccountId, today: string): Promise<number> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
     const startOfDay = new Date(today);
     const endOfDay = new Date(today);
@@ -66,7 +74,7 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
   }
 
   private toDocument(unlock: ListingUnlock): ListingUnlockDocument {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     return {
       listingUnlockId: unlock.listingUnlockId,
       organizationId,

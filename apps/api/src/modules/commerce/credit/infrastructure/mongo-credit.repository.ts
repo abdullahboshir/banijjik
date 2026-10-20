@@ -9,11 +9,19 @@ import type { CreditEntry, CreditBalance } from "../../domain/index.js";
 import { CREDIT_ENTRY_MODEL_NAME, type CreditEntryDocument } from "./credit-entry.schema.js";
 import { CREDIT_BALANCE_MODEL_NAME, type CreditBalanceDocument } from "./credit-balance.schema.js";
 
+function getOrganizationId(): string {
+  const context = getRequestContext();
+  if (!context.organizationId) {
+    throw new Error("Organization context required");
+  }
+  return context.organizationId;
+}
+
 export class MongoCreditRepository implements CreditRepository {
   async insertEntry(entry: CreditEntry): Promise<void> {
-    const Model = models({
-      organizationId: getRequestContext().organizationId,
-    }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
+    const Model = models({ organizationId: getOrganizationId() }).get<CreditEntryDocument>(
+      CREDIT_ENTRY_MODEL_NAME,
+    );
     await Model.create([this.entryToDocument(entry)], sessionOption(getActiveSession()));
   }
 
@@ -21,7 +29,7 @@ export class MongoCreditRepository implements CreditRepository {
     customerAccountId: CustomerAccountId,
     options: { limit: number; offset: number },
   ): Promise<readonly CreditEntry[]> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
     const docs = await Model.find({ organizationId, customerAccountId })
       .sort({ occurredAt: -1 })
@@ -31,21 +39,21 @@ export class MongoCreditRepository implements CreditRepository {
   }
 
   async getBalance(customerAccountId: CustomerAccountId): Promise<CreditBalance | null> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
     const doc = await Model.findOne({ organizationId, customerAccountId });
     return doc ? this.balanceFromDocument(doc) : null;
   }
 
   async insertBalance(balance: CreditBalance): Promise<void> {
-    const Model = models({
-      organizationId: getRequestContext().organizationId,
-    }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
+    const Model = models({ organizationId: getOrganizationId() }).get<CreditBalanceDocument>(
+      CREDIT_BALANCE_MODEL_NAME,
+    );
     await Model.create([this.balanceToDocument(balance)], sessionOption(getActiveSession()));
   }
 
   async updateBalance(input: UpdateBalanceInput): Promise<CreditBalance> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
     const doc = await Model.findOneAndUpdate(
       {
@@ -69,7 +77,7 @@ export class MongoCreditRepository implements CreditRepository {
   }
 
   async findPurchaseEntry(purchaseEntryId: string): Promise<CreditEntry | null> {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
     const doc = await Model.findOne({
       organizationId,
@@ -79,7 +87,7 @@ export class MongoCreditRepository implements CreditRepository {
   }
 
   private entryToDocument(entry: CreditEntry): CreditEntryDocument {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     return {
       creditEntryId: entry.creditEntryId,
       organizationId,
@@ -88,7 +96,7 @@ export class MongoCreditRepository implements CreditRepository {
       credits: entry.credits,
       expiresOn: entry.expiresOn ? new Date(entry.expiresOn) : null,
       source: entry.source,
-      fromPurchaseEntryId: null,
+      fromPurchaseEntryId: entry.fromPurchaseEntryId,
       reason: entry.reason,
       createdByUserId: entry.createdByUserId,
       occurredAt: new Date(entry.occurredAt),
@@ -105,6 +113,7 @@ export class MongoCreditRepository implements CreditRepository {
       credits: doc.credits,
       expiresOn: doc.expiresOn?.toISOString() ?? null,
       source: doc.source,
+      fromPurchaseEntryId: doc.fromPurchaseEntryId,
       reason: doc.reason,
       createdByUserId: doc.createdByUserId,
       occurredAt: doc.occurredAt.toISOString(),
@@ -114,7 +123,7 @@ export class MongoCreditRepository implements CreditRepository {
   }
 
   private balanceToDocument(balance: CreditBalance): CreditBalanceDocument {
-    const organizationId = getRequestContext().organizationId;
+    const organizationId = getOrganizationId();
     return {
       customerAccountId: balance.customerAccountId,
       organizationId,

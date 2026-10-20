@@ -69,16 +69,7 @@ export const creditManifest = defineModule({
   ],
   customFieldEntities: [],
   botTools: [],
-  storefrontSections: [
-    {
-      sectionKey: "credit-packs",
-      surface: SURFACE.STOREFRONT,
-      position: "sidebar",
-      labelTermKey: "storefront.credit.packs",
-      iconKey: "coins",
-      path: "/credit-packs",
-    },
-  ],
+  storefrontSections: ["credit-packs"],
   events: {
     emits: [CREDIT_EVENT_TYPE.CREDIT_ENTRY_CREATED, CREDIT_EVENT_TYPE.UNLOCK_CREATED],
     consumes: [],
