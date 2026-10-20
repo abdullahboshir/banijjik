@@ -38,10 +38,13 @@ function mountUnlockRoute(router: Router, input: CreditStorefrontRouterDependenc
       keyOf: () => requireCurrentCustomerAccountId(),
     }),
     async (request, response) => {
+      const listingNumber = Array.isArray(request.params.listingNumber)
+        ? request.params.listingNumber[0]
+        : request.params.listingNumber;
       sendData(
         response,
         await input.unlockListing.execute({
-          listingNumber: request.params.listingNumber,
+          listingNumber,
           customerAccountId: requireCurrentCustomerAccountId(),
           idempotencyKey: request.body.idempotencyKey,
         }),

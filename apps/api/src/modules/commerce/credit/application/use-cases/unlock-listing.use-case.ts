@@ -152,12 +152,13 @@ export class UnlockListingUseCase {
     fromPurchaseEntryId: string | null;
     reason: string | null;
     createdByUserId: string | null;
-    occurredAt: Date;
+    occurredAt: string;
     businessDate: string;
-    createdAt: Date;
+    createdAt: string;
   } {
     const today = new Date().toISOString().split("T")[0] ?? "";
     const creditEntryId = newId();
+    const now = this.deps.clock.now();
     return {
       creditEntryId,
       customerAccountId: input.customerAccountId,
@@ -168,9 +169,9 @@ export class UnlockListingUseCase {
       fromPurchaseEntryId: null,
       reason: null,
       createdByUserId: null,
-      occurredAt: this.deps.clock.now(),
+      occurredAt: now.toISOString(),
       businessDate: today,
-      createdAt: this.deps.clock.now(),
+      createdAt: now.toISOString(),
     };
   }
 
@@ -186,17 +187,18 @@ export class UnlockListingUseCase {
     customerAccountId: CustomerAccountId;
     listingId: ListingId;
     creditEntryId: string;
-    unlockedAt: Date;
-    createdAt: Date;
+    unlockedAt: string;
+    createdAt: string;
   } {
     const listingUnlockId = newId();
+    const now = this.deps.clock.now();
     return {
       listingUnlockId,
       customerAccountId: input.customerAccountId,
       listingId: input.listingId,
       creditEntryId,
-      unlockedAt: this.deps.clock.now(),
-      createdAt: this.deps.clock.now(),
+      unlockedAt: now.toISOString(),
+      createdAt: now.toISOString(),
     };
   }
 

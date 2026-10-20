@@ -71,8 +71,8 @@ export class MongoCreditPackRepository implements CreditPackRepository {
       status: pack.status,
       sortOrder: pack.sortOrder,
       version: pack.version,
-      createdAt: pack.createdAt,
-      updatedAt: pack.updatedAt,
+      createdAt: new Date(pack.createdAt),
+      updatedAt: new Date(pack.updatedAt),
       createdByUserId: null,
       updatedByUserId: null,
     };
@@ -84,13 +84,13 @@ export class MongoCreditPackRepository implements CreditPackRepository {
       organizationId: doc.organizationId as OrganizationId,
       name: doc.name,
       credits: doc.credits,
-      price: doc.price,
+      price: doc.price as { amount: number; currency: "BDT" },
       validityDays: doc.validityDays,
       status: doc.status,
       sortOrder: doc.sortOrder,
       version: doc.version,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
+      createdAt: doc.createdAt.toISOString(),
+      updatedAt: doc.updatedAt.toISOString(),
     };
   }
 }

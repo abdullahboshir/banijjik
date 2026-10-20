@@ -41,6 +41,7 @@ export const CREDIT_API_MESSAGE_KEY_LIST: readonly string[] =
 
 export interface CreditPack {
   readonly creditPackId: string;
+  readonly organizationId: string;
   readonly name: { readonly bn: string; readonly en: string };
   readonly credits: number;
   readonly price: Money;
