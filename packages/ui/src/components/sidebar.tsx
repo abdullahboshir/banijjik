@@ -11,6 +11,8 @@ export interface SidebarEntry {
   href: string;
   iconKey: string;
   isActive: boolean;
+  /** Optional count for a queue entry (directory review, inbox). */
+  badgeCount?: number;
 }
 
 export interface SidebarGroup {
@@ -47,6 +49,16 @@ function SidebarEntryLink({
     >
       <Icon iconKey={entry.iconKey} className="size-5 shrink-0" />
       <span className={labelClass}>{entry.label}</span>
+      {entry.badgeCount !== undefined && entry.badgeCount > 0 ? (
+        <span
+          className={cn(
+            "ms-auto inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-caption font-semibold text-on-brand",
+            isCollapsible && "lg:ms-0 xl:ms-auto",
+          )}
+        >
+          {entry.badgeCount > 99 ? "99+" : entry.badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }

@@ -7,7 +7,9 @@ template custom fields, per-field visibility tiers, staff moderation and public 
 
 - Storefront (`/api/v1/storefront/orgs/{organizationId}`): my listing CRUD/submit, public
   search and detail, listing photo upload (`LISTING_PHOTO`).
-- Tenant (`/orgs/{organizationId}/directory/…`): review queue, approve/reject/hide/unhide.
+- Tenant (`/orgs/{organizationId}/directory/…`): `GET /config` (template directory block),
+  review queue, all-listings filters, listing detail, approve/reject/hide/unhide (ADR-129).
+  Admin screens: `/{orgSlug}/directory/queue`, `/directory/listings`, `/directory/listings/{id}`.
 
 ## Privacy
 

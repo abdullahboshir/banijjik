@@ -13,6 +13,7 @@ import { AccountMenuContainer } from "./account-menu-container";
 import { bannerStatesOf } from "./banner-state";
 import { BrandLogo } from "./brand-logo";
 import { BusinessLogo } from "./business-logo";
+import { directoryQueueBadgeCount, withQueueBadge } from "./directory-queue-badge";
 import { buildMenuGroups, settingsHomeHref } from "./menu-groups";
 import { ShellNavigation } from "./shell-navigation";
 import { ShellSidebar } from "./shell-sidebar";
@@ -45,6 +46,38 @@ function MobileNavigation({
   );
 }
 
+function topBarOf(input: {
+  current: MyOrganizationSummary;
+  me: MeResponse;
+  organizations: MyOrganizationSummary[];
+  orgSlug: string;
+  t: Translator["t"];
+}): ReactElement {
+  const { current, me, organizations, orgSlug, t } = input;
+  return (
+    <TopBar
+      logo={
+        current.logoUrl ? (
+          <BusinessLogo
+            logoUrl={current.logoUrl}
+            alt={t("shell.businessLogo", { name: current.name })}
+          />
+        ) : (
+          <BrandLogo />
+        )
+      }
+      organizationName={current.name}
+      actions={
+        <AccountMenuContainer
+          userName={me.name}
+          currentOrganizationSlug={orgSlug}
+          organizations={organizations}
+        />
+      }
+    />
+  );
+}
+
 export interface OrganizationShellProps {
   orgSlug: string;
   me: MeResponse;
@@ -69,28 +102,7 @@ export async function OrganizationShell(props: OrganizationShellProps): Promise<
   const { t, locale } = await getTranslator();
   const current = organizations.find((organization) => organization.slug === orgSlug);
   if (!current) notFound();
-  const topBar = (
-    <TopBar
-      logo={
-        current.logoUrl ? (
-          <BusinessLogo
-            logoUrl={current.logoUrl}
-            alt={t("shell.businessLogo", { name: current.name })}
-          />
-        ) : (
-          <BrandLogo />
-        )
-      }
-      organizationName={current.name}
-      actions={
-        <AccountMenuContainer
-          userName={me.name}
-          currentOrganizationSlug={orgSlug}
-          organizations={organizations}
-        />
-      }
-    />
-  );
+  const topBar = topBarOf({ current, me, organizations, orgSlug, t });
   if (current.status === ORGANIZATION_STATUS.SUSPENDED) {
     return (
       <AppShell hasSidebar={false} topBar={topBar} sidebar={null} bottomNav={null}>
@@ -98,14 +110,16 @@ export async function OrganizationShell(props: OrganizationShellProps): Promise<
       </AppShell>
     );
   }
-  const menuGroups = buildMenuGroups({
-    menu: config?.menu ?? [],
-    orgSlug,
-    terms: config?.terms ?? {},
-    // The language the page is drawn in, so the menu words agree with the text beside them (ADR-055).
-    locale,
-    t,
-  });
+  const menuGroups = withQueueBadge(
+    buildMenuGroups({
+      menu: config?.menu ?? [],
+      orgSlug,
+      terms: config?.terms ?? {},
+      locale,
+      t,
+    }),
+    await directoryQueueBadgeCount(current.organizationId, config?.menu),
+  );
   const banners = config ? bannerStatesOf(config, new Date(), props.timeZone ?? UTC) : [];
   return (
     <AppShell
