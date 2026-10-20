@@ -205,3 +205,20 @@ export function buildDirectoryBlockReader(): {
     },
   };
 }
+
+/** Template `configuration.resourceTypes` keys for the active organization (card 3.6). */
+export function buildResourceTypeKeysReader(): {
+  listKeys(organizationId: import("@banijjik/ids").OrganizationId): Promise<readonly string[]>;
+} {
+  const organizations = buildOrganizationConfigSource();
+  const templates = new MongoIndustryTemplateRepository();
+  return {
+    async listKeys(organizationId) {
+      const snapshot = await organizations.find(organizationId);
+      if (snapshot === undefined) return [];
+      const template = await templates.findByKey(snapshot.industryTemplateKey);
+      if (template === undefined) return [];
+      return template.configuration.resourceTypes.map((row) => row.resourceTypeKey);
+    },
+  };
+}

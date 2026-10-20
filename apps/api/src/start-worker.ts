@@ -4,10 +4,20 @@ import { createCloseDatabasesTask, type DatabaseConnections } from "./kernel/db/
 import { eventHandlerRegistry, startEventProcessing } from "./kernel/events/index.js";
 import type { ShutdownTask } from "./kernel/lifecycle/shutdown.js";
 import { createCloseRedisTask, createQueueRedisClient } from "./kernel/redis/index.js";
+import { registerBookingScheduledJobs } from "./modules/commerce/booking/index.js";
+import { startScheduledJobs } from "./kernel/jobs/index.js";
 import { registerAccountingAndExpenseHandlers } from "./routes/accounting-event-handlers.js";
 import { registerContactHandlers } from "./routes/contact-event-handlers.js";
 import { buildEventModuleEffectiveness } from "./routes/module-effectiveness.js";
+import { buildModuleRegistry } from "./routes/module-registry.js";
 import { systemClock } from "./kernel/time/index.js";
+import { buildOrgConfigService } from "./modules/platform/entitlement/index.js";
+import {
+  buildOrganizationConfigPorts,
+  buildResolvedConfigSources,
+} from "./routes/organization-config-ports.js";
+import { buildIndustryTemplateReader } from "./modules/platform/industry/index.js";
+import type { ModuleRegistry } from "./kernel/modules/index.js";
 
 /**
  * Starts the worker role: the outbox dispatcher and the BullMQ worker (ADR-090). Returns the
@@ -23,10 +33,25 @@ export function startWorker(
   const redis = createQueueRedisClient(config.redisUrl);
   registerContactHandlers(config);
   registerAccountingAndExpenseHandlers();
+  const registry: ModuleRegistry = buildModuleRegistry();
+  const orgConfig = buildOrgConfigService({
+    registry,
+    clock: systemClock,
+    ...buildOrganizationConfigPorts(),
+    ...buildResolvedConfigSources(registry),
+    templates: buildIndustryTemplateReader(systemClock),
+  });
+  registerBookingScheduledJobs({
+    clock: systemClock,
+    orgConfig,
+    manifests: registry.all(),
+  });
+  const effectiveness = buildEventModuleEffectiveness(systemClock);
+  const scheduledJobs = startScheduledJobs({ redis, effectiveness, clock: systemClock });
   const processing = startEventProcessing({
     redis,
     registry: eventHandlerRegistry,
-    effectiveness: buildEventModuleEffectiveness(systemClock),
+    effectiveness,
     clock: systemClock,
     ...(config.outboxPollIntervalMs === undefined
       ? {}
@@ -34,6 +59,7 @@ export function startWorker(
   });
   logger.info({ event: "worker.started" }, "worker started");
   return [
+    ...scheduledJobs.shutdownTasks,
     ...processing.shutdownTasks,
     createCloseRedisTask(redis),
     createCloseDatabasesTask(connections),

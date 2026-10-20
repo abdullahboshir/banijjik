@@ -4,7 +4,6 @@ import {
   MODULE_KEY,
   OFFERING_KIND,
   type ModuleManifest,
-  type OfferingKind,
   type SystemRoleKey,
 } from "@banijjik/contracts";
 import { defineModule } from "../kernel/modules/index.js";
@@ -34,16 +33,10 @@ const EMPTY_PARTS = {
   moduleClass: MODULE_CLASS.CORE,
 } as const;
 
-function kindProvider(key: typeof MODULE_KEY.BOOKING, kind: OfferingKind): ModuleManifest {
-  return defineModule({ ...EMPTY_PARTS, key, path: `commerce/${key}`, providesKinds: [kind] });
-}
-
 /**
- * Stand-ins for the modules that sell services and plans. They do not exist yet (cards 3.6 and
- * 3.7), and the catalog only needs their kinds to be in the organization's resolved config.
- * Change the keys when the real modules arrive.
+ * Stand-in for enrollment (card 3.7). Booking's real module provides SERVICE after card 3.6;
+ * catalog tests still need PLAN until enrollment lands.
  */
-export const BOOKING_PROBE = kindProvider(MODULE_KEY.BOOKING, OFFERING_KIND.SERVICE);
 export const ENROLLMENT_PROBE = defineModule({
   ...EMPTY_PARTS,
   key: MODULE_KEY.ENROLLMENT,
@@ -51,11 +44,12 @@ export const ENROLLMENT_PROBE = defineModule({
   providesKinds: [OFFERING_KIND.PLAN],
 });
 
-export const CATALOG_PROBES: readonly ModuleManifest[] = [BOOKING_PROBE, ENROLLMENT_PROBE];
+export const CATALOG_PROBES: readonly ModuleManifest[] = [ENROLLMENT_PROBE];
 
 /**
- * The API with the two kind providers registered. An empty `tenantRouters` list is what makes the
- * harness build its own router, so the extra manifests take effect.
+ * The API with the enrollment kind provider registered. Booking is already in MODULE_MANIFESTS.
+ * An empty `tenantRouters` list is what makes the harness build its own router, so the extra
+ * manifests take effect.
  */
 export function startCatalogApi(
   options: Omit<

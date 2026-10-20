@@ -39,6 +39,7 @@ import { registerExpenseModels } from "../modules/commerce/expense/index.js";
 import { registerPricingModels } from "../modules/commerce/pricing/index.js";
 import { registerInventoryModels } from "../modules/commerce/inventory/index.js";
 import { registerDirectoryModels } from "../modules/commerce/directory/index.js";
+import { registerBookingModels } from "../modules/commerce/booking/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
@@ -116,6 +117,7 @@ export function registerModuleModels(): void {
   registerPricingModels();
   registerInventoryModels();
   registerDirectoryModels();
+  registerBookingModels();
   registerSettingsModels();
   registerFileModels();
 }

@@ -1,5 +1,4 @@
 import {
-  MODULE_CLASS,
   MODULE_KEY,
   ORGANIZATION_EVENT_TYPE,
   PLATFORM_AUDIT_ACTION,
@@ -7,7 +6,6 @@ import {
 } from "@banijjik/contracts";
 import type { Response } from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { defineModule } from "../../../kernel/modules/index.js";
 import { asCookies, callApi } from "../../../test-support/auth-api-client.js";
 import { registerViaApi } from "../../../test-support/auth-api-scenarios.js";
 import {
@@ -20,27 +18,6 @@ import { createPlatformActor, type PlatformActor } from "../../../test-support/p
 import { loadSeedIndustryTemplates } from "./infrastructure/load-seed-templates.js";
 
 registerIamApiModels();
-
-/** CORE booking, so /me/config can show it once a template allows it. */
-const BOOKING_PROBE = defineModule({
-  key: MODULE_KEY.BOOKING,
-  path: "capability/booking",
-  moduleClass: MODULE_CLASS.CORE,
-  dependsOn: [],
-  providesKinds: [],
-  requiresAnyKind: [],
-  tenantCanDisable: false,
-  permissions: [],
-  routes: { admin: ["/orgs/:organizationId/bookings"] },
-  menu: [],
-  settings: [],
-  customFieldEntities: [],
-  botTools: [],
-  storefrontSections: [],
-  events: { emits: [], consumes: [] },
-  limitKeys: [],
-  sequenceKeys: [],
-});
 
 const RETAIL_MODULES = [
   "accounting",
@@ -94,7 +71,8 @@ let harness: IamApiHarness;
 let operator: PlatformActor;
 
 beforeAll(async () => {
-  harness = await startIamApi({ tenantRouters: [], extraManifests: [BOOKING_PROBE] });
+  // Real bookingManifest (CORE) is already in MODULE_MANIFESTS after card 3.6.
+  harness = await startIamApi({ tenantRouters: [] });
   operator = await createPlatformActor(harness.app, harness.connections, [
     PLATFORM_ROLE.SUPER_ADMIN,
   ]);

@@ -29,6 +29,7 @@ import { buildExpenseTenantRouter } from "./expense-tenant-router.js";
 import { buildPricingTenantRouter } from "./pricing-tenant-router.js";
 import { buildInventoryTenantRouter } from "./inventory-tenant-router.js";
 import { buildDirectoryTenantRouter } from "./directory-tenant-router.js";
+import { buildBookingTenantRouter } from "./booking-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -59,6 +60,7 @@ export interface CoreTenantRouters {
   readonly pricingRouter: Router;
   readonly inventoryRouter: Router;
   readonly directoryRouter: Router;
+  readonly bookingRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -118,6 +120,7 @@ function buildCommerceTenantRouters(
   | "directoryRouter"
   | "accountingRouter"
   | "expenseRouter"
+  | "bookingRouter"
 > {
   const shared = {
     clock: input.clock,
@@ -143,6 +146,15 @@ function buildCommerceTenantRouters(
       clock: input.clock,
       audit: input.audit,
       permission: input.permission,
+      idempotency: input.idempotency,
+      orgConfig: input.orgConfig,
+      manifests: input.manifests,
+    }),
+    bookingRouter: buildBookingTenantRouter({
+      clock: input.clock,
+      audit: input.audit,
+      permission: input.permission,
+      permissions: input.permissions,
       idempotency: input.idempotency,
       orgConfig: input.orgConfig,
       manifests: input.manifests,

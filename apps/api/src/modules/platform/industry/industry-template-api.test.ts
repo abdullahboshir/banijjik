@@ -1,5 +1,4 @@
 import {
-  MODULE_CLASS,
   MODULE_KEY,
   MODULE_OVERRIDE_EFFECT,
   PACKAGE_KEY,
@@ -8,7 +7,6 @@ import {
 } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { defineModule } from "../../../kernel/modules/index.js";
 import { IndustryTemplate } from "./domain/industry-template.entity.js";
 import { loadSeedIndustryTemplates } from "./infrastructure/load-seed-templates.js";
 import { MongoIndustryTemplateRepository } from "./infrastructure/mongo-industry-template.repository.js";
@@ -27,27 +25,6 @@ import {
 } from "../../../test-support/platform-world.js";
 
 registerIamApiModels();
-
-/** CORE booking, so a template that does not list it must drop it even when a grant or package names it. */
-const BOOKING_PROBE = defineModule({
-  key: MODULE_KEY.BOOKING,
-  path: "capability/booking",
-  moduleClass: MODULE_CLASS.CORE,
-  dependsOn: [],
-  providesKinds: [],
-  requiresAnyKind: [],
-  tenantCanDisable: false,
-  permissions: [],
-  routes: { admin: ["/orgs/:organizationId/bookings"] },
-  menu: [],
-  settings: [],
-  customFieldEntities: [],
-  botTools: [],
-  storefrontSections: [],
-  events: { emits: [], consumes: [] },
-  limitKeys: [],
-  sequenceKeys: [],
-});
 
 const RETAIL_MODULES = [
   "accounting",
@@ -85,7 +62,8 @@ let harness: IamApiHarness;
 let issuedSlugs = 0;
 
 beforeAll(async () => {
-  harness = await startIamApi({ tenantRouters: [], extraManifests: [BOOKING_PROBE] });
+  // Real bookingManifest (CORE) is already in MODULE_MANIFESTS after card 3.6.
+  harness = await startIamApi({ tenantRouters: [] });
   await insertRetiredTemplate();
 });
 

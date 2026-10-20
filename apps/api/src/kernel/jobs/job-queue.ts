@@ -89,15 +89,11 @@ async function upsertRepeatables(
   jobs: readonly ScheduledJob[],
 ): Promise<void> {
   for (const job of jobs) {
-    await queue.add(
-      job.jobKey,
-      { jobKey: job.jobKey },
-      {
-        repeat: { every: job.everyMinutes * 60_000 },
-        jobId: job.jobKey,
-        removeOnComplete: 100,
-        removeOnFail: 100,
-      },
-    );
+    await queue.add(job.jobKey, { jobKey: job.jobKey }, {
+      repeat: { every: job.everyMinutes * 60_000 },
+      jobId: job.jobKey,
+      removeOnComplete: 100,
+      removeOnFail: 100,
+    } as import("bullmq").JobsOptions);
   }
 }
