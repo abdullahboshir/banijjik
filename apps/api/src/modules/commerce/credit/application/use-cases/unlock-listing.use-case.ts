@@ -11,13 +11,9 @@ import { ListingUnlockEntity } from "../../domain/listing-unlock.entity.js";
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
 
 export interface UnlockListingInput {
-  readonly organizationId: string;
-  readonly customerAccountId: string;
   readonly listingId: string;
-  readonly listingNumber: string;
+  readonly customerAccountId: string;
   readonly ownerCustomerAccountId: string;
-  readonly unlockCost: number;
-  readonly unlockLimitPerDay: number;
   readonly idempotencyKey: string;
 }
 
@@ -33,7 +29,7 @@ export class UnlockListingUseCase {
   constructor(private readonly deps: CreditDependencies) {}
 
   async execute(input: UnlockListingInput): Promise<UnlockListingOutput> {
-    this.validateNotOwnListing(input);
+    this.validateNotOwnListing(input.customerAccountId, input.ownerCustomerAccountId);
 
     const existingUnlock = await this.deps.unlocks.findExisting(
       input.customerAccountId,
@@ -43,13 +39,19 @@ export class UnlockListingUseCase {
       return this.idempotentResponse(existingUnlock, input.customerAccountId);
     }
 
-    await this.validateDailyLimit(input);
+    const unlockCost = 1;
+    const dailyLimit = 20;
+    await this.validateDailyLimit(input.customerAccountId, dailyLimit);
 
-    return this.performUnlock(input);
+    return this.performUnlock({
+      customerAccountId: input.customerAccountId,
+      listingId: input.listingId,
+      unlockCost,
+    });
   }
 
-  private validateNotOwnListing(input: UnlockListingInput): void {
-    if (input.customerAccountId === input.ownerCustomerAccountId) {
+  private validateNotOwnListing(customerAccountId: string, ownerCustomerAccountId: string): void {
+    if (customerAccountId === ownerCustomerAccountId) {
       throw new CannotUnlockOwnListingError();
     }
   }
@@ -67,15 +69,19 @@ export class UnlockListingUseCase {
     };
   }
 
-  private async validateDailyLimit(input: UnlockListingInput): Promise<void> {
+  private async validateDailyLimit(customerAccountId: string, dailyLimit: number): Promise<void> {
     const today = new Date().toISOString().split("T")[0];
-    const todayCount = await this.deps.unlocks.countByCustomerToday(input.customerAccountId, today);
-    if (todayCount >= input.unlockLimitPerDay) {
+    const todayCount = await this.deps.unlocks.countByCustomerToday(customerAccountId, today);
+    if (todayCount >= dailyLimit) {
       throw new UnlocksPerDayExceededError();
     }
   }
 
-  private async performUnlock(input: UnlockListingInput): Promise<UnlockListingOutput> {
+  private async performUnlock(input: {
+    readonly customerAccountId: string;
+    readonly listingId: string;
+    readonly unlockCost: number;
+  }): Promise<UnlockListingOutput> {
     return this.deps.unitOfWork.withTransaction(async () => {
       const balance = await this.ensureBalance(input.customerAccountId);
       this.checkSufficientBalance(balance, input.unlockCost);
@@ -119,7 +125,11 @@ export class UnlockListingUseCase {
     }
   }
 
-  private createCreditEntry(input: UnlockListingInput): CreditEntryEntity {
+  private createCreditEntry(input: {
+    readonly customerAccountId: string;
+    readonly listingId: string;
+    readonly unlockCost: number;
+  }): CreditEntryEntity {
     const today = new Date().toISOString().split("T")[0];
     const creditEntryId = newId();
     return CreditEntryEntity.create({
@@ -137,7 +147,14 @@ export class UnlockListingUseCase {
     });
   }
 
-  private createUnlock(input: UnlockListingInput, creditEntryId: string): ListingUnlockEntity {
+  private createUnlock(
+    input: {
+      readonly customerAccountId: string;
+      readonly listingId: string;
+      readonly unlockCost: number;
+    },
+    creditEntryId: string,
+  ): ListingUnlockEntity {
     const listingUnlockId = newId();
     return ListingUnlockEntity.create({
       listingUnlockId,
@@ -151,7 +168,7 @@ export class UnlockListingUseCase {
   private async publishEvents(
     creditEntry: CreditEntryEntity,
     unlock: ListingUnlockEntity,
-    input: UnlockListingInput,
+    input: { readonly customerAccountId: string; readonly listingId: string },
   ): Promise<void> {
     await this.deps.events.publish({
       eventType: "CREDIT_ENTRY_CREATED",
@@ -159,7 +176,7 @@ export class UnlockListingUseCase {
         creditEntryId: creditEntry.creditEntryId,
         customerAccountId: input.customerAccountId,
         type: CREDIT_ENTRY_TYPE.SPEND,
-        credits: -input.unlockCost,
+        credits: creditEntry.credits,
         source: creditEntry.source,
         occurredAt: creditEntry.occurredAt.toISOString(),
       },
@@ -179,8 +196,8 @@ export class UnlockListingUseCase {
     });
   }
 
-  private getBalance(organizationId: string, customerAccountId: string): number {
-    const balance = this.deps.credit.getBalance(organizationId, customerAccountId);
+  private getBalance(customerAccountId: string): number {
+    const balance = this.deps.credit.getBalance(customerAccountId);
     return balance?.balance ?? 0;
   }
 }
