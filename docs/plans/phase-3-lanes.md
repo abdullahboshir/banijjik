@@ -97,6 +97,8 @@ Each card adds its own contracts subpath (`pricing`, `booking`, `payment`, `acco
 
 **Added 2026-10-19 (plans ahead for parallel sessions):** `3.3` inventory (start now), `M.2` directory (start now, track M), `3.7` enrollment (after 3.4 and 3.6). Reserved ADRs: 3.3 → 125, 3.7 → 126, M.2 → 127. At most three implementers at a time on this machine; one heavy test run at a time.
 
+**Added 2026-10-20 (beside 3.6):** `3.8b` bookkeeping (ADR-128), `M.3` moderation screens (ADR-129 if needed), `M.4` credits (ADR-130), all startable now. 3.6 runs in `banijjik-lead`; use the other folders, one chat per folder.
+
 **Rules for every implementer** (Cursor included):
 - read AGENTS.md
 - follow the plan exactly; stop and ask on a gap
