@@ -12,6 +12,7 @@ import { buildDirectoryBlockReader } from "../modules/platform/industry/index.js
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import { CreditListingUnlockReader } from "../modules/commerce/credit/index.js";
 import { MongoListingUnlockRepository } from "../modules/commerce/credit/index.js";
+import { MODULE_KEY } from "@banijjik/contracts";
 
 export function buildDirectoryAdapters(input: {
   readonly orgConfig: OrgConfigService;
@@ -24,7 +25,7 @@ export function buildDirectoryAdapters(input: {
     manifests: input.manifests,
   });
 
-  const creditEnabled = input.manifests.some((m) => m.key === "CREDIT");
+  const creditEnabled = input.manifests.some((m) => m.key === MODULE_KEY.CREDIT);
   const unlockReader = creditEnabled
     ? new CreditListingUnlockReader(new MongoListingUnlockRepository())
     : null;

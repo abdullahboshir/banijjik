@@ -59,6 +59,7 @@ import { buildDirectoryTenantRouter } from "./presentation/directory-tenant.rout
 
 export { directoryManifest } from "./module.manifest.js";
 export { registerDirectoryModels } from "./infrastructure/register-directory-models.js";
+export { MongoListingRepository } from "./infrastructure/index.js";
 export type {
   CustomerPhoneReader,
   DirectorySettingsReader,

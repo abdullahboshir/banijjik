@@ -69,15 +69,18 @@ describe("UnlockListingUseCase - concurrency", () => {
     customerAccountId = asId<CustomerAccountId>("customer-1");
     listingIds = ["listing-1", "listing-2", "listing-3", "listing-4", "listing-5"];
 
-    vi.spyOn(listingRepo, "findByListingNumber").mockResolvedValue({
-      listingId: "listing-1",
-      listingNumber: "L-1",
-      ownerCustomerAccountId: asId<CustomerAccountId>("owner-1"),
-      status: "APPROVED",
-      version: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as unknown);
+    vi.spyOn(listingRepo, "findByListingNumber").mockImplementation(
+      async () =>
+        ({
+          listingId: "listing-1",
+          listingNumber: "L-1",
+          ownerCustomerAccountId: asId<CustomerAccountId>("owner-1"),
+          status: "APPROVED",
+          version: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }) as Partial<import("../../../directory/domain/listing.entity").Listing>,
+    );
 
     vi.spyOn(unlockRepo, "findExisting").mockResolvedValue(null);
     vi.spyOn(unlockRepo, "countByCustomerToday").mockResolvedValue(0);

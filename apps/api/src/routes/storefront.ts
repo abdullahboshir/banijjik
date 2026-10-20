@@ -36,7 +36,10 @@ import {
 } from "../modules/commerce/credit/index.js";
 import { MongoUnitOfWork } from "../kernel/db/index.js";
 import { kernelEventPublisher } from "../kernel/events/index.js";
-import { MongoListingRepository } from "../modules/commerce/directory/index.js";
+import {
+  MongoListingRepository,
+  type ListingRepository,
+} from "../modules/commerce/directory/index.js";
 import { directorySettingsFromResolver } from "../modules/commerce/directory/index.js";
 import {
   buildStorefrontOrganizationReader,
@@ -65,9 +68,21 @@ function buildCreditRouterDeps(input: StorefrontRouterInput) {
     credit: new MongoCreditRepository(),
     packs: new MongoCreditPackRepository(),
     unlocks: new MongoListingUnlockRepository(),
-    listings: new MongoListingRepository(),
+    listings: new MongoListingRepository() as ListingRepository,
     unitOfWork: new MongoUnitOfWork(),
-    events: kernelEventPublisher,
+    events: {
+      publish: async (
+        type: string,
+        payload: unknown,
+        options?: { version?: number; orderingKey?: string },
+      ) => {
+        await kernelEventPublisher.publish(
+          type as import("@banijjik/contracts").EventType,
+          payload,
+          options,
+        );
+      },
+    },
     audit: input.audit,
     clock: input.clock,
     directorySettings: directorySettingsFromResolver(settingsResolver),

@@ -153,7 +153,6 @@ function buildCommerceTenantRouters(
       idempotency: input.idempotency,
       orgConfig: input.orgConfig,
       manifests: input.manifests,
-      rateLimiter: input.rateLimiter,
     }),
     bookingRouter: buildBookingTenantRouter({
       clock: input.clock,

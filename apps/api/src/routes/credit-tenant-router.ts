@@ -4,7 +4,7 @@ import type { AuditRecorder } from "../kernel/audit/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import type { RateLimiter } from "../kernel/rate-limit/index.js";
 import {
-  buildCreditTenantRouter,
+  buildCreditTenantRouter as buildCreditTenantRouterFromModule,
   AdjustCreditsUseCase,
   GetMyCreditsUseCase,
   MongoCreditRepository,
@@ -16,7 +16,10 @@ import { kernelEventPublisher } from "../kernel/events/index.js";
 import { directorySettingsFromResolver } from "../modules/commerce/directory/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
-import { MongoListingRepository } from "../modules/commerce/directory/index.js";
+import {
+  MongoListingRepository,
+  type ListingRepository,
+} from "../modules/commerce/directory/index.js";
 
 export interface CreditRouterInput {
   readonly clock: Clock;
@@ -38,9 +41,21 @@ export function buildCreditTenantRouter(input: CreditRouterInput): Router {
     credit: new MongoCreditRepository(),
     packs: new MongoCreditPackRepository(),
     unlocks: new MongoListingUnlockRepository(),
-    listings: new MongoListingRepository(),
+    listings: new MongoListingRepository() as ListingRepository,
     unitOfWork: new MongoUnitOfWork(),
-    events: kernelEventPublisher,
+    events: {
+      publish: async (
+        type: string,
+        payload: unknown,
+        options?: { version?: number; orderingKey?: string },
+      ) => {
+        await kernelEventPublisher.publish(
+          type as import("@banijjik/contracts").EventType,
+          payload,
+          options,
+        );
+      },
+    },
     audit: input.audit,
     clock: input.clock,
     directorySettings: directorySettingsFromResolver(settingsResolver),
@@ -49,7 +64,7 @@ export function buildCreditTenantRouter(input: CreditRouterInput): Router {
   const adjustCredits = new AdjustCreditsUseCase(creditDeps);
   const getMyCredits = new GetMyCreditsUseCase(creditDeps);
 
-  return buildCreditTenantRouter({
+  return buildCreditTenantRouterFromModule({
     permission: input.permission,
     adjustCredits,
     getAccount: getMyCredits,
