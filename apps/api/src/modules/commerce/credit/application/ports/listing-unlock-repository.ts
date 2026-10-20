@@ -7,6 +7,10 @@ export interface ListingUnlockRepository {
     customerAccountId: CustomerAccountId,
     listingId: ListingId,
   ): Promise<ListingUnlock | null>;
+  findByCustomerAndListing(
+    customerAccountId: CustomerAccountId,
+    listingId: ListingId,
+  ): Promise<ListingUnlock | null>;
   listByCustomer(
     customerAccountId: CustomerAccountId,
     options: { limit: number; offset: number },

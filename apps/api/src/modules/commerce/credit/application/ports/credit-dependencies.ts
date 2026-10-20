@@ -5,6 +5,7 @@ import type { AuditRecorder } from "../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
 import type { EventPublisher } from "../../../../kernel/events/index.js";
 import type { UnitOfWork } from "../../../../kernel/db/index.js";
+import type { DirectorySettingsReader } from "../../../directory/index.js";
 
 export interface CreditDependencies {
   readonly credit: CreditRepository;
@@ -14,4 +15,5 @@ export interface CreditDependencies {
   readonly events: EventPublisher;
   readonly audit: AuditRecorder;
   readonly clock: Clock;
+  readonly directorySettings: DirectorySettingsReader;
 }

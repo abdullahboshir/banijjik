@@ -47,6 +47,11 @@ function organizationIdOf(): OrganizationId {
 }
 
 function mountPublicRoutes(router: Router, input: DirectoryStorefrontRouterDependencies): void {
+  mountListingSearch(router, input);
+  mountSingleListing(router, input);
+}
+
+function mountListingSearch(router: Router, input: DirectoryStorefrontRouterDependencies): void {
   router.get(
     "/listings",
     rateLimit({
@@ -72,6 +77,10 @@ function mountPublicRoutes(router: Router, input: DirectoryStorefrontRouterDepen
         getRequestContext().customerAccountId === undefined
           ? LISTING_VIEWER.PUBLIC
           : LISTING_VIEWER.MEMBER;
+      const rawQuery = {
+        ...query,
+        customerAccountId: getRequestContext().customerAccountId,
+      };
       sendData(
         response,
         await input.searchListings.execute({
@@ -80,12 +89,14 @@ function mountPublicRoutes(router: Router, input: DirectoryStorefrontRouterDepen
           page: query.page,
           limit: query.limit,
           ...(query.listingNumber === undefined ? {} : { listingNumber: query.listingNumber }),
-          rawQuery: query,
+          rawQuery,
         }),
       );
     },
   );
+}
 
+function mountSingleListing(router: Router, input: DirectoryStorefrontRouterDependencies): void {
   router.get(
     "/listings/:listingNumber",
     input.authenticateCustomerOptional,

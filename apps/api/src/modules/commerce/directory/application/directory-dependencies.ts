@@ -6,6 +6,7 @@ import type {
   DirectoryTemplateReader,
   ListingFieldReader,
   ListingSequence,
+  ListingUnlockReader,
 } from "./ports/directory-context-ports.js";
 import type { EventPublisher } from "./ports/event-publisher.js";
 import type { ListingRepository } from "./ports/listing-repository.js";
@@ -22,4 +23,5 @@ export interface DirectoryDependencies {
   readonly settings: DirectorySettingsReader;
   readonly phones: CustomerPhoneReader;
   readonly sequences: ListingSequence;
+  readonly unlockReader: ListingUnlockReader | null;
 }

@@ -28,6 +28,10 @@ export interface ListingSequence {
   nextListingNumber(prefix: string): Promise<string>;
 }
 
+export interface ListingUnlockReader {
+  hasUnlocked(listingId: string, customerAccountId: string): Promise<boolean>;
+}
+
 export function asListingFieldRules(
   fields: readonly EffectiveCustomField[],
 ): readonly CustomFieldRule[] {

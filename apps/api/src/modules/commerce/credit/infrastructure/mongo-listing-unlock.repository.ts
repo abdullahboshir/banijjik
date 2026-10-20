@@ -23,6 +23,15 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
     return doc ? this.fromDocument(doc) : null;
   }
 
+  async findByCustomerAndListing(
+    customerAccountId: CustomerAccountId,
+    listingId: ListingId,
+  ): Promise<ListingUnlock | null> {
+    const organizationId = getRequestContext().organizationId;
+    const doc = await this.model().findOne({ organizationId, customerAccountId, listingId });
+    return doc ? this.fromDocument(doc) : null;
+  }
+
   async listByCustomer(
     customerAccountId: CustomerAccountId,
     options: { limit: number; offset: number },

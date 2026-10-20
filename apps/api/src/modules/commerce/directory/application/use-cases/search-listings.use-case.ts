@@ -8,8 +8,26 @@ import type { OrganizationId } from "@banijjik/ids";
 import { listingNotFound } from "../../domain/errors.js";
 import type { DirectoryDependencies } from "../directory-dependencies.js";
 import { listingFiltersFromQuery } from "../listing-filters.js";
-import { asListingFieldRules } from "../ports/directory-context-ports.js";
+import { asListingFieldRules } from "../index.js";
 import { toListingListItem, toListingResponse } from "../listing-view.js";
+
+interface UnlockCheckInput {
+  readonly viewer: ListingViewer;
+  readonly listingId: string;
+  readonly customerAccountId: string | undefined;
+  readonly unlockReader: DirectoryDependencies["unlockReader"];
+}
+
+async function viewerWithUnlockCheck(input: UnlockCheckInput): Promise<ListingViewer> {
+  if (input.viewer !== LISTING_VIEWER.MEMBER || !input.customerAccountId || !input.unlockReader) {
+    return input.viewer;
+  }
+  const hasUnlocked = await input.unlockReader.hasUnlocked(
+    input.listingId,
+    input.customerAccountId,
+  );
+  return hasUnlocked ? LISTING_VIEWER.UNLOCKED_MEMBER : LISTING_VIEWER.MEMBER;
+}
 
 export class SearchListingsUseCase {
   constructor(private readonly dependencies: DirectoryDependencies) {}
@@ -40,8 +58,21 @@ export class SearchListingsUseCase {
       limit: input.limit,
     });
     return {
-      items: page.items.map((listing) =>
-        toListingListItem({ listing, fields: rules, viewer: input.viewer, photoPolicy }),
+      items: await Promise.all(
+        page.items.map(async (listing) => {
+          const effectiveViewer = await viewerWithUnlockCheck({
+            viewer: input.viewer,
+            listingId: listing.listingId,
+            customerAccountId: input.rawQuery.customerAccountId as string | undefined,
+            unlockReader: this.dependencies.unlockReader,
+          });
+          return toListingListItem({
+            listing,
+            fields: rules,
+            viewer: effectiveViewer,
+            photoPolicy,
+          });
+        }),
       ),
       total: page.total,
       page: page.page,
@@ -64,11 +95,16 @@ export class GetPublicListingUseCase {
       this.dependencies.fields.forOrganization(input.organizationId),
       this.dependencies.settings.photoPolicy(input.organizationId),
     ]);
+    const effectiveViewer = await viewerWithUnlockCheck({
+      viewer: input.viewer,
+      listingId: listing.listingId,
+      customerAccountId: input.viewer === LISTING_VIEWER.MEMBER ? input.organizationId : undefined,
+      unlockReader: this.dependencies.unlockReader,
+    });
     return toListingResponse({
       listing,
       fields: asListingFieldRules(effective),
-      viewer:
-        input.viewer === LISTING_VIEWER.UNLOCKED_MEMBER ? LISTING_VIEWER.MEMBER : input.viewer,
+      viewer: effectiveViewer,
       photoPolicy,
     });
   }

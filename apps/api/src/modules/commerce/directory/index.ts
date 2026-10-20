@@ -30,6 +30,7 @@ import type {
   DirectorySettingsReader,
   DirectoryTemplateReader,
   ListingFieldReader,
+  ListingUnlockReader,
 } from "./application/ports/directory-context-ports.js";
 import {
   ArchiveMyListingUseCase,
@@ -63,13 +64,16 @@ export type {
   DirectorySettingsReader,
   DirectoryTemplateReader,
   ListingFieldReader,
+  ListingUnlockReader,
 };
+export { asListingFieldRules } from "./application/ports/directory-context-ports.js";
 
 export interface DirectoryAdapters {
   readonly fields: ListingFieldReader;
   readonly template: DirectoryTemplateReader;
   readonly settings: DirectorySettingsReader;
   readonly phones: CustomerPhoneReader;
+  readonly unlockReader: ListingUnlockReader | null;
 }
 
 export interface DirectoryTenantDependencies {
@@ -109,6 +113,7 @@ function dependenciesOf(input: {
     template: input.adapters.template,
     settings: input.adapters.settings,
     phones: input.adapters.phones,
+    unlockReader: input.adapters.unlockReader,
     sequences: {
       async nextListingNumber(prefix: string): Promise<string> {
         const organizationId = asId<OrganizationId>(String(getRequestContext().organizationId));
