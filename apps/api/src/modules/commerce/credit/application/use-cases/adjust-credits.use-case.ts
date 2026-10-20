@@ -1,7 +1,6 @@
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
-import { CreditEntryEntity } from "../../domain/credit-entry.entity.js";
-import { CreditBalanceEntity } from "../../domain/credit-balance.entity.js";
+import { newId } from "@banijjik/ids";
 import { getRequestContext } from "../../../../kernel/context/index.js";
 
 export interface AdjustCreditsInput {
@@ -18,12 +17,17 @@ export class AdjustCreditsUseCase {
     return this.deps.unitOfWork.withTransaction(async () => {
       const balance = await this.deps.credit.getBalance(input.customerAccountId);
       if (!balance) {
-        await this.deps.credit.insertBalance(CreditBalanceEntity.create(input.customerAccountId));
+        await this.deps.credit.insertBalance({
+          customerAccountId: input.customerAccountId,
+          balance: 0,
+          version: 1,
+          updatedAt: this.deps.clock.now(),
+        });
       }
 
       const creditEntryId = newId();
       const today = new Date().toISOString().split("T")[0];
-      const entry = CreditEntryEntity.create({
+      const entry = {
         creditEntryId,
         customerAccountId: input.customerAccountId,
         type: CREDIT_ENTRY_TYPE.ADJUST,
@@ -35,7 +39,8 @@ export class AdjustCreditsUseCase {
         createdByUserId: input.actorUserId,
         occurredAt: this.deps.clock.now(),
         businessDate: today,
-      });
+        createdAt: this.deps.clock.now(),
+      };
 
       await this.deps.credit.insertEntry(entry);
 
@@ -57,9 +62,9 @@ export class AdjustCreditsUseCase {
         actorUserId: input.actorUserId,
       });
 
-      await this.deps.events.publish({
-        eventType: "CREDIT_ENTRY_CREATED",
-        payload: {
+      await this.deps.events.publish(
+        "CREDIT_ENTRY_CREATED",
+        {
           creditEntryId,
           customerAccountId: input.customerAccountId,
           type: CREDIT_ENTRY_TYPE.ADJUST,
@@ -67,8 +72,8 @@ export class AdjustCreditsUseCase {
           source: entry.source,
           occurredAt: entry.occurredAt.toISOString(),
         },
-        orderingKey: `creditAccount:${input.customerAccountId}`,
-      });
+        { orderingKey: `creditAccount:${input.customerAccountId}` },
+      );
 
       return { balance: updatedBalance.balance };
     });

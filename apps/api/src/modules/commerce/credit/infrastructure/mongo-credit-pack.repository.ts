@@ -6,12 +6,15 @@ import {
   updateVersioned,
 } from "../../../../kernel/db/index.js";
 import type { CreditPackRepository } from "../application/ports/credit-pack-repository.js";
-import type { CreditPack } from "../domain/credit-pack.entity.js";
+import type { CreditPack } from "../domain/index.js";
 import { CREDIT_PACK_MODEL_NAME, type CreditPackDocument } from "./credit-pack.schema.js";
 
 export class MongoCreditPackRepository implements CreditPackRepository {
   async insert(pack: CreditPack): Promise<void> {
-    await this.model().create([this.toDocument(pack)], sessionOption(getActiveSession()));
+    const Model = models({ organizationId: pack.organizationId }).get<CreditPackDocument>(
+      CREDIT_PACK_MODEL_NAME,
+    );
+    await Model.create([this.toDocument(pack)], sessionOption(getActiveSession()));
   }
 
   async save(
@@ -20,8 +23,11 @@ export class MongoCreditPackRepository implements CreditPackRepository {
     actorUserId: UserId | null,
   ): Promise<CreditPack> {
     const document = this.toDocument(pack);
+    const Model = models({ organizationId: pack.organizationId }).get<CreditPackDocument>(
+      CREDIT_PACK_MODEL_NAME,
+    );
     const saved = await updateVersioned<CreditPackDocument>({
-      model: this.model(),
+      model: Model,
       filter: { creditPackId: pack.creditPackId },
       expectedVersion,
       update: {
@@ -40,19 +46,18 @@ export class MongoCreditPackRepository implements CreditPackRepository {
   }
 
   async findById(organizationId: OrganizationId, creditPackId: string): Promise<CreditPack | null> {
-    const doc = await this.model().findOne({ organizationId, creditPackId });
+    const Model = models({ organizationId }).get<CreditPackDocument>(CREDIT_PACK_MODEL_NAME);
+    const doc = await Model.findOne({ organizationId, creditPackId });
     return doc ? this.fromDocument(doc) : null;
   }
 
   async listActive(organizationId: OrganizationId): Promise<readonly CreditPack[]> {
-    const docs = await this.model()
-      .find({ organizationId, status: "ACTIVE" })
-      .sort({ sortOrder: 1, createdAt: 1 });
+    const Model = models({ organizationId }).get<CreditPackDocument>(CREDIT_PACK_MODEL_NAME);
+    const docs = await Model.find({ organizationId, status: "ACTIVE" }).sort({
+      sortOrder: 1,
+      createdAt: 1,
+    });
     return docs.map((d) => this.fromDocument(d));
-  }
-
-  private model() {
-    return models(CREDIT_PACK_MODEL_NAME);
   }
 
   private toDocument(pack: CreditPack): CreditPackDocument {

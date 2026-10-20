@@ -5,7 +5,7 @@ import {
   SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
-import { CREDIT_EVENT_TYPE, CREDIT_SETTING_KEY } from "@banijjik/contracts/credit";
+import { CREDIT_EVENT_TYPE, CREDIT_RULE_KEY } from "@banijjik/contracts/credit";
 import { defineModule } from "../../../kernel/modules/index.js";
 
 /** The credit manifest (doc 16 §3.5, M.4 plan). */
@@ -46,21 +46,21 @@ export const creditManifest = defineModule({
   ],
   settings: [
     {
-      settingKey: CREDIT_SETTING_KEY.UNLOCK_COST,
-      value: { kind: "INTEGER" },
+      settingKey: CREDIT_RULE_KEY.UNLOCK_COST,
+      value: { kind: "INTEGER", min: 1, max: 1000 },
       systemDefault: 1,
       allowsLocationOverride: false,
       isClientVisible: true,
     },
     {
-      settingKey: CREDIT_SETTING_KEY.DAILY_UNLOCK_LIMIT,
-      value: { kind: "INTEGER" },
+      settingKey: CREDIT_RULE_KEY.UNLOCKS_PER_DAY,
+      value: { kind: "INTEGER", min: 1, max: 1000 },
       systemDefault: 20,
       allowsLocationOverride: false,
       isClientVisible: true,
     },
     {
-      settingKey: CREDIT_SETTING_KEY.SHOW_UNLOCKERS_TO_OWNER,
+      settingKey: CREDIT_RULE_KEY.SHOW_UNLOCKERS_TO_OWNER,
       value: { kind: "BOOLEAN" },
       systemDefault: false,
       allowsLocationOverride: false,
@@ -80,7 +80,7 @@ export const creditManifest = defineModule({
     },
   ],
   events: {
-    emits: [CREDIT_EVENT_TYPE.CREDIT_ENTRY_CREATED, CREDIT_EVENT_TYPE.LISTING_UNLOCKED],
+    emits: [CREDIT_EVENT_TYPE.CREDIT_ENTRY_CREATED, CREDIT_EVENT_TYPE.UNLOCK_CREATED],
     consumes: [],
   },
   limitKeys: [],

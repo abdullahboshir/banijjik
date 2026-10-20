@@ -1,12 +1,11 @@
-import { CREDIT_ERROR_CODE } from "@banijjik/contracts/credit";
 import { Router, type RequestHandler } from "express";
 import { requireCurrentCustomerAccountId } from "../../../../kernel/auth/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
 import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
-import type { UnlockListingUseCase } from "../use-cases/unlock-listing.use-case.js";
-import type { GetMyCreditsUseCase } from "../use-cases/get-my-credits.use-case.js";
-import type { GetMyUnlocksUseCase } from "../use-cases/get-my-unlocks.use-case.js";
-import type { ListCreditPacksUseCase } from "../use-cases/list-credit-packs.use-case.js";
+import type { UnlockListingUseCase } from "../application/index.js";
+import type { GetMyCreditsUseCase } from "../application/index.js";
+import type { GetMyUnlocksUseCase } from "../application/index.js";
+import type { ListCreditPacksUseCase } from "../application/index.js";
 
 const UNLOCK_IP_BUCKET = "credit.unlock.ip";
 const UNLOCK_ACCOUNT_BUCKET = "credit.unlock.account";
@@ -27,42 +26,26 @@ function mountUnlockRoute(router: Router, input: CreditStorefrontRouterDependenc
     rateLimit({
       limiter: input.limiter,
       bucket: UNLOCK_IP_BUCKET,
-      max: 20,
-      windowMs: 60000,
+      limit: 20,
+      windowSeconds: 60,
     }),
     input.authenticateCustomer,
     rateLimit({
       limiter: input.limiter,
       bucket: UNLOCK_ACCOUNT_BUCKET,
-      max: 20,
-      windowMs: 60000,
+      limit: 20,
+      windowSeconds: 60,
       keyOf: () => requireCurrentCustomerAccountId(),
     }),
     async (request, response) => {
-      try {
-        sendData(
-          response,
-          await input.unlockListing.execute({
-            listingNumber: request.params.listingNumber,
-            customerAccountId: requireCurrentCustomerAccountId(),
-            idempotencyKey: request.body.idempotencyKey,
-          }),
-        );
-      } catch (error) {
-        if (error instanceof Error && error.message === CREDIT_ERROR_CODE.INSUFFICIENT_BALANCE) {
-          response.status(422).json({ code: CREDIT_ERROR_CODE.INSUFFICIENT_BALANCE });
-          return;
-        }
-        if (error instanceof Error && error.message === CREDIT_ERROR_CODE.OWN_LISTING) {
-          response.status(400).json({ code: CREDIT_ERROR_CODE.OWN_LISTING });
-          return;
-        }
-        if (error instanceof Error && error.message === CREDIT_ERROR_CODE.DAILY_LIMIT_EXCEEDED) {
-          response.status(429).json({ code: CREDIT_ERROR_CODE.DAILY_LIMIT_EXCEEDED });
-          return;
-        }
-        throw error;
-      }
+      sendData(
+        response,
+        await input.unlockListing.execute({
+          listingNumber: request.params.listingNumber,
+          customerAccountId: requireCurrentCustomerAccountId(),
+          idempotencyKey: request.body.idempotencyKey,
+        }),
+      );
     },
   );
 }

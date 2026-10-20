@@ -1,5 +1,5 @@
 import type { OrganizationId } from "@banijjik/ids";
-import type { CreditPack } from "../../domain/credit-pack.entity.js";
+import type { CreditPack } from "../../domain/index.js";
 
 export interface CreditPackRepository {
   insert(pack: CreditPack): Promise<void>;

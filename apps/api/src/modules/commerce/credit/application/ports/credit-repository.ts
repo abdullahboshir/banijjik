@@ -1,6 +1,5 @@
 import type { CustomerAccountId } from "@banijjik/ids";
-import type { CreditEntry } from "../../domain/credit-entry.entity.js";
-import type { CreditBalance } from "../../domain/credit-balance.entity.js";
+import type { CreditEntry, CreditBalance } from "../../domain/index.js";
 
 export interface UpdateBalanceInput {
   readonly customerAccountId: CustomerAccountId;

@@ -1,6 +1,6 @@
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
-import { CreditEntryEntity } from "../../domain/credit-entry.entity.js";
+import { newId } from "@banijjik/ids";
 
 export class ExpireCreditsUseCase {
   constructor(private readonly deps: CreditDependencies) {}
@@ -55,7 +55,7 @@ export class ExpireCreditsUseCase {
     businessDate: string;
   }): Promise<void> {
     const creditEntryId = newId();
-    const entry = CreditEntryEntity.create({
+    const entry = {
       creditEntryId,
       customerAccountId: input.customerAccountId,
       type: CREDIT_ENTRY_TYPE.EXPIRE,
@@ -67,7 +67,8 @@ export class ExpireCreditsUseCase {
       createdByUserId: null,
       occurredAt: this.deps.clock.now(),
       businessDate: input.businessDate,
-    });
+      createdAt: this.deps.clock.now(),
+    };
     await this.deps.credit.insertEntry(entry);
   }
 }

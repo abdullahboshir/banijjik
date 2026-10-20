@@ -1,6 +1,8 @@
-import type { CreditPack } from "@banijjik/contracts/credit";
+import type { CreditPack as CreditPackContract } from "@banijjik/contracts/credit";
 import type { OrganizationId } from "@banijjik/ids";
-import type { Money } from "@banijjik/contracts";
+import type { Money } from "@banijjik/contracts/pricing";
+
+export type CreditPack = CreditPackContract;
 
 export class CreditPackEntity {
   constructor(

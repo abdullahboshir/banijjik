@@ -4,8 +4,7 @@ import type { PermissionMiddlewareFactory } from "../../../../kernel/access/inde
 import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
 import { asId, type CustomerAccountId } from "@banijjik/ids";
-import type { AdjustCreditsUseCase } from "../use-cases/adjust-credits.use-case.js";
-import type { GetMyCreditsUseCase } from "../use-cases/get-my-credits.use-case.js";
+import type { AdjustCreditsUseCase, GetMyCreditsUseCase } from "../application/index.js";
 
 export interface CreditTenantRouterDependencies {
   readonly permission: PermissionMiddlewareFactory;
@@ -18,9 +17,14 @@ export function buildCreditTenantRouter(input: CreditTenantRouterDependencies): 
 
   const read = input.permission(PERMISSION_KEY.CREDIT_ACCOUNT_READ);
   router.get("/credit/accounts/:customerAccountId", read, async (request, response) => {
+    const customerAccountId = asId<CustomerAccountId>(
+      Array.isArray(request.params.customerAccountId)
+        ? request.params.customerAccountId[0]
+        : request.params.customerAccountId,
+    );
     sendData(
       response,
-      await input.getAccount.execute(asId<CustomerAccountId>(request.params.customerAccountId), {
+      await input.getAccount.execute(customerAccountId, {
         limit: 20,
         offset: 0,
       }),
@@ -29,13 +33,17 @@ export function buildCreditTenantRouter(input: CreditTenantRouterDependencies): 
 
   const adjust = input.permission(PERMISSION_KEY.CREDIT_ACCOUNT_ADJUST);
   router.post("/credit/accounts/:customerAccountId/adjust", adjust, async (request, response) => {
+    const customerAccountId = asId<CustomerAccountId>(
+      Array.isArray(request.params.customerAccountId)
+        ? request.params.customerAccountId[0]
+        : request.params.customerAccountId,
+    );
     sendData(
       response,
       await input.adjustCredits.execute({
-        customerAccountId: asId<CustomerAccountId>(request.params.customerAccountId),
+        customerAccountId,
         credits: request.body.credits,
         reason: request.body.reason,
-        approvalToken: request.body.approvalToken,
         actorUserId: requireCurrentUserId(),
       }),
     );

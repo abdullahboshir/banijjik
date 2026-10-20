@@ -1,25 +1,20 @@
 import type { CustomerAccountId } from "@banijjik/ids";
-import {
-  getActiveSession,
-  getRequestContext,
-  models,
-  sessionOption,
-} from "../../../../kernel/db/index.js";
+import { getRequestContext } from "../../../../kernel/context/index.js";
+import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
 import type {
   CreditRepository,
   UpdateBalanceInput,
 } from "../application/ports/credit-repository.js";
-import type { CreditEntry } from "../../domain/credit-entry.entity.js";
-import type { CreditBalance } from "../../domain/credit-balance.entity.js";
+import type { CreditEntry, CreditBalance } from "../../domain/index.js";
 import { CREDIT_ENTRY_MODEL_NAME, type CreditEntryDocument } from "./credit-entry.schema.js";
 import { CREDIT_BALANCE_MODEL_NAME, type CreditBalanceDocument } from "./credit-balance.schema.js";
 
 export class MongoCreditRepository implements CreditRepository {
   async insertEntry(entry: CreditEntry): Promise<void> {
-    await this.entryModel().create(
-      [this.entryToDocument(entry)],
-      sessionOption(getActiveSession()),
-    );
+    const Model = models({
+      organizationId: getRequestContext().organizationId,
+    }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
+    await Model.create([this.entryToDocument(entry)], sessionOption(getActiveSession()));
   }
 
   async listEntries(
@@ -27,8 +22,8 @@ export class MongoCreditRepository implements CreditRepository {
     options: { limit: number; offset: number },
   ): Promise<readonly CreditEntry[]> {
     const organizationId = getRequestContext().organizationId;
-    const docs = await this.entryModel()
-      .find({ organizationId, customerAccountId })
+    const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
+    const docs = await Model.find({ organizationId, customerAccountId })
       .sort({ occurredAt: -1 })
       .skip(options.offset)
       .limit(options.limit);
@@ -37,20 +32,22 @@ export class MongoCreditRepository implements CreditRepository {
 
   async getBalance(customerAccountId: CustomerAccountId): Promise<CreditBalance | null> {
     const organizationId = getRequestContext().organizationId;
-    const doc = await this.balanceModel().findOne({ organizationId, customerAccountId });
+    const Model = models({ organizationId }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
+    const doc = await Model.findOne({ organizationId, customerAccountId });
     return doc ? this.balanceFromDocument(doc) : null;
   }
 
   async insertBalance(balance: CreditBalance): Promise<void> {
-    await this.balanceModel().create(
-      [this.balanceToDocument(balance)],
-      sessionOption(getActiveSession()),
-    );
+    const Model = models({
+      organizationId: getRequestContext().organizationId,
+    }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
+    await Model.create([this.balanceToDocument(balance)], sessionOption(getActiveSession()));
   }
 
   async updateBalance(input: UpdateBalanceInput): Promise<CreditBalance> {
     const organizationId = getRequestContext().organizationId;
-    const doc = await this.balanceModel().findOneAndUpdate(
+    const Model = models({ organizationId }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
+    const doc = await Model.findOneAndUpdate(
       {
         organizationId,
         customerAccountId: input.customerAccountId,
@@ -73,19 +70,12 @@ export class MongoCreditRepository implements CreditRepository {
 
   async findPurchaseEntry(purchaseEntryId: string): Promise<CreditEntry | null> {
     const organizationId = getRequestContext().organizationId;
-    const doc = await this.entryModel().findOne({
+    const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
+    const doc = await Model.findOne({
       organizationId,
       creditEntryId: purchaseEntryId,
     });
     return doc ? this.entryFromDocument(doc) : null;
-  }
-
-  private entryModel() {
-    return models(CREDIT_ENTRY_MODEL_NAME);
-  }
-
-  private balanceModel() {
-    return models(CREDIT_BALANCE_MODEL_NAME);
   }
 
   private entryToDocument(entry: CreditEntry): CreditEntryDocument {
@@ -141,9 +131,5 @@ export class MongoCreditRepository implements CreditRepository {
       version: doc.version,
       updatedAt: doc.updatedAt.toISOString(),
     };
-  }
-
-  private getRequestContext() {
-    return getRequestContext();
   }
 }

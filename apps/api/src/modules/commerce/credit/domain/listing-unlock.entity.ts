@@ -1,5 +1,7 @@
-import type { ListingUnlock } from "@banijjik/contracts/credit";
+import type { ListingUnlock as ListingUnlockContract } from "@banijjik/contracts/credit";
 import type { CustomerAccountId, ListingId } from "@banijjik/ids";
+
+export type ListingUnlock = ListingUnlockContract;
 
 export class ListingUnlockEntity {
   constructor(

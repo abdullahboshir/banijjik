@@ -1,5 +1,10 @@
-import type { CreditEntry } from "@banijjik/contracts/credit";
+import type {
+  CreditEntry as CreditEntryContract,
+  CreditSourceType,
+} from "@banijjik/contracts/credit";
 import type { CustomerAccountId } from "@banijjik/ids";
+
+export type CreditEntry = CreditEntryContract;
 
 export class CreditEntryEntity {
   constructor(
@@ -8,7 +13,7 @@ export class CreditEntryEntity {
     readonly type: "PURCHASE" | "SPEND" | "REFUND" | "EXPIRE" | "ADJUST",
     readonly credits: number,
     readonly expiresOn: Date | null,
-    readonly source: { readonly sourceType: string; readonly sourceId: string },
+    readonly source: { readonly sourceType: CreditSourceType; readonly sourceId: string },
     readonly fromPurchaseEntryId: string | null,
     readonly reason: string | null,
     readonly createdByUserId: string | null,
@@ -39,7 +44,7 @@ export class CreditEntryEntity {
     type: "PURCHASE" | "SPEND" | "REFUND" | "EXPIRE" | "ADJUST";
     credits: number;
     expiresOn: Date | null;
-    source: { readonly sourceType: string; readonly sourceId: string };
+    source: { readonly sourceType: CreditSourceType; readonly sourceId: string };
     fromPurchaseEntryId: string | null;
     reason: string | null;
     createdByUserId: string | null;

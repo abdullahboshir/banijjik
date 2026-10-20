@@ -1,11 +1,12 @@
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import type { UnlockListItem } from "@banijjik/contracts/credit";
+import type { CustomerAccountId } from "@banijjik/ids";
 
 export class GetMyUnlocksUseCase {
   constructor(private readonly deps: CreditDependencies) {}
 
   async execute(
-    customerAccountId: string,
+    customerAccountId: CustomerAccountId,
     options: { limit: number; offset: number },
   ): Promise<readonly UnlockListItem[]> {
     return this.deps.unlocks.listByCustomer(customerAccountId, options);

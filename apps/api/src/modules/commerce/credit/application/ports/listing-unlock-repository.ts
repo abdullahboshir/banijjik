@@ -1,5 +1,5 @@
 import type { CustomerAccountId, ListingId } from "@banijjik/ids";
-import type { ListingUnlock } from "../../domain/listing-unlock.entity.js";
+import type { ListingUnlock } from "../../domain/index.js";
 
 export interface ListingUnlockRepository {
   insert(unlock: ListingUnlock): Promise<void>;

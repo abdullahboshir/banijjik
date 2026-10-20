@@ -1,5 +1,7 @@
-import type { CreditBalance } from "@banijjik/contracts/credit";
+import type { CreditBalance as CreditBalanceContract } from "@banijjik/contracts/credit";
 import type { CustomerAccountId } from "@banijjik/ids";
+
+export type CreditBalance = CreditBalanceContract;
 
 export class CreditBalanceEntity {
   constructor(
