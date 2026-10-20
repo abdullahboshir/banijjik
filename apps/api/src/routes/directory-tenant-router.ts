@@ -36,6 +36,7 @@ export function buildDirectoryTenantRouter(input: DirectoryRouterInput): Router 
       settings: directorySettingsFromResolver(settingsResolver),
       template: buildDirectoryBlockReader(),
       phones: buildCustomerPhoneReader(),
+      unlockReader: null,
     },
   });
 }

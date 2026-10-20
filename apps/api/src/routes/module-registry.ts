@@ -18,6 +18,7 @@ import { pricingManifest } from "../modules/commerce/pricing/index.js";
 import { inventoryManifest } from "../modules/commerce/inventory/index.js";
 import { directoryManifest } from "../modules/commerce/directory/index.js";
 import { bookingManifest } from "../modules/commerce/booking/index.js";
+import { creditManifest } from "../modules/commerce/credit/index.js";
 import { settingsManifest } from "../modules/core/settings/index.js";
 import { tenantAdminManifest } from "../modules/platform/tenant-admin/index.js";
 
@@ -43,6 +44,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   inventoryManifest,
   directoryManifest,
   bookingManifest,
+  creditManifest,
 ];
 
 /**
