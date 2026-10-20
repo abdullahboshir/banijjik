@@ -54,6 +54,28 @@ export const directoryQueueQuerySchema = paginationQuerySchema.extend({
     .optional(),
 });
 
+const isoInstantSchema = z.iso.datetime({ offset: true }).or(z.iso.date());
+
+/** Staff all-listings query (card M.3); limit capped at the directory search max (50). */
+export const directoryListingsQuerySchema = paginationQuerySchema
+  .extend({
+    status: z
+      .enum([
+        LISTING_STATUS.DRAFT,
+        LISTING_STATUS.SUBMITTED,
+        LISTING_STATUS.APPROVED,
+        LISTING_STATUS.REJECTED,
+        LISTING_STATUS.HIDDEN,
+        LISTING_STATUS.ARCHIVED,
+      ])
+      .optional(),
+    listingNumber: z.string().trim().min(1).max(40).optional(),
+    from: isoInstantSchema.pipe(z.coerce.date()).optional(),
+    to: isoInstantSchema.pipe(z.coerce.date()).optional(),
+    limit: z.coerce.number().int().min(1).max(DIRECTORY_SEARCH_RULES.maxPageLimit).default(20),
+  })
+  .refine((query) => query.from === undefined || query.to === undefined || query.from <= query.to);
+
 /**
  * Public search query. Filter values for custom fields arrive as `f.<fieldKey>` (or
  * `f.<fieldKey>.min` / `.max` for ranges, and `f.<fieldKey>.divisionKey` etc. for GEO_BD).

@@ -57,6 +57,12 @@ const DOC_ROWS: [StatusRequestType, StatusTone, string][] = [
   ["OFFERING", "success", "ACTIVE"],
   ["OFFERING", "warning", "DRAFT"],
   ["OFFERING", "neutral", "ARCHIVED"],
+  ["LISTING", "success", "APPROVED"],
+  ["LISTING", "warning", "SUBMITTED"],
+  ["LISTING", "danger", "REJECTED"],
+  ["LISTING", "neutral", "DRAFT"],
+  ["LISTING", "neutral", "HIDDEN"],
+  ["LISTING", "neutral", "ARCHIVED"],
 ];
 
 describe("statusTone", () => {

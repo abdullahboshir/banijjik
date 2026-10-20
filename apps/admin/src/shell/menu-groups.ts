@@ -11,6 +11,7 @@ export const MENU_GROUP_ORDER: readonly string[] = [
   "enrollments",
   "catalog",
   "contacts",
+  "directory",
   "inbox",
   "website",
   "money",

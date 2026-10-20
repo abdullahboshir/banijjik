@@ -12,6 +12,7 @@ import type {
   ListingRepository,
   ListingSearchFilter,
   ListingSearchRequest,
+  ListingStaffListRequest,
 } from "../application/ports/listing-repository.js";
 import type { Listing } from "../domain/listing.entity.js";
 import { listingConflict } from "../domain/errors.js";
@@ -163,6 +164,37 @@ export class MongoListingRepository implements ListingRepository {
       request.status === LISTING_STATUS.SUBMITTED || request.status === undefined
         ? { submittedAt: 1, listingId: 1 }
         : { updatedAt: -1, listingId: 1 };
+    const [items, total] = await Promise.all([
+      this.model()
+        .find(filter)
+        .sort(sort)
+        .skip(skip)
+        .limit(request.limit)
+        .lean<ListingDocument[]>()
+        .exec(),
+      this.model().countDocuments(filter).exec(),
+    ]);
+    return {
+      items: items.map(toListing),
+      total,
+      page: request.page,
+      limit: request.limit,
+    };
+  }
+
+  async listStaff(request: ListingStaffListRequest): Promise<ListingPage<Listing>> {
+    const dateField = request.status === LISTING_STATUS.APPROVED ? "publishedAt" : "submittedAt";
+    const filter: Record<string, unknown> = {};
+    if (request.status !== undefined) filter["status"] = request.status;
+    if (request.listingNumber !== undefined) filter["listingNumber"] = request.listingNumber;
+    if (request.from !== undefined || request.to !== undefined) {
+      const range: Record<string, Date> = {};
+      if (request.from !== undefined) range["$gte"] = request.from;
+      if (request.to !== undefined) range["$lte"] = request.to;
+      filter[dateField] = range;
+    }
+    const skip = (request.page - 1) * request.limit;
+    const sort: Record<string, 1 | -1> = { [dateField]: -1, listingId: 1 };
     const [items, total] = await Promise.all([
       this.model()
         .find(filter)

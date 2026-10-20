@@ -43,9 +43,11 @@ import {
 } from "./application/use-cases/search-listings.use-case.js";
 import {
   ApproveListingUseCase,
+  GetDirectoryConfigUseCase,
   GetStaffListingUseCase,
   HideListingUseCase,
   ListDirectoryQueueUseCase,
+  ListStaffListingsUseCase,
   RejectListingUseCase,
   UnhideListingUseCase,
 } from "./application/use-cases/staff-listing.use-cases.js";
@@ -124,7 +126,9 @@ export function buildDirectoryTenantRouterFor(input: DirectoryTenantDependencies
   const deps = dependenciesOf(input);
   return buildDirectoryTenantRouter({
     permission: input.permission,
+    getConfig: new GetDirectoryConfigUseCase(deps),
     listQueue: new ListDirectoryQueueUseCase(deps),
+    listListings: new ListStaffListingsUseCase(deps),
     getListing: new GetStaffListingUseCase(deps),
     approve: new ApproveListingUseCase(deps),
     reject: new RejectListingUseCase(deps),

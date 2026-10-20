@@ -1,7 +1,11 @@
-import type {
-  ListingListItem,
-  ListingResponse,
-  ListingViewer,
+import {
+  LISTING_FIELD_TIER,
+  LISTING_STATUS,
+  LISTING_VIEWER,
+  type ListingListItem,
+  type ListingResponse,
+  type ListingViewer,
+  type StaffListingListItem,
 } from "@banijjik/contracts/directory";
 import type { DirectoryPhotoPolicy } from "@banijjik/contracts/directory";
 import type { CustomFieldRule } from "@banijjik/validation";
@@ -56,5 +60,35 @@ export function toListingListItem(input: ListingViewInput): ListingListItem {
       }),
     ],
     publishedAt: listing.publishedAt?.toISOString() ?? listing.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * Staff all-listings row: PUBLIC fields of the template's first section only (ADR-129).
+ * Never carries PRIVATE or UNLOCKED values.
+ */
+export function toStaffListingListItem(input: {
+  readonly listing: Listing;
+  readonly fields: readonly CustomFieldRule[];
+  readonly firstSectionKey: string | undefined;
+}): StaffListingListItem {
+  const { listing, fields, firstSectionKey } = input;
+  const sectionFields =
+    firstSectionKey === undefined
+      ? []
+      : fields.filter(
+          (field) =>
+            field.sectionKey === firstSectionKey &&
+            (field.listingTier ?? LISTING_FIELD_TIER.PUBLIC) === LISTING_FIELD_TIER.PUBLIC,
+        );
+  return {
+    listingId: listing.listingId,
+    listingNumber: listing.listingNumber,
+    status: listing.status,
+    submittedAt: listing.submittedAt?.toISOString() ?? null,
+    publishedAt: listing.publishedAt?.toISOString() ?? null,
+    editedAfterApproval:
+      listing.status === LISTING_STATUS.SUBMITTED && listing.reviewedAt !== undefined,
+    customFields: projectListingFields(listing.customFields, sectionFields, LISTING_VIEWER.PUBLIC),
   };
 }

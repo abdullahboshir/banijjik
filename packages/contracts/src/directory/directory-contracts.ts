@@ -62,6 +62,37 @@ export interface ListingListItem {
   readonly publishedAt: string;
 }
 
+/** Template `directory` block for staff screens (card M.3, ADR-129). No listingNumberPrefix. */
+export interface DirectoryConfigResponse {
+  readonly sections: readonly {
+    readonly sectionKey: string;
+    readonly label: { readonly bn: string; readonly en: string };
+  }[];
+  readonly rejectionReasons: readonly {
+    readonly reasonKey: string;
+    readonly label: { readonly bn: string; readonly en: string };
+    readonly isFinal: boolean;
+  }[];
+  readonly consents: readonly {
+    readonly consentKey: string;
+    readonly text: { readonly bn: string; readonly en: string };
+  }[];
+}
+
+/**
+ * Staff all-listings row: first section PUBLIC fields only; never PRIVATE or UNLOCKED (ADR-129).
+ * `editedAfterApproval` is true when the listing is SUBMITTED after a prior review (reviewedAt set).
+ */
+export interface StaffListingListItem {
+  readonly listingId: string;
+  readonly listingNumber: string;
+  readonly status: ListingStatus;
+  readonly submittedAt: string | null;
+  readonly publishedAt: string | null;
+  readonly editedAfterApproval: boolean;
+  readonly customFields: Record<string, unknown>;
+}
+
 export interface ListingUpsertRequest {
   readonly customFields?: Record<string, unknown>;
   readonly photoFileIds?: readonly string[];

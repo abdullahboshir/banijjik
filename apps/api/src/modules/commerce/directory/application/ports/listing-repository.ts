@@ -23,6 +23,16 @@ export interface ListingQueueRequest {
   readonly limit: number;
 }
 
+/** Staff all-listings filters (card M.3, ADR-129). */
+export interface ListingStaffListRequest {
+  readonly status?: ListingStatus;
+  readonly listingNumber?: string;
+  readonly from?: Date;
+  readonly to?: Date;
+  readonly page: number;
+  readonly limit: number;
+}
+
 export interface ListingPage<Row> {
   readonly items: readonly Row[];
   readonly total: number;
@@ -38,6 +48,7 @@ export interface ListingRepository {
   findActiveByOwner(ownerCustomerAccountId: CustomerAccountId): Promise<Listing | undefined>;
   searchApproved(request: ListingSearchRequest): Promise<ListingPage<Listing>>;
   listQueue(request: ListingQueueRequest): Promise<ListingPage<Listing>>;
+  listStaff(request: ListingStaffListRequest): Promise<ListingPage<Listing>>;
   /** For the explain test: returns whether the planner used the attribute index. */
   explainSearch(request: ListingSearchRequest): Promise<{ readonly usesAttributeIndex: boolean }>;
 }

@@ -10,6 +10,7 @@ export {
   DIRECTORY_SECTION_KEY_PATTERN,
   LISTING_NUMBER_PREFIX_MAX_LENGTH,
   LISTING_REJECTION_NOTE_MAX_LENGTH,
+  type DirectoryConfigResponse,
   type ListingConsentAccepted,
   type ListingEventPayload,
   type ListingListItem,
@@ -19,6 +20,7 @@ export {
   type ListingSubmitRequest,
   type ListingTransitionRequest,
   type ListingUpsertRequest,
+  type StaffListingListItem,
 } from "./directory-contracts.js";
 export { DIRECTORY_EVENT_TYPE, type DirectoryEventType } from "./directory-event-type.js";
 export {

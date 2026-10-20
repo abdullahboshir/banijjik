@@ -3,6 +3,7 @@
  * Kept off the root index so that file stays within the line limit.
  */
 export {
+  directoryListingsQuerySchema,
   directoryQueueQuerySchema,
   geoBdValueSchema,
   listingIdParamsSchema,

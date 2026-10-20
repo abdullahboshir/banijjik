@@ -255,7 +255,16 @@ Public reads are cacheable (`Cache-Control` + CDN). Writes need the storefront c
 | `POST /my/listing/photos` | customer | | multipart upload, purpose `LISTING_PHOTO`; refused when `directory.photoPolicy` is `NONE` |
 | `GET /listings` · `GET /listings/{listingNumber}` | public / optional customer | rate | APPROVED only; PUBLIC fields always, MEMBERS when signed in; filters `f.<fieldKey>…`; never UNLOCKED/PRIVATE until M.4 |
 
-Staff (tenant, module `directory`): `GET /directory/queue`, `GET /directory/listings/{listingId}`, `POST …/approve`, `…/reject`, `…/hide`, `…/unhide` with permissions `directory.listing.{read,review,hide}`.
+Staff (tenant, module `directory`, permissions `directory.listing.{read,review,hide}`):
+
+| Method & path | Permission | Notes |
+|---|---|---|
+| `GET /directory/config` | read | template `directory` block for screens: `sections`, `rejectionReasons` (with `isFinal`), `consents` (ADR-129); empty arrays when the template has no block |
+| `GET /directory/queue?status=&page&limit` | read | review queue; default SUBMITTED, oldest first; `total` for the menu badge |
+| `GET /directory/listings?status=&listingNumber=&from=&to=&page&limit` | read | all listings; limit ≤ 50; newest first by `submittedAt` (or `publishedAt` when status is APPROVED); rows carry first-section PUBLIC fields only and `editedAfterApproval` (ADR-129) |
+| `GET /directory/listings/{listingId}` | read | every tier (staff projection); rejection checklist comes from config, not this body |
+| `POST …/approve` · `…/reject` | review | body includes `version`; reject needs `reasonKeys` from the template |
+| `POST …/hide` · `…/unhide` | hide | published listings only |
 
 Every customer route answers `404 errors.storefront_not_available` while the business has `contact.customerLogin` off.
 | `POST /checkout` | customer or guest | I | `CheckoutRequest` (cart lines/bookings/enrollments, contact, address, payment choice) → PLACED order / HELD→REQUESTED booking / PENDING enrollment, shared `checkoutId` |

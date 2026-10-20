@@ -2,14 +2,17 @@ import { AUDIT_ACTION } from "@banijjik/contracts";
 import {
   DIRECTORY_EVENT_TYPE,
   LISTING_VIEWER,
+  type DirectoryConfigResponse,
   type ListingRejectRequest,
   type ListingResponse,
+  type ListingStatus,
+  type StaffListingListItem,
 } from "@banijjik/contracts/directory";
 import type { ListingId, OrganizationId, UserId } from "@banijjik/ids";
 import { invalidField, listingNotFound } from "../../domain/errors.js";
 import type { DirectoryDependencies } from "../directory-dependencies.js";
 import { asListingFieldRules } from "../ports/directory-context-ports.js";
-import { toListingResponse } from "../listing-view.js";
+import { toListingResponse, toStaffListingListItem } from "../listing-view.js";
 import { recordListingChange } from "../listing-records.js";
 
 async function staffView(
@@ -55,19 +58,72 @@ export class ListDirectoryQueueUseCase {
   }
 }
 
+export class GetDirectoryConfigUseCase {
+  constructor(private readonly dependencies: DirectoryDependencies) {}
+
+  async execute(input: {
+    readonly organizationId: OrganizationId;
+  }): Promise<DirectoryConfigResponse> {
+    const directory = await this.dependencies.template.directoryBlockOf(input.organizationId);
+    return {
+      sections: directory?.sections ?? [],
+      rejectionReasons: directory?.rejectionReasons ?? [],
+      consents: directory?.consents ?? [],
+    };
+  }
+}
+
 export class GetStaffListingUseCase {
   constructor(private readonly dependencies: DirectoryDependencies) {}
 
   async execute(input: {
     readonly organizationId: OrganizationId;
     readonly listingId: ListingId;
-  }): Promise<ListingResponse & { readonly reviewChecklist: readonly string[] }> {
+  }): Promise<ListingResponse> {
     const listing = await this.dependencies.listings.findById(input.listingId);
     if (listing === undefined) throw listingNotFound();
-    const directory = await this.dependencies.template.directoryBlockOf(input.organizationId);
+    return staffView(this.dependencies, input.organizationId, listing);
+  }
+}
+
+export class ListStaffListingsUseCase {
+  constructor(private readonly dependencies: DirectoryDependencies) {}
+
+  async execute(input: {
+    readonly organizationId: OrganizationId;
+    readonly status?: ListingStatus;
+    readonly listingNumber?: string;
+    readonly from?: Date;
+    readonly to?: Date;
+    readonly page: number;
+    readonly limit: number;
+  }): Promise<{
+    readonly items: StaffListingListItem[];
+    readonly total: number;
+    readonly page: number;
+    readonly limit: number;
+  }> {
+    const [page, directory, effective] = await Promise.all([
+      this.dependencies.listings.listStaff({
+        ...(input.status === undefined ? {} : { status: input.status }),
+        ...(input.listingNumber === undefined ? {} : { listingNumber: input.listingNumber }),
+        ...(input.from === undefined ? {} : { from: input.from }),
+        ...(input.to === undefined ? {} : { to: input.to }),
+        page: input.page,
+        limit: input.limit,
+      }),
+      this.dependencies.template.directoryBlockOf(input.organizationId),
+      this.dependencies.fields.forOrganization(input.organizationId),
+    ]);
+    const firstSectionKey = directory?.sections[0]?.sectionKey;
+    const fields = asListingFieldRules(effective);
     return {
-      ...(await staffView(this.dependencies, input.organizationId, listing)),
-      reviewChecklist: (directory?.sections ?? []).map((section) => section.sectionKey),
+      items: page.items.map((listing) =>
+        toStaffListingListItem({ listing, fields, firstSectionKey }),
+      ),
+      total: page.total,
+      page: page.page,
+      limit: page.limit,
     };
   }
 }

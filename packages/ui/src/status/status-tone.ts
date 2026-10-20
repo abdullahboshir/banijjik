@@ -10,7 +10,8 @@ export type StatusRequestType =
   | "LOCATION"
   | "ROLE"
   | "CONTACT"
-  | "OFFERING";
+  | "OFFERING"
+  | "LISTING";
 
 type ToneTable = Record<StatusRequestType, Readonly<Record<StatusTone, readonly string[]>>>;
 
@@ -96,6 +97,13 @@ export const STATUS_TONE_TABLE: ToneTable = {
     warning: ["DRAFT"],
     danger: [],
     neutral: ["ARCHIVED"],
+  },
+  LISTING: {
+    success: ["APPROVED"],
+    info: [],
+    warning: ["SUBMITTED"],
+    danger: ["REJECTED"],
+    neutral: ["DRAFT", "HIDDEN", "ARCHIVED"],
   },
 };
 

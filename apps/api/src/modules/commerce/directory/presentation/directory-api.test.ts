@@ -45,6 +45,7 @@ function listingField(input: {
   readonly isRequired?: boolean;
   readonly isFilterable?: boolean;
   readonly options?: readonly string[];
+  readonly sectionKey?: string;
   readonly sortOrder: number;
 }) {
   return {
@@ -61,6 +62,42 @@ function listingField(input: {
     listingTier: input.listingTier,
     ...(input.isFilterable === undefined ? {} : { isFilterable: input.isFilterable }),
     ...(input.options === undefined ? {} : { options: input.options }),
+    ...(input.sectionKey === undefined ? {} : { sectionKey: input.sectionKey }),
+  };
+}
+
+const DIRECTORY_BLOCK = {
+  sections: [
+    { sectionKey: "basics", label: { bn: "মূল", en: "Basics" } },
+    { sectionKey: "family", label: { bn: "পরিবার", en: "Family" } },
+  ],
+  consents: [{ consentKey: "truthful", text: { bn: "সত্য", en: "Truthful" } }],
+  rejectionReasons: [
+    { reasonKey: "unclear", label: { bn: "অস্পষ্ট", en: "Unclear" }, isFinal: false },
+    { reasonKey: "false_info", label: { bn: "মিথ্যা", en: "False" }, isFinal: true },
+  ],
+  listingNumberPrefix: "BD",
+};
+
+async function seedDirectoryBlock(organizationId: string): Promise<() => Promise<void>> {
+  const org = await harness.connections.platform
+    .collection("organizations")
+    .findOne({ organizationId });
+  if (org === null) throw new Error("organization missing");
+  const key = org.industryTemplateKey as string;
+  await harness.connections.platform
+    .collection("industry_templates")
+    .updateOne(
+      { industryTemplateKey: key },
+      { $set: { "configuration.directory": DIRECTORY_BLOCK }, $inc: { version: 1 } },
+    );
+  return async () => {
+    await harness.connections.platform
+      .collection("industry_templates")
+      .updateOne(
+        { industryTemplateKey: key },
+        { $unset: { "configuration.directory": "" }, $inc: { version: 1 } },
+      );
   };
 }
 
@@ -321,6 +358,151 @@ describe("directory listings", () => {
       if (response.status === 429) break;
     }
     expect(lastStatus).toBe(429);
+  });
+
+  it("returns directory config for staff and refuses a role without read", async () => {
+    const world = await aDirectoryWorld();
+    const cleanup = await seedDirectoryBlock(world.organizationA);
+    try {
+      const ok = await world.alice.call("get", `/orgs/${world.organizationA}/directory/config`);
+      expect(ok.status).toBe(200);
+      expect(ok.body.data.sections).toEqual(DIRECTORY_BLOCK.sections);
+      expect(ok.body.data.rejectionReasons).toEqual(DIRECTORY_BLOCK.rejectionReasons);
+      expect(ok.body.data.consents).toEqual(DIRECTORY_BLOCK.consents);
+      expect(ok.body.data.listingNumberPrefix).toBeUndefined();
+
+      const cashierRole = await findSystemRoleId(
+        harness.connections,
+        world.organizationA,
+        SYSTEM_ROLE_KEY.CASHIER,
+      );
+      const cashier = await addMemberWithAssignments(harness.app, world.organizationA, [
+        { locationId: ALL_LOCATIONS, roleId: cashierRole },
+      ]);
+      const denied = await cashier.actor.call(
+        "get",
+        `/orgs/${world.organizationA}/directory/config`,
+      );
+      expect(denied.status).toBe(403);
+
+      const crossOrg = await world.bob.call("get", `/orgs/${world.organizationA}/directory/config`);
+      expect(crossOrg.status).toBe(404);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it("lists staff rows with PUBLIC first-section fields only and enforces paging", async () => {
+    const world = await aDirectoryWorld();
+    const cleanup = await seedDirectoryBlock(world.organizationA);
+    try {
+      for (const field of [
+        listingField({
+          fieldKey: "public_basic",
+          fieldType: CUSTOM_FIELD_TYPE.TEXT,
+          listingTier: LISTING_FIELD_TIER.PUBLIC,
+          sectionKey: "basics",
+          sortOrder: 10,
+        }),
+        listingField({
+          fieldKey: "private_basic",
+          fieldType: CUSTOM_FIELD_TYPE.TEXT,
+          listingTier: LISTING_FIELD_TIER.PRIVATE,
+          sectionKey: "basics",
+          sortOrder: 11,
+        }),
+        listingField({
+          fieldKey: "unlocked_basic",
+          fieldType: CUSTOM_FIELD_TYPE.TEXT,
+          listingTier: LISTING_FIELD_TIER.UNLOCKED,
+          sectionKey: "basics",
+          sortOrder: 12,
+        }),
+        listingField({
+          fieldKey: "public_family",
+          fieldType: CUSTOM_FIELD_TYPE.TEXT,
+          listingTier: LISTING_FIELD_TIER.PUBLIC,
+          sectionKey: "family",
+          sortOrder: 13,
+        }),
+      ]) {
+        const created = await world.alice.call(
+          "post",
+          `/orgs/${world.organizationA}/custom-fields`,
+          field,
+        );
+        expect(created.status).toBe(201);
+      }
+
+      const customer = await signInCustomer(harness, world.organizationA);
+      const cookies = asCustomerCookies(customer.session);
+      await callStorefront(harness.app, {
+        method: "put",
+        organizationId: world.organizationA,
+        suffix: "/my/listing",
+        cookies,
+        body: {
+          customFields: {
+            age_band: "25",
+            public_basic: "visible",
+            private_basic: "secret",
+            unlocked_basic: "guard",
+            public_family: "other-section",
+          },
+        },
+      });
+      await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/listing/submit",
+        cookies,
+        body: { consents: [{ consentKey: "truthful" }] },
+      });
+
+      const list = await world.alice.call(
+        "get",
+        `/orgs/${world.organizationA}/directory/listings?status=SUBMITTED`,
+      );
+      expect(list.status).toBe(200);
+      expect(list.body.data.items).toHaveLength(1);
+      const row = list.body.data.items[0] as {
+        customFields: Record<string, unknown>;
+        editedAfterApproval: boolean;
+      };
+      expect(row.customFields).toEqual({ public_basic: "visible" });
+      expect(row.customFields).not.toHaveProperty("private_basic");
+      expect(row.customFields).not.toHaveProperty("unlocked_basic");
+      expect(row.customFields).not.toHaveProperty("public_family");
+      expect(row.editedAfterApproval).toBe(false);
+
+      const overLimit = await world.alice.call(
+        "get",
+        `/orgs/${world.organizationA}/directory/listings?limit=51`,
+      );
+      expect(overLimit.status).toBe(400);
+
+      const cashierRole = await findSystemRoleId(
+        harness.connections,
+        world.organizationA,
+        SYSTEM_ROLE_KEY.CASHIER,
+      );
+      const cashier = await addMemberWithAssignments(harness.app, world.organizationA, [
+        { locationId: ALL_LOCATIONS, roleId: cashierRole },
+      ]);
+      const denied = await cashier.actor.call(
+        "get",
+        `/orgs/${world.organizationA}/directory/listings`,
+      );
+      expect(denied.status).toBe(403);
+
+      const crossOrg = await world.bob.call(
+        "get",
+        `/orgs/${world.organizationA}/directory/listings`,
+      );
+      expect(crossOrg.status).toBe(404);
+    } finally {
+      await cleanup();
+    }
   });
 
   it("refuses a viewer on review and redacts personal values in the audit log", async () => {
