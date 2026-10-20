@@ -8,7 +8,7 @@ import type { OrganizationId } from "@banijjik/ids";
 import { listingNotFound } from "../../domain/errors.js";
 import type { DirectoryDependencies } from "../directory-dependencies.js";
 import { listingFiltersFromQuery } from "../listing-filters.js";
-import { asListingFieldRules } from "../index.js";
+import { asListingFieldRules } from "../../index.js";
 import { toListingListItem, toListingResponse } from "../listing-view.js";
 
 interface UnlockCheckInput {

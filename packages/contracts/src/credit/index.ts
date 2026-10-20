@@ -10,6 +10,7 @@ export {
   CREDIT_PACK_NAME_MAX_LENGTH,
   CREDIT_PACK_STATUS,
   CREDIT_SOURCE_TYPE,
+  CREDIT_RULE_KEY,
   type CreditAccountResponse,
   type CreditAdjustRequest,
   type CreditBalance,
@@ -19,6 +20,7 @@ export {
   type CreditPackCreateRequest,
   type CreditPackStatus,
   type CreditPackUpdateRequest,
+  type CreditRuleKey,
   type CreditSourceType,
   type ListingUnlock,
   type MyCreditsResponse,
@@ -27,9 +29,4 @@ export {
   type UnlockResponse,
 } from "./credit-contracts.js";
 export { CREDIT_EVENT_TYPE, type CreditEventType } from "./credit-event-type.js";
-export {
-  CREDIT_RULE_KEY,
-  CREDIT_SEARCH_RULES,
-  CREDIT_SETTINGS_TOPIC,
-  type CreditRuleKey,
-} from "./credit-settings.js";
+export { CREDIT_SEARCH_RULES, CREDIT_SETTINGS_TOPIC } from "./credit-settings.js";

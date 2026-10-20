@@ -17,11 +17,13 @@ export function buildCreditTenantRouter(input: CreditTenantRouterDependencies): 
 
   const read = input.permission(PERMISSION_KEY.CREDIT_ACCOUNT_READ);
   router.get("/credit/accounts/:customerAccountId", read, async (request, response) => {
-    const customerAccountId = asId<CustomerAccountId>(
-      Array.isArray(request.params.customerAccountId)
-        ? request.params.customerAccountId[0]
-        : request.params.customerAccountId,
-    );
+    const customerAccountIdParam = Array.isArray(request.params.customerAccountId)
+      ? request.params.customerAccountId[0]
+      : request.params.customerAccountId;
+    if (!customerAccountIdParam) {
+      throw new Error("customerAccountId is required");
+    }
+    const customerAccountId = asId<CustomerAccountId>(customerAccountIdParam);
     sendData(
       response,
       await input.getAccount.execute(customerAccountId, {
@@ -33,11 +35,13 @@ export function buildCreditTenantRouter(input: CreditTenantRouterDependencies): 
 
   const adjust = input.permission(PERMISSION_KEY.CREDIT_ACCOUNT_ADJUST);
   router.post("/credit/accounts/:customerAccountId/adjust", adjust, async (request, response) => {
-    const customerAccountId = asId<CustomerAccountId>(
-      Array.isArray(request.params.customerAccountId)
-        ? request.params.customerAccountId[0]
-        : request.params.customerAccountId,
-    );
+    const customerAccountIdParam = Array.isArray(request.params.customerAccountId)
+      ? request.params.customerAccountId[0]
+      : request.params.customerAccountId;
+    if (!customerAccountIdParam) {
+      throw new Error("customerAccountId is required");
+    }
+    const customerAccountId = asId<CustomerAccountId>(customerAccountIdParam);
     sendData(
       response,
       await input.adjustCredits.execute({

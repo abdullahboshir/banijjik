@@ -6,7 +6,7 @@ import {
   updateVersioned,
 } from "../../../../kernel/db/index.js";
 import type { CreditPackRepository } from "../application/ports/credit-pack-repository.js";
-import type { CreditPack } from "../domain/index.js";
+import type { CreditPack } from "@banijjik/contracts/credit";
 import { CREDIT_PACK_MODEL_NAME, type CreditPackDocument } from "./credit-pack.schema.js";
 
 export class MongoCreditPackRepository implements CreditPackRepository {

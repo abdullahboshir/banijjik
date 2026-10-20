@@ -41,6 +41,9 @@ function mountUnlockRoute(router: Router, input: CreditStorefrontRouterDependenc
       const listingNumber = Array.isArray(request.params.listingNumber)
         ? request.params.listingNumber[0]
         : request.params.listingNumber;
+      if (!listingNumber) {
+        throw new Error("listingNumber is required");
+      }
       sendData(
         response,
         await input.unlockListing.execute({

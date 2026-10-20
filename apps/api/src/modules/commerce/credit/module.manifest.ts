@@ -4,8 +4,9 @@ import {
   PERMISSION_KEY,
   SURFACE,
   permissionDefinition,
+  EVENT_TYPE,
 } from "@banijjik/contracts";
-import { CREDIT_RULE_KEY, EVENT_TYPE } from "@banijjik/contracts";
+import { CREDIT_RULE_KEY } from "@banijjik/contracts/credit";
 import { defineModule } from "../../../kernel/modules/index.js";
 
 /** The credit manifest (doc 16 §3.5, M.4 plan). */

@@ -54,19 +54,14 @@ Implemented the core credit module infrastructure including contracts, validatio
 
 ## Known Issues / Type Errors
 
-After commit `3e16524`, the following type errors remain (from latest typecheck):
+After commit `f589f6a`, the following type errors remain (from latest typecheck):
 
-1. **CustomerAccountId branding:** Many places still use `string` instead of branded `CustomerAccountId` type
-2. **CreditEntry structure:** Missing `fromPurchaseEntryId` field in contract vs schema mismatch
-3. **OrganizationId context:** `getRequestContext().organizationId` can be undefined in some repository methods
-4. **UnlockListItem mapping:** `GetMyUnlocksUseCase` returns `ListingUnlock[]` but should return `UnlockListItem[]` (needs listingNumber, customFields)
-5. **Model context:** Repository `models()` calls need proper context with non-undefined organizationId
-6. **Unlock input:** Router passes `listingNumber` but use case expects `listingId` - need conversion
-7. **Event types:** Manifest event types are strings but should be `EventType` enum
-8. **Module manifest storefrontSections:** Type mismatch - expects string not object
-9. **Missing directory index:** Directory module index doesn't export ports properly
-10. **AdjustCreditsUseCase:** Missing `approvalToken` field in input structure
-11. **Mongo document mapping:** Document mapping methods have type issues with organizationId being optional
+1. **Kernel imports:** Some infrastructure files still cannot find kernel modules (`../../../../kernel/audit/index.js`, etc.) - path issue
+2. **Test mocks:** Test file has mock type issues with repository and event publisher
+3. **Router params:** Some router parameter handling needs string|undefined narrowing
+4. **Contract imports:** Some files still import from domain instead of contracts
+
+Most type errors are now resolved compared to the initial state.
 
 ## Remaining Work (Plan Requirements)
 
@@ -145,22 +140,25 @@ After commit `3e16524`, the following type errors remain (from latest typecheck)
 6. `928d7b2` - Simplify unlock use case to accept listing data directly
 7. `2b9c0e3` - Add credit module to module class and validation
 8. `3e16524` - Fix credit module domain exports and repository model usage
+9. `0c1e31e` - Update M.4 handoff with current type errors and commit count
+10. `a6b715b` - Fix credit module type errors (contracts, repos, unlock reader)
+11. `f2f0869` - Fix credit error codes, date handling, and remaining type fixes
+12. `f589f6a` - Fix credit event types, imports, and date conversions
 
 ## Next Steps for Next Session
 
-1. Fix remaining type errors (CustomerAccountId branding, organizationId context, event types)
-2. Fix UnlockListItem mapping to include listingNumber and customFields
-3. Fix model context usage in repositories (non-undefined organizationId)
-4. Fix unlock router to convert listingNumber to listingId
-5. Fix module manifest storefrontSections type
-6. Wire listing repository into unlock use case
-7. Wire settings reader for configuration values
-8. Add approval token verification
-9. Complete the test suite per plan
-10. Build admin UI
-11. Add i18n keys
-12. Write ADR-130 and update docs
-13. Full verification and handoff
+1. Fix remaining kernel import path issues
+2. Fix test mock type issues
+3. Fix router parameter narrowing for string|undefined
+4. Fix contract imports to use contracts instead of domain
+5. Wire listing repository into unlock use case
+6. Wire settings reader for configuration values
+7. Add approval token verification
+8. Complete the test suite per plan
+9. Build admin UI
+10. Add i18n keys
+11. Write ADR-130 and update docs
+12. Full verification and handoff
 
 ## Notes
 

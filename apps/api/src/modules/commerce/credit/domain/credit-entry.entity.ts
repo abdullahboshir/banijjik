@@ -30,6 +30,7 @@ export class CreditEntryEntity {
       credits: this.credits,
       expiresOn: this.expiresOn?.toISOString() ?? null,
       source: this.source,
+      fromPurchaseEntryId: this.fromPurchaseEntryId,
       reason: this.reason,
       createdByUserId: this.createdByUserId,
       occurredAt: this.occurredAt.toISOString(),

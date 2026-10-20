@@ -1,6 +1,6 @@
 import type { CreditPack as CreditPackContract } from "@banijjik/contracts/credit";
 import type { OrganizationId } from "@banijjik/ids";
-import type { Money } from "@banijjik/contracts/pricing";
+import type { Money } from "@banijjik/contracts/accounting";
 
 export type CreditPack = CreditPackContract;
 
@@ -22,6 +22,7 @@ export class CreditPackEntity {
   toResponse(): CreditPack {
     return {
       creditPackId: this.creditPackId,
+      organizationId: this.organizationId,
       name: this.name,
       credits: this.credits,
       price: this.price,
