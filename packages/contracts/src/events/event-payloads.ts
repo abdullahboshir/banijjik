@@ -1,5 +1,10 @@
 import { ACCOUNTING_EVENT_TYPE, EXPENSE_EVENT_TYPE } from "../accounting/accounting-event-type.js";
-import { BOOKING_EVENT_TYPE, type BookingEventPayload } from "../booking/booking-event-type.js";
+import {
+  BOOKING_EVENT_TYPE,
+  type BookingEventPayload,
+  type BookingReminderPayload,
+  type ResourceEventPayload,
+} from "../booking/booking-event-type.js";
 import type { OfferingEventPayload } from "../catalog/catalog-contracts.js";
 import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
 import type { PromotionEventPayload } from "../pricing/pricing-contracts.js";
@@ -124,8 +129,19 @@ export interface EventPayloadMap {
   readonly [PAYMENT_EVENT_TYPE.PAYMENT_REFUNDED]: PaymentEventPayload;
   readonly [PAYMENT_EVENT_TYPE.PAYMENT_REVERSED]: PaymentEventPayload;
   readonly [PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED]: StoreCreditEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_HELD]: BookingEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_REQUESTED]: BookingEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_CONFIRMED]: BookingEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_RESCHEDULED]: BookingEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_CHECK_IN_RECORDED]: BookingEventPayload;
   readonly [BOOKING_EVENT_TYPE.BOOKING_COMPLETED]: BookingEventPayload;
   readonly [BOOKING_EVENT_TYPE.BOOKING_CANCELLED]: BookingEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_NO_SHOW_MARKED]: BookingEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_EXPIRED]: BookingEventPayload;
+  readonly [BOOKING_EVENT_TYPE.BOOKING_REMINDED]: BookingReminderPayload;
+  readonly [BOOKING_EVENT_TYPE.RESOURCE_CREATED]: ResourceEventPayload;
+  readonly [BOOKING_EVENT_TYPE.RESOURCE_UPDATED]: ResourceEventPayload;
+  readonly [BOOKING_EVENT_TYPE.RESOURCE_DEACTIVATED]: ResourceEventPayload;
   readonly [PRICING_EVENT_TYPE.PROMOTION_CHANGED]: PromotionEventPayload;
   readonly [INVENTORY_EVENT_TYPE.STOCK_CHANGED]: InventoryStockChangedPayload;
   readonly [INVENTORY_EVENT_TYPE.STOCK_LOW]: InventoryStockLowPayload;

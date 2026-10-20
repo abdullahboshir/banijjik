@@ -1,0 +1,31 @@
+/**
+ * Booking (card 3.6) request schemas (`@banijjik/validation/booking`).
+ */
+export {
+  availabilityQuerySchema,
+  bookingCancelRequestSchema,
+  bookingCreateRequestSchema,
+  bookingHoldRequestSchema,
+  bookingIdParamsSchema,
+  bookingListQuerySchema,
+  bookingRescheduleRequestSchema,
+  bookingTransitionRequestSchema,
+  bookingVersionRequestSchema,
+  resourceArchiveRequestSchema,
+  resourceCreateRequestSchema,
+  resourceIdParamsSchema,
+  resourceListQuerySchema,
+  resourceTimeOffCreateRequestSchema,
+  resourceTimeOffIdParamsSchema,
+  resourceUpdateRequestSchema,
+  type AvailabilityQuery,
+  type BookingCancelBody,
+  type BookingCreateBody,
+  type BookingHoldBody,
+  type BookingListQuery,
+  type BookingRescheduleBody,
+  type ResourceCreateBody,
+  type ResourceListQuery,
+  type ResourceTimeOffCreateBody,
+  type ResourceUpdateBody,
+} from "./booking-schemas.js";

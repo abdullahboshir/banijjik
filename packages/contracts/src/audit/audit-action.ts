@@ -75,6 +75,17 @@ export const AUDIT_ACTION = {
   LISTING_CONCEALED: "directory.listing.concealed",
   LISTING_REVEALED: "directory.listing.revealed",
   LISTING_ARCHIVED: "directory.listing.archived",
+  BOOKING_CREATED: "booking.booking.created",
+  BOOKING_CONFIRMED: "booking.booking.confirmed",
+  BOOKING_RESCHEDULED: "booking.booking.rescheduled",
+  BOOKING_CHECKED_IN: "booking.booking.checkInRecorded",
+  BOOKING_COMPLETED: "booking.booking.completed",
+  BOOKING_CANCELLED: "booking.booking.cancelled",
+  BOOKING_NO_SHOW: "booking.booking.noShowMarked",
+  BOOKING_EXPIRED: "booking.booking.expired",
+  RESOURCE_CREATED: "booking.resource.created",
+  RESOURCE_UPDATED: "booking.resource.updated",
+  RESOURCE_ARCHIVED: "booking.resource.deactivated",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -110,6 +121,9 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "stockMovement",
   "stockTransfer",
   "listing",
+  "booking",
+  "resource",
+  "resourceTimeOff",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

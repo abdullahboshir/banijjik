@@ -71,6 +71,15 @@ export const PERMISSION_KEY = {
   DIRECTORY_LISTING_READ: "directory.listing.read",
   DIRECTORY_LISTING_REVIEW: "directory.listing.review",
   DIRECTORY_LISTING_HIDE: "directory.listing.hide",
+  BOOKING_BOOKING_READ: "booking.booking.read",
+  BOOKING_BOOKING_CREATE: "booking.booking.create",
+  BOOKING_BOOKING_UPDATE: "booking.booking.update",
+  BOOKING_BOOKING_RESCHEDULE: "booking.booking.reschedule",
+  BOOKING_BOOKING_CANCEL: "booking.booking.cancel",
+  BOOKING_RESOURCE_READ: "booking.resource.read",
+  BOOKING_RESOURCE_CREATE: "booking.resource.create",
+  BOOKING_RESOURCE_UPDATE: "booking.resource.update",
+  BOOKING_RESOURCE_ARCHIVE: "booking.resource.archive",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

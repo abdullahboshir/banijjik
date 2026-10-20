@@ -62,6 +62,7 @@ function buildTree() {
   const accountingEntry = join(CONTRACTS_SOURCE, "accounting", "index.ts");
   const pricingEntry = join(CONTRACTS_SOURCE, "pricing", "index.ts");
   const directoryEntry = join(CONTRACTS_SOURCE, "directory", "index.ts");
+  const bookingEntry = join(CONTRACTS_SOURCE, "booking", "index.ts");
   writeFileSync(
     join(treeRoot, "tsconfig.json"),
     JSON.stringify({
@@ -78,6 +79,7 @@ function buildTree() {
           "@banijjik/contracts/accounting": [accountingEntry],
           "@banijjik/contracts/pricing": [pricingEntry],
           "@banijjik/contracts/directory": [directoryEntry],
+          "@banijjik/contracts/booking": [bookingEntry],
           "@banijjik/contracts": [contractsEntry],
         },
       },
@@ -86,7 +88,7 @@ function buildTree() {
   );
   writeFileSync(
     join(treeRoot, "vitest.config.mjs"),
-    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
+    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts/booking": ${JSON.stringify(bookingEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
   );
 }
 

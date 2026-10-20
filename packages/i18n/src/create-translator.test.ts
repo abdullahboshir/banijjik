@@ -10,6 +10,7 @@ import {
   VALIDATION_MESSAGE_KEYS,
 } from "@banijjik/contracts";
 import { CATALOG_MESSAGE_KEYS } from "@banijjik/contracts/catalog";
+import { BOOKING_MESSAGE_KEYS } from "@banijjik/contracts/booking";
 import { PRICING_MESSAGE_KEYS } from "@banijjik/contracts/pricing";
 import { FILE_MESSAGE_KEYS } from "@banijjik/contracts/file";
 import { describe, expect, it, vi } from "vitest";
@@ -50,6 +51,7 @@ describe("bundled catalogs", () => {
       ...FILE_MESSAGE_KEYS,
       ...CATALOG_MESSAGE_KEYS,
       ...PRICING_MESSAGE_KEYS,
+      ...BOOKING_MESSAGE_KEYS,
     ];
     for (const locale of SUPPORTED_LOCALES) {
       for (const key of emittedKeys) {
