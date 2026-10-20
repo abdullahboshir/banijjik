@@ -1,6 +1,6 @@
 # Handoff: card M.3 · IMPLEMENT · 2026-10-20
 
-- **Branch / commit:** `s/m3-moderation-screens` (tip after screens + browser-fix commits; API commit `4a50e97`). Not merged/pushed.
+- **Branch / commit:** `s/m3-moderation-screens` @ `18970be` (API `4a50e97`, screens `60d9798`). Not merged/pushed.
 - **Model:** Cursor (Composer)
 - **Done:**
   - Admin moderation: queue (`/directory/queue`), all listings with filters (`/directory/listings`), review page with tier chips, local reject checklist, approve/reject/hide/unhide
