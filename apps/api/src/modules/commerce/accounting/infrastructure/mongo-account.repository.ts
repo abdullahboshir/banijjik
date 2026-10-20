@@ -82,4 +82,43 @@ export class MongoAccountRepository implements AccountRepository {
   async countSystemAccounts(): Promise<number> {
     return accountModel().countDocuments({ isSystem: true });
   }
+
+  async updateName(
+    accountId: AccountId,
+    name: { readonly bn: string; readonly en: string },
+  ): Promise<void> {
+    await accountModel().updateOne(
+      { accountId },
+      { name, updatedAt: new Date() },
+      sessionOption(getActiveSession()),
+    );
+  }
+
+  async updateStatus(accountId: AccountId, status: AccountStatus): Promise<void> {
+    await accountModel().updateOne(
+      { accountId },
+      { status, updatedAt: new Date() },
+      sessionOption(getActiveSession()),
+    );
+  }
+
+  async listByOrganization(organizationId: OrganizationId): Promise<Account[]> {
+    const rows = await accountModel()
+      .find({ organizationId })
+      .sort({ accountCode: 1 })
+      .lean<AccountDocument[]>();
+    return rows.map(toEntity);
+  }
+
+  async listByTypeAndStatus(
+    organizationId: OrganizationId,
+    accountType: AccountType,
+    status: AccountStatus,
+  ): Promise<Account[]> {
+    const rows = await accountModel()
+      .find({ organizationId, accountType, status })
+      .sort({ accountCode: 1 })
+      .lean<AccountDocument[]>();
+    return rows.map(toEntity);
+  }
 }

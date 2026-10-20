@@ -62,6 +62,10 @@ export const ACCOUNTING_FISCAL_YEAR_START_SETTING_KEY = "accounting.fiscalYearSt
 /** Default fiscal year start: 1 July (Bangladesh common practice); day-of-year 1–366 as INTEGER. */
 export const ACCOUNTING_FISCAL_YEAR_START_DEFAULT = 182;
 
+/** Organization setting: a sole OWNER may post manual journal entries without approval (default true). */
+export const BOOKKEEPING_MANUAL_ENTRY_OWNER_WITHOUT_APPROVAL_SETTING_KEY =
+  "bookkeeping.manualEntryOwnerWithoutApproval";
+
 export interface LocalizedAccountName {
   readonly bn: string;
   readonly en: string;
@@ -120,4 +124,84 @@ export interface SystemAccountSeed {
   readonly accountCode: SystemAccountCode;
   readonly accountType: AccountType;
   readonly name: LocalizedAccountName;
+}
+
+/** `POST /bookkeeping/accounts` (3.8b). */
+export interface AccountCreateRequest {
+  readonly name: LocalizedAccountName;
+  readonly accountType: AccountType;
+  readonly parentAccountCode?: string | undefined;
+}
+
+/** `PATCH /bookkeeping/accounts/{accountId}` (3.8b). */
+export interface AccountUpdateRequest {
+  readonly version: number;
+  readonly name?: LocalizedAccountName | undefined;
+  readonly status?: AccountStatus | undefined;
+}
+
+/** `POST /bookkeeping/journal/manual` (3.8b). */
+export interface ManualJournalEntryRequest {
+  readonly businessDate: string;
+  readonly locationId?: string | undefined;
+  readonly memo: string;
+  readonly lines: readonly ManualJournalLine[];
+}
+
+export interface ManualJournalLine {
+  readonly accountId: string;
+  readonly debit?: Money | undefined;
+  readonly credit?: Money | undefined;
+}
+
+/** `GET /bookkeeping/statements/profit-and-loss` (3.8b). */
+export interface ProfitAndLossStatementRequest {
+  readonly from: string;
+  readonly to: string;
+  readonly locationId?: string | undefined;
+}
+
+export interface ProfitAndLossStatementRow {
+  readonly accountId: string;
+  readonly accountCode: string;
+  readonly name: LocalizedAccountName;
+  readonly accountType: AccountType;
+  readonly incomeTotal: Money;
+  readonly expenseTotal: Money;
+  readonly net: Money;
+}
+
+export interface ProfitAndLossStatementResponse {
+  readonly from: string;
+  readonly to: string;
+  readonly accounts: readonly ProfitAndLossStatementRow[];
+  readonly totalIncome: Money;
+  readonly totalExpense: Money;
+  readonly netProfit: Money;
+}
+
+/** `GET /bookkeeping/statements/balance-sheet` (3.8b). */
+export interface BalanceSheetRequest {
+  readonly asOf: string;
+}
+
+export interface BalanceSheetRow {
+  readonly accountId: string;
+  readonly accountCode: string;
+  readonly name: LocalizedAccountName;
+  readonly accountType: AccountType;
+  readonly balance: Money;
+}
+
+export interface BalanceSheetResponse {
+  readonly asOf: string;
+  readonly assets: readonly BalanceSheetRow[];
+  readonly liabilities: readonly BalanceSheetRow[];
+  readonly equity: readonly BalanceSheetRow[];
+  readonly retainedEarnings: Money;
+  readonly totalAssets: Money;
+  readonly totalLiabilities: Money;
+  readonly totalEquity: Money;
+  /** True when assets = liabilities + equity + retained earnings. */
+  readonly isBalanced: boolean;
 }

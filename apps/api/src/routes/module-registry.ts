@@ -11,6 +11,7 @@ import { saasBillingManifest } from "../modules/platform/saas-billing/index.js";
 import { customFieldManifest } from "../modules/core/custom-field/index.js";
 import { fileManifest } from "../modules/core/file/index.js";
 import { accountingManifest } from "../modules/commerce/accounting/index.js";
+import { bookkeepingManifest } from "../modules/commerce/bookkeeping/index.js";
 import { catalogManifest } from "../modules/commerce/catalog/index.js";
 import { contactManifest } from "../modules/commerce/contact/index.js";
 import { expenseManifest } from "../modules/commerce/expense/index.js";
@@ -37,6 +38,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   settingsManifest,
   fileManifest,
   accountingManifest,
+  bookkeepingManifest,
   contactManifest,
   catalogManifest,
   expenseManifest,

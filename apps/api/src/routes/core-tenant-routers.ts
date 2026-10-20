@@ -31,6 +31,7 @@ import { buildInventoryTenantRouter } from "./inventory-tenant-router.js";
 import { buildDirectoryTenantRouter } from "./directory-tenant-router.js";
 import { buildBookingTenantRouter } from "./booking-tenant-router.js";
 import { buildCreditTenantRouter } from "./credit-tenant-router.js";
+import { buildBookkeepingTenantRouter } from "./bookkeeping-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -57,6 +58,7 @@ export interface CoreTenantRouters {
   readonly contactRouter: Router;
   readonly catalogRouter: Router;
   readonly accountingRouter: Router;
+  readonly bookkeepingRouter: Router;
   readonly expenseRouter: Router;
   readonly pricingRouter: Router;
   readonly inventoryRouter: Router;
@@ -121,6 +123,7 @@ function buildCommerceTenantRouters(
   | "inventoryRouter"
   | "directoryRouter"
   | "accountingRouter"
+  | "bookkeepingRouter"
   | "expenseRouter"
   | "bookingRouter"
   | "creditRouter"
@@ -142,6 +145,11 @@ function buildCommerceTenantRouters(
     inventoryRouter: buildInventoryTenantRouter({ ...shared, rateLimiter: input.rateLimiter }),
     directoryRouter: buildDirectoryTenantRouter(shared),
     accountingRouter: buildAccountingTenantRouter({
+      clock: input.clock,
+      audit: input.audit,
+      permission: input.permission,
+    }),
+    bookkeepingRouter: buildBookkeepingTenantRouter({
       clock: input.clock,
       audit: input.audit,
       permission: input.permission,

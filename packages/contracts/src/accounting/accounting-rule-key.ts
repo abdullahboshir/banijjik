@@ -7,6 +7,9 @@ export const ACCOUNTING_RULE_KEY = defineEnum([
   "account_not_found",
   "journal_already_posted",
   "posting_source_missing",
+  "account_archived",
+  "entry_already_reversed",
+  "future_business_date",
 ]);
 
 export type AccountingRuleKey = (typeof ACCOUNTING_RULE_KEY)[keyof typeof ACCOUNTING_RULE_KEY];

@@ -1,0 +1,88 @@
+import {
+  MODULE_CLASS,
+  MODULE_KEY,
+  PERMISSION_KEY,
+  SEQUENCE_KEY,
+  SURFACE,
+  permissionDefinition,
+} from "@banijjik/contracts";
+import { BOOKKEEPING_MANUAL_ENTRY_OWNER_WITHOUT_APPROVAL_SETTING_KEY } from "@banijjik/contracts/accounting";
+import { defineModule } from "../../../kernel/modules/index.js";
+
+/** The bookkeeping manifest (OPTIONAL add-on, ADR-051, ADR-128). */
+export const bookkeepingManifest = defineModule({
+  key: MODULE_KEY.BOOKKEEPING,
+  path: "commerce/bookkeeping",
+  moduleClass: MODULE_CLASS.OPTIONAL,
+  dependsOn: [MODULE_KEY.ACCOUNTING],
+  providesKinds: [],
+  requiresAnyKind: [],
+  tenantCanDisable: true,
+  permissions: [
+    permissionDefinition(PERMISSION_KEY.BOOKKEEPING_ACCOUNT_READ, { isSensitive: false }),
+    permissionDefinition(PERMISSION_KEY.BOOKKEEPING_ACCOUNT_CREATE, { isSensitive: false }),
+    permissionDefinition(PERMISSION_KEY.BOOKKEEPING_ACCOUNT_UPDATE, { isSensitive: false }),
+    permissionDefinition(PERMISSION_KEY.BOOKKEEPING_JOURNAL_READ, { isSensitive: false }),
+    permissionDefinition(PERMISSION_KEY.BOOKKEEPING_JOURNAL_CREATE_MANUAL, { isSensitive: true }),
+    permissionDefinition(PERMISSION_KEY.BOOKKEEPING_STATEMENT_READ, { isSensitive: false }),
+  ],
+  routes: {
+    admin: [
+      "/orgs/:organizationId/bookkeeping/accounts",
+      "/orgs/:organizationId/bookkeeping/journal/manual",
+      "/orgs/:organizationId/bookkeeping/journal/:journalEntryId/reverse",
+      "/orgs/:organizationId/bookkeeping/statements/profit-and-loss",
+      "/orgs/:organizationId/bookkeeping/statements/balance-sheet",
+    ],
+  },
+  menu: [
+    {
+      menuKey: "bookkeeping.accounts",
+      surface: SURFACE.ADMIN,
+      groupKey: "money",
+      labelTermKey: "menu.bookkeeping.accounts",
+      path: "money/accounts",
+      iconKey: "wallet",
+      permissionKey: PERMISSION_KEY.BOOKKEEPING_ACCOUNT_READ,
+      order: 10,
+    },
+    {
+      menuKey: "bookkeeping.journal",
+      surface: SURFACE.ADMIN,
+      groupKey: "money",
+      labelTermKey: "menu.bookkeeping.journal",
+      path: "money/journal",
+      iconKey: "list",
+      permissionKey: PERMISSION_KEY.BOOKKEEPING_JOURNAL_READ,
+      order: 11,
+    },
+    {
+      menuKey: "bookkeeping.statements",
+      surface: SURFACE.ADMIN,
+      groupKey: "money",
+      labelTermKey: "menu.bookkeeping.statements",
+      path: "money/statements",
+      iconKey: "chart",
+      permissionKey: PERMISSION_KEY.BOOKKEEPING_STATEMENT_READ,
+      order: 12,
+    },
+  ],
+  settings: [
+    {
+      settingKey: BOOKKEEPING_MANUAL_ENTRY_OWNER_WITHOUT_APPROVAL_SETTING_KEY,
+      value: { kind: "BOOLEAN" },
+      systemDefault: true,
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
+  ],
+  customFieldEntities: [],
+  botTools: [],
+  storefrontSections: [],
+  events: {
+    emits: [],
+    consumes: [],
+  },
+  limitKeys: [],
+  sequenceKeys: [SEQUENCE_KEY.CUSTOM_ACCOUNT],
+});

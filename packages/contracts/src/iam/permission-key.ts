@@ -84,6 +84,12 @@ export const PERMISSION_KEY = {
   CREDIT_PACK_UPDATE: "credit.pack.update",
   CREDIT_ACCOUNT_READ: "credit.account.read",
   CREDIT_ACCOUNT_ADJUST: "credit.account.adjust",
+  BOOKKEEPING_ACCOUNT_READ: "bookkeeping.account.read",
+  BOOKKEEPING_ACCOUNT_CREATE: "bookkeeping.account.create",
+  BOOKKEEPING_ACCOUNT_UPDATE: "bookkeeping.account.update",
+  BOOKKEEPING_JOURNAL_READ: "bookkeeping.journal.read",
+  BOOKKEEPING_JOURNAL_CREATE_MANUAL: "bookkeeping.journal.createManual",
+  BOOKKEEPING_STATEMENT_READ: "bookkeeping.statement.read",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

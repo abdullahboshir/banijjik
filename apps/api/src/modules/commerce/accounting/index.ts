@@ -47,6 +47,8 @@ export { Account } from "./domain/account.entity.js";
 export { JournalEntry } from "./domain/journal-entry.entity.js";
 export { MongoAccountRepository } from "./infrastructure/mongo-account.repository.js";
 export { MongoJournalRepository } from "./infrastructure/mongo-journal.repository.js";
+export type { AccountRepository } from "./application/ports/account-repository.js";
+export type { JournalRepository } from "./application/ports/journal-repository.js";
 
 export interface AccountingTenantDependencies {
   readonly clock: Clock;

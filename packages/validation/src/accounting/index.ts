@@ -3,6 +3,9 @@
  * Kept off the root index so that file stays within the line limit.
  */
 export {
+  accountCreateRequestSchema,
+  accountUpdateRequestSchema,
+  balanceSheetQuerySchema,
   expenseCategoryArchiveRequestSchema,
   expenseCategoryCreateRequestSchema,
   expenseCategoryIdParamsSchema,
@@ -12,7 +15,13 @@ export {
   expenseListQuerySchema,
   expenseVoidRequestSchema,
   journalListQuerySchema,
+  manualJournalEntryRequestSchema,
+  profitAndLossQuerySchema,
+  reverseEntryRequestSchema,
   trialBalanceQuerySchema,
+  type AccountCreateBody,
+  type AccountUpdateBody,
+  type BalanceSheetQuery,
   type ExpenseCategoryArchiveBody,
   type ExpenseCategoryCreateBody,
   type ExpenseCategoryUpdateBody,
@@ -20,5 +29,8 @@ export {
   type ExpenseListQuery,
   type ExpenseVoidBody,
   type JournalListQuery,
+  type ManualJournalEntryBody,
+  type ProfitAndLossQuery,
+  type ReverseEntryBody,
   type TrialBalanceQuery,
 } from "./accounting-schemas.js";
