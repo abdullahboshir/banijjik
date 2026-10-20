@@ -9,7 +9,6 @@ const VISIBILITY = { admin: true, storefront: true, bot: false } as const;
 
 function field(input: Partial<CustomFieldRule> & { readonly fieldKey: string }): CustomFieldRule {
   return {
-    fieldKey: input.fieldKey,
     fieldType: input.fieldType ?? CUSTOM_FIELD_TYPE.SELECT,
     isRequired: false,
     visibility: VISIBILITY,

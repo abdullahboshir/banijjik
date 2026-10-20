@@ -45,14 +45,6 @@ const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.modules",
   "customField.fields",
 ];
-/** Settings the owner (and manager) see beyond the read-only set; ledger read is OWNER/MANAGER only. */
-const OWNER_SETTINGS_MENU_KEYS = [
-  READ_ONLY_SETTINGS_MENU_KEYS[0],
-  TAX_CLASSES_MENU_KEY,
-  ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
-  ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
-];
-
 let harness: IamApiHarness;
 
 beforeAll(async () => {
@@ -91,14 +83,14 @@ describe("the settings menu of the organization module", () => {
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
       CATALOG_MENU_KEYS.promotions,
-      ORGANIZATION_MENU_KEYS.roles,
-      ...OWNER_SETTINGS_MENU_KEYS,
       CATALOG_MENU_KEYS.stock,
       ORGANIZATION_MENU_KEYS.roles,
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
+      TAX_CLASSES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
+      ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
     ]);
   });
 
@@ -130,14 +122,14 @@ describe("the settings menu of the organization module", () => {
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
       CATALOG_MENU_KEYS.promotions,
-      ORGANIZATION_MENU_KEYS.roles,
-      ...OWNER_SETTINGS_MENU_KEYS,
       CATALOG_MENU_KEYS.stock,
       ORGANIZATION_MENU_KEYS.roles,
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
+      TAX_CLASSES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
+      ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
     ]);
     expect(archived.status).toBe(200);
     expect(withOneAgain).toEqual([
@@ -151,14 +143,14 @@ describe("the settings menu of the organization module", () => {
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
       CATALOG_MENU_KEYS.promotions,
-      ORGANIZATION_MENU_KEYS.roles,
-      ...OWNER_SETTINGS_MENU_KEYS,
       CATALOG_MENU_KEYS.stock,
       ORGANIZATION_MENU_KEYS.roles,
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
+      TAX_CLASSES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
+      ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
     ]);
   });
 

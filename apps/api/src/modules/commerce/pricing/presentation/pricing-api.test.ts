@@ -1,4 +1,4 @@
-import { SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { ALL_LOCATIONS, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   money,
@@ -12,7 +12,9 @@ import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js"
 import {
   countAuditRows,
   countOutboxRows,
+  createCustomRoleAs,
 } from "../../../../test-support/organization-tenant-world.js";
+import { addMemberWithAssignments } from "../../../../test-support/rbac-world.js";
 import type { ApiActor } from "../../../../test-support/two-organizations.js";
 
 registerIamApiModels();
@@ -337,11 +339,112 @@ describe("promotions and quotes", () => {
     expect(cross.status).toBe(404);
 
     const rider = await memberWithRole(harness, world, SYSTEM_ROLE_KEY.RIDER);
-    const denied = await rider.call("post", `/orgs/${world.organizationA}/promotions`, {
+    const deniedPromotion = await rider.call("post", `/orgs/${world.organizationA}/promotions`, {
       name: "Nope",
       target: { scope: "ALL", ids: [] },
       benefit: { type: "PERCENT", value: 500 },
     });
-    expect(denied.status).toBe(403);
+    expect(deniedPromotion.status).toBe(403);
+
+    const roleId = await createCustomRoleAs(world.alice, {
+      organizationId: world.organizationA,
+      name: "No catalog read",
+      permissionKeys: [],
+    });
+    const noCatalog = await addMemberWithAssignments(harness.app, world.organizationA, [
+      { locationId: ALL_LOCATIONS, roleId },
+    ]);
+    const deniedQuote = await noCatalog.actor.call("post", `/orgs/${world.organizationA}/quotes`, {
+      locationId: world.locationA1,
+      lines: [
+        {
+          offeringId: offering.offeringId,
+          variantId: firstVariantId(offering),
+          quantity: 1,
+        },
+      ],
+    });
+    expect(deniedQuote.status).toBe(403);
+  });
+
+  it("refuses an archived offering, an unavailable branch, a bad quantity and a missing modifier", async () => {
+    const world = await worldFor(harness, RETAIL, RETAIL);
+    const group = await world.alice.call("post", `/orgs/${world.organizationA}/modifier-groups`, {
+      name: "Size",
+      selection: "SINGLE",
+      isRequired: true,
+      minSelect: 1,
+      maxSelect: 1,
+      options: [
+        { name: "Small", priceDelta: money(0) },
+        { name: "Large", priceDelta: money(1000) },
+      ],
+    });
+    expect(group.status).toBe(201);
+
+    const offering = await publishOffering(world.alice, world.organizationA, {
+      kind: "PRODUCT",
+      name: "Shirt",
+      kindDetails: { requiresShipping: true },
+      modifierGroupIds: [group.body.data.modifierGroupId],
+      variants: [
+        {
+          name: "Default",
+          price: money(5000),
+          unitKey: "KG",
+          quantityRule: { min: 250, step: 250 },
+        },
+      ],
+    });
+    const variantId = firstVariantId(offering);
+    const quotePath = `/orgs/${world.organizationA}/quotes`;
+    const baseLine = { offeringId: offering.offeringId, variantId };
+
+    const badQuantity = await world.alice.call("post", quotePath, {
+      locationId: world.locationA1,
+      lines: [{ ...baseLine, quantity: 100, modifierOptionIds: [] }],
+    });
+    expect(badQuantity.status).toBe(400);
+    expect(badQuantity.body.error.details.fields[0].path).toBe("lines.0.quantity");
+
+    const missingModifier = await world.alice.call("post", quotePath, {
+      locationId: world.locationA1,
+      lines: [{ ...baseLine, quantity: 250, modifierOptionIds: [] }],
+    });
+    expect(missingModifier.status).toBe(400);
+    expect(missingModifier.body.error.details.fields[0].path).toBe("lines.0.modifierOptionIds");
+
+    const unavailable = await world.alice.call(
+      "put",
+      offeringsPath(world.organizationA, `/${offering.offeringId}/locations/${world.locationA1}`),
+      { isAvailable: false },
+    );
+    expect(unavailable.status).toBe(200);
+    const optionId = group.body.data.options[0].modifierOptionId as string;
+    const unavailableQuote = await world.alice.call("post", quotePath, {
+      locationId: world.locationA1,
+      lines: [{ ...baseLine, quantity: 250, modifierOptionIds: [optionId] }],
+    });
+    expect(unavailableQuote.status).toBe(422);
+    expect(unavailableQuote.body.error.details.ruleKey).toBe("OFFERING_NOT_AVAILABLE");
+
+    // Archive a second offering so the refusal is "not found", not the unavailable branch above.
+    const other = await publishOffering(world.alice, world.organizationA, {
+      kind: "PRODUCT",
+      name: "Old shirt",
+      kindDetails: { requiresShipping: true },
+      variants: [{ name: "Default", price: money(2000), unitKey: "PIECE" }],
+    });
+    const archived = await world.alice.call(
+      "post",
+      offeringsPath(world.organizationA, `/${other.offeringId}/archive`),
+      { version: other.version },
+    );
+    expect(archived.status).toBe(200);
+    const archivedQuote = await world.alice.call("post", quotePath, {
+      locationId: world.locationA1,
+      lines: [{ offeringId: other.offeringId, variantId: firstVariantId(other), quantity: 1 }],
+    });
+    expect(archivedQuote.status).toBe(404);
   });
 });
