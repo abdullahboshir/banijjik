@@ -269,3 +269,13 @@ export {
   type ModifierOptionInput,
 } from "./catalog/category-schemas.js";
 export { synonymsUpdateRequestSchema, type SynonymsUpdateBody } from "./catalog/synonym-schemas.js";
+export {
+  creditAdjustRequestSchema,
+  creditAccountIdParamsSchema,
+  creditEntriesQuerySchema,
+  creditPackCreateRequestSchema,
+  creditPackUpdateRequestSchema,
+  creditPacksQuerySchema,
+  unlockRequestSchema,
+  unlocksQuerySchema,
+} from "./credit/credit-schemas.js";

@@ -2,10 +2,11 @@ import {
   CREDIT_ADJUST_REASON_MAX_LENGTH,
   CREDIT_PACK_NAME_MAX_LENGTH,
 } from "@banijjik/contracts/credit";
-import { moneySchema } from "../accounting/money.schema.js";
 import { z } from "zod";
 import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
+
+const moneySchema = z.number().int().min(0);
 
 export const creditPackCreateRequestSchema = z.strictObject({
   name: z.strictObject({
