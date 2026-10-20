@@ -177,6 +177,3 @@ export type BookingHoldBody = z.infer<typeof bookingHoldRequestSchema>;
 export type BookingListQuery = z.infer<typeof bookingListQuerySchema>;
 export type BookingRescheduleBody = z.infer<typeof bookingRescheduleRequestSchema>;
 export type BookingCancelBody = z.infer<typeof bookingCancelRequestSchema>;
-
-/** Re-export for callers that resolve contact as either id or create. */
-export type ContactRef = z.infer<typeof contactRefSchema>;
