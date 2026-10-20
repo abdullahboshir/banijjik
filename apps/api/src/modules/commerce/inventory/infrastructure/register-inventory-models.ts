@@ -31,6 +31,7 @@ export function registerInventoryModels(): void {
     collectionName: STOCK_MOVEMENT_COLLECTION_NAME,
     schema: stockMovementSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
+    appendOnly: true,
   });
   registerModel({
     ...tenant,

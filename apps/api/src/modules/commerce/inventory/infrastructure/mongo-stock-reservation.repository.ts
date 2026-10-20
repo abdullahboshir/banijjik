@@ -30,19 +30,19 @@ export class MongoStockReservationRepository implements StockReservationReposito
   }
 
   async upsert(document: StockReservationRecord): Promise<void> {
+    // Idempotent insert only: $setOnInsert with organizationId is refused by the tenant
+    // update guard (checkUpdateOf treats any organizationId in the update as cross-org).
+    const existing = await this.findBySource({
+      organizationId: document.organizationId,
+      sourceType: document.sourceType,
+      sourceId: document.sourceId,
+    });
+    if (existing !== undefined) return;
     const session = getActiveSession();
     const Model = models({ organizationId: document.organizationId }).get<StockReservationDocument>(
       STOCK_RESERVATION_MODEL_NAME,
     );
-    await Model.updateOne(
-      {
-        organizationId: document.organizationId,
-        sourceType: document.sourceType,
-        sourceId: document.sourceId,
-      },
-      { $setOnInsert: document as unknown as StockReservationDocument },
-      { upsert: true, ...sessionOption(session) },
-    );
+    await Model.create([document as unknown as StockReservationDocument], sessionOption(session));
   }
 
   async deleteBySource(input: {

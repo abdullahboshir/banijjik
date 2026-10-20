@@ -20,6 +20,9 @@ function deltasFor(
   if (reason === STOCK_MOVEMENT_REASON.DAMAGE_WRITE_OFF) {
     return { onHandDelta: quantityDelta, damagedDelta: -quantityDelta };
   }
+  if (reason === STOCK_MOVEMENT_REASON.RETURN_DAMAGED) {
+    return { onHandDelta: 0, damagedDelta: quantityDelta };
+  }
   return { onHandDelta: quantityDelta, damagedDelta: 0 };
 }
 

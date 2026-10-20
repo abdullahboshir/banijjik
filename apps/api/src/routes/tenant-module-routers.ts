@@ -13,7 +13,7 @@ import {
 import type { CoreTenantRouters } from "./core-tenant-routers.js";
 import { buildIamTenantRouterFor } from "./iam-tenant-router.js";
 
-interface AccessParts {
+export interface AccessParts {
   readonly catalog: PermissionCatalog;
   readonly memberAccess: MemberAccessReader;
   readonly permissionGate: PermissionGate;

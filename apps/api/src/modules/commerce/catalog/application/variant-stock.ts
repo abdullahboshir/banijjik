@@ -5,20 +5,21 @@ import type { VariantDraft } from "../domain/variant-merge.js";
 import type { CatalogDependencies } from "./catalog-dependencies.js";
 
 export async function applyVariantStockRules(input: {
-  readonly dependencies: Pick<
-    CatalogDependencies,
-    "inventoryComponents" | "defaultStockItems" | "defaultStockTracked"
-  >;
+  readonly dependencies: Pick<CatalogDependencies, "inventoryComponents" | "defaultStockItems">;
   readonly organizationId: OrganizationId;
   readonly actorUserId: UserId;
   readonly kind: (typeof OFFERING_KIND)[keyof typeof OFFERING_KIND];
   readonly offeringName: string;
   readonly variants: readonly Variant[];
   readonly drafts: readonly VariantDraft[];
+  /**
+   * Resolved before the caller's transaction opens: settings / org-config must not load inside
+   * an active Mongo session (same rule as StockLedger.allowNegativeStock).
+   */
+  readonly trackByDefault: boolean;
 }): Promise<Variant[]> {
   const { dependencies, organizationId, actorUserId, kind, offeringName, drafts } = input;
-  const trackByDefault =
-    kind === OFFERING_KIND.PRODUCT && (await dependencies.defaultStockTracked.read(organizationId));
+  const trackByDefault = kind === OFFERING_KIND.PRODUCT && input.trackByDefault;
   const active = input.variants.filter(isActiveVariant);
   const archived = input.variants.filter((variant) => !isActiveVariant(variant));
   const nextActive: Variant[] = [];

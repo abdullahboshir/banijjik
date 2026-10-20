@@ -228,6 +228,15 @@ describe("stock operations", () => {
         (entry: { inventoryItemId: string }) => entry.inventoryItemId === item.inventoryItemId,
       ),
     ).toBe(true);
+    const lowEvents = await harness.connections.platform
+      .collection("outbox_events")
+      .find({
+        organizationId: world.organizationA,
+        type: "inventory.stock.lowCrossed",
+        "payload.inventoryItemId": item.inventoryItemId,
+      })
+      .toArray();
+    expect(lowEvents).toHaveLength(1);
   });
 
   it("denies cross-org stock reads", async () => {

@@ -293,6 +293,7 @@
   "errors.inventory_item_in_use": "ক্যাটালগের একটি ভ্যারিয়েন্ট এখনও এই আইটেম থেকে স্টক নেয়।",
   "errors.inventory_item_base_unit_immutable": "মুভমেন্ট হওয়ার পর বেস ইউনিট বদলানো যায় না।",
   "errors.inventory_invalid_stock_component": "সক্রিয় ইনভেন্টরি আইটেম ও সঠিক পরিমাণ বেছে নিন।",
+  "errors.inventory_stock_components_required": "এই ভ্যারিয়েন্টে রিজার্ভ বা রিটার্নের মতো কোনো স্টক কম্পোনেন্ট নেই।",
   "errors.offering_slug_taken": "এই ওয়েব ঠিকানার নামটি আগেই ব্যবহার হয়েছে। অন্যটি বেছে নিন।",
   "errors.offering_sku_taken": "অন্য একটি আইটেম এই SKU ব্যবহার করছে।",
   "errors.offering_kind_not_allowed": "আপনার ব্যবসায় এই ধরনের আইটেম নেই।",

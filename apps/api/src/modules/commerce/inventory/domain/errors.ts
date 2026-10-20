@@ -51,6 +51,18 @@ export function invalidStockComponent(path: string): DomainRuleError {
   });
 }
 
+export function stockComponentsRequired(offeringId: string, variantId: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "errors.inventory_stock_components_required",
+    details: {
+      ruleKey: INVENTORY_RULE_KEY.STOCK_COMPONENTS_REQUIRED,
+      offeringId,
+      variantId,
+    },
+  });
+}
+
 export function insufficientStock(inventoryItemId: string, available: number): DomainRuleError {
   return new DomainRuleError({
     code: ERROR_CODE.INSUFFICIENT_STOCK,

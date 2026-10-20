@@ -85,23 +85,28 @@ export class CreateOfferingUseCase {
     input: CreateOfferingInput,
     prepared: PreparedCreate,
   ): Promise<Offering> {
-    const { offerings, unitOfWork } = this.dependencies;
+    const { offerings, unitOfWork, defaultStockTracked } = this.dependencies;
     const slug = await chooseSlug(offerings, {
       name: input.name,
       explicitSlug: input.slug,
       offeringId: prepared.offeringId,
     });
     const { merged, drafts } = await this.variantsOf(input, prepared.currency);
-    const variants = await applyVariantStockRules({
-      dependencies: this.dependencies,
-      organizationId: input.organizationId,
-      actorUserId: input.actorUserId,
-      kind: input.kind,
-      offeringName: input.name,
-      variants: merged,
-      drafts,
+    // Settings resolve before the transaction; default item + offering share one (ADR-125).
+    const trackByDefault = await defaultStockTracked.read(input.organizationId);
+    return unitOfWork.run(async () => {
+      const variants = await applyVariantStockRules({
+        dependencies: this.dependencies,
+        organizationId: input.organizationId,
+        actorUserId: input.actorUserId,
+        kind: input.kind,
+        offeringName: input.name,
+        variants: merged,
+        drafts,
+        trackByDefault,
+      });
+      return this.createInside(input, prepared, { slug, variants });
     });
-    return unitOfWork.run(() => this.createInside(input, prepared, { slug, variants }));
   }
 
   private async variantsOf(input: CreateOfferingInput, currency: string) {

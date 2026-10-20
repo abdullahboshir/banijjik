@@ -24,9 +24,26 @@ export function movementDeltas(
   quantityDelta: number,
 ): { readonly onHandDelta: number; readonly damagedDelta: number } {
   if (reason === STOCK_MOVEMENT_REASON.DAMAGE_WRITE_OFF) {
+    // Write-off: quantityDelta is negative on sellable; damaged rises by the absolute amount.
     return { onHandDelta: quantityDelta, damagedDelta: -quantityDelta };
   }
+  if (reason === STOCK_MOVEMENT_REASON.RETURN_DAMAGED) {
+    // Damaged returns restock damaged only (docs/11 §4.5); quantityDelta is positive.
+    return { onHandDelta: 0, damagedDelta: quantityDelta };
+  }
   return { onHandDelta: quantityDelta, damagedDelta: 0 };
+}
+
+export function stockStateForReason(
+  reason: StockMovementReason,
+): (typeof STOCK_STATE)[keyof typeof STOCK_STATE] {
+  if (
+    reason === STOCK_MOVEMENT_REASON.RETURN_DAMAGED ||
+    reason === STOCK_MOVEMENT_REASON.DAMAGE_WRITE_OFF
+  ) {
+    return STOCK_STATE.DAMAGED;
+  }
+  return STOCK_STATE.SELLABLE;
 }
 
 export function assertStockAvailable(input: {
@@ -65,7 +82,7 @@ export function buildStockMovementDocument(input: {
     locationId: input.locationId,
     inventoryItemId: input.inventoryItemId,
     quantityDelta: input.quantityDelta,
-    stockState: STOCK_STATE.SELLABLE,
+    stockState: stockStateForReason(input.reason),
     reason: input.reason,
     sourceType: input.sourceType,
     sourceId: input.sourceId,

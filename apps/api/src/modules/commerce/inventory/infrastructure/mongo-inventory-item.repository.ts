@@ -70,7 +70,11 @@ export class MongoInventoryItemRepository implements InventoryItemRepository {
 
   async findById(inventoryItemId: InventoryItemId): Promise<InventoryItem | undefined> {
     const Model = models({}).get<InventoryItemDocument>(INVENTORY_ITEM_MODEL_NAME);
-    const document = await Model.findOne({ inventoryItemId }, { _id: 0 }).lean();
+    const document = await Model.findOne(
+      { inventoryItemId },
+      { _id: 0 },
+      sessionOption(getActiveSession()),
+    ).lean();
     return document === null ? undefined : toInventoryItem(document);
   }
 
@@ -82,7 +86,11 @@ export class MongoInventoryItemRepository implements InventoryItemRepository {
     const Model = models({ organizationId }).get<InventoryItemDocument>(INVENTORY_ITEM_MODEL_NAME);
     const filter: Record<string, unknown> = { organizationId, sku };
     if (exceptItemId !== undefined) filter.inventoryItemId = { $ne: exceptItemId };
-    const document = await Model.findOne(filter, { inventoryItemId: 1, _id: 0 }).lean();
+    const document = await Model.findOne(
+      filter,
+      { inventoryItemId: 1, _id: 0 },
+      sessionOption(getActiveSession()),
+    ).lean();
     return document === null ? undefined : asId<InventoryItemId>(document.inventoryItemId);
   }
 

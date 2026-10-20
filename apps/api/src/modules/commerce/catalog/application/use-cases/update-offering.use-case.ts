@@ -73,19 +73,31 @@ export class UpdateOfferingUseCase {
     current: Offering,
     fields: readonly EffectiveCustomField[],
   ): Promise<Offering> {
-    const { organization, unitOfWork, categories, modifierGroups, images } = this.dependencies;
+    const { organization, unitOfWork, categories, modifierGroups, images, defaultStockTracked } =
+      this.dependencies;
     const { currency } = await organization.read(input.organizationId);
     await assertReferencesUsable({ categories, modifierGroups, images }, input);
-    const changes = await this.checkedChanges(input, current, currency);
-    return unitOfWork.run(() => this.updateInside(input, fields, changes));
+    // Settings resolve before the transaction; default item + offering share one (ADR-125).
+    const trackByDefault = await defaultStockTracked.read(input.organizationId);
+    return unitOfWork.run(async () => {
+      const changes = await this.checkedChanges({
+        input,
+        current,
+        currency,
+        trackByDefault,
+      });
+      return this.updateInside(input, fields, changes);
+    });
   }
 
   /** Everything that can be refused without writing: kind details, variants, the slug. */
-  private async checkedChanges(
-    input: UpdateOfferingInput,
-    current: Offering,
-    currency: string,
-  ): Promise<OfferingChanges> {
+  private async checkedChanges(args: {
+    readonly input: UpdateOfferingInput;
+    readonly current: Offering;
+    readonly currency: string;
+    readonly trackByDefault: boolean;
+  }): Promise<OfferingChanges> {
+    const { input, current, currency, trackByDefault } = args;
     const kindDetails =
       input.kindDetails === undefined
         ? undefined
@@ -108,6 +120,7 @@ export class UpdateOfferingUseCase {
             offeringName: input.name ?? current.name,
             variants: mergedVariants,
             drafts,
+            trackByDefault,
           });
     const slug = await this.slugFor(input, current);
     return changesOf(input, { slug, kindDetails, variants });
