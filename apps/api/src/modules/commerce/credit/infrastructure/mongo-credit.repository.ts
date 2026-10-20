@@ -71,6 +71,15 @@ export class MongoCreditRepository implements CreditRepository {
     return this.balanceFromDocument(doc);
   }
 
+  async findPurchaseEntry(purchaseEntryId: string): Promise<CreditEntry | null> {
+    const organizationId = getRequestContext().organizationId;
+    const doc = await this.entryModel().findOne({
+      organizationId,
+      creditEntryId: purchaseEntryId,
+    });
+    return doc ? this.entryFromDocument(doc) : null;
+  }
+
   private entryModel() {
     return models(CREDIT_ENTRY_MODEL_NAME);
   }

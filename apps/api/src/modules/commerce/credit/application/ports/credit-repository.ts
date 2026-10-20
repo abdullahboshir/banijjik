@@ -17,4 +17,5 @@ export interface CreditRepository {
   getBalance(customerAccountId: CustomerAccountId): Promise<CreditBalance | null>;
   insertBalance(balance: CreditBalance): Promise<void>;
   updateBalance(input: UpdateBalanceInput): Promise<CreditBalance>;
+  findPurchaseEntry(purchaseEntryId: string): Promise<CreditEntry | null>;
 }
