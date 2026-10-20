@@ -80,6 +80,10 @@ export const PERMISSION_KEY = {
   BOOKING_RESOURCE_CREATE: "booking.resource.create",
   BOOKING_RESOURCE_UPDATE: "booking.resource.update",
   BOOKING_RESOURCE_ARCHIVE: "booking.resource.archive",
+  CREDIT_PACK_READ: "credit.pack.read",
+  CREDIT_PACK_UPDATE: "credit.pack.update",
+  CREDIT_ACCOUNT_READ: "credit.account.read",
+  CREDIT_ACCOUNT_ADJUST: "credit.account.adjust",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

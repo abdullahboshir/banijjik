@@ -25,6 +25,11 @@ import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type
 import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
 import type { ListingEventPayload } from "../directory/directory-contracts.js";
 import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
+import type {
+  CreditEntryCreatedPayload,
+  UnlockCreatedPayload,
+} from "../credit/credit-contracts.js";
+import { CREDIT_EVENT_TYPE } from "../credit/credit-event-type.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
 import {
@@ -153,4 +158,6 @@ export interface EventPayloadMap {
   readonly [DIRECTORY_EVENT_TYPE.LISTING_UNHIDDEN]: ListingEventPayload;
   readonly [DIRECTORY_EVENT_TYPE.LISTING_ARCHIVED]: ListingEventPayload;
   readonly [DIRECTORY_EVENT_TYPE.LISTING_UPDATED]: ListingEventPayload;
+  readonly [CREDIT_EVENT_TYPE.CREDIT_ENTRY_CREATED]: CreditEntryCreatedPayload;
+  readonly [CREDIT_EVENT_TYPE.UNLOCK_CREATED]: UnlockCreatedPayload;
 }

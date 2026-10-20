@@ -46,6 +46,10 @@
     "./booking": {
       "types": "./dist/booking/index.d.ts",
       "default": "./dist/booking/index.js"
+    },
+    "./credit": {
+      "types": "./dist/credit/index.d.ts",
+      "default": "./dist/credit/index.js"
     }
   },
   "files": [

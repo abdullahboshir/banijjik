@@ -13,6 +13,7 @@ export const APPROVAL_ACTION = defineEnum([
   "SESSION_LIMIT_OVERRIDE",
   "RETURN_NOT_RECEIVED",
   "STOCK_ADJUSTMENT",
+  "CREDIT_ADJUSTMENT",
 ]);
 export type ApprovalAction = (typeof APPROVAL_ACTION)[keyof typeof APPROVAL_ACTION];
 

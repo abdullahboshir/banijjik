@@ -121,6 +121,12 @@ export default defineConfig(
     rules: { "max-lines": "off" },
   },
   {
+    // Domain entities carry many fields as read-only constructor parameters.
+    name: "banijjik/domain-entities",
+    files: ["apps/api/src/modules/commerce/credit/domain/*.entity.ts"],
+    rules: { "max-params": "off" },
+  },
+  {
     name: "banijjik/explicit-return-types",
     files: SOURCE_FILES,
     ignores: TEST_FILES,
