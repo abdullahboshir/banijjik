@@ -68,6 +68,7 @@ export type {
   ListingUnlockReader,
 } from "./application/ports/directory-context-ports.js";
 export type { ListingRepository } from "./application/ports/listing-repository.js";
+export type { Listing } from "./domain/listing.entity.js";
 export { asListingFieldRules } from "./application/ports/directory-context-ports.js";
 
 export interface DirectoryAdapters {

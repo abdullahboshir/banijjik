@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import type { CreditRepository } from "../ports/credit-repository.js";
 import type { ListingUnlockRepository } from "../ports/listing-unlock-repository.js";
-import type { ListingRepository } from "../../../directory/index.js";
+import type { ListingRepository, Listing } from "../../../directory/index.js";
 import { UnlockListingUseCase } from "./unlock-listing.use-case.js";
-import { asId, type CustomerAccountId } from "@banijjik/ids";
+import { asId, type CustomerAccountId, type OrganizationId, type ListingId } from "@banijjik/ids";
 
 describe("UnlockListingUseCase - concurrency", () => {
   let creditRepo: CreditRepository;
@@ -63,24 +63,41 @@ describe("UnlockListingUseCase - concurrency", () => {
         reviewEdits: vi.fn(() => Promise.resolve(false)),
         photoPolicy: vi.fn(() => Promise.resolve("NONE")),
       } as unknown as CreditDependencies["directorySettings"],
+      resolveSettings: vi.fn(() =>
+        Promise.resolve(
+          new Map([
+            ["credit.unlockCost", { value: 1 }],
+            ["credit.unlocksPerDay", { value: 20 }],
+          ]),
+        ),
+      ) as unknown as CreditDependencies["resolveSettings"],
     };
 
     useCase = new UnlockListingUseCase(deps);
     customerAccountId = asId<CustomerAccountId>("customer-1");
     listingIds = ["listing-1", "listing-2", "listing-3", "listing-4", "listing-5"];
 
-    vi.spyOn(listingRepo, "findByListingNumber").mockImplementation(
-      async () =>
-        ({
-          listingId: "listing-1",
-          listingNumber: "L-1",
-          ownerCustomerAccountId: asId<CustomerAccountId>("owner-1"),
-          status: "APPROVED",
-          version: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }) as Partial<import("../../../directory/domain/listing.entity").Listing>,
-    );
+    vi.spyOn(listingRepo, "findByListingNumber").mockResolvedValue({
+      listingId: asId<ListingId>("listing-1"),
+      listingNumber: "L-1",
+      ownerCustomerAccountId: asId<CustomerAccountId>("owner-1"),
+      status: "APPROVED",
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      organizationId: asId<OrganizationId>("org-1"),
+      customFields: {},
+      customFieldSearch: [],
+      photoFileIds: [],
+      consentsAccepted: [],
+      submittedAt: undefined,
+      reviewedAt: undefined,
+      reviewedByUserId: undefined,
+      rejection: undefined,
+      publishedAt: undefined,
+      createdByUserId: null,
+      updatedByUserId: null,
+    } as Partial<Listing> as Listing | undefined);
 
     vi.spyOn(unlockRepo, "findExisting").mockResolvedValue(null);
     vi.spyOn(unlockRepo, "countByCustomerToday").mockResolvedValue(0);

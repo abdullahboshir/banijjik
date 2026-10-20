@@ -1,4 +1,4 @@
-import { newId } from "@banijjik/ids";
+import { newId, type OrganizationId } from "@banijjik/ids";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import {
   CreditsInsufficientError,
@@ -8,6 +8,7 @@ import {
 } from "../../domain/errors.js";
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
 import type { CustomerAccountId, ListingId } from "@banijjik/ids";
+import { getRequestContext } from "../../../../../kernel/context/index.js";
 
 export interface UnlockListingInput {
   readonly listingNumber: string;
@@ -43,8 +44,9 @@ export class UnlockListingUseCase {
       return this.idempotentResponse(existingUnlock, input.customerAccountId);
     }
 
-    const unlockCost = 1;
-    const dailyLimit = 20;
+    const { organizationId } = getRequestContext();
+    const unlockCost = await this.getUnlockCost(organizationId);
+    const dailyLimit = await this.getDailyLimit(organizationId);
     await this.validateDailyLimit(input.customerAccountId, dailyLimit);
 
     return this.performUnlock({
@@ -52,6 +54,24 @@ export class UnlockListingUseCase {
       listingId: listing.listingId,
       unlockCost,
     });
+  }
+
+  private async getUnlockCost(organizationId: string | undefined): Promise<number> {
+    if (!organizationId) return 1;
+    const map = await this.deps.resolveSettings(organizationId as OrganizationId, [
+      "credit.unlockCost",
+    ]);
+    const value = map.get("credit.unlockCost")?.value;
+    return typeof value === "number" ? value : 1;
+  }
+
+  private async getDailyLimit(organizationId: string | undefined): Promise<number> {
+    if (!organizationId) return 20;
+    const map = await this.deps.resolveSettings(organizationId as OrganizationId, [
+      "credit.unlocksPerDay",
+    ]);
+    const value = map.get("credit.unlocksPerDay")?.value;
+    return typeof value === "number" ? value : 20;
   }
 
   private validateListingApproved(status: string): void {

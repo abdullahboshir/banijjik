@@ -78,7 +78,7 @@ function buildCreditRouterDeps(input: StorefrontRouterInput) {
       ) => {
         await kernelEventPublisher.publish(
           type as import("@banijjik/contracts").EventType,
-          payload,
+          payload as import("@banijjik/contracts").EventPayloadMap[import("@banijjik/contracts").EventType],
           options,
         );
       },
@@ -86,6 +86,8 @@ function buildCreditRouterDeps(input: StorefrontRouterInput) {
     audit: input.audit,
     clock: input.clock,
     directorySettings: directorySettingsFromResolver(settingsResolver),
+    resolveSettings: (oid: string, keys: readonly string[]) =>
+      settingsResolver.resolve(oid as import("@banijjik/ids").OrganizationId, { keys }),
   };
 }
 

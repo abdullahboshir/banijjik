@@ -5,6 +5,7 @@ import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import type { UnitOfWork } from "./unit-of-work.js";
 import type { DirectorySettingsReader, ListingRepository } from "../../../directory/index.js";
+import type { OrganizationId } from "@banijjik/ids";
 
 export interface CreditDependencies {
   readonly credit: CreditRepository;
@@ -22,4 +23,8 @@ export interface CreditDependencies {
   readonly audit: AuditRecorder;
   readonly clock: Clock;
   readonly directorySettings: DirectorySettingsReader;
+  readonly resolveSettings: (
+    organizationId: OrganizationId,
+    keys: readonly string[],
+  ) => Promise<ReadonlyMap<string, { value: unknown }>>;
 }

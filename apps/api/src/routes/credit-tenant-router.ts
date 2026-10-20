@@ -51,7 +51,7 @@ export function buildCreditTenantRouter(input: CreditRouterInput): Router {
       ) => {
         await kernelEventPublisher.publish(
           type as import("@banijjik/contracts").EventType,
-          payload,
+          payload as import("@banijjik/contracts").EventPayloadMap[import("@banijjik/contracts").EventType],
           options,
         );
       },
@@ -59,6 +59,8 @@ export function buildCreditTenantRouter(input: CreditRouterInput): Router {
     audit: input.audit,
     clock: input.clock,
     directorySettings: directorySettingsFromResolver(settingsResolver),
+    resolveSettings: (oid: string, keys: readonly string[]) =>
+      settingsResolver.resolve(oid as import("@banijjik/ids").OrganizationId, { keys }),
   };
 
   const adjustCredits = new AdjustCreditsUseCase(creditDeps);
