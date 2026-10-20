@@ -144,21 +144,25 @@ Most type errors are now resolved compared to the initial state.
 10. `a6b715b` - Fix credit module type errors (contracts, repos, unlock reader)
 11. `f2f0869` - Fix credit error codes, date handling, and remaining type fixes
 12. `f589f6a` - Fix credit event types, imports, and date conversions
+13. `99f300f` - Fix credit module kernel imports, contracts, and event types
 
 ## Next Steps for Next Session
 
-1. Fix remaining kernel import path issues
-2. Fix test mock type issues
-3. Fix router parameter narrowing for string|undefined
-4. Fix contract imports to use contracts instead of domain
-5. Wire listing repository into unlock use case
-6. Wire settings reader for configuration values
-7. Add approval token verification
-8. Complete the test suite per plan
-9. Build admin UI
-10. Add i18n keys
-11. Write ADR-130 and update docs
-12. Full verification and handoff
+1. Fix remaining type errors:
+   - Test mock type issues (CreditPackRepository, event publisher)
+   - Test branded IDs (CustomerAccountId)
+   - Unlock use case: ownerCustomerAccountId parameter missing
+   - Unlock use case: occurredAt Date vs string mismatch
+   - CreditPack organizationId in contract
+   - MongoCreditPack.repository implicit any types
+2. Wire listing repository into unlock use case
+3. Wire settings reader for configuration values
+4. Add approval token verification
+5. Complete the test suite per plan
+6. Build admin UI
+7. Add i18n keys
+8. Write ADR-130 and update docs
+9. Full verification and handoff
 
 ## Notes
 

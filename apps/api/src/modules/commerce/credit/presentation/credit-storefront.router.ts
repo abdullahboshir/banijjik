@@ -49,7 +49,7 @@ function mountUnlockRoute(router: Router, input: CreditStorefrontRouterDependenc
         await input.unlockListing.execute({
           listingNumber,
           customerAccountId: requireCurrentCustomerAccountId(),
-          idempotencyKey: request.body.idempotencyKey,
+          idempotencyKey: request.body.idempotencyKey as string,
         }),
       );
     },

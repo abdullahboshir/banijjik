@@ -66,6 +66,7 @@ export class ExpireCreditsUseCase {
     businessDate: string;
   }): Promise<void> {
     const creditEntryId = newId();
+    const now = this.deps.clock.now();
     const entry = {
       creditEntryId,
       customerAccountId: input.customerAccountId,
@@ -76,9 +77,9 @@ export class ExpireCreditsUseCase {
       fromPurchaseEntryId: null,
       reason: null,
       createdByUserId: null,
-      occurredAt: this.deps.clock.now(),
+      occurredAt: now.toISOString(),
       businessDate: input.businessDate,
-      createdAt: this.deps.clock.now(),
+      createdAt: now.toISOString(),
     };
     await this.deps.credit.insertEntry(entry);
   }

@@ -10,6 +10,8 @@ import { buildEffectiveCustomFieldReader } from "../modules/core/custom-field/in
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import { buildDirectoryBlockReader } from "../modules/platform/industry/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
+import { CreditListingUnlockReader } from "../modules/commerce/credit/index.js";
+import { MongoListingUnlockRepository } from "../modules/commerce/credit/index.js";
 
 export function buildDirectoryAdapters(input: {
   readonly orgConfig: OrgConfigService;
@@ -21,11 +23,17 @@ export function buildDirectoryAdapters(input: {
     orgConfig: input.orgConfig,
     manifests: input.manifests,
   });
+
+  const creditEnabled = input.manifests.some((m) => m.key === "CREDIT");
+  const unlockReader = creditEnabled
+    ? new CreditListingUnlockReader(new MongoListingUnlockRepository())
+    : null;
+
   return {
     fields: listingFieldsFromEffectiveReader(buildEffectiveCustomFieldReader()),
     settings: directorySettingsFromResolver(settingsResolver),
     template: buildDirectoryBlockReader(),
     phones: buildCustomerPhoneReader(),
-    unlockReader: null,
+    unlockReader,
   };
 }

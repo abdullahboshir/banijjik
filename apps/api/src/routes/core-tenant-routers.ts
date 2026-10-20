@@ -30,6 +30,7 @@ import { buildPricingTenantRouter } from "./pricing-tenant-router.js";
 import { buildInventoryTenantRouter } from "./inventory-tenant-router.js";
 import { buildDirectoryTenantRouter } from "./directory-tenant-router.js";
 import { buildBookingTenantRouter } from "./booking-tenant-router.js";
+import { buildCreditTenantRouter } from "./credit-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -61,6 +62,7 @@ export interface CoreTenantRouters {
   readonly inventoryRouter: Router;
   readonly directoryRouter: Router;
   readonly bookingRouter: Router;
+  readonly creditRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -121,6 +123,7 @@ function buildCommerceTenantRouters(
   | "accountingRouter"
   | "expenseRouter"
   | "bookingRouter"
+  | "creditRouter"
 > {
   const shared = {
     clock: input.clock,
@@ -130,6 +133,7 @@ function buildCommerceTenantRouters(
     idempotency: input.idempotency,
     orgConfig: input.orgConfig,
     manifests: input.manifests,
+    rateLimiter: input.rateLimiter,
   };
   return {
     contactRouter: buildContactTenantRouter(shared),
@@ -149,6 +153,7 @@ function buildCommerceTenantRouters(
       idempotency: input.idempotency,
       orgConfig: input.orgConfig,
       manifests: input.manifests,
+      rateLimiter: input.rateLimiter,
     }),
     bookingRouter: buildBookingTenantRouter({
       clock: input.clock,
@@ -159,6 +164,7 @@ function buildCommerceTenantRouters(
       orgConfig: input.orgConfig,
       manifests: input.manifests,
     }),
+    creditRouter: buildCreditTenantRouter(shared),
   };
 }
 

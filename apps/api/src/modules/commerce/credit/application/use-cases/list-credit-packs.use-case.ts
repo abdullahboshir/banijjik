@@ -1,6 +1,6 @@
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import type { CreditPack } from "@banijjik/contracts/credit";
-import { getRequestContext } from "../../../../kernel/context/index.js";
+import { getRequestContext } from "../../../../../kernel/context/index.js";
 import type { OrganizationId } from "@banijjik/ids";
 
 export class ListCreditPacksUseCase {

@@ -3,6 +3,7 @@ import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import {
   CreditsInsufficientError,
   CannotUnlockOwnListingError,
+  ListingNotApprovedError,
   UnlocksPerDayExceededError,
 } from "../../domain/errors.js";
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
@@ -11,7 +12,6 @@ import type { CustomerAccountId, ListingId } from "@banijjik/ids";
 export interface UnlockListingInput {
   readonly listingNumber: string;
   readonly customerAccountId: CustomerAccountId;
-  readonly ownerCustomerAccountId: CustomerAccountId;
   readonly idempotencyKey: string;
 }
 
@@ -27,11 +27,17 @@ export class UnlockListingUseCase {
   constructor(private readonly deps: CreditDependencies) {}
 
   async execute(input: UnlockListingInput): Promise<UnlockListingOutput> {
-    this.validateNotOwnListing(input.customerAccountId, input.ownerCustomerAccountId);
+    const listing = await this.deps.listings.findByListingNumber(input.listingNumber);
+    if (!listing) {
+      throw new Error("Listing not found");
+    }
+
+    this.validateListingApproved(listing.status);
+    this.validateNotOwnListing(input.customerAccountId, listing.ownerCustomerAccountId);
 
     const existingUnlock = await this.deps.unlocks.findExisting(
       input.customerAccountId,
-      input.listingNumber as ListingId,
+      listing.listingId,
     );
     if (existingUnlock) {
       return this.idempotentResponse(existingUnlock, input.customerAccountId);
@@ -43,9 +49,15 @@ export class UnlockListingUseCase {
 
     return this.performUnlock({
       customerAccountId: input.customerAccountId,
-      listingId: input.listingNumber as ListingId,
+      listingId: listing.listingId,
       unlockCost,
     });
+  }
+
+  private validateListingApproved(status: string): void {
+    if (status !== "APPROVED") {
+      throw new ListingNotApprovedError();
+    }
   }
 
   private validateNotOwnListing(
@@ -75,7 +87,7 @@ export class UnlockListingUseCase {
     customerAccountId: CustomerAccountId,
     dailyLimit: number,
   ): Promise<void> {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0] ?? "";
     const todayCount = await this.deps.unlocks.countByCustomerToday(customerAccountId, today);
     if (todayCount >= dailyLimit) {
       throw new UnlocksPerDayExceededError();
@@ -87,7 +99,7 @@ export class UnlockListingUseCase {
     readonly listingId: ListingId;
     readonly unlockCost: number;
   }): Promise<UnlockListingOutput> {
-    return this.deps.unitOfWork.withTransaction(async () => {
+    return this.deps.unitOfWork.run(async () => {
       const balance = await this.ensureBalance(input.customerAccountId);
       this.checkSufficientBalance(balance, input.unlockCost);
 
@@ -122,7 +134,7 @@ export class UnlockListingUseCase {
         customerAccountId,
         balance: 0,
         version: 1,
-        updatedAt: this.deps.clock.now(),
+        updatedAt: this.deps.clock.now().toISOString(),
       });
       throw new CreditsInsufficientError(0, 0);
     }
@@ -207,9 +219,9 @@ export class UnlockListingUseCase {
       creditEntryId: string;
       credits: number;
       source: { sourceType: string; sourceId: string };
-      occurredAt: Date;
+      occurredAt: string;
     },
-    unlock: { listingUnlockId: string; unlockedAt: Date },
+    unlock: { listingUnlockId: string; unlockedAt: string },
     input: { readonly customerAccountId: CustomerAccountId; readonly listingId: ListingId },
   ): Promise<void> {
     await this.deps.events.publish(
@@ -220,7 +232,7 @@ export class UnlockListingUseCase {
         type: CREDIT_ENTRY_TYPE.SPEND,
         credits: creditEntry.credits,
         source: creditEntry.source,
-        occurredAt: creditEntry.occurredAt.toISOString(),
+        occurredAt: creditEntry.occurredAt,
       },
       { orderingKey: `creditAccount:${input.customerAccountId}` },
     );
@@ -232,7 +244,7 @@ export class UnlockListingUseCase {
         customerAccountId: input.customerAccountId,
         listingId: input.listingId,
         creditEntryId: creditEntry.creditEntryId,
-        unlockedAt: unlock.unlockedAt.toISOString(),
+        unlockedAt: unlock.unlockedAt,
       },
       { orderingKey: `listing:${input.listingId}` },
     );

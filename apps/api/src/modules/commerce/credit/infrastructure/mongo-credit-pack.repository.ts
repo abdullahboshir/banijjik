@@ -1,4 +1,5 @@
 import type { OrganizationId, UserId } from "@banijjik/ids";
+import { getRequestContext } from "../../../../kernel/context/index.js";
 import {
   getActiveSession,
   models,
@@ -11,10 +12,9 @@ import { CREDIT_PACK_MODEL_NAME, type CreditPackDocument } from "./credit-pack.s
 
 export class MongoCreditPackRepository implements CreditPackRepository {
   async insert(pack: CreditPack): Promise<void> {
-    const Model = models({ organizationId: pack.organizationId }).get<CreditPackDocument>(
-      CREDIT_PACK_MODEL_NAME,
-    );
-    await Model.create([this.toDocument(pack)], sessionOption(getActiveSession()));
+    const organizationId = this.getOrganizationId();
+    const Model = models({ organizationId }).get<CreditPackDocument>(CREDIT_PACK_MODEL_NAME);
+    await Model.create([this.toDocument(pack, organizationId)], sessionOption(getActiveSession()));
   }
 
   async save(
@@ -22,10 +22,9 @@ export class MongoCreditPackRepository implements CreditPackRepository {
     expectedVersion: number,
     actorUserId: UserId | null,
   ): Promise<CreditPack> {
-    const document = this.toDocument(pack);
-    const Model = models({ organizationId: pack.organizationId }).get<CreditPackDocument>(
-      CREDIT_PACK_MODEL_NAME,
-    );
+    const organizationId = this.getOrganizationId();
+    const document = this.toDocument(pack, organizationId);
+    const Model = models({ organizationId }).get<CreditPackDocument>(CREDIT_PACK_MODEL_NAME);
     const saved = await updateVersioned<CreditPackDocument>({
       model: Model,
       filter: { creditPackId: pack.creditPackId },
@@ -57,13 +56,21 @@ export class MongoCreditPackRepository implements CreditPackRepository {
       sortOrder: 1,
       createdAt: 1,
     });
-    return docs.map((d) => this.fromDocument(d));
+    return docs.map((d: CreditPackDocument) => this.fromDocument(d));
   }
 
-  private toDocument(pack: CreditPack): CreditPackDocument {
+  private getOrganizationId(): string {
+    const context = getRequestContext();
+    if (!context.organizationId) {
+      throw new Error("Organization context required");
+    }
+    return context.organizationId;
+  }
+
+  private toDocument(pack: CreditPack, organizationId: string): CreditPackDocument {
     return {
       creditPackId: pack.creditPackId,
-      organizationId: pack.organizationId,
+      organizationId,
       name: pack.name,
       credits: pack.credits,
       price: pack.price,
@@ -81,7 +88,6 @@ export class MongoCreditPackRepository implements CreditPackRepository {
   private fromDocument(doc: CreditPackDocument): CreditPack {
     return {
       creditPackId: doc.creditPackId,
-      organizationId: doc.organizationId as OrganizationId,
       name: doc.name,
       credits: doc.credits,
       price: doc.price as { amount: number; currency: "BDT" },

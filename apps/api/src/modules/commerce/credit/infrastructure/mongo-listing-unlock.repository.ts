@@ -2,7 +2,7 @@ import type { CustomerAccountId, ListingId } from "@banijjik/ids";
 import { getRequestContext } from "../../../../kernel/context/index.js";
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
 import type { ListingUnlockRepository } from "../application/ports/listing-unlock-repository.js";
-import type { ListingUnlock } from "../../domain/index.js";
+import type { ListingUnlock } from "../domain/index.js";
 import { LISTING_UNLOCK_MODEL_NAME, type ListingUnlockDocument } from "./listing-unlock.schema.js";
 
 function getOrganizationId(): string {
@@ -51,7 +51,7 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
       .sort({ unlockedAt: -1 })
       .skip(options.offset)
       .limit(options.limit);
-    return docs.map((d) => this.fromDocument(d));
+    return docs.map((d: ListingUnlockDocument) => this.fromDocument(d));
   }
 
   async countByListing(listingId: ListingId): Promise<number> {

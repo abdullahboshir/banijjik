@@ -65,7 +65,8 @@ export type {
   DirectoryTemplateReader,
   ListingFieldReader,
   ListingUnlockReader,
-};
+} from "./application/ports/directory-context-ports.js";
+export type { ListingRepository } from "./application/ports/listing-repository.js";
 export { asListingFieldRules } from "./application/ports/directory-context-ports.js";
 
 export interface DirectoryAdapters {

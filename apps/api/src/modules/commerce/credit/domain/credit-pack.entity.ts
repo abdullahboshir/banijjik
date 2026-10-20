@@ -22,7 +22,6 @@ export class CreditPackEntity {
   toResponse(): CreditPack {
     return {
       creditPackId: this.creditPackId,
-      organizationId: this.organizationId,
       name: this.name,
       credits: this.credits,
       price: this.price,

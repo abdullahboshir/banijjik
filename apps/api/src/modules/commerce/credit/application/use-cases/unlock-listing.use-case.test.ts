@@ -2,14 +2,16 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import type { CreditRepository } from "../ports/credit-repository.js";
 import type { ListingUnlockRepository } from "../ports/listing-unlock-repository.js";
+import type { ListingRepository } from "../../../directory/index.js";
 import { UnlockListingUseCase } from "./unlock-listing.use-case.js";
+import { asId, type CustomerAccountId } from "@banijjik/ids";
 
 describe("UnlockListingUseCase - concurrency", () => {
   let creditRepo: CreditRepository;
   let unlockRepo: ListingUnlockRepository;
+  let listingRepo: ListingRepository;
   let useCase: UnlockListingUseCase;
-  let organizationId: string;
-  let customerAccountId: string;
+  let customerAccountId: CustomerAccountId;
   let listingIds: string[];
 
   beforeEach(() => {
@@ -19,6 +21,7 @@ describe("UnlockListingUseCase - concurrency", () => {
       getBalance: vi.fn(),
       insertBalance: vi.fn(),
       updateBalance: vi.fn(),
+      findPurchaseEntry: vi.fn(),
     } as unknown as CreditRepository;
 
     unlockRepo = {
@@ -27,27 +30,61 @@ describe("UnlockListingUseCase - concurrency", () => {
       listByCustomer: vi.fn(),
       countByListing: vi.fn(),
       countByCustomerToday: vi.fn(),
+      findByCustomerAndListing: vi.fn(),
     } as unknown as ListingUnlockRepository;
+
+    listingRepo = {
+      insert: vi.fn(),
+      save: vi.fn(),
+      findById: vi.fn(),
+      findByListingNumber: vi.fn(),
+      findActiveByOwner: vi.fn(),
+      searchApproved: vi.fn(),
+      listQueue: vi.fn(),
+      explainSearch: vi.fn(),
+    } as unknown as ListingRepository;
 
     const deps: CreditDependencies = {
       credit: creditRepo,
-      packs: {} as unknown as ReturnType<typeof vi.fn>,
+      packs: {
+        insert: vi.fn(),
+        save: vi.fn(),
+        findById: vi.fn(),
+        listActive: vi.fn(),
+      } as unknown as CreditDependencies["packs"],
       unlocks: unlockRepo,
-      unitOfWork: { withTransaction: vi.fn((fn) => fn()) } as unknown as ReturnType<typeof vi.fn>,
-      events: { publish: vi.fn() } as unknown as ReturnType<typeof vi.fn>,
-      audit: {} as unknown as ReturnType<typeof vi.fn>,
-      clock: { now: () => new Date() } as unknown as ReturnType<typeof vi.fn>,
+      listings: listingRepo,
+      unitOfWork: { run: vi.fn((fn) => fn()) } as unknown as CreditDependencies["unitOfWork"],
+      events: { publish: vi.fn() } as unknown as CreditDependencies["events"],
+      audit: { record: vi.fn() } as unknown as CreditDependencies["audit"],
+      clock: { now: () => new Date() } as unknown as CreditDependencies["clock"],
+      directorySettings: {
+        oneListingPerAccount: vi.fn(() => Promise.resolve(false)),
+        reviewEdits: vi.fn(() => Promise.resolve(false)),
+        photoPolicy: vi.fn(() => Promise.resolve("NONE")),
+      } as unknown as CreditDependencies["directorySettings"],
     };
 
     useCase = new UnlockListingUseCase(deps);
-    organizationId = "org-1";
-    customerAccountId = "customer-1";
+    customerAccountId = asId<CustomerAccountId>("customer-1");
     listingIds = ["listing-1", "listing-2", "listing-3", "listing-4", "listing-5"];
+
+    vi.spyOn(listingRepo, "findByListingNumber").mockResolvedValue({
+      listingId: "listing-1",
+      listingNumber: "L-1",
+      ownerCustomerAccountId: asId<CustomerAccountId>("owner-1"),
+      status: "APPROVED",
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as unknown);
+
+    vi.spyOn(unlockRepo, "findExisting").mockResolvedValue(null);
+    vi.spyOn(unlockRepo, "countByCustomerToday").mockResolvedValue(0);
   });
 
   it("should allow exactly 3 parallel unlocks with a balance of 3", async () => {
     const initialBalance = 3;
-    const unlockCost = 1;
 
     vi.spyOn(creditRepo, "getBalance").mockResolvedValue({
       customerAccountId,
@@ -55,9 +92,6 @@ describe("UnlockListingUseCase - concurrency", () => {
       version: 1,
       updatedAt: new Date().toISOString(),
     });
-
-    vi.spyOn(unlockRepo, "findExisting").mockResolvedValue(null);
-    vi.spyOn(unlockRepo, "countByCustomerToday").mockResolvedValue(0);
 
     let balanceUpdateCalls = 0;
     vi.spyOn(creditRepo, "updateBalance").mockImplementation(async (input) => {
@@ -78,13 +112,8 @@ describe("UnlockListingUseCase - concurrency", () => {
     const results = await Promise.allSettled(
       listingIds.map((listingId) =>
         useCase.execute({
-          organizationId,
-          customerAccountId,
-          listingId,
           listingNumber: "L-1",
-          ownerCustomerAccountId: "owner-1",
-          unlockCost,
-          unlockLimitPerDay: 20,
+          customerAccountId,
           idempotencyKey: `key-${listingId}`,
         }),
       ),

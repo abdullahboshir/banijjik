@@ -5,7 +5,7 @@ import type {
   CreditRepository,
   UpdateBalanceInput,
 } from "../application/ports/credit-repository.js";
-import type { CreditEntry, CreditBalance } from "../../domain/index.js";
+import type { CreditEntry, CreditBalance } from "../domain/index.js";
 import { CREDIT_ENTRY_MODEL_NAME, type CreditEntryDocument } from "./credit-entry.schema.js";
 import { CREDIT_BALANCE_MODEL_NAME, type CreditBalanceDocument } from "./credit-balance.schema.js";
 
@@ -35,7 +35,7 @@ export class MongoCreditRepository implements CreditRepository {
       .sort({ occurredAt: -1 })
       .skip(options.offset)
       .limit(options.limit);
-    return docs.map((d) => this.entryFromDocument(d));
+    return docs.map((d: CreditEntryDocument) => this.entryFromDocument(d));
   }
 
   async getBalance(customerAccountId: CustomerAccountId): Promise<CreditBalance | null> {

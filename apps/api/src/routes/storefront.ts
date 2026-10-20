@@ -25,6 +25,20 @@ import {
 } from "../modules/commerce/contact/index.js";
 import { buildDirectoryStorefrontRouterFor } from "../modules/commerce/directory/index.js";
 import {
+  buildCreditStorefrontRouter,
+  MongoCreditRepository,
+  MongoCreditPackRepository,
+  MongoListingUnlockRepository,
+  UnlockListingUseCase,
+  GetMyCreditsUseCase,
+  GetMyUnlocksUseCase,
+  ListCreditPacksUseCase,
+} from "../modules/commerce/credit/index.js";
+import { MongoUnitOfWork } from "../kernel/db/index.js";
+import { kernelEventPublisher } from "../kernel/events/index.js";
+import { MongoListingRepository } from "../modules/commerce/directory/index.js";
+import { directorySettingsFromResolver } from "../modules/commerce/directory/index.js";
+import {
   buildStorefrontOrganizationReader,
   type StorefrontOrganizationReader,
 } from "../modules/core/organization/index.js";
@@ -40,6 +54,25 @@ const RESOLVE_PER_MINUTE = 60;
 const SURFACE_PER_MINUTE = 300;
 /** A block must reach a signed-in customer within a minute (ADR-119). */
 const ACCOUNT_STATUS_MAX_STALE_SECONDS = 60;
+
+function buildCreditRouterDeps(input: StorefrontRouterInput) {
+  const settingsResolver = buildSettingsResolver({
+    orgConfig: input.orgConfig,
+    manifests: input.manifests,
+  });
+
+  return {
+    credit: new MongoCreditRepository(),
+    packs: new MongoCreditPackRepository(),
+    unlocks: new MongoListingUnlockRepository(),
+    listings: new MongoListingRepository(),
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+    audit: input.audit,
+    clock: input.clock,
+    directorySettings: directorySettingsFromResolver(settingsResolver),
+  };
+}
 
 export interface StorefrontRouterInput {
   readonly config: AppConfig;
@@ -114,12 +147,7 @@ function customerLoginSwitch(input: StorefrontRouterInput): RequestHandler {
   };
 }
 
-function mountOrganizationSurface(
-  router: Router,
-  input: StorefrontRouterInput,
-  organizations: StorefrontOrganizationReader,
-): void {
-  const { config, clock, rateLimiter } = input;
+function buildCustomerAuth(config: AppConfig, clock: Clock, input: StorefrontRouterInput) {
   const secret = config.auth.accessTokenSecret;
   const accounts = cacheAccountStatus(buildCustomerAccountStatusReader(), {
     clock,
@@ -128,6 +156,78 @@ function mountOrganizationSurface(
   const verifier = createCustomerTokenVerifier({ secret, clock });
   const customerAuth = authenticateCustomer({ verifier, accounts });
   const customerAuthOptional = authenticateCustomerOptional({ verifier, accounts });
+  return { customerAuth, customerAuthOptional, secret };
+}
+
+function buildStorefrontRouters(
+  input: StorefrontRouterInput,
+  rateLimiter: RateLimiter,
+  auth: {
+    customerAuth: ReturnType<typeof authenticateCustomer>;
+    customerAuthOptional: ReturnType<typeof authenticateCustomerOptional>;
+    secret: string;
+  },
+) {
+  const { config, clock, audit } = input;
+  const creditDeps = buildCreditRouterDeps(input);
+
+  const directoryRouter = buildDirectoryStorefrontRouterFor({
+    clock,
+    audit,
+    limiter: rateLimiter,
+    adapters: buildDirectoryAdapters({
+      orgConfig: input.orgConfig,
+      manifests: input.manifests,
+      clock,
+    }),
+    authenticateCustomer: auth.customerAuth,
+    authenticateCustomerOptional: auth.customerAuthOptional,
+    storage: config.storage,
+    ...(input.fileOverrides === undefined ? {} : { fileOverrides: input.fileOverrides }),
+  });
+
+  const creditRouter = buildCreditStorefrontRouter({
+    unlockListing: new UnlockListingUseCase(creditDeps),
+    getMyCredits: new GetMyCreditsUseCase(creditDeps),
+    getMyUnlocks: new GetMyUnlocksUseCase(creditDeps),
+    listPacks: new ListCreditPacksUseCase(creditDeps),
+    limiter: rateLimiter,
+    authenticateCustomer: auth.customerAuth,
+    authenticateCustomerOptional: auth.customerAuthOptional,
+  });
+
+  const contactRouter = buildContactStorefrontRouterFor({
+    clock,
+    audit,
+    limiter: rateLimiter,
+    tokens: createCustomerTokenIssuer({
+      secret: auth.secret,
+      clock,
+      ttlSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
+    }),
+    storefront: config.storefront,
+    isSecureCookies: config.nodeEnv === "production",
+    accessTokenSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
+    requireCustomerLogin: customerLoginSwitch(input),
+    authenticateCustomer: auth.customerAuth,
+  });
+
+  return { directoryRouter, creditRouter, contactRouter };
+}
+
+function mountOrganizationSurface(
+  router: Router,
+  input: StorefrontRouterInput,
+  organizations: StorefrontOrganizationReader,
+): void {
+  const { config, clock, rateLimiter } = input;
+  const auth = buildCustomerAuth(config, clock, input);
+  const { directoryRouter, creditRouter, contactRouter } = buildStorefrontRouters(
+    input,
+    rateLimiter,
+    auth,
+  );
+
   router.use(
     "/orgs/:organizationId",
     rateLimit({
@@ -138,35 +238,9 @@ function mountOrganizationSurface(
     }),
     validate({ params: storefrontOrganizationParamsSchema }),
     businessContext(organizations),
-    buildDirectoryStorefrontRouterFor({
-      clock,
-      audit: input.audit,
-      limiter: rateLimiter,
-      adapters: buildDirectoryAdapters({
-        orgConfig: input.orgConfig,
-        manifests: input.manifests,
-        clock,
-      }),
-      authenticateCustomer: customerAuth,
-      authenticateCustomerOptional: customerAuthOptional,
-      storage: config.storage,
-      ...(input.fileOverrides === undefined ? {} : { fileOverrides: input.fileOverrides }),
-    }),
-    buildContactStorefrontRouterFor({
-      clock,
-      audit: input.audit,
-      limiter: rateLimiter,
-      tokens: createCustomerTokenIssuer({
-        secret,
-        clock,
-        ttlSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
-      }),
-      storefront: config.storefront,
-      isSecureCookies: config.nodeEnv === "production",
-      accessTokenSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
-      requireCustomerLogin: customerLoginSwitch(input),
-      authenticateCustomer: customerAuth,
-    }),
+    directoryRouter,
+    creditRouter,
+    contactRouter,
   );
 }
 
