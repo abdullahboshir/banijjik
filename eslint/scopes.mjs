@@ -29,6 +29,7 @@ export const ORM_ALLOWED_FILES = [
 // A new platform use case that needs system access is added here in the same commit, so the bypass
 // shows up in review (plan 1.9b, ADR-087). Patterns start with `**/` like the rest of this file.
 export const SYSTEM_ACCESS_FILES = [
+  "**/kernel/jobs/**",
   "**/modules/core/file/application/use-cases/read-public-file.use-case.ts",
   "**/modules/platform/entitlement/application/use-cases/create-module-override.use-case.ts",
   "**/modules/platform/entitlement/application/use-cases/delete-module-override.use-case.ts",
