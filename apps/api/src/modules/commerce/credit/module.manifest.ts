@@ -5,7 +5,7 @@ import {
   SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
-import { CREDIT_EVENT_TYPE, CREDIT_RULE_KEY } from "@banijjik/contracts/credit";
+import { CREDIT_RULE_KEY, EVENT_TYPE } from "@banijjik/contracts";
 import { defineModule } from "../../../kernel/modules/index.js";
 
 /** The credit manifest (doc 16 §3.5, M.4 plan). */
@@ -71,7 +71,7 @@ export const creditManifest = defineModule({
   botTools: [],
   storefrontSections: ["credit-packs"],
   events: {
-    emits: [CREDIT_EVENT_TYPE.CREDIT_ENTRY_CREATED, CREDIT_EVENT_TYPE.UNLOCK_CREATED],
+    emits: [EVENT_TYPE.CREDIT_ENTRY_CREATED, EVENT_TYPE.UNLOCK_CREATED],
     consumes: [],
   },
   limitKeys: [],

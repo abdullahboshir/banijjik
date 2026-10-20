@@ -51,9 +51,11 @@ export class ExpireCreditsUseCase {
       offset: 0,
     });
     return entries
-      .filter(
-        (e) => e.type === CREDIT_ENTRY_TYPE.SPEND && e.fromPurchaseEntryId === purchaseEntryId,
-      )
+      .filter((e) => {
+        if (e.type !== CREDIT_ENTRY_TYPE.SPEND) return false;
+        if (!e.fromPurchaseEntryId) return false;
+        return e.fromPurchaseEntryId === purchaseEntryId;
+      })
       .reduce((sum, e) => sum + Math.abs(e.credits), 0);
   }
 
