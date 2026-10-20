@@ -16,6 +16,8 @@ export type {
   ModifierGroupId,
   OfferingId,
   PromotionId,
+  ResourceId,
+  ResourceTimeOffId,
   TaxClassId,
   OtpChallengeId,
   Id,
