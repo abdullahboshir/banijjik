@@ -1,5 +1,3 @@
-"use client";
-
 import type { EffectiveCustomField } from "@banijjik/contracts";
 import type { DirectoryConfigResponse, ListingResponse } from "@banijjik/contracts/directory";
 import type { Locale, Translator } from "@banijjik/i18n";

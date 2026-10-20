@@ -1125,6 +1125,6 @@
   "directory.reject.reasons": "Reasons",
   "directory.reject.finalMark": "Final",
   "directory.reject.note": "Note",
-  "directory.reject.submit": "Reject",
+  "directory.reject.submit": "Submit rejection",
   "directory.reject.reasonRequired": "Choose at least one reason."
 }

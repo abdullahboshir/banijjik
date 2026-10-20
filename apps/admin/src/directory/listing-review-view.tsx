@@ -1,12 +1,11 @@
-import type { EffectiveCustomField } from "@banijjik/contracts";
+import type { CurrencyCode, EffectiveCustomField } from "@banijjik/contracts";
 import type { DirectoryConfigResponse, ListingResponse } from "@banijjik/contracts/directory";
 import type { Locale, Translator } from "@banijjik/i18n";
-import type { CurrencyCode } from "@banijjik/contracts";
 import { PageLayout } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import { LazyListingSections } from "./lazy-listing-sections";
+import { LazyReviewActions } from "./lazy-review-actions";
 import { ListingReviewHeader } from "./listing-review-header";
-import { ReviewActions } from "./review-actions";
+import { ListingSections } from "./listing-sections";
 import type { ReviewActionsLabels } from "./review-actions";
 
 export function ListingReviewView(props: {
@@ -33,7 +32,7 @@ export function ListingReviewView(props: {
       actions={<ListingReviewHeader listing={listing} queueHref={props.queueHref} t={t} />}
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <LazyListingSections
+        <ListingSections
           listing={listing}
           fields={props.fields}
           sections={props.config.sections}
@@ -45,7 +44,7 @@ export function ListingReviewView(props: {
           photosTitle={t("directory.photos.title")}
           photosHelp={t("directory.photos.help")}
         />
-        <ReviewActions
+        <LazyReviewActions
           organizationId={props.organizationId}
           listingId={listing.listingId}
           version={listing.version}

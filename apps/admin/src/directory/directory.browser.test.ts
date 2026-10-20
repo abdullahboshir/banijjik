@@ -13,6 +13,8 @@ import {
   waitForDialogSettled,
 } from "../test-support/browser-page";
 import {
+  ADMIN_ORIGIN,
+  API_PORT,
   seedOrganization,
   seedPerson,
   startBrowserStack,
@@ -25,6 +27,7 @@ const SLUG = "dirco";
 const ORG_NAME = "ডিরেক্টরি কো";
 const PRIVATE_VALUE = "গোপন-নাম-পরীক্ষা";
 const LISTING_NUMBER = "BD-1";
+const API_ORIGIN = `http://localhost:${API_PORT}`;
 
 let stack: BrowserStack;
 let owner: SeededPerson;
@@ -36,8 +39,8 @@ beforeAll(async () => {
   owner = await seedPerson("রিভিউয়ার আলী");
   await seedOrganization(owner, SLUG, ORG_NAME);
   organizationId = await organizationIdOf(SLUG);
-  await grantDirectory(organizationId);
   await seedDirectoryTemplate(organizationId);
+  await grantDirectory(organizationId);
   await createListingFields(organizationId);
   listingId = await insertSubmittedListing(organizationId);
 }, 180_000);
@@ -97,6 +100,7 @@ async function seedDirectoryTemplate(organizationId: string): Promise<void> {
       .updateOne(
         { industryTemplateKey: org.industryTemplateKey },
         {
+          $addToSet: { allowedModuleKeys: MODULE_KEY.DIRECTORY },
           $set: {
             "configuration.directory": {
               sections: [{ sectionKey: "basics", label: { bn: "মূল", en: "Basics" } }],
@@ -114,6 +118,10 @@ async function seedDirectoryTemplate(organizationId: string): Promise<void> {
           $inc: { version: 1 },
         },
       );
+    await client
+      .db("browser_platform")
+      .collection("organizations")
+      .updateOne({ organizationId: organizationId }, { $inc: { configVersion: 1 } });
   } finally {
     await client.close();
   }
@@ -152,20 +160,18 @@ async function createListingFields(organizationId: string): Promise<void> {
       sectionKey: "basics",
     },
   ]) {
-    const response = await fetch(
-      `http://localhost:4000/api/v1/orgs/${organizationId}/custom-fields`,
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          cookie: cookies,
-          origin: "http://localhost:3101",
-        },
-        body: JSON.stringify(field),
+    const response = await fetch(`${API_ORIGIN}/api/v1/orgs/${organizationId}/custom-fields`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: cookies,
+        origin: ADMIN_ORIGIN,
       },
-    );
+      body: JSON.stringify(field),
+    });
     if (response.status !== 201) {
-      throw new Error(`field ${field.fieldKey} failed: ${response.status}`);
+      const body = await response.text();
+      throw new Error(`field ${field.fieldKey} failed: ${response.status} ${body}`);
     }
   }
 }
@@ -219,16 +225,24 @@ describe("directory moderation screens", () => {
     expect(await bodyText(page)).toContain(PRIVATE_VALUE);
     expect(await bodyText(page)).toContain("শুধু অফিস");
 
+    await waitForText(page, message("directory.action.reject"));
     await clickByName(page, message("directory.action.reject"));
-    await waitForText(page, "অস্পষ্ট উত্তর");
+    await waitForText(page, message("directory.reject.submit"));
     await page.evaluate(() => {
-      const labels = [...document.querySelectorAll("label")];
-      const reason = labels.find((label) => label.textContent?.includes("অস্পষ্ট উত্তর"));
+      const formTitle = [...document.querySelectorAll("h3")].find((node) =>
+        node.textContent?.includes("তালিকা প্রত্যাখ্যান"),
+      );
+      const form = formTitle?.closest("div");
+      const reason = [...(form?.querySelectorAll("label") ?? [])].find((label) =>
+        label.textContent?.includes("অস্পষ্ট উত্তর"),
+      );
       const input = reason?.querySelector("input[type=checkbox]");
       if (input instanceof HTMLInputElement) input.click();
     });
     await clickByName(page, message("directory.reject.submit"));
-    await page.waitForFunction(() => location.pathname.endsWith("/directory/queue"));
+    await page.waitForFunction(() => location.pathname.endsWith("/directory/queue"), {
+      timeout: 30_000,
+    });
     await gotoWhenHydrated(page, `/${SLUG}/directory/queue`, "main");
     expect(await bodyText(page)).not.toContain(LISTING_NUMBER);
 

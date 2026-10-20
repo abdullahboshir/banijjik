@@ -1125,6 +1125,6 @@
   "directory.reject.reasons": "কারণ",
   "directory.reject.finalMark": "চূড়ান্ত",
   "directory.reject.note": "নোট",
-  "directory.reject.submit": "প্রত্যাখ্যান",
+  "directory.reject.submit": "প্রত্যাখ্যান জমা দিন",
   "directory.reject.reasonRequired": "অন্তত একটি কারণ বেছে নিন।"
 }
