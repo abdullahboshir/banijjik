@@ -1,6 +1,6 @@
 # Handoff: card M.4 · IMPLEMENT · 2026-10-21
 
-- **Branch / commit:** `s/m4-credits` (final commit hash in `git log -1 --oneline`) in worktree `E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik-m2` (based on `main` `8258669`). Not merged/pushed.
+- **Branch / commit:** `s/m4-credits` @ `522b9bc` in worktree `E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik-m2` (based on `main` `8258669`). Not merged/pushed.
 - **Model:** Cursor (Composer), finished with Qoder.
 - **Done:**
   - OPTIONAL module `commerce/credit` (`MODULE_KEY.CREDIT`, `dependsOn: [directory]`, `tenantCanDisable: true`) with its manifest: routes, menu, settings, events; grants OWNER/MANAGER all, STAFF `credit.account.read` + `credit.pack.read`.
