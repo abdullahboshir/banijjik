@@ -20,10 +20,11 @@ import { buildIndustryTemplateReader } from "./modules/platform/industry/index.j
 import type { ModuleRegistry } from "./kernel/modules/index.js";
 
 /**
- * Starts the worker role: the outbox dispatcher and the BullMQ worker (ADR-090). Returns the
- * shutdown tasks in the order they must run: stop the dispatcher, close the worker, close the
- * queue, close Redis, close the databases. The worker starts even when Redis is away; the
- * dispatcher then keeps events pending and backs off until it returns.
+ * Starts the worker role: the scheduled jobs, the outbox dispatcher and the BullMQ worker
+ * (ADR-090, ADR-122). Returns the shutdown tasks in the order they must run: close the scheduled
+ * jobs worker and queue, stop the dispatcher, close the worker, close the queue, close Redis,
+ * close the databases. The worker starts even when Redis is away; the dispatcher then keeps
+ * events pending and backs off until it returns.
  */
 export function startWorker(
   config: AppConfig,

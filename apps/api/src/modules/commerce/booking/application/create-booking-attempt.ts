@@ -1,6 +1,4 @@
-import { ERROR_CODE } from "@banijjik/contracts";
 import { BOOKING_STATUS, type BookingResponse } from "@banijjik/contracts/booking";
-import { AppError } from "../../../../kernel/http/app-error.js";
 import {
   asId,
   type LocationId,
@@ -13,8 +11,9 @@ import {
 import type { BookingCreateBody } from "@banijjik/validation/booking";
 import { BOOKING_RULE_KEY } from "@banijjik/contracts/booking";
 import { slotBounds } from "../domain/availability.js";
-import { bookingRuleError, slotUnavailableError } from "../domain/errors.js";
+import { bookingRuleError } from "../domain/errors.js";
 import { buildStaffBookingForSlot } from "./create-booking-context.js";
+import { runWithTxnRetry } from "./run-with-txn-retry.js";
 import { persistCreatedBooking } from "./create-booking-persist.js";
 import { reserveResourceForSlot } from "./booking-slot-selection.js";
 import type { CreateBookingDependencies } from "./use-cases/create-booking.use-case.js";
@@ -47,8 +46,8 @@ export async function createBookingWithRetries(input: {
   const preferred =
     input.body.resourceId === undefined ? undefined : asId<ResourceId>(input.body.resourceId);
 
-  for (let attempt = 1; attempt <= 12; attempt++) {
-    const response = await tryCreateBookingOnce({
+  return runWithTxnRetry(input.dependencies.unitOfWork, () =>
+    tryCreateBookingOnce({
       ...input,
       locationId,
       offeringId,
@@ -56,11 +55,8 @@ export async function createBookingWithRetries(input: {
       blockedEndsAt,
       timeZone,
       preferred,
-      attempt,
-    });
-    if (response !== undefined) return response;
-  }
-  throw slotUnavailableError();
+    }),
+  );
 }
 
 async function tryCreateBookingOnce(input: {
@@ -75,8 +71,7 @@ async function tryCreateBookingOnce(input: {
   blockedEndsAt: Date;
   timeZone: string;
   preferred: ResourceId | undefined;
-  attempt: number;
-}): Promise<BookingResponse | undefined> {
+}): Promise<BookingResponse> {
   const resource = await reserveResourceForSlot({
     resources: input.dependencies.resources,
     slots: input.dependencies.slots,
@@ -101,19 +96,12 @@ async function tryCreateBookingOnce(input: {
       capacity: resource.capacity,
     },
   });
-  try {
-    return await persistCreatedBooking({
-      dependencies: input.dependencies,
-      organizationId: input.organizationId,
-      resourceId: built.resourceId,
-      resourceCapacity: built.resourceCapacity,
-      booking: built.booking,
-      status: built.status as typeof BOOKING_STATUS.REQUESTED | typeof BOOKING_STATUS.CONFIRMED,
-    });
-  } catch (error) {
-    if (error instanceof AppError && error.code === ERROR_CODE.RETRY_LATER && input.attempt < 12) {
-      return undefined;
-    }
-    throw error;
-  }
+  return await persistCreatedBooking({
+    dependencies: input.dependencies,
+    organizationId: input.organizationId,
+    resourceId: built.resourceId,
+    resourceCapacity: built.resourceCapacity,
+    booking: built.booking,
+    status: built.status as typeof BOOKING_STATUS.REQUESTED | typeof BOOKING_STATUS.CONFIRMED,
+  });
 }

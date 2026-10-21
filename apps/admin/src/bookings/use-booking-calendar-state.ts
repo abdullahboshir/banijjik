@@ -25,6 +25,8 @@ export function useBookingCalendarState(
     resourceId?: string;
     startsAt?: string;
   };
+  /** Counts slot taps: the sheet opens seeded instead of waiting for its own button (plan 3.6 item 9). */
+  bookingSheetReveal: number;
 } {
   const { startMinutes, endMinutes } = useMemo(
     () => calendarBoundsFromSchedules(props.resources.map((resource) => resource.weeklySchedule)),
@@ -33,6 +35,7 @@ export function useBookingCalendarState(
   const gridHeight =
     ((endMinutes - startMinutes) / props.slotStepMinutes) * CALENDAR_SLOT_HEIGHT_PX;
   const [seed, setSeed] = useState<{ resourceId: string; startsAt: string } | undefined>();
+  const [bookingSheetReveal, setBookingSheetReveal] = useState(0);
 
   function openSlot(resourceId: string, minutesFromGridStart: number): void {
     const localMinutes =
@@ -45,6 +48,7 @@ export function useBookingCalendarState(
         props.timeZone,
       ),
     });
+    setBookingSheetReveal((reveal) => reveal + 1);
   }
 
   const bookingSeed = {
@@ -54,5 +58,5 @@ export function useBookingCalendarState(
     ...(seed?.startsAt === undefined ? {} : { startsAt: seed.startsAt }),
   };
 
-  return { startMinutes, endMinutes, gridHeight, openSlot, bookingSeed };
+  return { startMinutes, endMinutes, gridHeight, openSlot, bookingSeed, bookingSheetReveal };
 }

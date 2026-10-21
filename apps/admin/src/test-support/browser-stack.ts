@@ -141,7 +141,8 @@ function toCookieParam(setCookie: string): CookieParam {
   };
 }
 
-async function callApi(
+/** POSTs to the stack's API with an idempotency key and session cookies, and fails loudly with the body. */
+export async function callApi(
   path: string,
   options: { body: object; cookies?: CookieParam[] },
 ): Promise<Response> {
@@ -156,7 +157,9 @@ async function callApi(
     },
     body: JSON.stringify(options.body),
   });
-  if (!response.ok) throw new Error(`POST ${path} answered ${response.status}`);
+  if (!response.ok) {
+    throw new Error(`POST ${path} answered ${response.status}: ${await response.text()}`);
+  }
   return response;
 }
 
@@ -226,7 +229,7 @@ export async function setTrialEndsInDays(
 }
 
 /** The organization ID of a seeded person's business, read through the real API. */
-async function organizationIdOf(person: SeededPerson, slug: string): Promise<string> {
+export async function organizationIdOf(person: SeededPerson, slug: string): Promise<string> {
   const cookieHeader = person.cookies.map((c) => `${c.name}=${c.value}`).join("; ");
   const response = await fetch(`${API_ORIGIN}/api/v1/me/orgs`, {
     headers: { Cookie: cookieHeader, Origin: ADMIN_ORIGIN },

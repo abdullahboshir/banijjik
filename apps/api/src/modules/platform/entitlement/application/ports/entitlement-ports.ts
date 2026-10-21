@@ -1,5 +1,6 @@
 import type {
   ContactRole,
+  IndustryTemplateResourceType,
   IndustryTemplateKey,
   ModuleKey,
   OfferingKind,
@@ -16,6 +17,8 @@ export interface IndustryTemplateView {
   readonly allowedModuleKeys: readonly ModuleKey[];
   /** The roles a contact of this template may have (ADR-113). */
   readonly contactRoleKeys: readonly ContactRole[];
+  /** Template resource choices; absent in config cached before card 3.6. */
+  readonly resourceTypes?: readonly IndustryTemplateResourceType[];
   readonly enabledKinds: readonly OfferingKind[];
   readonly templateVersion: number;
 }

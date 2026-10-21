@@ -3,6 +3,7 @@
 import type { OfferingResponse } from "@banijjik/contracts/catalog";
 import type { ResourceResponse, ResourceTimeOffResponse } from "@banijjik/contracts/booking";
 import { Button, Sheet, SheetContent } from "@banijjik/ui";
+import { useTranslator } from "@banijjik/web-client/client";
 import { useState, type FormEvent, type ReactElement } from "react";
 import { SheetFeedback } from "../settings/sheet-feedback";
 import { useSheetSubmit } from "../settings/use-sheet-submit";
@@ -15,6 +16,8 @@ export interface ResourceFormSheetProps {
   organizationId: string;
   locationId: string;
   resourceTypeKey: string;
+  resourceTypes?: readonly { value: string; label: string }[];
+  resourceTypeLabel?: string;
   offerings: readonly OfferingResponse[];
   existing?: ResourceResponse;
   timeOff?: readonly ResourceTimeOffResponse[];
@@ -35,7 +38,6 @@ export interface ResourceFormSheetProps {
     conflict: string;
     reload: string;
   };
-  weekdayLabel: (weekday: number) => string;
   onClose: () => void;
 }
 
@@ -46,6 +48,9 @@ function ResourceFormSheetInner(props: {
   isEdit: boolean;
 }): ReactElement {
   const { sheet } = props;
+  // A client sheet reads its own translations: a server page may not pass a function through props.
+  const { t } = useTranslator();
+  const weekdayLabel = (weekday: number) => t(`bookings.weekday.${weekday}`);
   const state = useSheetSubmit({
     fieldNames: ["name", "capacity"],
     onClose: sheet.onClose,
@@ -71,12 +76,14 @@ function ResourceFormSheetInner(props: {
           className="flex flex-col gap-4"
         >
           <ResourceFormSheetBody
+            resourceTypes={sheet.resourceTypes}
+            resourceTypeLabel={sheet.resourceTypeLabel}
             form={props.form}
             offerings={sheet.offerings}
             isEdit={props.isEdit}
             timeOff={sheet.timeOff}
             labels={sheet.labels}
-            weekdayLabel={sheet.weekdayLabel}
+            weekdayLabel={weekdayLabel}
             onFormChange={props.setForm}
           />
           <SheetFeedback

@@ -11,6 +11,8 @@ import { ResourceScheduleEditor } from "./resource-schedule-editor";
 
 export function ResourceFormSheetBody(props: {
   form: ResourceFormState;
+  resourceTypes: readonly { value: string; label: string }[] | undefined;
+  resourceTypeLabel: string | undefined;
   offerings: readonly OfferingResponse[];
   isEdit: boolean;
   timeOff: readonly ResourceTimeOffResponse[] | undefined;
@@ -31,6 +33,8 @@ export function ResourceFormSheetBody(props: {
   return (
     <>
       <ResourceFormIdentityFields
+        resourceTypes={props.isEdit ? undefined : props.resourceTypes}
+        resourceTypeLabel={props.resourceTypeLabel}
         form={props.form}
         nameLabel={props.labels.name}
         capacityLabel={props.labels.capacity}

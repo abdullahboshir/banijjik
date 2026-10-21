@@ -1,4 +1,5 @@
-import { asId, type CustomerAccountId } from "@banijjik/ids";
+import { CONTACT_STATUS } from "@banijjik/contracts/contact";
+import { asId, type ContactId, type CustomerAccountId } from "@banijjik/ids";
 import { Router, type RequestHandler } from "express";
 import type { StorefrontConfig } from "../../../config/index.js";
 import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
@@ -41,6 +42,10 @@ import {
   ArchiveContactUseCase,
 } from "./application/use-cases/end-contact.use-cases.js";
 import { GetContactUseCase } from "./application/use-cases/get-contact.use-case.js";
+import {
+  findOrCreateInlineContact,
+  type InlineContactCreate,
+} from "./application/inline-contact-creator.js";
 import { ListContactsUseCase } from "./application/use-cases/list-contacts.use-case.js";
 import { SendCustomerOtpUseCase } from "./application/use-cases/send-customer-otp.use-case.js";
 import { UpdateContactUseCase } from "./application/use-cases/update-contact.use-case.js";
@@ -224,6 +229,29 @@ export function buildCustomerPhoneReader(): {
       const contact = await contacts.findById(account.contactId);
       return contact?.phoneE164;
     },
+  };
+}
+
+/**
+ * The inline `{ create: { name, phone } }` creator for another module's request body (card 3.6's
+ * booking sheet): reuses an ACTIVE contact with the phone, creates a CUSTOMER otherwise.
+ */
+export function buildInlineContactCreator(dependencies: {
+  readonly audit: AuditRecorder;
+  readonly clock: Clock;
+}): {
+  findOrCreateByPhone(input: InlineContactCreate): Promise<ContactId>;
+  isActive(contactId: ContactId): Promise<boolean>;
+} {
+  const write = {
+    contacts: new MongoContactRepository(),
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+  };
+  return {
+    findOrCreateByPhone: (input) => findOrCreateInlineContact({ ...write, ...dependencies }, input),
+    isActive: async (contactId) =>
+      (await write.contacts.findById(contactId))?.status === CONTACT_STATUS.ACTIVE,
   };
 }
 

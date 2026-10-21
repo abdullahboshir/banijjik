@@ -26,6 +26,7 @@ import {
   type BrowserStack,
   type SeededPerson,
 } from "../test-support/browser-stack";
+import { publishTemplate } from "../test-support/browser-seed";
 import salonFixture from "../test-support/salon-industry-fixture.json" with { type: "json" };
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
 
@@ -49,6 +50,8 @@ const savedPaths: Record<string, string> = {};
 
 beforeAll(async () => {
   stack = await startBrowserStack();
+  // The SALON seed template is a DRAFT (only RETAIL is published for signup); this stack has no platform admin.
+  await publishTemplate(stack, "SALON");
   owner = await seedPerson("রহিম উদ্দিন");
   await seedOrganization(owner, "acme", BUSINESS_NAME);
   await seedLocation(owner, "acme", SECOND_LOCATION_NAME);

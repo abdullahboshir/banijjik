@@ -15,6 +15,8 @@ export interface NewBookingFormButtonProps {
   offerings: readonly OfferingResponse[];
   seed: NewBookingSeed;
   labels: import("./new-booking-sheet").NewBookingSheetLabels;
+  /** Increases when the calendar taps a free slot, so the seeded sheet opens too (plan 3.6 item 9). */
+  revealSignal?: number;
 }
 
 async function loadSheet(): Promise<ComponentType<NewBookingSheetProps>> {
@@ -23,6 +25,13 @@ async function loadSheet(): Promise<ComponentType<NewBookingSheetProps>> {
 }
 
 export function NewBookingFormButton(props: NewBookingFormButtonProps): ReactElement {
-  const { label, ...sheetProps } = props;
-  return <LazySheetButton label={label} load={loadSheet} sheetProps={sheetProps} />;
+  const { label, revealSignal, ...sheetProps } = props;
+  return (
+    <LazySheetButton
+      label={label}
+      load={loadSheet}
+      sheetProps={sheetProps}
+      {...(revealSignal === undefined ? {} : { revealSignal })}
+    />
+  );
 }

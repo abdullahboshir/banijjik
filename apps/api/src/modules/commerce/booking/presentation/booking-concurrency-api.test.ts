@@ -78,7 +78,7 @@ describe("booking concurrency API", () => {
     );
   });
 
-  it("never exceeds capacity two for parallel creates on the same slot", async () => {
+  it("never exceeds capacity two for parallel creates on overlapping non-identical slots", async () => {
     const world = await worldFor(harness, RETAIL, SALON);
     const offering = await publishBookableService(world.alice, world.organizationA);
     const variantId = offering.variants[0]?.variantId;
@@ -103,7 +103,7 @@ describe("booking concurrency API", () => {
     const contactId = (contact.body.data as { contactId: string }).contactId;
 
     const attempts = await Promise.all(
-      Array.from({ length: 5 }, () =>
+      Array.from({ length: 5 }, (_, index) =>
         world.alice.callWith({
           method: "post",
           path: `/orgs/${world.organizationA}/bookings`,
@@ -112,7 +112,7 @@ describe("booking concurrency API", () => {
             offeringId: offering.offeringId,
             variantId,
             locationId: world.locationA2,
-            startsAt,
+            startsAt: new Date(new Date(startsAt).getTime() + index * 5 * 60_000).toISOString(),
             contactId,
           },
         }),

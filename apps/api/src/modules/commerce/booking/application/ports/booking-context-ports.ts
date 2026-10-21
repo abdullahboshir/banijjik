@@ -48,6 +48,7 @@ export interface MemberLocationChecker {
 }
 
 export interface ContactCreator {
+  isActive(contactId: ContactId): Promise<boolean>;
   create(input: {
     readonly organizationId: OrganizationId;
     readonly actorUserId: string | null;

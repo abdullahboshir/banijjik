@@ -1,10 +1,12 @@
 import { ERROR_CODE, PERMISSION_KEY, type ModuleManifest } from "@banijjik/contracts";
+import { asId, type UserId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { AppError } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildDefaultCatalogQuoteReader } from "../modules/commerce/catalog/index.js";
+import { buildInlineContactCreator } from "../modules/commerce/contact/index.js";
 import {
   buildBookingRouter,
   type BookingTenantDependencies,
@@ -132,14 +134,18 @@ function quoterOf(input: BookingRouterInput): BookingTenantDependencies["quoter"
   };
 }
 
-function contactCreatorOf(): BookingTenantDependencies["contacts"] {
+/** The inline `{ create: { name, phone } }` of a booking body, served by the contact module. */
+function contactCreatorOf(input: BookingRouterInput): BookingTenantDependencies["contacts"] {
+  const creator = buildInlineContactCreator({ audit: input.audit, clock: input.clock });
   return {
-    create: async () => {
-      throw new AppError({
-        code: ERROR_CODE.INTERNAL,
-        messageKey: "errors.not_implemented",
-      });
-    },
+    isActive: (contactId) => creator.isActive(contactId),
+    create: (request) =>
+      creator.findOrCreateByPhone({
+        organizationId: request.organizationId,
+        actorUserId: request.actorUserId === null ? null : asId<UserId>(request.actorUserId),
+        name: request.name,
+        phoneE164: request.phone,
+      }),
   };
 }
 
@@ -153,6 +159,6 @@ export function buildBookingTenantRouter(input: BookingRouterInput): Router {
     orgConfig: input.orgConfig,
     manifests: input.manifests,
     quoter: quoterOf(input),
-    contacts: contactCreatorOf(),
+    contacts: contactCreatorOf(input),
   });
 }

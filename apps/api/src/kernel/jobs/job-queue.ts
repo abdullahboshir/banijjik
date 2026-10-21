@@ -71,7 +71,8 @@ export function startScheduledJobs(options: StartScheduledJobsOptions): {
       {
         name: "scheduled-jobs-worker",
         run: async () => {
-          await worker.close();
+          // With Redis unavailable no new work can be claimed; abandon leases for durable recovery.
+          await worker.close(options.redis.status !== "ready");
         },
       },
       {

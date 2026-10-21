@@ -9,14 +9,13 @@ const MAX_TXN_ATTEMPTS = 8;
  * Retries transient transaction aborts. After the last attempt, maps RETRY_LATER to
  * SLOT_UNAVAILABLE so concurrent slot races answer 409 (plan: never double-book).
  */
-export async function runWithTxnRetry(
+export async function runWithTxnRetry<Result>(
   unitOfWork: BookingUnitOfWork,
-  work: () => Promise<void>,
-): Promise<void> {
+  work: () => Promise<Result>,
+): Promise<Result> {
   for (let attempt = 1; ; attempt++) {
     try {
-      await unitOfWork.run(work);
-      return;
+      return await unitOfWork.run(work);
     } catch (error) {
       const isRetryLater = error instanceof AppError && error.code === ERROR_CODE.RETRY_LATER;
       if (isRetryLater && attempt < MAX_TXN_ATTEMPTS) continue;

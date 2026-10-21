@@ -13,8 +13,8 @@ import {
   WEEKDAYS,
 } from "@banijjik/contracts/booking";
 import { z } from "zod";
+import { contactLinkCreateSchema } from "../custom-field/contact-link-input.js";
 import { paginationQuerySchema } from "../pagination.js";
-import { phoneE164Schema } from "../phone.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 
 const weekdaySchema = z
@@ -104,13 +104,7 @@ export const availabilityQuerySchema = z.strictObject({
   resourceId: uuidV7Schema.optional(),
 });
 
-const contactInlineCreateSchema = z.strictObject({
-  create: z.strictObject({
-    name: z.string().trim().min(1).max(160),
-    phone: phoneE164Schema,
-  }),
-});
-
+/** The inline contact follows the 3.1b link-input pattern (ADR-073), so the shapes stay shared. */
 export const bookingCreateRequestSchema = z
   .strictObject({
     offeringId: uuidV7Schema,
@@ -120,7 +114,7 @@ export const bookingCreateRequestSchema = z
     resourceId: uuidV7Schema.optional(),
     note: z.string().trim().min(1).max(MAX_BOOKING_NOTE_LENGTH).optional(),
     contactId: uuidV7Schema.optional(),
-    contact: contactInlineCreateSchema.optional(),
+    contact: contactLinkCreateSchema.optional(),
   })
   .superRefine((body, context) => {
     const hasContactId = body.contactId !== undefined;

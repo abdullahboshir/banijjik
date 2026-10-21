@@ -1,3 +1,4 @@
+import { termLabel } from "@banijjik/web-client";
 import { PERMISSION_KEY } from "@banijjik/contracts";
 import { EmptyState, PageLayout } from "@banijjik/ui";
 import type { ReactElement } from "react";
@@ -8,10 +9,6 @@ import { ResourceFormButton } from "./resource-form-button";
 import { loadResourceListPage } from "./resource-list-page-load";
 import { resourceListLabels } from "./resource-list-labels";
 import { ResourceList } from "./resource-list";
-
-function weekdayLabelOf(t: (key: string) => string, weekday: number): string {
-  return t(`bookings.weekday.${weekday}`);
-}
 
 export async function ResourceListPage(props: {
   readonly orgSlug: string;
@@ -28,22 +25,27 @@ export async function ResourceListPage(props: {
   }
   const loaded = await loadResourceListPage(access);
   const labels = resourceListLabels({ t, locale, access });
-  const resourceTypeKey = "STYLIST";
+  const resourceTypes = (access.config.resourceTypes ?? []).map((type) => ({
+    value: type.resourceTypeKey,
+    label: termLabel(access.config.terms, type.termKey, { locale, fallback: type.resourceTypeKey }),
+  }));
+  const resourceTypeKey = resourceTypes[0]?.value;
   return (
     <PageLayout
       title={labels.resourceTerm}
       subtitle={t("resources.list.subtitle")}
       actions={
-        loaded.canCreate && loaded.locationId !== undefined ? (
+        loaded.canCreate && loaded.locationId !== undefined && resourceTypeKey !== undefined ? (
           <ResourceFormButton
             label={labels.add}
             sheetProps={{
               organizationId: loaded.organizationId,
               locationId: loaded.locationId,
               resourceTypeKey,
+              resourceTypes,
+              resourceTypeLabel: labels.list.type,
               offerings: loaded.offerings,
               labels: labels.sheet,
-              weekdayLabel: (weekday) => weekdayLabelOf(t, weekday),
             }}
           />
         ) : null
@@ -59,7 +61,6 @@ export async function ResourceListPage(props: {
           offerings={loaded.offerings}
           labels={labels.list}
           sheetLabels={labels.sheet}
-          weekdayLabel={(weekday) => weekdayLabelOf(t, weekday)}
         />
       )}
     </PageLayout>

@@ -39,7 +39,11 @@ export async function resolveBookingContactId(
     readonly body: BookingCreateBody;
   },
 ): Promise<ContactId> {
-  if (input.body.contactId !== undefined) return asId<ContactId>(input.body.contactId);
+  if (input.body.contactId !== undefined) {
+    const contactId = asId<ContactId>(input.body.contactId);
+    if (!(await contacts.isActive(contactId))) throw recordNotFound();
+    return contactId;
+  }
   const create = input.body.contact?.create;
   if (create === undefined) throw recordNotFound();
   return contacts.create({

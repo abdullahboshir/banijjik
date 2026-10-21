@@ -19,7 +19,6 @@ export function ResourceList(props: {
     empty: string;
   };
   sheetLabels: ResourceFormSheetProps["labels"];
-  weekdayLabel: (weekday: number) => string;
 }): ReactElement {
   return (
     <ul className="flex flex-col gap-2">
@@ -43,7 +42,6 @@ export function ResourceList(props: {
               offerings: props.offerings,
               existing: resource,
               labels: props.sheetLabels,
-              weekdayLabel: props.weekdayLabel,
             }}
           />
         </li>

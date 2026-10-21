@@ -1,5 +1,6 @@
 import type {
   ContactRole,
+  IndustryTemplateResourceType,
   EffectiveCustomField,
   LimitMap,
   LocalizedText,
@@ -37,6 +38,8 @@ export interface ResolvedOrgConfig {
   readonly fields: Readonly<Record<string, readonly EffectiveCustomField[]>>;
   /** The contact roles the template allows (ADR-113). */
   readonly contactRoleKeys: readonly ContactRole[];
+  /** Template resource choices; absent in config cached before card 3.6. */
+  readonly resourceTypes?: readonly IndustryTemplateResourceType[];
   /** Template terms with tenant overrides. Both languages are always present (ADR-104). */
   readonly terms: Readonly<Record<string, LocalizedText>>;
   readonly subscription: SubscriptionSnapshot | undefined;

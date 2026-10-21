@@ -58,11 +58,15 @@ describe("OrgConfigResolver sources", () => {
       template: {
         allowedModuleKeys: [],
         contactRoleKeys: [],
+        resourceTypes: [{ resourceTypeKey: "ROOM", termKey: "room", isMember: false }],
         enabledKinds: [],
         templateVersion: 1,
       },
     });
 
+    expect(resolved.resourceTypes).toEqual([
+      { resourceTypeKey: "ROOM", termKey: "room", isMember: false },
+    ]);
     expect(resolved.modules).toEqual([MODULE_KEY.IAM]);
     expect(seen[1]).toEqual([MODULE_KEY.IAM]);
     expect(seen[2]).toEqual([MODULE_KEY.IAM]);

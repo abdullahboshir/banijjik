@@ -4,6 +4,7 @@ import type { BookingHoldBody } from "@banijjik/validation/booking";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { assertLocationAllowed } from "../booking-slot-selection.js";
+import { runWithTxnRetry } from "../run-with-txn-retry.js";
 import { assembleHoldBooking } from "../hold-booking-assembler.js";
 import { persistHoldBooking } from "../hold-booking-persist.js";
 import type {
@@ -53,22 +54,24 @@ export class HoldBookingUseCase {
     readonly source?: typeof BOOKING_SOURCE.STOREFRONT;
   }): Promise<BookingResponse> {
     assertLocationAllowed(input.body.locationId, input.allowedLocationIds);
-    const assembled = await assembleHoldBooking({
-      dependencies: this.dependencies,
-      organizationId: input.organizationId,
-      actorUserId: input.actorUserId,
-      allowedLocationIds: input.allowedLocationIds,
-      body: input.body,
-      source: input.source ?? BOOKING_SOURCE.STOREFRONT,
-    });
-    return persistHoldBooking({
-      dependencies: this.dependencies,
-      organizationId: input.organizationId,
-      booking: assembled.booking,
-      resourceId: assembled.resourceId,
-      resourceCapacity: assembled.resourceCapacity,
-      startsAt: assembled.startsAt,
-      blockedEndsAt: assembled.blockedEndsAt,
+    return runWithTxnRetry(this.dependencies.unitOfWork, async () => {
+      const assembled = await assembleHoldBooking({
+        dependencies: this.dependencies,
+        organizationId: input.organizationId,
+        actorUserId: input.actorUserId,
+        allowedLocationIds: input.allowedLocationIds,
+        body: input.body,
+        source: input.source ?? BOOKING_SOURCE.STOREFRONT,
+      });
+      return persistHoldBooking({
+        dependencies: this.dependencies,
+        organizationId: input.organizationId,
+        booking: assembled.booking,
+        resourceId: assembled.resourceId,
+        resourceCapacity: assembled.resourceCapacity,
+        startsAt: assembled.startsAt,
+        blockedEndsAt: assembled.blockedEndsAt,
+      });
     });
   }
 }

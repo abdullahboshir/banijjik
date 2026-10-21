@@ -220,6 +220,8 @@ bookingSchema.index(
 );
 bookingSchema.index({ organizationId: 1, locationId: 1, startsAt: 1 });
 bookingSchema.index({ organizationId: 1, contactId: 1, createdAt: -1 });
+bookingSchema.index({ organizationId: 1, status: 1, holdExpiresAt: 1, bookingId: 1 });
+bookingSchema.index({ organizationId: 1, status: 1, startsAt: 1, bookingId: 1 });
 bookingSchema.index({ organizationId: 1, resourceIds: 1, startsAt: 1 });
 
 export const resourceSlotUsageSchema = new Schema<ResourceSlotUsageDocument>(

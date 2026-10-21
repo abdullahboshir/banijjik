@@ -3,7 +3,7 @@ import type { EffectiveCustomField } from "../custom-field/custom-field-contract
 import type { MenuEntry } from "../modules/module-manifest.js";
 import type { ModuleKey } from "../modules/module-key.js";
 import type { OfferingKind } from "../modules/offering-kind.js";
-import type { LocalizedText } from "../platform/industry-template.js";
+import type { IndustryTemplateResourceType, LocalizedText } from "../platform/industry-template.js";
 import type { PermissionKey } from "../iam/permission-key.js";
 import type { AccessMode } from "./access-mode.js";
 import type { LimitMap } from "./limit-key.js";
@@ -56,6 +56,8 @@ export interface ResolvedOrgConfigResponse {
   readonly fields: Readonly<Record<string, readonly EffectiveCustomField[]>>;
   /** The contact roles the template allows: a contact form offers these (ADR-113). */
   readonly contactRoleKeys: readonly ContactRole[];
+  /** Template resource choices; absent in config cached before card 3.6. */
+  readonly resourceTypes?: readonly IndustryTemplateResourceType[];
   readonly permissions: CallerPermissionsResponse;
   /** Every permission of the effective modules, so a client never hard-codes which ones are sensitive. */
   readonly permissionDefinitions: readonly PermissionDefinitionResponse[];

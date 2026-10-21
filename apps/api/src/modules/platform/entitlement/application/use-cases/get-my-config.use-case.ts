@@ -115,6 +115,7 @@ export class GetMyConfigUseCase {
       kinds: config.kinds,
       limits: config.limits,
       menu,
+      resourceTypes: config.resourceTypes ?? [],
       terms: config.terms,
       settings: config.settings,
       fields: config.fields,

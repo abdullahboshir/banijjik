@@ -7,7 +7,6 @@ import { requireOrgAccess } from "../shell/org-access";
 import { holdsPermission } from "../shell/permissions";
 import { BookingLocationDateFilter } from "./booking-location-date-filter";
 import { loadBookingCalendarData } from "./booking-calendar-load";
-import { bookingStatusLabelOf } from "./booking-labels";
 import { LazyBookingCalendar } from "./lazy-booking-calendar";
 import type { NewBookingSheetLabels } from "./new-booking-sheet";
 
@@ -88,7 +87,6 @@ export async function BookingCalendarPage(props: {
         offerings={loaded.offerings}
         canCreate={loaded.canCreate}
         labels={labels}
-        statusLabel={(status) => bookingStatusLabelOf(status, t)}
       />
     </PageLayout>
   );

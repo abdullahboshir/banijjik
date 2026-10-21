@@ -17,6 +17,7 @@ export function BookingCalendarToolbar(props: {
   offerings: readonly OfferingResponse[];
   seed: NewBookingSeed;
   sheetLabels: NewBookingSheetLabels;
+  revealSignal: number;
 }): ReactElement | null {
   if (!props.canCreate) return null;
   return (
@@ -30,6 +31,7 @@ export function BookingCalendarToolbar(props: {
         offerings={props.offerings}
         seed={props.seed}
         labels={props.sheetLabels}
+        revealSignal={props.revealSignal}
       />
     </div>
   );

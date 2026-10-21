@@ -142,6 +142,7 @@ export class OrgConfigResolver {
       settings,
       fields: resolvedFields,
       contactRoleKeys: request.template.contactRoleKeys,
+      resourceTypes: request.template.resourceTypes ?? [],
       terms: resolvedTerms,
       subscription: toSubscriptionSnapshot(resolved.subscription),
       validUntil: earliestExpiry(resolved.overrides),

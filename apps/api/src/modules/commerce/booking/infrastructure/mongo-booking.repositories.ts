@@ -22,6 +22,8 @@ import {
 } from "./booking.schema.js";
 import { bookingDocument, toBooking, toResource } from "./mongo-booking.mapper.js";
 
+const SCHEDULED_BOOKING_BATCH_LIMIT = 100;
+
 function resourceModel(): Model<ResourceDocument> {
   return models({}).get<ResourceDocument>(RESOURCE_MODEL_NAME);
 }
@@ -180,6 +182,8 @@ export class MongoBookingRepository implements BookingRepository {
   async listHeldExpired(now: Date): Promise<readonly Booking[]> {
     const rows = await bookingModel()
       .find({ status: "HELD", holdExpiresAt: { $lte: now } })
+      .sort({ holdExpiresAt: 1, bookingId: 1 })
+      .limit(SCHEDULED_BOOKING_BATCH_LIMIT)
       .lean<BookingDocument[]>();
     return rows.map(toBooking);
   }
@@ -194,6 +198,8 @@ export class MongoBookingRepository implements BookingRepository {
         status: "CONFIRMED",
         startsAt: { $lte: cutoff },
       })
+      .sort({ startsAt: 1, bookingId: 1 })
+      .limit(SCHEDULED_BOOKING_BATCH_LIMIT)
       .lean<BookingDocument[]>();
     return rows.map(toBooking);
   }

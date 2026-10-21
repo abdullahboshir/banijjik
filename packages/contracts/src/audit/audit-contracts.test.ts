@@ -4,7 +4,8 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "./audit-action.js";
 describe("audit vocabulary", () => {
   it("names every action <module>.<entity>.<pastTenseVerb>", () => {
     for (const action of Object.values(AUDIT_ACTION)) {
-      expect(action).toMatch(/^[a-z-]+\.[a-z][A-Za-z]*\.[a-z]+ed$/);
+      // The same pattern the event guard uses: a past tense verb, one word or camelCase ("checkInRecorded").
+      expect(action).toMatch(/^[a-z][a-z0-9-]*\.[a-z][A-Za-z]*\.[a-z][A-Za-z]*(ed|d)$/);
     }
   });
 
@@ -44,6 +45,9 @@ describe("audit vocabulary", () => {
       "stockMovement",
       "stockTransfer",
       "listing",
+      "booking",
+      "resource",
+      "resourceTimeOff",
     ]);
   });
 });
