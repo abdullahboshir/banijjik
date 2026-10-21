@@ -10,6 +10,7 @@ interface HandlerDeps {
   queueHref: string;
   setBusy: (busy: boolean) => void;
   setConflict: (conflict: boolean) => void;
+  setFailed: (failed: boolean) => void;
   setPanel: (panel: Panel) => void;
   push: (href: string) => void;
   refresh: () => void;
@@ -17,11 +18,13 @@ interface HandlerDeps {
 
 function runWith(deps: HandlerDeps, action: () => Promise<unknown>, leaveQueue: boolean): void {
   deps.setConflict(false);
+  deps.setFailed(false);
   void runReviewAction({
     action,
     leaveQueue,
     onBusy: deps.setBusy,
     onConflict: () => deps.setConflict(true),
+    onFailure: () => deps.setFailed(true),
     onSuccessLeave: () => {
       deps.push(deps.queueHref);
       deps.refresh();

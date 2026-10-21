@@ -20,6 +20,7 @@ export interface ReviewActionsLabels {
   cancel: string;
   close: string;
   versionConflict: string;
+  failure: string;
   checklistTitle: string;
   checklistHelp: string;
   noneApply: string;
@@ -47,6 +48,7 @@ export function ReviewActions(props: ReviewActionsProps): ReactElement {
   const [panel, setPanel] = useState<Panel>("none");
   const [busy, setBusy] = useState(false);
   const [conflict, setConflict] = useState(false);
+  const [failed, setFailed] = useState(false);
   const { labels } = props;
   const handlers = createReviewHandlers({
     organizationId: props.organizationId,
@@ -55,6 +57,7 @@ export function ReviewActions(props: ReviewActionsProps): ReactElement {
     queueHref: props.queueHref,
     setBusy,
     setConflict,
+    setFailed,
     setPanel,
     push: (href) => router.push(href),
     refresh: () => router.refresh(),
@@ -66,6 +69,7 @@ export function ReviewActions(props: ReviewActionsProps): ReactElement {
         panel={panel}
         busy={busy}
         conflict={conflict}
+        failed={failed}
         status={props.status}
         canReview={props.canReview}
         canHide={props.canHide}
@@ -86,7 +90,9 @@ export function ReviewActions(props: ReviewActionsProps): ReactElement {
         cancelLabel={labels.cancel}
         closeLabel={labels.close}
         tone="default"
-        onConfirm={handlers.onApprove}
+        onConfirm={() => {
+          if (!busy) handlers.onApprove();
+        }}
       />
     </>
   );

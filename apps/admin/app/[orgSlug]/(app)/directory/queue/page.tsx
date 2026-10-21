@@ -3,9 +3,11 @@ import { DirectoryQueuePage } from "../../../../../src/directory/queue-page";
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ orgSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<ReactElement> {
-  const { orgSlug } = await params;
-  return <DirectoryQueuePage orgSlug={orgSlug} />;
+  const [{ orgSlug }, query] = await Promise.all([params, searchParams]);
+  return <DirectoryQueuePage orgSlug={orgSlug} searchParams={query} />;
 }

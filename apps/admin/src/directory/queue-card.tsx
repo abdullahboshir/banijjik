@@ -74,7 +74,7 @@ export function QueueCard(props: QueueCardProps): ReactElement {
           {lines.map((line) => (
             <div key={line.label} className="flex gap-2">
               <dt className="text-secondary">{line.label}</dt>
-              <dd className="break-words">{line.value}</dd>
+              <dd className="min-w-0 break-words">{line.value}</dd>
             </div>
           ))}
         </dl>

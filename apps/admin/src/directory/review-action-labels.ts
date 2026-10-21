@@ -13,6 +13,7 @@ export function reviewActionLabelsOf(t: Translator["t"]): ReviewActionsLabels {
     cancel: t("common.cancel"),
     close: t("shell.closeMenu"),
     versionConflict: t("directory.review.versionConflict"),
+    failure: t("errors.internal"),
     checklistTitle: t("directory.checklist.title"),
     checklistHelp: t("directory.checklist.help"),
     noneApply: t("directory.checklist.noneApply"),

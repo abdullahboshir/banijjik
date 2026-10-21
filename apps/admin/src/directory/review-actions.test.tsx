@@ -33,6 +33,7 @@ const LABELS = {
   cancel: "Cancel",
   close: "Close",
   versionConflict: "This listing changed; reload",
+  failure: "Unable to complete moderation",
   checklistTitle: "Checklist",
   checklistHelp: "Help",
   noneApply: "N/A",
@@ -154,4 +155,69 @@ describe("ReviewActions", () => {
     await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
     expect(await screen.findByText("This listing changed; reload")).toBeTruthy();
   });
+});
+
+describe("moderation failure recovery", () => {
+  it("keeps rejection values and stays on the listing when the API fails", async () => {
+    rejectListing.mockRejectedValue(new Error("request failed"));
+    render(
+      <ReviewActions
+        organizationId="org-1"
+        listingId="listing-1"
+        version={2}
+        status="SUBMITTED"
+        canReview={true}
+        canHide={false}
+        reasons={REASONS}
+        locale="en"
+        labels={LABELS}
+        queueHref="/acme/directory/queue"
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Reject" }));
+    const reasonBoxes = screen.getAllByLabelText(/Unclear/u);
+    await userEvent.click(reasonBoxes[reasonBoxes.length - 1] as HTMLElement);
+    await userEvent.type(screen.getByRole("textbox", { name: "Note" }), "Please clarify");
+    await userEvent.click(screen.getByRole("button", { name: "Submit reject" }));
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", LABELS.failure);
+    expect(screen.getByRole("textbox", { name: "Note" })).toHaveProperty("value", "Please clarify");
+    expect(reasonBoxes[reasonBoxes.length - 1]).toHaveProperty("checked", true);
+    expect(push).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Submit reject" })).toHaveProperty("disabled", false);
+  });
+});
+
+describe("published listing visibility", () => {
+  it.each([
+    { status: "APPROVED", label: "Hide", action: hideListing },
+    { status: "HIDDEN", label: "Unhide", action: unhideListing },
+  ])(
+    "calls $label with the listing version and refreshes after success",
+    async ({ status, label, action }) => {
+      action.mockResolvedValue({});
+      render(
+        <ReviewActions
+          organizationId="org-1"
+          listingId="listing-1"
+          version={2}
+          status={status}
+          canReview={false}
+          canHide={true}
+          reasons={REASONS}
+          locale="en"
+          labels={LABELS}
+          queueHref="/acme/directory/queue"
+        />,
+      );
+      await userEvent.click(screen.getByRole("button", { name: label }));
+      await waitFor(() =>
+        expect(action).toHaveBeenCalledWith("org-1", "listing-1", { version: 2 }),
+      );
+      await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+      expect(push).not.toHaveBeenCalled();
+      expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Reject" })).toBeNull();
+    },
+  );
 });

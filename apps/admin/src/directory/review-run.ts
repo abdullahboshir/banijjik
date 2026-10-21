@@ -13,6 +13,7 @@ export async function runReviewAction(input: {
   leaveQueue: boolean;
   onBusy: (busy: boolean) => void;
   onConflict: () => void;
+  onFailure: () => void;
   onSuccessLeave: () => void;
   onSuccessStay: () => void;
 }): Promise<void> {
@@ -29,7 +30,7 @@ export async function runReviewAction(input: {
       input.onConflict();
       return;
     }
-    throw error;
+    input.onFailure();
   } finally {
     input.onBusy(false);
   }

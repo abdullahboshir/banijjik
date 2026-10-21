@@ -219,11 +219,18 @@ describe("directory moderation screens", () => {
     await gotoWhenHydrated(page, `/${SLUG}/directory/queue`, "main");
     await waitForText(page, LISTING_NUMBER);
     expect(await bodyText(page)).toContain(message("directory.queue.open"));
+    expect(await bodyText(page)).not.toContain(PRIVATE_VALUE);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      PHONE_VIEWPORT.width + 1,
+    );
 
     await gotoWhenHydrated(page, `/${SLUG}/directory/listings/${listingId}`, "main");
     await waitForText(page, message("directory.tier.PRIVATE"));
     expect(await bodyText(page)).toContain(PRIVATE_VALUE);
     expect(await bodyText(page)).toContain("শুধু অফিস");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      PHONE_VIEWPORT.width + 1,
+    );
 
     await waitForText(page, message("directory.action.reject"));
     await clickByName(page, message("directory.action.reject"));

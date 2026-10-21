@@ -10,10 +10,19 @@ import { ReviewToolbar } from "./review-toolbar";
 
 type Panel = "none" | "approve" | "reject";
 
+function ReviewFailureAlert(props: { message: string }): ReactElement {
+  return (
+    <p className="text-small text-danger" role="alert">
+      {props.message}
+    </p>
+  );
+}
+
 export function ReviewPanelBody(props: {
   panel: Panel;
   busy: boolean;
   conflict: boolean;
+  failed: boolean;
   status: string;
   canReview: boolean;
   canHide: boolean;
@@ -36,6 +45,7 @@ export function ReviewPanelBody(props: {
           {labels.versionConflict}
         </p>
       ) : null}
+      {props.failed ? <ReviewFailureAlert message={labels.failure} /> : null}
       <ReviewChecklist
         reasons={props.reasons}
         locale={props.locale}
