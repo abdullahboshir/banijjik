@@ -255,6 +255,19 @@ export function buildInlineContactCreator(dependencies: {
   };
 }
 
+/** Tenant-scoped existence check, for modules that reference a customer account by id. */
+export function buildCustomerAccountLookup(): {
+  exists(customerAccountId: CustomerAccountId): Promise<boolean>;
+} {
+  const accounts = new MongoCustomerAccountRepository();
+  return {
+    async exists(customerAccountId) {
+      const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
+      return account !== undefined;
+    },
+  };
+}
+
 export interface ContactEventHandlerDependencies {
   readonly storefront: Pick<StorefrontConfig, "otpSecret" | "smsDriver">;
   readonly composer: OtpMessageComposer;

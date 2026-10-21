@@ -86,6 +86,10 @@ export const AUDIT_ACTION = {
   RESOURCE_CREATED: "booking.resource.created",
   RESOURCE_UPDATED: "booking.resource.updated",
   RESOURCE_ARCHIVED: "booking.resource.deactivated",
+  CREDIT_PACK_CREATED: "credit.pack.created",
+  CREDIT_PACK_UPDATED: "credit.pack.updated",
+  CREDIT_PACK_ARCHIVED: "credit.pack.archived",
+  CREDIT_ACCOUNT_ADJUSTED: "credit.creditAccount.adjusted",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -124,6 +128,10 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "booking",
   "resource",
   "resourceTimeOff",
+  "creditPack",
+  "creditEntry",
+  "creditAccount",
+  "listingUnlock",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

@@ -1,174 +1,42 @@
-# Handoff: Card M.4 - Credits and Connections
+# Handoff: card M.4 · IMPLEMENT · 2026-10-21
 
-**Branch:** `s/m4-credits`
-**Based on commit:** `main 9016a0f` (now ahead)
-**Date:** 2026-10-20
-
-## Summary
-
-Implemented the core credit module infrastructure including contracts, validation, domain entities, repositories, use cases, and routing. However, the card is **not complete** - there are type errors to fix and significant remaining work (admin UI, i18n, full test suite, ADR, documentation).
-
-## Completed Work
-
-### 1. Contracts and Validation
-- ✅ Added `MODULE_KEY.CREDIT` to contracts
-- ✅ Created credit contracts subpath with types, enums, error codes, and event types
-- ✅ Added credit permission keys (`CREDIT_PACK_READ`, `CREDIT_PACK_UPDATE`, `CREDIT_ACCOUNT_READ`, `CREDIT_ACCOUNT_ADJUST`)
-- ✅ Added `CREDIT_ADJUSTMENT` to `APPROVAL_ACTION`
-- ✅ Created credit validation schemas (packs, adjust, unlock, list queries)
-- ✅ Added credit module class as `OPTIONAL`
-- ✅ Updated ESLint domain forbidden imports to allow `@banijjik/contracts/credit`
-
-### 2. Domain and Infrastructure
-- ✅ Implemented `CreditPack` entity with localized names, credits, price, validity, status
-- ✅ Implemented `CreditEntry` append-only ledger with types (PURCHASE, SPEND, REFUND, EXPIRE, ADJUST)
-- ✅ Implemented `CreditBalance` projection with optimistic concurrency
-- ✅ Implemented `ListingUnlock` entity with unique constraint on (organizationId, customerAccountId, listingId)
-- ✅ Created Mongo schemas with organization-scoped indexes
-- ✅ Implemented repositories: `MongoCreditRepository`, `MongoCreditPackRepository`, `MongoListingUnlockRepository`
-- ✅ Added `findPurchaseEntry` to credit repository for FIFO expiry attribution
-- ✅ Added `findByCustomerAndListing` to unlock repository
-
-### 3. Use Cases
-- ✅ `UnlockListingUseCase` with transaction, conditional balance update, daily limit check, own-listing rejection
-- ✅ Concurrency test written first (parallel unlocks with balance 3 → exactly 3 succeed)
-- ✅ `ExpireCreditsUseCase` with FIFO purchase attribution
-- ✅ `AdjustCreditsUseCase` for staff credit adjustments with audit and events
-- ✅ `GetMyCreditsUseCase` for customer balance/history
-- ✅ `GetMyUnlocksUseCase` for customer unlock list
-- ✅ `ListCreditPacksUseCase` for public active pack listing
-
-### 4. Routing and Integration
-- ✅ Created credit module manifest with permissions, routes, menu, settings, events
-- ✅ Created credit storefront router (unlock, /my/credits, /my/unlocks, /credit-packs)
-- ✅ Created credit tenant router (account read, adjust)
-- ✅ Added `ListingUnlockReader` port to directory
-- ✅ Integrated unlock reader into directory projection (viewer UNLOCKED_MEMBER based on unlock)
-- ✅ Registered credit models in `registerModuleModels`
-- ✅ Added credit manifest to module registry
-- ✅ Wired credit routers into route composition
-- ✅ Added system role grants (OWNER/MANAGER all, STAFF read-only)
-
-### 5. Adapters
-- ✅ Created `CreditListingUnlockReader` adapter implementing the directory port
-
-## Known Issues / Type Errors
-
-After commit `f589f6a`, the following type errors remain (from latest typecheck):
-
-1. **Kernel imports:** Some infrastructure files still cannot find kernel modules (`../../../../kernel/audit/index.js`, etc.) - path issue
-2. **Test mocks:** Test file has mock type issues with repository and event publisher
-3. **Router params:** Some router parameter handling needs string|undefined narrowing
-4. **Contract imports:** Some files still import from domain instead of contracts
-
-Most type errors are now resolved compared to the initial state.
-
-## Remaining Work (Plan Requirements)
-
-### High Priority (Core Functionality)
-- [ ] Fix all type errors to pass `npm run typecheck`
-- [ ] Wire listing repository into unlock use case (to fetch listing by number, get owner)
-- [ ] Wire settings reader for unlock cost and daily limit (currently hardcoded)
-- [ ] Add approval token verification for staff adjustments (using kernel approval verifier)
-- [ ] Implement proper idempotency key handling in unlock endpoint
-- [ ] Add per-IP rate limiting in unlock router (currently partially done)
-- [ ] Complete FIFO expiry job/function with idempotency
-- [ ] Add purchase entry attribution to SPEND entries (`fromPurchaseEntryId`)
-
-### Tests (All Plan Tests Required)
-- [ ] Ledger scenario test (grant → spend → balance equals sum of entries)
-- [ ] Idempotency test (same listing twice charges once)
-- [ ] Expiry idempotency test (job run twice creates one EXPIRE per purchase)
-- [ ] Projection matrix test (before/after unlock, account-specific, module-off)
-- [ ] Daily limit test (returns 429)
-- [ ] Own listing test (returns 400)
-- [ ] Non-approved listing test (returns 404)
-- [ ] Privacy test (unlock count returns number only, no identities)
-- [ ] Cross-organization test (account/listing from other org → 404)
-- [ ] Cross-organization token test (org A token at org B → 401)
-- [ ] Permission denied test (staff adjust without permission)
-- [ ] Module-off test suite includes credit
-- [ ] Admin unit tests for packs and credits section
-- [ ] Admin browser tests
-- [ ] Existing suites must remain green
-
-### Admin UI
-- [ ] Credit pack management screen under settings/SALES
-- [ ] Contact detail "Credits" section with:
-  - Balance display
-  - History list
-  - Adjust action with approval dialog for non-owner
-- [ ] Admin unit tests
-- [ ] Admin browser tests
-
-### Documentation
-- [ ] Write ADR-130 (ledger, projection, FIFO expiry, unlock reader, limits, privacy)
-- [ ] Update doc 09 (entity descriptions)
-- [ ] Update doc 14 (new module row)
-- [ ] Update doc 16 §3.2/§3.5 if any detail changed
-- [ ] Write this handoff with real verification output
-
-### i18n
-- [ ] Add Bengali and English keys for:
-  - Menu: `menu.credit.packs`
-  - Storefront: `storefront.credit.packs`
-  - Admin screens: credit-related labels
-  - Error messages: insufficient balance, daily limit exceeded, own listing
-
-### Final Verification
-- [ ] Run `npm run lint` → pass
-- [ ] Run `npm run typecheck` → pass
-- [ ] Run `npm test` → all tests pass
-- [ ] Run `npm run build` → pass
-- [ ] Update `docs/STATUS.md` M.4 row only
-
-## Deviations from Plan
-
-1. **Simplified unlock use case input:** Currently accepts `listingId` and `ownerCustomerAccountId` directly instead of fetching via listing repository. This needs proper wiring.
-2. **Hardcoded values:** Unlock cost (1) and daily limit (20) are hardcoded instead of read from settings.
-3. **Missing approval integration:** Staff adjustment use case doesn't verify approval tokens yet.
-4. **Router structure:** Credit routers are created but may not be fully integrated into the route composition due to type errors.
-5. **Missing storefront sections:** The module manifest has storefront sections but they may not be rendered.
-
-## Commit History
-
-1. `3b2331c` - Initial domain, use cases, concurrency test (partial)
-2. `7ec065a` - Add credit use cases (adjust, expire, get-my-credits, get-my-unlocks, list-packs)
-3. `65f6ba8` - Add credit routers, unlock reader port, directory projection integration
-4. `ea2f257` - Wire credit module into route composition
-5. `fd3f193` - Add system role grants for credit permissions
-6. `928d7b2` - Simplify unlock use case to accept listing data directly
-7. `2b9c0e3` - Add credit module to module class and validation
-8. `3e16524` - Fix credit module domain exports and repository model usage
-9. `0c1e31e` - Update M.4 handoff with current type errors and commit count
-10. `a6b715b` - Fix credit module type errors (contracts, repos, unlock reader)
-11. `f2f0869` - Fix credit error codes, date handling, and remaining type fixes
-12. `f589f6a` - Fix credit event types, imports, and date conversions
-13. `99f300f` - Fix credit module kernel imports, contracts, and event types
-
-## Next Steps for Next Session
-
-1. Fix remaining type errors:
-   - Test mock type issues (CreditPackRepository, event publisher)
-   - Test branded IDs (CustomerAccountId)
-   - Unlock use case: ownerCustomerAccountId parameter missing
-   - Unlock use case: occurredAt Date vs string mismatch
-   - CreditPack organizationId in contract
-   - MongoCreditPack.repository implicit any types
-2. Wire listing repository into unlock use case
-3. Wire settings reader for configuration values
-4. Add approval token verification
-5. Complete the test suite per plan
-6. Build admin UI
-7. Add i18n keys
-8. Write ADR-130 and update docs
-9. Full verification and handoff
-
-## Notes
-
-- The architecture follows the existing pattern (domain → application → infrastructure → presentation)
-- All domain code properly depends only on contracts and IDs
-- Concurrency test was written first as required
-- FIFO expiry logic is implemented but needs validation against actual repository behavior
-- The unlock reader port is correctly added to directory for account-specific UNLOCKED field visibility
-- Module-off behavior should work via entitlement gate, but needs testing
+- **Branch / commit:** `s/m4-credits` (final commit hash in `git log -1 --oneline`) in worktree `E:\WEB-DEVELOPMENT\PROJECTS\business-platform\banijjik-m2` (based on `main` `8258669`). Not merged/pushed.
+- **Model:** Cursor (Composer), finished with Qoder.
+- **Done:**
+  - OPTIONAL module `commerce/credit` (`MODULE_KEY.CREDIT`, `dependsOn: [directory]`, `tenantCanDisable: true`) with its manifest: routes, menu, settings, events; grants OWNER/MANAGER all, STAFF `credit.account.read` + `credit.pack.read`.
+  - **Packs:** entity, Mongo repository, tenant CRUD (`POST /credit/packs`, `PATCH /credit/packs/{creditPackId}`, `POST /credit/packs/{creditPackId}/archive`) under `credit.pack.{read,update}`; public `GET /storefront/orgs/{organizationId}/credit-packs` returns ACTIVE packs only.
+  - **Ledger:** append-only `CreditEntry` (PURCHASE/SPEND/REFUND/EXPIRE/ADJUST); `CreditBalance` projection changed by a guarded atomic `$inc` in the same transaction, so it equals the sum of entries and never goes negative; SPEND rows allocate FIFO unexpired purchases first and record `fromPurchaseEntryId`.
+  - **Unlocks:** `POST /storefront/orgs/{organizationId}/listings/{listingNumber}/unlock` requires a UUID `Idempotency-Key`; cost and daily cap come from the settings reader (`credit.unlockCost` default 1, `credit.unlocksPerDay` default 20); per-IP and per-account rate limits; own listing → 400, non-approved/unknown → 404, short balance → 422, daily cap → 429; a repeat or parallel duplicate returns the existing unlock with `creditsSpent: 0`.
+  - **Customer reads:** `GET /my/credits` (balance + paged entries) and `GET /my/unlocks` (unlocked listings with their UNLOCKED fields, paged).
+  - **Staff:** `GET /credit/accounts/{customerAccountId}`; `POST …/adjust` is audited and requires an `APPROVAL_ACTION.CREDIT_ADJUSTMENT` token consumed in the transaction unless the actor is the OWNER.
+  - **Directory:** `ListingUnlockReader` and `ListingUnlockCounter` ports adapted in routes (directory never imports credit); viewer `UNLOCKED_MEMBER` only for the unlocking account; `GET /directory/listings/{listingId}/unlock-count` returns a count only; with the credit module off, UNLOCKED fields stay hidden and the credit routes are absent.
+  - **Expiry:** `ExpireCreditsUseCase` writes one EXPIRE per expired purchase remainder, idempotent through the partial unique index on `(organizationId, source.sourceId)` for EXPIRE rows. No scheduler in this card (the 3.6 job must call it per organization).
+  - **Admin:** `/credit/packs` screen (menu `credit.packs`, SALES topic, `coins` icon) with create/edit/archive; contact detail "Credits" section (balance, history, adjustment; approval dialog and location for non-owners) shown only when the module is on and the caller holds the keys; BN/EN keys.
+  - **Docs:** ADR-130 Accepted (proposed), `09` entities 5.2c, `14` storefront/tenant rows and error codes, module README; `16` verified consistent, unchanged.
+  - **Tests:** `credit-api.test.ts` (12 scenarios: pack read/write + permissions, ledger + idempotent unlock, 5 parallel unlocks with balance 3 → exactly 3, parallel duplicate charges once, settings cost + daily limit, own listing, non-approved/unknown, missing Idempotency-Key, projection + privacy, module off, approval consumption, STAFF denial/negative balance, cross-org + cross-org token), `spend-allocation.test.ts`, `expire-credits.use-case.test.ts`, `credit-pack.use-cases.test.ts`, admin `packs-manager.test.tsx`, `contact-credits.test.tsx`, `credit-form.test.ts`, browser `credit-screens.browser.test.ts` (create a pack, adjust a contact's credits as OWNER).
+- **Verified with** (2026-10-21, run in this worktree):
+  - `npm run lint` → exit 0; `npm run format:check` → "All matched files use Prettier code style!"
+  - `npm run typecheck` → **16/16 successful** (9 cached)
+  - `npm run build -- --force` → **9/9 successful**
+  - Tests (turbo `--force`): **206 files / 1627 passed** — admin 547, ui 230, validation 244, platform 123, web-client 97, contracts 74, lint-tests 274, i18n 24, ids 14
+  - Tests (`@banijjik/api`, `--maxWorkers=2`): **223 files / 1943 passed, 1 skipped**
+  - Browser: `credit-screens.browser.test.ts` → **1 file / 1 test passed** (creates a pack and adjusts a contact's credits as the OWNER, 1808 ms)
+  - Environment note: a single `npm test -- --force` with default worker fan-out is not reliable on this machine. One run hit a stale-data disk fill (C: at 447 MB free; Mongo refused writes, workers died with access violation) and two load-sensitive tests timed out. After removing 17 stale `%TEMP%\mongo-mem-*` dirs (4.2 GB, left by the crashed runs) the API suite passed cleanly with two workers; the other workspaces were verified by the concurrency-2 turbo run.
+- **Not done / known gaps:**
+  - Opus T1 **REVIEW** not run (required before merge).
+  - Expiry has no scheduler; wire `ExpireCreditsUseCase` into the 3.6 jobs.
+  - `credit.showUnlockersToOwner` is declared (default false) but this card exposes counts only; no endpoint lists who unlocked.
+  - Paying for packs and accounting postings are M.5; the public site screens are M.6.
+- **Deviations from plan (and why):**
+  - The browser test seeds `directory` and `credit` module overrides, adds both to every `industry_templates.allowedModuleKeys`, and bumps `organizations.configVersion`, because `resolveModules` intersects overrides with the template allow-list and no template enables credit until M.8. Test setup only; product behaviour unchanged.
+  - Added `platform.module.credit` to both platform catalogs; the catalog-coverage test requires a label for every registered module key.
+  - EXPIRE idempotency uses `source.sourceId = purchaseEntryId` plus a partial unique index rather than a separate marker collection.
+  - Directory asks for unlock counts through the extra `ListingUnlockCounter` port (the plan named only the reader).
+  - New-module generator test updated for the credit module alias.
+- **Decisions made:** ADR-130 Accepted (proposed) as planned; unlock defaults 1 credit and 20 per day; no product decisions beyond the plan.
+- **Notes for the next session:**
+  1. Run the mandatory **T1 REVIEW** (Opus) against this branch, fix findings, then merge.
+  2. Browser test prerequisites: built API/admin, `CHROME_PATH` set, Redis on `redis://127.0.0.1:6380`; command: `CHROME_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe" npm run test:browser -w @banijjik/admin -- src/credit/credit-screens.browser.test.ts`.
+  3. M.5 should create PURCHASE entries and listen to `credit.entry.created` (`orderingKey: creditAccount:<customerAccountId>`) for accounting.
+  4. M.6 needs the storefront screens for `/credit-packs`, unlock, `/my/credits` and `/my/unlocks`.
+- **Next suggested card / pair:** M.4 REVIEW → merge; then M.5 (manual payment verification) or M.3 (already planned)

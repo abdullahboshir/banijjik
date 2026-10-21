@@ -179,6 +179,7 @@
   "platform.module.notification": "Notifications",
   "platform.module.accounting": "Accounting",
   "platform.module.contact": "Contacts",
+  "platform.module.credit": "Credits",
   "platform.module.directory": "Directory",
   "platform.module.catalog": "Catalog",
   "platform.module.inventory": "Inventory",

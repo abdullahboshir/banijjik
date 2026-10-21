@@ -6,4 +6,8 @@ export interface CreditPackRepository {
   save(pack: CreditPack, expectedVersion: number, actorUserId: string | null): Promise<CreditPack>;
   findById(organizationId: OrganizationId, creditPackId: string): Promise<CreditPack | null>;
   listActive(organizationId: OrganizationId): Promise<readonly CreditPack[]>;
+  list(
+    organizationId: OrganizationId,
+    options: { limit: number; offset: number },
+  ): Promise<{ readonly items: readonly CreditPack[]; readonly total: number }>;
 }

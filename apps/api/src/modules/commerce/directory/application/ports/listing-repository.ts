@@ -44,6 +44,7 @@ export interface ListingRepository {
   insert(listing: Listing): Promise<void>;
   save(listing: Listing, expectedVersion: number, actorUserId: UserId | null): Promise<Listing>;
   findById(listingId: ListingId): Promise<Listing | undefined>;
+  findByIds(listingIds: readonly ListingId[]): Promise<readonly Listing[]>;
   findByListingNumber(listingNumber: string): Promise<Listing | undefined>;
   findActiveByOwner(ownerCustomerAccountId: CustomerAccountId): Promise<Listing | undefined>;
   searchApproved(request: ListingSearchRequest): Promise<ListingPage<Listing>>;

@@ -21,6 +21,7 @@ export {
   type CreditPackUpdateRequest,
   type CreditSourceType,
   type ListingUnlock,
+  type ListingUnlockCountResponse,
   type MyCreditsResponse,
   type UnlockListItem,
   type UnlockRequest,

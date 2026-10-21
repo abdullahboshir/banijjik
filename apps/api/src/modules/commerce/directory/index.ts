@@ -30,8 +30,10 @@ import type {
   DirectorySettingsReader,
   DirectoryTemplateReader,
   ListingFieldReader,
+  ListingUnlockCounter,
   ListingUnlockReader,
 } from "./application/ports/directory-context-ports.js";
+import { CountListingUnlocksUseCase } from "./application/use-cases/count-listing-unlocks.use-case.js";
 import {
   ArchiveMyListingUseCase,
   GetMyListingUseCase,
@@ -65,11 +67,13 @@ export type {
   DirectorySettingsReader,
   DirectoryTemplateReader,
   ListingFieldReader,
+  ListingUnlockCounter,
   ListingUnlockReader,
 } from "./application/ports/directory-context-ports.js";
 export type { ListingRepository } from "./application/ports/listing-repository.js";
 export type { Listing } from "./domain/listing.entity.js";
 export { asListingFieldRules } from "./application/ports/directory-context-ports.js";
+export { projectListingFields } from "./domain/project-listing.js";
 
 export interface DirectoryAdapters {
   readonly fields: ListingFieldReader;
@@ -77,6 +81,7 @@ export interface DirectoryAdapters {
   readonly settings: DirectorySettingsReader;
   readonly phones: CustomerPhoneReader;
   readonly unlockReader: ListingUnlockReader | null;
+  readonly unlockCounter: ListingUnlockCounter | null;
 }
 
 export interface DirectoryTenantDependencies {
@@ -117,6 +122,7 @@ function dependenciesOf(input: {
     settings: input.adapters.settings,
     phones: input.adapters.phones,
     unlockReader: input.adapters.unlockReader,
+    unlockCounter: input.adapters.unlockCounter,
     sequences: {
       async nextListingNumber(prefix: string): Promise<string> {
         const organizationId = asId<OrganizationId>(String(getRequestContext().organizationId));
@@ -142,6 +148,7 @@ export function buildDirectoryTenantRouterFor(input: DirectoryTenantDependencies
     reject: new RejectListingUseCase(deps),
     hide: new HideListingUseCase(deps),
     unhide: new UnhideListingUseCase(deps),
+    countUnlocks: new CountListingUnlocksUseCase(deps),
   });
 }
 

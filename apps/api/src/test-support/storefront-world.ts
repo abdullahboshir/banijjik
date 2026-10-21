@@ -46,9 +46,11 @@ export interface StorefrontCall {
   readonly cookies?: Record<string, string>;
   readonly ip?: string;
   readonly query?: Record<string, string | number>;
+  /** Null sends none; omitted sends one (a POST would otherwise fail the kernel rule). */
+  readonly idempotencyKey?: string | null;
 }
 
-/** A public call: no admin session, no Idempotency-Key (the storefront endpoints do not need one). */
+/** A public call: no admin session. The storefront does not need an Idempotency-Key except unlock. */
 export function callStorefront(app: Express, call: StorefrontCall): Test {
   const query =
     call.query === undefined
@@ -61,7 +63,7 @@ export function callStorefront(app: Express, call: StorefrontCall): Test {
   return callApi(app, {
     method: call.method,
     path: `/api/v1${storefrontPath(call.organizationId, call.suffix)}${query}`,
-    idempotencyKey: null,
+    idempotencyKey: call.idempotencyKey === undefined ? null : call.idempotencyKey,
     ip: call.ip ?? freshIp(),
     ...(call.body === undefined ? {} : { body: call.body }),
     ...(call.cookies === undefined ? {} : { cookies: call.cookies }),

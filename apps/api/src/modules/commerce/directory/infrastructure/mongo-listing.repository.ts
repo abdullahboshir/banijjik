@@ -120,6 +120,15 @@ export class MongoListingRepository implements ListingRepository {
     return row === null ? undefined : toListing(row);
   }
 
+  async findByIds(listingIds: readonly ListingId[]): Promise<readonly Listing[]> {
+    if (listingIds.length === 0) return [];
+    const rows = await this.model()
+      .find({ listingId: { $in: [...listingIds] } })
+      .lean<ListingDocument[]>()
+      .exec();
+    return rows.map(toListing);
+  }
+
   async findByListingNumber(listingNumber: string): Promise<Listing | undefined> {
     const row = await this.model().findOne({ listingNumber }).lean<ListingDocument>().exec();
     return row === null ? undefined : toListing(row);

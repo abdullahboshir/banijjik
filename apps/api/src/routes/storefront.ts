@@ -21,6 +21,7 @@ import { runInOrganizationContext } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
   buildContactStorefrontRouterFor,
+  buildCustomerAccountLookup,
   buildCustomerAccountStatusReader,
 } from "../modules/commerce/contact/index.js";
 import { buildDirectoryStorefrontRouterFor } from "../modules/commerce/directory/index.js";
@@ -32,16 +33,20 @@ import {
   UnlockListingUseCase,
   GetMyCreditsUseCase,
   GetMyUnlocksUseCase,
-  ListCreditPacksUseCase,
+  ListActiveCreditPacksUseCase,
 } from "../modules/commerce/credit/index.js";
 import { MongoUnitOfWork } from "../kernel/db/index.js";
 import { kernelEventPublisher } from "../kernel/events/index.js";
 import {
+  listingFieldsFromEffectiveReader,
   MongoListingRepository,
   type ListingRepository,
 } from "../modules/commerce/directory/index.js";
 import { directorySettingsFromResolver } from "../modules/commerce/directory/index.js";
+import { buildEffectiveCustomFieldReader } from "../modules/core/custom-field/index.js";
+import { buildApprovalVerifier } from "../modules/core/iam/index.js";
 import {
+  buildOrganizationCurrencyReader,
   buildStorefrontOrganizationReader,
   type StorefrontOrganizationReader,
 } from "../modules/core/organization/index.js";
@@ -69,6 +74,7 @@ function buildCreditRouterDeps(input: StorefrontRouterInput) {
     packs: new MongoCreditPackRepository(),
     unlocks: new MongoListingUnlockRepository(),
     listings: new MongoListingRepository() as ListingRepository,
+    fields: listingFieldsFromEffectiveReader(buildEffectiveCustomFieldReader()),
     unitOfWork: new MongoUnitOfWork(),
     events: {
       publish: async (
@@ -88,6 +94,9 @@ function buildCreditRouterDeps(input: StorefrontRouterInput) {
     directorySettings: directorySettingsFromResolver(settingsResolver),
     resolveSettings: (oid: string, keys: readonly string[]) =>
       settingsResolver.resolve(oid as import("@banijjik/ids").OrganizationId, { keys }),
+    approvals: buildApprovalVerifier({ audit: input.audit, clock: input.clock }),
+    accounts: buildCustomerAccountLookup(),
+    currency: buildOrganizationCurrencyReader(),
   };
 }
 
@@ -207,7 +216,7 @@ function buildStorefrontRouters(
     unlockListing: new UnlockListingUseCase(creditDeps),
     getMyCredits: new GetMyCreditsUseCase(creditDeps),
     getMyUnlocks: new GetMyUnlocksUseCase(creditDeps),
-    listPacks: new ListCreditPacksUseCase(creditDeps),
+    listPacks: new ListActiveCreditPacksUseCase(creditDeps),
     limiter: rateLimiter,
     authenticateCustomer: auth.customerAuth,
     authenticateCustomerOptional: auth.customerAuthOptional,

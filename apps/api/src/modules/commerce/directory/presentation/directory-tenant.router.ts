@@ -23,6 +23,7 @@ import type {
   RejectListingUseCase,
   UnhideListingUseCase,
 } from "../application/use-cases/staff-listing.use-cases.js";
+import type { CountListingUnlocksUseCase } from "../application/use-cases/count-listing-unlocks.use-case.js";
 
 export interface DirectoryTenantRouterDependencies {
   readonly permission: PermissionMiddlewareFactory;
@@ -34,6 +35,8 @@ export interface DirectoryTenantRouterDependencies {
   readonly reject: RejectListingUseCase;
   readonly hide: HideListingUseCase;
   readonly unhide: UnhideListingUseCase;
+  /** Answers 404 when the credit module is off for the organization (the counter port is null). */
+  readonly countUnlocks: CountListingUnlocksUseCase;
 }
 
 function organizationIdOf(): OrganizationId {
@@ -114,6 +117,21 @@ function mountStaffDetail(router: Router, input: DirectoryTenantRouterDependenci
       sendData(
         response,
         await input.getListing.execute({
+          organizationId: organizationIdOf(),
+          listingId: asId<ListingId>(listingId),
+        }),
+      );
+    },
+  );
+  router.get(
+    "/directory/listings/:listingId/unlock-count",
+    read,
+    validate({ params: listingIdParamsSchema }),
+    async (_request, response) => {
+      const { listingId } = response.locals["validated"].params as { listingId: string };
+      sendData(
+        response,
+        await input.countUnlocks.execute({
           organizationId: organizationIdOf(),
           listingId: asId<ListingId>(listingId),
         }),

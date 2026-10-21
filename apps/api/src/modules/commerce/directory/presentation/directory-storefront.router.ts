@@ -77,19 +77,18 @@ function mountListingSearch(router: Router, input: DirectoryStorefrontRouterDepe
         getRequestContext().customerAccountId === undefined
           ? LISTING_VIEWER.PUBLIC
           : LISTING_VIEWER.MEMBER;
-      const rawQuery = {
-        ...query,
-        customerAccountId: getRequestContext().customerAccountId,
-      };
       sendData(
         response,
         await input.searchListings.execute({
           organizationId: organizationIdOf(),
           viewer,
+          ...(getRequestContext().customerAccountId === undefined
+            ? {}
+            : { customerAccountId: getRequestContext().customerAccountId }),
           page: query.page,
           limit: query.limit,
           ...(query.listingNumber === undefined ? {} : { listingNumber: query.listingNumber }),
-          rawQuery,
+          rawQuery: { ...query },
         }),
       );
     },
@@ -113,6 +112,9 @@ function mountSingleListing(router: Router, input: DirectoryStorefrontRouterDepe
           organizationId: organizationIdOf(),
           listingNumber,
           viewer,
+          ...(getRequestContext().customerAccountId === undefined
+            ? {}
+            : { customerAccountId: getRequestContext().customerAccountId }),
         }),
       );
     },

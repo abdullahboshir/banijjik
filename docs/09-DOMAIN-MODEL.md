@@ -333,6 +333,22 @@ Owner `commerce/directory` · scope org · versioned · custom fields (entityTyp
 - Visibility tiers and photo policy: ADR-127. Archive clears personal data and keeps the number.
 - Indexes: `{ organizationId, listingNumber }` unique; partial unique on owner for active statuses; attribute-pattern on `customFieldSearch`; queue and published sorts.
 
+### 5.2c CreditPack, CreditEntry, CreditBalance and ListingUnlock (ADR-130)
+Owner `commerce/credit` (OPTIONAL, depends on `directory`) · scope org
+| Field | Type | Notes |
+|---|---|---|
+| **CreditPack** | versioned | `creditPackId`, `name` (`{ bn, en }`), `credits` (integer > 0), `price: Money`, `validityDays` (integer? null = never), `status` (`ACTIVE \| ARCHIVED`), `sortOrder`, STF + `version` |
+| **CreditEntry** | append-only | `creditEntryId`, `customerAccountId`, `type` (`PURCHASE \| SPEND \| REFUND \| EXPIRE \| ADJUST`), `credits` (signed integer), `expiresOn?`, `source { sourceType, sourceId }` (`PAYMENT \| UNLOCK \| ADJUSTMENT \| EXPIRY_JOB`), `fromPurchaseEntryId?` (the purchase a SPEND or EXPIRE row consumes), `reason?`, `createdByUserId?`, `occurredAt`, `businessDate`, `createdAt` |
+| **CreditBalance** | projection | `customerAccountId`, `balance`, `version`, `updatedAt`; changed only by a guarded atomic `$inc` (`balance + delta ≥ 0`) in the same transaction as its entry, so it equals the sum of entries and never goes negative |
+| **ListingUnlock** | append-only | `listingUnlockId`, `customerAccountId`, `listingId`, `creditEntryId`, `unlockedAt`; unique per `(organizationId, customerAccountId, listingId)`, so unlocking twice costs once |
+
+- Spend allocation is FIFO: the oldest unexpired purchases first, then expired ones. Each SPEND row records its `fromPurchaseEntryId`; a spend beyond every purchase is unattributed non-expiring (ADJUST) credit. Corrections are new entries, never updates.
+- `ExpireCreditsUseCase` writes one EXPIRE row per expired purchase remainder; a second run changes nothing (partial unique index on `(organizationId, source.sourceId)` for EXPIRE rows). No scheduler in M.4; a 3.6 job calls it per organization.
+- Unlock cost `credit.unlockCost` (default 1); `credit.unlocksPerDay` per account per business day (default 20) plus per-IP and per-account rate limits. Own listing → 400, non-APPROVED → 404, insufficient balance → 422.
+- Directory reads unlocks through the `ListingUnlockReader` port; UNLOCKED fields project only for the unlocking account. The owner's unlock count is a number only (`credit.showUnlockersToOwner` defaults false and no endpoint lists unlockers).
+- Indexes: `{ organizationId, customerAccountId, occurredAt }` on entries; `{ organizationId, customerAccountId }` unique on balances; `{ organizationId, customerAccountId, listingId }` unique on unlocks.
+- Events: `credit.entry.created` (`orderingKey creditAccount:<customerAccountId>`) and `credit.unlock.created` (`orderingKey listing:<listingId>`).
+
 ### 5.3 Offering
 Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fields (entityType `offering`, filtered by `kind`)
 | Field | Type | Notes |

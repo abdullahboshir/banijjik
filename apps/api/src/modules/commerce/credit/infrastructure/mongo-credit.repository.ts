@@ -1,11 +1,18 @@
 import type { CustomerAccountId } from "@banijjik/ids";
 import { getRequestContext } from "../../../../kernel/context/index.js";
-import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
-import type {
-  CreditRepository,
-  UpdateBalanceInput,
-} from "../application/ports/credit-repository.js";
-import type { CreditEntry, CreditBalance } from "../domain/index.js";
+import {
+  getActiveSession,
+  isDuplicateKeyError,
+  models,
+  sessionOption,
+} from "../../../../kernel/db/index.js";
+import type { ApplyDeltaInput, CreditRepository } from "../application/ports/credit-repository.js";
+import {
+  CreditEntryAlreadyExistsError,
+  type CreditEntry,
+  type CreditBalance,
+} from "../domain/index.js";
+import { CREDIT_ENTRY_TYPE } from "@banijjik/contracts/credit";
 import { CREDIT_ENTRY_MODEL_NAME, type CreditEntryDocument } from "./credit-entry.schema.js";
 import { CREDIT_BALANCE_MODEL_NAME, type CreditBalanceDocument } from "./credit-balance.schema.js";
 
@@ -22,7 +29,12 @@ export class MongoCreditRepository implements CreditRepository {
     const Model = models({ organizationId: getOrganizationId() }).get<CreditEntryDocument>(
       CREDIT_ENTRY_MODEL_NAME,
     );
-    await Model.create([this.entryToDocument(entry)], sessionOption(getActiveSession()));
+    try {
+      await Model.create([this.entryToDocument(entry)], sessionOption(getActiveSession()));
+    } catch (error) {
+      if (isDuplicateKeyError(error)) throw new CreditEntryAlreadyExistsError();
+      throw error;
+    }
   }
 
   async listEntries(
@@ -34,46 +46,91 @@ export class MongoCreditRepository implements CreditRepository {
     const docs = await Model.find({ organizationId, customerAccountId })
       .sort({ occurredAt: -1 })
       .skip(options.offset)
-      .limit(options.limit);
-    return docs.map((d: CreditEntryDocument) => this.entryFromDocument(d));
+      .limit(options.limit)
+      .lean();
+    return docs.map((d) => this.entryFromDocument(d as CreditEntryDocument));
   }
 
   async getBalance(customerAccountId: CustomerAccountId): Promise<CreditBalance | null> {
     const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
-    const doc = await Model.findOne({ organizationId, customerAccountId });
-    return doc ? this.balanceFromDocument(doc) : null;
+    const doc = await Model.findOne({ organizationId, customerAccountId }).lean();
+    return doc ? this.balanceFromDocument(doc as CreditBalanceDocument) : null;
   }
 
-  async insertBalance(balance: CreditBalance): Promise<void> {
-    const Model = models({ organizationId: getOrganizationId() }).get<CreditBalanceDocument>(
-      CREDIT_BALANCE_MODEL_NAME,
-    );
-    await Model.create([this.balanceToDocument(balance)], sessionOption(getActiveSession()));
-  }
-
-  async updateBalance(input: UpdateBalanceInput): Promise<CreditBalance> {
+  async applyDelta(input: ApplyDeltaInput): Promise<CreditBalance | null> {
     const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
+    const filter =
+      input.delta < 0
+        ? {
+            organizationId,
+            customerAccountId: input.customerAccountId,
+            balance: { $gte: -input.delta },
+          }
+        : { organizationId, customerAccountId: input.customerAccountId };
     const doc = await Model.findOneAndUpdate(
-      {
-        organizationId,
-        customerAccountId: input.customerAccountId,
-        version: input.expectedVersion,
-      },
+      filter,
       {
         $inc: { balance: input.delta, version: 1 },
         $set: { updatedAt: new Date() },
       },
-      { new: true },
-    );
-    if (!doc) {
-      throw new Error("Balance not found or version mismatch");
-    }
-    if (doc.balance < 0) {
-      throw new Error("Balance cannot go negative");
-    }
-    return this.balanceFromDocument(doc);
+      {
+        new: true,
+        upsert: input.delta > 0,
+        ...sessionOption(getActiveSession()),
+      },
+    ).lean<CreditBalanceDocument>();
+    return doc ? this.balanceFromDocument(doc) : null;
+  }
+
+  async listPurchases(customerAccountId: CustomerAccountId): Promise<readonly CreditEntry[]> {
+    const organizationId = getOrganizationId();
+    const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
+    const docs = await Model.find({
+      organizationId,
+      customerAccountId,
+      type: CREDIT_ENTRY_TYPE.PURCHASE,
+    })
+      .sort({ occurredAt: 1 })
+      .limit(1000)
+      .lean();
+    return docs.map((d) => this.entryFromDocument(d as CreditEntryDocument));
+  }
+
+  async sumSpendsByPurchase(
+    customerAccountId: CustomerAccountId,
+    purchaseEntryIds: readonly string[],
+  ): Promise<ReadonlyMap<string, number>> {
+    if (purchaseEntryIds.length === 0) return new Map();
+    const organizationId = getOrganizationId();
+    const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
+    const rows = await Model.aggregate<{ _id: string; total: number }>([
+      {
+        $match: {
+          organizationId,
+          customerAccountId,
+          type: CREDIT_ENTRY_TYPE.SPEND,
+          fromPurchaseEntryId: { $in: purchaseEntryIds },
+        },
+      },
+      { $group: { _id: "$fromPurchaseEntryId", total: { $sum: { $abs: "$credits" } } } },
+    ]);
+    return new Map(rows.map((row) => [row._id, row.total]));
+  }
+
+  async listExpiringPurchases(today: string): Promise<readonly CreditEntry[]> {
+    const organizationId = getOrganizationId();
+    const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
+    const docs = await Model.find({
+      organizationId,
+      type: CREDIT_ENTRY_TYPE.PURCHASE,
+      expiresOn: { $ne: null, $lt: new Date(today) },
+    })
+      .sort({ occurredAt: 1 })
+      .limit(1000)
+      .lean();
+    return docs.map((d) => this.entryFromDocument(d as CreditEntryDocument));
   }
 
   async findPurchaseEntry(purchaseEntryId: string): Promise<CreditEntry | null> {
@@ -82,8 +139,8 @@ export class MongoCreditRepository implements CreditRepository {
     const doc = await Model.findOne({
       organizationId,
       creditEntryId: purchaseEntryId,
-    });
-    return doc ? this.entryFromDocument(doc) : null;
+    }).lean();
+    return doc ? this.entryFromDocument(doc as CreditEntryDocument) : null;
   }
 
   private entryToDocument(entry: CreditEntry): CreditEntryDocument {
@@ -119,17 +176,6 @@ export class MongoCreditRepository implements CreditRepository {
       occurredAt: doc.occurredAt.toISOString(),
       businessDate: doc.businessDate,
       createdAt: doc.createdAt.toISOString(),
-    };
-  }
-
-  private balanceToDocument(balance: CreditBalance): CreditBalanceDocument {
-    const organizationId = getOrganizationId();
-    return {
-      customerAccountId: balance.customerAccountId,
-      organizationId,
-      balance: balance.balance,
-      version: balance.version,
-      updatedAt: new Date(balance.updatedAt),
     };
   }
 

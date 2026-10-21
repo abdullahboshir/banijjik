@@ -6,6 +6,7 @@ import type {
   DirectoryTemplateReader,
   ListingFieldReader,
   ListingSequence,
+  ListingUnlockCounter,
   ListingUnlockReader,
 } from "./ports/directory-context-ports.js";
 import type { EventPublisher } from "./ports/event-publisher.js";
@@ -24,4 +25,5 @@ export interface DirectoryDependencies {
   readonly phones: CustomerPhoneReader;
   readonly sequences: ListingSequence;
   readonly unlockReader: ListingUnlockReader | null;
+  readonly unlockCounter: ListingUnlockCounter | null;
 }

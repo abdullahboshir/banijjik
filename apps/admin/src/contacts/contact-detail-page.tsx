@@ -17,6 +17,7 @@ import {
 import { fieldAppliesToContactRoles } from "@banijjik/validation";
 import Link from "next/link";
 import type { ReactElement } from "react";
+import { ContactCredits } from "../credit/contact-credits";
 import { CustomFieldDetailList } from "../custom-fields/custom-field-detail-list";
 import type { LinkedContacts } from "../custom-fields/custom-field-display";
 import { customFieldPartsOf } from "../custom-fields/custom-field-parts";
@@ -311,6 +312,7 @@ export async function ContactDetailPage({
         <RelationList contact={contact} basePath={basePath} t={t} />
       </PageSection>
       <WebsiteLogin access={access} contact={contact} translator={translator} />
+      <ContactCredits access={access} contact={contact} translator={translator} />
       <DetailActions access={access} translator={translator} data={data} />
     </div>
   );

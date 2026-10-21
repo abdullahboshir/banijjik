@@ -1,8 +1,13 @@
 import type { CustomerAccountId, ListingId } from "@banijjik/ids";
 import { getRequestContext } from "../../../../kernel/context/index.js";
-import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
+import {
+  getActiveSession,
+  isDuplicateKeyError,
+  models,
+  sessionOption,
+} from "../../../../kernel/db/index.js";
 import type { ListingUnlockRepository } from "../application/ports/listing-unlock-repository.js";
-import type { ListingUnlock } from "../domain/index.js";
+import { ListingUnlockAlreadyExistsError, type ListingUnlock } from "../domain/index.js";
 import { LISTING_UNLOCK_MODEL_NAME, type ListingUnlockDocument } from "./listing-unlock.schema.js";
 
 function getOrganizationId(): string {
@@ -18,7 +23,12 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
     const Model = models({ organizationId: getOrganizationId() }).get<ListingUnlockDocument>(
       LISTING_UNLOCK_MODEL_NAME,
     );
-    await Model.create([this.toDocument(unlock)], sessionOption(getActiveSession()));
+    try {
+      await Model.create([this.toDocument(unlock)], sessionOption(getActiveSession()));
+    } catch (error) {
+      if (isDuplicateKeyError(error)) throw new ListingUnlockAlreadyExistsError();
+      throw error;
+    }
   }
 
   async findExisting(
@@ -71,6 +81,20 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
       customerAccountId,
       unlockedAt: { $gte: startOfDay, $lte: endOfDay },
     });
+  }
+
+  async findUnlockedListingIds(
+    customerAccountId: CustomerAccountId,
+    listingIds: readonly ListingId[],
+  ): Promise<ReadonlySet<ListingId>> {
+    if (listingIds.length === 0) return new Set();
+    const organizationId = getOrganizationId();
+    const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
+    const docs = await Model.find(
+      { organizationId, customerAccountId, listingId: { $in: listingIds } },
+      { listingId: 1, _id: 0 },
+    ).lean();
+    return new Set(docs.map((doc) => doc.listingId as ListingId));
   }
 
   private toDocument(unlock: ListingUnlock): ListingUnlockDocument {

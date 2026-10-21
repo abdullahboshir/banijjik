@@ -8,7 +8,7 @@ import type { OrganizationId } from "@banijjik/ids";
 import { listingNotFound } from "../../domain/errors.js";
 import type { DirectoryDependencies } from "../directory-dependencies.js";
 import { listingFiltersFromQuery } from "../listing-filters.js";
-import { asListingFieldRules } from "../../index.js";
+import { asListingFieldRules } from "../ports/directory-context-ports.js";
 import { toListingListItem, toListingResponse } from "../listing-view.js";
 
 interface UnlockCheckInput {
@@ -29,12 +29,29 @@ async function viewerWithUnlockCheck(input: UnlockCheckInput): Promise<ListingVi
   return hasUnlocked ? LISTING_VIEWER.UNLOCKED_MEMBER : LISTING_VIEWER.MEMBER;
 }
 
+interface UnlockLookup {
+  readonly viewer: ListingViewer;
+  readonly customerAccountId: string | undefined;
+  readonly unlockReader: DirectoryDependencies["unlockReader"];
+}
+
+async function unlockedIdsOf(
+  input: UnlockLookup,
+  listingIds: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (input.viewer !== LISTING_VIEWER.MEMBER || !input.customerAccountId || !input.unlockReader) {
+    return new Set();
+  }
+  return input.unlockReader.unlockedListingIds(input.customerAccountId, listingIds);
+}
+
 export class SearchListingsUseCase {
   constructor(private readonly dependencies: DirectoryDependencies) {}
 
   async execute(input: {
     readonly organizationId: OrganizationId;
     readonly viewer: ListingViewer;
+    readonly customerAccountId?: string;
     readonly page: number;
     readonly limit: number;
     readonly listingNumber?: string;
@@ -57,21 +74,24 @@ export class SearchListingsUseCase {
       page: input.page,
       limit: input.limit,
     });
+    // One unlock query per page; per-row checks would be an N+1 on every customer search.
+    const unlockedIds = await unlockedIdsOf(
+      {
+        viewer: input.viewer,
+        customerAccountId: input.customerAccountId,
+        unlockReader: this.dependencies.unlockReader,
+      },
+      page.items.map((listing) => listing.listingId),
+    );
     return {
-      items: await Promise.all(
-        page.items.map(async (listing) => {
-          const effectiveViewer = await viewerWithUnlockCheck({
-            viewer: input.viewer,
-            listingId: listing.listingId,
-            customerAccountId: input.rawQuery.customerAccountId as string | undefined,
-            unlockReader: this.dependencies.unlockReader,
-          });
-          return toListingListItem({
-            listing,
-            fields: rules,
-            viewer: effectiveViewer,
-            photoPolicy,
-          });
+      items: page.items.map((listing) =>
+        toListingListItem({
+          listing,
+          fields: rules,
+          viewer: unlockedIds.has(listing.listingId)
+            ? LISTING_VIEWER.UNLOCKED_MEMBER
+            : input.viewer,
+          photoPolicy,
         }),
       ),
       total: page.total,
@@ -88,6 +108,7 @@ export class GetPublicListingUseCase {
     readonly organizationId: OrganizationId;
     readonly listingNumber: string;
     readonly viewer: ListingViewer;
+    readonly customerAccountId?: string;
   }): Promise<ListingResponse> {
     const listing = await this.dependencies.listings.findByListingNumber(input.listingNumber);
     if (listing === undefined || listing.status !== "APPROVED") throw listingNotFound();
@@ -98,7 +119,8 @@ export class GetPublicListingUseCase {
     const effectiveViewer = await viewerWithUnlockCheck({
       viewer: input.viewer,
       listingId: listing.listingId,
-      customerAccountId: input.viewer === LISTING_VIEWER.MEMBER ? input.organizationId : undefined,
+      customerAccountId:
+        input.viewer === LISTING_VIEWER.MEMBER ? input.customerAccountId : undefined,
       unlockReader: this.dependencies.unlockReader,
     });
     return toListingResponse({

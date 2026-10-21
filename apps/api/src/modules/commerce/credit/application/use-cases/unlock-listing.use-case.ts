@@ -1,19 +1,29 @@
-import { newId, type OrganizationId } from "@banijjik/ids";
+import { newId, type CustomerAccountId, type ListingId } from "@banijjik/ids";
+import {
+  CREDIT_ENTRY_TYPE,
+  CREDIT_EVENT_TYPE,
+  CREDIT_SOURCE_TYPE,
+  CREDIT_RULE_KEY,
+} from "@banijjik/contracts/credit";
+import { LISTING_STATUS } from "@banijjik/contracts/directory";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import {
-  CreditsInsufficientError,
   CannotUnlockOwnListingError,
+  CreditsInsufficientError,
   ListingNotApprovedError,
+  ListingNotFoundError,
+  ListingUnlockAlreadyExistsError,
   UnlocksPerDayExceededError,
-} from "../../domain/errors.js";
-import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
-import type { CustomerAccountId, ListingId } from "@banijjik/ids";
+  allocateSpend,
+  type SpendAllocation,
+} from "../../domain/index.js";
 import { getRequestContext } from "../../../../../kernel/context/index.js";
+import type { OrganizationId } from "@banijjik/ids";
+import { businessDateOf } from "./business-date.js";
 
 export interface UnlockListingInput {
   readonly listingNumber: string;
   readonly customerAccountId: CustomerAccountId;
-  readonly idempotencyKey: string;
 }
 
 export interface UnlockListingOutput {
@@ -24,69 +34,178 @@ export interface UnlockListingOutput {
   readonly remainingBalance: number;
 }
 
+const DEFAULT_UNLOCK_COST = 1;
+const DEFAULT_UNLOCKS_PER_DAY = 20;
+
 export class UnlockListingUseCase {
   constructor(private readonly deps: CreditDependencies) {}
 
   async execute(input: UnlockListingInput): Promise<UnlockListingOutput> {
     const listing = await this.deps.listings.findByListingNumber(input.listingNumber);
-    if (!listing) {
-      throw new Error("Listing not found");
+    if (!listing) throw new ListingNotFoundError();
+    if (listing.status !== LISTING_STATUS.APPROVED) throw new ListingNotApprovedError();
+    if (listing.ownerCustomerAccountId === input.customerAccountId) {
+      throw new CannotUnlockOwnListingError();
     }
 
-    this.validateListingApproved(listing.status);
-    this.validateNotOwnListing(input.customerAccountId, listing.ownerCustomerAccountId);
-
-    const existingUnlock = await this.deps.unlocks.findExisting(
+    const existing = await this.deps.unlocks.findExisting(
       input.customerAccountId,
       listing.listingId,
     );
-    if (existingUnlock) {
-      return this.idempotentResponse(existingUnlock, input.customerAccountId);
+    if (existing) return this.idempotentResponse(existing, input.customerAccountId);
+
+    const organizationId = this.organizationId();
+    const unlockCost = await this.amountSetting(
+      organizationId,
+      CREDIT_RULE_KEY.UNLOCK_COST,
+      DEFAULT_UNLOCK_COST,
+    );
+    const dailyLimit = await this.amountSetting(
+      organizationId,
+      CREDIT_RULE_KEY.UNLOCKS_PER_DAY,
+      DEFAULT_UNLOCKS_PER_DAY,
+    );
+    const today = businessDateOf(this.deps.clock.now());
+    await this.assertWithinDailyLimit(input.customerAccountId, dailyLimit, today);
+
+    try {
+      return await this.performUnlock({
+        customerAccountId: input.customerAccountId,
+        listingId: listing.listingId,
+        unlockCost,
+        businessDate: today,
+      });
+    } catch (error) {
+      // The unique key is the final guard under concurrency: the loser reads the winner's unlock
+      // after its own transaction was rolled back.
+      if (!(error instanceof ListingUnlockAlreadyExistsError)) throw error;
+      const winner = await this.deps.unlocks.findExisting(
+        input.customerAccountId,
+        listing.listingId,
+      );
+      if (!winner) throw error;
+      return this.idempotentResponse(winner, input.customerAccountId);
     }
+  }
 
+  private organizationId(): OrganizationId {
     const { organizationId } = getRequestContext();
-    const unlockCost = await this.getUnlockCost(organizationId);
-    const dailyLimit = await this.getDailyLimit(organizationId);
-    await this.validateDailyLimit(input.customerAccountId, dailyLimit);
+    if (!organizationId) throw new Error("Organization context required for an unlock");
+    return organizationId as OrganizationId;
+  }
 
-    return this.performUnlock({
-      customerAccountId: input.customerAccountId,
-      listingId: listing.listingId,
-      unlockCost,
+  private async amountSetting(
+    organizationId: OrganizationId,
+    key: string,
+    fallback: number,
+  ): Promise<number> {
+    const resolved = await this.deps.resolveSettings(organizationId, [key]);
+    const value = resolved.get(key)?.value;
+    return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : fallback;
+  }
+
+  private async assertWithinDailyLimit(
+    customerAccountId: CustomerAccountId,
+    dailyLimit: number,
+    today: string,
+  ): Promise<void> {
+    const todayCount = await this.deps.unlocks.countByCustomerToday(customerAccountId, today);
+    if (todayCount >= dailyLimit) throw new UnlocksPerDayExceededError();
+  }
+
+  private async performUnlock(input: {
+    readonly customerAccountId: CustomerAccountId;
+    readonly listingId: ListingId;
+    readonly unlockCost: number;
+    readonly businessDate: string;
+  }): Promise<UnlockListingOutput> {
+    return this.deps.unitOfWork.run(async () => {
+      const updatedBalance = await this.deps.credit.applyDelta({
+        customerAccountId: input.customerAccountId,
+        delta: -input.unlockCost,
+      });
+      if (!updatedBalance) {
+        const balance = await this.deps.credit.getBalance(input.customerAccountId);
+        throw new CreditsInsufficientError(balance?.balance ?? 0, input.unlockCost);
+      }
+
+      const entries = await this.createSpendEntries(input);
+      const unlock = {
+        listingUnlockId: newId(),
+        customerAccountId: input.customerAccountId,
+        listingId: input.listingId,
+        creditEntryId: entries[0]?.creditEntryId ?? "",
+        unlockedAt: this.deps.clock.now().toISOString(),
+        createdAt: this.deps.clock.now().toISOString(),
+      };
+      await this.deps.unlocks.insert(unlock);
+      await this.publishEvents(entries, unlock, input);
+
+      return {
+        listingUnlockId: unlock.listingUnlockId,
+        listingId: unlock.listingId,
+        unlockedAt: unlock.unlockedAt,
+        creditsSpent: input.unlockCost,
+        remainingBalance: updatedBalance.balance,
+      };
     });
   }
 
-  private async getUnlockCost(organizationId: string | undefined): Promise<number> {
-    if (!organizationId) return 1;
-    const map = await this.deps.resolveSettings(organizationId as OrganizationId, [
-      "credit.unlockCost",
-    ]);
-    const value = map.get("credit.unlockCost")?.value;
-    return typeof value === "number" ? value : 1;
-  }
-
-  private async getDailyLimit(organizationId: string | undefined): Promise<number> {
-    if (!organizationId) return 20;
-    const map = await this.deps.resolveSettings(organizationId as OrganizationId, [
-      "credit.unlocksPerDay",
-    ]);
-    const value = map.get("credit.unlocksPerDay")?.value;
-    return typeof value === "number" ? value : 20;
-  }
-
-  private validateListingApproved(status: string): void {
-    if (status !== "APPROVED") {
-      throw new ListingNotApprovedError();
+  private async createSpendEntries(input: {
+    readonly customerAccountId: CustomerAccountId;
+    readonly listingId: ListingId;
+    readonly unlockCost: number;
+    readonly businessDate: string;
+  }): Promise<readonly SpentEntry[]> {
+    const allocations = await this.allocationsForSpend(
+      input.customerAccountId,
+      input.unlockCost,
+      input.businessDate,
+    );
+    const now = this.deps.clock.now();
+    const entries: SpentEntry[] = [];
+    for (const allocation of allocations) {
+      const entry = {
+        creditEntryId: newId(),
+        customerAccountId: input.customerAccountId,
+        type: CREDIT_ENTRY_TYPE.SPEND,
+        credits: -allocation.credits,
+        expiresOn: null,
+        source: { sourceType: CREDIT_SOURCE_TYPE.UNLOCK, sourceId: input.listingId },
+        fromPurchaseEntryId: allocation.purchaseEntryId,
+        reason: null,
+        createdByUserId: null,
+        occurredAt: now.toISOString(),
+        businessDate: input.businessDate,
+        createdAt: now.toISOString(),
+      };
+      await this.deps.credit.insertEntry(entry);
+      entries.push(entry);
     }
+    return entries;
   }
 
-  private validateNotOwnListing(
+  private async allocationsForSpend(
     customerAccountId: CustomerAccountId,
-    ownerCustomerAccountId: CustomerAccountId,
-  ): void {
-    if (customerAccountId === ownerCustomerAccountId) {
-      throw new CannotUnlockOwnListingError();
-    }
+    cost: number,
+    asOf: string,
+  ): Promise<readonly SpendAllocation[]> {
+    const purchases = await this.deps.credit.listPurchases(customerAccountId);
+    const spent = await this.deps.credit.sumSpendsByPurchase(
+      customerAccountId,
+      purchases.map((purchase) => purchase.creditEntryId),
+    );
+    return allocateSpend({
+      cost,
+      asOf,
+      purchases: purchases.map((purchase) => ({
+        purchaseEntryId: purchase.creditEntryId,
+        credits: purchase.credits,
+        spent: spent.get(purchase.creditEntryId) ?? 0,
+        occurredAt: purchase.occurredAt,
+        expiresOn: purchase.expiresOn,
+      })),
+    });
   }
 
   private async idempotentResponse(
@@ -103,170 +222,57 @@ export class UnlockListingUseCase {
     };
   }
 
-  private async validateDailyLimit(
-    customerAccountId: CustomerAccountId,
-    dailyLimit: number,
-  ): Promise<void> {
-    const today = new Date().toISOString().split("T")[0] ?? "";
-    const todayCount = await this.deps.unlocks.countByCustomerToday(customerAccountId, today);
-    if (todayCount >= dailyLimit) {
-      throw new UnlocksPerDayExceededError();
-    }
-  }
-
-  private async performUnlock(input: {
-    readonly customerAccountId: CustomerAccountId;
-    readonly listingId: ListingId;
-    readonly unlockCost: number;
-  }): Promise<UnlockListingOutput> {
-    return this.deps.unitOfWork.run(async () => {
-      const balance = await this.ensureBalance(input.customerAccountId);
-      this.checkSufficientBalance(balance, input.unlockCost);
-
-      const updatedBalance = await this.deps.credit.updateBalance({
-        customerAccountId: input.customerAccountId,
-        expectedVersion: balance.version,
-        delta: -input.unlockCost,
-      });
-
-      const creditEntry = this.createCreditEntry(input);
-      await this.deps.credit.insertEntry(creditEntry);
-
-      const unlock = this.createUnlock(input, creditEntry.creditEntryId);
-      await this.deps.unlocks.insert(unlock);
-
-      await this.publishEvents(creditEntry, unlock, input);
-
-      return {
-        listingUnlockId: unlock.listingUnlockId,
-        listingId: unlock.listingId,
-        unlockedAt: unlock.unlockedAt,
-        creditsSpent: input.unlockCost,
-        remainingBalance: updatedBalance.balance,
-      };
-    });
-  }
-
-  private async ensureBalance(customerAccountId: CustomerAccountId) {
-    const balance = await this.deps.credit.getBalance(customerAccountId);
-    if (!balance) {
-      await this.deps.credit.insertBalance({
-        customerAccountId,
-        balance: 0,
-        version: 1,
-        updatedAt: this.deps.clock.now().toISOString(),
-      });
-      throw new CreditsInsufficientError(0, 0);
-    }
-    return balance;
-  }
-
-  private checkSufficientBalance(
-    balance: { balance: number; version: number },
-    unlockCost: number,
-  ): void {
-    if (balance.balance < unlockCost) {
-      throw new CreditsInsufficientError(balance.balance, unlockCost);
-    }
-  }
-
-  private createCreditEntry(input: {
-    readonly customerAccountId: CustomerAccountId;
-    readonly listingId: ListingId;
-    readonly unlockCost: number;
-  }): {
-    creditEntryId: string;
-    customerAccountId: CustomerAccountId;
-    type: "PURCHASE" | "SPEND" | "REFUND" | "EXPIRE" | "ADJUST";
-    credits: number;
-    expiresOn: string | null;
-    source: { sourceType: "PAYMENT" | "UNLOCK" | "ADJUSTMENT" | "EXPIRY_JOB"; sourceId: string };
-    fromPurchaseEntryId: string | null;
-    reason: string | null;
-    createdByUserId: string | null;
-    occurredAt: string;
-    businessDate: string;
-    createdAt: string;
-  } {
-    const today = new Date().toISOString().split("T")[0] ?? "";
-    const creditEntryId = newId();
-    const now = this.deps.clock.now();
-    return {
-      creditEntryId,
-      customerAccountId: input.customerAccountId,
-      type: CREDIT_ENTRY_TYPE.SPEND,
-      credits: -input.unlockCost,
-      expiresOn: null,
-      source: { sourceType: CREDIT_SOURCE_TYPE.UNLOCK, sourceId: input.listingId },
-      fromPurchaseEntryId: null,
-      reason: null,
-      createdByUserId: null,
-      occurredAt: now.toISOString(),
-      businessDate: today,
-      createdAt: now.toISOString(),
-    };
-  }
-
-  private createUnlock(
-    input: {
-      readonly customerAccountId: CustomerAccountId;
-      readonly listingId: ListingId;
-      readonly unlockCost: number;
-    },
-    creditEntryId: string,
-  ): {
-    listingUnlockId: string;
-    customerAccountId: CustomerAccountId;
-    listingId: ListingId;
-    creditEntryId: string;
-    unlockedAt: string;
-    createdAt: string;
-  } {
-    const listingUnlockId = newId();
-    const now = this.deps.clock.now();
-    return {
-      listingUnlockId,
-      customerAccountId: input.customerAccountId,
-      listingId: input.listingId,
-      creditEntryId,
-      unlockedAt: now.toISOString(),
-      createdAt: now.toISOString(),
-    };
-  }
-
   private async publishEvents(
-    creditEntry: {
+    entries: readonly SpentEntry[],
+    unlock: {
+      listingUnlockId: string;
+      customerAccountId: CustomerAccountId;
+      listingId: ListingId;
       creditEntryId: string;
-      credits: number;
-      source: { sourceType: string; sourceId: string };
-      occurredAt: string;
+      unlockedAt: string;
     },
-    unlock: { listingUnlockId: string; unlockedAt: string },
     input: { readonly customerAccountId: CustomerAccountId; readonly listingId: ListingId },
   ): Promise<void> {
-    await this.deps.events.publish(
-      "CREDIT_ENTRY_CREATED",
-      {
-        creditEntryId: creditEntry.creditEntryId,
-        customerAccountId: input.customerAccountId,
-        type: CREDIT_ENTRY_TYPE.SPEND,
-        credits: creditEntry.credits,
-        source: creditEntry.source,
-        occurredAt: creditEntry.occurredAt,
-      },
-      { orderingKey: `creditAccount:${input.customerAccountId}` },
-    );
+    for (const entry of entries) {
+      await this.deps.events.publish(
+        CREDIT_EVENT_TYPE.CREDIT_ENTRY_CREATED,
+        {
+          creditEntryId: entry.creditEntryId,
+          customerAccountId: input.customerAccountId,
+          type: CREDIT_ENTRY_TYPE.SPEND,
+          credits: entry.credits,
+          source: entry.source,
+          occurredAt: entry.occurredAt,
+        },
+        { orderingKey: `creditAccount:${input.customerAccountId}` },
+      );
+    }
 
     await this.deps.events.publish(
-      "UNLOCK_CREATED",
+      CREDIT_EVENT_TYPE.UNLOCK_CREATED,
       {
         listingUnlockId: unlock.listingUnlockId,
         customerAccountId: input.customerAccountId,
         listingId: input.listingId,
-        creditEntryId: creditEntry.creditEntryId,
+        creditEntryId: unlock.creditEntryId,
         unlockedAt: unlock.unlockedAt,
       },
       { orderingKey: `listing:${input.listingId}` },
     );
   }
+}
+
+interface SpentEntry {
+  readonly creditEntryId: string;
+  readonly customerAccountId: CustomerAccountId;
+  readonly type: "SPEND";
+  readonly credits: number;
+  readonly expiresOn: null;
+  readonly source: { sourceType: "UNLOCK"; sourceId: string };
+  readonly fromPurchaseEntryId: string | null;
+  readonly reason: null;
+  readonly createdByUserId: null;
+  readonly occurredAt: string;
+  readonly businessDate: string;
+  readonly createdAt: string;
 }

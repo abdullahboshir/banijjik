@@ -1,5 +1,4 @@
 import { registerCreditModels } from "./infrastructure/register-credit-models.js";
-import { creditManifest } from "./module.manifest.js";
 import { buildCreditStorefrontRouter } from "./presentation/credit-storefront.router.js";
 import { buildCreditTenantRouter } from "./presentation/credit-tenant.router.js";
 import {
@@ -12,13 +11,19 @@ import {
   GetMyCreditsUseCase,
   GetMyUnlocksUseCase,
   ListCreditPacksUseCase,
+  ListActiveCreditPacksUseCase,
+  CreateCreditPackUseCase,
+  UpdateCreditPackUseCase,
+  ArchiveCreditPackUseCase,
   AdjustCreditsUseCase,
+  ExpireCreditsUseCase,
 } from "./application/index.js";
 import { CreditListingUnlockReader } from "./application/adapters/index.js";
 
+export { creditManifest } from "./module.manifest.js";
+
 export {
   registerCreditModels,
-  creditManifest,
   buildCreditStorefrontRouter,
   buildCreditTenantRouter,
   MongoCreditRepository,
@@ -28,6 +33,11 @@ export {
   GetMyCreditsUseCase,
   GetMyUnlocksUseCase,
   ListCreditPacksUseCase,
+  ListActiveCreditPacksUseCase,
+  CreateCreditPackUseCase,
+  UpdateCreditPackUseCase,
+  ArchiveCreditPackUseCase,
   AdjustCreditsUseCase,
+  ExpireCreditsUseCase,
   CreditListingUnlockReader,
 };

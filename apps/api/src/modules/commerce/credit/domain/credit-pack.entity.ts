@@ -34,16 +34,18 @@ export class CreditPackEntity {
     };
   }
 
-  static create(input: {
-    creditPackId: string;
-    organizationId: OrganizationId;
-    name: { readonly bn: string; readonly en: string };
-    credits: number;
-    price: Money;
-    validityDays: number | null;
-    sortOrder: number;
-  }): CreditPackEntity {
-    const now = new Date();
+  static create(
+    input: {
+      creditPackId: string;
+      organizationId: OrganizationId;
+      name: { readonly bn: string; readonly en: string };
+      credits: number;
+      price: Money;
+      validityDays: number | null;
+      sortOrder: number;
+    },
+    now: Date = new Date(),
+  ): CreditPackEntity {
     return new CreditPackEntity(
       input.creditPackId,
       input.organizationId,
@@ -59,13 +61,16 @@ export class CreditPackEntity {
     );
   }
 
-  update(input: {
-    name: { readonly bn: string; readonly en: string };
-    credits: number;
-    price: Money;
-    validityDays: number | null;
-    sortOrder: number;
-  }): CreditPackEntity {
+  update(
+    input: {
+      name: { readonly bn: string; readonly en: string };
+      credits: number;
+      price: Money;
+      validityDays: number | null;
+      sortOrder: number;
+    },
+    now: Date = new Date(),
+  ): CreditPackEntity {
     return new CreditPackEntity(
       this.creditPackId,
       this.organizationId,
@@ -77,11 +82,11 @@ export class CreditPackEntity {
       input.sortOrder,
       this.version + 1,
       this.updatedAt,
-      new Date(),
+      now,
     );
   }
 
-  archive(): CreditPackEntity {
+  archive(now: Date = new Date()): CreditPackEntity {
     return new CreditPackEntity(
       this.creditPackId,
       this.organizationId,
@@ -93,7 +98,7 @@ export class CreditPackEntity {
       this.sortOrder,
       this.version + 1,
       this.updatedAt,
-      new Date(),
+      now,
     );
   }
 }

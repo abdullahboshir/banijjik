@@ -58,3 +58,14 @@ export const creditEntrySchema = new Schema<CreditEntryDocument>(
 
 creditEntrySchema.index({ organizationId: 1, customerAccountId: 1, occurredAt: -1 });
 creditEntrySchema.index({ organizationId: 1, customerAccountId: 1, type: 1, occurredAt: -1 });
+creditEntrySchema.index(
+  { organizationId: 1, "source.sourceId": 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      type: CREDIT_ENTRY_TYPE.EXPIRE,
+      "source.sourceType": CREDIT_SOURCE_TYPE.EXPIRY_JOB,
+    },
+  },
+);
+creditEntrySchema.index({ organizationId: 1, type: 1, expiresOn: 1 });

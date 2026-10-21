@@ -30,6 +30,16 @@ export interface ListingSequence {
 
 export interface ListingUnlockReader {
   hasUnlocked(listingId: string, customerAccountId: string): Promise<boolean>;
+  /** One query for a page of results, so listing lists never ask per row. */
+  unlockedListingIds(
+    customerAccountId: string,
+    listingIds: readonly string[],
+  ): Promise<ReadonlySet<string>>;
+}
+
+/** Count-only privacy (M.4 decision 6): never who unlocked. Null when the credit module is off. */
+export interface ListingUnlockCounter {
+  countByListing(listingId: string): Promise<number | null>;
 }
 
 export function asListingFieldRules(

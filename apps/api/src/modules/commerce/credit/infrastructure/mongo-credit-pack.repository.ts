@@ -8,6 +8,7 @@ import {
 } from "../../../../kernel/db/index.js";
 import type { CreditPackRepository } from "../application/ports/credit-pack-repository.js";
 import type { CreditPack } from "@banijjik/contracts/credit";
+import type { Money } from "@banijjik/contracts/accounting";
 import { CREDIT_PACK_MODEL_NAME, type CreditPackDocument } from "./credit-pack.schema.js";
 
 export class MongoCreditPackRepository implements CreditPackRepository {
@@ -59,6 +60,24 @@ export class MongoCreditPackRepository implements CreditPackRepository {
     return docs.map((d: CreditPackDocument) => this.fromDocument(d));
   }
 
+  async list(
+    organizationId: OrganizationId,
+    options: { limit: number; offset: number },
+  ): Promise<{ readonly items: readonly CreditPack[]; readonly total: number }> {
+    const Model = models({ organizationId }).get<CreditPackDocument>(CREDIT_PACK_MODEL_NAME);
+    const [docs, total] = await Promise.all([
+      Model.find({ organizationId })
+        .sort({ sortOrder: 1, createdAt: 1 })
+        .skip(options.offset)
+        .limit(options.limit),
+      Model.countDocuments({ organizationId }),
+    ]);
+    return {
+      items: docs.map((d: CreditPackDocument) => this.fromDocument(d)),
+      total,
+    };
+  }
+
   private getOrganizationId(): string {
     const context = getRequestContext();
     if (!context.organizationId) {
@@ -90,7 +109,7 @@ export class MongoCreditPackRepository implements CreditPackRepository {
       creditPackId: doc.creditPackId,
       name: doc.name,
       credits: doc.credits,
-      price: doc.price as { amount: number; currency: "BDT" },
+      price: doc.price as Money,
       validityDays: doc.validityDays,
       status: doc.status,
       sortOrder: doc.sortOrder,

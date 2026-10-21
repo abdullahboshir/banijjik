@@ -33,7 +33,10 @@ export const CREDIT_API_MESSAGE_KEYS = {
   cannotUnlockOwnListing: "errors.credit_cannot_unlock_own_listing",
   unlocksPerDayExceeded: "errors.credit_unlocks_per_day_exceeded",
   listingNotApproved: "errors.credit_listing_not_approved",
+  listingNotFound: "errors.credit_listing_not_found",
   adjustReasonRequired: "errors.credit_adjust_reason_required",
+  packCurrencyMismatch: "errors.credit_pack_currency_mismatch",
+  adjustmentWouldGoNegative: "errors.credit_adjustment_would_go_negative",
 } as const;
 
 export const CREDIT_API_MESSAGE_KEY_LIST: readonly string[] =
@@ -137,6 +140,12 @@ export interface UnlockListItem {
   readonly listingNumber: string;
   readonly unlockedAt: string;
   readonly customFields: Record<string, unknown>;
+}
+
+/** Count only: the listing owner never learns who unlocked (M.4 decision 6). */
+export interface ListingUnlockCountResponse {
+  readonly listingId: string;
+  readonly unlockCount: number;
 }
 
 export interface CreditEntryCreatedPayload {

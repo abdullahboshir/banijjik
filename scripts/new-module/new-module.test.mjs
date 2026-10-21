@@ -18,6 +18,8 @@ import { generateModule, NewModuleError, runCommandLine } from "./new-module.mjs
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CONTRACTS_SOURCE = join(REPOSITORY_ROOT, "packages", "contracts", "src");
+const VALIDATION_ENTRY = join(REPOSITORY_ROOT, "packages", "validation", "src", "index.ts");
+const IDS_ENTRY = join(REPOSITORY_ROOT, "packages", "ids", "src", "index.ts");
 const KERNEL_MODULES = join(REPOSITORY_ROOT, "apps", "api", "src", "kernel", "modules");
 const MODULES_IN_TREE = join("apps", "api", "src", "modules");
 const WORKFLOW = { target: "automation/workflow" };
@@ -63,6 +65,7 @@ function buildTree() {
   const pricingEntry = join(CONTRACTS_SOURCE, "pricing", "index.ts");
   const directoryEntry = join(CONTRACTS_SOURCE, "directory", "index.ts");
   const bookingEntry = join(CONTRACTS_SOURCE, "booking", "index.ts");
+  const creditEntry = join(CONTRACTS_SOURCE, "credit", "index.ts");
   writeFileSync(
     join(treeRoot, "tsconfig.json"),
     JSON.stringify({
@@ -80,7 +83,10 @@ function buildTree() {
           "@banijjik/contracts/pricing": [pricingEntry],
           "@banijjik/contracts/directory": [directoryEntry],
           "@banijjik/contracts/booking": [bookingEntry],
+          "@banijjik/contracts/credit": [creditEntry],
           "@banijjik/contracts": [contractsEntry],
+          "@banijjik/validation": [VALIDATION_ENTRY],
+          "@banijjik/ids": [IDS_ENTRY],
         },
       },
       include: ["apps/**/*.ts"],
@@ -88,7 +94,7 @@ function buildTree() {
   );
   writeFileSync(
     join(treeRoot, "vitest.config.mjs"),
-    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts/booking": ${JSON.stringify(bookingEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
+    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts/booking": ${JSON.stringify(bookingEntry)}, "@banijjik/contracts/credit": ${JSON.stringify(creditEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
   );
 }
 

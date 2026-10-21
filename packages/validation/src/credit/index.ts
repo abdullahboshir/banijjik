@@ -2,9 +2,11 @@ export {
   creditAdjustRequestSchema,
   creditAccountIdParamsSchema,
   creditEntriesQuerySchema,
+  creditPackArchiveRequestSchema,
   creditPackCreateRequestSchema,
+  creditPackIdParamsSchema,
   creditPackUpdateRequestSchema,
   creditPacksQuerySchema,
-  unlockRequestSchema,
+  unlockListingParamsSchema,
   unlocksQuerySchema,
 } from "./credit-schemas.js";

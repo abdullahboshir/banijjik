@@ -15,6 +15,7 @@ import { IamPermissionGate } from "./application/permission-gate.js";
 import { PermissionResolver } from "./application/permission-resolver.js";
 import type { MemberAccessReader } from "./application/ports/member-access-reader.js";
 import type { PermissionCache } from "./application/ports/permission-cache.js";
+import type { RoleManagementRepository } from "./application/ports/role-management-repository.js";
 import type { RoleRepository } from "./application/ports/role-repository.js";
 import { IamRoleGrantReader, type RoleGrantReader } from "./application/role-grant-reader.js";
 import { SessionIssuer } from "./application/session-issuer.js";
@@ -148,10 +149,22 @@ export function buildProvisionSystemRolesUseCase(clock: Clock): ProvisionSystemR
   return new ProvisionSystemRolesUseCase({ roles: new MongoRoleRepository(), clock });
 }
 
+export { memberIsOwner } from "./application/approval-capability.js";
+
 /** The read port other modules use to turn role IDs into role keys, in one query. */
 export type RoleKeyReader = Pick<RoleRepository, "findRoleKeysByIds">;
 
 export function buildRoleKeyReader(): RoleKeyReader {
+  return new MongoRoleRepository();
+}
+
+/**
+ * Role reads for an organization request. No organization filter is passed, because the tenant
+ * plugin adds the active one; an explicit filter would be rejected as cross-organization access.
+ */
+export type TenantRoleReader = Pick<RoleManagementRepository, "findByIds">;
+
+export function buildTenantRoleReader(): TenantRoleReader {
   return new MongoRoleRepository();
 }
 

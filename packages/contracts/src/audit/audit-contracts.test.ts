@@ -48,6 +48,10 @@ describe("audit vocabulary", () => {
       "booking",
       "resource",
       "resourceTimeOff",
+      "creditPack",
+      "creditEntry",
+      "creditAccount",
+      "listingUnlock",
     ]);
   });
 });
