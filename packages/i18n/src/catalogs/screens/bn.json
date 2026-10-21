@@ -487,6 +487,7 @@
   "bookings.calendar.noLocation": "বুকিং নেওয়ার আগে একটি লোকেশন যোগ করুন।",
   "bookings.calendar.add": "নতুন {term}",
   "bookings.calendar.addSlot": "স্লট বুক করুন",
+  "bookings.calendar.minutesUnit": "মি.",
   "bookings.detail.subtitle": "এই বুকিংয়ের স্ট্যাটাস, ইতিহাস ও অ্যাকশন।",
   "bookings.detail.back": "ক্যালেন্ডারে ফিরুন",
   "bookings.detail.history": "ইতিহাস",

@@ -188,6 +188,14 @@ export async function seedOrganization(
   });
 }
 
+/** Creates a business when the test supplies the full create body (template keys live in JSON fixtures). */
+export async function seedOrganizationWithBody(
+  person: SeededPerson,
+  body: { name: string; slug: string } & Record<string, unknown>,
+): Promise<void> {
+  await callApi("/me/orgs", { body, cookies: person.cookies });
+}
+
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**

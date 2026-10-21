@@ -20,11 +20,13 @@ import {
 import {
   seedLocation,
   seedOrganization,
+  seedOrganizationWithBody,
   seedPerson,
   startBrowserStack,
   type BrowserStack,
   type SeededPerson,
 } from "../test-support/browser-stack";
+import salonFixture from "../test-support/salon-industry-fixture.json" with { type: "json" };
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
 
 const BUSINESS_NAME = "আকমি ট্রেডার্স";
@@ -266,5 +268,24 @@ describe("the phone and the first load", () => {
 
     expect(report.overflow, name).toBeLessThanOrEqual(0);
     expect(report.small, name).toEqual([]);
+  });
+});
+
+describe("the SALON catalog", () => {
+  it("lets the owner add a bookable service offering", async () => {
+    const owner = await seedPerson("সালমা");
+    await seedOrganizationWithBody(owner, {
+      name: "সালমা পার্লার",
+      slug: "salon",
+      ...salonFixture,
+    });
+    const page = await openPage(stack.browser, PHONE_VIEWPORT);
+    await signInWithCookies(page, owner);
+    await gotoWhenHydrated(page, "/salon/catalog/new?kind=SERVICE", "#offering-name");
+    await typeInto(page, "#offering-name", "হেয়ারকাট");
+    await page.type("#detail-durationMinutes", "30");
+    await clickByName(page, message("catalog.editor.saveDraft"));
+    await waitForText(page, "হেয়ারকাট");
+    await closePage(page);
   });
 });
