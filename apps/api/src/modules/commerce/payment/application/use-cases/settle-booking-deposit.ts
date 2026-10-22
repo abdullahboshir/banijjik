@@ -18,7 +18,6 @@ import {
   type StoreCreditEntryId,
   type UserId,
 } from "@banijjik/ids";
-import { kernelEventPublisher } from "../../../../../kernel/events/index.js";
 import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import { recordNotFound, storeCreditConflictError } from "../../domain/errors.js";
 import { Payment } from "../../domain/payment.entity.js";
@@ -29,7 +28,19 @@ import type {
   PaymentRepository,
   PaymentSummaryRepository,
   StoreCreditRepository,
+  TimezoneReader,
 } from "../ports/payment-repositories.js";
+
+export interface SettleBookingTerminationDependencies {
+  readonly payments: PaymentRepository;
+  readonly storeCredits: StoreCreditRepository;
+  readonly summaries: PaymentSummaryRepository;
+  readonly contactStoreCredit: ContactStoreCreditPort;
+  readonly events: {
+    publish(eventType: string, payload: unknown, options?: { orderingKey?: string }): Promise<void>;
+  };
+  readonly timeZone: TimezoneReader;
+}
 
 export interface SettleBookingTerminationInput {
   readonly organizationId: OrganizationId;
@@ -59,7 +70,8 @@ function computeTerminationFeeAmount(
   }
   if (input.feeMode === "NONE") return 0;
   if (input.feeMode === "PERCENT") {
-    const percent = Math.min(100, Math.max(1, input.feePercent));
+    const percent = Math.min(100, Math.max(0, input.feePercent));
+    if (percent === 0) return 0;
     const cap = Math.floor((input.priceTotal.amount * percent) / 100);
     return Math.min(netPaidAmount, cap);
   }
@@ -67,11 +79,13 @@ function computeTerminationFeeAmount(
   return Math.min(netPaidAmount, cap);
 }
 
-function buildTerminationRefundPayment(
-  input: SettleBookingTerminationInput,
-  creditAmount: number,
-  seq: number,
-): Payment {
+function buildTerminationRefundPayment(opts: {
+  readonly input: SettleBookingTerminationInput;
+  readonly creditAmount: number;
+  readonly seq: number;
+  readonly timeZone: string;
+}): Payment {
+  const { input, creditAmount, seq, timeZone } = opts;
   const { currency } = input.priceTotal;
   const note = input.mode === "CANCEL" ? "Booking cancellation credit" : "Booking no-show credit";
   return Payment.create({
@@ -95,7 +109,7 @@ function buildTerminationRefundPayment(
     reversesPaymentId: null,
     receivedByMemberId: input.actorUserId ?? "system",
     approval: null,
-    businessDate: businessDateOf(input.now, "Asia/Dhaka"),
+    businessDate: businessDateOf(input.now, timeZone),
     note,
     version: 1,
     createdAt: input.now,
@@ -106,12 +120,7 @@ function buildTerminationRefundPayment(
 }
 
 async function creditRefundForTermination(
-  deps: {
-    readonly payments: PaymentRepository;
-    readonly storeCredits: StoreCreditRepository;
-    readonly summaries: PaymentSummaryRepository;
-    readonly contactStoreCredit: ContactStoreCreditPort;
-  },
+  deps: SettleBookingTerminationDependencies,
   input: SettleBookingTerminationInput,
   creditAmount: number,
 ): Promise<void> {
@@ -126,7 +135,8 @@ async function creditRefundForTermination(
     organizationId: input.organizationId,
     sequenceKey: SEQUENCE_KEY.PAYMENT,
   });
-  const payment = buildTerminationRefundPayment(input, creditAmount, seq);
+  const timeZone = await deps.timeZone.read(input.organizationId);
+  const payment = buildTerminationRefundPayment({ input, creditAmount, seq, timeZone });
   await deps.payments.create(payment);
 
   const bal = await deps.contactStoreCredit.getBalance(input.organizationId, input.contactId);
@@ -157,12 +167,12 @@ async function creditRefundForTermination(
   await deps.storeCredits.create(entry);
 
   const orderingKey = `paymentAccount:${input.organizationId}`;
-  await kernelEventPublisher.publish(
+  await deps.events.publish(
     PAYMENT_EVENT_TYPE.PAYMENT_REFUNDED,
     { paymentId: payment.paymentId },
     { orderingKey },
   );
-  await kernelEventPublisher.publish(
+  await deps.events.publish(
     PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED,
     { storeCreditEntryId: entry.storeCreditEntryId },
     { orderingKey },
@@ -170,12 +180,7 @@ async function creditRefundForTermination(
 }
 
 export async function settleBookingTermination(
-  deps: {
-    readonly payments: PaymentRepository;
-    readonly storeCredits: StoreCreditRepository;
-    readonly summaries: PaymentSummaryRepository;
-    readonly contactStoreCredit: ContactStoreCreditPort;
-  },
+  deps: SettleBookingTerminationDependencies,
   input: SettleBookingTerminationInput,
 ): Promise<{ readonly feeRetained: Money | null }> {
   const { currency } = input.priceTotal;

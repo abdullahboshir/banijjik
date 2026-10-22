@@ -27,6 +27,7 @@ export {
   type ManualJournalLine,
   type Money,
   type PostingKey,
+  reversalPostingKeyFor,
   type ProfitAndLossStatementRequest,
   type ProfitAndLossStatementResponse,
   type ProfitAndLossStatementRow,

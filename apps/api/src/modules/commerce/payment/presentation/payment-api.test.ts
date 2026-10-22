@@ -795,4 +795,46 @@ describe("Payment API", () => {
     expect(snapshot?.overpaymentToStoreCredit?.amount).toBe(5000);
     expect(snapshot?.allocations[0]?.revenueState).toBe("BEFORE_REVENUE");
   });
+
+  it("computes business date from organization timezone when timezone is non-Dhaka and clock is after local midnight", async () => {
+    const world = await worldFor(harness, RETAIL, SALON);
+    const contactId = await createCustomer(world);
+    const booking = await createBooking(world, contactId);
+
+    // Update organization A's timezone to Pacific/Auckland
+    await harness.connections.platform
+      .collection("organizations")
+      .updateOne(
+        { organizationId: world.organizationA },
+        { $set: { timezone: "Pacific/Auckland" } },
+      );
+
+    // At 2026-10-22T11:15:00Z, Auckland is at UTC+13 (00:15 local time on 2026-10-23, just after midnight).
+    // Asia/Dhaka is at UTC+6 (17:15 on 2026-10-22).
+    const targetTime = new Date("2026-10-22T11:15:00.000Z");
+    const deltaSeconds = (targetTime.getTime() - harness.clock.now().getTime()) / 1000;
+    harness.clock.advanceSeconds(deltaSeconds);
+
+    const payRes = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/payments`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: world.locationA1,
+        method: PAYMENT_METHOD.CASH,
+        amount: money(booking.price.total.amount),
+        contactId,
+        allocations: [
+          {
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+            requestId: booking.bookingId,
+            amount: money(booking.price.total.amount),
+          },
+        ],
+      },
+    });
+
+    expect(payRes.status).toBe(201);
+    expect(payRes.body.data.businessDate).toBe("2026-10-23");
+  });
 });

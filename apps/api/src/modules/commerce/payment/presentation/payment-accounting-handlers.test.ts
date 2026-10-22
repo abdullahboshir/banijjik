@@ -4,6 +4,7 @@ import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
 import {
   PAYMENT_METHOD,
   PAYMENT_REQUEST_TYPE,
+  PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
   STORE_CREDIT_DIRECTION,
   STORE_CREDIT_ENTRY_KIND,
 } from "@banijjik/contracts/payment";
@@ -407,6 +408,15 @@ describe("payment and booking accounting posting through real handlers", () => {
       contactStoreCredit: new MongoContactStoreCreditAdapter(),
       unitOfWork: new MongoUnitOfWork(),
       events: kernelEventPublisher,
+      orgConfig: {
+        forOrganization: async () => ({
+          config: {
+            settings: {
+              [PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY]: 1,
+            },
+          },
+        }),
+      } as unknown as import("../../../platform/entitlement/index.js").OrgConfigService,
       clock: { now: () => futureDate },
     });
     await withOrganizationContext(world.organizationA, async () => {

@@ -75,7 +75,7 @@ async function buildReversalPayment(input: {
     direction: PAYMENT_DIRECTION.REVERSAL,
     method: original.method,
     amount: original.amount,
-    externalReference: original.externalReference,
+    externalReference: null,
     reversesPaymentId: original.paymentId,
     allocations: original.allocations,
     contactId: original.contactId,
@@ -103,7 +103,7 @@ export interface ReversePaymentDependencies {
   };
   readonly audit: AuditRecorder;
   readonly clock: Clock;
-  readonly timeZone?: TimezoneReader;
+  readonly timeZone: TimezoneReader;
 }
 
 function computeReversalStoreCreditDelta(original: Payment): {
@@ -234,7 +234,7 @@ export class ReversePaymentUseCase {
   async execute(input: ReversePaymentInput): Promise<PaymentResponse> {
     const deps = this.dependencies;
     const original = await validateReversalEligibility(deps, input);
-    const timeZone = deps.timeZone ? await deps.timeZone.read(input.organizationId) : "Asia/Dhaka";
+    const timeZone = await deps.timeZone.read(input.organizationId);
 
     return deps.unitOfWork.run(async () => {
       const consumed = await deps.approvals.consume(input.approvalToken, {

@@ -43,6 +43,10 @@ export const POSTING_KEY = defineEnum([
   "refund_advance",
   "refund_after_revenue",
   "reversal",
+  "reversal_payment_in_advance",
+  "reversal_payment_in_after_revenue",
+  "reversal_payment_store_credit",
+  "reversal_overpayment_to_store_credit",
   "booking_completed",
   "booking_completed_settle_advances",
   "cancellation_fee",
@@ -53,6 +57,21 @@ export const POSTING_KEY = defineEnum([
 ]);
 export type PostingKey =
   (typeof POSTING_KEY)[keyof typeof POSTING_KEY] | `manual:${string}` | `reversal:${string}`;
+
+export function reversalPostingKeyFor(originalKey: PostingKey): PostingKey {
+  switch (originalKey) {
+    case POSTING_KEY.payment_in_advance:
+      return POSTING_KEY.reversal_payment_in_advance;
+    case POSTING_KEY.payment_in_after_revenue:
+      return POSTING_KEY.reversal_payment_in_after_revenue;
+    case POSTING_KEY.payment_store_credit:
+      return POSTING_KEY.reversal_payment_store_credit;
+    case POSTING_KEY.overpayment_to_store_credit:
+      return POSTING_KEY.reversal_overpayment_to_store_credit;
+    default:
+      return POSTING_KEY.reversal;
+  }
+}
 
 /** Whether allocated money sits as a liability (before revenue) or settles AR (after). */
 export const REVENUE_STATE = defineEnum(["BEFORE_REVENUE", "AFTER_REVENUE"]);

@@ -1,4 +1,5 @@
 import type { CurrencyCode } from "@banijjik/contracts";
+import { PAYMENT_DIRECTION, PAYMENT_METHOD } from "@banijjik/contracts/payment";
 import {
   asId,
   type LocationId,
@@ -133,7 +134,10 @@ export class MongoPaymentRepository implements PaymentRepository {
       if (props.reversesPaymentId) {
         throw paymentReversalAlreadyReversedError();
       }
-      if (props.externalReference && (props.method === "BKASH" || props.method === "NAGAD")) {
+      if (
+        props.externalReference &&
+        (props.method === PAYMENT_METHOD.BKASH || props.method === PAYMENT_METHOD.NAGAD)
+      ) {
         const existing = await this.findByReference(
           props.organizationId,
           props.method,
@@ -174,7 +178,7 @@ export class MongoPaymentRepository implements PaymentRepository {
       .findOne({
         organizationId,
         reversesPaymentId: paymentId,
-        direction: "REVERSAL",
+        direction: PAYMENT_DIRECTION.REVERSAL,
       })
       .lean<PaymentDocument>();
     return row ? toDomain(row) : undefined;

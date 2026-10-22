@@ -164,7 +164,7 @@ export const bookingManifest = defineModule({
     },
     {
       settingKey: BOOKING_FEE_PERCENT_SETTING_KEY,
-      value: { kind: "INTEGER", min: 1, max: 100 },
+      value: { kind: "INTEGER", min: 0, max: 100 },
       systemDefault: BOOKING_FEE_PERCENT_DEFAULT,
       allowsLocationOverride: false,
       isClientVisible: true,

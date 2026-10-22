@@ -49,7 +49,13 @@ function applyCancelFeeMode(input: {
     };
   }
   if (input.feeMode === CANCEL_FEE_MODE.PERCENT) {
-    const percent = Math.min(100, Math.max(1, input.feePercent));
+    const percent = Math.min(100, Math.max(0, input.feePercent));
+    if (percent === 0) {
+      return {
+        feeRetained: { amount: 0, currency },
+        amountToCredit: { amount: Math.max(0, input.netPaid.amount), currency },
+      };
+    }
     const cap = Math.floor((input.lineTotal.amount * percent) / 100);
     const fee = Math.min(input.netPaid.amount, cap);
     return {

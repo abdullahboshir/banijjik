@@ -33,16 +33,13 @@ import type { RequestReaderRegistry } from "../ports/request-reader.js";
 import type { RefundPaymentInput } from "./refund-payment.use-case.js";
 
 export async function isApprovalRequired(
-  orgConfig: OrgConfigService | undefined,
+  orgConfig: OrgConfigService,
   hasRefundWithoutApprovalPermission: boolean,
   organizationId: import("@banijjik/ids").OrganizationId,
 ): Promise<boolean> {
-  let managerWithoutApproval = true;
-  if (orgConfig) {
-    const effective = await orgConfig.forOrganization(organizationId);
-    const val = effective.config.settings[PAYMENT_REFUND_MANAGER_WITHOUT_APPROVAL_SETTING_KEY];
-    if (typeof val === "boolean") managerWithoutApproval = val;
-  }
+  const effective = await orgConfig.forOrganization(organizationId);
+  const val = effective.config.settings[PAYMENT_REFUND_MANAGER_WITHOUT_APPROVAL_SETTING_KEY];
+  const managerWithoutApproval = typeof val === "boolean" ? val : true;
   return !(hasRefundWithoutApprovalPermission && managerWithoutApproval);
 }
 

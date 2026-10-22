@@ -3,6 +3,8 @@ import {
   BOOKING_DEPOSIT_REQUIRED_SETTING_KEY,
   BOOKING_DEPOSIT_VALUE_DEFAULT,
   BOOKING_DEPOSIT_VALUE_SETTING_KEY,
+  BOOKING_FEE_PERCENT_DEFAULT,
+  BOOKING_FEE_PERCENT_SETTING_KEY,
   BOOKING_FREE_CANCEL_HOURS_DEFAULT,
   BOOKING_FREE_CANCEL_HOURS_SETTING_KEY,
   BOOKING_HOLD_MINUTES_DEFAULT,
@@ -64,6 +66,7 @@ const BOOKING_SETTING_KEYS = [
   BOOKING_FREE_CANCEL_HOURS_SETTING_KEY,
   BOOKING_LATE_CANCEL_FEE_SETTING_KEY,
   BOOKING_NO_SHOW_FEE_SETTING_KEY,
+  BOOKING_FEE_PERCENT_SETTING_KEY,
 ] as const;
 
 function readVal(resolved: ReadonlyMap<string, { readonly value: unknown }>, key: string): unknown {
@@ -105,6 +108,10 @@ function mapResolvedSettings(resolved: ReadonlyMap<string, { readonly value: unk
     noShowFee: cancelFeeModeOf(
       readVal(resolved, BOOKING_NO_SHOW_FEE_SETTING_KEY),
       BOOKING_NO_SHOW_FEE_DEFAULT,
+    ),
+    feePercent: numberOrDefault(
+      readVal(resolved, BOOKING_FEE_PERCENT_SETTING_KEY),
+      BOOKING_FEE_PERCENT_DEFAULT,
     ),
   };
 }

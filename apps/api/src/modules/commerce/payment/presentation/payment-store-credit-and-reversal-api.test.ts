@@ -2,6 +2,7 @@ import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
 import {
   PAYMENT_METHOD,
   PAYMENT_REQUEST_TYPE,
+  PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
   STORE_CREDIT_DIRECTION,
   STORE_CREDIT_ENTRY_KIND,
 } from "@banijjik/contracts/payment";
@@ -394,6 +395,66 @@ describe("store credit ledger, expiry job, and reversal rules", () => {
     expect(revRes.status).toBe(422);
   });
 
+  it("reverses a bKash payment with externalReference, returns 201, and rejects second reversal with 409", async () => {
+    const world = await worldFor(harness, RETAIL, SALON);
+    const contactId = await createCustomer(world);
+    const booking = await createBooking(world, contactId);
+    const total = booking.price.total.amount;
+    const ref = `BKASH-${newId().slice(0, 8)}`;
+
+    const payRes = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/payments`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: world.locationA1,
+        method: PAYMENT_METHOD.BKASH,
+        externalReference: ref,
+        amount: money(total),
+        contactId,
+        allocations: [
+          {
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+            requestId: booking.bookingId,
+            amount: money(total),
+          },
+        ],
+      },
+    });
+    expect(payRes.status).toBe(201);
+    const paymentId = payRes.body.data.paymentId as string;
+
+    const token1 = await getApprovalToken(world, {
+      action: APPROVAL_ACTION.PAYMENT_REVERSAL,
+      subjectKey: paymentId,
+      amount: money(total),
+      locationId: world.locationA1,
+    });
+    const rev1 = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/payments/${paymentId}/reverse`,
+      idempotencyKey: newId(),
+      body: { approvalToken: token1 },
+    });
+    expect(rev1.status).toBe(201);
+    expect(rev1.body.data.externalReference).toBeNull();
+    expect(rev1.body.data.reversesPaymentId).toBe(paymentId);
+
+    const token2 = await getApprovalToken(world, {
+      action: APPROVAL_ACTION.PAYMENT_REVERSAL,
+      subjectKey: paymentId,
+      amount: money(total),
+      locationId: world.locationA1,
+    });
+    const rev2 = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/payments/${paymentId}/reverse`,
+      idempotencyKey: newId(),
+      body: { approvalToken: token2 },
+    });
+    expect(rev2.status).toBe(409);
+  });
+
   it("sets expiresAt on credit entries when storeCreditExpiryDays is configured and expires store credit only once when the expiry job runs twice", async () => {
     const world = await worldFor(harness, RETAIL, SALON);
     const contactId = await createCustomer(world);
@@ -430,6 +491,15 @@ describe("store credit ledger, expiry job, and reversal rules", () => {
       contactStoreCredit: new MongoContactStoreCreditAdapter(),
       unitOfWork: new MongoUnitOfWork(),
       events: kernelEventPublisher,
+      orgConfig: {
+        forOrganization: async () => ({
+          config: {
+            settings: {
+              [PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY]: 1,
+            },
+          },
+        }),
+      } as unknown as import("../../../platform/entitlement/index.js").OrgConfigService,
       clock: { now: () => futureDate },
     });
 

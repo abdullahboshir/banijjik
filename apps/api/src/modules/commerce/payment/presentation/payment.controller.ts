@@ -33,10 +33,6 @@ export class PaymentController {
       readonly getDues: GetDuesUseCase;
       readonly adjustStoreCredit: AdjustStoreCreditUseCase;
       readonly listStoreCredit: ListStoreCreditEntriesUseCase;
-      readonly isManagerOrOwner?: (
-        userId: UserId,
-        organizationId: OrganizationId,
-      ) => Promise<boolean>;
       readonly hasRefundWithoutApprovalPermission: (
         userId: UserId,
         organizationId: OrganizationId,

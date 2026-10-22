@@ -4,6 +4,7 @@ import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { AppError } from "../kernel/http/index.js";
+import { kernelEventPublisher } from "../kernel/events/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildDefaultCatalogQuoteReader } from "../modules/commerce/catalog/index.js";
 import { buildInlineContactCreator } from "../modules/commerce/contact/index.js";
@@ -26,7 +27,10 @@ import {
   buildPriceQuoter,
   type PricingTenantDependencies,
 } from "../modules/commerce/pricing/index.js";
-import { buildOrganizationCurrencyReader } from "../modules/core/organization/index.js";
+import {
+  buildOrganizationCurrencyReader,
+  buildOrganizationTimezoneReader,
+} from "../modules/core/organization/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import {
@@ -165,6 +169,7 @@ function depositCheckOf(): DepositCheckPort {
   const payments = new MongoPaymentRepository();
   const storeCredits = new MongoStoreCreditRepository();
   const contactStoreCredit = new MongoContactStoreCreditAdapter();
+  const timezones = buildOrganizationTimezoneReader();
   return {
     async isDepositSatisfied(input: {
       readonly organizationId: OrganizationId;
@@ -194,7 +199,25 @@ function depositCheckOf(): DepositCheckPort {
     },
     async settleBookingTermination(input) {
       return settleBookingTermination(
-        { payments, storeCredits, summaries, contactStoreCredit },
+        {
+          payments,
+          storeCredits,
+          summaries,
+          contactStoreCredit,
+          events: kernelEventPublisher,
+          timeZone: {
+            read: async (organizationId: OrganizationId) => {
+              const tz = await timezones.read(organizationId);
+              if (tz === undefined) {
+                throw new AppError({
+                  code: ERROR_CODE.INTERNAL,
+                  messageKey: "errors.missing_tenant_context",
+                });
+              }
+              return tz;
+            },
+          },
+        },
         input,
       );
     },

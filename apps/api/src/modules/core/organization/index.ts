@@ -15,6 +15,7 @@ import type { ActorProfileReader, SystemRoleProvisioner } from "./application/po
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
 import type { OrganizationCurrencyReader } from "./application/ports/organization-currency-reader.js";
+import type { OrganizationTimezoneReader } from "./application/ports/organization-timezone-reader.js";
 import type { StorefrontOrganizationReader } from "./application/ports/storefront-organization-reader.js";
 import { MongoStorefrontOrganizationReader } from "./infrastructure/mongo-storefront-organization.reader.js";
 import type { TrialStarter } from "./application/ports/trial-starter.js";
@@ -39,6 +40,7 @@ import { MongoLocationLookup } from "./infrastructure/mongo-location-lookup.js";
 import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
 import { MongoOrganizationConfigSource } from "./infrastructure/mongo-organization-config-source.js";
 import { MongoOrganizationCurrencyReader } from "./infrastructure/mongo-organization-currency.reader.js";
+import { MongoOrganizationTimezoneReader } from "./infrastructure/mongo-organization-timezone.reader.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
 import { MongoMemberAccessReader } from "./infrastructure/mongo-member-access-reader.js";
 import { MongoMembershipDirectory } from "./infrastructure/mongo-membership-directory.js";
@@ -261,6 +263,13 @@ export type { OrganizationCurrencyReader } from "./application/ports/organizatio
 /** The currency of an organization, for modules that price things (card 3.2a). */
 export function buildOrganizationCurrencyReader(): OrganizationCurrencyReader {
   return new MongoOrganizationCurrencyReader();
+}
+
+export type { OrganizationTimezoneReader } from "./application/ports/organization-timezone-reader.js";
+
+/** The timezone of an organization, for date-computing modules (card 3.8a). */
+export function buildOrganizationTimezoneReader(): OrganizationTimezoneReader {
+  return new MongoOrganizationTimezoneReader();
 }
 
 export type {

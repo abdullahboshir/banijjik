@@ -87,12 +87,12 @@ async function adjustContactBalance(
 }
 
 async function resolveExpiresAt(input: {
-  readonly orgConfig: OrgConfigService | undefined;
+  readonly orgConfig: OrgConfigService;
   readonly organizationId: OrganizationId;
   readonly direction: StoreCreditDirection;
   readonly now: Date;
 }): Promise<Date | null> {
-  if (input.direction !== STORE_CREDIT_DIRECTION.CREDIT || !input.orgConfig) return null;
+  if (input.direction !== STORE_CREDIT_DIRECTION.CREDIT) return null;
   const effective = await input.orgConfig.forOrganization(input.organizationId);
   const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
   const days = typeof val === "number" && val > 0 ? val : null;
@@ -104,7 +104,7 @@ export interface AdjustStoreCreditDependencies {
   readonly contactStoreCredit: ContactStoreCreditPort;
   readonly unitOfWork: PaymentUnitOfWork;
   readonly approvals: Pick<ApprovalVerifier, "consume">;
-  readonly orgConfig?: OrgConfigService;
+  readonly orgConfig: OrgConfigService;
   readonly events: {
     publish(eventType: string, payload: unknown, options?: { orderingKey?: string }): Promise<void>;
   };

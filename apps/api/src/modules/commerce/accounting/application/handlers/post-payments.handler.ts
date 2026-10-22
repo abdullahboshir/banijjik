@@ -1,5 +1,10 @@
 import { EVENT_TYPE, MODULE_KEY, type EventEnvelope } from "@banijjik/contracts";
-import { JOURNAL_SOURCE_TYPE, POSTING_KEY } from "@banijjik/contracts/accounting";
+import {
+  JOURNAL_SOURCE_TYPE,
+  POSTING_KEY,
+  reversalPostingKeyFor,
+} from "@banijjik/contracts/accounting";
+import { STORE_CREDIT_ENTRY_KIND } from "@banijjik/contracts/payment";
 import { asId, type OrganizationId, type UserId } from "@banijjik/ids";
 import type { EventHandler } from "../../../../../kernel/events/index.js";
 import { postingSourceMissing } from "../../domain/errors.js";
@@ -68,7 +73,7 @@ async function postStoreCreditChange(
   if (entryId === undefined) throw postingSourceMissing("storeCreditEntryId");
   const snapshot = await input.payments.readStoreCreditEntry(entryId);
   if (snapshot === undefined) throw postingSourceMissing(`storeCredit:${entryId}`);
-  if (snapshot.kind !== "EXPIRY") return;
+  if (snapshot.kind !== STORE_CREDIT_ENTRY_KIND.EXPIRY) return;
   await postJournalEntry(input.posting, {
     organizationId,
     actorUserId,
@@ -96,8 +101,7 @@ async function postPaymentReversal(
       postingKey,
     });
     if (target === undefined) continue;
-    const reversalPostingKey =
-      reversedCount === 0 ? POSTING_KEY.reversal : (`reversal:${postingKey}` as const);
+    const reversalPostingKey = reversalPostingKeyFor(postingKey);
     await postReversal(input.posting, {
       organizationId: actor.organizationId,
       actorUserId: actor.actorUserId,

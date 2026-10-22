@@ -23,15 +23,14 @@ export interface ExpireStoreCreditJobDependencies {
   readonly events: {
     publish(eventType: string, payload: unknown, options?: { orderingKey?: string }): Promise<void>;
   };
-  readonly orgConfig?: OrgConfigService;
+  readonly orgConfig: OrgConfigService;
   readonly clock: Clock;
 }
 
 async function resolveExpiryDays(
-  orgConfig: OrgConfigService | undefined,
+  orgConfig: OrgConfigService,
   organizationId: OrganizationId,
 ): Promise<number | null> {
-  if (!orgConfig) return 1;
   const effective = await orgConfig.forOrganization(organizationId);
   const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
   return typeof val === "number" && val > 0 ? val : null;

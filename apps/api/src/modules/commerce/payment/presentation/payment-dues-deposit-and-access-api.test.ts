@@ -350,6 +350,63 @@ describe("dues lifecycle, deposit policy, events, permissions, cross-location, a
     expect(contactAfterLateCancel.body.data.summary?.storeCreditBalanceMinor).toBe(total1);
   });
 
+  it("retains zero fee when feeMode is PERCENT and feePercent is 0 on late cancellation", async () => {
+    const world = await worldFor(harness, RETAIL, SALON);
+    const contactId = await createCustomer(world);
+
+    // Set lateCancelFee to PERCENT, feePercent to 0, freeCancelHours large (outside window)
+    const patchSettings = await world.alice.call("patch", `/orgs/${world.organizationA}/settings`, {
+      items: [
+        { settingKey: "booking.freeCancelHours", value: 100000 },
+        { settingKey: "booking.lateCancelFee", value: "PERCENT" },
+        { settingKey: "booking.feePercent", value: 0 },
+      ],
+    });
+    expect(patchSettings.status).toBe(200);
+
+    const booking = await createBookingAtLocation(
+      world,
+      contactId,
+      world.locationA1,
+      "2027-03-14T04:00:00.000Z",
+    );
+    const total = booking.price.total.amount;
+
+    await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/payments`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: world.locationA1,
+        method: PAYMENT_METHOD.CASH,
+        amount: money(total),
+        contactId,
+        allocations: [
+          {
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+            requestId: booking.bookingId,
+            amount: money(total),
+          },
+        ],
+      },
+    });
+
+    const cancelRes = await world.alice.call(
+      "post",
+      `/orgs/${world.organizationA}/bookings/${booking.bookingId}/cancel`,
+      { version: booking.version, reason: "Late cancel with 0 percent fee" },
+    );
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.data.cancellationFeeRetained ?? null).toBeNull();
+
+    // Since 0 fee was retained, the full amount was refunded to store credit
+    const contact = await world.alice.call(
+      "get",
+      `/orgs/${world.organizationA}/contacts/${contactId}`,
+    );
+    expect(contact.body.data.summary?.storeCreditBalanceMinor).toBe(total);
+  });
+
   it("publishes payment and store-credit events with paymentAccount:<organizationId> orderingKey and no personal data", async () => {
     const world = await worldFor(harness, RETAIL, SALON);
     const contactId = await createCustomer(world, "SensitivePersonName");

@@ -1,11 +1,16 @@
-import { PERMISSION_KEY, SYSTEM_REASON, type ModuleManifest } from "@banijjik/contracts";
+import {
+  ERROR_CODE,
+  PERMISSION_KEY,
+  SYSTEM_REASON,
+  type ModuleManifest,
+} from "@banijjik/contracts";
 import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import { type OrganizationId, type UserId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { asSystemPort } from "../kernel/context/index.js";
-import { forbidden } from "../kernel/http/index.js";
+import { AppError, forbidden } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import {
@@ -14,7 +19,10 @@ import {
   RequestReaderRegistry,
 } from "../modules/commerce/payment/index.js";
 import { buildApprovalVerifier } from "../modules/core/iam/index.js";
-import { buildMembershipDirectory } from "../modules/core/organization/index.js";
+import {
+  buildMembershipDirectory,
+  buildOrganizationTimezoneReader,
+} from "../modules/core/organization/index.js";
 import { buildBookingRequestReader } from "./booking-request-reader.js";
 
 export interface PaymentRouterInput {
@@ -32,6 +40,7 @@ export function buildPaymentTenantRouterFor(input: PaymentRouterInput): Router {
   requestReaders.register(PAYMENT_REQUEST_TYPE.BOOKING, buildBookingRequestReader());
 
   const directory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
+  const timezones = buildOrganizationTimezoneReader();
 
   const controller = buildPaymentController({
     clock: input.clock,
@@ -40,6 +49,18 @@ export function buildPaymentTenantRouterFor(input: PaymentRouterInput): Router {
     idempotency: input.idempotency,
     orgConfig: input.orgConfig,
     manifests: input.manifests,
+    timeZone: {
+      read: async (organizationId: OrganizationId) => {
+        const tz = await timezones.read(organizationId);
+        if (tz === undefined) {
+          throw new AppError({
+            code: ERROR_CODE.INTERNAL,
+            messageKey: "errors.missing_tenant_context",
+          });
+        }
+        return tz;
+      },
+    },
     approvals: buildApprovalVerifier({ audit: input.audit, clock: input.clock }),
     requestReaders,
     hasRefundWithoutApprovalPermission: async (

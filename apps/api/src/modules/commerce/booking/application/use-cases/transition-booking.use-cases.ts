@@ -30,6 +30,13 @@ export {
   RequestFromHoldUseCase,
 } from "./booking-status-transitions.use-cases.js";
 
+function resolveFeePercent(
+  settings: Awaited<ReturnType<BookingSettingsReader["read"]>> | undefined,
+): number {
+  if (!settings) return 0;
+  return settings.feePercent ?? settings.depositValue;
+}
+
 async function settleNoShowDeposit(input: {
   readonly depositCheck: DepositCheckPort | undefined;
   readonly organizationId: OrganizationId;
@@ -38,18 +45,23 @@ async function settleNoShowDeposit(input: {
   readonly actorUserId: UserId | null;
   readonly now: Date;
 }) {
-  return input.depositCheck?.settleBookingTermination?.({
+  const { depositCheck, settings, existing } = input;
+  if (!depositCheck?.settleBookingTermination) return undefined;
+  const freeCancelHours = settings?.freeCancelHours ?? BOOKING_FREE_CANCEL_HOURS_DEFAULT;
+  const feeMode = settings?.noShowFee ?? BOOKING_NO_SHOW_FEE_DEFAULT;
+  const feePercent = resolveFeePercent(settings);
+  return depositCheck.settleBookingTermination({
     organizationId: input.organizationId,
-    requestId: input.existing.bookingId,
-    contactId: input.existing.contactId,
-    locationId: input.existing.locationId,
-    startsAt: input.existing.startsAt,
-    depositRequired: input.existing.depositRequired,
-    priceTotal: input.existing.price.total,
+    requestId: existing.bookingId,
+    contactId: existing.contactId,
+    locationId: existing.locationId,
+    startsAt: existing.startsAt,
+    depositRequired: existing.depositRequired,
+    priceTotal: existing.price.total,
     mode: "NO_SHOW",
-    freeCancelHours: input.settings?.freeCancelHours ?? BOOKING_FREE_CANCEL_HOURS_DEFAULT,
-    feeMode: input.settings?.noShowFee ?? BOOKING_NO_SHOW_FEE_DEFAULT,
-    feePercent: input.settings?.depositValue ?? 0,
+    freeCancelHours,
+    feeMode,
+    feePercent,
     actorUserId: input.actorUserId,
     now: input.now,
   });

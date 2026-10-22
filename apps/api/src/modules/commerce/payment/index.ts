@@ -78,14 +78,10 @@ export interface PaymentTenantDependencies {
   readonly audit: AuditRecorder;
   readonly permission: PermissionMiddlewareFactory;
   readonly idempotency: RequestHandler;
-  readonly orgConfig?: OrgConfigService;
+  readonly orgConfig: OrgConfigService;
   readonly manifests: readonly ModuleManifest[];
   readonly approvals: Pick<ApprovalVerifier, "consume">;
   readonly requestReaders: RequestReaderRegistry;
-  readonly isManagerOrOwner?: (
-    userId: import("@banijjik/ids").UserId,
-    organizationId: import("@banijjik/ids").OrganizationId,
-  ) => Promise<boolean>;
   readonly hasRefundWithoutApprovalPermission: (
     userId: import("@banijjik/ids").UserId,
     organizationId: import("@banijjik/ids").OrganizationId,
@@ -95,7 +91,7 @@ export interface PaymentTenantDependencies {
     userId: import("@banijjik/ids").UserId,
     organizationId: import("@banijjik/ids").OrganizationId,
   ) => Promise<string>;
-  readonly timeZone?: import("./application/ports/payment-repositories.js").TimezoneReader;
+  readonly timeZone: import("./application/ports/payment-repositories.js").TimezoneReader;
 }
 
 function resolvePaymentRepos(repos?: {
@@ -134,8 +130,8 @@ export function buildPaymentController(
     events: kernelEventPublisher,
     audit: deps.audit,
     clock: deps.clock,
-    ...(deps.timeZone ? { timeZone: deps.timeZone } : {}),
-    ...(deps.orgConfig ? { orgConfig: deps.orgConfig } : {}),
+    timeZone: deps.timeZone,
+    orgConfig: deps.orgConfig,
   };
 
   return new PaymentController({
@@ -156,7 +152,7 @@ export function buildPaymentController(
       contactStoreCredit,
       unitOfWork,
       approvals: deps.approvals,
-      ...(deps.orgConfig ? { orgConfig: deps.orgConfig } : {}),
+      orgConfig: deps.orgConfig,
       events: kernelEventPublisher,
       audit: deps.audit,
       clock: deps.clock,
@@ -165,7 +161,6 @@ export function buildPaymentController(
       storeCredit,
       contactStoreCredit,
     }),
-    ...(deps.isManagerOrOwner ? { isManagerOrOwner: deps.isManagerOrOwner } : {}),
     hasRefundWithoutApprovalPermission: deps.hasRefundWithoutApprovalPermission,
     getMemberId: deps.getMemberId,
   });

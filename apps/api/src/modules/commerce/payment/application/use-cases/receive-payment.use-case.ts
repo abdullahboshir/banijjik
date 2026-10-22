@@ -139,16 +139,15 @@ export interface ReceivePaymentDependencies {
   };
   readonly audit: AuditRecorder;
   readonly clock: Clock;
-  readonly timeZone?: TimezoneReader;
-  readonly orgConfig?: OrgConfigService;
+  readonly timeZone: TimezoneReader;
+  readonly orgConfig: OrgConfigService;
 }
 
 async function resolveStoreCreditExpiresAt(
-  orgConfig: OrgConfigService | undefined,
+  orgConfig: OrgConfigService,
   organizationId: OrganizationId,
   now: Date,
 ): Promise<Date | null> {
-  if (!orgConfig) return null;
   const effective = await orgConfig.forOrganization(organizationId);
   const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
   const expiryDays = typeof val === "number" && val > 0 ? val : null;
@@ -199,7 +198,7 @@ async function prepareReceiveContext(
   });
   await validateAllocationLimits(deps.requestReaders, deps.summaries, input);
 
-  const timeZone = deps.timeZone ? await deps.timeZone.read(input.organizationId) : "Asia/Dhaka";
+  const timeZone = await deps.timeZone.read(input.organizationId);
   const now = deps.clock.now();
   const businessDate = businessDateOf(now, timeZone);
   const expiresAt = await resolveStoreCreditExpiresAt(deps.orgConfig, input.organizationId, now);
