@@ -61,7 +61,7 @@ function createPackage(overrides: object = {}) {
     packageKey: uniquePackageKey(),
     name: "Try package",
     isAddOn: false,
-    moduleKeys: [MODULE_KEY.SALES, MODULE_KEY.CATALOG],
+    moduleKeys: [MODULE_KEY.SALES, MODULE_KEY.CATALOG, MODULE_KEY.POS],
     limits: LIMITS,
     ...overrides,
   });
@@ -84,7 +84,7 @@ describe("creating a package", () => {
       isAddOn: false,
       status: PACKAGE_STATUS.ACTIVE,
       version: 1,
-      unbuiltModuleKeys: [MODULE_KEY.SALES],
+      unbuiltModuleKeys: [MODULE_KEY.POS],
     });
     expect(await auditActions(response.body.data.packageId)).toEqual([
       PLATFORM_AUDIT_ACTION.PACKAGE_CREATED,
