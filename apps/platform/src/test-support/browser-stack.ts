@@ -38,7 +38,7 @@ const PORT_POLL_MS = 5_000;
 export const TEST_PASSWORD = "correct-horse-battery";
 export const OPERATOR_EMAIL = "operator@example.com";
 export const OPERATOR_PASSWORD = "operator-horse-battery-1";
-/** The module the probe API registers (see probe-api.mjs); the only one an operator can grant in this stack. */
+/** An OPTIONAL module of the production registry that an operator can grant in this stack. */
 export const PROBE_MODULE_KEY = "bookkeeping";
 
 export interface BrowserStack {

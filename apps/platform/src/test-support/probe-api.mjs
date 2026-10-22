@@ -1,10 +1,7 @@
-// The API for the platform browser test: the built API of apps/api, started the way main.ts starts it, plus
-// ONE probe module in the registry. The production registry holds no OPTIONAL module yet (the first one is
-// built in Phase 3), so without a probe an operator could not grant any module in a real browser test. The
-// probe has no routes, menu or permissions: it only exists so the entitlement resolver can list it.
+// The API for the platform browser test: the built API of apps/api, started the way main.ts starts it.
+// The production registry now holds OPTIONAL modules, so an operator can grant a real one.
 // Test code only. It reads the built files in apps/api/dist; build the API first.
 import { fileURLToPath } from "node:url";
-import { MODULE_CLASS, MODULE_KEY } from "@banijjik/contracts";
 
 const loadFromApi = (path) => import(new URL(`../../../api/dist/${path}`, import.meta.url).href);
 
@@ -17,34 +14,11 @@ const { createLogger, setRootLogger } = await loadFromApi("kernel/logger/index.j
 const { MongoRateLimiter, registerRateLimitModel } = await loadFromApi(
   "kernel/rate-limit/index.js",
 );
-const { defineModule } = await loadFromApi("kernel/modules/index.js");
 const { registerSequenceModel } = await loadFromApi("kernel/sequence/index.js");
 const { systemClock } = await loadFromApi("kernel/time/index.js");
 const { buildV1Router, registerModuleModels } = await loadFromApi("routes/v1.js");
 const { seedIndustryTemplates } = await loadFromApi("seeds/seed-industry-templates.js");
 const { seedPackages } = await loadFromApi("seeds/seed-packages.js");
-
-const PROBE_MODULE_KEY = MODULE_KEY.BOOKKEEPING;
-
-const probeManifest = defineModule({
-  key: PROBE_MODULE_KEY,
-  path: "commerce/bookkeeping",
-  moduleClass: MODULE_CLASS.OPTIONAL,
-  tenantCanDisable: false,
-  dependsOn: [],
-  providesKinds: [],
-  requiresAnyKind: [],
-  permissions: [],
-  menu: [],
-  routes: { admin: [] },
-  settings: [],
-  customFieldEntities: [],
-  botTools: [],
-  storefrontSections: [],
-  events: { emits: [], consumes: [] },
-  limitKeys: [],
-  sequenceKeys: [],
-});
 
 const config = loadConfigFromProcess(fileURLToPath(new URL("./no-env-file", import.meta.url)));
 const logger = createLogger({ level: config.logLevel });
@@ -64,6 +38,5 @@ const v1Router = buildV1Router({
   config,
   clock: systemClock,
   rateLimiter: new MongoRateLimiter(systemClock),
-  extraManifests: [probeManifest],
 });
 buildApp({ config, logger, v1Router }).listen(config.port);
