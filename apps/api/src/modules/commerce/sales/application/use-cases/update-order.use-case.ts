@@ -76,24 +76,26 @@ export class UpdateOrderUseCase {
       this.changesOf(args, { contactId, approval, clearedContent }),
       { actorUserId: input.actorUserId, now: this.dependencies.clock.now() },
     );
-    await this.dependencies.unitOfWork.run(async () => {
+    const persisted = await this.dependencies.unitOfWork.run(async () => {
       if (existing.status !== ORDER_STATUS.DRAFT && quoteChanged) {
         await this.restock(existing, prepared, settings.allowNegativeStock);
       }
-      const persisted = await this.dependencies.orders.update(edited, input.body.version);
+      const saved = await this.dependencies.orders.update(edited, input.body.version);
       await this.dependencies.events.publish(
         SALES_EVENT_TYPE.ORDER_UPDATED,
-        { orderId: persisted.orderId },
-        { orderingKey: orderOrderingKey(persisted.orderId) },
+        { orderId: saved.orderId },
+        { orderingKey: orderOrderingKey(saved.orderId) },
       );
       await this.dependencies.audit.record({
         action: AUDIT_ACTION.ORDER_UPDATED,
         entityType: "order",
-        entityId: persisted.orderId,
+        entityId: saved.orderId,
         changes: {},
       });
+      return saved;
     });
-    return toOrderResponse(edited, await this.dependencies.payments.read(edited.orderId));
+    // The answer carries the stored version, so the next PATCH can send it back.
+    return toOrderResponse(persisted, await this.dependencies.payments.read(persisted.orderId));
   }
 
   private async contactChange(
