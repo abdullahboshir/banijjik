@@ -7,7 +7,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
 - No secrets, passwords or `.env` values.
 
-Last updated: 2026-10-22 (late evening) by Opus 5.5 · GitHub `main` is `072fb8f` (CI run `39748953629` green); local `main` is ahead with docs-only commits (plan 3.16, this save), not pushed
+Last updated: 2026-10-22 (late evening) by Opus 5.5 · `main` `bab9b99` pushed (owner yes, docs only); this save is a later docs commit, not pushed
 
 ## 1. Where the project stands
 - Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, 3.8a, 3.8b, 3.8c, 3.12, 3.13, 3.14. Track M merged: M.1 to M.4. Details per card: `docs/STATUS.md`.
@@ -24,12 +24,12 @@ Last updated: 2026-10-22 (late evening) by Opus 5.5 · GitHub `main` is `072fb8f
 | M.5 Part A credit purchase | `s/M.5-api-credit-purchases` | `banijjik` | T1 | 1 commit (contracts, validation, entity, repo) plus uncommitted files. Same instruction. |
 | 3.5a Part A orders | `s/3.5a-api-orders` | `banijjik-3.5a` | T1 | 1 commit (sales vocabulary), 2 uncommitted files; hardly moved. Same instruction. |
 | 3.15 test stability | `s/3.15-test-stability` | `banijjik-m2` | T3 | Running (the session first asked for 3.6b; the lead gave it 3.15 instead). Scope stays tests only; the replayer race goes in its handoff as a known gap. |
-| 3.16 dead-letter replay race | `s/3.16-dead-letter-replay-race` (new) | `banijjik-m2` after 3.15, or a cloud agent | T1 | Plan on main. Not started. Failing unit test first, then the fix; strict T1 review of `dead-letter-replayer.ts`. |
+| 3.16 dead-letter replay race | `s/3.16-dead-letter-replay-race` (new) | cloud agent (lead started it 2026-10-22 15:11, Agent tool, isolation remote) | T1 | Running. The agent was told: failing unit test first, then the fix, push the branch, green CI, handoff `docs/handoffs/3.16.md`. Then strict T1 review of `dead-letter-replayer.ts`. The tool also left a locked local worktree `banijjik/.claude/worktrees/agent-…` (excluded via `.git/info/exclude`, not committed); remove it with `git worktree remove` once the agent is done. |
 | 3.6b rental/event Part A | `s/3.6b-api-rental-event` (new) | none yet | T1 | Plan on main. **Waits** until 3.8 or 3.7 Part A merges (same `booking` files); no new full folder (disk). |
 
 Free folders: none (`banijjik-m2` runs 3.15). Do not run two sessions in one folder (it broke 3.7 once).
 
-**Stray 3.7 files in `banijjik` (the M.5 folder):** an older copy of 3.7 work sits there uncommitted: `commerce/enrollment/`, the booking `resource-exclusive-hold*` files, and small edits in booking `index.ts` and `register-booking-models.ts`. The newer copy is in `banijjik-1.7b` (only `resource-exclusive-hold.schema.ts` differs). The M.5 session was told to stage by file name and never commit them. Delete them only after the owner says yes and after comparing that schema file. When reviewing M.5, check that no booking or enrollment file is in the diff.
+**Stray 3.7 files in `banijjik` (the M.5 folder):** an older copy of 3.7 work sits there uncommitted: `commerce/enrollment/`, the booking `resource-exclusive-hold*` files, and small edits in booking `index.ts` and `register-booking-models.ts`. The main copy is in `banijjik-1.7b`, but `resource-exclusive-hold.schema.ts` in `banijjik` was edited later (14:37, adds `immutable: true` to `organizationId`); the 3.7 session was asked to carry that line over. The M.5 session was told to stage by file name and never commit them. Owner said yes to deleting the copy: do it once M.5 is committed and the 3.7 session has the `immutable` line (not earlier, because the M.5 session is still working in that folder). When reviewing M.5, check that no booking or enrollment file is in the diff.
 
 **CI on main:** green on `072fb8f` (run `39748953629`). Known flakes (`branding-form.test.tsx`, `ordered-event-worker.test.ts`, `package-form.test.tsx`) are card 3.15.
 
@@ -39,8 +39,6 @@ Stash `stash@{4}` ("owner-edits-AGENTS-and-05-CONVENTIONS…") in `banijjik` hol
 - Sessions must report "done" (committed, pushed, CI green, handoff written) for 3.8, 3.7, M.5, 3.5a. Nothing can be merged before that; the lead does not merge unfinished branches.
 - Standing permission to push `main` after each reviewed merge (asked three times; today's push was a one-time yes). Ask before each push.
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
-- Yes or no: delete the stray 3.7 copy in `banijjik` once M.5 is committed (see §2).
-- Who runs 3.16 (after 3.15 in `banijjik-m2`, or a cloud agent).
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
 
 ## 4. Next actions, in order
@@ -63,7 +61,7 @@ Stash `stash@{4}` ("owner-edits-AGENTS-and-05-CONVENTIONS…") in `banijjik` hol
 - **Token cost** (measured 2026-10-22): about 90% of a day's usage went to carrying a 900k-token session, mostly full cache rewrites after a break of over an hour or a `/model` switch. Keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
-- **2026-10-22 late evening** (Opus): told a session not to start 3.6b (booking overlap, no folder) and gave it 3.15 in `banijjik-m2`; found the stray 3.7 copy in the M.5 folder; confirmed the dead-letter replay race the 3.15 session reported and wrote plan 3.16 (T1).
+- **2026-10-22 late evening** (Opus): told a session not to start 3.6b (booking overlap, no folder) and gave it 3.15 in `banijjik-m2`; found the stray 3.7 copy in the M.5 folder; confirmed the dead-letter replay race the 3.15 session reported and wrote plan 3.16 (T1); pushed main `bab9b99` (owner yes); started 3.16 as a cloud agent.
 - **2026-10-22 evening** (Sonnet): pushed main (owner yes); refreshed plans 3.8 and 3.7, decided 3.7 freeze rule; wrote plans 3.15 and 3.6b; audited all branches (none done, none pushed, much uncommitted); found main CI flake and re-ran it; told the owner how to run sessions in separate folders.
 - **2026-10-22 afternoon** (Sonnet): checked state (3.5a branch unpushed, one commit only), refreshed plans 3.8 and 3.7 against main (accounting adapter duty, existing payment contracts, bed-hold port risk for 3.7). No code merged.
 - **2026-10-22 morning** (Sonnet): reviewed, rebased, pushed and merged 3.6, M.3, M.4 and 3.8b in that order, each green on CI. Fixed on the way: JS budget (contact credit section lazy, admin budget 180 KiB by owner), duplicate probe module in the platform browser stack, router builder length, long setting key overflow. All branches stayed unpushed to main.
