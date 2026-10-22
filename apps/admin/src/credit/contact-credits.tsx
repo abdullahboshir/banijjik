@@ -12,7 +12,7 @@ import { fetchWebsiteLogin } from "../contacts/website-login-data";
 import { fetchBusinessResource, fetchBusinessResourceIfAllowed } from "../lib/api/server-resource";
 import type { OrgAccess } from "../shell/org-access";
 import { holdsPermission } from "../shell/permissions";
-import { ContactCreditsSection } from "./contact-credits-section";
+import { ContactCreditsSectionLazy } from "./contact-credits-lazy";
 import { contactCreditsLabelsOf } from "./credit-labels";
 
 const HISTORY_LIMIT = 20;
@@ -53,7 +53,7 @@ export async function ContactCredits(props: {
         )) ?? [])
       : [];
   return (
-    <ContactCreditsSection
+    <ContactCreditsSectionLazy
       organizationId={organizationId}
       customerAccountId={customerAccount.customerAccountId}
       account={account}
