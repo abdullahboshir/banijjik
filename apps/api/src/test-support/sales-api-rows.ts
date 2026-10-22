@@ -1,3 +1,5 @@
+import type { OfferingKind } from "@banijjik/contracts";
+
 /** One line as the order routes answer it. Tests read only what they assert. */
 export interface OrderLineRow {
   readonly orderLineId: string;
@@ -105,10 +107,13 @@ export interface StockReceiptInput {
   readonly unitCostAmount: number;
 }
 
-/** A product with one variant; `stockComponents` empty means the variant is not tracked. */
-export interface ProductInput {
+/** An offering to publish: sales tests use PRODUCT, the refusal tests name the other kinds. */
+export interface OfferingInput {
+  readonly kind: OfferingKind;
   readonly name: string;
   readonly priceAmount: number;
+  /** The unit a sales line sells in; a product is sold by the PIECE unless the test says otherwise. */
+  readonly unitKey?: string;
   readonly stockComponents?: readonly {
     readonly inventoryItemId: string;
     readonly quantity: number;

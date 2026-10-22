@@ -3,10 +3,10 @@ import { expect } from "vitest";
 import { money, offeringsPath } from "./catalog-world.js";
 import type { ApiActor, TwoOrganizations } from "./two-organizations.js";
 import type {
+  OfferingInput,
   OrderListItemRow,
   OrderLinesInput,
   OrderRow,
-  ProductInput,
   QuoteRow,
   StockLevelRow,
   StockMovementRow,
@@ -46,20 +46,20 @@ export async function addInventoryItem(shop: SalesShop, name: string): Promise<s
   return created.body.data.inventoryItemId as string;
 }
 
-/** Create and publish a PRODUCT with one variant, and return its ids. */
-export async function publishProduct(
+/** Create and publish an offering with one variant, and return its ids. */
+export async function publishOffering(
   shop: SalesShop,
-  input: ProductInput,
+  input: OfferingInput,
 ): Promise<{ offeringId: string; variantId: string }> {
   const created = await shop.actor.call("post", offeringsPath(shop.organizationId), {
-    kind: "PRODUCT",
+    kind: input.kind,
     name: input.name,
     ...(input.taxClassKey === undefined ? {} : { taxClassKey: input.taxClassKey }),
     variants: [
       {
         name: "Default",
         price: money(input.priceAmount),
-        unitKey: "PIECE",
+        unitKey: input.unitKey ?? "PIECE",
         ...(input.stockComponents === undefined ? {} : { stockComponents: input.stockComponents }),
       },
     ],

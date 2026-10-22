@@ -16,7 +16,7 @@ import {
   levelOf,
   orderMovements,
   placeOrder,
-  publishProduct,
+  publishOffering,
   quoteOf,
   receiveStock,
   shopOf,
@@ -63,7 +63,8 @@ interface Pack {
 async function packOf(shop: SalesShop, label: string): Promise<Pack> {
   const riceItemId = await addInventoryItem(shop, `Rice ${label}`);
   const bagItemId = await addInventoryItem(shop, `Bag ${label}`);
-  const product = await publishProduct(shop, {
+  const product = await publishOffering(shop, {
+    kind: "PRODUCT",
     name: `Rice 1kg pack ${label}`,
     priceAmount: PACK_PRICE,
     stockComponents: [
