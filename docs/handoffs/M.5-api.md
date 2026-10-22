@@ -2,6 +2,8 @@
 
 - **Branch / commit:** `s/M.5-api-credit-purchases`
 - **Session:** Part A (API) of Card M.5 (Tier T1: customer money and credits).
+- **CI Run (Green):** [https://github.com/abdullahboshir/banijjik/actions/runs/39759796154](https://github.com/abdullahboshir/banijjik/actions/runs/39759796154) (verify in 11m28s, browser in 6m35s, secrets in 8s).
+- **Deviations from Plan:** None.
 - **Done:**
   - **Contracts & Validation (`packages/contracts`, `packages/validation`, `packages/ids`):**
     - Added `CreditPurchaseId` branded ID (`Id<"CreditPurchase">`).
@@ -12,6 +14,7 @@
     - Added setting keys: `credit.payment.methods` (STRUCTURED spec, validated against `creditPaymentMethodsSettingSchema`), `credit.purchase.maxPending` (default 2), `credit.purchase.pendingDays` (default 3), `credit.purchase.approvalAbove` (MONEY setting, default 0 = off).
     - Added events: `credit.purchase.submitted`, `credit.purchase.verified`, `credit.purchase.rejected`, `credit.purchase.cancelled` (`orderingKey: creditAccount:<customerAccountId>`).
     - Added schemas: `submitCreditPurchaseSchema`, `verifyCreditPurchaseSchema`, `rejectCreditPurchaseSchema`, `listCreditPurchasesQuerySchema`, `creditPurchaseIdParamSchema`, `creditPaymentMethodsSettingSchema`.
+    - Added i18n catalogs translations in `bn.json` and `en.json` for permissions and credit errors.
   - **Credit Domain & Persistence (`apps/api/src/modules/commerce/credit`):**
     - `CreditPurchase` entity with immutable pack snapshot (`name`, `credits`, `price: Money`, `validityDays?`), method, sender phone (E.164), upper-cased reference, status lifecycle, timestamps, rejection reason, verifier, and linked `creditEntryId`.
     - Mongoose schema `credit-purchase.schema.ts` with compound unique partial index `(organizationId, method, transactionReference)` for PENDING and VERIFIED statuses.
@@ -37,38 +40,30 @@
       - `POST /credit/purchases/:creditPurchaseId/verify` (`credit.purchase.verify`, `Idempotency-Key`)
       - `POST /credit/purchases/:creditPurchaseId/reject` (`credit.purchase.verify`, `Idempotency-Key`)
     - Scheduled Job: registered `cancel-expired-purchases` job via `registerCreditScheduledJobs`.
-  - **Tests (`apps/api/src/modules/commerce/credit/presentation/credit-purchase-api.test.ts`):**
-    - 7 comprehensive scenarios covering all plan requirements:
-      1. Happy path: submit → staff verify → credit granted, balance up, ledger entry, outbox events, audit.
-      2. Duplicate reference: 409 conflict on pending/verified, allowed after rejected, parallel race test.
-      3. Idempotent verify: verify twice returns identical response, parallel verify grants once.
-      4. Limits and rules: maxPending 422, pack price snapshot preserved, archived pack 422, unconfigured method 422, customer cancel.
-      5. Staff rules: self-service guard 403, approval token required above threshold, invalid token 403, permissions, cross-org 404.
-      6. Expiry job: cancels expired pending purchases cleanly and idempotently.
-      7. Module off: storefront and staff purchase routes return 404/403.
-    - Full suite: 5/5 credit test files (43/43 tests) pass cleanly.
+  - **Tests:**
+    - `apps/api/src/modules/commerce/credit/presentation/credit-purchase-api.test.ts`:
+      1. `happy path: submit -> staff verify -> credits granted once, ledger entry and events recorded`
+      2. `duplicate reference: rejected if PENDING or VERIFIED, allowed after REJECTED, and parallel race test`
+      3. `idempotent verify: verify twice returns identical response, parallel verify grants once`
+      4. `limits and rules: maxPending, rate-limiting, pack snapshot, unconfigured method, and customer cancel`
+      5. `staff rules: self-service guard (403), approval token required above threshold, and permissions`
+      6. `expiry job: cancels expired pending purchases cleanly and idempotently`
+      7. `module off: storefront and staff purchase routes are not available when credit module is disabled`
+    - `apps/api/src/modules/commerce/credit/presentation/credit-api.test.ts` (20 tests passed)
+    - `apps/api/src/modules/commerce/credit/domain/spend-allocation.test.ts` (7 tests passed)
+    - `apps/api/src/modules/commerce/credit/application/use-cases/expire-credits.use-case.test.ts` (6 tests passed)
+    - `apps/api/src/modules/commerce/credit/application/use-cases/credit-pack.use-cases.test.ts` (3 tests passed)
+    - Full credit suite: 5/5 test files, 43/43 tests passed.
   - **Docs:**
     - Added ADR-132 to `docs/04-DECISIONS.md`.
     - Updated `docs/09-DOMAIN-MODEL.md` (CreditPurchase aggregate, state transitions, indexes, events).
     - Updated `docs/14-API.md` (Storefront and Tenant credit purchase endpoints, error codes).
     - Updated `apps/api/src/modules/commerce/credit/README.md`.
+    - Updated `docs/STATUS.md` row for M.5.
 
-- **Verified with:**
-  - `npx eslint apps/api/src/modules/commerce/credit packages/contracts/src/credit packages/contracts/src/events packages/validation/src/credit apps/api/src/routes/credit-tenant-router.ts apps/api/src/routes/storefront.ts` → Exit 0 (0 errors, 0 warnings).
-  - `npm --prefix apps/api test -- credit` → 5/5 test files, 43/43 tests passed.
-  - `npm --prefix packages/ids test` → 2/2 test files, 14/14 tests passed.
-  - `npm --prefix packages/contracts run build` → Exit 0.
-  - `npm --prefix packages/validation test` → 26/26 test files, 252/252 tests passed.
-  - `npx tsc -p apps/api/tsconfig.json --noEmit` → Zero errors in all M.5 files (uncommitted 3.7 enrollment files isolated).
-
-- **Untouched 3.7 Files in Workspace (Reported separately):**
-  - `apps/api/src/modules/commerce/booking/application/ports/resource-exclusive-holds.ts`
-  - `apps/api/src/modules/commerce/booking/infrastructure/mongo-resource-exclusive-holds.ts`
-  - `apps/api/src/modules/commerce/booking/infrastructure/resource-exclusive-hold.schema.ts`
-  - `apps/api/src/modules/commerce/booking/infrastructure/register-booking-models.ts`
-  - `apps/api/src/modules/commerce/booking/index.ts`
-  - `apps/api/src/modules/commerce/enrollment/**`
-  - `scripts/new-module/new-module.test.mjs`
+- **Known Gaps:**
+  - None for Part A. Part B (admin screens) is next.
+  - Note for 3.7 session: `resource-exclusive-hold.schema.ts`-এ `organizationId`-তে `immutable: true` যোগ করতে হবে।
 
 - **Next Step:**
   - Part B: Admin screens (`s/M.5-ui-credit-purchases`).
