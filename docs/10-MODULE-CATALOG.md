@@ -125,7 +125,7 @@ Inputs: the org's `PlatformSubscription`, its base and add-on `Package`s, its `M
 | `sms` | integration/sms | CORE | 5.13 | | | | | SMS log (usage-limited by `smsPerMonth`) |
 | `risk` | automation/risk | CORE | 5.15 | `sales` | | P | yes | COD risk scores |
 | `pos` | commerce/pos | OPTIONAL | 3.9 | `sales`, `payment` | | | no | POS devices, shifts, registers, Z-reports |
-| `bookkeeping` | commerce/bookkeeping | OPTIONAL | 3.8b | | | | no | — (UI over `accounting`: chart of accounts, journals, manual entries, statements) |
+| `bookkeeping` | commerce/bookkeeping | OPTIONAL | 3.8b | `accounting` | | | yes | — (owns no data; chart of accounts, journals, approved manual/reversing entries, statements; trial balance moves from Advanced settings into Money when enabled) |
 | `website` | channel/website | OPTIONAL | 4.1–4.5 | `catalog`, `contact` | | | no | Site, Page, Theme, Domain, WebsiteTemplate (platform-scoped records) |
 | `payment-gateway` | integration/payment-gateway | OPTIONAL | 5.17 (new) | `payment` | | | yes | gateway credentials, gateway transactions |
 | `messaging` | channel/messaging | OPTIONAL | 5.4 / 5.5 / 5.12 | `contact` | | | no | Channel, Conversation, Message |
