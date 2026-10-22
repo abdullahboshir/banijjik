@@ -26,6 +26,11 @@ export function buildBookingPostingSourceAdapter(): import("../accounting/index.
 import type { BookingTenantDependencies } from "./booking-tenant-dependencies.js";
 export type { BookingTenantDependencies };
 export type { DepositCheckPort, PaymentStatusReader } from "./application/ports/payment-ports.js";
+export {
+  computeCancelDepositDisposition,
+  computeNoShowDepositDisposition,
+  type DepositDisposition,
+} from "./domain/deposit.js";
 
 export function buildBookingRouter(dependencies: BookingTenantDependencies): Router {
   const controller = buildBookingController(dependencies);

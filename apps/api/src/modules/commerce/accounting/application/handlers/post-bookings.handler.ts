@@ -14,7 +14,7 @@ export function buildPostBookingsHandler(input: {
     handlerKey: "accounting.postBookings",
     moduleKey: MODULE_KEY.ACCOUNTING,
     eventType: EVENT_TYPE.BOOKING_COMPLETED,
-    alsoHandles: [EVENT_TYPE.BOOKING_CANCELLED],
+    alsoHandles: [EVENT_TYPE.BOOKING_CANCELLED, EVENT_TYPE.BOOKING_NO_SHOW_MARKED],
     ordering: "ORDERED",
     async handle(envelope) {
       await handleBookingEvent(input, envelope as unknown as EventEnvelope<{ bookingId: string }>);

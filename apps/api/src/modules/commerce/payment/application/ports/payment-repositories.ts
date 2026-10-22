@@ -1,4 +1,5 @@
 import type {
+  Money,
   PaymentDirection,
   PaymentMethod,
   PaymentRequestType,
@@ -43,6 +44,7 @@ export interface ListStoreCreditFilter {
 export interface ListDuesFilter {
   readonly organizationId: OrganizationId;
   readonly locationId?: LocationId | undefined;
+  readonly allowedLocationIds?: readonly string[] | "ALL" | undefined;
   readonly contactId?: string | undefined;
   readonly requestType?: PaymentRequestType | undefined;
   readonly page: number;
@@ -74,17 +76,68 @@ export interface StoreCreditRepository {
   ): Promise<readonly StoreCreditEntry[]>;
 }
 
+export interface ApplyAllocationInput {
+  readonly organizationId: OrganizationId;
+  readonly locationId: LocationId;
+  readonly requestType: PaymentRequestType;
+  readonly requestId: string;
+  readonly contactId: string | null;
+  readonly total: Money;
+  readonly amount: number;
+  readonly currency: string;
+  readonly now: Date;
+}
+
+export interface ApplyRefundInput {
+  readonly organizationId: OrganizationId;
+  readonly requestType: PaymentRequestType;
+  readonly requestId: string;
+  readonly amount: number;
+  readonly now: Date;
+}
+
+export interface RestoreAllocationInput {
+  readonly organizationId: OrganizationId;
+  readonly requestType: PaymentRequestType;
+  readonly requestId: string;
+  readonly amount: number;
+  readonly now: Date;
+}
+
+export interface EnsureSummaryInput {
+  readonly organizationId: OrganizationId;
+  readonly locationId: LocationId;
+  readonly requestType: PaymentRequestType;
+  readonly requestId: string;
+  readonly contactId: string | null;
+  readonly total: Money;
+  readonly now: Date;
+}
+
+export interface SetSummaryTotalInput {
+  readonly organizationId: OrganizationId;
+  readonly requestType: PaymentRequestType;
+  readonly requestId: string;
+  readonly total: Money;
+  readonly now: Date;
+}
+
 export interface PaymentSummaryRepository {
   findByRequest(
     organizationId: OrganizationId,
     requestType: PaymentRequestType,
     requestId: string,
   ): Promise<PaymentSummary | undefined>;
-  upsert(summary: PaymentSummary): Promise<void>;
+  ensureSummary?(input: EnsureSummaryInput): Promise<void>;
+  setTotal?(input: SetSummaryTotalInput): Promise<void>;
+  applyAllocation(input: ApplyAllocationInput): Promise<void>;
+  applyRefund(input: ApplyRefundInput): Promise<void>;
+  restoreAllocation(input: RestoreAllocationInput): Promise<void>;
   listDues(filter: ListDuesFilter): Promise<PaginatedResult<PaymentSummary>>;
 }
 
 export interface ContactStoreCreditPort {
+  contactExists(organizationId: OrganizationId, contactId: ContactId): Promise<boolean>;
   getBalance(
     organizationId: OrganizationId,
     contactId: ContactId,
@@ -99,4 +152,8 @@ export interface ContactStoreCreditPort {
 
 export interface PaymentUnitOfWork {
   run<T>(work: () => Promise<T>): Promise<T>;
+}
+
+export interface TimezoneReader {
+  read(organizationId: OrganizationId): Promise<string>;
 }

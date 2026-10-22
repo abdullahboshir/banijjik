@@ -45,6 +45,7 @@ export interface BookingProps {
   readonly source: BookingSource;
   readonly note: string | null;
   readonly holdExpiresAt: Date | null;
+  readonly cancellationFeeRetained?: Money | null;
   readonly history: readonly BookingHistoryEntry[];
   readonly version: number;
   readonly createdAt: Date;
@@ -238,6 +239,10 @@ export class Booking {
     return this.props.holdExpiresAt;
   }
 
+  get cancellationFeeRetained(): Money | null {
+    return this.props.cancellationFeeRetained ?? null;
+  }
+
   get history(): readonly BookingHistoryEntry[] {
     return this.props.history;
   }
@@ -269,6 +274,7 @@ export class Booking {
       readonly actorUserId: UserId | null;
       readonly bookingNumber?: string | null;
       readonly note?: string;
+      readonly cancellationFeeRetained?: Money | null;
       readonly reschedule?: {
         readonly startsAt: Date;
         readonly endsAt: Date;

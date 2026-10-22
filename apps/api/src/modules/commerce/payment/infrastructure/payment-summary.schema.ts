@@ -15,7 +15,7 @@ export interface PaymentSummaryDocument {
   requestType: PaymentRequestType;
   requestId: string;
   contactId: string | null;
-  locationId: string | null;
+  locationId: string;
   total: {
     amount: number;
     currency: string;
@@ -42,7 +42,7 @@ export const paymentSummarySchema = new Schema<PaymentSummaryDocument>(
     },
     requestId: { type: String, required: true, immutable: true },
     contactId: { type: String, default: null },
-    locationId: { type: String, default: null },
+    locationId: { type: String, required: true, immutable: true },
     total: {
       amount: { type: Number, required: true },
       currency: { type: String, required: true },

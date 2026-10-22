@@ -33,9 +33,14 @@ export class PaymentController {
       readonly getDues: GetDuesUseCase;
       readonly adjustStoreCredit: AdjustStoreCreditUseCase;
       readonly listStoreCredit: ListStoreCreditEntriesUseCase;
-      readonly isManagerOrOwner: (
+      readonly isManagerOrOwner?: (
         userId: UserId,
         organizationId: OrganizationId,
+      ) => Promise<boolean>;
+      readonly hasRefundWithoutApprovalPermission: (
+        userId: UserId,
+        organizationId: OrganizationId,
+        locationId: string,
       ) => Promise<boolean>;
       readonly getMemberId: (userId: UserId, organizationId: OrganizationId) => Promise<string>;
     },
@@ -56,7 +61,6 @@ export class PaymentController {
       contactId: body.contactId,
       receivedByMemberId: memberId,
       actorUserId,
-      businessDate: body.businessDate,
       note: body.note,
     });
 
@@ -67,7 +71,12 @@ export class PaymentController {
     const body = response.locals["validated"].body;
     const { organizationId, actorUserId } = readTenantCaller();
     const memberId = await this.useCases.getMemberId(actorUserId, organizationId);
-    const isManagerOrOwner = await this.useCases.isManagerOrOwner(actorUserId, organizationId);
+    const hasRefundWithoutApprovalPermission =
+      await this.useCases.hasRefundWithoutApprovalPermission(
+        actorUserId,
+        organizationId,
+        body.locationId,
+      );
 
     const payment = await this.useCases.refundPayment.execute({
       organizationId,
@@ -79,9 +88,8 @@ export class PaymentController {
       contactId: body.contactId,
       receivedByMemberId: memberId,
       actorUserId,
-      isManagerOrOwner,
+      hasRefundWithoutApprovalPermission,
       approvalToken: body.approvalToken,
-      businessDate: body.businessDate,
       note: body.note,
     });
 
@@ -145,10 +153,10 @@ export class PaymentController {
 
   readonly dues: RequestHandler = async (request, response) => {
     const query = response.locals["validated"].query;
-    const { organizationId } = readTenantCaller();
+    const caller = readTenantCaller();
 
     const result = await this.useCases.getDues.execute({
-      organizationId,
+      organizationId: caller.organizationId,
       locationId: query.locationId ? asId<LocationId>(query.locationId) : undefined,
       contactId: query.contactId,
       requestType: query.requestType,

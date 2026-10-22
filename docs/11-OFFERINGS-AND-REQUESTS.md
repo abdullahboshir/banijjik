@@ -190,21 +190,22 @@ New aggregate **SalesReturn** (sales, location scope, append-only):
 
 ## 7. Payments & store credit (module `payment`)
 
-### 7.1 Payment
-- `direction`: `IN` \| `REFUND` \| `REVERSAL` (REVERSAL undoes a mistaken entry, references `reversesPaymentId`, needs approval).
-- `method`: `CASH`, `BKASH`, `NAGAD`, `BANK`, `CARD`, `GATEWAY`, `STORE_CREDIT`, `COD_COURIER`, `RIDER_CASH`.
-- **Allocations** go to requests of the same org: `{ requestType, requestId, enrollmentPeriodId?, amount }`. Σ allocations ≤ amount. An IN payment above the allocations is overpayment: it becomes store credit (contact required) or POS change (cash only, not stored).
-- **Manual mobile-money verification:** `externalReference` (bKash/Nagad trxID) is unique per `(organizationId, method, externalReference)`, which prevents recording the same transfer twice.
-- **Immutable:** corrections are REFUND or REVERSAL. Every payment requires `Idempotency-Key`.
+### 7.1 Payment (ADR-123)
+- `direction`: `IN` \| `REFUND` \| `REVERSAL` (REVERSAL undoes a mistaken entry, references `reversesPaymentId` with a unique partial index per org, always needs `PAYMENT_REVERSAL` approval, refuses with 422 if any allocated request has a refund or if an overpayment credit has already been spent, and reverses all accounting journals of the original payment).
+- `method`: `CASH`, `BKASH`, `NAGAD`, `BANK`, `CARD`, `GATEWAY`, `STORE_CREDIT`, `COD_COURIER`, `RIDER_CASH` (`GATEWAY`, `COD_COURIER` and `RIDER_CASH` refused until Phase 5).
+- **Allocations** go to requests of the same org: `{ requestType, requestId, enrollmentPeriodId?, amount, revenueState }`. `revenueState` (`BEFORE_REVENUE` \| `AFTER_REVENUE`) is captured on each allocation when the payment is recorded. Σ allocations ≤ amount, enforced atomically per request on `PaymentSummary` (`ORGANIZATION_AND_LOCATION` tenancy). An IN payment above the allocations is overpayment: it becomes store credit (contact required) or POS change (cash only, not stored).
+- **Refunds** (`POST /refunds`) allocate to the refunded requests (`refunded + amount ≤ allocated`) and require `REFUND` approval unless the caller holds `payment.payment.refundWithoutApproval` at the location and `payment.refund.managerWithoutApproval` is true.
+- **Manual mobile-money verification:** `externalReference` (bKash/Nagad trxID) is unique per `(organizationId, method, externalReference)`, which prevents recording the same transfer twice (`409` with `paymentId`).
+- **Immutable:** corrections are REFUND or REVERSAL. Every payment requires `Idempotency-Key`. `businessDate` is derived in the organization timezone.
 - POS payments carry `posSessionId`. Rider payments carry `receivedByMemberId` (the rider).
 
-### 7.2 Store credit (owner decision: launch)
+### 7.2 Store credit (owner decision: launch, ADR-123)
 New append-only **StoreCreditEntry** (payment module, org scope):
-`storeCreditEntryId`, `contactId`, `amount: Money` (+ credit / − use), `reason` (`RETURN_REFUND`, `CANCELLATION`, `OVERPAYMENT`, `ORDER_PAYMENT`, `MANUAL_ADJUSTMENT`, `EXPIRY`, `REVERSAL`), `sourceType`, `sourceId`, `expiresOn?`, `businessDate`.
-- Balance = Σ entries (projection `Contact.summary.storeCreditBalance`). It never goes below 0, enforced with the version check on the contact summary inside the transaction.
-- Using credit = a Payment `IN` with method `STORE_CREDIT` + an entry (−) in the same transaction.
-- `MANUAL_ADJUSTMENT` needs approval (§9). Expiry: `payment.storeCreditExpiryDays` (null = never; a job writes EXPIRY entries).
-- Accounting: store credit is a liability (`STORE_CREDIT_LIABILITY`).
+`storeCreditEntryId`, `contactId`, `kind` (`PAYMENT_OVERPAYMENT`, `PAYMENT_USE`, `PAYMENT_REFUND`, `PAYMENT_REVERSAL`, `CANCELLATION`, `MANUAL_ADJUSTMENT`, `EXPIRY`), `direction` (`CREDIT \| DEBIT`), `amount: Money`, `balanceAfterMinor`, `paymentId?`, `approvalId?` (`approvalTokenId`), `expiresAt?`, `expiresStoreCreditEntryId?` (unique per org), `businessDate`.
+- Balance = Σ entries (projection `Contact.summary.storeCreditBalance`). It never goes below 0, enforced with the version check on the contact summary inside the transaction (`409` on conflict).
+- Using credit = a Payment `IN` with method `STORE_CREDIT` + a `PAYMENT_USE` DEBIT entry in the same transaction.
+- `MANUAL_ADJUSTMENT` needs approval (§9). Expiry: `payment.storeCreditExpiryDays` (null = never; the daily job `payment.expireStoreCredit` writes one `EXPIRY` entry per expired credit entry via `expiresStoreCreditEntryId`).
+- Accounting: store credit is a liability (`STORE_CREDIT_LIABILITY`). Every entry publishes `payment.storeCredit.changed` (`orderingKey: paymentAccount:<organizationId>`); accounting posts a journal from `payment.storeCredit.changed` only for `EXPIRY` (overpayment and refund-to-credit are posted from the payment event).
 
 ### 7.3 COD settlement
 - **Courier COD:** at DELIVERED, a Payment `IN` method `COD_COURIER` (the money is with the courier) is allocated to the order. When the courier pays out, a `CourierSettlement` record (courier module: `courierSettlementId`, `courierKey`, `paymentIds[]`, `grossAmount`, `courierCharges`, `netReceived`, `receivedVia`, `businessDate`) clears the courier receivable and books the courier fees.

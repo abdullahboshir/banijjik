@@ -24,6 +24,7 @@ export interface StoreCreditEntryDocument {
   balanceAfterMinor: number;
   note: string | null;
   expiresAt: Date | null;
+  expiresStoreCreditEntryId: string | null;
   createdAt: Date;
   createdByUserId: string | null;
 }
@@ -51,6 +52,7 @@ export const storeCreditEntrySchema = new Schema<StoreCreditEntryDocument>(
     balanceAfterMinor: { type: Number, required: true },
     note: { type: String, default: null },
     expiresAt: { type: Date, default: null },
+    expiresStoreCreditEntryId: { type: String, default: null },
     createdAt: { type: Date, required: true, immutable: true },
     createdByUserId: { type: String, default: null },
   },
@@ -60,3 +62,12 @@ export const storeCreditEntrySchema = new Schema<StoreCreditEntryDocument>(
 storeCreditEntrySchema.index({ organizationId: 1, storeCreditEntryId: 1 }, { unique: true });
 storeCreditEntrySchema.index({ organizationId: 1, contactId: 1, createdAt: -1 });
 storeCreditEntrySchema.index({ organizationId: 1, expiresAt: 1 });
+storeCreditEntrySchema.index(
+  { organizationId: 1, expiresStoreCreditEntryId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      expiresStoreCreditEntryId: { $type: "string", $gt: "" },
+    },
+  },
+);

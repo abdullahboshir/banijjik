@@ -48,6 +48,33 @@ export function paymentReversalAlreadyReversedError(): DomainRuleError {
   });
 }
 
+export function paymentReversalHasRefundError(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    details: { ruleKey: PAYMENT_RULE_KEYS.PAYMENT_REVERSAL_HAS_REFUND },
+  });
+}
+
+export function overpaymentCreditSpentError(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    details: { ruleKey: PAYMENT_RULE_KEYS.OVERPAYMENT_CREDIT_SPENT },
+  });
+}
+
+export function paymentContactNotFoundError(contactId: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.VALIDATION_ERROR,
+    details: { ruleKey: PAYMENT_RULE_KEYS.PAYMENT_CONTACT_NOT_FOUND, contactId },
+  });
+}
+
+export function storeCreditConflictError(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.CONFLICT,
+  });
+}
+
 export function storeCreditInsufficientError(): DomainRuleError {
   return new DomainRuleError({
     code: ERROR_CODE.BUSINESS_RULE,

@@ -42,6 +42,9 @@ export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS]
 export const STORE_CREDIT_ENTRY_KIND = defineEnum([
   "PAYMENT_OVERPAYMENT",
   "PAYMENT_USE",
+  "PAYMENT_REFUND",
+  "PAYMENT_REVERSAL",
+  "CANCELLATION",
   "MANUAL_ADJUSTMENT",
   "EXPIRY",
 ]);
@@ -73,6 +76,9 @@ export const PAYMENT_RULE_KEYS = Object.freeze({
   PAYMENT_OVERPAYMENT_REQUIRES_CONTACT: "errors.payment_overpayment_requires_contact",
   PAYMENT_REFUND_EXCEEDS_PAID: "errors.payment_refund_exceeds_paid",
   PAYMENT_REVERSAL_ALREADY_REVERSED: "errors.payment_reversal_already_reversed",
+  PAYMENT_REVERSAL_HAS_REFUND: "errors.payment_reversal_has_refund",
+  OVERPAYMENT_CREDIT_SPENT: "errors.overpayment_credit_spent",
+  PAYMENT_CONTACT_NOT_FOUND: "errors.payment_contact_not_found",
   STORE_CREDIT_INSUFFICIENT: "errors.store_credit_insufficient",
   PAYMENT_METHOD_NOT_ALLOWED: "errors.payment_method_not_allowed",
   PAYMENT_REQUEST_NOT_FOUND: "errors.payment_request_not_found",
@@ -88,6 +94,7 @@ export interface PaymentAllocation {
   readonly requestId: string;
   readonly enrollmentPeriodId?: string | null;
   readonly amount: Money;
+  readonly revenueState?: "BEFORE_REVENUE" | "AFTER_REVENUE";
 }
 
 export interface PaymentApprovalSnapshot {
@@ -126,6 +133,7 @@ export interface StoreCreditEntryResponse {
   readonly balanceAfterMinor: number;
   readonly note?: string | null;
   readonly expiresAt?: string | null;
+  readonly expiresStoreCreditEntryId?: string | null;
   readonly createdAt: string;
 }
 

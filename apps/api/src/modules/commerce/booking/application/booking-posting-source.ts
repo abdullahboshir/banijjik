@@ -21,6 +21,9 @@ export function buildBookingPostingSource(input: {
         },
         tax: booking.price.tax,
         advancesToSettle: booking.depositRequired,
+        ...(booking.cancellationFeeRetained
+          ? { cancellationFeeRetained: booking.cancellationFeeRetained }
+          : {}),
       };
     },
   };

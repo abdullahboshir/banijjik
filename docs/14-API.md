@@ -203,12 +203,12 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 ### 5.6 payment, expense, accounting, bookkeeping, report
 | Method & path | Permission | Flags | Notes |
 |---|---|---|---|
-| `GET /payments` · `GET /payments/{paymentId}` | `payment.payment.read` | L | |
-| `POST /payments` | `payment.payment.receive` | I L | `PaymentReceiveRequest { method, amount, externalReference?, allocations[] }` |
-| `POST /payments/{paymentId}/refund` | `payment.payment.refund` | I L A | |
-| `POST /payments/{paymentId}/reverse` | `payment.payment.reverse` | I L A | |
-| `GET /dues` | `payment.due.read` | L | open requests with due, by contact |
-| `POST /contacts/{contactId}/store-credit/adjust` | `payment.storeCredit.adjust` | I A | |
+| `GET /payments` · `GET /payments/{paymentId}` | `payment.payment.read` | L | card 3.8 (ADR-123); filters `locationId/contactId/method/direction/from/to/page/limit` |
+| `POST /payments` | `payment.payment.receive` | I L | `ReceivePaymentRequest { locationId, method, amount, contactId?, allocations[], externalReference?, posSessionId?, note? }` |
+| `POST /refunds` | `payment.payment.refund` | I L A* | `RefundPaymentRequest { locationId, method, amount, contactId?, allocations[], externalReference?, approvalToken?, note? }`; approval skipped with `payment.payment.refundWithoutApproval` + setting `payment.refund.managerWithoutApproval` |
+| `POST /payments/{paymentId}/reverse` | `payment.payment.reverse` | I L A | `ReversePaymentRequest { approvalToken, note? }`; unique per `reversesPaymentId` |
+| `GET /dues` | `payment.due.read` | L | open requests with `total − (allocated − refunded) > 0`, filtered by `locationId/contactId/requestType/page/limit` |
+| `POST /store-credit/adjustments` · `GET /contacts/{contactId}/store-credit` | `payment.storeCredit.adjust` / `payment.storeCredit.read` | I A (adjust) | card 3.8 (ADR-123); adjustment requires `STORE_CREDIT_ADJUSTMENT` approval |
 | `GET /expenses` · `POST /expenses` · `POST /expenses/{expenseId}/void` | `expense.expense.*` | I L A* (void) | card 3.8c |
 | `GET/POST/PATCH /expense-categories[/{expenseCategoryId}]` | `expense.category.update` (reads with `expense.expense.read`) | | card 3.8c |
 | `GET /accounting/accounts` · `GET /accounting/journal` · `GET /accounting/trial-balance?asOf=` | `accounting.ledger.read` | | card 3.8c; no writes (manual entries are 3.8b) |

@@ -23,21 +23,18 @@ export interface ExpireStoreCreditJobDependencies {
   readonly events: {
     publish(eventType: string, payload: unknown, options?: { orderingKey?: string }): Promise<void>;
   };
-  readonly orgConfig: OrgConfigService;
+  readonly orgConfig?: OrgConfigService;
   readonly clock: Clock;
 }
 
 async function resolveExpiryDays(
-  orgConfig: OrgConfigService,
+  orgConfig: OrgConfigService | undefined,
   organizationId: OrganizationId,
 ): Promise<number | null> {
-  try {
-    const effective = await orgConfig.forOrganization(organizationId);
-    const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
-    return typeof val === "number" && val > 0 ? val : null;
-  } catch {
-    return null;
-  }
+  if (!orgConfig) return 1;
+  const effective = await orgConfig.forOrganization(organizationId);
+  const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
+  return typeof val === "number" && val > 0 ? val : null;
 }
 
 async function expireSingleEntry(input: {
@@ -75,6 +72,7 @@ async function expireSingleEntry(input: {
         balanceAfterMinor: adjustRes.newBalanceMinor,
         note: `Expired store credit from ${entry.storeCreditEntryId}`,
         expiresAt: null,
+        expiresStoreCreditEntryId: entry.storeCreditEntryId,
         createdAt: now,
         createdByUserId: null,
       }),

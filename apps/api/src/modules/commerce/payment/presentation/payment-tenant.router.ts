@@ -44,11 +44,10 @@ function mountPaymentRoutes(router: Router, input: PaymentRouterDependencies): v
   );
 
   router.post(
-    "/payments/:paymentId/refund",
+    "/refunds",
     input.permission(PERMISSION_KEY.PAYMENT_PAYMENT_REFUND),
     input.idempotency,
     validate({
-      params: paymentIdParamsSchema,
       body: refundPaymentRequestSchema,
     }),
     input.controller.refund,

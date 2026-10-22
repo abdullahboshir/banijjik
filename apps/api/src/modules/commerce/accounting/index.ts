@@ -10,6 +10,8 @@ import type { BookingPostingSource } from "./application/ports/booking-posting-s
 import type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 import type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
 import type { PaymentPostingSource } from "./application/ports/payment-posting-source.js";
+import { buildPostBookingsHandler } from "./application/handlers/post-bookings.handler.js";
+import { buildPostPaymentsHandler } from "./application/handlers/post-payments.handler.js";
 import { registerAccountingEventHandlers } from "./application/register-handlers.js";
 import { catchUpSystemAccounts, seedSystemAccounts } from "./application/seed-system-accounts.js";
 import { GetTrialBalanceUseCase } from "./application/use-cases/get-trial-balance.use-case.js";
@@ -47,6 +49,7 @@ export {
 } from "./domain/posting-rules.js";
 export { assertBalanced, mirrorLines } from "./domain/journal-lines.js";
 export { postJournalEntry, postReversal } from "./application/post-journal.js";
+export { buildPostBookingsHandler, buildPostPaymentsHandler };
 export { Account } from "./domain/account.entity.js";
 export { JournalEntry } from "./domain/journal-entry.entity.js";
 export { MongoAccountRepository } from "./infrastructure/mongo-account.repository.js";

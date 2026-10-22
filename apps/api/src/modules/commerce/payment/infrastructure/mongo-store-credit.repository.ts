@@ -38,6 +38,7 @@ function toDomain(doc: StoreCreditEntryDocument): StoreCreditEntry {
     balanceAfterMinor: doc.balanceAfterMinor,
     note: doc.note,
     expiresAt: doc.expiresAt,
+    expiresStoreCreditEntryId: doc.expiresStoreCreditEntryId ?? null,
     createdAt: doc.createdAt,
     createdByUserId: doc.createdByUserId ? asId<UserId>(doc.createdByUserId) : null,
   });
@@ -60,6 +61,7 @@ export class MongoStoreCreditRepository implements StoreCreditRepository {
       balanceAfterMinor: props.balanceAfterMinor,
       note: props.note,
       expiresAt: props.expiresAt,
+      expiresStoreCreditEntryId: props.expiresStoreCreditEntryId ?? null,
       createdAt: props.createdAt,
       createdByUserId: props.createdByUserId,
     };
@@ -106,13 +108,35 @@ export class MongoStoreCreditRepository implements StoreCreditRepository {
     organizationId: OrganizationId,
     now: Date,
   ): Promise<readonly StoreCreditEntry[]> {
-    const rows = await getStoreCreditModel()
+    const model = getStoreCreditModel();
+    const expiredEntries = await model
       .find({
         organizationId,
         expiresAt: { $ne: null, $lte: now },
         direction: "CREDIT",
       })
       .lean<StoreCreditEntryDocument[]>();
-    return rows.map(toDomain);
+
+    if (expiredEntries.length === 0) return [];
+
+    const candidateIds = expiredEntries.map((e) => e.storeCreditEntryId);
+    const alreadyProcessedEntries = await model
+      .find({
+        organizationId,
+        expiresStoreCreditEntryId: { $in: candidateIds },
+      })
+      .select({ expiresStoreCreditEntryId: 1 })
+      .lean<StoreCreditEntryDocument[]>();
+
+    const alreadyProcessedSet = new Set(
+      alreadyProcessedEntries
+        .map((e) => e.expiresStoreCreditEntryId)
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    const unprocessed = expiredEntries.filter(
+      (e) => !alreadyProcessedSet.has(e.storeCreditEntryId),
+    );
+    return unprocessed.map(toDomain);
   }
 }

@@ -84,9 +84,10 @@ export async function prepareStaffBooking(input: {
   );
   const settings = await input.dependencies.settings.read(input.organizationId);
   const now = input.dependencies.clock.now();
+  const hasDeposit = quoted.depositRequired.amount > 0;
   const { status, bookingNumber } = await staffBookingStatusAndNumber({
     organizationId: input.organizationId,
-    requireApproval: settings.requireApproval,
+    requireApproval: settings.requireApproval || hasDeposit,
   });
   return {
     locationId,

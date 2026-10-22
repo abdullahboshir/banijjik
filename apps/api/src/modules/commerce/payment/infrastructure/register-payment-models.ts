@@ -34,6 +34,6 @@ export function registerPaymentModels(): void {
     modelName: PAYMENT_SUMMARY_MODEL_NAME,
     collectionName: PAYMENT_SUMMARY_COLLECTION_NAME,
     schema: paymentSummarySchema,
-    tenancy: MODEL_TENANCY.ORGANIZATION,
+    tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
   });
 }

@@ -5,6 +5,14 @@ import type { ContactStoreCreditPort } from "../application/ports/payment-reposi
 const CONTACT_MODEL_NAME = "Contact";
 
 export class MongoContactStoreCreditAdapter implements ContactStoreCreditPort {
+  async contactExists(organizationId: OrganizationId, contactId: ContactId): Promise<boolean> {
+    const doc = await models({})
+      .get(CONTACT_MODEL_NAME)
+      .findOne({ organizationId, contactId }, { _id: 1 })
+      .lean();
+    return Boolean(doc);
+  }
+
   async getBalance(
     organizationId: OrganizationId,
     contactId: ContactId,

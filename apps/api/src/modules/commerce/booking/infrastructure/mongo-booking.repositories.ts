@@ -143,6 +143,7 @@ export class MongoBookingRepository implements BookingRepository {
           resourceIds: props.resourceIds,
           providerMemberId: props.providerMemberId,
           holdExpiresAt: props.holdExpiresAt,
+          cancellationFeeRetained: props.cancellationFeeRetained ?? null,
           history: props.history,
           note: props.note,
           updatedAt: props.updatedAt,

@@ -16,6 +16,7 @@ export interface StoreCreditEntryProps {
   readonly balanceAfterMinor: number;
   readonly note: string | null;
   readonly expiresAt: Date | null;
+  readonly expiresStoreCreditEntryId: string | null;
   readonly createdAt: Date;
   readonly createdByUserId: UserId | null;
 }
@@ -69,6 +70,10 @@ export class StoreCreditEntry {
 
   get expiresAt(): Date | null {
     return this.props.expiresAt;
+  }
+
+  get expiresStoreCreditEntryId(): string | null {
+    return this.props.expiresStoreCreditEntryId;
   }
 
   get createdAt(): Date {

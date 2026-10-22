@@ -3,6 +3,7 @@ import {
   MAX_HISTORY_ENTRIES,
   type BookingHistoryEntry,
   type BookingStatus,
+  type Money,
 } from "@banijjik/contracts/booking";
 import type { MemberId, ResourceId, UserId } from "@banijjik/ids";
 import type { BookingProps } from "./booking.entity.js";
@@ -97,6 +98,7 @@ export function transitionBookingProps(
     readonly actorUserId: UserId | null;
     readonly bookingNumber?: string | null;
     readonly note?: string;
+    readonly cancellationFeeRetained?: Money | null;
     readonly reschedule?: {
       readonly startsAt: Date;
       readonly endsAt: Date;
@@ -128,6 +130,9 @@ export function transitionBookingProps(
     ...rescheduled,
     status,
     bookingNumber: input.bookingNumber === undefined ? props.bookingNumber : input.bookingNumber,
+    ...(input.cancellationFeeRetained === undefined
+      ? {}
+      : { cancellationFeeRetained: input.cancellationFeeRetained }),
     history: appendHistory(props.history, historyEntry),
     updatedAt: input.now,
     updatedByUserId: input.actorUserId,

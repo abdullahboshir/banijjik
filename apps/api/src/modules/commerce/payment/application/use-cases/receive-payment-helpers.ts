@@ -3,14 +3,19 @@ import {
   STORE_CREDIT_DIRECTION,
   STORE_CREDIT_ENTRY_KIND,
 } from "@banijjik/contracts/payment";
-import { asId, newId, type ContactId, type StoreCreditEntryId } from "@banijjik/ids";
-import { PaymentSummary } from "../../domain/payment-summary.entity.js";
+import {
+  asId,
+  newId,
+  type ContactId,
+  type PaymentId,
+  type StoreCreditEntryId,
+} from "@banijjik/ids";
 import { StoreCreditEntry } from "../../domain/store-credit-entry.entity.js";
-import { computePaymentStatus } from "../../domain/payment-rules.js";
 import {
   paymentAllocationsInvalidError,
   paymentReferenceTakenError,
   paymentRequestNotFoundError,
+  storeCreditConflictError,
   storeCreditContactRequiredError,
   storeCreditInsufficientError,
 } from "../../domain/errors.js";
@@ -69,11 +74,15 @@ export async function validateAllocationLimits(
   }
 }
 
-export async function handleStoreCreditPayment(
-  contactStoreCredit: ContactStoreCreditPort,
-  input: ReceivePaymentInput,
-): Promise<void> {
-  if (input.method !== PAYMENT_METHOD.STORE_CREDIT) return;
+export async function handleStoreCreditPayment(opts: {
+  readonly contactStoreCredit: ContactStoreCreditPort;
+  readonly storeCredit: StoreCreditRepository;
+  readonly input: ReceivePaymentInput;
+  readonly paymentId: PaymentId;
+  readonly now: Date;
+}): Promise<string | null> {
+  const { contactStoreCredit, storeCredit, input, paymentId, now } = opts;
+  if (input.method !== PAYMENT_METHOD.STORE_CREDIT) return null;
   if (!input.contactId) throw storeCreditContactRequiredError();
 
   const contactId = asId<ContactId>(input.contactId);
@@ -86,16 +95,39 @@ export async function handleStoreCreditPayment(
     expectedVersion: bal.version,
   });
   if (!result.success) throw storeCreditInsufficientError();
+
+  const entryId = newId<StoreCreditEntryId>();
+  await storeCredit.create(
+    StoreCreditEntry.create({
+      storeCreditEntryId: entryId,
+      organizationId: input.organizationId,
+      contactId,
+      direction: STORE_CREDIT_DIRECTION.DEBIT,
+      kind: STORE_CREDIT_ENTRY_KIND.PAYMENT_USE,
+      amount: input.amount,
+      paymentId,
+      balanceAfterMinor: result.newBalanceMinor,
+      note: "Store credit payment",
+      expiresAt: null,
+      expiresStoreCreditEntryId: null,
+      createdAt: now,
+      createdByUserId: input.actorUserId,
+    }),
+  );
+  return entryId;
 }
 
 export async function handleOverpayment(opts: {
   readonly contactStoreCredit: ContactStoreCreditPort;
   readonly storeCredit: StoreCreditRepository;
   readonly input: ReceivePaymentInput;
+  readonly paymentId: PaymentId;
   readonly overpaymentAmount: number;
+  readonly expiresAt: Date | null;
   readonly now: Date;
 }): Promise<string | null> {
-  const { contactStoreCredit, storeCredit, input, overpaymentAmount, now } = opts;
+  const { contactStoreCredit, storeCredit, input, paymentId, overpaymentAmount, expiresAt, now } =
+    opts;
   if (overpaymentAmount <= 0 || !input.contactId) return null;
   const contactId = asId<ContactId>(input.contactId);
   const bal = await contactStoreCredit.getBalance(input.organizationId, contactId);
@@ -105,6 +137,7 @@ export async function handleOverpayment(opts: {
     deltaMinor: overpaymentAmount,
     expectedVersion: bal ? bal.version : 1,
   });
+  if (!result.success) throw storeCreditConflictError();
 
   const entryId = newId<StoreCreditEntryId>();
   await storeCredit.create(
@@ -115,10 +148,11 @@ export async function handleOverpayment(opts: {
       direction: STORE_CREDIT_DIRECTION.CREDIT,
       kind: STORE_CREDIT_ENTRY_KIND.PAYMENT_OVERPAYMENT,
       amount: { amount: overpaymentAmount, currency: input.amount.currency },
-      paymentId: null,
+      paymentId,
       balanceAfterMinor: result.newBalanceMinor,
       note: "Overpayment added to store credit",
-      expiresAt: null,
+      expiresAt,
+      expiresStoreCreditEntryId: null,
       createdAt: now,
       createdByUserId: input.actorUserId,
     }),
@@ -135,33 +169,17 @@ export async function updateSummaries(opts: {
   const { summaries, requestReaders, input, now } = opts;
   for (const alloc of input.allocations) {
     const reader = requestReaders.get(alloc.requestType);
-    if (!reader) continue;
-    const snapshot = await reader.read(input.organizationId, alloc.requestId);
-    if (!snapshot) continue;
-
-    const existing = await summaries.findByRequest(
-      input.organizationId,
-      alloc.requestType,
-      alloc.requestId,
-    );
-    const prevAllocated = existing ? existing.allocated.amount : 0;
-    const prevRefunded = existing ? existing.refunded.amount : 0;
-    const nextAllocated = prevAllocated + alloc.amount.amount;
-    const nextStatus = computePaymentStatus(snapshot.total.amount, nextAllocated, prevRefunded);
-
-    await summaries.upsert(
-      PaymentSummary.create({
-        organizationId: input.organizationId,
-        requestType: alloc.requestType,
-        requestId: alloc.requestId,
-        contactId: input.contactId ?? snapshot.contactId,
-        locationId: input.locationId ?? snapshot.locationId,
-        total: snapshot.total,
-        allocated: { amount: nextAllocated, currency: alloc.amount.currency },
-        refunded: existing ? existing.refunded : { amount: 0, currency: alloc.amount.currency },
-        paymentStatus: nextStatus,
-        updatedAt: now,
-      }),
-    );
+    const snapshot = reader ? await reader.read(input.organizationId, alloc.requestId) : undefined;
+    await summaries.applyAllocation({
+      organizationId: input.organizationId,
+      locationId: input.locationId,
+      requestType: alloc.requestType,
+      requestId: alloc.requestId,
+      contactId: input.contactId ?? snapshot?.contactId ?? null,
+      total: snapshot ? snapshot.total : alloc.amount,
+      amount: alloc.amount.amount,
+      currency: alloc.amount.currency,
+      now,
+    });
   }
 }

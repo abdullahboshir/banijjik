@@ -34,6 +34,7 @@ import {
 } from "./application/use-cases/receive-payment.use-case.js";
 import { RefundPaymentUseCase } from "./application/use-cases/refund-payment.use-case.js";
 import { ReversePaymentUseCase } from "./application/use-cases/reverse-payment.use-case.js";
+import { settleBookingTermination } from "./application/use-cases/settle-booking-deposit.js";
 import { MongoContactStoreCreditAdapter } from "./infrastructure/contact-store-credit.adapter.js";
 import { MongoPaymentRepository } from "./infrastructure/mongo-payment.repository.js";
 import { MongoPaymentSummaryRepository } from "./infrastructure/mongo-payment-summary.repository.js";
@@ -62,6 +63,7 @@ export {
   MongoStoreCreditRepository,
   MongoPaymentSummaryRepository,
   MongoContactStoreCreditAdapter,
+  settleBookingTermination,
   toPaymentResponse,
   type RequestReader,
   type RequestReadSnapshot,
@@ -80,14 +82,34 @@ export interface PaymentTenantDependencies {
   readonly manifests: readonly ModuleManifest[];
   readonly approvals: Pick<ApprovalVerifier, "consume">;
   readonly requestReaders: RequestReaderRegistry;
-  readonly isManagerOrOwner: (
+  readonly isManagerOrOwner?: (
     userId: import("@banijjik/ids").UserId,
     organizationId: import("@banijjik/ids").OrganizationId,
+  ) => Promise<boolean>;
+  readonly hasRefundWithoutApprovalPermission: (
+    userId: import("@banijjik/ids").UserId,
+    organizationId: import("@banijjik/ids").OrganizationId,
+    locationId: string,
   ) => Promise<boolean>;
   readonly getMemberId: (
     userId: import("@banijjik/ids").UserId,
     organizationId: import("@banijjik/ids").OrganizationId,
   ) => Promise<string>;
+  readonly timeZone?: import("./application/ports/payment-repositories.js").TimezoneReader;
+}
+
+function resolvePaymentRepos(repos?: {
+  payments?: PaymentRepository;
+  storeCredit?: StoreCreditRepository;
+  summaries?: PaymentSummaryRepository;
+  contactStoreCredit?: ContactStoreCreditPort;
+}) {
+  return {
+    payments: repos?.payments ?? new MongoPaymentRepository(),
+    storeCredit: repos?.storeCredit ?? new MongoStoreCreditRepository(),
+    summaries: repos?.summaries ?? new MongoPaymentSummaryRepository(),
+    contactStoreCredit: repos?.contactStoreCredit ?? new MongoContactStoreCreditAdapter(),
+  };
 }
 
 export function buildPaymentController(
@@ -99,10 +121,7 @@ export function buildPaymentController(
     contactStoreCredit?: ContactStoreCreditPort;
   },
 ): PaymentController {
-  const payments = repos?.payments ?? new MongoPaymentRepository();
-  const storeCredit = repos?.storeCredit ?? new MongoStoreCreditRepository();
-  const summaries = repos?.summaries ?? new MongoPaymentSummaryRepository();
-  const contactStoreCredit = repos?.contactStoreCredit ?? new MongoContactStoreCreditAdapter();
+  const { payments, storeCredit, summaries, contactStoreCredit } = resolvePaymentRepos(repos);
   const unitOfWork = new MongoUnitOfWork();
 
   const useCaseDeps = {
@@ -115,6 +134,7 @@ export function buildPaymentController(
     events: kernelEventPublisher,
     audit: deps.audit,
     clock: deps.clock,
+    ...(deps.timeZone ? { timeZone: deps.timeZone } : {}),
     ...(deps.orgConfig ? { orgConfig: deps.orgConfig } : {}),
   };
 
@@ -136,6 +156,7 @@ export function buildPaymentController(
       contactStoreCredit,
       unitOfWork,
       approvals: deps.approvals,
+      ...(deps.orgConfig ? { orgConfig: deps.orgConfig } : {}),
       events: kernelEventPublisher,
       audit: deps.audit,
       clock: deps.clock,
@@ -144,7 +165,8 @@ export function buildPaymentController(
       storeCredit,
       contactStoreCredit,
     }),
-    isManagerOrOwner: deps.isManagerOrOwner,
+    ...(deps.isManagerOrOwner ? { isManagerOrOwner: deps.isManagerOrOwner } : {}),
+    hasRefundWithoutApprovalPermission: deps.hasRefundWithoutApprovalPermission,
     getMemberId: deps.getMemberId,
   });
 }

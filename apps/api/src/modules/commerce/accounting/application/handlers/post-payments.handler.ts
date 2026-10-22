@@ -68,6 +68,7 @@ async function postStoreCreditChange(
   if (entryId === undefined) throw postingSourceMissing("storeCreditEntryId");
   const snapshot = await input.payments.readStoreCreditEntry(entryId);
   if (snapshot === undefined) throw postingSourceMissing(`storeCredit:${entryId}`);
+  if (snapshot.kind !== "EXPIRY") return;
   await postJournalEntry(input.posting, {
     organizationId,
     actorUserId,
@@ -85,7 +86,9 @@ async function postPaymentReversal(
     POSTING_KEY.payment_in_advance,
     POSTING_KEY.payment_in_after_revenue,
     POSTING_KEY.payment_store_credit,
+    POSTING_KEY.overpayment_to_store_credit,
   ] as const;
+  let reversedCount = 0;
   for (const postingKey of candidates) {
     const target = await input.posting.journals.findBySource({
       sourceType: JOURNAL_SOURCE_TYPE.PAYMENT,
@@ -93,16 +96,20 @@ async function postPaymentReversal(
       postingKey,
     });
     if (target === undefined) continue;
+    const reversalPostingKey =
+      reversedCount === 0 ? POSTING_KEY.reversal : (`reversal:${postingKey}` as const);
     await postReversal(input.posting, {
       organizationId: actor.organizationId,
       actorUserId: actor.actorUserId,
       original: target,
-      postingKey: POSTING_KEY.reversal,
+      postingKey: reversalPostingKey,
       businessDate: snapshot.businessDate,
     });
-    return;
+    reversedCount++;
   }
-  throw postingSourceMissing(`payment-reversal:${originalId}`);
+  if (reversedCount === 0) {
+    throw postingSourceMissing(`payment-reversal:${originalId}`);
+  }
 }
 
 async function handlePaymentEvent(

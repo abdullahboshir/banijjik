@@ -6,7 +6,7 @@ export interface PaymentSummaryProps {
   readonly requestType: PaymentRequestType;
   readonly requestId: string;
   readonly contactId: string | null;
-  readonly locationId: LocationId | null;
+  readonly locationId: LocationId;
   readonly total: Money;
   readonly allocated: Money;
   readonly refunded: Money;
@@ -41,7 +41,7 @@ export class PaymentSummary {
     return this.props.contactId;
   }
 
-  get locationId(): LocationId | null {
+  get locationId(): LocationId {
     return this.props.locationId;
   }
 

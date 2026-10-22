@@ -27,6 +27,9 @@ export const paymentManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.PAYMENT_PAYMENT_READ),
     permissionDefinition(PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE),
     permissionDefinition(PERMISSION_KEY.PAYMENT_PAYMENT_REFUND, { isSensitive: true }),
+    permissionDefinition(PERMISSION_KEY.PAYMENT_PAYMENT_REFUND_WITHOUT_APPROVAL, {
+      isSensitive: true,
+    }),
     permissionDefinition(PERMISSION_KEY.PAYMENT_PAYMENT_REVERSE, { isSensitive: true }),
     permissionDefinition(PERMISSION_KEY.PAYMENT_DUE_READ),
     permissionDefinition(PERMISSION_KEY.PAYMENT_STORE_CREDIT_READ),
@@ -35,6 +38,7 @@ export const paymentManifest = defineModule({
   routes: {
     admin: [
       "/orgs/:organizationId/payments",
+      "/orgs/:organizationId/refunds",
       "/orgs/:organizationId/dues",
       "/orgs/:organizationId/store-credit",
     ],

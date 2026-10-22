@@ -17,6 +17,7 @@ export interface ApprovalConsumeExpected {
 }
 
 export interface ApprovalConsumeResult {
+  readonly approvalTokenId: string;
   readonly approverMemberId: MemberId;
   readonly approvedAt: Date;
 }
@@ -61,7 +62,11 @@ export class ApprovalVerifier {
         approverMemberId: { to: marked.approverMemberId },
       },
     });
-    return { approverMemberId: marked.approverMemberId, approvedAt: now };
+    return {
+      approvalTokenId: marked.approvalTokenId,
+      approverMemberId: marked.approverMemberId,
+      approvedAt: now,
+    };
   }
 }
 

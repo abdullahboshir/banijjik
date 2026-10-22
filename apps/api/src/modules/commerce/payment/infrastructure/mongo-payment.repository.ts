@@ -9,7 +9,10 @@ import {
 import type { Model, QueryFilter } from "mongoose";
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
 import { Payment } from "../domain/payment.entity.js";
-import { paymentReferenceTakenError } from "../domain/errors.js";
+import {
+  paymentReferenceTakenError,
+  paymentReversalAlreadyReversedError,
+} from "../domain/errors.js";
 import type {
   ListPaymentsFilter,
   PaginatedResult,
@@ -43,6 +46,7 @@ function toDomain(doc: PaymentDocument): Payment {
         amount: a.amount.amount,
         currency: a.amount.currency as CurrencyCode,
       },
+      ...(a.revenueState ? { revenueState: a.revenueState } : {}),
     })),
     contactId: doc.contactId,
     receivedByMemberId: doc.receivedByMemberId,
@@ -86,6 +90,7 @@ function toPaymentDocument(payment: Payment): PaymentDocument {
         amount: a.amount.amount,
         currency: a.amount.currency,
       },
+      revenueState: a.revenueState ?? null,
     })),
     contactId: props.contactId,
     receivedByMemberId: props.receivedByMemberId,
@@ -106,6 +111,15 @@ function toPaymentDocument(payment: Payment): PaymentDocument {
   };
 }
 
+function isDuplicateMongoError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: number }).code === 11000
+  );
+}
+
 export class MongoPaymentRepository implements PaymentRepository {
   async create(payment: Payment): Promise<Payment> {
     const props = payment.toProps();
@@ -115,24 +129,17 @@ export class MongoPaymentRepository implements PaymentRepository {
       await getPaymentModel().create([doc], sessionOption(getActiveSession()));
       return payment;
     } catch (error: unknown) {
-      const isDuplicate =
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as { code: number }).code === 11000;
-      if (
-        isDuplicate &&
-        props.externalReference &&
-        (props.method === "BKASH" || props.method === "NAGAD")
-      ) {
+      if (!isDuplicateMongoError(error)) throw error;
+      if (props.reversesPaymentId) {
+        throw paymentReversalAlreadyReversedError();
+      }
+      if (props.externalReference && (props.method === "BKASH" || props.method === "NAGAD")) {
         const existing = await this.findByReference(
           props.organizationId,
           props.method,
           props.externalReference,
         );
-        if (existing) {
-          throw paymentReferenceTakenError(existing.paymentId);
-        }
+        if (existing) throw paymentReferenceTakenError(existing.paymentId);
       }
       throw error;
     }

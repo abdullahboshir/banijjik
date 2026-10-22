@@ -64,6 +64,9 @@ export function toBookingResponse(
     version: props.version,
     createdAt: props.createdAt.toISOString(),
     updatedAt: props.updatedAt.toISOString(),
+    ...(props.cancellationFeeRetained
+      ? { cancellationFeeRetained: props.cancellationFeeRetained }
+      : {}),
     ...(options?.paymentStatus ? { paymentStatus: options.paymentStatus } : {}),
   };
 }

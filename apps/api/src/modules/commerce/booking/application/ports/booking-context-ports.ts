@@ -28,6 +28,9 @@ export interface BookingSettings {
   readonly noShowAfterMinutes: number;
   readonly depositRequired: import("@banijjik/contracts/booking").DepositRequired;
   readonly depositValue: number;
+  readonly freeCancelHours?: number;
+  readonly lateCancelFee?: import("@banijjik/contracts/booking").CancelFeeMode;
+  readonly noShowFee?: import("@banijjik/contracts/booking").CancelFeeMode;
 }
 
 export interface BookingSettingsReader {

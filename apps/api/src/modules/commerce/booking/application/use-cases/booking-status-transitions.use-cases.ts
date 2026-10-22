@@ -14,11 +14,7 @@ import {
 } from "../booking-transition-shared.js";
 import type { BookingSettingsReader } from "../ports/booking-context-ports.js";
 import { toBookingResponse } from "../booking-views.js";
-import type {
-  BookingRepository,
-  BookingUnitOfWork,
-  ResourceSlotUsagePort,
-} from "../ports/booking-repositories.js";
+import type { BookingRepository, BookingUnitOfWork } from "../ports/booking-repositories.js";
 import type { BookingEventPublisher } from "./create-booking.use-case.js";
 
 export class ConfirmBookingUseCase {
@@ -29,7 +25,7 @@ export class ConfirmBookingUseCase {
       readonly events: BookingEventPublisher;
       readonly audit: AuditRecorder;
       readonly clock: Clock;
-      readonly depositCheck?: DepositCheckPort;
+      readonly depositCheck: DepositCheckPort;
     },
   ) {}
 
@@ -43,7 +39,7 @@ export class ConfirmBookingUseCase {
     if (existing === undefined) throw recordNotFound();
     assertLocationAllowed(existing.locationId, input.allowedLocationIds);
 
-    if (existing.depositRequired.amount > 0 && this.dependencies.depositCheck) {
+    if (existing.depositRequired.amount > 0) {
       const satisfied = await this.dependencies.depositCheck.isDepositSatisfied({
         organizationId: existing.organizationId,
         requestId: existing.bookingId,
@@ -64,6 +60,19 @@ export class ConfirmBookingUseCase {
   }
 }
 
+async function verifyDepositIfNeeded(
+  depositCheck: DepositCheckPort | undefined,
+  existing: import("../../domain/booking.entity.js").Booking,
+): Promise<void> {
+  if (existing.depositRequired.amount <= 0 || !depositCheck) return;
+  const satisfied = await depositCheck.isDepositSatisfied({
+    organizationId: existing.organizationId,
+    requestId: existing.bookingId,
+    requiredAmount: existing.depositRequired,
+  });
+  if (!satisfied) throw depositRequiredError();
+}
+
 export class RequestFromHoldUseCase {
   constructor(
     private readonly dependencies: {
@@ -73,6 +82,7 @@ export class RequestFromHoldUseCase {
       readonly audit: AuditRecorder;
       readonly clock: Clock;
       readonly settings: BookingSettingsReader;
+      readonly depositCheck?: DepositCheckPort;
     },
   ) {}
 
@@ -90,34 +100,40 @@ export class RequestFromHoldUseCase {
     if (existing.holdExpiresAt !== null && existing.holdExpiresAt <= now) {
       throw holdExpiredError();
     }
-    const bookingNumber = formatBookingNumber(
-      await nextSequenceValue({
-        organizationId: input.organizationId,
-        sequenceKey: SEQUENCE_KEY.BOOKING,
-      }),
-    );
+    await verifyDepositIfNeeded(this.dependencies.depositCheck, existing);
+    const seq = await nextSequenceValue({
+      organizationId: input.organizationId,
+      sequenceKey: SEQUENCE_KEY.BOOKING,
+    });
     const requested = existing.transition("request", {
       now,
       actorUserId: input.actorUserId,
-      bookingNumber,
+      bookingNumber: formatBookingNumber(seq),
     });
-    const eventType =
-      requested.status === BOOKING_STATUS.REQUESTED
-        ? BOOKING_EVENT_TYPE.BOOKING_REQUESTED
-        : BOOKING_EVENT_TYPE.BOOKING_CONFIRMED;
+    const isRequested = requested.status === BOOKING_STATUS.REQUESTED;
+    const eventType = isRequested
+      ? BOOKING_EVENT_TYPE.BOOKING_REQUESTED
+      : BOOKING_EVENT_TYPE.BOOKING_CONFIRMED;
+    const auditAction = isRequested ? AUDIT_ACTION.BOOKING_CREATED : AUDIT_ACTION.BOOKING_CONFIRMED;
     let persisted = requested;
     await this.dependencies.unitOfWork.run(async () => {
       persisted = await this.dependencies.bookings.update(requested, input.version);
+      await this.dependencies.depositCheck?.initializeSummary?.({
+        organizationId: input.organizationId,
+        requestId: persisted.bookingId,
+        contactId: persisted.contactId,
+        locationId: persisted.locationId,
+        total: persisted.price.total,
+        actorUserId: input.actorUserId,
+        now,
+      });
       await this.dependencies.events.publish(
         eventType,
         { bookingId: persisted.bookingId },
         { orderingKey: bookingOrderingKey(persisted.bookingId) },
       );
       await this.dependencies.audit.record({
-        action:
-          persisted.status === BOOKING_STATUS.REQUESTED
-            ? AUDIT_ACTION.BOOKING_CREATED
-            : AUDIT_ACTION.BOOKING_CONFIRMED,
+        action: auditAction,
         entityType: "booking",
         entityId: persisted.bookingId,
         changes: { bookingNumber: { to: persisted.bookingNumber } },
@@ -178,60 +194,6 @@ export class CompleteBookingUseCase {
       eventType: BOOKING_EVENT_TYPE.BOOKING_COMPLETED,
       auditAction: AUDIT_ACTION.BOOKING_COMPLETED,
     });
-  }
-}
-
-export class NoShowBookingUseCase {
-  constructor(
-    private readonly dependencies: {
-      readonly bookings: BookingRepository;
-      readonly slots: ResourceSlotUsagePort;
-      readonly unitOfWork: BookingUnitOfWork;
-      readonly events: BookingEventPublisher;
-      readonly audit: AuditRecorder;
-      readonly clock: Clock;
-    },
-  ) {}
-
-  async execute(input: {
-    readonly organizationId: OrganizationId;
-    readonly bookingId: BookingId;
-    readonly version: number;
-    readonly actorUserId: UserId | null;
-    readonly allowedLocationIds: readonly string[] | "ALL";
-  }): Promise<BookingResponse> {
-    const existing = await this.dependencies.bookings.findById(input.bookingId);
-    if (existing === undefined) throw recordNotFound();
-    assertLocationAllowed(existing.locationId, input.allowedLocationIds);
-    const marked = existing.transition("noShow", {
-      now: this.dependencies.clock.now(),
-      actorUserId: input.actorUserId,
-    });
-    let persisted = marked;
-    await this.dependencies.unitOfWork.run(async () => {
-      const resourceId = existing.resourceIds[0];
-      if (resourceId !== undefined) {
-        await this.dependencies.slots.releaseCapacity({
-          organizationId: input.organizationId,
-          resourceId,
-          startsAt: existing.startsAt,
-          blockedEndsAt: existing.blockedEndsAt,
-        });
-      }
-      persisted = await this.dependencies.bookings.update(marked, input.version);
-      await this.dependencies.events.publish(
-        BOOKING_EVENT_TYPE.BOOKING_NO_SHOW_MARKED,
-        { bookingId: persisted.bookingId },
-        { orderingKey: bookingOrderingKey(persisted.bookingId) },
-      );
-      await this.dependencies.audit.record({
-        action: AUDIT_ACTION.BOOKING_NO_SHOW,
-        entityType: "booking",
-        entityId: persisted.bookingId,
-        changes: {},
-      });
-    });
-    return toBookingResponse(persisted);
   }
 }
 

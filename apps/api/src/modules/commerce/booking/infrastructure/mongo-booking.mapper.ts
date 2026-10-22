@@ -64,6 +64,12 @@ export function toBooking(row: BookingDocument): Booking {
     source: row.source,
     note: row.note,
     holdExpiresAt: row.holdExpiresAt,
+    cancellationFeeRetained: row.cancellationFeeRetained
+      ? {
+          amount: row.cancellationFeeRetained.amount,
+          currency: row.cancellationFeeRetained.currency as "BDT",
+        }
+      : null,
     history: row.history,
     version: row.version,
     createdAt: row.createdAt,
@@ -96,6 +102,7 @@ export function bookingDocument(booking: Booking): BookingDocument {
     source: props.source,
     note: props.note,
     holdExpiresAt: props.holdExpiresAt,
+    cancellationFeeRetained: props.cancellationFeeRetained ?? null,
     history: [...props.history],
     version: props.version,
     createdAt: props.createdAt,

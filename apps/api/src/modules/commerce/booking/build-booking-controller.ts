@@ -51,7 +51,7 @@ type WiringInput = {
   readonly manifests: readonly ModuleManifest[];
   readonly quoter: PriceQuoterPort;
   readonly contacts: ContactCreator;
-  readonly depositCheck?: DepositCheckPort;
+  readonly depositCheck: DepositCheckPort;
   readonly paymentStatusReader?: PaymentStatusReader;
 };
 
@@ -98,6 +98,8 @@ function bookingShared(wiring: AppointmentWiring) {
     audit: wiring.input.audit,
     clock: wiring.input.clock,
     offerings: wiring.offerings,
+    settings: wiring.settings,
+    depositCheck: wiring.input.depositCheck,
   };
 }
 
@@ -146,7 +148,7 @@ function bookingLifecycleUseCases(wiring: AppointmentWiring) {
       events,
       audit: wiring.input.audit,
       clock: wiring.input.clock,
-      ...(wiring.input.depositCheck ? { depositCheck: wiring.input.depositCheck } : {}),
+      depositCheck: wiring.input.depositCheck,
     }),
     requestFromHold: new RequestFromHoldUseCase({
       bookings: wiring.repos.bookings,
@@ -155,6 +157,7 @@ function bookingLifecycleUseCases(wiring: AppointmentWiring) {
       audit: wiring.input.audit,
       clock: wiring.input.clock,
       settings: wiring.settings,
+      depositCheck: wiring.input.depositCheck,
     }),
     checkInBooking: new CheckInBookingUseCase({
       bookings: wiring.repos.bookings,
@@ -177,6 +180,8 @@ function bookingLifecycleUseCases(wiring: AppointmentWiring) {
       events,
       audit: wiring.input.audit,
       clock: wiring.input.clock,
+      settings: wiring.settings,
+      depositCheck: wiring.input.depositCheck,
     }),
   };
 }

@@ -2,6 +2,7 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
 import {
   PAYMENT_EVENT_TYPE,
+  PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
   STORE_CREDIT_DIRECTION,
   STORE_CREDIT_ENTRY_KIND,
   type Money,
@@ -18,10 +19,13 @@ import {
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import type { ApprovalVerifier } from "../../../../core/iam/index.js";
+import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
 import { StoreCreditEntry } from "../../domain/store-credit-entry.entity.js";
 import {
   paymentApprovalRequiredError,
+  paymentContactNotFoundError,
   recordNotFound,
+  storeCreditConflictError,
   storeCreditInsufficientError,
 } from "../../domain/errors.js";
 import type {
@@ -52,6 +56,7 @@ export function toStoreCreditEntryResponse(entry: StoreCreditEntry): StoreCredit
     balanceAfterMinor: props.balanceAfterMinor,
     note: props.note,
     expiresAt: props.expiresAt ? props.expiresAt.toISOString() : null,
+    expiresStoreCreditEntryId: props.expiresStoreCreditEntryId ?? null,
     createdAt: props.createdAt.toISOString(),
   };
 }
@@ -77,8 +82,21 @@ async function adjustContactBalance(
     expectedVersion: contactBal.version,
   });
 
-  if (!result.success) throw storeCreditInsufficientError();
+  if (!result.success) throw storeCreditConflictError();
   return result.newBalanceMinor;
+}
+
+async function resolveExpiresAt(input: {
+  readonly orgConfig: OrgConfigService | undefined;
+  readonly organizationId: OrganizationId;
+  readonly direction: StoreCreditDirection;
+  readonly now: Date;
+}): Promise<Date | null> {
+  if (input.direction !== STORE_CREDIT_DIRECTION.CREDIT || !input.orgConfig) return null;
+  const effective = await input.orgConfig.forOrganization(input.organizationId);
+  const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
+  const days = typeof val === "number" && val > 0 ? val : null;
+  return days ? new Date(input.now.getTime() + days * 24 * 60 * 60 * 1000) : null;
 }
 
 export interface AdjustStoreCreditDependencies {
@@ -86,6 +104,7 @@ export interface AdjustStoreCreditDependencies {
   readonly contactStoreCredit: ContactStoreCreditPort;
   readonly unitOfWork: PaymentUnitOfWork;
   readonly approvals: Pick<ApprovalVerifier, "consume">;
+  readonly orgConfig?: OrgConfigService;
   readonly events: {
     publish(eventType: string, payload: unknown, options?: { orderingKey?: string }): Promise<void>;
   };
@@ -97,20 +116,30 @@ export class AdjustStoreCreditUseCase {
   constructor(private readonly dependencies: AdjustStoreCreditDependencies) {}
 
   async execute(input: AdjustStoreCreditInput): Promise<StoreCreditEntryResponse> {
-    const { storeCredit, contactStoreCredit, unitOfWork, approvals, events, audit, clock } =
-      this.dependencies;
-
+    const deps = this.dependencies;
     if (!input.approvalToken) throw paymentApprovalRequiredError();
 
-    return unitOfWork.run(async () => {
-      await approvals.consume(input.approvalToken, {
+    const exists = await deps.contactStoreCredit.contactExists(
+      input.organizationId,
+      input.contactId,
+    );
+    if (!exists) throw paymentContactNotFoundError(input.contactId);
+
+    return deps.unitOfWork.run(async () => {
+      await deps.approvals.consume(input.approvalToken, {
         action: APPROVAL_ACTION.STORE_CREDIT_ADJUSTMENT,
         subjectKey: input.contactId,
         amount: input.amount,
       });
 
-      const newBalance = await adjustContactBalance(contactStoreCredit, input);
-      const now = clock.now();
+      const newBalance = await adjustContactBalance(deps.contactStoreCredit, input);
+      const now = deps.clock.now();
+      const expiresAt = await resolveExpiresAt({
+        orgConfig: deps.orgConfig,
+        organizationId: input.organizationId,
+        direction: input.direction,
+        now,
+      });
       const storeCreditEntryId = newId<StoreCreditEntryId>();
 
       const entry = StoreCreditEntry.create({
@@ -123,19 +152,20 @@ export class AdjustStoreCreditUseCase {
         paymentId: null,
         balanceAfterMinor: newBalance,
         note: input.reason,
-        expiresAt: null,
+        expiresAt,
+        expiresStoreCreditEntryId: null,
         createdAt: now,
         createdByUserId: input.actorUserId,
       });
 
-      await storeCredit.create(entry);
-      await events.publish(
+      await deps.storeCredit.create(entry);
+      await deps.events.publish(
         PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED,
         { storeCreditEntryId },
         { orderingKey: `paymentAccount:${input.organizationId}` },
       );
 
-      await audit.record({
+      await deps.audit.record({
         action: AUDIT_ACTION.STORE_CREDIT_ADJUSTED,
         entityType: AUDIT_ENTITY_TYPE.storeCreditEntry,
         entityId: storeCreditEntryId,

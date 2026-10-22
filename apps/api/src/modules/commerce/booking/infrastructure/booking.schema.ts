@@ -122,6 +122,7 @@ export interface BookingDocument {
   source: BookingSource;
   note: string | null;
   holdExpiresAt: Date | null;
+  cancellationFeeRetained?: { amount: number; currency: string } | null;
   history: {
     at: string;
     action: string;
@@ -206,6 +207,7 @@ export const bookingSchema = new Schema<BookingDocument>(
     source: { type: String, required: true, enum: Object.values(BOOKING_SOURCE) },
     note: { type: String, default: null },
     holdExpiresAt: { type: Date, default: null },
+    cancellationFeeRetained: { type: moneySchema, default: null },
     history: { type: [historySchema], default: [] },
     ...versionField,
     ...auditFields,

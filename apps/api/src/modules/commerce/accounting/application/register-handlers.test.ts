@@ -34,9 +34,12 @@ describe("accounting ORDERED posting handlers", () => {
     ]);
   });
 
-  it("postBookings alsoHandles cancellation", () => {
+  it("postBookings alsoHandles cancellation and no-show", () => {
     const handler = buildPostBookingsHandler({ bookings, posting });
     expect(handler.handlerKey).toBe("accounting.postBookings");
-    expect(handler.alsoHandles).toEqual([EVENT_TYPE.BOOKING_CANCELLED]);
+    expect(handler.alsoHandles).toEqual([
+      EVENT_TYPE.BOOKING_CANCELLED,
+      EVENT_TYPE.BOOKING_NO_SHOW_MARKED,
+    ]);
   });
 });

@@ -14,7 +14,13 @@ import {
   type PaymentStatusReader,
 } from "../modules/commerce/booking/index.js";
 import { PAYMENT_REQUEST_TYPE, PAYMENT_STATUS, type Money } from "@banijjik/contracts/payment";
-import { MongoPaymentSummaryRepository } from "../modules/commerce/payment/index.js";
+import {
+  MongoContactStoreCreditAdapter,
+  MongoPaymentRepository,
+  MongoPaymentSummaryRepository,
+  MongoStoreCreditRepository,
+  settleBookingTermination,
+} from "../modules/commerce/payment/index.js";
 import type { OrganizationId } from "@banijjik/ids";
 import {
   buildPriceQuoter,
@@ -156,6 +162,9 @@ function contactCreatorOf(input: BookingRouterInput): BookingTenantDependencies[
 
 function depositCheckOf(): DepositCheckPort {
   const summaries = new MongoPaymentSummaryRepository();
+  const payments = new MongoPaymentRepository();
+  const storeCredits = new MongoStoreCreditRepository();
+  const contactStoreCredit = new MongoContactStoreCreditAdapter();
   return {
     async isDepositSatisfied(input: {
       readonly organizationId: OrganizationId;
@@ -169,7 +178,25 @@ function depositCheckOf(): DepositCheckPort {
         input.requestId,
       );
       if (!summary) return false;
-      return summary.allocated.amount >= input.requiredAmount.amount;
+      const netPaid = summary.allocated.amount - summary.refunded.amount;
+      return netPaid >= input.requiredAmount.amount;
+    },
+    async initializeSummary(input) {
+      await summaries.ensureSummary({
+        organizationId: input.organizationId,
+        locationId: input.locationId,
+        requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        requestId: input.requestId,
+        contactId: input.contactId,
+        total: input.total,
+        now: input.now,
+      });
+    },
+    async settleBookingTermination(input) {
+      return settleBookingTermination(
+        { payments, storeCredits, summaries, contactStoreCredit },
+        input,
+      );
     },
   };
 }

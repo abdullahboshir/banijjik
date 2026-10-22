@@ -7,6 +7,7 @@ import {
   type Money,
   type PostingKey,
 } from "@banijjik/contracts/accounting";
+import type { StoreCreditEntryKind } from "@banijjik/contracts/payment";
 import {
   assertBalanced,
   credit,
@@ -46,7 +47,7 @@ export interface StoreCreditPostingSnapshot {
   readonly businessDate: string;
   readonly locationId: string | null;
   readonly amount: Money;
-  readonly kind: "EXPIRY";
+  readonly kind: StoreCreditEntryKind;
 }
 
 export type BookingRevenueKind = "SERVICE" | "RENTAL" | "EVENT" | "PLAN";

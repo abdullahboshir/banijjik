@@ -401,6 +401,7 @@
   "permission.payment.payment.read": "View payments",
   "permission.payment.payment.receive": "Receive payments",
   "permission.payment.payment.refund": "Refund payments",
+  "permission.payment.payment.refundWithoutApproval": "Refund payments without approval",
   "permission.payment.payment.reverse": "Reverse payments",
   "permission.payment.due.read": "View dues",
   "permission.payment.storeCredit.read": "View store credit",

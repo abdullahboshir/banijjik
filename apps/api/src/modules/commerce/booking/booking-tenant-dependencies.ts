@@ -16,6 +16,6 @@ export interface BookingTenantDependencies {
   readonly manifests: readonly ModuleManifest[];
   readonly quoter: PriceQuoterPort;
   readonly contacts: ContactCreator;
-  readonly depositCheck?: DepositCheckPort;
+  readonly depositCheck: DepositCheckPort;
   readonly paymentStatusReader?: PaymentStatusReader;
 }

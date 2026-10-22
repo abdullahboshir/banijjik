@@ -1,13 +1,20 @@
 import type { CurrencyCode } from "@banijjik/contracts";
-import type { PaymentRequestType } from "@banijjik/contracts/payment";
+import { PAYMENT_STATUS, type PaymentRequestType } from "@banijjik/contracts/payment";
 import { asId, type LocationId, type OrganizationId } from "@banijjik/ids";
 import type { Model, QueryFilter } from "mongoose";
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
+import { paymentAllocationsInvalidError, paymentRefundExceedsPaidError } from "../domain/errors.js";
+import { computePaymentStatus } from "../domain/payment-rules.js";
 import { PaymentSummary } from "../domain/payment-summary.entity.js";
 import type {
+  ApplyAllocationInput,
+  ApplyRefundInput,
+  EnsureSummaryInput,
   ListDuesFilter,
   PaginatedResult,
   PaymentSummaryRepository,
+  RestoreAllocationInput,
+  SetSummaryTotalInput,
 } from "../application/ports/payment-repositories.js";
 import {
   PAYMENT_SUMMARY_MODEL_NAME,
@@ -24,7 +31,7 @@ function toDomain(doc: PaymentSummaryDocument): PaymentSummary {
     requestType: doc.requestType,
     requestId: doc.requestId,
     contactId: doc.contactId,
-    locationId: doc.locationId ? asId<LocationId>(doc.locationId) : null,
+    locationId: asId<LocationId>(doc.locationId),
     total: {
       amount: doc.total.amount,
       currency: doc.total.currency as CurrencyCode,
@@ -37,7 +44,11 @@ function toDomain(doc: PaymentSummaryDocument): PaymentSummary {
       amount: doc.refunded.amount,
       currency: doc.refunded.currency as CurrencyCode,
     },
-    paymentStatus: doc.paymentStatus,
+    paymentStatus: computePaymentStatus(
+      doc.total.amount,
+      doc.allocated.amount,
+      doc.refunded.amount,
+    ),
     updatedAt: doc.updatedAt,
   });
 }
@@ -49,40 +60,138 @@ export class MongoPaymentSummaryRepository implements PaymentSummaryRepository {
     requestId: string,
   ): Promise<PaymentSummary | undefined> {
     const row = await getPaymentSummaryModel()
-      .findOne({ organizationId, requestType, requestId })
+      .findOne({ organizationId, requestType, requestId }, null, sessionOption(getActiveSession()))
       .lean<PaymentSummaryDocument>();
     return row ? toDomain(row) : undefined;
   }
 
-  async upsert(summary: PaymentSummary): Promise<void> {
-    const props = summary.toProps();
-    await getPaymentSummaryModel().updateOne(
+  async ensureSummary(input: EnsureSummaryInput): Promise<void> {
+    const model = getPaymentSummaryModel();
+    const session = sessionOption(getActiveSession());
+    await model.updateOne(
       {
-        organizationId: props.organizationId,
-        requestType: props.requestType,
-        requestId: props.requestId,
+        organizationId: input.organizationId,
+        requestType: input.requestType,
+        requestId: input.requestId,
+      },
+      {
+        $setOnInsert: {
+          requestType: input.requestType,
+          requestId: input.requestId,
+          locationId: input.locationId,
+          contactId: input.contactId,
+          total: {
+            amount: input.total.amount,
+            currency: input.total.currency,
+          },
+          allocated: { amount: 0, currency: input.total.currency },
+          refunded: { amount: 0, currency: input.total.currency },
+          paymentStatus: PAYMENT_STATUS.UNPAID,
+        },
+      },
+      { upsert: true, ...session },
+    );
+  }
+
+  async setTotal(input: SetSummaryTotalInput): Promise<void> {
+    const model = getPaymentSummaryModel();
+    const session = sessionOption(getActiveSession());
+    await model.updateOne(
+      {
+        organizationId: input.organizationId,
+        requestType: input.requestType,
+        requestId: input.requestId,
       },
       {
         $set: {
-          contactId: props.contactId,
-          locationId: props.locationId,
-          total: {
-            amount: props.total.amount,
-            currency: props.total.currency,
-          },
-          allocated: {
-            amount: props.allocated.amount,
-            currency: props.allocated.currency,
-          },
-          refunded: {
-            amount: props.refunded.amount,
-            currency: props.refunded.currency,
-          },
-          paymentStatus: props.paymentStatus,
-          updatedAt: props.updatedAt,
+          "total.amount": input.total.amount,
+          updatedAt: input.now,
         },
       },
-      { upsert: true, ...sessionOption(getActiveSession()) },
+      session,
+    );
+  }
+
+  async applyAllocation(input: ApplyAllocationInput): Promise<void> {
+    const model = getPaymentSummaryModel();
+    const session = sessionOption(getActiveSession());
+
+    await this.ensureSummary({
+      organizationId: input.organizationId,
+      locationId: input.locationId,
+      requestType: input.requestType,
+      requestId: input.requestId,
+      contactId: input.contactId,
+      total: input.total,
+      now: input.now,
+    });
+
+    const result = await model.updateOne(
+      {
+        organizationId: input.organizationId,
+        requestType: input.requestType,
+        requestId: input.requestId,
+        $expr: {
+          $lte: [
+            { $add: [{ $subtract: ["$allocated.amount", "$refunded.amount"] }, input.amount] },
+            "$total.amount",
+          ],
+        },
+      },
+      {
+        $inc: { "allocated.amount": input.amount },
+        $set: { updatedAt: input.now },
+      },
+      session,
+    );
+
+    if (result.matchedCount === 0) {
+      throw paymentAllocationsInvalidError(
+        `Allocation of ${input.amount} exceeds remaining total for ${input.requestId}`,
+      );
+    }
+  }
+
+  async applyRefund(input: ApplyRefundInput): Promise<void> {
+    const model = getPaymentSummaryModel();
+    const session = sessionOption(getActiveSession());
+
+    const result = await model.updateOne(
+      {
+        organizationId: input.organizationId,
+        requestType: input.requestType,
+        requestId: input.requestId,
+        $expr: {
+          $lte: [{ $add: ["$refunded.amount", input.amount] }, "$allocated.amount"],
+        },
+      },
+      {
+        $inc: { "refunded.amount": input.amount },
+        $set: { updatedAt: input.now },
+      },
+      session,
+    );
+
+    if (result.matchedCount === 0) {
+      throw paymentRefundExceedsPaidError();
+    }
+  }
+
+  async restoreAllocation(input: RestoreAllocationInput): Promise<void> {
+    const model = getPaymentSummaryModel();
+    const session = sessionOption(getActiveSession());
+
+    await model.updateOne(
+      {
+        organizationId: input.organizationId,
+        requestType: input.requestType,
+        requestId: input.requestId,
+      },
+      {
+        $inc: { "allocated.amount": -input.amount },
+        $set: { updatedAt: input.now },
+      },
+      session,
     );
   }
 
@@ -95,6 +204,8 @@ export class MongoPaymentSummaryRepository implements PaymentSummaryRepository {
     };
     if (filter.locationId) {
       query.locationId = filter.locationId;
+    } else if (filter.allowedLocationIds && filter.allowedLocationIds !== "ALL") {
+      query.locationId = { $in: filter.allowedLocationIds };
     }
     if (filter.contactId) {
       query.contactId = filter.contactId;

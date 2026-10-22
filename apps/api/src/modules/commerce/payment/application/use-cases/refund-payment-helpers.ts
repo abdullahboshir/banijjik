@@ -4,17 +4,24 @@ import {
   PAYMENT_REFUND_MANAGER_WITHOUT_APPROVAL_SETTING_KEY,
   STORE_CREDIT_DIRECTION,
   STORE_CREDIT_ENTRY_KIND,
+  type PaymentAllocation,
   type PaymentApprovalSnapshot,
 } from "@banijjik/contracts/payment";
-import { asId, newId, type ContactId, type StoreCreditEntryId } from "@banijjik/ids";
+import {
+  asId,
+  newId,
+  type ContactId,
+  type PaymentId,
+  type StoreCreditEntryId,
+} from "@banijjik/ids";
 import type { ApprovalVerifier } from "../../../../core/iam/index.js";
 import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
-import { PaymentSummary } from "../../domain/payment-summary.entity.js";
 import { StoreCreditEntry } from "../../domain/store-credit-entry.entity.js";
-import { computePaymentStatus, validateRefundAllocations } from "../../domain/payment-rules.js";
+import { validateRefundAllocations } from "../../domain/payment-rules.js";
 import {
   paymentAllocationsInvalidError,
   paymentRequestNotFoundError,
+  storeCreditConflictError,
   storeCreditContactRequiredError,
 } from "../../domain/errors.js";
 import type {
@@ -27,27 +34,28 @@ import type { RefundPaymentInput } from "./refund-payment.use-case.js";
 
 export async function isApprovalRequired(
   orgConfig: OrgConfigService | undefined,
-  input: RefundPaymentInput,
+  hasRefundWithoutApprovalPermission: boolean,
+  organizationId: import("@banijjik/ids").OrganizationId,
 ): Promise<boolean> {
   let managerWithoutApproval = true;
   if (orgConfig) {
-    try {
-      const effective = await orgConfig.forOrganization(input.organizationId);
-      const val = effective.config.settings[PAYMENT_REFUND_MANAGER_WITHOUT_APPROVAL_SETTING_KEY];
-      if (typeof val === "boolean") managerWithoutApproval = val;
-    } catch {
-      // default true
-    }
+    const effective = await orgConfig.forOrganization(organizationId);
+    const val = effective.config.settings[PAYMENT_REFUND_MANAGER_WITHOUT_APPROVAL_SETTING_KEY];
+    if (typeof val === "boolean") managerWithoutApproval = val;
   }
-  return !(input.isManagerOrOwner && managerWithoutApproval);
+  return !(hasRefundWithoutApprovalPermission && managerWithoutApproval);
 }
 
-async function readCurrentPaidMap(
+async function readCurrentPaidAndAllocations(
   requestReaders: RequestReaderRegistry,
   summaries: PaymentSummaryRepository,
   input: RefundPaymentInput,
-): Promise<Map<string, number>> {
+): Promise<{
+  readonly currentPaid: Map<string, number>;
+  readonly allocations: readonly PaymentAllocation[];
+}> {
   const currentPaid = new Map<string, number>();
+  const allocations: PaymentAllocation[] = [];
   for (const alloc of input.allocations) {
     const reader = requestReaders.get(alloc.requestType);
     if (!reader)
@@ -62,15 +70,19 @@ async function readCurrentPaidMap(
     );
     const netPaid = summary ? summary.allocated.amount - summary.refunded.amount : 0;
     currentPaid.set(alloc.requestId, netPaid);
+    allocations.push({
+      ...alloc,
+      revenueState: snapshot.revenueState,
+    });
   }
-  return currentPaid;
+  return { currentPaid, allocations };
 }
 
 export async function validateRefundRequests(
   requestReaders: RequestReaderRegistry,
   summaries: PaymentSummaryRepository,
   input: RefundPaymentInput,
-): Promise<void> {
+): Promise<readonly PaymentAllocation[]> {
   if (input.allocations.length === 0) {
     throw paymentAllocationsInvalidError("Refund requires at least one allocation");
   }
@@ -82,21 +94,28 @@ export async function validateRefundRequests(
     throw paymentAllocationsInvalidError("External reference required for mobile money");
   }
 
-  const currentPaidByRequest = await readCurrentPaidMap(requestReaders, summaries, input);
+  const { currentPaid: currentPaidByRequest, allocations } = await readCurrentPaidAndAllocations(
+    requestReaders,
+    summaries,
+    input,
+  );
   validateRefundAllocations({
     refundAmount: input.amount,
-    allocations: input.allocations,
+    allocations,
     currentPaidByRequest,
   });
+  return allocations;
 }
 
 export async function creditStoreCreditOnRefund(opts: {
   readonly contactStoreCredit: ContactStoreCreditPort;
   readonly storeCredit: StoreCreditRepository;
   readonly input: RefundPaymentInput;
+  readonly paymentId: PaymentId;
+  readonly expiresAt: Date | null;
   readonly now: Date;
 }): Promise<string | null> {
-  const { contactStoreCredit, storeCredit, input, now } = opts;
+  const { contactStoreCredit, storeCredit, input, paymentId, expiresAt, now } = opts;
   if (input.method !== PAYMENT_METHOD.STORE_CREDIT || !input.contactId) return null;
   const contactId = asId<ContactId>(input.contactId);
   const contactBal = await contactStoreCredit.getBalance(input.organizationId, contactId);
@@ -107,6 +126,7 @@ export async function creditStoreCreditOnRefund(opts: {
     deltaMinor: input.amount.amount,
     expectedVersion: version,
   });
+  if (!result.success) throw storeCreditConflictError();
 
   const entryId = newId<StoreCreditEntryId>();
   await storeCredit.create(
@@ -115,12 +135,13 @@ export async function creditStoreCreditOnRefund(opts: {
       organizationId: input.organizationId,
       contactId,
       direction: STORE_CREDIT_DIRECTION.CREDIT,
-      kind: STORE_CREDIT_ENTRY_KIND.PAYMENT_OVERPAYMENT,
+      kind: STORE_CREDIT_ENTRY_KIND.PAYMENT_REFUND,
       amount: input.amount,
-      paymentId: null,
+      paymentId,
       balanceAfterMinor: result.newBalanceMinor,
       note: "Refund to store credit",
-      expiresAt: null,
+      expiresAt,
+      expiresStoreCreditEntryId: null,
       createdAt: now,
       createdByUserId: input.actorUserId,
     }),
@@ -130,40 +151,18 @@ export async function creditStoreCreditOnRefund(opts: {
 
 export async function updateRefundSummaries(opts: {
   readonly summaries: PaymentSummaryRepository;
-  readonly requestReaders: RequestReaderRegistry;
   readonly input: RefundPaymentInput;
   readonly now: Date;
 }): Promise<void> {
-  const { summaries, requestReaders, input, now } = opts;
+  const { summaries, input, now } = opts;
   for (const alloc of input.allocations) {
-    const reader = requestReaders.get(alloc.requestType);
-    if (!reader) continue;
-    const snapshot = await reader.read(input.organizationId, alloc.requestId);
-    if (!snapshot) continue;
-
-    const existing = await summaries.findByRequest(
-      input.organizationId,
-      alloc.requestType,
-      alloc.requestId,
-    );
-    const allocatedAmount = existing ? existing.allocated.amount : 0;
-    const nextRefunded = (existing ? existing.refunded.amount : 0) + alloc.amount.amount;
-    const nextStatus = computePaymentStatus(snapshot.total.amount, allocatedAmount, nextRefunded);
-
-    await summaries.upsert(
-      PaymentSummary.create({
-        organizationId: input.organizationId,
-        requestType: alloc.requestType,
-        requestId: alloc.requestId,
-        contactId: input.contactId ?? snapshot.contactId,
-        locationId: input.locationId ?? snapshot.locationId,
-        total: snapshot.total,
-        allocated: { amount: allocatedAmount, currency: alloc.amount.currency },
-        refunded: { amount: nextRefunded, currency: alloc.amount.currency },
-        paymentStatus: nextStatus,
-        updatedAt: now,
-      }),
-    );
+    await summaries.applyRefund({
+      organizationId: input.organizationId,
+      requestType: alloc.requestType,
+      requestId: alloc.requestId,
+      amount: alloc.amount.amount,
+      now,
+    });
   }
 }
 
@@ -179,7 +178,7 @@ export async function resolveRefundApproval(
     amount: input.amount,
   });
   return {
-    approvalId: input.approvalToken.slice(0, 16),
+    approvalId: consumed.approvalTokenId,
     approverUserId: consumed.approverMemberId,
     approvedAt: consumed.approvedAt.toISOString(),
   };

@@ -401,6 +401,7 @@
   "permission.payment.payment.read": "পেমেন্ট দেখা",
   "permission.payment.payment.receive": "পেমেন্ট গ্রহণ করা",
   "permission.payment.payment.refund": "পেমেন্ট রিফান্ড করা",
+  "permission.payment.payment.refundWithoutApproval": "অনুমোদন ছাড়া পেমেন্ট রিফান্ড করা",
   "permission.payment.payment.reverse": "পেমেন্ট রিভার্স করা",
   "permission.payment.due.read": "বকেয়া দেখা",
   "permission.payment.storeCredit.read": "স্টোর ক্রেডিট দেখা",

@@ -20,6 +20,7 @@ export interface PaymentAllocationSubdocument {
     amount: number;
     currency: string;
   };
+  revenueState: "BEFORE_REVENUE" | "AFTER_REVENUE" | null;
 }
 
 export interface PaymentApprovalSubdocument {
@@ -66,6 +67,11 @@ const allocationSchema = new Schema<PaymentAllocationSubdocument>(
     amount: {
       amount: { type: Number, required: true },
       currency: { type: String, required: true },
+    },
+    revenueState: {
+      type: String,
+      enum: ["BEFORE_REVENUE", "AFTER_REVENUE"],
+      default: null,
     },
   },
   { _id: false },
@@ -118,7 +124,15 @@ paymentSchema.index({ organizationId: 1, paymentId: 1 }, { unique: true });
 paymentSchema.index({ organizationId: 1, paymentNumber: 1 });
 paymentSchema.index({ organizationId: 1, locationId: 1, createdAt: -1 });
 paymentSchema.index({ organizationId: 1, contactId: 1, createdAt: -1 });
-paymentSchema.index({ organizationId: 1, reversesPaymentId: 1 });
+paymentSchema.index(
+  { organizationId: 1, reversesPaymentId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      reversesPaymentId: { $type: "string", $gt: "" },
+    },
+  },
+);
 paymentSchema.index(
   { organizationId: 1, method: 1, externalReference: 1 },
   {

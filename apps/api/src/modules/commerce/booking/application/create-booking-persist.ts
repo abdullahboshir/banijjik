@@ -10,6 +10,7 @@ import type {
   BookingUnitOfWork,
   ResourceSlotUsagePort,
 } from "./ports/booking-repositories.js";
+import type { DepositCheckPort } from "./ports/payment-ports.js";
 import type { BookingEventPublisher } from "./use-cases/create-booking.use-case.js";
 
 function orderingKey(bookingId: BookingId): string {
@@ -23,6 +24,7 @@ export async function persistCreatedBooking(input: {
     readonly unitOfWork: BookingUnitOfWork;
     readonly events: BookingEventPublisher;
     readonly audit: AuditRecorder;
+    readonly depositCheck?: DepositCheckPort;
   };
   organizationId: OrganizationId;
   resourceId: ResourceId;
@@ -39,6 +41,15 @@ export async function persistCreatedBooking(input: {
       blockedEndsAt: input.booking.blockedEndsAt,
     });
     await input.dependencies.bookings.insert(input.booking);
+    await input.dependencies.depositCheck?.initializeSummary?.({
+      organizationId: input.organizationId,
+      requestId: input.booking.bookingId,
+      contactId: input.booking.contactId,
+      locationId: input.booking.locationId,
+      total: input.booking.price.total,
+      actorUserId: input.booking.createdByUserId,
+      now: input.booking.createdAt,
+    });
     const eventType =
       input.status === BOOKING_STATUS.REQUESTED
         ? BOOKING_EVENT_TYPE.BOOKING_REQUESTED

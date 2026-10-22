@@ -16,6 +16,18 @@ import {
   type StoreCreditEntryDocument,
 } from "./store-credit-entry.schema.js";
 
+async function resolveAllocationRevenueState(
+  organizationId: OrganizationId,
+  alloc: PaymentDocument["allocations"][number],
+  requestReaders: RequestReaderRegistry,
+): Promise<"BEFORE_REVENUE" | "AFTER_REVENUE"> {
+  if (alloc.revenueState) return alloc.revenueState;
+  const reader = requestReaders.get(alloc.requestType);
+  if (!reader) return "BEFORE_REVENUE";
+  const snapshot = await reader.read(organizationId, alloc.requestId);
+  return snapshot ? snapshot.revenueState : "BEFORE_REVENUE";
+}
+
 async function buildPostingAllocations(
   paymentDoc: PaymentDocument,
   requestReaders: RequestReaderRegistry,
@@ -25,14 +37,7 @@ async function buildPostingAllocations(
   let totalAllocated = 0;
 
   for (const alloc of paymentDoc.allocations) {
-    let revenueState: "BEFORE_REVENUE" | "AFTER_REVENUE" = "BEFORE_REVENUE";
-    const reader = requestReaders.get(alloc.requestType);
-    if (reader) {
-      const snapshot = await reader.read(organizationId, alloc.requestId);
-      if (snapshot) {
-        revenueState = snapshot.revenueState;
-      }
-    }
+    const revenueState = await resolveAllocationRevenueState(organizationId, alloc, requestReaders);
     allocations.push({
       requestId: alloc.requestId,
       amount: {
@@ -98,7 +103,7 @@ async function readStoreCreditSnapshot(
     .findOne({ storeCreditEntryId })
     .lean<StoreCreditEntryDocument>();
 
-  if (!entryDoc || entryDoc.kind !== "EXPIRY") return undefined;
+  if (!entryDoc) return undefined;
 
   return {
     storeCreditEntryId: entryDoc.storeCreditEntryId,
@@ -108,7 +113,7 @@ async function readStoreCreditSnapshot(
       amount: entryDoc.amount.amount,
       currency: entryDoc.amount.currency as CurrencyCode,
     },
-    kind: "EXPIRY",
+    kind: entryDoc.kind,
   };
 }
 

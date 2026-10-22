@@ -29,11 +29,6 @@ export const receivePaymentRequestSchema = z
     externalReference: z.string().trim().min(1).max(100).optional().nullable(),
     allocations: z.array(paymentAllocationSchema).default([]),
     contactId: uuidV7Schema.optional().nullable(),
-    businessDate: z
-      .string()
-      .trim()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
     note: z.string().trim().max(500).optional().nullable(),
   })
   .refine(
@@ -57,11 +52,6 @@ export const refundPaymentRequestSchema = z
     externalReference: z.string().trim().min(1).max(100).optional().nullable(),
     allocations: z.array(paymentAllocationSchema).min(1),
     contactId: uuidV7Schema.optional().nullable(),
-    businessDate: z
-      .string()
-      .trim()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
     approvalToken: z.string().trim().min(1).max(500).optional(),
     note: z.string().trim().max(500).optional().nullable(),
   })

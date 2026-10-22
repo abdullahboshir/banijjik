@@ -2,6 +2,7 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, SEQUENCE_KEY } from "@banijjik/contrac
 import {
   PAYMENT_DIRECTION,
   PAYMENT_EVENT_TYPE,
+  PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
   type Money,
   type PaymentAllocation,
   type PaymentApprovalSnapshot,
@@ -9,7 +10,9 @@ import {
   type PaymentResponse,
 } from "@banijjik/contracts/payment";
 import {
+  asId,
   newId,
+  type ContactId,
   type LocationId,
   type OrganizationId,
   type PaymentId,
@@ -21,13 +24,15 @@ import type { Clock } from "../../../../../kernel/time/index.js";
 import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
 import type { ApprovalVerifier } from "../../../../core/iam/index.js";
 import { Payment } from "../../domain/payment.entity.js";
-import { paymentApprovalRequiredError } from "../../domain/errors.js";
+import { paymentApprovalRequiredError, paymentContactNotFoundError } from "../../domain/errors.js";
+import { businessDateOf } from "../../domain/timezone.js";
 import type {
   ContactStoreCreditPort,
   PaymentRepository,
   PaymentSummaryRepository,
   PaymentUnitOfWork,
   StoreCreditRepository,
+  TimezoneReader,
 } from "../ports/payment-repositories.js";
 import type { RequestReaderRegistry } from "../ports/request-reader.js";
 import { formatPaymentNumber, toPaymentResponse } from "./payment-view.js";
@@ -49,24 +54,22 @@ export interface RefundPaymentInput {
   readonly contactId?: string | null;
   readonly receivedByMemberId: string;
   readonly actorUserId: UserId | null;
-  readonly isManagerOrOwner: boolean;
+  readonly hasRefundWithoutApprovalPermission: boolean;
   readonly approvalToken?: string | undefined;
-  readonly businessDate?: string | undefined;
   readonly note?: string | null;
 }
 
-async function buildRefundPayment(opts: {
+function buildRefundPayment(opts: {
   readonly input: RefundPaymentInput;
+  readonly paymentId: PaymentId;
+  readonly businessDate: string;
   readonly approvalSnapshot: PaymentApprovalSnapshot | null;
+  readonly seq: number;
   readonly now: Date;
-}): Promise<Payment> {
-  const { input, approvalSnapshot, now } = opts;
-  const seq = await nextSequenceValue({
-    sequenceKey: SEQUENCE_KEY.PAYMENT,
-    organizationId: input.organizationId,
-  });
+}): Payment {
+  const { input, paymentId, businessDate, approvalSnapshot, seq, now } = opts;
   return Payment.create({
-    paymentId: newId<PaymentId>(),
+    paymentId,
     organizationId: input.organizationId,
     locationId: input.locationId,
     paymentNumber: formatPaymentNumber(seq),
@@ -78,7 +81,7 @@ async function buildRefundPayment(opts: {
     allocations: input.allocations,
     contactId: input.contactId || null,
     receivedByMemberId: input.receivedByMemberId,
-    businessDate: input.businessDate ?? now.toISOString().slice(0, 10),
+    businessDate,
     approval: approvalSnapshot,
     note: input.note ?? null,
     version: 1,
@@ -132,7 +135,47 @@ export interface RefundPaymentDependencies {
   };
   readonly audit: AuditRecorder;
   readonly clock: Clock;
+  readonly timeZone?: TimezoneReader;
   readonly orgConfig?: OrgConfigService;
+}
+
+async function resolveRefundExpiryDate(
+  orgConfig: OrgConfigService | undefined,
+  organizationId: OrganizationId,
+  now: Date,
+): Promise<Date | null> {
+  if (!orgConfig) return null;
+  const effective = await orgConfig.forOrganization(organizationId);
+  const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
+  const days = typeof val === "number" && val > 0 ? val : null;
+  return days ? new Date(now.getTime() + days * 24 * 60 * 60 * 1000) : null;
+}
+
+async function prepareRefundContext(deps: RefundPaymentDependencies, input: RefundPaymentInput) {
+  if (input.contactId) {
+    const exists = await deps.contactStoreCredit.contactExists(
+      input.organizationId,
+      asId<ContactId>(input.contactId),
+    );
+    if (!exists) throw paymentContactNotFoundError(input.contactId);
+  }
+  const needsApproval = await isApprovalRequired(
+    deps.orgConfig,
+    input.hasRefundWithoutApprovalPermission,
+    input.organizationId,
+  );
+  if (needsApproval && !input.approvalToken) throw paymentApprovalRequiredError();
+  const enrichedAllocations = await validateRefundRequests(
+    deps.requestReaders,
+    deps.summaries,
+    input,
+  );
+  const enrichedInput: RefundPaymentInput = { ...input, allocations: enrichedAllocations };
+  const timeZone = deps.timeZone ? await deps.timeZone.read(input.organizationId) : "Asia/Dhaka";
+  const now = deps.clock.now();
+  const businessDate = businessDateOf(now, timeZone);
+  const expiresAt = await resolveRefundExpiryDate(deps.orgConfig, input.organizationId, now);
+  return { needsApproval, enrichedInput, now, businessDate, expiresAt };
 }
 
 export class RefundPaymentUseCase {
@@ -140,32 +183,45 @@ export class RefundPaymentUseCase {
 
   async execute(input: RefundPaymentInput): Promise<PaymentResponse> {
     const deps = this.dependencies;
-    const needsApproval = await isApprovalRequired(deps.orgConfig, input);
-    if (needsApproval && !input.approvalToken) throw paymentApprovalRequiredError();
-    await validateRefundRequests(deps.requestReaders, deps.summaries, input);
+    const { needsApproval, enrichedInput, now, businessDate, expiresAt } =
+      await prepareRefundContext(deps, input);
 
     return deps.unitOfWork.run(async () => {
-      const approvalSnapshot = await resolveRefundApproval(deps.approvals, needsApproval, input);
-      const now = deps.clock.now();
+      const approvalSnapshot = await resolveRefundApproval(
+        deps.approvals,
+        needsApproval,
+        enrichedInput,
+      );
+      const paymentId = newId<PaymentId>();
       const creditEntryId = await creditStoreCreditOnRefund({
         contactStoreCredit: deps.contactStoreCredit,
         storeCredit: deps.storeCredit,
-        input,
+        input: enrichedInput,
+        paymentId,
+        expiresAt,
         now,
       });
-      const payment = await buildRefundPayment({ input, approvalSnapshot, now });
+
+      const seq = await nextSequenceValue({
+        sequenceKey: SEQUENCE_KEY.PAYMENT,
+        organizationId: input.organizationId,
+      });
+      const payment = buildRefundPayment({
+        input: enrichedInput,
+        paymentId,
+        businessDate,
+        approvalSnapshot,
+        seq,
+        now,
+      });
+
       await deps.payments.create(payment);
-      await updateRefundSummaries({
-        summaries: deps.summaries,
-        requestReaders: deps.requestReaders,
-        input,
-        now,
-      });
+      await updateRefundSummaries({ summaries: deps.summaries, input: enrichedInput, now });
       await publishRefundEffects({
         events: deps.events,
         audit: deps.audit,
-        input,
-        paymentId: payment.paymentId,
+        input: enrichedInput,
+        paymentId,
         creditEntryId,
       });
 

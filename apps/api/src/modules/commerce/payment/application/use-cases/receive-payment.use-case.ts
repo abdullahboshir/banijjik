@@ -3,13 +3,16 @@ import {
   PAYMENT_DIRECTION,
   PAYMENT_EVENT_TYPE,
   PAYMENT_METHOD,
+  PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
   type Money,
   type PaymentAllocation,
   type PaymentMethod,
   type PaymentResponse,
 } from "@banijjik/contracts/payment";
 import {
+  asId,
   newId,
+  type ContactId,
   type LocationId,
   type OrganizationId,
   type PaymentId,
@@ -20,13 +23,16 @@ import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
 import { Payment } from "../../domain/payment.entity.js";
+import { paymentContactNotFoundError } from "../../domain/errors.js";
 import { validatePaymentAllocations } from "../../domain/payment-rules.js";
+import { businessDateOf } from "../../domain/timezone.js";
 import type {
   ContactStoreCreditPort,
   PaymentRepository,
   PaymentSummaryRepository,
   PaymentUnitOfWork,
   StoreCreditRepository,
+  TimezoneReader,
 } from "../ports/payment-repositories.js";
 import type { RequestReaderRegistry } from "../ports/request-reader.js";
 import { formatPaymentNumber, toPaymentResponse } from "./payment-view.js";
@@ -50,18 +56,20 @@ export interface ReceivePaymentInput {
   readonly contactId?: string | null;
   readonly receivedByMemberId: string;
   readonly actorUserId: UserId | null;
-  readonly businessDate?: string | undefined;
   readonly note?: string | null;
 }
 
 function buildReceivedPayment(opts: {
   readonly input: ReceivePaymentInput;
+  readonly paymentId: PaymentId;
+  readonly allocations: readonly PaymentAllocation[];
+  readonly businessDate: string;
   readonly seq: number;
   readonly now: Date;
 }): Payment {
-  const { input, seq, now } = opts;
+  const { input, paymentId, allocations, businessDate, seq, now } = opts;
   return Payment.create({
-    paymentId: newId<PaymentId>(),
+    paymentId,
     organizationId: input.organizationId,
     locationId: input.locationId,
     paymentNumber: formatPaymentNumber(seq),
@@ -70,10 +78,10 @@ function buildReceivedPayment(opts: {
     amount: input.amount,
     externalReference: input.externalReference?.trim() || null,
     reversesPaymentId: null,
-    allocations: input.allocations,
+    allocations,
     contactId: input.contactId || null,
     receivedByMemberId: input.receivedByMemberId,
-    businessDate: input.businessDate ?? now.toISOString().slice(0, 10),
+    businessDate,
     approval: null,
     note: input.note ?? null,
     version: 1,
@@ -91,11 +99,19 @@ async function publishReceivedEffects(opts: {
   readonly audit: AuditRecorder;
   readonly input: ReceivePaymentInput;
   readonly paymentId: PaymentId;
+  readonly debitEntryId: string | null;
   readonly creditEntryId: string | null;
 }): Promise<void> {
-  const { events, audit, input, paymentId, creditEntryId } = opts;
+  const { events, audit, input, paymentId, debitEntryId, creditEntryId } = opts;
   const orderingKey = `paymentAccount:${input.organizationId}`;
   await events.publish(PAYMENT_EVENT_TYPE.PAYMENT_RECEIVED, { paymentId }, { orderingKey });
+  if (debitEntryId) {
+    await events.publish(
+      PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED,
+      { storeCreditEntryId: debitEntryId },
+      { orderingKey },
+    );
+  }
   if (creditEntryId) {
     await events.publish(
       PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED,
@@ -123,7 +139,77 @@ export interface ReceivePaymentDependencies {
   };
   readonly audit: AuditRecorder;
   readonly clock: Clock;
+  readonly timeZone?: TimezoneReader;
   readonly orgConfig?: OrgConfigService;
+}
+
+async function resolveStoreCreditExpiresAt(
+  orgConfig: OrgConfigService | undefined,
+  organizationId: OrganizationId,
+  now: Date,
+): Promise<Date | null> {
+  if (!orgConfig) return null;
+  const effective = await orgConfig.forOrganization(organizationId);
+  const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
+  const expiryDays = typeof val === "number" && val > 0 ? val : null;
+  return expiryDays ? new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000) : null;
+}
+
+async function enrichAllocationsWithRevenueState(
+  requestReaders: RequestReaderRegistry,
+  organizationId: OrganizationId,
+  rawAllocations: readonly PaymentAllocation[],
+): Promise<readonly PaymentAllocation[]> {
+  const allocations: PaymentAllocation[] = [];
+  for (const alloc of rawAllocations) {
+    const reader = requestReaders.get(alloc.requestType);
+    const snapshot = reader ? await reader.read(organizationId, alloc.requestId) : undefined;
+    allocations.push({
+      ...alloc,
+      revenueState: snapshot?.revenueState ?? "BEFORE_REVENUE",
+    });
+  }
+  return allocations;
+}
+
+async function prepareReceiveContext(
+  deps: ReceivePaymentDependencies,
+  input: ReceivePaymentInput,
+): Promise<{
+  readonly overpaymentAmount: number;
+  readonly businessDate: string;
+  readonly expiresAt: Date | null;
+  readonly allocations: readonly PaymentAllocation[];
+  readonly now: Date;
+}> {
+  if (input.contactId) {
+    const exists = await deps.contactStoreCredit.contactExists(
+      input.organizationId,
+      asId<ContactId>(input.contactId),
+    );
+    if (!exists) throw paymentContactNotFoundError(input.contactId);
+  }
+
+  await validateMobileMoney(deps.payments, input);
+  const { overpaymentAmount } = validatePaymentAllocations({
+    paymentAmount: input.amount,
+    allocations: input.allocations,
+    contactId: input.contactId,
+    isCash: input.method === PAYMENT_METHOD.CASH,
+  });
+  await validateAllocationLimits(deps.requestReaders, deps.summaries, input);
+
+  const timeZone = deps.timeZone ? await deps.timeZone.read(input.organizationId) : "Asia/Dhaka";
+  const now = deps.clock.now();
+  const businessDate = businessDateOf(now, timeZone);
+  const expiresAt = await resolveStoreCreditExpiresAt(deps.orgConfig, input.organizationId, now);
+  const allocations = await enrichAllocationsWithRevenueState(
+    deps.requestReaders,
+    input.organizationId,
+    input.allocations,
+  );
+
+  return { overpaymentAmount, businessDate, expiresAt, allocations, now };
 }
 
 export class ReceivePaymentUseCase {
@@ -131,23 +217,26 @@ export class ReceivePaymentUseCase {
 
   async execute(input: ReceivePaymentInput): Promise<PaymentResponse> {
     const deps = this.dependencies;
-    await validateMobileMoney(deps.payments, input);
-    const { overpaymentAmount } = validatePaymentAllocations({
-      paymentAmount: input.amount,
-      allocations: input.allocations,
-      contactId: input.contactId,
-      isCash: input.method === PAYMENT_METHOD.CASH,
-    });
-    await validateAllocationLimits(deps.requestReaders, deps.summaries, input);
+    const { overpaymentAmount, businessDate, expiresAt, allocations, now } =
+      await prepareReceiveContext(deps, input);
 
     return deps.unitOfWork.run(async () => {
-      const now = deps.clock.now();
-      await handleStoreCreditPayment(deps.contactStoreCredit, input);
+      const paymentId = newId<PaymentId>();
+      const debitEntryId = await handleStoreCreditPayment({
+        contactStoreCredit: deps.contactStoreCredit,
+        storeCredit: deps.storeCredit,
+        input,
+        paymentId,
+        now,
+      });
+
       const creditEntryId = await handleOverpayment({
         contactStoreCredit: deps.contactStoreCredit,
         storeCredit: deps.storeCredit,
         input,
+        paymentId,
         overpaymentAmount,
+        expiresAt,
         now,
       });
 
@@ -155,7 +244,14 @@ export class ReceivePaymentUseCase {
         sequenceKey: SEQUENCE_KEY.PAYMENT,
         organizationId: input.organizationId,
       });
-      const payment = buildReceivedPayment({ input, seq, now });
+      const payment = buildReceivedPayment({
+        input,
+        paymentId,
+        allocations,
+        businessDate,
+        seq,
+        now,
+      });
 
       await deps.payments.create(payment);
       await updateSummaries({
@@ -168,7 +264,8 @@ export class ReceivePaymentUseCase {
         events: deps.events,
         audit: deps.audit,
         input,
-        paymentId: payment.paymentId,
+        paymentId,
+        debitEntryId,
         creditEntryId,
       });
 

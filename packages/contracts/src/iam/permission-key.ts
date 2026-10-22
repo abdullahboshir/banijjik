@@ -95,6 +95,7 @@ export const PERMISSION_KEY = {
   PAYMENT_PAYMENT_READ: "payment.payment.read",
   PAYMENT_PAYMENT_RECEIVE: "payment.payment.receive",
   PAYMENT_PAYMENT_REFUND: "payment.payment.refund",
+  PAYMENT_PAYMENT_REFUND_WITHOUT_APPROVAL: "payment.payment.refundWithoutApproval",
   PAYMENT_PAYMENT_REVERSE: "payment.payment.reverse",
   PAYMENT_DUE_READ: "payment.due.read",
   PAYMENT_STORE_CREDIT_READ: "payment.storeCredit.read",

@@ -449,12 +449,11 @@ describe("Payment API", () => {
       },
     });
     expect(payRes.status).toBe(201);
-    const payment = payRes.body.data;
 
     // Cashier without refund permission gets 403
     const cashierRefundNoPerm = await cashierActor.callWith({
       method: "post",
-      path: `/orgs/${world.organizationA}/payments/${payment.paymentId}/refund`,
+      path: `/orgs/${world.organizationA}/refunds`,
       idempotencyKey: newId(),
       body: {
         locationId: world.locationA1,
@@ -475,7 +474,7 @@ describe("Payment API", () => {
     // Owner (Alice) refunds 10000 without approval token (since owner/manager setting allows it)
     const ownerRefund = await world.alice.callWith({
       method: "post",
-      path: `/orgs/${world.organizationA}/payments/${payment.paymentId}/refund`,
+      path: `/orgs/${world.organizationA}/refunds`,
       idempotencyKey: newId(),
       body: {
         locationId: world.locationA1,
