@@ -65,8 +65,8 @@ export class UnlockListingUseCase {
       CREDIT_RULE_KEY.UNLOCKS_PER_DAY,
       DEFAULT_UNLOCKS_PER_DAY,
     );
-    const today = businessDateOf(this.deps.clock.now());
-    await this.assertWithinDailyLimit(input.customerAccountId, dailyLimit, today);
+    const now = this.deps.clock.now();
+    const today = businessDateOf(now);
 
     try {
       return await this.performUnlock({
@@ -74,6 +74,8 @@ export class UnlockListingUseCase {
         listingId: listing.listingId,
         unlockCost,
         businessDate: today,
+        dailyLimit,
+        now,
       });
     } catch (error) {
       // The unique key is the final guard under concurrency: the loser reads the winner's unlock
@@ -118,8 +120,23 @@ export class UnlockListingUseCase {
     readonly listingId: ListingId;
     readonly unlockCost: number;
     readonly businessDate: string;
+    readonly dailyLimit: number;
+    readonly now: Date;
   }): Promise<UnlockListingOutput> {
     return this.deps.unitOfWork.run(async () => {
+      // This account write serializes different listings and expiry across API instances.
+      // Mongo retries a conflicting transaction with a fresh snapshot.
+      await this.deps.credit.applyDelta({ customerAccountId: input.customerAccountId, delta: 0 });
+      const existing = await this.deps.unlocks.findExisting(
+        input.customerAccountId,
+        input.listingId,
+      );
+      if (existing) return this.idempotentResponse(existing, input.customerAccountId);
+      await this.assertWithinDailyLimit(
+        input.customerAccountId,
+        input.dailyLimit,
+        input.businessDate,
+      );
       const updatedBalance = await this.deps.credit.applyDelta({
         customerAccountId: input.customerAccountId,
         delta: -input.unlockCost,
@@ -130,13 +147,15 @@ export class UnlockListingUseCase {
       }
 
       const entries = await this.createSpendEntries(input);
+      const firstEntry = entries[0];
+      if (!firstEntry) throw new Error("A paid unlock requires a spend entry");
       const unlock = {
         listingUnlockId: newId(),
         customerAccountId: input.customerAccountId,
         listingId: input.listingId,
-        creditEntryId: entries[0]?.creditEntryId ?? "",
-        unlockedAt: this.deps.clock.now().toISOString(),
-        createdAt: this.deps.clock.now().toISOString(),
+        creditEntryId: firstEntry.creditEntryId,
+        unlockedAt: input.now.toISOString(),
+        createdAt: input.now.toISOString(),
       };
       await this.deps.unlocks.insert(unlock);
       await this.publishEvents(entries, unlock, input);
@@ -156,13 +175,14 @@ export class UnlockListingUseCase {
     readonly listingId: ListingId;
     readonly unlockCost: number;
     readonly businessDate: string;
+    readonly now: Date;
   }): Promise<readonly SpentEntry[]> {
     const allocations = await this.allocationsForSpend(
       input.customerAccountId,
       input.unlockCost,
       input.businessDate,
     );
-    const now = this.deps.clock.now();
+    const now = input.now;
     const entries: SpentEntry[] = [];
     for (const allocation of allocations) {
       const entry = {

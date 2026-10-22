@@ -21,3 +21,10 @@ capped per business day.
 - `credit.unlockCost` (default 1)
 - `credit.unlocksPerDay` (default 20)
 - `credit.showUnlockersToOwner` (default false)
+
+Storefront credit routes are unavailable when the module is ineffective. The public active-pack
+list returns at most 100 rows in sort order. Ledger mutation guards are installed by the model
+registry. Unlocks and expiry serialize on the account balance version inside their transactions;
+all attribution/count reads share that session. Purchase scans use 100-row keyset batches and count
+EXPIRE alongside SPEND so expired purchases cannot be allocated again. Deploy the additive keyset
+indexes through the existing `db:sync-indexes` procedure (ADR-094).

@@ -15,7 +15,7 @@ import type {
 } from "@banijjik/contracts/credit";
 import { LISTING_FIELD_TIER } from "@banijjik/contracts/directory";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
-import { newId } from "@banijjik/ids";
+import { asId, newId, type CustomerAccountId } from "@banijjik/ids";
 import type { Response } from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { API_PASSWORD } from "../../../../test-support/auth-api-scenarios.js";
@@ -47,6 +47,13 @@ import {
   createTwoOrganizations,
   type TwoOrganizations,
 } from "../../../../test-support/two-organizations.js";
+
+import { withOrganizationContext } from "../../../../test-support/organization-context.js";
+import { models, MongoUnitOfWork } from "../../../../kernel/db/index.js";
+
+import { MongoCreditRepository } from "../index.js";
+import { ExpireCreditsUseCase } from "../application/use-cases/expire-credits.use-case.js";
+import type { CreditDependencies } from "../application/ports/credit-dependencies.js";
 
 registerIamApiModels();
 
@@ -218,6 +225,10 @@ describe("credit packs", () => {
     expect(pack.credits).toBe(10);
     expect(pack.status).toBe("ACTIVE");
     expect(pack.version).toBe(1);
+    const storedPack = await harness.connections.tenantShared
+      .collection("credit_packs")
+      .findOne({ organizationId, creditPackId: pack.creditPackId });
+    expect(storedPack?.["createdByUserId"]).toBe(world.alice.userId);
     expect(JSON.stringify(created.body)).not.toContain("organizationId");
 
     const staffList = await world.alice.call("get", packsPath(organizationId));
@@ -464,9 +475,12 @@ describe("credit ledger and unlock", () => {
       world,
       organizationId: world.organizationA,
       customerAccountId: buyerAccountId,
-      credits: 5,
+      credits: 1,
     });
 
+    await patchSettings(world, world.organizationA, [
+      { settingKey: CREDIT_RULE_KEY.UNLOCKS_PER_DAY, value: 1 },
+    ]);
     const responses = await Promise.all([
       unlock({
         app: harness.app,
@@ -495,9 +509,58 @@ describe("credit ledger and unlock", () => {
       cookies: asCustomerCookies(buyer.session),
     });
     const credits = dataOf<MyCreditsResponse>(account);
-    expect(credits.balance).toBe(4);
+    expect(credits.balance).toBe(0);
     expect(creditEntriesOf(credits.entries, CREDIT_ENTRY_TYPE.SPEND)).toHaveLength(1);
   });
+
+  it("serializes different listings at the daily cap and rolls back refused debits", async () => {
+    const world = await aCreditWorld();
+    const listings: ApprovedListing[] = [];
+    for (let index = 0; index < 4; index += 1) {
+      listings.push((await anApprovedListing(world)).listing);
+    }
+    const buyer = await signInCustomer(harness, world.organizationA);
+    await grantCredits({
+      world,
+      organizationId: world.organizationA,
+      customerAccountId: customerAccountIdOf(buyer),
+      credits: 10,
+    });
+    expect(
+      (
+        await patchSettings(world, world.organizationA, [
+          { settingKey: CREDIT_RULE_KEY.UNLOCKS_PER_DAY, value: 2 },
+        ])
+      ).status,
+    ).toBe(200);
+    const responses = await Promise.all(
+      listings.map((listing) =>
+        unlock({
+          app: harness.app,
+          organizationId: world.organizationA,
+          customer: buyer,
+          listingNumber: listing.listingNumber,
+        }),
+      ),
+    );
+    expect(responses.filter((response) => response.status === 200)).toHaveLength(2);
+    const refused = responses.filter((response) => response.status !== 200);
+    expect(refused).toHaveLength(2);
+    for (const response of refused) {
+      expect(response.status).toBe(429);
+      expect(response.body.error.code).toBe(ERROR_CODE.UNLOCKS_PER_DAY_EXCEEDED);
+    }
+    const account = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/my/credits",
+      cookies: asCustomerCookies(buyer.session),
+    });
+    const credits = dataOf<MyCreditsResponse>(account);
+    expect(credits.balance).toBe(8);
+    expect(sumCredits(credits.entries)).toBe(8);
+    expect(creditEntriesOf(credits.entries, CREDIT_ENTRY_TYPE.SPEND)).toHaveLength(2);
+  }, 60_000);
 
   it("uses the configured cost and refuses the unlock that exceeds the daily limit", async () => {
     const world = await aCreditWorld();
@@ -735,7 +798,37 @@ describe("unlock projection and privacy", () => {
     const visible = await searchListings(harness.app, world.organizationA, buyer);
     expect(fieldNamesOf(visible.body.data.items[0])).toContain("guardian_name");
 
+    const customerAccountId = customerAccountIdOf(buyer);
+    const filter = { organizationId: world.organizationA, customerAccountId };
+    const database = harness.connections.tenantShared;
+    const balanceBefore = await database.collection("credit_balances").findOne(filter);
+    const entriesBefore = await database.collection("credit_entries").find(filter).toArray();
+    const unlocksBefore = await database.collection("listing_unlocks").find(filter).toArray();
+    const other = await anApprovedListing(world);
     await disableCreditModule(world.organizationA);
+    const refused = await unlock({
+      app: harness.app,
+      organizationId: world.organizationA,
+      customer: buyer,
+      listingNumber: other.listing.listingNumber,
+    });
+    expect(refused.status).toBe(404);
+    for (const suffix of ["/my/credits", "/my/unlocks", "/credit-packs"]) {
+      const response = await callStorefront(harness.app, {
+        method: "get",
+        organizationId: world.organizationA,
+        suffix,
+        cookies: asCustomerCookies(buyer.session),
+      });
+      expect(response.status).toBe(404);
+    }
+    expect(await database.collection("credit_balances").findOne(filter)).toEqual(balanceBefore);
+    expect(await database.collection("credit_entries").find(filter).toArray()).toEqual(
+      entriesBefore,
+    );
+    expect(await database.collection("listing_unlocks").find(filter).toArray()).toEqual(
+      unlocksBefore,
+    );
 
     const hidden = await searchListings(harness.app, world.organizationA, buyer);
     expect(hidden.status).toBe(200);
@@ -754,11 +847,164 @@ describe("unlock projection and privacy", () => {
 });
 
 describe("adjustments and isolation", () => {
+  it("bounds the public active pack list at 100", async () => {
+    const world = await aCreditWorld();
+    const now = new Date();
+    await harness.connections.tenantShared.collection("credit_packs").insertMany(
+      Array.from({ length: 101 }, (_, sortOrder) => ({
+        organizationId: world.organizationA,
+        creditPackId: newId(),
+        name: { en: "Pack", bn: "প্যাক" },
+        credits: 1,
+        price: { amount: 100, currency: "BDT" },
+        validityDays: null,
+        status: "ACTIVE",
+        sortOrder,
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        createdByUserId: null,
+        updatedByUserId: null,
+      })),
+    );
+    const response = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/credit-packs",
+    });
+    expect(response.status).toBe(200);
+    const packs = dataOf<readonly CreditPack[]>(response);
+    expect(packs).toHaveLength(100);
+    expect(packs[0]?.sortOrder).toBe(0);
+    expect(packs[99]?.sortOrder).toBe(99);
+  });
+  it("reads every purchase past 1000 rows with equal timestamps", async () => {
+    const world = await aCreditWorld();
+    const customerAccountId = asId<CustomerAccountId>(
+      customerAccountIdOf(await signInCustomer(harness, world.organizationA)),
+    );
+    const occurredAt = new Date("2026-10-01T00:00:00Z");
+    const rows = Array.from({ length: 1001 }, () => ({
+      organizationId: world.organizationA,
+      customerAccountId,
+      creditEntryId: newId(),
+      type: CREDIT_ENTRY_TYPE.PURCHASE,
+      credits: 1,
+      occurredAt,
+      createdAt: occurredAt,
+      expiresOn: new Date("2026-10-02T00:00:00Z"),
+      source: { sourceType: "PAYMENT", sourceId: newId() },
+      fromPurchaseEntryId: null,
+      reason: null,
+      createdByUserId: null,
+      businessDate: "2026-10-01",
+    }));
+    await harness.connections.tenantShared.collection("credit_entries").insertMany(rows);
+    await withOrganizationContext(world.organizationA, async () => {
+      const repository = new MongoCreditRepository();
+      const purchases = await repository.listPurchases(customerAccountId);
+      expect(purchases).toHaveLength(1001);
+      expect(new Set(purchases.map((entry) => entry.creditEntryId)).size).toBe(1001);
+      expect(await repository.listExpiringPurchases("2026-10-21")).toHaveLength(1001);
+    });
+  });
+
+  it("expires once under concurrent real transactions and never reallocates expired credit", async () => {
+    const world = await aCreditWorld();
+    const buyer = await signInCustomer(harness, world.organizationA);
+    const customerAccountId = asId<CustomerAccountId>(customerAccountIdOf(buyer));
+    await grantCredits({
+      world,
+      organizationId: world.organizationA,
+      customerAccountId,
+      credits: 10,
+    });
+    await withOrganizationContext(world.organizationA, async () => {
+      const credit = new MongoCreditRepository();
+      const unitOfWork = new MongoUnitOfWork();
+      const purchaseId = newId();
+      await unitOfWork.run(async () => {
+        await credit.applyDelta({ customerAccountId, delta: 10 });
+        await credit.insertEntry({
+          creditEntryId: purchaseId,
+          customerAccountId,
+          type: CREDIT_ENTRY_TYPE.PURCHASE,
+          credits: 10,
+          expiresOn: "2026-10-02T00:00:00Z",
+          source: { sourceType: "PAYMENT", sourceId: newId() },
+          fromPurchaseEntryId: null,
+          reason: null,
+          createdByUserId: null,
+          occurredAt: "2026-10-01T00:00:00Z",
+          createdAt: "2026-10-01T00:00:00Z",
+          businessDate: "2026-10-01",
+        });
+      });
+      const deps = {
+        credit,
+        unitOfWork,
+        clock: { now: () => new Date("2026-10-21T08:00:00Z") },
+        events: { publish: async () => undefined },
+      } as unknown as CreditDependencies;
+      const results = await Promise.all([
+        new ExpireCreditsUseCase(deps).execute(),
+        new ExpireCreditsUseCase(deps).execute(),
+      ]);
+      expect(results.reduce((sum, result) => sum + result.expiredEntries, 0)).toBe(1);
+      expect((await credit.getBalance(customerAccountId))?.balance).toBe(10);
+      expect(
+        (await credit.sumSpendsByPurchase(customerAccountId, [purchaseId])).get(purchaseId),
+      ).toBe(10);
+      const entries = await credit.listEntries(customerAccountId, { limit: 100, offset: 0 });
+      expect(entries.filter((entry) => entry.type === CREDIT_ENTRY_TYPE.EXPIRE)).toHaveLength(1);
+      const expiryEntry = entries.find((entry) => entry.type === CREDIT_ENTRY_TYPE.EXPIRE);
+      if (!expiryEntry) throw new Error("Expected the committed expiry entry");
+      await expect(
+        credit.insertEntry({ ...expiryEntry, creditEntryId: newId() }),
+      ).rejects.toMatchObject({
+        messageKey: "errors.credit_entry_already_exists",
+      });
+      expect(sumCredits(entries)).toBe(10);
+    });
+  });
+  it("refuses mutations of compiled credit ledger models", async () => {
+    const world = await aCreditWorld();
+    await withOrganizationContext(world.organizationA, async () => {
+      const Model = models({ organizationId: world.organizationA }).get<{ credits: number }>(
+        "CreditEntry",
+      );
+      const filter = { creditEntryId: newId() };
+      const error = { messageKey: "errors.append_only_model" };
+      await expect(Model.updateOne(filter, { $set: { credits: 100 } })).rejects.toMatchObject(
+        error,
+      );
+      await expect(Model.deleteOne(filter)).rejects.toMatchObject(error);
+      await expect(Model.replaceOne(filter, { credits: 100 })).rejects.toMatchObject(error);
+    });
+  });
+
+  it("rejects zero adjustments without appending a ledger entry", async () => {
+    const world = await aCreditWorld();
+    const buyer = await signInCustomer(harness, world.organizationA);
+    const customerAccountId = asId<CustomerAccountId>(customerAccountIdOf(buyer));
+    const response = await grantCredits({
+      world,
+      organizationId: world.organizationA,
+      customerAccountId,
+      credits: 0,
+    });
+    expect(response.status).toBe(400);
+    expect(
+      await harness.connections.tenantShared
+        .collection("credit_entries")
+        .countDocuments({ organizationId: world.organizationA, customerAccountId }),
+    ).toBe(0);
+  });
   it("refuses a MANAGER without an approval token and accepts another MANAGER's token once", async () => {
     const world = await aCreditWorld();
     const organizationId = world.organizationA;
     const buyer = await signInCustomer(harness, organizationId);
-    const customerAccountId = customerAccountIdOf(buyer);
+    const customerAccountId = asId<CustomerAccountId>(customerAccountIdOf(buyer));
 
     const managerRoleId = await findSystemRoleId(
       harness.connections,
@@ -828,7 +1074,7 @@ describe("adjustments and isolation", () => {
   it("refuses a STAFF adjust and an adjustment below zero", async () => {
     const world = await aCreditWorld();
     const buyer = await signInCustomer(harness, world.organizationA);
-    const customerAccountId = customerAccountIdOf(buyer);
+    const customerAccountId = asId<CustomerAccountId>(customerAccountIdOf(buyer));
 
     const staffRoleId = await findSystemRoleId(
       harness.connections,

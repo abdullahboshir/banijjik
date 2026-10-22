@@ -12,10 +12,19 @@ import type { Money } from "@banijjik/contracts/accounting";
 import { CREDIT_PACK_MODEL_NAME, type CreditPackDocument } from "./credit-pack.schema.js";
 
 export class MongoCreditPackRepository implements CreditPackRepository {
-  async insert(pack: CreditPack): Promise<void> {
+  async insert(pack: CreditPack, actorUserId: string | null): Promise<void> {
     const organizationId = this.getOrganizationId();
     const Model = models({ organizationId }).get<CreditPackDocument>(CREDIT_PACK_MODEL_NAME);
-    await Model.create([this.toDocument(pack, organizationId)], sessionOption(getActiveSession()));
+    await Model.create(
+      [
+        {
+          ...this.toDocument(pack, organizationId),
+          createdByUserId: actorUserId,
+          updatedByUserId: actorUserId,
+        },
+      ],
+      sessionOption(getActiveSession()),
+    );
   }
 
   async save(
@@ -47,16 +56,19 @@ export class MongoCreditPackRepository implements CreditPackRepository {
 
   async findById(organizationId: OrganizationId, creditPackId: string): Promise<CreditPack | null> {
     const Model = models({ organizationId }).get<CreditPackDocument>(CREDIT_PACK_MODEL_NAME);
-    const doc = await Model.findOne({ organizationId, creditPackId });
+    const doc = await Model.findOne({ organizationId, creditPackId }, { _id: 0 }).lean();
     return doc ? this.fromDocument(doc) : null;
   }
 
   async listActive(organizationId: OrganizationId): Promise<readonly CreditPack[]> {
     const Model = models({ organizationId }).get<CreditPackDocument>(CREDIT_PACK_MODEL_NAME);
-    const docs = await Model.find({ organizationId, status: "ACTIVE" }).sort({
-      sortOrder: 1,
-      createdAt: 1,
-    });
+    const docs = await Model.find({ organizationId, status: "ACTIVE" })
+      .sort({
+        sortOrder: 1,
+        createdAt: 1,
+      })
+      .limit(100)
+      .lean();
     return docs.map((d: CreditPackDocument) => this.fromDocument(d));
   }
 
@@ -69,7 +81,8 @@ export class MongoCreditPackRepository implements CreditPackRepository {
       Model.find({ organizationId })
         .sort({ sortOrder: 1, createdAt: 1 })
         .skip(options.offset)
-        .limit(options.limit),
+        .limit(options.limit)
+        .lean(),
       Model.countDocuments({ organizationId }),
     ]);
     return {

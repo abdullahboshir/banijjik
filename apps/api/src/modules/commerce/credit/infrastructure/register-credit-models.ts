@@ -34,6 +34,7 @@ export function registerCreditModels(): void {
     modelName: CREDIT_ENTRY_MODEL_NAME,
     collectionName: CREDIT_ENTRY_COLLECTION_NAME,
     schema: creditEntrySchema,
+    appendOnly: true,
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
   registerModel({

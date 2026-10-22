@@ -105,3 +105,7 @@ Staff can grant or take back credits with a reason. The listing owner can see ho
 - Staff manage packs and adjust balances.
 - Unlocked fields appear only for the unlocking account.
 - The Opus review passes.
+
+## Owner-authorized review delta (2026-10-21)
+
+Fix findings in M.4-review.md without changing product decisions: per-route storefront module gates, append-only registration, and account-write serialization before the transactional daily count; preserve idempotent retries at the cap. Correct zero adjustments, timestamps, missing spend IDs and silent purchase truncation. Use active-session consumption reads for both unlock and expiry, include expired consumption, and refresh expiry attribution after the account write. Add additive keyset indexes through ADR-094; preserve document/event compatibility. Regression coverage includes cap concurrency, module-off no-charge, compiled-model mutations, 1001 tied-date purchases, duplicate unlock with balance one and cap one, concurrent expiry and event-write rollback. Keep minor cleanup outside correctness explicitly listed in the handoff. Mandatory independent T1 review of this delta remains pending.

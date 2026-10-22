@@ -37,7 +37,11 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
   ): Promise<ListingUnlock | null> {
     const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
-    const doc = await Model.findOne({ organizationId, customerAccountId, listingId });
+    const doc = await Model.findOne(
+      { organizationId, customerAccountId, listingId },
+      { _id: 0 },
+      sessionOption(getActiveSession()),
+    ).lean();
     return doc ? this.fromDocument(doc) : null;
   }
 
@@ -47,7 +51,11 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
   ): Promise<ListingUnlock | null> {
     const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
-    const doc = await Model.findOne({ organizationId, customerAccountId, listingId });
+    const doc = await Model.findOne(
+      { organizationId, customerAccountId, listingId },
+      { _id: 0 },
+      sessionOption(getActiveSession()),
+    ).lean();
     return doc ? this.fromDocument(doc) : null;
   }
 
@@ -60,7 +68,8 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
     const docs = await Model.find({ organizationId, customerAccountId })
       .sort({ unlockedAt: -1 })
       .skip(options.offset)
-      .limit(options.limit);
+      .limit(options.limit)
+      .lean();
     return docs.map((d: ListingUnlockDocument) => this.fromDocument(d));
   }
 
@@ -76,11 +85,14 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
     const startOfDay = new Date(today);
     const endOfDay = new Date(today);
     endOfDay.setUTCHours(23, 59, 59, 999);
-    return Model.countDocuments({
-      organizationId,
-      customerAccountId,
-      unlockedAt: { $gte: startOfDay, $lte: endOfDay },
-    });
+    return Model.countDocuments(
+      {
+        organizationId,
+        customerAccountId,
+        unlockedAt: { $gte: startOfDay, $lte: endOfDay },
+      },
+      sessionOption(getActiveSession()),
+    );
   }
 
   async findUnlockedListingIds(

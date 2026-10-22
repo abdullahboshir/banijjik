@@ -21,7 +21,7 @@ export interface CreditRepository {
   applyDelta(input: ApplyDeltaInput): Promise<CreditBalance | null>;
   /** PURCHASE rows of the account, oldest first, for FIFO spend attribution. */
   listPurchases(customerAccountId: CustomerAccountId): Promise<readonly CreditEntry[]>;
-  /** Attributed SPEND totals keyed by purchase entry id. */
+  /** Consumed totals (SPEND and EXPIRE) keyed by purchase entry id. */
   sumSpendsByPurchase(
     customerAccountId: CustomerAccountId,
     purchaseEntryIds: readonly string[],

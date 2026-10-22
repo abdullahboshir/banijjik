@@ -70,7 +70,7 @@ export class CreateCreditPackUseCase {
     );
     const created = pack.toResponse();
     return this.deps.unitOfWork.run(async () => {
-      await this.deps.packs.insert(created);
+      await this.deps.packs.insert(created, actorUserId);
       await this.recordAudit(AUDIT_ACTION.CREDIT_PACK_CREATED, created, actorUserId);
       return created;
     });

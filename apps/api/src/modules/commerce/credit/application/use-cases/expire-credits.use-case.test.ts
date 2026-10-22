@@ -118,6 +118,19 @@ function aLedger(input: {
 }
 
 describe("ExpireCreditsUseCase", () => {
+  it("rolls the debit and expiry entry back when event persistence fails", async () => {
+    const ledger = aLedger({
+      purchases: [purchaseEntry({ creditEntryId: "purchase-rollback" })],
+      balance: 10,
+    });
+    vi.mocked(ledger.deps.events.publish).mockRejectedValueOnce(new Error("outbox unavailable"));
+    await expect(new ExpireCreditsUseCase(ledger.deps).execute()).rejects.toThrow(
+      "outbox unavailable",
+    );
+    expect(ledger.balance.value).toBe(10);
+    expect(ledger.entries).toHaveLength(0);
+    expect((await new ExpireCreditsUseCase(ledger.deps).execute()).expiredEntries).toBe(1);
+  });
   it("writes one EXPIRE for the unused remainder and is idempotent on a second run", async () => {
     const ledger = aLedger({
       purchases: [purchaseEntry({ creditEntryId: "purchase-1" })],

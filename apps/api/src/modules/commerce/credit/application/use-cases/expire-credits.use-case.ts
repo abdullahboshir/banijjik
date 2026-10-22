@@ -23,47 +23,27 @@ export class ExpireCreditsUseCase {
   async execute(): Promise<ExpireCreditsResult> {
     const today = businessDateOf(this.deps.clock.now());
     const purchases = await this.deps.credit.listExpiringPurchases(today);
-    const spentByAccount = await this.spentByAccount(purchases);
     let expiredEntries = 0;
 
     for (const purchase of purchases) {
-      const customerAccountId = purchase.customerAccountId as CustomerAccountId;
-      const spent = spentByAccount.get(customerAccountId)?.get(purchase.creditEntryId) ?? 0;
-      const unused = purchase.credits - spent;
-      if (unused <= 0) continue;
-      if (await this.expirePurchase(purchase, unused, today)) expiredEntries += 1;
+      if (await this.expirePurchase(purchase, today)) expiredEntries += 1;
     }
     return { expiredEntries };
   }
 
-  private async spentByAccount(
-    purchases: readonly CreditEntry[],
-  ): Promise<ReadonlyMap<CustomerAccountId, ReadonlyMap<string, number>>> {
-    const byAccount = new Map<CustomerAccountId, string[]>();
-    for (const purchase of purchases) {
-      const customerAccountId = purchase.customerAccountId as CustomerAccountId;
-      const ids = byAccount.get(customerAccountId) ?? [];
-      ids.push(purchase.creditEntryId);
-      byAccount.set(customerAccountId, ids);
-    }
-    const result = new Map<CustomerAccountId, ReadonlyMap<string, number>>();
-    for (const [customerAccountId, ids] of byAccount) {
-      result.set(
-        customerAccountId,
-        await this.deps.credit.sumSpendsByPurchase(customerAccountId, ids),
-      );
-    }
-    return result;
-  }
-
   /** False when the balance no longer covers the remainder (already spent) or a job won the race. */
-  private async expirePurchase(
-    purchase: CreditEntry,
-    unused: number,
-    today: string,
-  ): Promise<boolean> {
+  private async expirePurchase(purchase: CreditEntry, today: string): Promise<boolean> {
     try {
       return await this.deps.unitOfWork.run(async () => {
+        const customerAccountId = purchase.customerAccountId as CustomerAccountId;
+        // Serialize expiry with unlocks before reading attribution, including transaction retries.
+        const locked = await this.deps.credit.applyDelta({ customerAccountId, delta: 0 });
+        if (!locked) return false;
+        const spent = await this.deps.credit.sumSpendsByPurchase(customerAccountId, [
+          purchase.creditEntryId,
+        ]);
+        const unused = purchase.credits - (spent.get(purchase.creditEntryId) ?? 0);
+        if (unused <= 0) return false;
         const balance = await this.deps.credit.applyDelta({
           customerAccountId: purchase.customerAccountId as CustomerAccountId,
           delta: -unused,

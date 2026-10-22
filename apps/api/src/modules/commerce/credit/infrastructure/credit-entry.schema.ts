@@ -69,3 +69,11 @@ creditEntrySchema.index(
   },
 );
 creditEntrySchema.index({ organizationId: 1, type: 1, expiresOn: 1 });
+creditEntrySchema.index({ organizationId: 1, type: 1, occurredAt: 1, creditEntryId: 1 });
+creditEntrySchema.index({
+  organizationId: 1,
+  customerAccountId: 1,
+  type: 1,
+  occurredAt: 1,
+  creditEntryId: 1,
+});

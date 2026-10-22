@@ -40,3 +40,36 @@
   3. M.5 should create PURCHASE entries and listen to `credit.entry.created` (`orderingKey: creditAccount:<customerAccountId>`) for accounting.
   4. M.6 needs the storefront screens for `/credit-packs`, unlock, `/my/credits` and `/my/unlocks`.
 - **Next suggested card / pair:** M.4 REVIEW → merge; then M.5 (manual payment verification) or M.3 (already planned)
+
+## Review-fix session (2026-10-21, Codex)
+
+This delta addresses review B1/B2/Ma1; the earlier PASS WITH FIXES heading is not approval of the delta. The named-model independent T1 re-review remains required.
+
+- All four credit storefront routes check effective module status before authentication/use cases; disabling credit returns 404 and preserves balance, ledger and unlock rows. Directory/contact routes retain their own gates.
+- CreditEntry registration now applies the kernel append-only plugin. Compiled-model update, replace and delete regression tests exercise its refusal.
+- Unlock transactions first write the existing account balance (zero delta increments its version), then re-read an existing unlock and the daily count with the active session. Mongo write conflicts serialize different listings per account across instances; callback retries obtain a fresh snapshot. The debit, spend entries, unlock and outbox remain in one transaction. Duplicate unlocks at the cap and zero remaining balance still return the existing unlock.
+- A single clock value supplies the unlock/spend timestamps. A missing spend entry throws before an unlock can persist. API validation rejects zero adjustments.
+- Purchase/expiry reads keyset-page in batches of 100 by occurredAt/creditEntryId, including tied timestamps; a 1001-row regression covers the removed truncation. Consumption includes EXPIRE as well as SPEND, preventing already-expired purchases from receiving later spend attribution.
+- Expiry locks the account before reading consumption within the transaction, so concurrent spending cannot leave a stale expiry amount. Tests cover concurrent real expiry transactions, ledger/balance reconciliation and event-persistence rollback/retry.
+- Packs persist the creating actor, reads use lean(), and the public ACTIVE pack list is bounded to the first 100 in sort order (test covers 101 records).
+
+Deployment: additive purchase keyset indexes require the existing ADR-094 db:sync-indexes procedure before rollout. No destructive migration or queued payload change. Existing credit records retain their shape; EXPIRE attribution is already stored on fromPurchaseEntryId. Rolling back application code retains indexes and ledger rows; never rewrite financial history. No deployment was performed.
+
+Remaining review polish: duplicate/dead repository methods (minor 7), context-only pack repository signatures (minor 9), and shared dependency assembly (minor 10) remain unchanged. Invalid-setting fallback and second-page customer endpoint coverage remain follow-up test gaps. No new product decision or architectural ADR was introduced. Production latency/query-plan measurement on realistic growing tenant data remains outstanding; the paging regression is correctness evidence, not a performance claim. Expiry scheduler integration remains deferred to 3.6.
+
+Verification of this delta completed on 2026-10-22. Earlier runs above describe the original implementation, not this delta. Heavy commands use the shared Local\BanijjikHeavyVerification mutex, serial turbo tasks and bounded test workers. Dependency builds passed (6/6 uncached). First typecheck caught a now-fixed import conflict; second failed with Node native Zone Allocation out-of-memory (exit 134). Final results will be recorded below.
+
+### Delta verification (2026-10-22)
+
+- `npm run typecheck -- --force --concurrency=1`: **16/16 successful, 0 cached** on the final source, exit 0.
+- `npm run lint -- --no-cache`: **exit 0** on the final source. Required 4096 MB Node heap; a 1024 MB heap exhausted during whole-repo typed lint. Earlier lint findings (two fixture layer imports and a 61-line router builder) were corrected without disabling rules.
+- `npm run format:check`: **All matched files use Prettier code style!**, exit 0.
+- `npm test -w @banijjik/api -- src/modules/commerce/credit --maxWorkers=1`: **4 files, 36 tests passed**, exit 0 (42.09 s). Real MongoDB 8.0.13 replica set; includes 1001 tied-timestamp purchases and a direct duplicate EXPIRE insert rejected by the partial unique index. Transaction/rollback regression coverage is local correctness evidence; it is not a production latency or growth benchmark.
+- Complete uncached tests, build and mobile credit browser scenario: passed; results follow below. Logs are outside the repository in `%TEMP%/banijjik-m4-full-tests-20261022.log` and `%TEMP%/banijjik-m4-full-build-20261022.log`.
+- Prefer forward recovery to application rollback: running the old version reintroduces the reviewed defects even though records/indexes remain compatible. No ledger history should be rewritten.
+
+- `npm test -- --force --concurrency=1 -- --maxWorkers=1` with Redis `127.0.0.1:6380`: **16/16 tasks successful, 0 cached**; **429 files / 3577 tests passed, 1 skipped**, exit 0 (17m19.814s). API 223 files / 1950 passed + 1 skipped; admin 547, platform 123, UI 230, validation 244, web-client 97, contracts 74, lint fixtures 274, i18n 24, IDs 14. The skip is the existing Windows-only SIGTERM spawn test in `apps/api/src/main.test.ts`; it was not newly disabled.
+- `npm run build -- --force --concurrency=1`: **9/9 successful, 0 cached**, exit 0 (1m6.199s).
+- First final browser attempt failed before exercising the scenario: another active `banijjik-1.7b` browser stack occupied port 3101, and the setup reached that stack rather than its newly created replica set (`No business with slug acme`). Its follow-on platform browser suite then held port 4000. No other session was stopped or modified. Retry awaits release of both fixed harness ports; application/test source was not changed to hide the failure.
+
+- Browser retry after the competing suite released ports: `CHROME_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe" npm run test:browser -w @banijjik/admin -- src/credit/credit-screens.browser.test.ts --maxWorkers=1`: **1 file / 1 test passed**, exit 0. Exercises creating a pack and adjusting a contact's credits as OWNER at the existing phone viewport. All required automated checks for this fix session passed; the separate named-model independent T1 re-review of the delta is still required before merge. No merge, push or deployment was performed.

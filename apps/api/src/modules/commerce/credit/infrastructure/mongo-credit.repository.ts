@@ -1,4 +1,5 @@
 import type { CustomerAccountId } from "@banijjik/ids";
+import type { QueryFilter } from "mongoose";
 import { getRequestContext } from "../../../../kernel/context/index.js";
 import {
   getActiveSession,
@@ -54,7 +55,11 @@ export class MongoCreditRepository implements CreditRepository {
   async getBalance(customerAccountId: CustomerAccountId): Promise<CreditBalance | null> {
     const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<CreditBalanceDocument>(CREDIT_BALANCE_MODEL_NAME);
-    const doc = await Model.findOne({ organizationId, customerAccountId }).lean();
+    const doc = await Model.findOne(
+      { organizationId, customerAccountId },
+      { _id: 0 },
+      sessionOption(getActiveSession()),
+    ).lean();
     return doc ? this.balanceFromDocument(doc as CreditBalanceDocument) : null;
   }
 
@@ -86,16 +91,11 @@ export class MongoCreditRepository implements CreditRepository {
 
   async listPurchases(customerAccountId: CustomerAccountId): Promise<readonly CreditEntry[]> {
     const organizationId = getOrganizationId();
-    const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
-    const docs = await Model.find({
+    return this.readPurchasePages({
       organizationId,
       customerAccountId,
       type: CREDIT_ENTRY_TYPE.PURCHASE,
-    })
-      .sort({ occurredAt: 1 })
-      .limit(1000)
-      .lean();
-    return docs.map((d) => this.entryFromDocument(d as CreditEntryDocument));
+    });
   }
 
   async sumSpendsByPurchase(
@@ -110,27 +110,54 @@ export class MongoCreditRepository implements CreditRepository {
         $match: {
           organizationId,
           customerAccountId,
-          type: CREDIT_ENTRY_TYPE.SPEND,
+          type: { $in: [CREDIT_ENTRY_TYPE.SPEND, CREDIT_ENTRY_TYPE.EXPIRE] },
           fromPurchaseEntryId: { $in: purchaseEntryIds },
         },
       },
       { $group: { _id: "$fromPurchaseEntryId", total: { $sum: { $abs: "$credits" } } } },
-    ]);
+    ]).session(getActiveSession() ?? null);
     return new Map(rows.map((row) => [row._id, row.total]));
   }
 
   async listExpiringPurchases(today: string): Promise<readonly CreditEntry[]> {
     const organizationId = getOrganizationId();
-    const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
-    const docs = await Model.find({
+    return this.readPurchasePages({
       organizationId,
       type: CREDIT_ENTRY_TYPE.PURCHASE,
       expiresOn: { $ne: null, $lt: new Date(today) },
-    })
-      .sort({ occurredAt: 1 })
-      .limit(1000)
-      .lean();
-    return docs.map((d) => this.entryFromDocument(d as CreditEntryDocument));
+    });
+  }
+
+  private async readPurchasePages(
+    filter: QueryFilter<CreditEntryDocument>,
+  ): Promise<readonly CreditEntry[]> {
+    const Model = models({ organizationId: getOrganizationId() }).get<CreditEntryDocument>(
+      CREDIT_ENTRY_MODEL_NAME,
+    );
+    const pageSize = 100;
+    const entries: CreditEntry[] = [];
+    let cursor: CreditEntryDocument | undefined;
+    for (;;) {
+      const after = cursor
+        ? {
+            $or: [
+              { occurredAt: { $gt: cursor.occurredAt } },
+              { occurredAt: cursor.occurredAt, creditEntryId: { $gt: cursor.creditEntryId } },
+            ],
+          }
+        : {};
+      const page = await Model.find(
+        { ...filter, ...after },
+        { _id: 0 },
+        sessionOption(getActiveSession()),
+      )
+        .sort({ occurredAt: 1, creditEntryId: 1 })
+        .limit(pageSize)
+        .lean();
+      entries.push(...page.map((document) => this.entryFromDocument(document)));
+      if (page.length < pageSize) return entries;
+      cursor = page[page.length - 1];
+    }
   }
 
   async findPurchaseEntry(purchaseEntryId: string): Promise<CreditEntry | null> {

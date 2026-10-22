@@ -1,4 +1,4 @@
-import { ERROR_CODE, type ModuleManifest } from "@banijjik/contracts";
+import { ERROR_CODE, MODULE_KEY, type ModuleManifest } from "@banijjik/contracts";
 import { CUSTOMER_LOGIN_SETTING_KEY, CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
 import {
   storefrontOrganizationParamsSchema,
@@ -185,6 +185,19 @@ function buildCustomerAuth(config: AppConfig, clock: Clock, input: StorefrontRou
   return { customerAuth, customerAuthOptional, secret };
 }
 
+function creditModuleSwitch(input: StorefrontRouterInput): RequestHandler {
+  return async (_request, _response, next) => {
+    const { organizationId } = getRequestContext();
+    if (
+      !organizationId ||
+      !(await input.orgConfig.isModuleEffective(organizationId, MODULE_KEY.CREDIT))
+    ) {
+      throw notAvailable();
+    }
+    next();
+  };
+}
+
 function buildStorefrontRouters(
   input: StorefrontRouterInput,
   rateLimiter: RateLimiter,
@@ -213,6 +226,7 @@ function buildStorefrontRouters(
   });
 
   const creditRouter = buildCreditStorefrontRouter({
+    requireCreditModule: creditModuleSwitch(input),
     unlockListing: new UnlockListingUseCase(creditDeps),
     getMyCredits: new GetMyCreditsUseCase(creditDeps),
     getMyUnlocks: new GetMyUnlocksUseCase(creditDeps),

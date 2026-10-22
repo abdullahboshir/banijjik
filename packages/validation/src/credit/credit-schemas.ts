@@ -34,7 +34,7 @@ export const creditPackArchiveRequestSchema = z.strictObject({
 });
 
 export const creditAdjustRequestSchema = z.strictObject({
-  credits: z.number().int(),
+  credits: z.union([z.number().int().positive(), z.number().int().negative()]),
   reason: z.string().trim().min(1).max(CREDIT_ADJUST_REASON_MAX_LENGTH),
   approvalToken: z.string().trim().min(1).max(200).optional(),
 });

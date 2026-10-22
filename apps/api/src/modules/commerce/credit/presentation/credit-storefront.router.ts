@@ -28,6 +28,7 @@ export interface CreditStorefrontRouterDependencies {
   readonly getMyUnlocks: GetMyUnlocksUseCase;
   readonly listPacks: ListActiveCreditPacksUseCase;
   readonly limiter: RateLimiter;
+  readonly requireCreditModule: RequestHandler;
   readonly authenticateCustomer: RequestHandler;
   readonly authenticateCustomerOptional: RequestHandler;
 }
@@ -61,6 +62,7 @@ function requiredIdempotencyKey(request: Request): string {
 function mountUnlockRoute(router: Router, input: CreditStorefrontRouterDependencies): void {
   router.post(
     "/listings/:listingNumber/unlock",
+    input.requireCreditModule,
     rateLimit({
       limiter: input.limiter,
       bucket: UNLOCK_IP_BUCKET,
@@ -93,6 +95,7 @@ function mountUnlockRoute(router: Router, input: CreditStorefrontRouterDependenc
 function mountMyCreditsRoute(router: Router, input: CreditStorefrontRouterDependencies): void {
   router.get(
     "/my/credits",
+    input.requireCreditModule,
     input.authenticateCustomer,
     validate({ query: creditEntriesQuerySchema }),
     async (_request, response) => {
@@ -110,6 +113,7 @@ function mountMyCreditsRoute(router: Router, input: CreditStorefrontRouterDepend
 function mountMyUnlocksRoute(router: Router, input: CreditStorefrontRouterDependencies): void {
   router.get(
     "/my/unlocks",
+    input.requireCreditModule,
     input.authenticateCustomer,
     validate({ query: unlocksQuerySchema }),
     async (_request, response) => {
@@ -125,9 +129,14 @@ function mountMyUnlocksRoute(router: Router, input: CreditStorefrontRouterDepend
 }
 
 function mountCreditPacksRoute(router: Router, input: CreditStorefrontRouterDependencies): void {
-  router.get("/credit-packs", input.authenticateCustomerOptional, async (_request, response) => {
-    sendData(response, await input.listPacks.execute());
-  });
+  router.get(
+    "/credit-packs",
+    input.requireCreditModule,
+    input.authenticateCustomerOptional,
+    async (_request, response) => {
+      sendData(response, await input.listPacks.execute());
+    },
+  );
 }
 
 export function buildCreditStorefrontRouter(input: CreditStorefrontRouterDependencies): Router {
