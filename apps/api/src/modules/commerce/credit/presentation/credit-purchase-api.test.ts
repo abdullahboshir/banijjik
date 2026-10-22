@@ -209,7 +209,7 @@ describe("credit purchase API", () => {
     expect(auditActions).toContain(AUDIT_ACTION.CREDIT_PURCHASE_VERIFIED);
   });
 
-  it("duplicate reference: rejected if PENDING or VERIFIED, allowed after REJECTED, and parallel race test", async () => {
+  it("duplicate reference: own retry replays, another account gets 409, allowed after REJECTED, parallel retry replays", async () => {
     const world = await createTwoOrganizations(harness.app, harness.connections, {
       industryTemplateKey: "RETAIL",
     });
@@ -241,7 +241,7 @@ describe("credit purchase API", () => {
     });
     expect(res1.status).toBe(201);
 
-    // Second submission with same method + reference -> 409
+    // Same account, same method + reference + pack -> replay of its own purchase (201, same body)
     const res2 = await callStorefront(harness.app, {
       organizationId,
       suffix: "/credit-purchases",
@@ -255,8 +255,28 @@ describe("credit purchase API", () => {
       },
       cookies: asCustomerCookies(customer.session),
     });
-    expect(res2.status).toBe(409);
-    expect(res2.body.error.code).toBe(ERROR_CODE.CONFLICT);
+    expect(res2.status).toBe(201);
+    expect(dataOf<CreditPurchaseResponse>(res2).creditPurchaseId).toBe(
+      dataOf<CreditPurchaseResponse>(res1).creditPurchaseId,
+    );
+
+    // Another customer account using the same reference -> 409
+    const otherCustomer = await signInCustomer(harness, organizationId, "01722222223");
+    const res2Other = await callStorefront(harness.app, {
+      organizationId,
+      suffix: "/credit-purchases",
+      method: "post",
+      idempotencyKey: newId(),
+      body: {
+        creditPackId: pack.creditPackId,
+        method: CREDIT_PURCHASE_METHOD.BKASH,
+        senderPhone: "+8801722222223",
+        transactionReference: "TRXDUPLICATE1",
+      },
+      cookies: asCustomerCookies(otherCustomer.session),
+    });
+    expect(res2Other.status).toBe(409);
+    expect(res2Other.body.error.code).toBe(ERROR_CODE.CONFLICT);
 
     // Staff rejects the first purchase
     const purchaseId = dataOf<CreditPurchaseResponse>(res1).creditPurchaseId;
@@ -284,7 +304,7 @@ describe("credit purchase API", () => {
     });
     expect(res3.status).toBe(201);
 
-    // Parallel submissions with same reference -> exactly one 201, one 409
+    // Parallel identical submissions from one account -> both 201, the same purchase
     const [p1, p2] = await Promise.all([
       callStorefront(harness.app, {
         organizationId,
@@ -313,8 +333,10 @@ describe("credit purchase API", () => {
         cookies: asCustomerCookies(customer.session),
       }),
     ]);
-    const statuses = [p1.status, p2.status].sort();
-    expect(statuses).toEqual([201, 409]);
+    expect([p1.status, p2.status]).toEqual([201, 201]);
+    expect(dataOf<CreditPurchaseResponse>(p1).creditPurchaseId).toBe(
+      dataOf<CreditPurchaseResponse>(p2).creditPurchaseId,
+    );
   });
 
   it("idempotent verify: verify twice returns identical response, parallel verify grants once", async () => {
