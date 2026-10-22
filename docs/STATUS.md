@@ -118,7 +118,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.9 POS | todo |  |
 | 3.11 staff commission | todo | ADR-100 |
 | 3.10 reports and dashboard | todo | last |
-| 3.14 CI for every card branch | planned (2026-10-22, `docs/plans/3.14.md`, Opus; T2) | start first: `s/**` push trigger and a browser job (Redis on 6380, MongoDB 8.0.13 cache, system Chrome) |
+| 3.14 CI for every card branch | merged (2026-10-22, implemented by the lead (Opus 5.5); CI run 39719375443 green) | `s/**` pushes run verify, browser (admin 90, platform 16 passed, about 5 min) and secrets; flaky 3.8a replay test noted in the handoff |
 | Phase 3 review | todo | |
 
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
