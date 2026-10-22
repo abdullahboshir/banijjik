@@ -7,36 +7,42 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
 - No secrets, passwords or `.env` values.
 
-Last updated: 2026-10-22 (plans 3.8 and 3.7 refreshed) by Sonnet 5.5 · local main `433c179` · GitHub main `c4968f2` (not pushed; needs the owner's yes)
+Last updated: 2026-10-22 (evening) by Sonnet 5.5 · `main` pushed to GitHub
 
 ## 1. Where the project stands
-- Phase 3 merged: 3.6, 3.8b, 3.0, 3.1a, 3.1b, 3.1c, 3.2a, 3.2b, 3.3, 3.4, 3.4b, 3.8a, 3.8c, 3.12, 3.13, 3.14 (CI for card branches). Track M merged: M.1, M.2, M.3, M.4. Details per card: `docs/STATUS.md`.
-- From 2026-10-22, every plan and session follows `docs/plans/parallel-sessions-guide.md`: Part A (API) and Part B (screens) per card, file ownership, fast local checks, full verification on GitHub CI for every pushed `s/**` branch, one finish checklist. Ready board: guide §9.
+- Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, 3.8a, 3.8b, 3.8c, 3.12, 3.13, 3.14. Track M merged: M.1 to M.4. Details per card: `docs/STATUS.md`.
+- `main` was pushed on 2026-10-22 (owner said yes). Cloud agents and new branches now see 3.6, M.3, M.4, 3.8b.
+- Every plan and session follows `docs/plans/parallel-sessions-guide.md` (Part A API, Part B screens, finish checklist §8, review §10). Ready board §9 is stale (still shows 3.6 "running"); refresh it at the next merge.
+- Plans written this session: 3.15 (test stability), 3.6b (rental and event bookings); refreshed: 3.8, 3.7 (last section of each). 3.7 has a lead decision on freeze (narrow exception: latest period end moves on unfreeze).
 
-## 2. Open branches
-All four earlier cards (3.6, M.3, M.4, 3.8b) are merged into local `main`. Their branches and folders are free to reuse (`banijjik-lead`, `banijjik-1.7b`, `banijjik-m2`, `banijjik`); do not delete the branches until main is pushed.
+## 2. Open branches (checked 2026-10-22; none is pushed except main, so no CI has run on any)
+| Card / part | Branch | Folder | Tier | State and next step |
+|---|---|---|---|---|
+| 3.8 Part A payments | `s/3.8-api-payments` | `banijjik-lead` | T1 | 2 commits (contracts, validation) plus about 28 uncommitted files (payment module, booking ports, contact, routes, grants). Not reviewed. Owner told the session: commit, push, CI green, finish checklist. Then strict T1 review. It must also supply the accounting `PaymentPostingSource` adapter (plan refresh item 3). |
+| 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` | `banijjik-1.7b` | T1 | No commits; uncommitted `enrollment/` module and booking `resource-exclusive-hold` files. The first attempt in folder `banijjik` was disturbed by a branch switch; old branch `s/3.7-api-enrollment` has no real work. Same instruction as above. |
+| M.5 Part A credit purchase | `s/M.5-api-credit-purchases` | `banijjik` | T1 | 1 commit (contracts, validation, entity, repo) plus uncommitted files. Same instruction. |
+| 3.5a Part A orders | `s/3.5a-api-orders` | `banijjik-3.5a` | T1 | 1 commit (sales vocabulary), 2 uncommitted files; hardly moved. Same instruction. |
+| 3.15 test stability | `s/3.15-test-stability` (new) | `banijjik-m2` (empty) | T3 | Plan on main. Not started. Owner gives it to a session. |
+| 3.6b rental/event Part A | `s/3.6b-api-rental-event` (new) | cloud agent or a free folder | T1 | Plan on main. Advice to the owner: start after 3.8 or 3.7 Part A merges (same `booking` files). |
 
-| Branch | Folder | Tier | State and next step |
-|---|---|---|---|
-| `s/3.5a-api-orders` | `banijjik-3.5a` | T1 | Started by the owner's Cursor session (first commit `600b297`, uncommitted edits). Not reviewed. When it reports done: CI green, strict T1 review, merge. |
+Free folders: `banijjik-m2` (after M.4, empty). Do not run two sessions in one folder (it broke 3.7 once).
 
-Known flaky test: `apps/api/src/kernel/events/ordered-event-worker.test.ts` times out now and then on CI (seen 3 times on 2026-10-22). Rerun failed jobs once. Plan a small fix card (condition-based wait) now: it costs a rerun on every card.
+**CI on main:** run `39736146807` (commit `5de077a`, docs only) failed on `apps/admin` `branding-form.test.tsx` ("shows every preset by name…"), a timing flake from card 3.12; the lead re-ran the failed jobs. Check `gh run list --branch main`. If it fails again, treat it as a real bug and open a fix. Card 3.15 covers the known flakes (also `ordered-event-worker.test.ts`, `package-form.test.tsx`).
 
-Stash `stash@{0}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). Not lost; the owner has not said keep or drop.
+Stash `stash@{0}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). The owner has not said keep or drop.
 
 ## 3. Waiting on the owner
-- **Push main** (local `main` is ahead of GitHub `c4968f2` by 3.14, 3.6, M.3, M.4, 3.8b). Needed so cloud agents and new branches see the CI rules and the merged cards. Standing permission to push `main` after each reviewed merge was asked twice and not answered; ask before pushing.
+- Sessions must report "done" (committed, pushed, CI green, handoff written) for 3.8, 3.7, M.5, 3.5a. Nothing can be merged before that; the lead does not merge unfinished branches.
+- Standing permission to push `main` after each reviewed merge (asked three times; today's push was a one-time yes). Ask before each push.
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
-- Older open items: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
+- Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
 
 ## 4. Next actions, in order
-1. Plans 3.8 and 3.7 are refreshed (last section of each, based on `8f4c63e`). Implementers can start **3.8 Part A** (payments; also supplies the accounting `PaymentPostingSource` adapter) and **3.7 Part A** (enrollment; no payment link, no `commerce/payment` edits). Still to write: **3.6b** (rental/event booking plan).
-2. **M.5 Part A** (credit purchase) can start now (M.4 is merged).
-3. **3.5a Part A** is running; review when done. Then Part B of 3.5a, 3.8, 3.7, M.5 after their Part A.
-4. Small card: fix the flaky `ordered-event-worker` test.
-5. Later: 3.5b, 3.9 POS, 3.11, 3.10, M.6 to M.9, then the Phase 3 review (`docs/handoffs/phase-3-review.md`).
-6. Follow-ups noted in review: reports and approval amounts in bookkeeping hardcode `"BDT"` (fine while `CURRENCY_CODE` has only BDT; read the organization currency when a second currency is added). Admin script budget is now 180 KiB (owner, 2026-10-22); the contact credit section loads on demand.
-
+1. Check `gh run list` for main and every pushed `s/**` branch; check each folder in §2 with `git log` and `git status` (the owner's sessions often leave work uncommitted).
+2. For each card that reports done and has green CI: strict T1 review of the risky files (guide §10), findings back as a numbered list, then rebase on main, wait for green CI, fast-forward main, push (with permission). Order of arrival; each later branch rebases. Merge hot spots: `routes/*`, `start-worker.ts`, contracts index files, booking files (3.8, 3.7 and 3.6b all touch them), STATUS.md rows.
+3. After 3.8 Part A merges: refresh and release 3.8 Part B, 3.11 plan, 3.9 plan inputs. After 3.5a Part A: 3.5a Part B, plan 3.5b. After M.5 Part A: M.5 Part B, plan M.6. After 3.7 Part A: 3.7 Part B; payment link for enrollment goes to 3.8 or a small follow-up (plan 3.7 refresh item 1).
+4. Later: 3.9 POS, 3.11, 3.10, M.6 to M.9, then `docs/handoffs/phase-3-review.md`.
+5. Follow-ups: reports and approval amounts in bookkeeping hardcode `"BDT"` (read the organization currency when a second currency is added). Admin script budget is 180 KiB (owner, 2026-10-22).
 
 ## 5. How the lead works
 - **Role:** plans (just in time), strict T1 reviews, merge checks, integration (rebases, conflicts), fast-forward of `main`. Implementation is done by the owner's Cursor sessions (sometimes Claude Code or Qoder), not by the lead, unless the owner asks.
@@ -50,8 +56,8 @@ Stash `stash@{0}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - **Token cost** (measured 2026-10-22): about 90% of a day's usage went to carrying a 900k-token session, mostly full cache rewrites after a break of over an hour or a `/model` switch. Keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-22 evening** (Sonnet): pushed main (owner yes); refreshed plans 3.8 and 3.7, decided 3.7 freeze rule; wrote plans 3.15 and 3.6b; audited all branches (none done, none pushed, much uncommitted); found main CI flake and re-ran it; told the owner how to run sessions in separate folders.
 - **2026-10-22 afternoon** (Sonnet): checked state (3.5a branch unpushed, one commit only), refreshed plans 3.8 and 3.7 against main (accounting adapter duty, existing payment contracts, bed-hold port risk for 3.7). No code merged.
 - **2026-10-22 morning** (Sonnet): reviewed, rebased, pushed and merged 3.6, M.3, M.4 and 3.8b in that order, each green on CI. Fixed on the way: JS budget (contact credit section lazy, admin budget 180 KiB by owner), duplicate probe module in the platform browser stack, router builder length, long setting key overflow. All branches stayed unpushed to main.
 - **2026-10-22 night** (Sonnet): rebased 3.6 on main (STATUS.md conflicts), CI green, reviewed R1 delta, fast-forwarded local main to `e5af140`. banijjik-lead folder is now free. M.3, M.4, 3.8b not yet reviewed; none pushed.
 - **2026-10-22** (Opus): parallel sessions guide; plans 3.14, 3.5a, M.5; session parts for 3.7 and 3.8; pushed main `c4968f2`; implemented and merged 3.14 locally (CI green after one flaky rerun); token-usage analysis; created this file and the user-level `/lead` and `/save-state` skills. The owner reports 3.6, M.3, M.4 and 3.8b finished (not yet reviewed).
-- **2026-10-20 to 21** (Opus): merged 3.8c, 3.4, 3.3 and M.2 together (`8258669`); planned 3.8b, M.3, M.4; reviewed 3.6 (R1: bookable service fields missing in the offering editor).
