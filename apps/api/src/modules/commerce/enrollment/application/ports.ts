@@ -29,6 +29,10 @@ export interface EnrollmentRepository {
   find(enrollmentId: string): Promise<Enrollment | undefined>;
   currentPeriod(enrollment: Enrollment): Promise<EnrollmentPeriod>;
   periods(enrollmentId: string): Promise<readonly EnrollmentPeriod[]>;
+  periodPage(
+    enrollmentId: string,
+    query: { page: number; limit: number },
+  ): Promise<{ items: EnrollmentPeriod[]; hasNext: boolean }>;
   save(enrollment: Enrollment, version: number): Promise<Enrollment>;
   savePeriod(period: EnrollmentPeriod, changeEnd: boolean): Promise<void>;
   insertPeriod(period: EnrollmentPeriod): Promise<void>;

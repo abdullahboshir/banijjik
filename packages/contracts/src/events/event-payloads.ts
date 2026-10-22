@@ -113,7 +113,7 @@ export interface EventPayloadMap {
   readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_COMPLETED]: EnrollmentEventPayload;
   readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_OVERDUE]: EnrollmentEventPayload;
   readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_RENEWAL_DUE]: EnrollmentEventPayload;
-  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_CREATED]: CheckInEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_RECORDED]: CheckInEventPayload;
   readonly [IAM_EVENT_TYPE.USER_REGISTERED]: UserRegisteredPayload;
   readonly [IAM_EVENT_TYPE.ROLE_CREATED]: RolePayload;
   readonly [IAM_EVENT_TYPE.ROLE_PERMISSIONS_CHANGED]: RolePayload;

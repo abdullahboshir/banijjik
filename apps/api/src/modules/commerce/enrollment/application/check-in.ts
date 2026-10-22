@@ -50,7 +50,7 @@ export async function createCheckIn(
     });
     await dependencies.repository.checkIn(checkIn);
     await dependencies.events.publish(
-      ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_CREATED,
+      ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_RECORDED,
       {
         checkInId: checkIn.checkInId,
         ...(checkIn.enrollmentId === undefined ? {} : { enrollmentId: checkIn.enrollmentId }),
@@ -59,7 +59,7 @@ export async function createCheckIn(
       { orderingKey: `enrollment:${enrollment?.enrollmentId ?? checkIn.checkInId}` },
     );
     await dependencies.audit.record({
-      action: ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_CREATED,
+      action: ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_RECORDED,
       entityType: "checkIn",
       entityId: checkIn.checkInId,
     });

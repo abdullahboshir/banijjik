@@ -47,7 +47,7 @@ export async function recordEnrollment(
   enrollment: Enrollment,
   event: Exclude<
     (typeof ENROLLMENT_EVENT_TYPE)[keyof typeof ENROLLMENT_EVENT_TYPE],
-    typeof ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_CREATED
+    typeof ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_RECORDED
   >,
 ): Promise<void> {
   await dependencies.events.publish(
@@ -99,6 +99,9 @@ export async function detail(
   enrollmentId: string,
 ): Promise<Enrollment & { periods: readonly EnrollmentPeriod[] }> {
   const enrollment = await readEnrollment(dependencies, caller, enrollmentId);
-  const periods: readonly EnrollmentPeriod[] = await dependencies.repository.periods(enrollmentId);
+  const { items: periods } = await dependencies.repository.periodPage(enrollmentId, {
+    page: 1,
+    limit: 100,
+  });
   return { ...enrollment, periods };
 }

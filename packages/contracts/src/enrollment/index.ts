@@ -39,7 +39,7 @@ export const ENROLLMENT_EVENT_TYPE = {
   ENROLLMENT_COMPLETED: "enrollment.enrollment.completed",
   ENROLLMENT_OVERDUE: "enrollment.enrollment.overdue",
   ENROLLMENT_RENEWAL_DUE: "enrollment.renewal.due",
-  ENROLLMENT_CHECK_IN_CREATED: "enrollment.checkIn.created",
+  ENROLLMENT_CHECK_IN_RECORDED: "enrollment.checkIn.recorded",
 } as const;
 export interface EnrollmentEventPayload {
   readonly enrollmentId: string;
@@ -79,3 +79,12 @@ export const ENROLLMENT_TERMINAL_STATUSES: readonly EnrollmentStatus[] = [
   ENROLLMENT_STATUS.COMPLETED,
   ENROLLMENT_STATUS.EXPIRED,
 ];
+
+export type {
+  EnrollmentResponse,
+  EnrollmentPeriodResponse,
+  EnrollmentDetailResponse,
+  EnrollmentFreezeResponse,
+  CheckInResponse,
+  EnrollmentTransitionResponse,
+} from "./enrollment-responses.js";

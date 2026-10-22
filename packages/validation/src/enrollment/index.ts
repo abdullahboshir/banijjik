@@ -20,13 +20,18 @@ export const enrollmentVersionRequestSchema = z.strictObject({
   version: z.number().int().positive(),
 });
 export const enrollmentIdParamsSchema = z.object({ enrollmentId: uuidV7Schema });
-export const enrollmentListQuerySchema = paginationQuerySchema.extend({
-  locationId: uuidV7Schema.optional(),
-  status: z.enum(ENROLLMENT_STATUS).optional(),
-  offeringId: uuidV7Schema.optional(),
-  contactId: uuidV7Schema.optional(),
-  due: businessDate.optional(),
-});
+export const enrollmentListQuerySchema = paginationQuerySchema
+  .extend({
+    locationId: uuidV7Schema.optional(),
+    status: z.enum(ENROLLMENT_STATUS).optional(),
+    offeringId: uuidV7Schema.optional(),
+    contactId: uuidV7Schema.optional(),
+    overdue: z
+      .enum(["true", "false"])
+      .transform((value) => value === "true")
+      .optional(),
+  })
+  .strict();
 export type EnrollmentListQuery = z.infer<typeof enrollmentListQuerySchema>;
 export const checkInCreateRequestSchema = z
   .strictObject({

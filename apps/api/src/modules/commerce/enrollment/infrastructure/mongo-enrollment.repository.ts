@@ -52,6 +52,18 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
       .sort({ periodNumber: 1 })
       .lean<EnrollmentPeriod[]>();
   }
+  async periodPage(
+    enrollmentId: string,
+    query: { page: number; limit: number },
+  ): Promise<{ items: EnrollmentPeriod[]; hasNext: boolean }> {
+    const rows = await periods()
+      .find({ enrollmentId }, projection, options())
+      .sort({ periodNumber: 1 })
+      .skip((query.page - 1) * query.limit)
+      .limit(query.limit + 1)
+      .lean<EnrollmentPeriod[]>();
+    return { items: rows.slice(0, query.limit), hasNext: rows.length > query.limit };
+  }
   async save(enrollment: Enrollment, version: number): Promise<Enrollment> {
     const {
       enrollmentId,
@@ -127,18 +139,15 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
     );
   }
   async list(query: EnrollmentListQuery): Promise<{ items: Enrollment[]; hasNext: boolean }> {
-    const { page, limit, due } = query;
+    const { page, limit, overdue } = query;
     const filter: QueryFilter<Enrollment> = {};
     if (query.locationId !== undefined) filter.locationId = query.locationId;
     if (query.status !== undefined) filter.status = query.status;
     if (query.offeringId !== undefined) filter.offeringId = query.offeringId;
     if (query.contactId !== undefined) filter.contactId = query.contactId;
+    if (overdue !== undefined) filter.$and = [{ status: overdue ? "OVERDUE" : { $ne: "OVERDUE" } }];
     const rows = await enrollments()
-      .find(
-        { ...filter, ...(due === undefined ? {} : { status: "OVERDUE" }) },
-        projection,
-        options(),
-      )
+      .find(filter, projection, options())
       .sort({ enrollmentId: 1 })
       .skip((page - 1) * limit)
       .limit(limit + 1)

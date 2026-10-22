@@ -1,3 +1,4 @@
+import { paginationQuerySchema } from "@banijjik/validation";
 import { PERMISSION_KEY } from "@banijjik/contracts";
 import {
   enrollmentCreateRequestSchema,
@@ -17,7 +18,7 @@ import type { PermissionMiddlewareFactory } from "../../../../kernel/access/inde
 import { readTenantCaller } from "../../../../kernel/access/index.js";
 import { sendData, validate } from "../../../../kernel/http/index.js";
 import type { EnrollmentDependencies } from "../application/dependencies.js";
-import { detail } from "../application/dependencies.js";
+import { detail, readEnrollment } from "../application/dependencies.js";
 import { createEnrollment } from "../application/create-enrollment.js";
 import { transitionEnrollment } from "../application/transition-enrollment.js";
 import { createCheckIn } from "../application/check-in.js";
@@ -69,13 +70,18 @@ export function buildEnrollmentRouter(input: {
       );
     },
   );
+  mountPeriods(router, input);
   mountTransitions(router, input);
   mountCheckIns(router, input);
   return router;
 }
 function mountTransitions(
   router: Router,
-  input: { dependencies: EnrollmentDependencies; permission: PermissionMiddlewareFactory },
+  input: {
+    dependencies: EnrollmentDependencies;
+    permission: PermissionMiddlewareFactory;
+    idempotency: RequestHandler;
+  },
 ) {
   const routes: readonly [EnrollmentAction, Parameters<PermissionMiddlewareFactory>[0]][] = [
     ["activate", PERMISSION_KEY.ENROLLMENT_ENROLLMENT_UPDATE],
@@ -89,6 +95,7 @@ function mountTransitions(
       `/enrollments/:enrollmentId/${action}`,
       input.permission(key),
       validate({ params: enrollmentIdParamsSchema, body: enrollmentVersionRequestSchema }),
+      input.idempotency,
       async (request, response) => {
         const { version } = request.body as { version: number };
         const result = await transitionEnrollment(input.dependencies, {
@@ -105,13 +112,18 @@ function mountTransitions(
 
 function mountCheckIns(
   router: Router,
-  input: { dependencies: EnrollmentDependencies; permission: PermissionMiddlewareFactory },
+  input: {
+    dependencies: EnrollmentDependencies;
+    permission: PermissionMiddlewareFactory;
+    idempotency: RequestHandler;
+  },
 ) {
   const { dependencies, permission } = input;
   router.post(
     "/check-ins",
     permission(PERMISSION_KEY.ENROLLMENT_CHECK_IN_CREATE),
     validate({ body: checkInCreateRequestSchema }),
+    input.idempotency,
     async (request, response) => {
       sendData(
         response,
@@ -130,6 +142,24 @@ function mountCheckIns(
       sendData(response, page.items, {
         meta: { page: query.page, limit: query.limit, hasNext: page.hasNext },
       });
+    },
+  );
+}
+
+function mountPeriods(
+  router: Router,
+  input: { dependencies: EnrollmentDependencies; permission: PermissionMiddlewareFactory },
+) {
+  router.get(
+    "/enrollments/:enrollmentId/periods",
+    input.permission(PERMISSION_KEY.ENROLLMENT_ENROLLMENT_READ),
+    validate({ params: enrollmentIdParamsSchema, query: paginationQuerySchema }),
+    async (request, response) => {
+      const enrollmentId = String(request.params.enrollmentId);
+      await readEnrollment(input.dependencies, readTenantCaller(), enrollmentId);
+      const query = response.locals["validated"].query as { page: number; limit: number };
+      const page = await input.dependencies.repository.periodPage(enrollmentId, query);
+      sendData(response, page.items, { meta: { ...query, hasNext: page.hasNext } });
     },
   );
 }
