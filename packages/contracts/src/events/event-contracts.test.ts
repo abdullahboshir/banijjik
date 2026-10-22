@@ -1,3 +1,4 @@
+import { ENROLLMENT_EVENT_TYPE } from "../enrollment/index.js";
 import { describe, expect, it } from "vitest";
 import { ACCOUNTING_EVENT_TYPE, EXPENSE_EVENT_TYPE } from "../accounting/accounting-event-type.js";
 import { BOOKING_EVENT_TYPE } from "../booking/booking-event-type.js";
@@ -39,6 +40,7 @@ describe("event types", () => {
       ...Object.values(CREDIT_EVENT_TYPE),
       ...Object.values(COMMISSION_EVENT_TYPE),
       ...Object.values(SALES_EVENT_TYPE),
+      ...Object.values(ENROLLMENT_EVENT_TYPE),
     ].sort();
 
     expect(Object.values(EVENT_TYPE).sort()).toEqual(expected);

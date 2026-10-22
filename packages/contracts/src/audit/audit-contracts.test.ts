@@ -57,6 +57,8 @@ describe("audit vocabulary", () => {
       "storeCreditEntry",
       "commissionRule",
       "order",
+      "enrollment",
+      "checkIn",
     ]);
   });
 });
