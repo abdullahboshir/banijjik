@@ -39,6 +39,8 @@ const EXPENSE_MENU_KEYS = {
 const PAYMENT_MENU_KEY = "payment.payments";
 const ACCOUNTING_TRIAL_BALANCE_MENU_KEY = "accounting.trialBalance";
 const TAX_CLASSES_MENU_KEY = "pricing.taxClasses";
+// Sales is a CORE module, so its entry joins the menu of every template (card 3.5a).
+const SALES_ORDERS_MENU_KEY = "sales.orders";
 
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
@@ -77,6 +79,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      SALES_ORDERS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
@@ -116,6 +119,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      SALES_ORDERS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
@@ -139,6 +143,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      SALES_ORDERS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
@@ -166,6 +171,7 @@ describe("the settings menu of the organization module", () => {
     expect(menuKeys).toEqual([
       CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
+      SALES_ORDERS_MENU_KEY,
       CATALOG_MENU_KEYS.categories,
       CATALOG_MENU_KEYS.modifierGroups,
       PAYMENT_MENU_KEY,

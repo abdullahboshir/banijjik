@@ -156,6 +156,7 @@ describe("the entitlement gate", () => {
       "catalog.offerings",
       "contact.contacts",
       "organization.profile",
+      "sales.orders",
       "organization.branding",
       "catalog.categories",
       "expense.expenses",
@@ -358,6 +359,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       "organization",
       "payment",
       "pricing",
+      "sales",
       "settings",
       "workflow",
     ]);
@@ -377,6 +379,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.CATALOG_OFFERING_READ,
       PERMISSION_KEY.CONTACT_CONTACT_READ,
       PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
+      PERMISSION_KEY.SALES_ORDER_READ,
       PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
       PERMISSION_KEY.CATALOG_CATEGORY_READ,
       PERMISSION_KEY.EXPENSE_EXPENSE_READ,
@@ -427,6 +430,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.PAYMENT_PAYMENT_READ,
       PERMISSION_KEY.PAYMENT_DUE_READ,
       PERMISSION_KEY.PAYMENT_STORE_CREDIT_READ,
+      PERMISSION_KEY.SALES_ORDER_READ,
       PERMISSION_KEY.SETTINGS_SETTING_READ,
     ]);
     expect(
@@ -435,6 +439,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       PERMISSION_KEY.ORGANIZATION_LOCATION_READ,
       PERMISSION_KEY.CATALOG_OFFERING_READ,
       PERMISSION_KEY.CONTACT_CONTACT_READ,
+      PERMISSION_KEY.SALES_ORDER_READ,
       PERMISSION_KEY.CATALOG_CATEGORY_READ,
       PERMISSION_KEY.EXPENSE_EXPENSE_READ,
       PERMISSION_KEY.CATALOG_MODIFIER_GROUP_READ,

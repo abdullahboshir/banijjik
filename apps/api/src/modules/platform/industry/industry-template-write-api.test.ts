@@ -33,6 +33,7 @@ const RETAIL_MODULES = [
   "organization",
   "payment",
   "pricing",
+  "sales",
   "settings",
 ];
 const WITH_BOOKING = [
@@ -50,6 +51,7 @@ const WITH_BOOKING = [
   "organization",
   "payment",
   "pricing",
+  "sales",
   "settings",
 ];
 
