@@ -103,6 +103,13 @@ export const AUDIT_ACTION = {
   COMMISSION_RULE_CREATED: "commission.rule.created",
   COMMISSION_RULE_UPDATED: "commission.rule.updated",
   COMMISSION_RULE_ARCHIVED: "commission.rule.archived",
+  ORDER_DRAFTED: "sales.order.drafted",
+  ORDER_PLACED: "sales.order.placed",
+  ORDER_CONFIRMED: "sales.order.confirmed",
+  ORDER_UPDATED: "sales.order.updated",
+  ORDER_PACKED: "sales.order.packed",
+  ORDER_COMPLETED: "sales.order.completed",
+  ORDER_CANCELLED: "sales.order.cancelled",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -149,6 +156,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "payment",
   "storeCreditEntry",
   "commissionRule",
+  "order",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

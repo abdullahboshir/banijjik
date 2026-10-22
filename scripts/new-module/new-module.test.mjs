@@ -68,6 +68,7 @@ function buildTree() {
   const creditEntry = join(CONTRACTS_SOURCE, "credit", "index.ts");
   const paymentEntry = join(CONTRACTS_SOURCE, "payment", "index.ts");
   const commissionEntry = join(CONTRACTS_SOURCE, "commission", "index.ts");
+  const salesEntry = join(CONTRACTS_SOURCE, "sales", "index.ts");
   writeFileSync(
     join(treeRoot, "tsconfig.json"),
     JSON.stringify({
@@ -88,6 +89,7 @@ function buildTree() {
           "@banijjik/contracts/credit": [creditEntry],
           "@banijjik/contracts/payment": [paymentEntry],
           "@banijjik/contracts/commission": [commissionEntry],
+          "@banijjik/contracts/sales": [salesEntry],
           "@banijjik/contracts": [contractsEntry],
           "@banijjik/validation": [VALIDATION_ENTRY],
           "@banijjik/ids": [IDS_ENTRY],
@@ -98,7 +100,7 @@ function buildTree() {
   );
   writeFileSync(
     join(treeRoot, "vitest.config.mjs"),
-    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts/booking": ${JSON.stringify(bookingEntry)}, "@banijjik/contracts/credit": ${JSON.stringify(creditEntry)}, "@banijjik/contracts/payment": ${JSON.stringify(paymentEntry)}, "@banijjik/contracts/commission": ${JSON.stringify(commissionEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
+    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts/booking": ${JSON.stringify(bookingEntry)}, "@banijjik/contracts/credit": ${JSON.stringify(creditEntry)}, "@banijjik/contracts/payment": ${JSON.stringify(paymentEntry)}, "@banijjik/contracts/commission": ${JSON.stringify(commissionEntry)}, "@banijjik/contracts/sales": ${JSON.stringify(salesEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
   );
 }
 

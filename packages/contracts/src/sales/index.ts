@@ -1,0 +1,52 @@
+/**
+ * Sales contracts (card 3.5a), public entry `@banijjik/contracts/sales`.
+ * The main index is at its line limit, so this module's vocabulary gets its own entry.
+ */
+export {
+  FULFILLMENT_METHOD,
+  FULFILLMENT_METHODS_THIS_CARD,
+  MAX_ORDER_CANCEL_REASON_LENGTH,
+  MAX_ORDER_LINES,
+  MAX_ORDER_NOTE_LENGTH,
+  MAX_ORDER_SEARCH_LENGTH,
+  ORDER_CANCELLABLE_STATUSES,
+  ORDER_EDITABLE_STATUSES,
+  ORDER_IMPLEMENTED_STATUSES,
+  ORDER_LIMIT_COUNTED_STATUSES,
+  ORDER_SOURCE,
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  SALES_ADVANCE_REQUIRED,
+  SALES_ADVANCE_REQUIRED_DEFAULT,
+  SALES_ADVANCE_REQUIRED_SETTING_KEY,
+  SALES_AUTO_CONFIRM_DEFAULT,
+  SALES_AUTO_CONFIRM_SETTING_KEY,
+  SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_DEFAULT,
+  SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_SETTING_KEY,
+  SALES_DRAFT_EXPIRY_HOURS_DEFAULT,
+  SALES_DRAFT_EXPIRY_HOURS_SETTING_KEY,
+  SALES_PLACED_AUTO_CANCEL_HOURS_DEFAULT,
+  SALES_PLACED_AUTO_CANCEL_HOURS_SETTING_KEY,
+  SALES_USE_PACKING_DEFAULT,
+  SALES_USE_PACKING_SETTING_KEY,
+  orderApprovalSubject,
+  type FulfillmentMethod,
+  type OrderApproval,
+  type OrderFulfillment,
+  type OrderLineModifierSnapshot,
+  type OrderLineSnapshot,
+  type OrderListItem,
+  type OrderResponse,
+  type OrderSource,
+  type OrderStatus,
+  type OrderTotals,
+  type PaymentStatus,
+  type SalesAdvanceRequired,
+} from "./sales-contracts.js";
+export {
+  SALES_EVENT_TYPE,
+  type OrderEventPayload,
+  type SalesEventType,
+} from "./sales-event-type.js";
+export { SALES_MESSAGE_KEYS, SALES_RULE_KEY, type SalesRuleKey } from "./sales-rule-key.js";
+export type { Money } from "../pricing/pricing-contracts.js";

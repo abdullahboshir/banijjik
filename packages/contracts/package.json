@@ -58,6 +58,10 @@
     "./commission": {
       "types": "./dist/commission/index.d.ts",
       "default": "./dist/commission/index.js"
+    },
+    "./sales": {
+      "types": "./dist/sales/index.d.ts",
+      "default": "./dist/sales/index.js"
     }
   },
   "files": [

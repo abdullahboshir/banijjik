@@ -104,6 +104,11 @@ export const PERMISSION_KEY = {
   COMMISSION_RULE_UPDATE: "commission.rule.update",
   COMMISSION_ENTRY_READ: "commission.entry.read",
   COMMISSION_ENTRY_READ_OWN: "commission.entry.readOwn",
+  SALES_ORDER_READ: "sales.order.read",
+  SALES_ORDER_CREATE: "sales.order.create",
+  SALES_ORDER_UPDATE: "sales.order.update",
+  SALES_ORDER_CONFIRM: "sales.order.confirm",
+  SALES_ORDER_CANCEL: "sales.order.cancel",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

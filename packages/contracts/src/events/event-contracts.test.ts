@@ -12,6 +12,7 @@ import { INVENTORY_EVENT_TYPE } from "../inventory/inventory-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
 import { PAYMENT_EVENT_TYPE } from "../payment/payment-event-type.js";
 import { PRICING_EVENT_TYPE } from "../pricing/pricing-event-type.js";
+import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 import { SETTINGS_EVENT_TYPE } from "../settings/settings-event-type.js";
 import { EVENT_TYPE } from "./event-type.js";
 import { OUTBOX_STATUS } from "./outbox-status.js";
@@ -37,6 +38,7 @@ describe("event types", () => {
       ...Object.values(DIRECTORY_EVENT_TYPE),
       ...Object.values(CREDIT_EVENT_TYPE),
       ...Object.values(COMMISSION_EVENT_TYPE),
+      ...Object.values(SALES_EVENT_TYPE),
     ].sort();
 
     expect(Object.values(EVENT_TYPE).sort()).toEqual(expected);
