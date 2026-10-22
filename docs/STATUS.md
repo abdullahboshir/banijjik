@@ -120,7 +120,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.10 reports and dashboard | todo | last |
 | 3.14 CI for every card branch | merged (2026-10-22, implemented by the lead (Opus 5.5); CI run 39719375443 green) | `s/**` pushes run verify, browser (admin 90, platform 16 passed, about 5 min) and secrets; flaky 3.8a replay test noted in the handoff |
 | 3.15 test stability (flaky tests) | planned (2026-10-22, `docs/plans/3.15.md`, Sonnet; T3) | can start now; evidence-first, no skips or global timeouts |
-| 3.16 dead-letter replay race fix | planned (2026-10-22, `docs/plans/3.16.md`, Opus; T1) | found by the 3.15 session: replayer can write REPLAYED while BullMQ ignores the new job (old job still active); fix in the replayer only, failing test first |
+| 3.16 dead-letter replay race fix | implemented (awaiting review), CI https://github.com/abdullahboshir/banijjik/actions/runs/39754720859 | `docs/handoffs/3.16.md`; replayer decides from the old job state; T1 review needed |
 | Phase 3 review | todo | |
 
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
