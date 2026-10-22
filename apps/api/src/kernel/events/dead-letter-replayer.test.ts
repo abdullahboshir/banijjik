@@ -1,5 +1,5 @@
 import { newId } from "@banijjik/ids";
-import type { Queue } from "bullmq";
+import type { JobState, Queue } from "bullmq";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   connectTestDatabases,
@@ -39,6 +39,32 @@ beforeEach(async () => {
 });
 
 const NO_OLD_JOB = { getJob: async () => undefined } as unknown as Queue<EventJobData>;
+
+/** The old BullMQ job of the same ID; a test moves it between states like the worker would. */
+interface FakeOldJob {
+  state: JobState | "unknown";
+  removeCalls: number;
+}
+
+function fakeOldJob(state: FakeOldJob["state"]): FakeOldJob {
+  return { state, removeCalls: 0 };
+}
+
+function queueWithOldJob(oldJob: FakeOldJob): Queue<EventJobData> {
+  const job = {
+    getState: async () => oldJob.state,
+    // Answers like a real job, so the stub stays honest whichever question the replayer asks.
+    isFailed: async () => oldJob.state === "failed",
+    remove: async () => {
+      oldJob.removeCalls += 1;
+    },
+  };
+  return { getJob: async () => job } as unknown as Queue<EventJobData>;
+}
+
+function recordingJobs(added: EventJobData[]): EventJobQueue {
+  return { enqueue: async (job) => void added.push(job) };
+}
 
 async function requestedReplay(): Promise<{ id: string; eventId: string }> {
   const eventId = newId();
@@ -141,5 +167,26 @@ describe("the dead letter replayer", () => {
 
     expect(await replayer.replayPending()).toBe(0);
     expect(added).toEqual([]);
+  });
+
+  it("does not mark a replay REPLAYED while the old job is still active", async () => {
+    const reportSpy = vi.spyOn(observability, "reportError");
+    const { id } = await requestedReplay();
+    // Writing the dead letter reported its own error; count only what the replayer reports.
+    reportSpy.mockClear();
+    const oldJob = fakeOldJob("active");
+    const added: EventJobData[] = [];
+    const replayer = new DeadLetterReplayer({
+      queue: queueWithOldJob(oldJob),
+      jobs: recordingJobs(added),
+    });
+
+    const queued = await replayer.replayPending();
+
+    expect(queued).toBe(0);
+    expect(added).toEqual([]);
+    expect(oldJob.removeCalls).toBe(0);
+    expect(await statusOf(id)).toBe("REPLAY_REQUESTED");
+    expect(reportSpy).not.toHaveBeenCalled();
   });
 });
