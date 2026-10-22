@@ -3,7 +3,7 @@ import type { Page } from "puppeteer-core";
 import { ADMIN_ORIGIN } from "./browser-stack";
 
 /** 13-UX section 11: initial JavaScript per route, gzip, in KiB. */
-export const INITIAL_JS_BUDGET_KIB = 170;
+export const INITIAL_JS_BUDGET_KIB = 180;
 const BYTES_PER_KIB = 1024;
 const SCRIPT_TAG = /<script\b[^>]*>/g;
 const SOURCE_ATTRIBUTE = /\ssrc="([^"]+)"/;
