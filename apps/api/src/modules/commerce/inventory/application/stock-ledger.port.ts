@@ -21,13 +21,17 @@ import type { InventoryItem } from "../domain/inventory-item.entity.js";
 export interface StockLedgerReserveInput {
   readonly organizationId: OrganizationId;
   readonly locationId: string;
-  readonly actorUserId: UserId;
+  /** Unused by reserve and release (neither writes a movement); null from scheduled jobs. */
+  readonly actorUserId: UserId | null;
   readonly sourceType: string;
   readonly sourceId: string;
   readonly lines: readonly StockLedgerLine[];
   /** Read before opening a transaction (settings cannot load inside one). */
   readonly allowNegativeStock: boolean;
 }
+
+/** `commitSale` writes SALE movements, so it must name a real actor. */
+export type StockLedgerCommitInput = StockLedgerReserveInput & { readonly actorUserId: UserId };
 
 interface ExpandedComponentLine {
   readonly inventoryItemId: InventoryItemId;
@@ -107,7 +111,7 @@ export class StockLedger {
     });
   }
 
-  async commitSale(input: StockLedgerReserveInput): Promise<void> {
+  async commitSale(input: StockLedgerCommitInput): Promise<void> {
     const { stockLedger, settings, currency, reservations } = this.dependencies;
     const reservation = await reservations.findBySource({
       organizationId: input.organizationId,
@@ -144,7 +148,7 @@ export class StockLedger {
   }
 
   async returnStock(
-    input: StockLedgerReserveInput & { readonly disposition: StockReturnDisposition },
+    input: StockLedgerCommitInput & { readonly disposition: StockReturnDisposition },
   ): Promise<void> {
     const { stockLedger, settings, currency, levels } = this.dependencies;
     const expanded = await this.expandLines(input.organizationId, input.lines);

@@ -100,8 +100,11 @@ export type {
 } from "./application/ports/inventory-ports.js";
 export { MongoOfferingRepository } from "./infrastructure/mongo-offering.repository.js";
 export { MongoCategoryRepository } from "./infrastructure/mongo-category.repository.js";
-export { MongoOfferingLocationRepository } from "./infrastructure/mongo-record.repositories.js";
-export { isActiveVariant } from "./domain/variant.js";
+export {
+  MongoModifierGroupRepository,
+  MongoOfferingLocationRepository,
+} from "./infrastructure/mongo-record.repositories.js";
+export { DEFAULT_VARIANT_NAME, isActiveVariant } from "./domain/variant.js";
 
 export interface CatalogTenantDependencies {
   readonly clock: Clock;

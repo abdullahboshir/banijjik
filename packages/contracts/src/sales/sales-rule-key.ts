@@ -3,6 +3,9 @@ export const SALES_RULE_KEY = {
   KIND_NEEDS_BOOKING: "KIND_NEEDS_BOOKING",
   FULFILLMENT_METHOD_UNSUPPORTED: "FULFILLMENT_METHOD_UNSUPPORTED",
   ADVANCE_NEEDS_PAYMENTS: "ADVANCE_NEEDS_PAYMENTS",
+  CONTACT_PHONE_REQUIRED: "CONTACT_PHONE_REQUIRED",
+  /** `POST …/pack` when `sales.usePacking` is off (plan 3.5a transition table). */
+  PACKING_DISABLED: "PACKING_DISABLED",
 } as const;
 
 export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
@@ -12,4 +15,6 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.kind_needs_booking",
   "errors.fulfillment_method_unsupported",
   "errors.advance_needs_payments",
+  "errors.order_contact_phone_required",
+  "errors.packing_disabled",
 ];

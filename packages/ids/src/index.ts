@@ -6,6 +6,7 @@ export type {
   BookingId,
   CategoryId,
   ContactId,
+  OrderId,
   CustomerAccountId,
   CustomerSessionId,
   ExpenseCategoryId,

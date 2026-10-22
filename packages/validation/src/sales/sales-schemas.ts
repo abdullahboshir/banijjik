@@ -65,6 +65,7 @@ export const orderInstantRequestSchema = z.strictObject({
   contactId: uuidV7Schema.optional(),
   lines: orderLinesSchema.min(1),
   orderDiscount: manualDiscountSchema.optional(),
+  approvalToken: z.string().min(1).optional(),
   note: noteSchema,
   customFields: customFieldValuesRequestSchema.optional(),
 });

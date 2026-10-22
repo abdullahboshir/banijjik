@@ -8,6 +8,7 @@ export type OrganizationId = Id<"Organization">;
 export type LocationId = Id<"Location">;
 export type MemberId = Id<"Member">;
 export type ContactId = Id<"Contact">;
+export type OrderId = Id<"Order">;
 export type CustomerAccountId = Id<"CustomerAccount">;
 export type CustomerSessionId = Id<"CustomerSession">;
 export type OtpChallengeId = Id<"OtpChallenge">;

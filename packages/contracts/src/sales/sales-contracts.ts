@@ -105,6 +105,12 @@ export function orderApprovalSubject(orderId: string): string {
   return `order:${orderId}`;
 }
 
+/**
+ * An instant sale is approved before the order exists, so its tokens share this subject. A token
+ * is single-use, so one token still approves exactly one sale.
+ */
+export const INSTANT_ORDER_APPROVAL_SUBJECT = "order:instant";
+
 export interface OrderLineModifierSnapshot {
   readonly modifierGroupId: string;
   readonly modifierOptionId: string;

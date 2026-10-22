@@ -29,6 +29,7 @@ export {
   SALES_PLACED_AUTO_CANCEL_HOURS_SETTING_KEY,
   SALES_USE_PACKING_DEFAULT,
   SALES_USE_PACKING_SETTING_KEY,
+  INSTANT_ORDER_APPROVAL_SUBJECT,
   orderApprovalSubject,
   type FulfillmentMethod,
   type OrderApproval,

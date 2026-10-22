@@ -48,6 +48,8 @@ import type {
   SettingChangedPayload,
   TermChangedPayload,
 } from "../settings/settings-contracts.js";
+import type { OrderEventPayload } from "../sales/sales-event-type.js";
+import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 
 export interface JournalPostedPayload {
   readonly journalEntryId: string;
@@ -170,4 +172,11 @@ export interface EventPayloadMap {
   readonly [CREDIT_EVENT_TYPE.PURCHASE_REJECTED]: CreditPurchaseEventPayload;
   readonly [CREDIT_EVENT_TYPE.PURCHASE_CANCELLED]: CreditPurchaseEventPayload;
   readonly [COMMISSION_EVENT_TYPE.ENTRY_RECORDED]: CommissionEntryRecordedPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_DRAFTED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_PLACED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_CONFIRMED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_UPDATED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_PACKED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_COMPLETED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_CANCELLED]: OrderEventPayload;
 }

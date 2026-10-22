@@ -50,6 +50,10 @@ import { StockController } from "./presentation/stock.controller.js";
 export { inventoryManifest } from "./module.manifest.js";
 export { registerInventoryModels } from "./infrastructure/register-inventory-models.js";
 export { buildInventoryCatalogPorts } from "./infrastructure/catalog-inventory.adapters.js";
+export {
+  buildInventoryCostReader,
+  type InventoryUnitCost,
+} from "./infrastructure/inventory-cost.reader.js";
 export { StockLedger } from "./application/stock-ledger.port.js";
 
 export interface InventoryTenantDependencies {

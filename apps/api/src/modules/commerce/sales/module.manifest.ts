@@ -1,0 +1,114 @@
+import {
+  LIMIT_KEY,
+  MODULE_CLASS,
+  MODULE_KEY,
+  OFFERING_KIND,
+  PERMISSION_KEY,
+  SEQUENCE_KEY,
+  SURFACE,
+  permissionDefinition,
+} from "@banijjik/contracts";
+import {
+  SALES_ADVANCE_REQUIRED,
+  SALES_ADVANCE_REQUIRED_DEFAULT,
+  SALES_ADVANCE_REQUIRED_SETTING_KEY,
+  SALES_AUTO_CONFIRM_DEFAULT,
+  SALES_AUTO_CONFIRM_SETTING_KEY,
+  SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_DEFAULT,
+  SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_SETTING_KEY,
+  SALES_DRAFT_EXPIRY_HOURS_DEFAULT,
+  SALES_DRAFT_EXPIRY_HOURS_SETTING_KEY,
+  SALES_EVENT_TYPE,
+  SALES_PLACED_AUTO_CANCEL_HOURS_DEFAULT,
+  SALES_PLACED_AUTO_CANCEL_HOURS_SETTING_KEY,
+  SALES_USE_PACKING_DEFAULT,
+  SALES_USE_PACKING_SETTING_KEY,
+} from "@banijjik/contracts/sales";
+import { defineModule } from "../../../kernel/modules/index.js";
+
+const MAX_HOURS_SETTING = 24 * 365;
+
+export const salesManifest = defineModule({
+  key: MODULE_KEY.SALES,
+  path: "commerce/sales",
+  moduleClass: MODULE_CLASS.CORE,
+  dependsOn: [MODULE_KEY.CATALOG, MODULE_KEY.CONTACT, MODULE_KEY.PRICING, MODULE_KEY.INVENTORY],
+  providesKinds: [OFFERING_KIND.PRODUCT],
+  requiresAnyKind: [],
+  tenantCanDisable: false,
+  permissions: [
+    permissionDefinition(PERMISSION_KEY.SALES_ORDER_READ),
+    permissionDefinition(PERMISSION_KEY.SALES_ORDER_CREATE),
+    permissionDefinition(PERMISSION_KEY.SALES_ORDER_UPDATE),
+    permissionDefinition(PERMISSION_KEY.SALES_ORDER_CONFIRM),
+    permissionDefinition(PERMISSION_KEY.SALES_ORDER_CANCEL),
+  ],
+  routes: {
+    admin: ["/orgs/:organizationId/orders"],
+  },
+  menu: [
+    {
+      menuKey: "sales.orders",
+      surface: SURFACE.ADMIN,
+      groupKey: "sales",
+      labelTermKey: "menu.sales.orders",
+      path: "orders",
+      iconKey: "receipt",
+      permissionKey: PERMISSION_KEY.SALES_ORDER_READ,
+      order: 10,
+    },
+  ],
+  settings: [
+    {
+      settingKey: SALES_AUTO_CONFIRM_SETTING_KEY,
+      value: { kind: "BOOLEAN" },
+      systemDefault: SALES_AUTO_CONFIRM_DEFAULT,
+      allowsLocationOverride: true,
+      isClientVisible: false,
+    },
+    {
+      settingKey: SALES_DRAFT_EXPIRY_HOURS_SETTING_KEY,
+      value: { kind: "INTEGER", min: 1, max: MAX_HOURS_SETTING },
+      systemDefault: SALES_DRAFT_EXPIRY_HOURS_DEFAULT,
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
+    {
+      settingKey: SALES_PLACED_AUTO_CANCEL_HOURS_SETTING_KEY,
+      value: { kind: "INTEGER", min: 0, max: MAX_HOURS_SETTING },
+      systemDefault: SALES_PLACED_AUTO_CANCEL_HOURS_DEFAULT,
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
+    {
+      settingKey: SALES_USE_PACKING_SETTING_KEY,
+      value: { kind: "BOOLEAN" },
+      systemDefault: SALES_USE_PACKING_DEFAULT,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+    {
+      settingKey: SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_SETTING_KEY,
+      value: { kind: "BOOLEAN" },
+      systemDefault: SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_DEFAULT,
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
+    {
+      settingKey: SALES_ADVANCE_REQUIRED_SETTING_KEY,
+      value: { kind: "ENUM", values: Object.values(SALES_ADVANCE_REQUIRED) },
+      systemDefault: SALES_ADVANCE_REQUIRED_DEFAULT,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+  ],
+  customFieldEntities: ["order"],
+  botTools: [],
+  storefrontSections: [],
+  events: {
+    emits: Object.values(SALES_EVENT_TYPE),
+    consumes: [],
+  },
+  limitKeys: [LIMIT_KEY.ORDERS_PER_MONTH],
+  sequenceKeys: [SEQUENCE_KEY.ORDER, SEQUENCE_KEY.INVOICE],
+});
