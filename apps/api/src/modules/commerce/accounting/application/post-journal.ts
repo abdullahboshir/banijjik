@@ -15,7 +15,9 @@ import {
 } from "@banijjik/ids";
 import { nextSequenceValue } from "../../../../kernel/sequence/index.js";
 import type { AuditRecorder } from "../../../../kernel/audit/index.js";
+import { conflict } from "../../../../kernel/http/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
+import { entryAlreadyReversed } from "../domain/bookkeeping-errors.js";
 import { accountNotFound } from "../domain/errors.js";
 import { JournalEntry } from "../domain/journal-entry.entity.js";
 import {
@@ -54,6 +56,8 @@ async function resolveLines(
   for (const line of draft.lines) {
     const account = await accounts.findByCode(line.accountCode);
     if (account === undefined) throw accountNotFound(line.accountCode);
+    if (accounts.reserveActive !== undefined && !(await accounts.reserveActive(account.accountId)))
+      throw accountNotFound(line.accountCode);
     resolved.push({
       accountId: account.accountId,
       accountCode: account.accountCode,
@@ -65,6 +69,8 @@ async function resolveLines(
 }
 
 export function toAccountResponse(account: {
+  readonly version?: number;
+  readonly parentAccountCode?: string | null;
   readonly accountId: string;
   readonly accountCode: string;
   readonly name: AccountResponse["name"];
@@ -73,6 +79,8 @@ export function toAccountResponse(account: {
   readonly status: AccountResponse["status"];
 }): AccountResponse {
   return {
+    version: account.version ?? 1,
+    parentAccountCode: account.parentAccountCode ?? null,
     accountId: account.accountId,
     accountCode: account.accountCode,
     name: account.name,
@@ -84,6 +92,7 @@ export function toAccountResponse(account: {
 
 export function toJournalResponse(entry: JournalEntry): JournalEntryResponse {
   return {
+    memo: entry.memo,
     journalEntryId: entry.journalEntryId,
     entryNumber: entry.entryNumber,
     businessDate: entry.businessDate,
@@ -99,7 +108,8 @@ export function toJournalResponse(entry: JournalEntry): JournalEntryResponse {
 
 /**
  * Posts one balanced draft. Idempotent on (sourceType, sourceId, postingKey): a duplicate insert
- * returns the existing entry without a second event.
+ * returns the existing entry without a second event. Reversals pass `rejectExisting` because a
+ * second correction is a conflict, not a replay.
  */
 async function buildJournalEntry(
   dependencies: PostJournalDependencies,
@@ -115,6 +125,13 @@ async function buildJournalEntry(
     sequenceKey: SEQUENCE_KEY.JOURNAL,
   });
   return JournalEntry.create({
+    journalEntryId:
+      input.draft.journalEntryId === undefined
+        ? undefined
+        : asId<JournalEntryId>(input.draft.journalEntryId),
+    memo: input.draft.memo,
+    requestFingerprint: input.draft.requestFingerprint,
+    operationKey: input.draft.operationKey,
     organizationId: input.organizationId,
     entryNumber: formatEntryNumber(sequence),
     businessDate: input.draft.businessDate,
@@ -138,6 +155,7 @@ export async function postJournalEntry(
     readonly organizationId: OrganizationId;
     readonly actorUserId: UserId | null;
     readonly draft: DraftJournalEntry;
+    readonly rejectExisting?: boolean;
   },
 ): Promise<JournalEntry> {
   const { journals, events, audit } = dependencies;
@@ -146,10 +164,18 @@ export async function postJournalEntry(
     sourceId: input.draft.sourceId,
     postingKey: input.draft.postingKey,
   });
-  if (existing !== undefined) return existing;
+  if (existing !== undefined) {
+    if (input.rejectExisting === true) throw entryAlreadyReversed();
+    return existing;
+  }
   const entry = await buildJournalEntry(dependencies, input);
   const result = await journals.insert(entry);
   if (result === "duplicate") {
+    if (input.rejectExisting === true) throw entryAlreadyReversed();
+    // A manual retry racing the first attempt collides on operationKey with a different source id,
+    // so there is no row to replay; the client retries after the winner commits.
+    if (entry.operationKey !== null && entry.operationKey !== undefined)
+      throw conflict({ operation: entry.operationKey });
     const raced = await journals.findBySource({
       sourceType: entry.sourceType,
       sourceId: entry.sourceId,
@@ -182,13 +208,16 @@ export async function postReversal(
     readonly original: JournalEntry;
     readonly postingKey: PostingKey;
     readonly businessDate: string;
+    readonly rejectExisting?: boolean;
   },
 ): Promise<JournalEntry> {
   return postJournalEntry(dependencies, {
     organizationId: input.organizationId,
     actorUserId: input.actorUserId,
+    ...(input.rejectExisting === undefined ? {} : { rejectExisting: input.rejectExisting }),
     draft: {
       businessDate: input.businessDate,
+      memo: input.original.memo,
       locationId: input.original.locationId,
       sourceType: input.original.sourceType,
       sourceId: input.original.sourceId,

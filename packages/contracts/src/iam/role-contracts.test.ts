@@ -38,7 +38,17 @@ describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
 
 describe("PERMISSION_KEY", () => {
   it("lists the keys of every built module", () => {
-    expect(Object.values(PERMISSION_KEY)).toHaveLength(81);
+    expect(Object.values(PERMISSION_KEY)).toHaveLength(87);
+    expect(Object.values(PERMISSION_KEY)).toEqual(
+      expect.arrayContaining([
+        "bookkeeping.account.read",
+        "bookkeeping.account.create",
+        "bookkeeping.account.update",
+        "bookkeeping.journal.read",
+        "bookkeeping.journal.createManual",
+        "bookkeeping.statement.read",
+      ]),
+    );
   });
 
   it("only holds keys that match the module.entity.action pattern", () => {
@@ -72,7 +82,7 @@ describe("PERMISSION_KEY", () => {
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.iam.role.read");
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.directory.listing.read");
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.credit.account.adjust");
-    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(81);
+    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(87);
   });
 });
 

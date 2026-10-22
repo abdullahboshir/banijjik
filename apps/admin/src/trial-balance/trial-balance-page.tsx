@@ -1,4 +1,4 @@
-import { PERMISSION_KEY } from "@banijjik/contracts";
+import { MODULE_KEY, PERMISSION_KEY } from "@banijjik/contracts";
 import type { TrialBalanceResponse } from "@banijjik/contracts/accounting";
 import type { Translator } from "@banijjik/i18n";
 import { Button, EmptyState, FormField, formatMoney, PageLayout, TextInput } from "@banijjik/ui";
@@ -53,33 +53,31 @@ function AccountRows(props: {
   locale: Translator["locale"];
 }): ReactElement {
   const { result, t, locale } = props;
-  if (result.accounts.length === 0) {
+  if (result.accounts.length === 0)
     return <p className="text-body text-secondary">{t("trialBalance.empty")}</p>;
-  }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[32rem] border-collapse text-left text-small">
-        <thead>
-          <tr className="border-b border-default text-secondary">
-            <th className="px-2 py-3 font-medium">{t("trialBalance.column.code")}</th>
-            <th className="px-2 py-3 font-medium">{t("trialBalance.column.name")}</th>
-            <th className="px-2 py-3 font-medium">{t("trialBalance.column.debit")}</th>
-            <th className="px-2 py-3 font-medium">{t("trialBalance.column.credit")}</th>
-            <th className="px-2 py-3 font-medium">{t("trialBalance.column.balance")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {result.accounts.map((row) => (
-            <tr key={row.accountId} className="border-b border-default">
-              <td className="px-2 py-3 text-primary">{row.accountCode}</td>
-              <td className="px-2 py-3 text-primary">{localizedNameOf(row.name, locale)}</td>
-              <td className="px-2 py-3 text-primary">{formatMoney(row.debitTotal, { locale })}</td>
-              <td className="px-2 py-3 text-primary">{formatMoney(row.creditTotal, { locale })}</td>
-              <td className="px-2 py-3 text-primary">{formatMoney(row.balance, { locale })}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="grid gap-3 sm:grid-cols-2">
+      {result.accounts.map((row) => (
+        <article key={row.accountId} className="rounded-lg border border-default p-4">
+          <h2 className="font-semibold">{localizedNameOf(row.name, locale)}</h2>
+          <p className="text-small text-secondary">{row.accountCode}</p>
+          <dl className="grid grid-cols-2 gap-2">
+            {(["debit", "credit", "balance"] as const).map((side) => (
+              <div key={side}>
+                <dt>{t("trialBalance.column." + side)}</dt>
+                <dd>
+                  {formatMoney(
+                    side === "balance"
+                      ? row.balance
+                      : row[side === "debit" ? "debitTotal" : "creditTotal"],
+                    { locale },
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </article>
+      ))}
     </div>
   );
 }
@@ -94,13 +92,17 @@ export async function TrialBalancePage(props: {
     requireOrgAccess(props.orgSlug),
   ]);
   const { t, locale } = translator;
-  if (!holdsPermission(access.config.permissions, PERMISSION_KEY.ACCOUNTING_LEDGER_READ)) {
+  const bookkeeping = access.config.modules.includes(MODULE_KEY.BOOKKEEPING);
+  const permission = bookkeeping
+    ? PERMISSION_KEY.BOOKKEEPING_STATEMENT_READ
+    : PERMISSION_KEY.ACCOUNTING_LEDGER_READ;
+  if (!holdsPermission(access.config.permissions, permission)) {
     return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const asOf = asOfOf(props.searchParams["asOf"]);
   const { organizationId } = access.organization;
   const result = await fetchBusinessResource<TrialBalanceResponse>(
-    `/orgs/${organizationId}/accounting/trial-balance?asOf=${asOf}`,
+    `/orgs/${organizationId}/${bookkeeping ? "bookkeeping" : "accounting"}/trial-balance?asOf=${asOf}`,
   );
   return (
     <PageLayout title={t("trialBalance.title")} subtitle={t("trialBalance.subtitle")}>

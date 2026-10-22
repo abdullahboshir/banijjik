@@ -17,6 +17,9 @@ export const ACCOUNT_COLLECTION_NAME = "accounts";
 
 export interface AccountDocument {
   accountId: string;
+  version: number;
+  postingVersion: number;
+  parentAccountCode: string | null;
   organizationId: string;
   accountCode: string;
   name: { bn: string; en: string };
@@ -37,6 +40,9 @@ const localizedNameSchema = new Schema(
 export const accountSchema = new Schema<AccountDocument>(
   {
     ...domainIdField("accountId"),
+    version: { type: Number, required: true, default: 1 },
+    postingVersion: { type: Number, default: 0 },
+    parentAccountCode: { type: String, default: null },
     organizationId: { type: String, required: true, immutable: true },
     accountCode: { type: String, required: true },
     name: { type: localizedNameSchema, required: true },
@@ -50,3 +56,7 @@ export const accountSchema = new Schema<AccountDocument>(
 
 accountSchema.index({ organizationId: 1, accountCode: 1 }, { unique: true });
 accountSchema.index({ organizationId: 1, status: 1, accountCode: 1 });
+
+accountSchema.index({ organizationId: 1, accountType: 1, accountCode: 1 });
+
+accountSchema.index({ organizationId: 1, accountId: 1 });

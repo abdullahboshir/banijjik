@@ -16,6 +16,10 @@ export interface ResolvedJournalLine {
 }
 
 export interface DraftJournalEntry {
+  readonly journalEntryId?: string | undefined;
+  readonly operationKey?: string | null | undefined;
+  readonly requestFingerprint?: string | null | undefined;
+  readonly memo?: string | null | undefined;
   readonly businessDate: string;
   readonly locationId: string | null;
   readonly sourceType: string;

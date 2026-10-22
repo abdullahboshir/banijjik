@@ -12,6 +12,8 @@ import type { SettingDefinition } from "../settings/setting-definition.js";
 
 /** One entry of the admin menu (10-MODULE-CATALOG section 6). Labels come from terms or message keys, never literals. */
 export interface MenuEntry {
+  /** A replacement menu entry is provided by this enabled module. */
+  readonly hiddenWhenModuleEnabled?: ModuleKey;
   readonly menuKey: string;
   readonly surface: Surface;
   readonly groupKey: string;

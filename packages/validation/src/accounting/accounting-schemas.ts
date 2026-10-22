@@ -1,4 +1,6 @@
 import {
+  MANUAL_JOURNAL_MIN_LINES,
+  MANUAL_JOURNAL_MAX_LINES,
   ACCOUNT_STATUS,
   ACCOUNT_TYPE,
   EXPENSE_PAID_VIA,
@@ -9,7 +11,7 @@ import { moneySchema } from "../catalog/catalog-parts.js";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 
-const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "businessDate");
+const isoDateSchema = z.iso.date();
 
 const localizedNameSchema = z.strictObject({
   bn: z.string().trim().min(1).max(120),
@@ -25,6 +27,7 @@ export const journalListQuerySchema = z.strictObject({
   from: isoDateSchema.optional(),
   to: isoDateSchema.optional(),
   sourceType: z.enum(JOURNAL_SOURCE_TYPE).optional(),
+  accountId: uuidV7Schema.optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 });
@@ -83,11 +86,6 @@ export const expenseCategoryArchiveRequestSchema = z.strictObject({
 });
 export type ExpenseCategoryArchiveBody = z.infer<typeof expenseCategoryArchiveRequestSchema>;
 
-const localizedNameSchema = z.strictObject({
-  bn: z.string().trim().min(1).max(120),
-  en: z.string().trim().min(1).max(120),
-});
-
 export const accountCreateRequestSchema = z.strictObject({
   name: localizedNameSchema,
   accountType: z.enum(ACCOUNT_TYPE),
@@ -95,18 +93,22 @@ export const accountCreateRequestSchema = z.strictObject({
 });
 export type AccountCreateBody = z.infer<typeof accountCreateRequestSchema>;
 
-export const accountUpdateRequestSchema = z.strictObject({
-  version: z.number().int().positive(),
-  name: localizedNameSchema.optional(),
-  status: z.enum(ACCOUNT_STATUS).optional(),
-});
+export const accountUpdateRequestSchema = z
+  .strictObject({
+    version: z.number().int().positive(),
+    name: localizedNameSchema.optional(),
+    status: z.enum(ACCOUNT_STATUS).optional(),
+  })
+  .refine((body) => body.name !== undefined || body.status !== undefined, {
+    message: "at_least_one_change",
+  });
 export type AccountUpdateBody = z.infer<typeof accountUpdateRequestSchema>;
 
 const manualJournalLineSchema = z
   .strictObject({
     accountId: uuidV7Schema,
-    debit: moneySchema.optional(),
-    credit: moneySchema.optional(),
+    debit: moneySchema.refine((money) => money.amount > 0).optional(),
+    credit: moneySchema.refine((money) => money.amount > 0).optional(),
   })
   .refine(
     (line) =>
@@ -119,15 +121,21 @@ export const manualJournalEntryRequestSchema = z.strictObject({
   businessDate: isoDateSchema,
   locationId: uuidV7Schema.optional(),
   memo: z.string().trim().min(1).max(500),
-  lines: z.array(manualJournalLineSchema).min(2).max(20),
+  lines: z
+    .array(manualJournalLineSchema)
+    .min(MANUAL_JOURNAL_MIN_LINES)
+    .max(MANUAL_JOURNAL_MAX_LINES),
+  approvalToken: z.string().optional(),
 });
 export type ManualJournalEntryBody = z.infer<typeof manualJournalEntryRequestSchema>;
 
-export const profitAndLossQuerySchema = z.strictObject({
-  from: isoDateSchema,
-  to: isoDateSchema,
-  locationId: uuidV7Schema.optional(),
-});
+export const profitAndLossQuerySchema = z
+  .strictObject({
+    from: isoDateSchema,
+    to: isoDateSchema,
+    locationId: uuidV7Schema.optional(),
+  })
+  .refine((query) => query.from <= query.to);
 export type ProfitAndLossQuery = z.infer<typeof profitAndLossQuerySchema>;
 
 export const balanceSheetQuerySchema = z.strictObject({
@@ -137,5 +145,13 @@ export type BalanceSheetQuery = z.infer<typeof balanceSheetQuerySchema>;
 
 export const reverseEntryRequestSchema = z.strictObject({
   businessDate: isoDateSchema,
+  approvalToken: z.string().optional(),
 });
 export type ReverseEntryBody = z.infer<typeof reverseEntryRequestSchema>;
+
+export const accountListQuerySchema = z.strictObject({
+  accountId: uuidV7Schema.optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(MAX_PAGE_SIZE),
+});
+export type AccountListQuery = z.infer<typeof accountListQuerySchema>;

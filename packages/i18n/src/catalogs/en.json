@@ -372,5 +372,21 @@
   "errors.credits_insufficient": "This customer does not have enough credits.",
   "errors.cannot_unlock_own_listing": "You cannot unlock your own listing.",
   "errors.listing_not_approved": "That listing is not available.",
-  "errors.unlocks_per_day_exceeded": "This account reached its daily unlock limit."
+  "errors.unlocks_per_day_exceeded": "This account reached its daily unlock limit.",
+  "errors.accounting.unbalanced_journal": "Debits and credits must match.",
+  "errors.accounting.system_account_immutable": "A system account can be renamed but cannot be archived or retyped.",
+  "errors.accounting.account_not_found": "Account not found.",
+  "errors.accounting.journal_already_posted": "This journal has already been posted.",
+  "errors.accounting.posting_source_missing": "The posting source is unavailable.",
+  "errors.accounting.account_archived": "Archived accounts cannot receive new entries.",
+  "errors.accounting.entry_already_reversed": "This entry has already been reversed.",
+  "errors.accounting.account_code_conflict": "That account code is already taken. Please try again.",
+  "errors.accounting.future_business_date": "The business date cannot be in the future.",
+  "permission.bookkeeping.account.read": "View accounts",
+  "permission.bookkeeping.account.create": "Create accounts",
+  "permission.bookkeeping.account.update": "Edit accounts",
+  "permission.bookkeeping.journal.read": "View journals",
+  "permission.bookkeeping.journal.createManual": "Post and reverse manual entries",
+  "permission.bookkeeping.statement.read": "View financial statements",
+  "errors.system_account_locked": "System account code, type and status cannot be changed."
 }

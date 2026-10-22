@@ -5,7 +5,11 @@ import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { banglaTranslator } from "../auth/test-helpers";
-import { accessFixture } from "../settings/test-fixtures";
+import { accessFixture as settingsAccessFixture } from "../settings/test-fixtures";
+const accessFixture = (options: Parameters<typeof settingsAccessFixture>[0]) => {
+  const access = settingsAccessFixture(options);
+  return { ...access, config: { ...access.config, modules: [] } };
+};
 
 vi.mock("next/link", () => ({
   default: ({ href, children }: { href: string; children: ReactNode }) => (

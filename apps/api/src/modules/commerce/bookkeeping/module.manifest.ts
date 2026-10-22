@@ -29,6 +29,9 @@ export const bookkeepingManifest = defineModule({
   routes: {
     admin: [
       "/orgs/:organizationId/bookkeeping/accounts",
+      "/orgs/:organizationId/bookkeeping/accounts/:accountId",
+      "/orgs/:organizationId/bookkeeping/journal",
+      "/orgs/:organizationId/bookkeeping/trial-balance",
       "/orgs/:organizationId/bookkeeping/journal/manual",
       "/orgs/:organizationId/bookkeeping/journal/:journalEntryId/reverse",
       "/orgs/:organizationId/bookkeeping/statements/profit-and-loss",
@@ -36,6 +39,16 @@ export const bookkeepingManifest = defineModule({
     ],
   },
   menu: [
+    {
+      menuKey: "bookkeeping.trialBalance",
+      surface: SURFACE.ADMIN,
+      groupKey: "money",
+      labelTermKey: "menu.bookkeeping.trialBalance",
+      path: "money/trial-balance",
+      iconKey: "wallet",
+      permissionKey: PERMISSION_KEY.BOOKKEEPING_STATEMENT_READ,
+      order: 13,
+    },
     {
       menuKey: "bookkeeping.accounts",
       surface: SURFACE.ADMIN,

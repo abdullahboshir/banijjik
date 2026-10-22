@@ -22,7 +22,7 @@ export const approvalGrantRequestSchema = z.strictObject({
   action: z.enum(APPROVAL_ACTION),
   subjectKey: z.string().trim().min(1).max(SUBJECT_KEY_MAX_LENGTH),
   amount: moneySchema.optional(),
-  locationId: uuidV7Schema,
+  locationId: z.union([uuidV7Schema, z.literal("ALL")]),
   approverMemberId: uuidV7Schema,
   pin: approvalPinSchema,
 });
@@ -30,6 +30,6 @@ export type ApprovalGrantBody = z.output<typeof approvalGrantRequestSchema>;
 
 /** Query of `GET /orgs/{organizationId}/approvers`. */
 export const approversQuerySchema = z.strictObject({
-  locationId: uuidV7Schema,
+  locationId: z.union([uuidV7Schema, z.literal("ALL")]),
 });
 export type ApproversQuery = z.output<typeof approversQuerySchema>;

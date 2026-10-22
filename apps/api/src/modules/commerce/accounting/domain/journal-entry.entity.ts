@@ -10,6 +10,9 @@ import {
 import type { ResolvedJournalLine } from "./journal-lines.js";
 
 export interface JournalEntryProps {
+  readonly requestFingerprint?: string | null;
+  readonly operationKey?: string | null;
+  readonly memo?: string | null;
   readonly journalEntryId: JournalEntryId;
   readonly organizationId: OrganizationId;
   readonly entryNumber: string;
@@ -28,6 +31,10 @@ export class JournalEntry {
   private constructor(private readonly props: JournalEntryProps) {}
 
   static create(input: {
+    readonly journalEntryId?: JournalEntryId | undefined;
+    readonly memo?: string | null | undefined;
+    readonly requestFingerprint?: string | null | undefined;
+    readonly operationKey?: string | null | undefined;
     readonly organizationId: OrganizationId;
     readonly entryNumber: string;
     readonly businessDate: string;
@@ -41,7 +48,10 @@ export class JournalEntry {
     readonly actorUserId: UserId | null;
   }): JournalEntry {
     return new JournalEntry({
-      journalEntryId: asId<JournalEntryId>(newId()),
+      journalEntryId: input.journalEntryId ?? asId<JournalEntryId>(newId()),
+      memo: input.memo ?? null,
+      requestFingerprint: input.requestFingerprint ?? null,
+      operationKey: input.operationKey ?? null,
       organizationId: input.organizationId,
       entryNumber: input.entryNumber,
       businessDate: input.businessDate,
@@ -58,6 +68,16 @@ export class JournalEntry {
 
   static rehydrate(props: JournalEntryProps): JournalEntry {
     return new JournalEntry(props);
+  }
+
+  get operationKey(): string | null {
+    return this.props.operationKey ?? null;
+  }
+  get requestFingerprint(): string | null {
+    return this.props.requestFingerprint ?? null;
+  }
+  get memo(): string | null {
+    return this.props.memo ?? null;
   }
 
   get journalEntryId(): JournalEntryId {

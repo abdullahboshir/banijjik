@@ -73,3 +73,6 @@ export {
   type SystemAccountCode,
 } from "./system-account-code.js";
 export { SYSTEM_ACCOUNT_SEEDS } from "./system-account-seeds.js";
+export { manualJournalContent } from "./manual-journal-subject.js";
+
+export { MANUAL_JOURNAL_MIN_LINES, MANUAL_JOURNAL_MAX_LINES } from "./accounting-contracts.js";

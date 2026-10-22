@@ -8,6 +8,8 @@ import {
 import { asId, newId, type AccountId, type OrganizationId, type UserId } from "@banijjik/ids";
 
 export interface AccountProps {
+  readonly version?: number;
+  readonly parentAccountCode?: string | null;
   readonly accountId: AccountId;
   readonly organizationId: OrganizationId;
   readonly accountCode: string;
@@ -30,11 +32,14 @@ export class Account {
     readonly name: LocalizedAccountName;
     readonly accountType: AccountType;
     readonly isSystem: boolean;
+    readonly parentAccountCode?: string | null;
     readonly now: Date;
     readonly actorUserId: UserId | null;
   }): Account {
     return new Account({
       accountId: asId<AccountId>(newId()),
+      version: 1,
+      parentAccountCode: input.parentAccountCode ?? null,
       organizationId: input.organizationId,
       accountCode: input.accountCode,
       name: input.name,
@@ -50,6 +55,13 @@ export class Account {
 
   static rehydrate(props: AccountProps): Account {
     return new Account(props);
+  }
+
+  get version(): number {
+    return this.props.version ?? 1;
+  }
+  get parentAccountCode(): string | null {
+    return this.props.parentAccountCode ?? null;
   }
 
   get accountId(): AccountId {

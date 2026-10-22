@@ -34,3 +34,5 @@ export {
   type ReverseEntryBody,
   type TrialBalanceQuery,
 } from "./accounting-schemas.js";
+
+export { accountListQuerySchema, type AccountListQuery } from "./accounting-schemas.js";

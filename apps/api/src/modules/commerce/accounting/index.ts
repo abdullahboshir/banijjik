@@ -104,3 +104,14 @@ export function registerAccountingHandlers(input: AccountingEventHandlerInput): 
 export function accountingUnitOfWork(): MongoUnitOfWork {
   return new MongoUnitOfWork();
 }
+
+export { CreateAccountUseCase } from "./application/use-cases/create-account.use-case.js";
+export { UpdateAccountUseCase } from "./application/use-cases/update-account.use-case.js";
+export { PostManualEntryUseCase } from "./application/use-cases/post-manual-entry.use-case.js";
+export { ReverseEntryUseCase } from "./application/use-cases/reverse-entry.use-case.js";
+export { ProfitAndLossUseCase } from "./application/use-cases/profit-and-loss.use-case.js";
+export { BalanceSheetUseCase } from "./application/use-cases/balance-sheet.use-case.js";
+
+export { ListAccountsUseCase, ListJournalUseCase, GetTrialBalanceUseCase };
+
+export { ListBookkeepingAccountsUseCase } from "./application/use-cases/list-bookkeeping-accounts.use-case.js";

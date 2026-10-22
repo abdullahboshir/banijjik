@@ -31,6 +31,11 @@ export function menuOf(
 ): readonly MenuEntry[] {
   return manifestsOf(manifests, moduleKeys)
     .flatMap((manifest) => manifest.menu)
+    .filter(
+      (entry) =>
+        entry.hiddenWhenModuleEnabled === undefined ||
+        !moduleKeys.has(entry.hiddenWhenModuleEnabled),
+    )
     .filter((entry) => entry.requiresKind === undefined || kinds.includes(entry.requiresKind))
     .sort(byOrderThenKey);
 }

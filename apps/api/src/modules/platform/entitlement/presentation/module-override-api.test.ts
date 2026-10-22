@@ -7,7 +7,7 @@ import {
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  BOOKKEEPING_PROBE_MANIFEST,
+  PAYMENT_GATEWAY_PROBE_MANIFEST,
   buildEntitlementProbeRouter,
 } from "../../../../test-support/entitlement-world.js";
 import {
@@ -33,7 +33,7 @@ let operator: PlatformActor;
 beforeAll(async () => {
   harness = await startIamApi({
     tenantRouters: [buildEntitlementProbeRouter()],
-    extraManifests: [BOOKKEEPING_PROBE_MANIFEST],
+    extraManifests: [PAYMENT_GATEWAY_PROBE_MANIFEST],
   });
   operator = await createPlatformActor(harness.app, harness.connections, [PLATFORM_ROLE.BILLING]);
 });
@@ -85,11 +85,11 @@ describe("granting a module outside the package (roadmap Done)", () => {
     expect(before.status).toBe(403);
     expect(before.body.error.code).toBe("MODULE_DISABLED");
 
-    const created = await grant(organizationId, MODULE_KEY.BOOKKEEPING);
+    const created = await grant(organizationId, MODULE_KEY.PAYMENT_GATEWAY);
     expect(created.status).toBe(201);
 
     const config = await owner.call("get", `/orgs/${organizationId}/me/config`);
-    expect(config.body.data.modules).toContain(MODULE_KEY.BOOKKEEPING);
+    expect(config.body.data.modules).toContain(MODULE_KEY.PAYMENT_GATEWAY);
     expect((await owner.call("get", `/orgs/${organizationId}/ledger`)).status).toBe(200);
 
     const removed = await operator.call(
@@ -104,12 +104,12 @@ describe("granting a module outside the package (roadmap Done)", () => {
 
   it("revokes a module of the package the same way", async () => {
     const { owner, organizationId } = await createTenant();
-    await grant(organizationId, MODULE_KEY.BOOKKEEPING);
+    await grant(organizationId, MODULE_KEY.PAYMENT_GATEWAY);
     const revoke = await operator.call(
       "post",
       `/organizations/${organizationId}/module-overrides`,
       {
-        moduleKey: MODULE_KEY.BOOKKEEPING,
+        moduleKey: MODULE_KEY.PAYMENT_GATEWAY,
         effect: MODULE_OVERRIDE_EFFECT.PLATFORM_REVOKE,
         reason: "unpaid",
       },
@@ -144,9 +144,9 @@ describe("module override rules", () => {
 
   it("answers 409 DUPLICATE for the same module and effect twice", async () => {
     const { organizationId } = await createTenant();
-    await grant(organizationId, MODULE_KEY.BOOKKEEPING);
+    await grant(organizationId, MODULE_KEY.PAYMENT_GATEWAY);
 
-    const response = await grant(organizationId, MODULE_KEY.BOOKKEEPING);
+    const response = await grant(organizationId, MODULE_KEY.PAYMENT_GATEWAY);
 
     expect(response.status).toBe(409);
     expect(response.body.error.code).toBe("DUPLICATE");
@@ -155,11 +155,13 @@ describe("module override rules", () => {
   it("refuses an expiry in the past and the tenant-only effect", async () => {
     const { organizationId } = await createTenant();
 
-    const past = await grant(organizationId, MODULE_KEY.BOOKKEEPING, { expiresAt: "2001-01-01" });
+    const past = await grant(organizationId, MODULE_KEY.PAYMENT_GATEWAY, {
+      expiresAt: "2001-01-01",
+    });
     const tenantEffect = await operator.call(
       "post",
       `/organizations/${organizationId}/module-overrides`,
-      { moduleKey: MODULE_KEY.BOOKKEEPING, effect: "TENANT_DISABLE", reason: "x" },
+      { moduleKey: MODULE_KEY.PAYMENT_GATEWAY, effect: "TENANT_DISABLE", reason: "x" },
     );
 
     expect(past.status).toBe(400);
@@ -169,7 +171,7 @@ describe("module override rules", () => {
   it("answers 404 for an unknown organization and an unknown override", async () => {
     const { organizationId } = await createTenant();
 
-    const unknownOrganization = await grant(newId(), MODULE_KEY.BOOKKEEPING);
+    const unknownOrganization = await grant(newId(), MODULE_KEY.PAYMENT_GATEWAY);
     const unknownOverride = await operator.call(
       "delete",
       `/organizations/${organizationId}/module-overrides/${newId()}`,
@@ -182,7 +184,7 @@ describe("module override rules", () => {
   it("lists the overrides of one organization only", async () => {
     const first = await createTenant();
     const second = await createTenant();
-    await grant(first.organizationId, MODULE_KEY.BOOKKEEPING);
+    await grant(first.organizationId, MODULE_KEY.PAYMENT_GATEWAY);
 
     const listed = await operator.call(
       "get",
@@ -194,7 +196,7 @@ describe("module override rules", () => {
     );
 
     expect(listed.body.data).toHaveLength(1);
-    expect(listed.body.data[0].moduleKey).toBe(MODULE_KEY.BOOKKEEPING);
+    expect(listed.body.data[0].moduleKey).toBe(MODULE_KEY.PAYMENT_GATEWAY);
     expect(other.body.data).toEqual([]);
   });
 });
@@ -204,7 +206,7 @@ describe("module override side effects", () => {
     const { organizationId } = await createTenant();
     const startVersion = await configVersionOf(organizationId);
 
-    const created = await grant(organizationId, MODULE_KEY.BOOKKEEPING, { reason: "pilot" });
+    const created = await grant(organizationId, MODULE_KEY.PAYMENT_GATEWAY, { reason: "pilot" });
     await operator.call("get", `/organizations/${organizationId}/module-overrides`);
     await operator.call(
       "delete",

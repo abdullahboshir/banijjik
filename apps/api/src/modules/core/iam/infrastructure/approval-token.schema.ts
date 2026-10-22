@@ -11,6 +11,7 @@ export interface ApprovalTokenDocument {
   tokenHash: string;
   action: ApprovalAction;
   subjectKey: string;
+  locationId?: string;
   amountMinor?: number;
   currencyCode?: string;
   approverMemberId: string;
@@ -30,6 +31,7 @@ export const approvalTokenSchema = new Schema<ApprovalTokenDocument>(
     tokenHash: { type: String, required: true },
     action: { type: String, required: true, enum: Object.values(APPROVAL_ACTION) },
     subjectKey: { type: String, required: true },
+    locationId: { type: String },
     amountMinor: { type: Number },
     currencyCode: { type: String },
     approverMemberId: { type: String, required: true },

@@ -13,6 +13,7 @@ export interface ApprovalTokenRecord {
   readonly tokenHash: string;
   readonly action: ApprovalAction;
   readonly subjectKey: string;
+  readonly locationId?: string;
   readonly amount: ApprovalMoney | undefined;
   readonly approverMemberId: MemberId;
   readonly requestedByUserId: UserId;
@@ -25,6 +26,7 @@ export interface NewApprovalToken {
   readonly tokenHash: string;
   readonly action: ApprovalAction;
   readonly subjectKey: string;
+  readonly locationId?: string;
   readonly amount: ApprovalMoney | undefined;
   readonly approverMemberId: MemberId;
   readonly requestedByUserId: UserId;

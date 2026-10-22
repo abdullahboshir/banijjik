@@ -372,5 +372,21 @@
   "errors.credits_insufficient": "এই গ্রাহকের যথেষ্ট ক্রেডিট নেই।",
   "errors.cannot_unlock_own_listing": "নিজের তালিকা আনলক করা যায় না।",
   "errors.listing_not_approved": "সেই তালিকা এখন পাওয়া যাচ্ছে না।",
-  "errors.unlocks_per_day_exceeded": "এই অ্যাকাউন্ট আজকের আনলক সীমায় পৌঁছেছে।"
+  "errors.unlocks_per_day_exceeded": "এই অ্যাকাউন্ট আজকের আনলক সীমায় পৌঁছেছে।",
+  "errors.accounting.unbalanced_journal": "ডেবিট ও ক্রেডিট সমান হতে হবে।",
+  "errors.accounting.system_account_immutable": "সিস্টেম হিসাবের নাম বদলানো যায়, আর্কাইভ বা ধরন পরিবর্তন করা যায় না।",
+  "errors.accounting.account_not_found": "হিসাব পাওয়া যায়নি।",
+  "errors.accounting.journal_already_posted": "এই জার্নাল আগে পোস্ট করা হয়েছে।",
+  "errors.accounting.posting_source_missing": "পোস্টিংয়ের উৎস পাওয়া যাচ্ছে না।",
+  "errors.accounting.account_archived": "আর্কাইভ করা হিসাবে নতুন এন্ট্রি দেওয়া যায় না।",
+  "errors.accounting.entry_already_reversed": "এই এন্ট্রির বিপরীত এন্ট্রি দেওয়া হয়েছে।",
+  "errors.accounting.account_code_conflict": "এই হিসাব কোডটি ইতিমধ্যে ব্যবহৃত। আবার চেষ্টা করুন।",
+  "errors.accounting.future_business_date": "লেনদেনের তারিখ ভবিষ্যতের হতে পারবে না।",
+  "permission.bookkeeping.account.read": "হিসাব দেখুন",
+  "permission.bookkeeping.account.create": "হিসাব তৈরি করুন",
+  "permission.bookkeeping.account.update": "হিসাব সম্পাদনা করুন",
+  "permission.bookkeeping.journal.read": "জার্নাল দেখুন",
+  "permission.bookkeeping.journal.createManual": "ম্যানুয়াল এন্ট্রি ও বিপরীত এন্ট্রি দিন",
+  "permission.bookkeeping.statement.read": "আর্থিক বিবরণী দেখুন",
+  "errors.system_account_locked": "সিস্টেম হিসাবের কোড, ধরন ও অবস্থা বদলানো যায় না।"
 }

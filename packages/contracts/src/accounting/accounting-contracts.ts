@@ -51,7 +51,8 @@ export const POSTING_KEY = defineEnum([
   "expense_voided",
   "rounding",
 ]);
-export type PostingKey = (typeof POSTING_KEY)[keyof typeof POSTING_KEY];
+export type PostingKey =
+  (typeof POSTING_KEY)[keyof typeof POSTING_KEY] | `manual:${string}` | `reversal:${string}`;
 
 /** Whether allocated money sits as a liability (before revenue) or settles AR (after). */
 export const REVENUE_STATE = defineEnum(["BEFORE_REVENUE", "AFTER_REVENUE"]);
@@ -72,6 +73,9 @@ export interface LocalizedAccountName {
 }
 
 export interface AccountResponse {
+  readonly balance?: Money;
+  readonly version: number;
+  readonly parentAccountCode: string | null;
   readonly accountId: string;
   readonly accountCode: string;
   readonly name: LocalizedAccountName;
@@ -88,6 +92,7 @@ export interface JournalLineResponse {
 }
 
 export interface JournalEntryResponse {
+  readonly memo?: string | null;
   readonly journalEntryId: string;
   readonly entryNumber: string;
   readonly businessDate: string;
@@ -145,6 +150,7 @@ export interface ManualJournalEntryRequest {
   readonly businessDate: string;
   readonly locationId?: string | undefined;
   readonly memo: string;
+  readonly approvalToken?: string | undefined;
   readonly lines: readonly ManualJournalLine[];
 }
 
@@ -205,3 +211,6 @@ export interface BalanceSheetResponse {
   /** True when assets = liabilities + equity + retained earnings. */
   readonly isBalanced: boolean;
 }
+
+export const MANUAL_JOURNAL_MIN_LINES = 2;
+export const MANUAL_JOURNAL_MAX_LINES = 20;

@@ -16,7 +16,7 @@ import { registerIamApiModels, startIamApi } from "../../../../test-support/iam-
 import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
 import { loginViaApi } from "../../../../test-support/auth-api-scenarios.js";
 import {
-  BOOKKEEPING_PROBE_MANIFEST,
+  PAYMENT_GATEWAY_PROBE_MANIFEST,
   buildEntitlementProbeRouter,
   removeModuleOverrides,
   WORKFLOW_PROBE_MANIFEST,
@@ -37,7 +37,7 @@ import { buildModuleEffectiveness, buildOrgConfigService } from "../index.js";
 
 registerIamApiModels();
 
-const PROBE_MANIFESTS = [WORKFLOW_PROBE_MANIFEST, BOOKKEEPING_PROBE_MANIFEST];
+const PROBE_MANIFESTS = [WORKFLOW_PROBE_MANIFEST, PAYMENT_GATEWAY_PROBE_MANIFEST];
 const DAY_SECONDS = 24 * 60 * 60;
 
 let harness: IamApiHarness;
@@ -194,12 +194,12 @@ describe("the entitlement gate", () => {
     const { owner, organizationId } = await createTrialOrganization();
     await writeModuleOverride({
       organizationId,
-      moduleKey: "bookkeeping",
+      moduleKey: "payment-gateway",
       effect: MODULE_OVERRIDE_EFFECT.PLATFORM_GRANT,
     });
     await writeModuleOverride({
       organizationId,
-      moduleKey: "bookkeeping",
+      moduleKey: "payment-gateway",
       effect: MODULE_OVERRIDE_EFFECT.TENANT_DISABLE,
     });
     await writeModuleOverride({
@@ -222,14 +222,14 @@ describe("the entitlement gate", () => {
 
     await writeModuleOverride({
       organizationId,
-      moduleKey: "bookkeeping",
+      moduleKey: "payment-gateway",
       effect: MODULE_OVERRIDE_EFFECT.PLATFORM_GRANT,
     });
     const after = await owner.call("get", `/orgs/${organizationId}/ledger`);
 
     expect(before.body.error).toMatchObject({
       code: "MODULE_DISABLED",
-      details: { moduleKey: "bookkeeping" },
+      details: { moduleKey: "payment-gateway" },
     });
     expect(after.status).toBe(200);
   });
@@ -475,7 +475,7 @@ describe("handlers of a module that is off", () => {
     const answers = await withOrganizationContext(organizationId, async () => ({
       iam: await effectiveness.isEffective(organizationId, "iam"),
       workflow: await effectiveness.isEffective(organizationId, "workflow"),
-      bookkeeping: await effectiveness.isEffective(organizationId, "bookkeeping"),
+      bookkeeping: await effectiveness.isEffective(organizationId, "payment-gateway"),
       unregistered: await effectiveness.isEffective(organizationId, "bot"),
     }));
 

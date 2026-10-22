@@ -150,6 +150,9 @@ function buildCommerceTenantRouters(
       permission: input.permission,
     }),
     bookkeepingRouter: buildBookkeepingTenantRouter({
+      idempotency: input.idempotency,
+      orgConfig: input.orgConfig,
+      manifests: input.manifests,
       clock: input.clock,
       audit: input.audit,
       permission: input.permission,

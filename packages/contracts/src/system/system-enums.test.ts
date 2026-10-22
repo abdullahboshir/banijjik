@@ -33,6 +33,7 @@ describe("system enums", () => {
       "TRANSFER",
       "ZREPORT",
       "RETURN",
+      "CUSTOM_ACCOUNT",
     ]);
   });
 

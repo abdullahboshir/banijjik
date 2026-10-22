@@ -67,6 +67,7 @@ const menuEntrySchema = z
     iconKey: z.string().min(1),
     permissionKey: z.string().min(1),
     order: z.number().int(),
+    hiddenWhenModuleEnabled: moduleKeySchema.optional(),
     requiresKind: offeringKindSchema.optional(),
     visibility: z.enum(Object.values(MENU_VISIBILITY)).optional(),
     settingsTopicKey: z.enum(Object.values(SETTINGS_TOPIC)).optional(),

@@ -114,6 +114,7 @@ export class GrantApprovalUseCase {
         tokenHash: issued.tokenHash,
         action: input.action,
         subjectKey: input.subjectKey,
+        locationId: input.locationId,
         amount: input.amount,
         approverMemberId: input.approverMemberId,
         requestedByUserId: input.actorUserId,

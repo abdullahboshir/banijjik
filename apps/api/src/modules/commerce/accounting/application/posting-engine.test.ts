@@ -43,6 +43,10 @@ class FakeAccounts implements AccountRepository {
     return [...this.rows.values()];
   }
 
+  async listByOrganization(organizationId: OrganizationId): Promise<Account[]> {
+    return [...this.rows.values()].filter((row) => row.organizationId === organizationId);
+  }
+
   async countSystemAccounts(): Promise<number> {
     return [...this.rows.values()].filter((row) => row.isSystem).length;
   }

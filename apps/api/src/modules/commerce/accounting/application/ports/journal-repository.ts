@@ -6,11 +6,19 @@ export interface JournalListFilter {
   readonly from?: string | undefined;
   readonly to?: string | undefined;
   readonly sourceType?: JournalSourceType | undefined;
+  readonly accountId?: string | undefined;
   readonly page: number;
   readonly limit: number;
 }
 
 export interface JournalRepository {
+  findManualOperation?(operationKey: string): Promise<JournalEntry | undefined>;
+  aggregateBalances?(filter: {
+    from?: string | undefined;
+    to: string;
+    locationId?: string | undefined;
+  }): Promise<readonly { accountId: string; debit: number; credit: number }[]>;
+
   /** Returns "duplicate" when the idempotency unique index refuses the insert. */
   insert(entry: JournalEntry): Promise<"inserted" | "duplicate">;
   findById(journalEntryId: JournalEntryId): Promise<JournalEntry | undefined>;

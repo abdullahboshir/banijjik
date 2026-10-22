@@ -15,7 +15,7 @@ export class GetTrialBalanceUseCase {
 
   async execute(asOf: string): Promise<TrialBalanceResponse> {
     const [accounts, entries] = await Promise.all([
-      this.accounts.listActive(),
+      this.accounts.listAll?.() ?? this.accounts.listActive(),
       this.journals.listThrough(asOf),
     ]);
     const currency = entries[0]?.lines[0]?.debit.currency ?? "BDT";

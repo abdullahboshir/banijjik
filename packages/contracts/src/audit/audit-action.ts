@@ -53,6 +53,8 @@ export const AUDIT_ACTION = {
   EXPENSE_CREATED: "expense.expense.created",
   EXPENSE_VOIDED: "expense.expense.voided",
   EXPENSE_CATEGORY_UPDATED: "expense.category.updated",
+  ACCOUNT_CREATED: "accounting.account.created",
+  ACCOUNT_UPDATED: "accounting.account.updated",
   JOURNAL_POSTED: "accounting.journal.posted",
   TAX_CLASS_CREATED: "pricing.taxClass.created",
   TAX_CLASS_UPDATED: "pricing.taxClass.updated",

@@ -10,6 +10,8 @@ import type { ApprovalMoney, ApprovalTokenRepository } from "./ports/approval-to
 export interface ApprovalConsumeExpected {
   readonly action: ApprovalAction;
   readonly subjectKey: string;
+  readonly requestedByUserId?: string;
+  readonly locationId?: string;
   /** When set, the token's amount must cover it (same currency). */
   readonly amount?: ApprovalMoney;
 }
@@ -43,6 +45,7 @@ export class ApprovalVerifier {
     if (stored.expiresAt.getTime() <= now.getTime()) throw approvalRequired(expected.action);
     if (stored.action !== expected.action) throw approvalRequired(expected.action);
     if (stored.subjectKey !== expected.subjectKey) throw approvalRequired(expected.action);
+    assertCallerBinding(stored, expected);
     if (!amountIsCovered(stored.amount, expected.amount)) {
       throw approvalRequired(expected.action);
     }
@@ -71,4 +74,17 @@ function amountIsCovered(
   if (approved === undefined) return false;
   if (approved.currency !== requested.currency) return false;
   return requested.amount <= approved.amount;
+}
+
+function assertCallerBinding(
+  stored: { locationId?: string; requestedByUserId: string },
+  expected: ApprovalConsumeExpected,
+): void {
+  if (expected.locationId !== undefined && stored.locationId !== expected.locationId)
+    throw approvalRequired(expected.action);
+  if (
+    expected.requestedByUserId !== undefined &&
+    stored.requestedByUserId !== expected.requestedByUserId
+  )
+    throw approvalRequired(expected.action);
 }

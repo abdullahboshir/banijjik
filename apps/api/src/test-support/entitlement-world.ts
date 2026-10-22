@@ -25,8 +25,8 @@ export const WORKFLOW_PROBE_MANIFEST = optionalProbeManifest({
 });
 
 /** An OPTIONAL module that no package of the trial contains and the tenant may not disable. */
-export const BOOKKEEPING_PROBE_MANIFEST = optionalProbeManifest({
-  key: MODULE_KEY.BOOKKEEPING,
+export const PAYMENT_GATEWAY_PROBE_MANIFEST = optionalProbeManifest({
+  key: MODULE_KEY.PAYMENT_GATEWAY,
   routePrefix: "/ledger",
   tenantCanDisable: false,
 });
@@ -38,7 +38,7 @@ export function buildEntitlementProbeRouter(): Router {
   router.post("/flows", (_request, response) =>
     sendData(response, { module: "workflow" }, { status: 201 }),
   );
-  router.get("/ledger", (_request, response) => sendData(response, { module: "bookkeeping" }));
+  router.get("/ledger", (_request, response) => sendData(response, { module: "payment-gateway" }));
   router.get("/forgotten", (_request, response) => sendData(response, { module: "none" }));
   return router;
 }

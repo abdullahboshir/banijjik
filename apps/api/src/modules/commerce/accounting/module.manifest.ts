@@ -35,6 +35,7 @@ export const accountingManifest = defineModule({
   menu: [
     {
       menuKey: "accounting.trialBalance",
+      hiddenWhenModuleEnabled: MODULE_KEY.BOOKKEEPING,
       surface: SURFACE.ADMIN,
       groupKey: "settings",
       labelTermKey: "menu.accounting.trialBalance",
