@@ -102,6 +102,8 @@ function serviceDetails(details: DetailsState, errors: FieldErrors): Record<stri
   return {
     durationMinutes: requiredPositive(details.durationMinutes, "durationMinutes", errors),
     bufferAfterMinutes: buffer ?? 0,
+    requiresResource: details.requiresResource,
+    resourceTypeKeys: [...details.resourceTypeKeys],
     bookingMode: details.bookingMode,
   };
 }

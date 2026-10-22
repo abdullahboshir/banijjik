@@ -9,6 +9,7 @@ import {
 } from "@banijjik/contracts/catalog";
 import type { Translator } from "@banijjik/i18n";
 import { currencySymbolOf } from "@banijjik/ui";
+import { termLabel } from "@banijjik/web-client";
 import { customFieldPartsOf } from "../custom-fields/custom-field-parts";
 import { holdsPermission, holdsPermissionEverywhere } from "../shell/permissions";
 import type { OrgAccess } from "../shell/org-access";
@@ -49,6 +50,13 @@ export function buildEditorProps(input: {
   const { access, translator, lookups, kind, offering } = input;
   const { permissions, terms, kinds, fields } = access.config;
   const word = kindWord({ terms, kinds, translator }, kind);
+  const resourceTypes = (access.config.resourceTypes ?? []).map((type) => ({
+    value: type.resourceTypeKey,
+    label: termLabel(terms, type.termKey, {
+      locale: translator.locale,
+      fallback: type.resourceTypeKey,
+    }),
+  }));
   const offeringFields = fields["offering"] ?? [];
   const parts = customFieldPartsOf({
     fields: offeringFields,
@@ -71,6 +79,7 @@ export function buildEditorProps(input: {
     categories: lookups.categories,
     modifierGroups: lookups.modifierGroups,
     taxClasses: lookups.taxClasses,
+    resourceTypes,
     locations: lookups.locations.map(({ locationId, name }) => ({ locationId, name })),
     customFields: offeringFields.length > 0 ? parts.form : undefined,
     stockPickerLabels: itemPickerLabelsOf(translator.t),

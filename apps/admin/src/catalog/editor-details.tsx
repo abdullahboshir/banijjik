@@ -17,6 +17,8 @@ import type { DetailsState } from "./offering-form";
 
 interface DetailsProps extends SectionProps {
   currencySymbol: string;
+  /** The resource choices of the business's template, labelled with its own words. */
+  resourceTypes: readonly { value: string; label: string }[];
 }
 
 interface PartProps extends DetailsProps {
@@ -67,12 +69,48 @@ function ProductDetails(props: PartProps): ReactElement {
   );
 }
 
+function ResourceTypePicker(props: PartProps): ReactElement | null {
+  const { form, labels, isReadOnly, resourceTypes, change } = props;
+  if (resourceTypes.length === 0) return null;
+  const selected = form.details.resourceTypeKeys;
+  return (
+    <fieldset className="flex flex-col gap-1">
+      <legend className="text-small font-semibold text-primary">
+        {labels["details.resourceTypes"]}
+      </legend>
+      {resourceTypes.map((type) => (
+        <ToggleField
+          key={type.value}
+          label={type.label}
+          checked={selected.includes(type.value)}
+          disabled={isReadOnly}
+          onChange={(isOn) =>
+            change({
+              resourceTypeKeys: isOn
+                ? [...selected, type.value]
+                : selected.filter((key) => key !== type.value),
+            })
+          }
+        />
+      ))}
+    </fieldset>
+  );
+}
+
 function ServiceDetails(props: PartProps): ReactElement {
   const { form, labels, isReadOnly, change } = props;
   return (
     <>
       <NumberField {...props} field="durationMinutes" labelKey="details.durationMinutes" />
       <NumberField {...props} field="bufferAfterMinutes" labelKey="details.bufferAfterMinutes" />
+      <ToggleField
+        id="detail-requires-resource"
+        label={labels["details.requiresResource"]}
+        checked={form.details.requiresResource}
+        disabled={isReadOnly}
+        onChange={(requiresResource) => change({ requiresResource })}
+      />
+      {form.details.requiresResource ? <ResourceTypePicker {...props} /> : null}
       <ChoiceField
         id="detail-booking-mode"
         label={labels["details.bookingMode"]}

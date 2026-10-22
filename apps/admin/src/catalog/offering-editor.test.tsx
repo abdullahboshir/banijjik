@@ -47,6 +47,7 @@ function props(patch: Partial<Props> = {}): Props {
     categories: [],
     modifierGroups: [],
     taxClasses: [],
+    resourceTypes: [],
     locations: [],
     customFields: undefined,
     stockPickerLabels: itemPickerLabelsOf(t),
@@ -148,6 +149,30 @@ describe("the sections of each kind", () => {
 
     expect(screen.getByLabelText(labels["details.billingCount"])).toBeTruthy();
     expect(screen.getByLabelText(`${labels["details.admissionFee"]} (৳)`)).toBeTruthy();
+  });
+
+  it("saves a service with its resource requirement and chosen resource type", async () => {
+    createOffering.mockResolvedValue({ offeringId: "o-3", status: "DRAFT", version: 1 });
+    const form = { ...newOfferingForm("SERVICE", UNIT_KEY.SESSION), name: "হেয়ারকাট" };
+    renderInBangla(
+      <OfferingEditor
+        {...props({
+          initial: form,
+          resourceTypes: [{ value: "STYLIST", label: "স্টাইলিস্ট" }],
+        })}
+      />,
+    );
+
+    await typeInto(labels["field.price"], "500");
+    await userEvent.click(screen.getByLabelText("স্টাইলিস্ট"));
+    await userEvent.click(screen.getByRole("button", { name: labels["editor.saveDraft"] }));
+
+    await waitFor(() => expect(createOffering).toHaveBeenCalled());
+    expect(createOffering.mock.calls[0]?.[1].body.kindDetails).toMatchObject({
+      requiresResource: true,
+      resourceTypeKeys: ["STYLIST"],
+      bookingMode: "SLOT",
+    });
   });
 
   it("makes a row for each combination of the options, with a duration for a service", async () => {

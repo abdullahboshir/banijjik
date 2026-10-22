@@ -53,6 +53,7 @@ export interface OfferingEditorProps {
   categories: readonly CategoryResponse[];
   modifierGroups: readonly ModifierGroupResponse[];
   taxClasses: readonly TaxClassResponse[];
+  resourceTypes: readonly { value: string; label: string }[];
   locations: readonly { locationId: string; name: string }[];
   customFields: CustomFieldsFormProps | undefined;
   canWrite: boolean;
@@ -228,7 +229,11 @@ function EditorSections(props: {
         taxClasses={p.taxClasses}
         stockPickerLabels={p.stockPickerLabels}
       />
-      <EditorDetails {...section} currencySymbol={p.currencySymbol} />
+      <EditorDetails
+        {...section}
+        currencySymbol={p.currencySymbol}
+        resourceTypes={p.resourceTypes}
+      />
       <EditorVariants
         {...section}
         organizationId={p.organizationId}

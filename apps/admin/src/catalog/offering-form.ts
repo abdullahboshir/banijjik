@@ -29,6 +29,8 @@ export interface DetailsState {
   weightGrams: string;
   durationMinutes: string;
   bufferAfterMinutes: string;
+  requiresResource: boolean;
+  resourceTypeKeys: string[];
   bookingMode: BookingMode;
   billingUnit: BillingPeriodUnit;
   billingCount: string;
@@ -107,6 +109,8 @@ function emptyDetails(): DetailsState {
     weightGrams: "",
     durationMinutes: DEFAULT_SERVICE_MINUTES,
     bufferAfterMinutes: "0",
+    requiresResource: false,
+    resourceTypeKeys: [],
     bookingMode: BOOKING_MODE.SLOT,
     billingUnit: BILLING_PERIOD_UNIT.MONTH,
     billingCount: DEFAULT_BILLING_COUNT,
@@ -131,7 +135,11 @@ export function newOfferingForm(kind: OfferingKind, unitKey: UnitKey): OfferingF
     isLoose: false,
     looseMin: "",
     looseStep: "",
-    details: emptyDetails(),
+    // A new service is bookable by default: the booking sheet lists only services with a resource.
+    details: {
+      ...emptyDetails(),
+      requiresResource: kind === OFFERING_KIND.SERVICE,
+    },
     hasOptions: false,
     options: [],
     rows: [emptyRow()],
@@ -176,6 +184,10 @@ function rowOfVariant(kind: OfferingKind, variant: VariantResponse): VariantRow 
   };
 }
 
+function resourceTypeKeysOf(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((key): key is string => typeof key === "string") : [];
+}
+
 function detailsOfOffering(offering: OfferingResponse): DetailsState {
   const details = emptyDetails();
   const stored = offering.kindDetails as unknown as Record<string, unknown>;
@@ -192,6 +204,8 @@ function detailsOfOffering(offering: OfferingResponse): DetailsState {
       ...details,
       durationMinutes: text("durationMinutes"),
       bufferAfterMinutes: text("bufferAfterMinutes") || "0",
+      requiresResource: stored["requiresResource"] === true,
+      resourceTypeKeys: resourceTypeKeysOf(stored["resourceTypeKeys"]),
       bookingMode: stored["bookingMode"] as BookingMode,
     };
   }

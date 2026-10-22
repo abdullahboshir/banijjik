@@ -275,6 +275,9 @@ describe("the phone and the first load", () => {
 });
 
 describe("the SALON catalog", () => {
+  const SERVICE_NAME = "হেয়ারকাট";
+  const APPOINTMENT_TERM = "অ্যাপয়েন্টমেন্ট";
+
   it("lets the owner add a bookable service offering", async () => {
     const owner = await seedPerson("সালমা");
     await seedOrganizationWithBody(owner, {
@@ -282,13 +285,37 @@ describe("the SALON catalog", () => {
       slug: "salon",
       ...salonFixture,
     });
+    await seedLocation(owner, "salon", "প্রধান শাখা");
     const page = await openPage(stack.browser, PHONE_VIEWPORT);
     await signInWithCookies(page, owner);
+
     await gotoWhenHydrated(page, "/salon/catalog/new?kind=SERVICE", "#offering-name");
-    await typeInto(page, "#offering-name", "হেয়ারকাট");
-    await page.type("#detail-durationMinutes", "30");
+    await typeInto(page, "#offering-name", SERVICE_NAME);
+    await typeInto(page, "#offering-price", "500");
+    // The service starts as a bookable appointment; choose the template's staff resource.
+    await tick(page, "স্টাইলিস্ট");
     await clickByName(page, message("catalog.editor.saveDraft"));
-    await waitForText(page, "হেয়ারকাট");
+    const servicePath = await waitForDetailPath(page);
+    await waitForText(page, SERVICE_NAME);
+    await page.waitForSelector("#detail-requires-resource");
+    const requiresResource = await page.$eval(
+      "#detail-requires-resource",
+      (input) => (input as HTMLInputElement).checked,
+    );
+    await clickByName(page, message("catalog.editor.publish"));
+    await waitForBadge(page, message("catalog.status.ACTIVE"));
+
+    // The booking sheet lists only SLOT services that need a resource.
+    await gotoWhenHydrated(page, "/salon/bookings", "main button");
+    await clickByName(page, message("bookings.calendar.add").replace("{term}", APPOINTMENT_TERM));
+    await page.waitForSelector("#new-booking-service");
+    const choices = await page.$$eval("#new-booking-service option", (options) =>
+      options.map((option) => option.textContent ?? ""),
+    );
     await closePage(page);
+
+    expect(requiresResource).toBe(true);
+    expect(servicePath).toMatch(/^\/salon\/catalog\/[0-9a-f-]{36}$/u);
+    expect(choices).toContain(SERVICE_NAME);
   });
 });

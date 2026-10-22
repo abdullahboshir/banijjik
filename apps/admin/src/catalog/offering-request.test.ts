@@ -112,6 +112,52 @@ describe("a service with a duration per variant", () => {
   });
 });
 
+describe("a bookable service", () => {
+  it("starts a new service as an appointment that needs a resource", () => {
+    const form = newOfferingForm("SERVICE", "SESSION");
+
+    expect(form.details.requiresResource).toBe(true);
+    expect(form.details.resourceTypeKeys).toEqual([]);
+    expect(form.details.bookingMode).toBe("SLOT");
+  });
+
+  it("sends the resource requirement, the chosen resource types and the booking mode", () => {
+    const form = newOfferingForm("SERVICE", "SESSION");
+    const state: OfferingFormState = {
+      ...form,
+      name: "Haircut",
+      details: {
+        ...form.details,
+        resourceTypeKeys: ["STYLIST", "CHAIR"],
+        bookingMode: "WALK_IN_ONLY",
+      },
+      rows: [{ ...emptyRow(), price: "300" }],
+    };
+
+    const body = payloadOf(state);
+
+    expect(body.kindDetails).toMatchObject({
+      requiresResource: true,
+      resourceTypeKeys: ["STYLIST", "CHAIR"],
+      bookingMode: "WALK_IN_ONLY",
+    });
+  });
+
+  it("can turn the requirement off and drop the resource types", () => {
+    const form = newOfferingForm("SERVICE", "SESSION");
+    const state: OfferingFormState = {
+      ...form,
+      name: "Walk-in trim",
+      details: { ...form.details, requiresResource: false },
+      rows: [{ ...emptyRow(), price: "100" }],
+    };
+
+    const body = payloadOf(state);
+
+    expect(body.kindDetails).toMatchObject({ requiresResource: false, resourceTypeKeys: [] });
+  });
+});
+
 describe("a plan with an admission fee", () => {
   it("sends the billing period, the fee and a month count override per variant", () => {
     const form = newOfferingForm("PLAN", "SESSION");
@@ -196,7 +242,13 @@ describe("formFromOffering", () => {
       },
       { variantId: "v-3", name: "Old", optionValues: { Hair: "Old" }, status: "ARCHIVED" },
     ],
-    kindDetails: { durationMinutes: 30, bufferAfterMinutes: 0, bookingMode: "SLOT" },
+    kindDetails: {
+      durationMinutes: 30,
+      bufferAfterMinutes: 0,
+      requiresResource: true,
+      resourceTypeKeys: ["STYLIST"],
+      bookingMode: "SLOT",
+    },
     customFields: {},
     version: 4,
   } as unknown as OfferingResponse;
@@ -213,11 +265,23 @@ describe("formFromOffering", () => {
     expect(form.version).toBe(4);
   });
 
+  it("shows the resource requirement and the chosen resource types", () => {
+    const form = formFromOffering(stored);
+
+    expect(form.details.requiresResource).toBe(true);
+    expect(form.details.resourceTypeKeys).toEqual(["STYLIST"]);
+    expect(form.details.bookingMode).toBe("SLOT");
+  });
+
   it("builds the same payload back, so saving an untouched form changes nothing", () => {
     const body = payloadOf(formFromOffering(stored));
 
     expect(body.variants.map((variant) => variant.variantId)).toEqual(["v-1", "v-2"]);
     expect(body.imageFileIds).toEqual(["f-1"]);
     expect(body.categoryIds).toEqual(["c-1"]);
+    expect(body.kindDetails).toMatchObject({
+      requiresResource: true,
+      resourceTypeKeys: ["STYLIST"],
+    });
   });
 });

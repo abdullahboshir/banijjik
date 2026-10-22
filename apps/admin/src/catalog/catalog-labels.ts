@@ -67,6 +67,8 @@ export const EDITOR_LABEL_KEYS = [
   "details.weightGrams",
   "details.durationMinutes",
   "details.bufferAfterMinutes",
+  "details.requiresResource",
+  "details.resourceTypes",
   "details.bookingMode",
   "details.bookingMode.SLOT",
   "details.bookingMode.WALK_IN_ONLY",

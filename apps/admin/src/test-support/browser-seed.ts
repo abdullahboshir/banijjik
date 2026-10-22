@@ -2,11 +2,7 @@ import { INDUSTRY_TEMPLATE_STATUS } from "@banijjik/contracts";
 import { MongoClient } from "mongodb";
 import { callApi, organizationIdOf, type BrowserStack, type SeededPerson } from "./browser-stack";
 
-/**
- * Creates and publishes a bookable SERVICE through the real API. The offering editor saves no
- * `requiresResource`, and only offerings with it are bookable (the booking sheet lists those), so a
- * browser test that books cannot make the service through the UI yet.
- */
+/** Creates and publishes a bookable SERVICE through the real API, so a booking test starts from a known service. */
 export async function seedBookableService(
   person: SeededPerson,
   slug: string,

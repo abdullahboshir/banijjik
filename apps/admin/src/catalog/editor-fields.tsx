@@ -73,6 +73,7 @@ export function ChoiceField(props: ChoiceFieldProps): ReactElement {
 }
 
 export function ToggleField(props: {
+  id?: string;
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -80,6 +81,7 @@ export function ToggleField(props: {
 }): ReactElement {
   return (
     <Checkbox
+      id={props.id}
       label={props.label}
       checked={props.checked}
       disabled={props.disabled}

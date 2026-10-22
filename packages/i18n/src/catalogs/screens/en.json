@@ -756,6 +756,8 @@
   "catalog.details.weightGrams": "Weight (grams)",
   "catalog.details.durationMinutes": "How long it takes (minutes)",
   "catalog.details.bufferAfterMinutes": "Break afterwards (minutes)",
+  "catalog.details.requiresResource": "Needs a staff member or place",
+  "catalog.details.resourceTypes": "Who or what can take it",
   "catalog.details.bookingMode": "How customers come",
   "catalog.details.bookingMode.SLOT": "By appointment",
   "catalog.details.bookingMode.WALK_IN_ONLY": "Walk-in only",

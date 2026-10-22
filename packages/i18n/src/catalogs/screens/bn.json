@@ -756,6 +756,8 @@
   "catalog.details.weightGrams": "ওজন (গ্রাম)",
   "catalog.details.durationMinutes": "কতক্ষণ লাগে (মিনিট)",
   "catalog.details.bufferAfterMinutes": "পরে বিরতি (মিনিট)",
+  "catalog.details.requiresResource": "কর্মী বা জায়গা প্রয়োজন",
+  "catalog.details.resourceTypes": "কারা বা কোনটি নিতে পারে",
   "catalog.details.bookingMode": "গ্রাহক যেভাবে আসেন",
   "catalog.details.bookingMode.SLOT": "অ্যাপয়েন্টমেন্টে",
   "catalog.details.bookingMode.WALK_IN_ONLY": "শুধু সরাসরি এসে",
