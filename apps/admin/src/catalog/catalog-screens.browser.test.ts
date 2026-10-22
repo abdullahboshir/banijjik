@@ -40,7 +40,6 @@ const MINIMUM_TOUCH_TARGET = 43.5;
 /** A valid 1x1 PNG; the API reads the real content, so the bytes must be a real image. */
 const PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-const DETAIL_PATH = /^\/acme\/catalog\/[0-9a-f-]{36}$/u;
 
 let stack: BrowserStack;
 let owner: SeededPerson;
@@ -95,11 +94,11 @@ async function tick(page: Page, label: string): Promise<void> {
   );
 }
 
-async function waitForDetailPath(page: Page): Promise<string> {
+async function waitForDetailPath(page: Page, orgSlug: string): Promise<string> {
   await page.waitForFunction(
-    (pattern) => new RegExp(pattern, "u").test(window.location.pathname),
+    (slug) => new RegExp(`^/${slug}/catalog/[0-9a-f-]{36}$`, "u").test(window.location.pathname),
     {},
-    DETAIL_PATH.source,
+    orgSlug,
   );
   return new URL(page.url()).pathname;
 }
@@ -149,7 +148,7 @@ describe("adding products", () => {
     await typeInto(page, "#variant-1-price", "450");
     await typeInto(page, "#variant-1-sku", "TS-L");
     await clickByName(page, message("catalog.editor.saveAndPublish"));
-    savedPaths["shirt"] = await waitForDetailPath(page);
+    savedPaths["shirt"] = await waitForDetailPath(page, "acme");
     await waitForBadge(page, message("catalog.status.ACTIVE"));
     await gotoWhenHydrated(page, "/acme/catalog?q=TS-L", "main a");
     await waitForText(page, SHIRT_NAME);
@@ -169,7 +168,7 @@ describe("adding products", () => {
     await typeInto(page, "#loose-min", "250");
     await typeInto(page, "#loose-step", "250");
     await clickByName(page, message("catalog.editor.saveDraft"));
-    savedPaths["rice"] = await waitForDetailPath(page);
+    savedPaths["rice"] = await waitForDetailPath(page, "acme");
     await gotoWhenHydrated(page, savedPaths["rice"], "#loose-min");
     const rule = await page.$$eval("#loose-min, #loose-step", (inputs) =>
       inputs.map((input) => (input as HTMLInputElement).value),
@@ -295,7 +294,7 @@ describe("the SALON catalog", () => {
     // The service starts as a bookable appointment; choose the template's staff resource.
     await tick(page, "স্টাইলিস্ট");
     await clickByName(page, message("catalog.editor.saveDraft"));
-    const servicePath = await waitForDetailPath(page);
+    const servicePath = await waitForDetailPath(page, "salon");
     await waitForText(page, SERVICE_NAME);
     await page.waitForSelector("#detail-requires-resource");
     const requiresResource = await page.$eval(
