@@ -7,7 +7,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
 - No secrets, passwords or `.env` values.
 
-Last updated: 2026-10-22 (evening) by Opus 5.5 · local main `798b934` · GitHub main `c4968f2` (local main is 5 commits ahead, including card 3.14: push needs the owner's yes)
+Last updated: 2026-10-22 (night) by Sonnet 5.5 · local main `e5af140` (3.6 merged) · GitHub main `c4968f2` (local is 8 commits ahead, incl. 3.14; push needs the owner's yes)
 
 ## 1. Where the project stands
 - Phase 3 merged: 3.0, 3.1a, 3.1b, 3.1c, 3.2a, 3.2b, 3.3, 3.4, 3.4b, 3.8a, 3.8c, 3.12, 3.13, 3.14 (CI for card branches). Track M merged: M.1, M.2. Details per card: `docs/STATUS.md`.
@@ -18,7 +18,6 @@ The owner reported on 2026-10-22 that all four are fixed and finished. None has 
 
 | Branch | Folder | Tier | State and next step |
 |---|---|---|---|
-| `s/3.6-booking-core` | `banijjik-lead` | T1 | Head `96450b5` (R1 fixes and a clean Done-means pass recorded). Merge first: rebase on main, push, CI, review the R1 delta, ff main. |
 | `s/m3-moderation-screens` | `banijjik-1.7b` | T2 | Head `f2ecb32`, based on an old 3.6 head (`cdd75a1`). After 3.6 merges: rebase on main (drop the duplicated 3.6 commits), push, CI, merge check, merge. |
 | `s/m4-credits` | `banijjik-m2` | T1 | Head `3fd0c89` fixes B1 (storefront credit routes not module-gated) and B2 (`CreditEntry` not append-only) from `docs/handoffs/M.4-review.md`. Review the delta, rebase, push, CI, merge. |
 | `s/3.8b-bookkeeping` | `banijjik` | T1 | Head `997d13c`. The folder has **uncommitted out-of-scope edits** to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"); do not let them into the card. Full T1 review, rebase, push, CI, merge. |
@@ -31,7 +30,7 @@ Known flaky test (from 3.14): `apps/api/src/kernel/events/ordered-event-worker.t
 - Older open items: P1 rotate leaked secrets (repo is public), phone usability check (deferred by the owner), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
 
 ## 4. Next actions, in order
-1. Review and merge, one by one, each green on CI after its rebase: **3.6 → M.3 → M.4 → 3.8b**.
+1. Review and merge, one by one, each rebased on main, pushed, green on CI: **M.3 → M.4 → 3.8b** (3.6 is merged locally: CI run 39721717696 green, R1 delta reviewed). Note: rebasing STATUS.md rows conflicts every commit; resolve by keeping main's side and check `git grep "^<<<<<<<"` before pushing.
 2. Implementers now: **3.5a Part A** (prompt in the guide §6, branch `s/3.5a-api-orders`). It needs a free folder or a cloud agent; local folders free up as the four branches merge.
 3. After 3.6 merges: refresh plans **3.8** and **3.7** (based on `3c0165b`, older than 3.8c and 3.6), then 3.8 Part A and 3.7 Part A; write the **3.6b** plan.
 4. After M.4 merges: **M.5 Part A**.
@@ -50,6 +49,7 @@ Known flaky test (from 3.14): `apps/api/src/kernel/events/ordered-event-worker.t
 - **Token cost** (measured 2026-10-22): about 90% of a day's usage went to carrying a 900k-token session, mostly full cache rewrites after a break of over an hour or a `/model` switch. Keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-22 night** (Sonnet): rebased 3.6 on main (STATUS.md conflicts), CI green, reviewed R1 delta, fast-forwarded local main to `e5af140`. banijjik-lead folder is now free. M.3, M.4, 3.8b not yet reviewed; none pushed.
 - **2026-10-22** (Opus): parallel sessions guide; plans 3.14, 3.5a, M.5; session parts for 3.7 and 3.8; pushed main `c4968f2`; implemented and merged 3.14 locally (CI green after one flaky rerun); token-usage analysis; created this file and the user-level `/lead` and `/save-state` skills. The owner reports 3.6, M.3, M.4 and 3.8b finished (not yet reviewed).
 - **2026-10-20 to 21** (Opus): merged 3.8c, 3.4, 3.3 and M.2 together (`8258669`); planned 3.8b, M.3, M.4; reviewed 3.6 (R1: bookable service fields missing in the offering editor).
 - **2026-10-19** (Opus): merged M.1 and 3.4b; planned 3.4, 3.4b, 3.6, 3.8, 3.8c, 3.3, 3.7, M.2.
