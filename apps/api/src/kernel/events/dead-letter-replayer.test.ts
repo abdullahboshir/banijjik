@@ -1,11 +1,17 @@
 import { newId } from "@banijjik/ids";
-import type { JobState, Queue } from "bullmq";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { Worker, type JobState, type Queue } from "bullmq";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   connectTestDatabases,
   disposeTestDatabases,
   installTestLogger,
 } from "../../test-support/test-databases.js";
+import {
+  createRedisTestScope,
+  describeWithRedis,
+  type RedisTestScope,
+} from "../../test-support/test-redis.js";
+import { waitFor } from "../../test-support/wait-for.js";
 import { initializeModels, models, withTransaction } from "../db/index.js";
 import type { DatabaseConnections } from "../db/database-connections.js";
 import { replayDeadLetter } from "./dead-letter-admin.js";
@@ -15,7 +21,13 @@ import {
   EVENT_DEAD_LETTER_MODEL_NAME,
   type EventDeadLetterDocument,
 } from "./dead-letter.schema.js";
-import type { EventJobData, EventJobQueue } from "./event-job.js";
+import {
+  buildEventJobId,
+  EVENT_QUEUE_NAME,
+  type EventJobData,
+  type EventJobQueue,
+} from "./event-job.js";
+import { BullMqEventJobQueue, createEventQueue } from "./event-queue.js";
 import { registerEventModels } from "./register-event-models.js";
 import * as observability from "../observability/report-error.js";
 
@@ -66,10 +78,12 @@ function recordingJobs(added: EventJobData[]): EventJobQueue {
   return { enqueue: async (job) => void added.push(job) };
 }
 
-async function requestedReplay(): Promise<{ id: string; eventId: string }> {
-  const eventId = newId();
+async function requestedReplay(
+  eventId: string = newId(),
+  handlerKey = "ledger.post",
+): Promise<{ id: string; eventId: string }> {
   await deadLetter({
-    data: { eventId, handlerKey: "ledger.post", type: "iam.user.registered", organizationId: null },
+    data: { eventId, handlerKey, type: "iam.user.registered", organizationId: null },
     attempts: 5,
     error: new Error("boom"),
   });
@@ -188,5 +202,195 @@ describe("the dead letter replayer", () => {
     expect(oldJob.removeCalls).toBe(0);
     expect(await statusOf(id)).toBe("REPLAY_REQUESTED");
     expect(reportSpy).not.toHaveBeenCalled();
+  });
+
+  it("queues the replay on the next poll once the old job has failed", async () => {
+    const { id } = await requestedReplay();
+    const oldJob = fakeOldJob("active");
+    const added: EventJobData[] = [];
+    const replayer = new DeadLetterReplayer({
+      queue: queueWithOldJob(oldJob),
+      jobs: recordingJobs(added),
+    });
+    await replayer.replayPending();
+
+    oldJob.state = "failed";
+    const queued = await replayer.replayPending();
+
+    expect(queued).toBe(1);
+    expect(oldJob.removeCalls).toBe(1);
+    expect(added).toHaveLength(1);
+    expect(await statusOf(id)).toBe("REPLAYED");
+  });
+
+  it.each(["waiting", "delayed", "prioritized", "waiting-children"] as const)(
+    "leaves a replay waiting while the old job is %s",
+    async (state) => {
+      const reportSpy = vi.spyOn(observability, "reportError");
+      const { id } = await requestedReplay();
+      reportSpy.mockClear();
+      const oldJob = fakeOldJob(state);
+      const added: EventJobData[] = [];
+      const replayer = new DeadLetterReplayer({
+        queue: queueWithOldJob(oldJob),
+        jobs: recordingJobs(added),
+      });
+
+      const queued = await replayer.replayPending();
+
+      expect(queued).toBe(0);
+      expect(added).toEqual([]);
+      expect(oldJob.removeCalls).toBe(0);
+      expect(await statusOf(id)).toBe("REPLAY_REQUESTED");
+      expect(reportSpy).not.toHaveBeenCalled();
+    },
+  );
+
+  it("marks REPLAYED without adding again when the replayed job already completed", async () => {
+    const { id } = await requestedReplay();
+    const oldJob = fakeOldJob("completed");
+    const added: EventJobData[] = [];
+    const replayer = new DeadLetterReplayer({
+      queue: queueWithOldJob(oldJob),
+      jobs: recordingJobs(added),
+    });
+
+    const queued = await replayer.replayPending();
+
+    expect(queued).toBe(0);
+    expect(added).toEqual([]);
+    expect(oldJob.removeCalls).toBe(0);
+    expect(await statusOf(id)).toBe("REPLAYED");
+  });
+
+  it("treats an old job in state unknown as gone and queues the replay", async () => {
+    const { id } = await requestedReplay();
+    const oldJob = fakeOldJob("unknown");
+    const added: EventJobData[] = [];
+    const replayer = new DeadLetterReplayer({
+      queue: queueWithOldJob(oldJob),
+      jobs: recordingJobs(added),
+    });
+
+    const queued = await replayer.replayPending();
+
+    expect(queued).toBe(1);
+    expect(added).toHaveLength(1);
+    expect(oldJob.removeCalls).toBe(0);
+    expect(await statusOf(id)).toBe("REPLAYED");
+  });
+
+  it("waits, and never marks REPLAYED, when the old job is in a state it does not know", async () => {
+    const { id } = await requestedReplay();
+    const oldJob = fakeOldJob("from-a-newer-bullmq" as JobState);
+    const added: EventJobData[] = [];
+    const replayer = new DeadLetterReplayer({
+      queue: queueWithOldJob(oldJob),
+      jobs: recordingJobs(added),
+    });
+
+    const queued = await replayer.replayPending();
+
+    expect(queued).toBe(0);
+    expect(added).toEqual([]);
+    expect(await statusOf(id)).toBe("REPLAY_REQUESTED");
+  });
+});
+
+/** Holds the processor of the old job inside its last attempt until the test lets it fail. */
+interface BlockedProcessor {
+  readonly worker: Worker<EventJobData>;
+  hasStarted(): boolean;
+  failTheBlockedJob(): void;
+  completedRuns(): number;
+}
+
+function startBlockedProcessor(scope: RedisTestScope): BlockedProcessor {
+  let runs = 0;
+  let completedRuns = 0;
+  let failBlockedJob: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    failBlockedJob = resolve;
+  });
+  const worker = new Worker<EventJobData>(
+    EVENT_QUEUE_NAME,
+    async () => {
+      runs += 1;
+      if (runs === 1) {
+        await gate;
+        throw new Error("the last attempt fails");
+      }
+      completedRuns += 1;
+    },
+    { connection: scope.client, prefix: scope.prefix },
+  );
+  return {
+    worker,
+    hasStarted: () => runs > 0,
+    failTheBlockedJob: () => failBlockedJob(),
+    completedRuns: () => completedRuns,
+  };
+}
+
+describeWithRedis("the dead letter replayer with a real queue", (redisUrl) => {
+  let scope: RedisTestScope;
+  let queue: ReturnType<typeof createEventQueue>;
+  let processor: BlockedProcessor;
+
+  beforeEach(() => {
+    scope = createRedisTestScope(redisUrl);
+    queue = createEventQueue({ connection: scope.client, prefix: scope.prefix });
+    processor = startBlockedProcessor(scope);
+  });
+
+  afterEach(async () => {
+    // Let a blocked job end first, so closing the worker does not wait for it.
+    processor.failTheBlockedJob();
+    await processor.worker.close();
+    await queue.close();
+    await scope.dispose();
+  });
+
+  it("a replay asked for while the last attempt is still running is carried out after the job fails", async () => {
+    const eventId = newId();
+    const handlerKey = "ledger.post";
+    const jobId = buildEventJobId(eventId, handlerKey);
+    const data: EventJobData = {
+      eventId,
+      handlerKey,
+      type: "iam.user.registered",
+      organizationId: null,
+    };
+    await queue.add(handlerKey, data, { jobId, attempts: 1, removeOnFail: false });
+    await waitFor("the last attempt to start", async () =>
+      processor.hasStarted() ? true : undefined,
+    );
+    // This is the gap of card 3.16: the dead letter is written, the job is still active.
+    const { id } = await requestedReplay(eventId, handlerKey);
+    const replayer = new DeadLetterReplayer({ queue, jobs: new BullMqEventJobQueue({ queue }) });
+
+    const queuedWhileActive = await replayer.replayPending();
+
+    expect(queuedWhileActive).toBe(0);
+    expect(await statusOf(id)).toBe("REPLAY_REQUESTED");
+    expect(await queue.getJobCounts("active", "waiting", "failed")).toMatchObject({
+      active: 1,
+      waiting: 0,
+      failed: 0,
+    });
+
+    processor.failTheBlockedJob();
+    await waitFor("the old job to fail", async () =>
+      (await queue.getJobState(jobId)) === "failed" ? true : undefined,
+    );
+    const queuedAfterFailure = await replayer.replayPending();
+
+    expect(queuedAfterFailure).toBe(1);
+    expect(await statusOf(id)).toBe("REPLAYED");
+    await waitFor("the replayed job to run", async () =>
+      processor.completedRuns() === 1 && (await queue.getJobState(jobId)) === "completed"
+        ? true
+        : undefined,
+    );
   });
 });
