@@ -64,6 +64,7 @@ import { CustomerAuthController } from "./presentation/customer-auth.controller.
 import { CustomerCookies } from "./presentation/customer-cookies.js";
 
 export { contactManifest } from "./module.manifest.js";
+export { buildContactBillToReader } from "./infrastructure/contact-bill-to-reader.js";
 export { registerContactModels } from "./infrastructure/register-contact-models.js";
 export { buildSalesContactReader } from "./sales-contact-reader.js";
 export type {
