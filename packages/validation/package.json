@@ -33,6 +33,10 @@
     "./credit": {
       "types": "./dist/credit/index.d.ts",
       "default": "./dist/credit/index.js"
+    },
+    "./payment": {
+      "types": "./dist/payment/index.d.ts",
+      "default": "./dist/payment/index.js"
     }
   },
   "files": [
