@@ -3,7 +3,8 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    # Card branches too, so every session gets the full verification without running it locally (card 3.14).
+    branches: [main, "s/**"]
 
 # Least privilege: the jobs only read the repository and use no secrets.
 permissions:
@@ -88,6 +89,62 @@ jobs:
       # Dev-only findings (eslint-plugin-boundaries, no non-breaking fix) are reported, not blocking.
       - name: Report all dependency advisories
         run: npm audit --audit-level=high || true
+
+  browser:
+    name: browser
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # The admin and platform browser stacks connect to Redis at 127.0.0.1:6380 (their local default).
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # The browser stacks start MongoMemoryReplSet without a version; pin the one the cache holds.
+      MONGOMS_VERSION: "8.0.13"
+      # Preinstalled on GitHub's Ubuntu runners; the suites never download a browser.
+      CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache the in-memory MongoDB binary
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules/.cache/mongodb-memory-server
+          key: ${{ runner.os }}-mongodb-binary-8.0.13
+
+      # Ubuntu 24.04 blocks the unprivileged user namespaces that Chrome's sandbox needs.
+      - name: Allow the Chrome sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      # The API dist and both Next.js builds are served by the stacks; the values are placeholders, not secrets.
+      - name: Build
+        run: npx turbo run build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+          NEXT_PUBLIC_BRAND_NAME: Test Brand
+
+      - name: Admin browser suite
+        run: npm run test:browser -w @banijjik/admin
+
+      - name: Platform browser suite
+        run: npm run test:browser -w @banijjik/platform
 
   secrets:
     name: secrets
