@@ -194,7 +194,7 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **3.3 Inventory ledger** (InventoryItem with a base unit (ADR-098), StockMovement and InventoryLevel per inventory item, reservation per stock component, packs and loose sale from one stock, kits and recipes, services that use up products, adjustment, transfer, low stock, moving average cost). M: `modules/supply`, `modules/inventory`
 **3.4b Manager approvals** (PIN and one-time approval token for discounts, refunds, reversals and overrides; split out of 3.4 and 3.8, plan 2026-10-19).
 **3.4 Pricing & tax** (price resolution for all kinds, promotions as rules, tax classes; money in minor units). M: `modules/pricing`
-**3.5 Orders** (PRODUCT requests: state machine from D3, invoice, returns/refunds, COD; one transaction for order + stock + journal). M: `modules/sales` + guides 15, 16, 21
+**3.5 Orders** (PRODUCT requests: state machine from D3, invoice, returns/refunds, COD; one transaction for order + stock + journal). M: `modules/sales` + guides 15, 16, 21 (split 2026-10-22: 3.5a orders with stock, 3.5b returns and exchanges)
 **3.6b Rental and event bookings** (RENTAL per night or hour, EVENT sessions; split out of 3.6).
 **3.6 Booking core** (Resources: staff/room/seat/table/vehicle; availability rules; bookings for SERVICE/RENTAL/EVENT; no double-booking under concurrency; reminders via outbox).
 **3.7 Enrollment core** (PLAN kind: enrollments, periods, renewals, dues, attendance/check-in as a generic capability). M: `modules/membership`
@@ -209,6 +209,7 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
   - **Topic-wise structure, easy for any owner to understand:** a settings home grouped by topic (Business, Team, Website, Sales and catalogue, Payments, Automation, Advanced), each topic a card with a one-line explanation; every page split into titled sections with short help text; one consistent page layout (header, sections, sticky actions).
   - **Visual quality:** type scale, spacing, colour use, cards, icons, empty-state illustrations, loading skeletons, a friendlier dashboard frame for 3.10.
   - Usability check on a phone with two or three pilot owners (P3) before it is called done.
+**3.14 CI for every card branch** (chore, 2026-10-22: every push of an `s/**` branch runs the full verification and the admin and platform browser suites on GitHub, so sessions do not run whole suites locally; `docs/plans/parallel-sessions-guide.md`).
 **3.11 Staff commission** (OPTIONAL `commission`, ADR-100: rules per member or role and per offering, category or kind; performer on booking and order lines; append-only accruals; payouts posted through `accounting`).
 - Phase done: a salon, a gym and a coaching centre from templates take bookings and enrollments, sell services and products at the counter, collect fees and dues, and pay staff commission, with correct numbers in reports; **and** a product seller runs a full day (stock in → POS + online orders → returns → day close), including loose and packed sale from one stock. No industry-specific code.
 

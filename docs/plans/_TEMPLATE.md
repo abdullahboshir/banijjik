@@ -2,6 +2,9 @@
 
 Tier: T1 | T2 | T3 · Planned by: <model> · Date: <yyyy-mm-dd> · Based on commit: <sha>
 
+## Session parts
+One part, or Part A (API) and Part B (screens) as `docs/plans/parallel-sessions-guide.md` §3 says: which decisions, files and tests belong to each, and the branch names.
+
 ## Goal
 One paragraph: what exists after this card that did not exist before.
 
@@ -12,8 +15,10 @@ Docs/sections and existing code files this plan relies on.
 Every design choice made here, with its reason. The implementer must not make new design choices. If one is needed, stop and ask.
 
 ## Files
-| Path | Create/Change | Purpose |
-|---|---|---|
+Mark each row **owns** (only this card edits it in this wave) or **add-only** (a shared file; add lines at the end of the right block).
+
+| Path | Create/Change | Owns / add-only | Purpose |
+|---|---|---|---|
 
 ## Interfaces & types
 Exact signatures (TypeScript) for public functions, ports, entities, DTOs, manifest entries, events.

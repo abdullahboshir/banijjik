@@ -4,7 +4,7 @@ The agent updates this file at the **end of every session**. It is the only prog
 
 **Start-of-session prompts (owner copies one):**
 - **PLAN** (Opus): `Read AGENTS.md and docs/STATUS.md. PLAN session for card <id>: write docs/plans/<id>.md from docs/plans/_TEMPLATE.md. No application code. Ask me about any product decision.`
-- **IMPLEMENT** (Sonnet): `Read AGENTS.md, docs/STATUS.md and docs/plans/<id>.md. IMPLEMENT card <id> exactly as planned. Stop and ask if the plan has a gap. Verify, then update STATUS.md.`
+- **IMPLEMENT** (any implementer, from 2026-10-22): the prompt in `docs/plans/parallel-sessions-guide.md` §6 (one part per session, fast local checks, CI on the pushed branch, the finish checklist of §8).
 - **REVIEW** (Opus, T1 cards): `Read AGENTS.md and docs/plans/<id>.md. REVIEW branch s/<id>-… against the plan, AGENTS.md and the DoD. List findings by severity, fix confirmed ones, update STATUS.md.`
 - **PHASE REVIEW** (Opus, end of each phase): `Read AGENTS.md, docs/STATUS.md, docs/03-ROADMAP.md and all handoffs of phase <n>. PHASE REVIEW for phase <n>: check cross-card consistency, the "Phase done" criteria and doc/code drift; run all checks without cache; list findings by severity; fix confirmed ones; write docs/handoffs/phase-<n>-review.md and update STATUS.md.`
 - **DESIGN** (Opus, D cards): `Read AGENTS.md and docs/STATUS.md. Do card <id> from docs/03-ROADMAP.md: write the design doc only. Ask me about product decisions.`
@@ -113,10 +113,12 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.8c accounting engine and expenses | merged (2026-10-20, implemented with Cursor, Claude T1 review passed; ADR-124 proposed) | system accounts by code, ORDERED posting handlers (`alsoHandles`), idempotent balanced journals, trial balance, expenses; validation on `@banijjik/validation/accounting`. Gap: real `PaymentPostingSource` (3.8) and `BookingPostingSource` (3.6) adapters; handlers register only with them |
 | 3.8b bookkeeping add-on UI | planned (2026-10-20, `docs/plans/3.8b.md`, Opus; T1) | can start now; custom accounts, manual and reversing entries with approval, P&L and balance sheet; owns no data; ADR-128 |
 | 3.3 inventory ledger | merged (2026-10-20, implemented with Cursor, Claude T1 review 2 passed; ADR-125 proposed) | items, receipts, adjustments, one-step transfers, moving average in cost micros (BigInt), low stock, rebuild check, `StockLedger` port; stock components switched on in catalog |
-| 3.5 orders | todo | lane A |
+| 3.5a orders (draft, place, confirm, edit, cancel, complete, with stock) | planned (2026-10-22, `docs/plans/3.5a.md`, Opus; part A T1, part B T2) | part A can start now; PRODUCT lines only, quote-only totals, reservation lifecycle, instant sale for POS, payment status port stubbed until 3.8; ADR-131 |
+| 3.5b returns and exchanges | todo | after 3.5a |
 | 3.9 POS | todo |  |
 | 3.11 staff commission | todo | ADR-100 |
 | 3.10 reports and dashboard | todo | last |
+| 3.14 CI for every card branch | planned (2026-10-22, `docs/plans/3.14.md`, Opus; T2) | start first: `s/**` push trigger and a browser job (Redis on 6380, MongoDB 8.0.13 cache, system Chrome) |
 | Phase 3 review | todo | |
 
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
@@ -127,7 +129,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | M.2 directory API | merged (2026-10-20, implemented with Cursor, Claude T1 review 2 passed; ADR-127 proposed) | listings, visibility tiers with one projection, moderation API, filters, GEO_BD registry (BBS source), photo policy, contracts and validation subpaths `directory` |
 | M.3 admin moderation screens | planned (2026-10-20, `docs/plans/M.3.md`, Opus; T2) | can start now; queue, review page with tiers and checklist, approve/reject/hide, all listings |
 | M.4 credits and connections | planned (2026-10-20, `docs/plans/M.4.md`, Opus; T1) | can start now; credit packs, append-only credit ledger with FIFO expiry, idempotent unlocks, unlock port into directory, limits; ADR-130 |
-| M.5 manual payment verification | todo | |
+| M.5 credit pack purchase with manual verification | planned (2026-10-22, `docs/plans/M.5.md`, Opus; part A T1, part B T2) | after M.4 is merged; bKash/Nagad reference unique per method, idempotent verify grants once, self-service guard, approval above a limit, no accounting yet; ADR-132 |
 | M.6 minimal storefront | todo | |
 | M.7 trust and safety | todo | |
 | M.8 matrimony templates and notifications | todo | |

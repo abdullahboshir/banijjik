@@ -122,3 +122,6 @@ Only wave 1 has full plans. A later card's plan is written when the cards it bui
 - **Tiers:** T1 = 3.0, 3.1a, 3.2(a), 3.8a, 3.8, 3.3, 3.5, 3.6, 3.9 (money, stock, concurrency, uploads). T2 = the rest. Every T1 card gets the strict Opus review; T2 cards a merge check.
 - **One heavy test run at a time** on this machine; three sessions need at least 4 GB free on E:.
 - The table may change when a wave's plans are written. Changes are recorded here and in STATUS.
+
+## From 2026-10-22: many parallel sessions
+Plans and sessions follow `docs/plans/parallel-sessions-guide.md`: one layer per session (Part A API, Part B screens), file ownership in every plan, fast local checks only, the full verification on GitHub CI for every pushed card branch (card 3.14), and one finish checklist. The ready board is in that guide (§9); it replaces the "at most three implementers" note above for cloud agents. Local folders stay limited by disk space.
