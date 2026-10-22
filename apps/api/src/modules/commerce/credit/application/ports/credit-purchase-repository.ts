@@ -1,5 +1,5 @@
 import type { CreditPurchaseMethod, CreditPurchaseStatus } from "@banijjik/contracts/credit";
-import type { CreditPurchaseId, CustomerAccountId } from "@banijjik/ids";
+import type { CreditPurchaseId, CustomerAccountId, UserId } from "@banijjik/ids";
 import type { CreditPurchase } from "../../domain/credit-purchase.entity.js";
 
 export interface ListCreditPurchasesStaffFilter {
@@ -11,7 +11,8 @@ export interface ListCreditPurchasesStaffFilter {
 
 export interface CreditPurchaseRepository {
   insert(purchase: CreditPurchase): Promise<void>;
-  updateVersioned(purchase: CreditPurchase): Promise<boolean>;
+  /** A stale version surfaces as the kernel's 409 conflict; a missing row as 404. */
+  updateVersioned(purchase: CreditPurchase, updatedByUserId: UserId | null): Promise<void>;
   findById(creditPurchaseId: CreditPurchaseId): Promise<CreditPurchase | undefined>;
   findByReference(
     method: CreditPurchaseMethod,

@@ -5,7 +5,9 @@ import {
   type CreditPurchaseId,
   type CustomerAccountId,
   type OrganizationId,
+  type UserId,
 } from "@banijjik/ids";
+import { escapeRegExp } from "@banijjik/validation";
 import { getRequestContext } from "../../../../kernel/context/index.js";
 import {
   getActiveSession,
@@ -13,7 +15,6 @@ import {
   sessionOption,
   updateVersioned,
 } from "../../../../kernel/db/index.js";
-import { escapeRegExp } from "@banijjik/validation";
 import type {
   CreditPurchaseRepository,
   ListCreditPurchasesStaffFilter,
@@ -48,35 +49,28 @@ export class MongoCreditPurchaseRepository implements CreditPurchaseRepository {
     }
   }
 
-  async updateVersioned(purchase: CreditPurchase): Promise<boolean> {
+  async updateVersioned(purchase: CreditPurchase, updatedByUserId: UserId | null): Promise<void> {
     const organizationId = this.getOrganizationId();
     const Model = models({ organizationId }).get<CreditPurchaseDocument>(
       CREDIT_PURCHASE_MODEL_NAME,
     );
-    try {
-      const doc = this.toDocument(purchase, organizationId);
-      await updateVersioned<CreditPurchaseDocument>({
-        model: Model,
-        filter: { creditPurchaseId: purchase.creditPurchaseId },
-        expectedVersion: purchase.version - 1,
-        update: {
-          $set: {
-            status: doc.status,
-            verifiedByUserId: doc.verifiedByUserId,
-            verifiedAt: doc.verifiedAt,
-            rejectionReason: doc.rejectionReason,
-            creditEntryId: doc.creditEntryId,
-            updatedAt: doc.updatedAt,
-          },
+    const doc = this.toDocument(purchase, organizationId);
+    await updateVersioned<CreditPurchaseDocument>({
+      model: Model,
+      filter: { creditPurchaseId: purchase.creditPurchaseId },
+      expectedVersion: purchase.version - 1,
+      update: {
+        $set: {
+          status: doc.status,
+          verifiedByUserId: doc.verifiedByUserId,
+          verifiedAt: doc.verifiedAt,
+          rejectionReason: doc.rejectionReason,
+          creditEntryId: doc.creditEntryId,
+          updatedAt: doc.updatedAt,
+          updatedByUserId,
         },
-      });
-      return true;
-    } catch (error) {
-      if (isDuplicateKeyError(error)) {
-        throw new CreditReferenceTakenError();
-      }
-      return false;
-    }
+      },
+    });
   }
 
   async findById(creditPurchaseId: CreditPurchaseId): Promise<CreditPurchase | undefined> {
@@ -240,6 +234,9 @@ export class MongoCreditPurchaseRepository implements CreditPurchaseRepository {
       version: purchase.version,
       createdAt: purchase.createdAt,
       updatedAt: purchase.updatedAt,
+      // A customer submission has no staff author; staff set updatedByUserId on verify/reject.
+      createdByUserId: null,
+      updatedByUserId: null,
     };
   }
 

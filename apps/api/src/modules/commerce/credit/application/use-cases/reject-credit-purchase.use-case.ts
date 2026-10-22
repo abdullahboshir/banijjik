@@ -5,6 +5,7 @@ import {
   type CreditPurchaseResponse,
 } from "@banijjik/contracts/credit";
 import type { CreditPurchaseId, UserId } from "@banijjik/ids";
+import { conflict } from "../../../../../kernel/http/index.js";
 import { CreditPurchaseNotFoundError, CreditPurchaseNotPendingError } from "../../domain/errors.js";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { assertNotSelfService } from "./assert-not-self-service.js";
@@ -37,8 +38,12 @@ export class RejectCreditPurchaseUseCase {
       if (!current) {
         throw new CreditPurchaseNotFoundError();
       }
-      if (current.status !== CREDIT_PURCHASE_STATUS.PENDING || current.version !== input.version) {
+      if (current.status !== CREDIT_PURCHASE_STATUS.PENDING) {
         throw new CreditPurchaseNotPendingError();
+      }
+      // A stale version on a still-PENDING purchase is the standard 409, not "not pending".
+      if (current.version !== input.version) {
+        throw conflict({ currentVersion: current.version });
       }
 
       const now = this.deps.clock.now();
@@ -48,10 +53,7 @@ export class RejectCreditPurchaseUseCase {
         rejectionReason: input.reason,
       });
 
-      const updated = await this.deps.purchases.updateVersioned(rejected);
-      if (!updated) {
-        throw new CreditPurchaseNotPendingError();
-      }
+      await this.deps.purchases.updateVersioned(rejected, input.actorUserId);
 
       await this.deps.audit.record({
         action: AUDIT_ACTION.CREDIT_PURCHASE_REJECTED,

@@ -36,6 +36,8 @@ export interface CreditPurchaseDocument {
   version: number;
   createdAt: Date;
   updatedAt: Date;
+  createdByUserId: string | null;
+  updatedByUserId: string | null;
 }
 
 export const creditPurchaseSchema = new Schema<CreditPurchaseDocument>(
@@ -75,13 +77,10 @@ export const creditPurchaseSchema = new Schema<CreditPurchaseDocument>(
     creditEntryId: { type: String, default: null },
     submittedAt: { type: Date, required: true },
     expiresAt: { type: Date, required: true },
-    version: { type: Number, required: true, default: 1 },
     createdAt: { type: Date, required: true, immutable: true },
     updatedAt: { type: Date, required: true },
-    createdByUserId: { type: String, default: null },
-    updatedByUserId: { type: String, default: null },
-    ...auditFields,
     ...versionField,
+    ...auditFields,
   },
   SCHEMA_OPTIONS,
 );
@@ -106,6 +105,9 @@ creditPurchaseSchema.index(
 // Staff queue: oldest PENDING first, or filtering by status
 creditPurchaseSchema.index({ organizationId: 1, status: 1, submittedAt: 1 });
 
-// Additional unique indexes for creditPurchaseId and purchaseNumber
+// Daily expiry job
+creditPurchaseSchema.index({ organizationId: 1, status: 1, expiresAt: 1 });
+
+// domainIdField leaves the unique index to the caller; the customer-facing number is unique per org
 creditPurchaseSchema.index({ organizationId: 1, creditPurchaseId: 1 }, { unique: true });
 creditPurchaseSchema.index({ organizationId: 1, purchaseNumber: 1 }, { unique: true });

@@ -16,3 +16,4 @@ Purchases (ADR-132) record bKash/Nagad transfers with pack snapshot and partial 
 
 Settings: `credit.unlockCost`, `credit.unlocksPerDay`, `credit.showUnlockersToOwner`, `credit.payment.methods`, `credit.purchase.maxPending`, `credit.purchase.pendingDays`, `credit.purchase.approvalAbove`.
 Storefront routes hide when module is off. Active packs cap at 100 rows. Registry guards prevent ledger mutation. Keyset scans use 100-row batches with additive indexes (ADR-094).
+`db:sync-indexes`: `credit_purchases` gains unique `{organizationId, creditPurchaseId}` and `{organizationId, purchaseNumber}`.

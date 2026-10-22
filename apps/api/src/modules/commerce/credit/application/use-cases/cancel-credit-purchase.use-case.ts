@@ -24,10 +24,7 @@ export class CancelCreditPurchaseUseCase {
       const now = this.deps.clock.now();
       const cancelled = purchase.cancel(now);
 
-      const updated = await this.deps.purchases.updateVersioned(cancelled);
-      if (!updated) {
-        throw new CreditPurchaseNotPendingError();
-      }
+      await this.deps.purchases.updateVersioned(cancelled, null);
 
       await this.deps.audit.record({
         action: AUDIT_ACTION.CREDIT_PURCHASE_CANCELLED,

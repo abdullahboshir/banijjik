@@ -17,10 +17,7 @@ export class CancelExpiredPurchasesUseCase {
         }
 
         const cancelled = current.cancel(now);
-        const updated = await this.deps.purchases.updateVersioned(cancelled);
-        if (!updated) {
-          return;
-        }
+        await this.deps.purchases.updateVersioned(cancelled, null);
 
         cancelledCount++;
 

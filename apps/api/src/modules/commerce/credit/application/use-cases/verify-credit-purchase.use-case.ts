@@ -17,6 +17,7 @@ import {
   type UserId,
 } from "@banijjik/ids";
 import { getRequestContext } from "../../../../../kernel/context/index.js";
+import { conflict } from "../../../../../kernel/http/index.js";
 import type { CreditPurchase } from "../../domain/credit-purchase.entity.js";
 import { CreditPurchaseNotFoundError, CreditPurchaseNotPendingError } from "../../domain/errors.js";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
@@ -54,9 +55,10 @@ export class VerifyCreditPurchaseUseCase {
       const current = await this.deps.purchases.findById(input.creditPurchaseId);
       if (!current) throw new CreditPurchaseNotFoundError();
       if (current.status === CREDIT_PURCHASE_STATUS.VERIFIED) return viewCreditPurchase(current);
-      if (current.status !== CREDIT_PURCHASE_STATUS.PENDING || current.version !== input.version) {
+      if (current.status !== CREDIT_PURCHASE_STATUS.PENDING)
         throw new CreditPurchaseNotPendingError();
-      }
+      // A stale version on a still-PENDING purchase is the standard 409, not "not pending".
+      if (current.version !== input.version) throw conflict({ currentVersion: current.version });
 
       if (requiresApproval && input.approvalToken) {
         await this.deps.approvals.consume(input.approvalToken, {
@@ -128,8 +130,7 @@ export class VerifyCreditPurchaseUseCase {
       verifiedAt: now,
       creditEntryId,
     });
-    const updated = await this.deps.purchases.updateVersioned(verified);
-    if (!updated) throw new CreditPurchaseNotPendingError();
+    await this.deps.purchases.updateVersioned(verified, input.actorUserId);
 
     await this.recordAuditAndEvents({
       verified,
