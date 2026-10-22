@@ -27,6 +27,7 @@ import type { ListingEventPayload } from "../directory/directory-contracts.js";
 import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
 import type {
   CreditEntryCreatedPayload,
+  CreditPurchaseEventPayload,
   UnlockCreatedPayload,
 } from "../credit/credit-contracts.js";
 import { CREDIT_EVENT_TYPE } from "../credit/credit-event-type.js";
@@ -160,4 +161,8 @@ export interface EventPayloadMap {
   readonly [DIRECTORY_EVENT_TYPE.LISTING_UPDATED]: ListingEventPayload;
   readonly [CREDIT_EVENT_TYPE.CREDIT_ENTRY_CREATED]: CreditEntryCreatedPayload;
   readonly [CREDIT_EVENT_TYPE.UNLOCK_CREATED]: UnlockCreatedPayload;
+  readonly [CREDIT_EVENT_TYPE.PURCHASE_SUBMITTED]: CreditPurchaseEventPayload;
+  readonly [CREDIT_EVENT_TYPE.PURCHASE_VERIFIED]: CreditPurchaseEventPayload;
+  readonly [CREDIT_EVENT_TYPE.PURCHASE_REJECTED]: CreditPurchaseEventPayload;
+  readonly [CREDIT_EVENT_TYPE.PURCHASE_CANCELLED]: CreditPurchaseEventPayload;
 }

@@ -56,7 +56,7 @@ describe("credit validation schemas", () => {
       },
     ];
     expect(creditPaymentMethodsSettingSchema.parse(setting)).toEqual(setting);
-    expect(creditPaymentMethodsSettingSchema.safeParse([]).success).toBe(false);
+    expect(creditPaymentMethodsSettingSchema.safeParse([]).success).toBe(true);
   });
 
   it("validates credit purchases staff query", () => {

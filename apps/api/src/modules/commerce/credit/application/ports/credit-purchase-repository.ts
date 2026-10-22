@@ -3,8 +3,8 @@ import type { CreditPurchaseId, CustomerAccountId } from "@banijjik/ids";
 import type { CreditPurchase } from "../../domain/credit-purchase.entity.js";
 
 export interface ListCreditPurchasesStaffFilter {
-  readonly status?: CreditPurchaseStatus;
-  readonly q?: string;
+  readonly status?: CreditPurchaseStatus | undefined;
+  readonly q?: string | undefined;
   readonly offset: number;
   readonly limit: number;
 }

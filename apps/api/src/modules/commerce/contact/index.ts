@@ -258,12 +258,37 @@ export function buildInlineContactCreator(dependencies: {
 /** Tenant-scoped existence check, for modules that reference a customer account by id. */
 export function buildCustomerAccountLookup(): {
   exists(customerAccountId: CustomerAccountId): Promise<boolean>;
+  findById(
+    customerAccountId: CustomerAccountId,
+  ): Promise<{ contactId: string; phoneE164: string } | undefined>;
 } {
   const accounts = new MongoCustomerAccountRepository();
   return {
     async exists(customerAccountId) {
       const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
       return account !== undefined;
+    },
+    async findById(customerAccountId) {
+      const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
+      if (!account) return undefined;
+      return { contactId: account.contactId, phoneE164: account.phoneE164 };
+    },
+  };
+}
+
+export function buildContactLookup(): {
+  findActiveByPhone(phoneE164: string): Promise<{ contactId: string } | undefined>;
+  findActiveByEmail(email: string): Promise<{ contactId: string } | undefined>;
+} {
+  const contacts = new MongoContactRepository();
+  return {
+    async findActiveByPhone(phone) {
+      const contact = await contacts.findActiveByPhone(phone);
+      return contact ? { contactId: contact.contactId } : undefined;
+    },
+    async findActiveByEmail(email) {
+      const contact = await contacts.findActiveByEmail(email);
+      return contact ? { contactId: contact.contactId } : undefined;
     },
   };
 }

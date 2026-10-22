@@ -84,6 +84,7 @@ creditPurchaseSchema.index({ organizationId: 1, customerAccountId: 1, submittedA
 creditPurchaseSchema.index(
   { organizationId: 1, method: 1, transactionReference: 1 },
   {
+    name: "uniq_credit_purchase_pending_verified_ref",
     unique: true,
     partialFilterExpression: {
       status: {

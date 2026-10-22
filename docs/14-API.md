@@ -80,6 +80,9 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | 400 | `CANNOT_UNLOCK_OWN_LISTING` | a customer may not spend credits on their own listing |
 | 404 | `LISTING_NOT_APPROVED` | an unlock of a listing that is not APPROVED |
 | 429 | `UNLOCKS_PER_DAY_EXCEEDED` | the account reached `credit.unlocksPerDay` for the business day |
+| 409 | `CREDIT_REFERENCE_TAKEN` | a transfer reference is already in use for a PENDING or VERIFIED purchase (ADR-132) |
+| 403 | `CREDIT_PURCHASE_SELF_SERVICE_FORBIDDEN` | staff cannot verify or reject their own credit purchase (ADR-132) |
+| 422 | `CREDIT_PAYMENT_METHOD_NOT_CONFIGURED` | selected payment method is not configured in `credit.payment.methods` (ADR-132) |
 | 413 | `PAYLOAD_TOO_LARGE` | an upload over its size limit (`errors.file_too_large`), aborted while streaming |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | an upload whose content is not an accepted type, checked by magic bytes (`errors.file_type_not_allowed`) |
 | 429 | `RATE_LIMITED` | |
@@ -262,6 +265,10 @@ Public reads are cacheable (`Cache-Control` + CDN). Writes need the storefront c
 | `POST /listings/{listingNumber}/unlock` | customer | rate I | spends `credit.unlockCost`; idempotent per account and listing; `Idempotency-Key` header required; 422 when the balance is short, 429 at the daily limit, 400 for the customer's own listing |
 | `GET /my/credits` · `GET /my/unlocks` | customer | | balance with paged entries / unlocked listings with their UNLOCKED fields, paged |
 | `GET /credit-packs` | public / optional customer | cache | ACTIVE packs only (sold in M.5) |
+| `GET /credit/payment-info` | public / optional customer | | accepted methods and payment instructions (ADR-132) |
+| `POST /credit-purchases` | customer | rate I | submits pack purchase with transfer reference (ADR-132) |
+| `GET /my/credit-purchases` | customer | | own purchase history with statuses, paged |
+| `POST /credit-purchases/{creditPurchaseId}/cancel` | customer | | cancels own PENDING purchase (ADR-132) |
 
 Staff (tenant, module `directory`, permissions `directory.listing.{read,review,hide}`):
 
@@ -273,7 +280,7 @@ Staff (tenant, module `directory`, permissions `directory.listing.{read,review,h
 | `GET /directory/listings/{listingId}` | read | every tier (staff projection); rejection checklist comes from config, not this body |
 | `POST …/approve` · `…/reject` | review | body includes `version`; reject needs `reasonKeys` from the template |
 | `POST …/hide` · `…/unhide` | hide | published listings only |
-Staff (tenant, module `credit`): `GET/POST /credit/packs`, `PATCH /credit/packs/{creditPackId}`, `POST …/archive` with `credit.pack.{read,update}` (writes carry `Idempotency-Key`); `GET /credit/accounts/{customerAccountId}` (`credit.account.read`); `POST …/adjust` (`credit.account.adjust`, `Idempotency-Key`, approval token unless OWNER). `GET /directory/listings/{listingId}/unlock-count` returns a count only (`directory.listing.read`, ADR-130).
+Staff (tenant, module `credit`): `GET/POST /credit/packs`, `PATCH /credit/packs/{creditPackId}`, `POST …/archive` with `credit.pack.{read,update}` (writes carry `Idempotency-Key`); `GET /credit/accounts/{customerAccountId}` (`credit.account.read`); `POST …/adjust` (`credit.account.adjust`, `Idempotency-Key`, approval token unless OWNER). `GET /credit/purchases` and `GET /credit/purchases/{creditPurchaseId}` (`credit.purchase.read`); `POST /credit/purchases/{creditPurchaseId}/verify` (`credit.purchase.verify`, `Idempotency-Key`, approval token when pack price > `credit.purchase.approvalAbove` unless OWNER); `POST /credit/purchases/{creditPurchaseId}/reject` (`credit.purchase.verify`, `Idempotency-Key`). `GET /directory/listings/{listingId}/unlock-count` returns a count only (`directory.listing.read`, ADR-130).
 
 Every customer route answers `404 errors.storefront_not_available` while the business has `contact.customerLogin` off.
 | `POST /checkout` | customer or guest | I | `CheckoutRequest` (cart lines/bookings/enrollments, contact, address, payment choice) → PLACED order / HELD→REQUESTED booking / PENDING enrollment, shared `checkoutId` |

@@ -349,6 +349,18 @@ Owner `commerce/credit` (OPTIONAL, depends on `directory`) · scope org
 - Indexes: `{ organizationId, customerAccountId, occurredAt }` on entries; `{ organizationId, customerAccountId }` unique on balances; `{ organizationId, customerAccountId, listingId }` unique on unlocks.
 - Events: `credit.entry.created` (`orderingKey creditAccount:<customerAccountId>`) and `credit.unlock.created` (`orderingKey listing:<listingId>`).
 
+### 5.2d CreditPurchase (ADR-132)
+Owner `commerce/credit` · scope org · versioned · audit fields
+| Field | Type | Notes |
+|---|---|---|
+| **CreditPurchase** | versioned | `creditPurchaseId`, `purchaseNumber` (`CP-<n>`), `customerAccountId`, `creditPackId`, immutable `snapshot` (`{ name, credits, price: Money, validityDays? }`), `method` (`BKASH \| NAGAD`), `senderPhone` (E.164), `transactionReference` (upper-cased), `status` (`PENDING \| VERIFIED \| REJECTED \| CANCELLED`), `submittedAt`, `expiresAt`, `verifiedByUserId?`, `verifiedAt?`, `rejectionReason?`, `creditEntryId?`, STF + `version` |
+
+- **Duplicate transfer prevention:** partial unique index `{ organizationId, method, transactionReference }` where status is `PENDING` or `VERIFIED` (`409 errors.credit_reference_taken`). A `REJECTED` or `CANCELLED` reference may be reused in a subsequent new submission.
+- **Verification & ledger link:** Staff verify (`credit.purchase.verify`) executes within a transaction, consumes approval token when pack price > `credit.purchase.approvalAbove` (MONEY setting), marks status `VERIFIED`, and appends a `PURCHASE` credit entry (`source = { sourceType: "PURCHASE", sourceId: creditPurchaseId }`) with `balance` delta and `expiresOn` derived from snapshot validity. Replaying verify returns the verified entity idempotently without double-granting credits.
+- **Self-service guard:** Staff cannot verify or reject their own customer purchases (`403 errors.credit_purchase_self_service_forbidden`).
+- **Expiry job:** Daily scheduled job cancels PENDING purchases older than `credit.purchase.pendingDays` (default 3 days).
+- **Events:** `credit.purchase.submitted`, `credit.purchase.verified`, `credit.purchase.rejected`, `credit.purchase.cancelled` (`orderingKey creditAccount:<customerAccountId>`).
+
 ### 5.3 Offering
 Owner `commerce/catalog` · scope org · versioned · soft-delete · custom fields (entityType `offering`, filtered by `kind`)
 | Field | Type | Notes |

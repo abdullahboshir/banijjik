@@ -2,15 +2,16 @@ import {
   MODULE_CLASS,
   MODULE_KEY,
   PERMISSION_KEY,
+  SEQUENCE_KEY,
   SETTINGS_TOPIC,
   SURFACE,
   permissionDefinition,
   EVENT_TYPE,
 } from "@banijjik/contracts";
-import { CREDIT_RULE_KEY } from "@banijjik/contracts/credit";
+import { CREDIT_EVENT_TYPE, CREDIT_RULE_KEY } from "@banijjik/contracts/credit";
 import { defineModule } from "../../../kernel/modules/index.js";
 
-/** The credit manifest (doc 16 §3.5, M.4 plan). */
+/** The credit manifest (doc 16 §3.5, M.4, M.5 plans). */
 export const creditManifest = defineModule({
   key: MODULE_KEY.CREDIT,
   path: "commerce/credit",
@@ -24,13 +25,18 @@ export const creditManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.CREDIT_PACK_UPDATE),
     permissionDefinition(PERMISSION_KEY.CREDIT_ACCOUNT_READ),
     permissionDefinition(PERMISSION_KEY.CREDIT_ACCOUNT_ADJUST),
+    permissionDefinition(PERMISSION_KEY.CREDIT_PURCHASE_READ),
+    permissionDefinition(PERMISSION_KEY.CREDIT_PURCHASE_VERIFY),
   ],
   routes: {
-    admin: ["/orgs/:organizationId/credit"],
+    admin: ["/orgs/:organizationId/credit", "/orgs/:organizationId/credit/purchases"],
     storefront: [
       "/storefront/orgs/:organizationId/my/credits",
       "/storefront/orgs/:organizationId/my/unlocks",
       "/storefront/orgs/:organizationId/credit-packs",
+      "/storefront/orgs/:organizationId/credit/payment-info",
+      "/storefront/orgs/:organizationId/credit-purchases",
+      "/storefront/orgs/:organizationId/my/credit-purchases",
     ],
   },
   menu: [
@@ -69,14 +75,49 @@ export const creditManifest = defineModule({
       allowsLocationOverride: false,
       isClientVisible: true,
     },
+    {
+      settingKey: CREDIT_RULE_KEY.PURCHASE_PENDING_DAYS,
+      value: { kind: "INTEGER", min: 1, max: 90 },
+      systemDefault: 7,
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
+    {
+      settingKey: CREDIT_RULE_KEY.PURCHASE_MAX_PENDING,
+      value: { kind: "INTEGER", min: 1, max: 20 },
+      systemDefault: 3,
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
+    {
+      settingKey: CREDIT_RULE_KEY.PURCHASE_APPROVAL_ABOVE,
+      value: { kind: "MONEY", min: 0, max: Number.MAX_SAFE_INTEGER },
+      systemDefault: 0,
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
+    {
+      settingKey: CREDIT_RULE_KEY.PAYMENT_METHODS,
+      value: { kind: "STRUCTURED", schemaKey: "credit.payment.methods" },
+      systemDefault: [],
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
   ],
   customFieldEntities: [],
   botTools: [],
   storefrontSections: ["credit-packs"],
   events: {
-    emits: [EVENT_TYPE.CREDIT_ENTRY_CREATED, EVENT_TYPE.UNLOCK_CREATED],
+    emits: [
+      EVENT_TYPE.CREDIT_ENTRY_CREATED,
+      EVENT_TYPE.UNLOCK_CREATED,
+      CREDIT_EVENT_TYPE.PURCHASE_SUBMITTED,
+      CREDIT_EVENT_TYPE.PURCHASE_VERIFIED,
+      CREDIT_EVENT_TYPE.PURCHASE_REJECTED,
+      CREDIT_EVENT_TYPE.PURCHASE_CANCELLED,
+    ],
     consumes: [],
   },
   limitKeys: [],
-  sequenceKeys: [],
+  sequenceKeys: [SEQUENCE_KEY.CREDIT_PURCHASE],
 });

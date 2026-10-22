@@ -282,3 +282,7 @@ export interface CreditPurchaseVerifiedPayload {
   readonly verifiedByUserId: string | null;
   readonly verifiedAt: string;
 }
+
+export interface CreditPurchaseEventPayload {
+  readonly creditPurchaseId: string;
+}

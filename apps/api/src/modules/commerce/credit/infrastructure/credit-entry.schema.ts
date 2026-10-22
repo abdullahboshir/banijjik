@@ -61,6 +61,7 @@ creditEntrySchema.index({ organizationId: 1, customerAccountId: 1, type: 1, occu
 creditEntrySchema.index(
   { organizationId: 1, "source.sourceId": 1 },
   {
+    name: "uniq_credit_entry_expiry_job",
     unique: true,
     partialFilterExpression: {
       type: CREDIT_ENTRY_TYPE.EXPIRE,
@@ -71,6 +72,7 @@ creditEntrySchema.index(
 creditEntrySchema.index(
   { organizationId: 1, "source.sourceId": 1 },
   {
+    name: "uniq_credit_entry_purchase",
     unique: true,
     partialFilterExpression: {
       type: CREDIT_ENTRY_TYPE.PURCHASE,

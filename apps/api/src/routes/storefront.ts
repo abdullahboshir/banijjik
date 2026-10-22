@@ -21,32 +21,21 @@ import { runInOrganizationContext } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
   buildContactStorefrontRouterFor,
-  buildCustomerAccountLookup,
   buildCustomerAccountStatusReader,
 } from "../modules/commerce/contact/index.js";
 import { buildDirectoryStorefrontRouterFor } from "../modules/commerce/directory/index.js";
 import {
   buildCreditStorefrontRouter,
-  MongoCreditRepository,
-  MongoCreditPackRepository,
-  MongoListingUnlockRepository,
-  UnlockListingUseCase,
+  CancelCreditPurchaseUseCase,
+  GetCreditPaymentInfoUseCase,
   GetMyCreditsUseCase,
   GetMyUnlocksUseCase,
   ListActiveCreditPacksUseCase,
+  ListMyCreditPurchasesUseCase,
+  SubmitCreditPurchaseUseCase,
+  UnlockListingUseCase,
 } from "../modules/commerce/credit/index.js";
-import { MongoUnitOfWork } from "../kernel/db/index.js";
-import { kernelEventPublisher } from "../kernel/events/index.js";
 import {
-  listingFieldsFromEffectiveReader,
-  MongoListingRepository,
-  type ListingRepository,
-} from "../modules/commerce/directory/index.js";
-import { directorySettingsFromResolver } from "../modules/commerce/directory/index.js";
-import { buildEffectiveCustomFieldReader } from "../modules/core/custom-field/index.js";
-import { buildApprovalVerifier } from "../modules/core/iam/index.js";
-import {
-  buildOrganizationCurrencyReader,
   buildStorefrontOrganizationReader,
   type StorefrontOrganizationReader,
 } from "../modules/core/organization/index.js";
@@ -54,6 +43,7 @@ import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import type { FileModuleDependencies } from "../modules/core/file/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import { buildDirectoryAdapters } from "./directory-storefront-adapters.js";
+import { buildCreditModuleDeps } from "./credit-tenant-router.js";
 
 const RESOLVE_BUCKET = "storefront.resolve.ip";
 const SURFACE_BUCKET = "storefront.surface.ip";
@@ -62,43 +52,6 @@ const RESOLVE_PER_MINUTE = 60;
 const SURFACE_PER_MINUTE = 300;
 /** A block must reach a signed-in customer within a minute (ADR-119). */
 const ACCOUNT_STATUS_MAX_STALE_SECONDS = 60;
-
-function buildCreditRouterDeps(input: StorefrontRouterInput) {
-  const settingsResolver = buildSettingsResolver({
-    orgConfig: input.orgConfig,
-    manifests: input.manifests,
-  });
-
-  return {
-    credit: new MongoCreditRepository(),
-    packs: new MongoCreditPackRepository(),
-    unlocks: new MongoListingUnlockRepository(),
-    listings: new MongoListingRepository() as ListingRepository,
-    fields: listingFieldsFromEffectiveReader(buildEffectiveCustomFieldReader()),
-    unitOfWork: new MongoUnitOfWork(),
-    events: {
-      publish: async (
-        type: string,
-        payload: unknown,
-        options?: { version?: number; orderingKey?: string },
-      ) => {
-        await kernelEventPublisher.publish(
-          type as import("@banijjik/contracts").EventType,
-          payload as import("@banijjik/contracts").EventPayloadMap[import("@banijjik/contracts").EventType],
-          options,
-        );
-      },
-    },
-    audit: input.audit,
-    clock: input.clock,
-    directorySettings: directorySettingsFromResolver(settingsResolver),
-    resolveSettings: (oid: string, keys: readonly string[]) =>
-      settingsResolver.resolve(oid as import("@banijjik/ids").OrganizationId, { keys }),
-    approvals: buildApprovalVerifier({ audit: input.audit, clock: input.clock }),
-    accounts: buildCustomerAccountLookup(),
-    currency: buildOrganizationCurrencyReader(),
-  };
-}
 
 export interface StorefrontRouterInput {
   readonly config: AppConfig;
@@ -208,7 +161,7 @@ function buildStorefrontRouters(
   },
 ) {
   const { config, clock, audit } = input;
-  const creditDeps = buildCreditRouterDeps(input);
+  const creditDeps = buildCreditModuleDeps(input);
 
   const directoryRouter = buildDirectoryStorefrontRouterFor({
     clock,
@@ -231,6 +184,10 @@ function buildStorefrontRouters(
     getMyCredits: new GetMyCreditsUseCase(creditDeps),
     getMyUnlocks: new GetMyUnlocksUseCase(creditDeps),
     listPacks: new ListActiveCreditPacksUseCase(creditDeps),
+    getPaymentInfo: new GetCreditPaymentInfoUseCase(creditDeps),
+    submitPurchase: new SubmitCreditPurchaseUseCase(creditDeps),
+    listMyPurchases: new ListMyCreditPurchasesUseCase(creditDeps),
+    cancelPurchase: new CancelCreditPurchaseUseCase(creditDeps),
     limiter: rateLimiter,
     authenticateCustomer: auth.customerAuth,
     authenticateCustomerOptional: auth.customerAuthOptional,

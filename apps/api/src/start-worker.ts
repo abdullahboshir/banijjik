@@ -5,6 +5,8 @@ import { eventHandlerRegistry, startEventProcessing } from "./kernel/events/inde
 import type { ShutdownTask } from "./kernel/lifecycle/shutdown.js";
 import { createCloseRedisTask, createQueueRedisClient } from "./kernel/redis/index.js";
 import { registerBookingScheduledJobs } from "./modules/commerce/booking/index.js";
+import { registerCreditScheduledJobs } from "./modules/commerce/credit/index.js";
+import { buildAuditRecorder } from "./modules/core/audit/index.js";
 import { startScheduledJobs } from "./kernel/jobs/index.js";
 import { registerAccountingAndExpenseHandlers } from "./routes/accounting-event-handlers.js";
 import { registerContactHandlers } from "./routes/contact-event-handlers.js";
@@ -46,6 +48,10 @@ export function startWorker(
     clock: systemClock,
     orgConfig,
     manifests: registry.all(),
+  });
+  registerCreditScheduledJobs({
+    clock: systemClock,
+    audit: buildAuditRecorder(systemClock),
   });
   const effectiveness = buildEventModuleEffectiveness(systemClock);
   const scheduledJobs = startScheduledJobs({ redis, effectiveness, clock: systemClock });

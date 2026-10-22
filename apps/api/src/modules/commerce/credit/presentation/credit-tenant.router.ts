@@ -8,10 +8,14 @@ import {
   creditPackIdParamsSchema,
   creditPackUpdateRequestSchema,
   creditPacksQuerySchema,
+  creditPurchaseIdParamsSchema,
+  creditPurchaseRejectRequestSchema,
+  creditPurchasesStaffQuerySchema,
+  creditPurchaseVerifyRequestSchema,
 } from "@banijjik/validation/credit";
 import type { CreditPackCreateRequest, CreditPackUpdateRequest } from "@banijjik/contracts/credit";
 import { Router, type RequestHandler } from "express";
-import { asId, type CustomerAccountId, type UserId } from "@banijjik/ids";
+import { asId, type CreditPurchaseId, type CustomerAccountId, type UserId } from "@banijjik/ids";
 import type { PermissionMiddlewareFactory } from "../../../../kernel/access/index.js";
 import { requireCurrentUserId } from "../../../../kernel/auth/index.js";
 import { sendData, validate } from "../../../../kernel/http/index.js";
@@ -19,9 +23,13 @@ import type {
   AdjustCreditsUseCase,
   ArchiveCreditPackUseCase,
   CreateCreditPackUseCase,
+  GetCreditPurchaseStaffUseCase,
   GetMyCreditsUseCase,
   ListCreditPacksUseCase,
+  ListCreditPurchasesStaffUseCase,
+  RejectCreditPurchaseUseCase,
   UpdateCreditPackUseCase,
+  VerifyCreditPurchaseUseCase,
 } from "../application/index.js";
 
 const HTTP_CREATED = 201;
@@ -35,6 +43,10 @@ export interface CreditTenantRouterDependencies {
   readonly createPack: CreateCreditPackUseCase;
   readonly updatePack: UpdateCreditPackUseCase;
   readonly archivePack: ArchiveCreditPackUseCase;
+  readonly listPurchases: ListCreditPurchasesStaffUseCase;
+  readonly getPurchase: GetCreditPurchaseStaffUseCase;
+  readonly verifyPurchase: VerifyCreditPurchaseUseCase;
+  readonly rejectPurchase: RejectCreditPurchaseUseCase;
   /** OWNER members adjust without an approval token (M.4 decision 6). */
   readonly isOwner: (userId: UserId) => Promise<boolean>;
 }
@@ -60,6 +72,7 @@ export function buildCreditTenantRouter(input: CreditTenantRouterDependencies): 
   const router = Router({ mergeParams: true });
   mountPackRoutes(router, input);
   mountAccountRoutes(router, input);
+  mountPurchaseRoutes(router, input);
   return router;
 }
 
@@ -171,4 +184,101 @@ function mountAccountRoutes(router: Router, input: CreditTenantRouterDependencie
       );
     },
   );
+}
+
+function mountPurchaseReadRoutes(router: Router, input: CreditTenantRouterDependencies): void {
+  const read = input.permission(PERMISSION_KEY.CREDIT_PURCHASE_READ);
+
+  router.get(
+    "/credit/purchases",
+    read,
+    validate({ query: creditPurchasesStaffQuerySchema }),
+    async (_request, response) => {
+      const query = response.locals["validated"].query as {
+        page: number;
+        limit: number;
+        status?: import("@banijjik/contracts/credit").CreditPurchaseStatus;
+        q?: string;
+      };
+      sendData(
+        response,
+        await input.listPurchases.execute({
+          status: query.status,
+          q: query.q,
+          offset: (query.page - 1) * query.limit,
+          limit: query.limit,
+        }),
+      );
+    },
+  );
+
+  router.get(
+    "/credit/purchases/:creditPurchaseId",
+    read,
+    validate({ params: creditPurchaseIdParamsSchema }),
+    async (_request, response) => {
+      const params = response.locals["validated"].params as { creditPurchaseId: string };
+      sendData(
+        response,
+        await input.getPurchase.execute(asId<CreditPurchaseId>(params.creditPurchaseId)),
+      );
+    },
+  );
+}
+
+function mountPurchaseActionRoutes(router: Router, input: CreditTenantRouterDependencies): void {
+  const verify = input.permission(PERMISSION_KEY.CREDIT_PURCHASE_VERIFY);
+
+  router.post(
+    "/credit/purchases/:creditPurchaseId/verify",
+    verify,
+    input.idempotency,
+    validate({ params: creditPurchaseIdParamsSchema, body: creditPurchaseVerifyRequestSchema }),
+    async (_request, response) => {
+      const params = response.locals["validated"].params as { creditPurchaseId: string };
+      const body = response.locals["validated"].body as {
+        version: number;
+        approvalToken?: string;
+      };
+      const actorUserId = requireCurrentUserId();
+      sendData(
+        response,
+        await input.verifyPurchase.execute({
+          creditPurchaseId: asId<CreditPurchaseId>(params.creditPurchaseId),
+          version: body.version,
+          actorUserId,
+          isOwner: await input.isOwner(actorUserId),
+          ...(body.approvalToken === undefined ? {} : { approvalToken: body.approvalToken }),
+        }),
+      );
+    },
+  );
+
+  router.post(
+    "/credit/purchases/:creditPurchaseId/reject",
+    verify,
+    validate({ params: creditPurchaseIdParamsSchema, body: creditPurchaseRejectRequestSchema }),
+    async (_request, response) => {
+      const params = response.locals["validated"].params as { creditPurchaseId: string };
+      const body = response.locals["validated"].body as {
+        version: number;
+        reason: string;
+      };
+      const actorUserId = requireCurrentUserId();
+      sendData(
+        response,
+        await input.rejectPurchase.execute({
+          creditPurchaseId: asId<CreditPurchaseId>(params.creditPurchaseId),
+          version: body.version,
+          reason: body.reason,
+          actorUserId,
+        }),
+      );
+    },
+  );
+}
+
+function mountPurchaseRoutes(router: Router, input: CreditTenantRouterDependencies): void {
+  mountPurchaseReadRoutes(router, input);
+  mountPurchaseActionRoutes(router, input);
 }

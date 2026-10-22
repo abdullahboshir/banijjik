@@ -25,6 +25,7 @@ export {
   type CreditPaymentInfoResponse,
   type CreditPaymentMethodSetting,
   type CreditPurchase,
+  type CreditPurchaseEventPayload,
   type CreditPurchaseMethod,
   type CreditPurchaseRejectRequest,
   type CreditPurchaseResponse,

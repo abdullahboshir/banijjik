@@ -34,5 +34,6 @@ export type {
   StoreCreditEntryId,
   StockMovementId,
   StockReservationId,
+  CreditPurchaseId,
   UserId,
 } from "./branded-ids.js";

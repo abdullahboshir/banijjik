@@ -35,6 +35,7 @@ export type StoreCreditEntryId = Id<"StoreCreditEntry">;
 export type InventoryItemId = Id<"InventoryItem">;
 export type StockMovementId = Id<"StockMovement">;
 export type StockReservationId = Id<"StockReservation">;
+export type CreditPurchaseId = Id<"CreditPurchase">;
 
 export class InvalidIdError extends Error {
   constructor() {

@@ -25,9 +25,7 @@ export const creditPaymentMethodSettingItemSchema = z.strictObject({
   }),
 });
 
-export const creditPaymentMethodsSettingSchema = z
-  .array(creditPaymentMethodSettingItemSchema)
-  .min(1);
+export const creditPaymentMethodsSettingSchema = z.array(creditPaymentMethodSettingItemSchema);
 
 export const transactionReferenceSchema = z
   .string()
