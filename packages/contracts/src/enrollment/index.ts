@@ -31,14 +31,14 @@ export const CHECK_IN_METHOD = { STAFF: "STAFF" } as const;
 export const ENROLLMENT_EVENT_TYPE = {
   ENROLLMENT_CREATED: "enrollment.enrollment.created",
   ENROLLMENT_ACTIVATED: "enrollment.enrollment.activated",
-  ENROLLMENT_FROZEN: "enrollment.enrollment.frozen",
-  ENROLLMENT_UNFROZEN: "enrollment.enrollment.unfrozen",
+  ENROLLMENT_FROZEN: "enrollment.enrollment.freezeStarted",
+  ENROLLMENT_UNFROZEN: "enrollment.enrollment.freezeEnded",
   ENROLLMENT_CANCELLED: "enrollment.enrollment.cancelled",
   ENROLLMENT_RENEWED: "enrollment.enrollment.renewed",
   ENROLLMENT_EXPIRED: "enrollment.enrollment.expired",
   ENROLLMENT_COMPLETED: "enrollment.enrollment.completed",
-  ENROLLMENT_OVERDUE: "enrollment.enrollment.overdue",
-  ENROLLMENT_RENEWAL_DUE: "enrollment.renewal.due",
+  ENROLLMENT_OVERDUE: "enrollment.enrollment.overdueMarked",
+  ENROLLMENT_RENEWAL_DUE: "enrollment.enrollment.renewalDueReached",
   ENROLLMENT_CHECK_IN_RECORDED: "enrollment.checkIn.recorded",
 } as const;
 export interface EnrollmentEventPayload {
