@@ -7,6 +7,7 @@ import {
   CREDIT_SOURCE_TYPE,
   DEFAULT_PURCHASE_APPROVAL_ABOVE,
   type CreditPurchaseResponse,
+  type CreditPurchaseSnapshot,
 } from "@banijjik/contracts/credit";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
 import {
@@ -27,6 +28,12 @@ import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { assertNotSelfService } from "./assert-not-self-service.js";
 import { businessDateOf } from "./business-date.js";
 import { viewCreditPurchase } from "./credit-purchase-view.js";
+
+/** `currency` is null when the setting is a bare number, which carries no currency to compare. */
+interface ApprovalThreshold {
+  readonly amount: number;
+  readonly currency: string | null;
+}
 
 export interface VerifyCreditPurchaseInput {
   readonly creditPurchaseId: CreditPurchaseId;
@@ -87,7 +94,7 @@ export class VerifyCreditPurchaseUseCase {
     ]);
     const settingVal = settings.get(CREDIT_RULE_KEY.PURCHASE_APPROVAL_ABOVE)?.value;
     const threshold = this.resolveApprovalThreshold(settingVal);
-    const requires = threshold > 0 && purchase.snapshot.price.amount > threshold && !input.isOwner;
+    const requires = this.exceedsThreshold(threshold, purchase.snapshot.price) && !input.isOwner;
 
     if (requires && !input.approvalToken) {
       throw new DomainRuleError({
@@ -190,12 +197,25 @@ export class VerifyCreditPurchaseUseCase {
     );
   }
 
-  private resolveApprovalThreshold(setting: unknown): number {
-    if (typeof setting === "number") return setting;
+  private resolveApprovalThreshold(setting: unknown): ApprovalThreshold {
+    if (typeof setting === "number") return { amount: setting, currency: null };
     if (typeof setting === "object" && setting !== null && "amount" in setting) {
-      const amt = (setting as { amount: unknown }).amount;
-      return typeof amt === "number" ? amt : DEFAULT_PURCHASE_APPROVAL_ABOVE;
+      const { amount, currency } = setting as { amount: unknown; currency?: unknown };
+      return {
+        amount: typeof amount === "number" ? amount : DEFAULT_PURCHASE_APPROVAL_ABOVE,
+        currency: typeof currency === "string" ? currency : null,
+      };
     }
-    return DEFAULT_PURCHASE_APPROVAL_ABOVE;
+    return { amount: DEFAULT_PURCHASE_APPROVAL_ABOVE, currency: null };
+  }
+
+  /** Amounts of two currencies are never compared: a mismatch fails safe and asks for approval. */
+  private exceedsThreshold(
+    threshold: ApprovalThreshold,
+    price: CreditPurchaseSnapshot["price"],
+  ): boolean {
+    if (threshold.amount <= 0) return false;
+    if (threshold.currency !== null && threshold.currency !== price.currency) return true;
+    return price.amount > threshold.amount;
   }
 }

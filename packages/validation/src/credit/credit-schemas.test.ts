@@ -15,6 +15,13 @@ describe("credit validation schemas", () => {
     expect(transactionReferenceSchema.safeParse("abc-123").success).toBe(false);
   });
 
+  it("reports the standard invalid_format issue, not a custom English message", () => {
+    const result = transactionReferenceSchema.safeParse("abc-123");
+    const issue = result.error?.issues[0];
+    expect(issue?.code).toBe("invalid_format");
+    expect(issue?.message).not.toContain("transaction reference");
+  });
+
   it("validates credit purchase submission request", () => {
     const valid = {
       creditPackId: "01926b48-1234-7abc-8def-0123456789ab",

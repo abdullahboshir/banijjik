@@ -31,11 +31,7 @@ export const transactionReferenceSchema = z
   .string()
   .trim()
   .transform((val) => val.toUpperCase())
-  .pipe(
-    z
-      .string()
-      .regex(/^[A-Z0-9]{6,30}$/, "Invalid transaction reference (must be 6-30 letters and digits)"),
-  );
+  .pipe(z.string().regex(/^[A-Z0-9]{6,30}$/));
 
 export const creditPurchaseSubmitRequestSchema = z.strictObject({
   creditPackId: uuidV7Schema,

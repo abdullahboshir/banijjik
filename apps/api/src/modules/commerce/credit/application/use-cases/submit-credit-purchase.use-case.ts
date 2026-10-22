@@ -47,7 +47,12 @@ export class SubmitCreditPurchaseUseCase {
 
   async execute(input: SubmitCreditPurchaseInput): Promise<CreditPurchaseResponse> {
     const organizationId = asId<OrganizationId>(String(getRequestContext().organizationId));
-    const pack = await this.validatePackAndRef(organizationId, input);
+
+    // Replay first: a retry of a lost 201 must write nothing (no sequence number, audit or event).
+    const replayed = await this.replayOwnSubmission(input);
+    if (replayed !== undefined) return replayed;
+
+    const pack = await this.validatePack(organizationId, input);
     const { pendingDays } = await this.validateLimitsAndMethod(organizationId, input);
 
     const now = this.deps.clock.now();
@@ -72,22 +77,44 @@ export class SubmitCreditPurchaseUseCase {
       expiresAt,
     });
 
-    return this.savePurchase(purchase);
+    try {
+      return await this.savePurchase(purchase);
+    } catch (error) {
+      if (!(error instanceof CreditReferenceTakenError)) throw error;
+      // A parallel identical submit won the unique index: behave like the pre-check would have.
+      const replayedAfterRace = await this.replayOwnSubmission(input);
+      if (replayedAfterRace !== undefined) return replayedAfterRace;
+      throw error;
+    }
   }
 
-  private async validatePackAndRef(
+  /**
+   * The same customer account already holds a PENDING or VERIFIED purchase with this method,
+   * reference and pack: return it unchanged. Any other holder of the reference stays a 409 that
+   * reveals nothing.
+   */
+  private async replayOwnSubmission(
+    input: SubmitCreditPurchaseInput,
+  ): Promise<CreditPurchaseResponse | undefined> {
+    const existing = await this.deps.purchases.findByReference(
+      input.method,
+      input.transactionReference,
+    );
+    if (existing === undefined) return undefined;
+    const isOwnSubmission =
+      existing.customerAccountId === input.customerAccountId &&
+      existing.creditPackId === input.creditPackId;
+    if (!isOwnSubmission) throw new CreditReferenceTakenError();
+    return viewCreditPurchase(existing);
+  }
+
+  private async validatePack(
     organizationId: OrganizationId,
     input: SubmitCreditPurchaseInput,
   ): Promise<CreditPack> {
     const pack = await this.deps.packs.findById(organizationId, input.creditPackId);
     if (!pack) throw new CreditPackNotFoundError();
     if (pack.status !== CREDIT_PACK_STATUS.ACTIVE) throw new CreditPackNotActiveError();
-
-    const existingRef = await this.deps.purchases.findByReference(
-      input.method,
-      input.transactionReference,
-    );
-    if (existingRef !== undefined) throw new CreditReferenceTakenError();
     return pack;
   }
 
