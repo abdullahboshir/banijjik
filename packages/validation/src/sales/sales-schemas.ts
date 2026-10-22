@@ -16,6 +16,9 @@ import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+const MIN_VERSION = 1;
+/** `?version=` reaches the server as text, so it is coerced the way `?limit=` is. */
+const versionQuerySchema = z.coerce.number().int().min(MIN_VERSION);
 const isoInstantSchema = z.iso.datetime({ offset: true }).or(z.iso.date());
 
 const manualDiscountSchema = z.strictObject({
@@ -87,7 +90,7 @@ export const orderTransitionRequestSchema = z.strictObject({
 });
 
 /** `DELETE /orders/{orderId}?version=`: a draft is discarded only at the version it was read at. */
-export const orderDeleteQuerySchema = z.strictObject({ version: versionSchema });
+export const orderDeleteQuerySchema = z.strictObject({ version: versionQuerySchema });
 
 export const orderCancelRequestSchema = z.strictObject({
   version: versionSchema,
