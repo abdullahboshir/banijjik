@@ -36,6 +36,7 @@ const EXPENSE_MENU_KEYS = {
   expenses: "expense.expenses",
   categories: "expense.categories",
 } as const;
+const PAYMENT_MENU_KEY = "payment.payments";
 const ACCOUNTING_TRIAL_BALANCE_MENU_KEY = "accounting.trialBalance";
 const TAX_CLASSES_MENU_KEY = "pricing.taxClasses";
 
@@ -82,6 +83,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
+      PAYMENT_MENU_KEY,
       CATALOG_MENU_KEYS.promotions,
       CATALOG_MENU_KEYS.stock,
       ORGANIZATION_MENU_KEYS.roles,
@@ -121,6 +123,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
+      PAYMENT_MENU_KEY,
       CATALOG_MENU_KEYS.promotions,
       CATALOG_MENU_KEYS.stock,
       ORGANIZATION_MENU_KEYS.roles,
@@ -142,6 +145,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
+      PAYMENT_MENU_KEY,
       CATALOG_MENU_KEYS.promotions,
       CATALOG_MENU_KEYS.stock,
       ORGANIZATION_MENU_KEYS.roles,
@@ -164,6 +168,7 @@ describe("the settings menu of the organization module", () => {
       CONTACTS_MENU_KEY,
       CATALOG_MENU_KEYS.categories,
       CATALOG_MENU_KEYS.modifierGroups,
+      PAYMENT_MENU_KEY,
       CATALOG_MENU_KEYS.promotions,
       CATALOG_MENU_KEYS.stock,
       ...READ_ONLY_SETTINGS_MENU_KEYS,

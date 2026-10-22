@@ -39,12 +39,11 @@ import { MongoPaymentRepository } from "./infrastructure/mongo-payment.repositor
 import { MongoPaymentSummaryRepository } from "./infrastructure/mongo-payment-summary.repository.js";
 import { MongoStoreCreditRepository } from "./infrastructure/mongo-store-credit.repository.js";
 import { registerPaymentModels } from "./infrastructure/register-payment-models.js";
-import { paymentManifest } from "./module.manifest.js";
+export { paymentManifest } from "./module.manifest.js";
 import { PaymentController } from "./presentation/payment.controller.js";
 import { buildPaymentTenantRouter } from "./presentation/payment-tenant.router.js";
 
 export {
-  paymentManifest,
   registerPaymentModels,
   buildPaymentPostingSource,
   buildExpireStoreCreditJob,

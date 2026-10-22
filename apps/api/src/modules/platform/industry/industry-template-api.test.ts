@@ -38,6 +38,7 @@ const RETAIL_MODULES = [
   "iam",
   "inventory",
   "organization",
+  "payment",
   "pricing",
   "settings",
 ];
@@ -54,6 +55,7 @@ const SALON_MODULES = [
   "iam",
   "inventory",
   "organization",
+  "payment",
   "pricing",
   "settings",
 ];

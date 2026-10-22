@@ -397,5 +397,12 @@
   "permission.bookkeeping.journal.read": "জার্নাল দেখুন",
   "permission.bookkeeping.journal.createManual": "ম্যানুয়াল এন্ট্রি ও বিপরীত এন্ট্রি দিন",
   "permission.bookkeeping.statement.read": "আর্থিক বিবরণী দেখুন",
-  "errors.system_account_locked": "সিস্টেম হিসাবের কোড, ধরন ও অবস্থা বদলানো যায় না।"
+  "errors.system_account_locked": "সিস্টেম হিসাবের কোড, ধরন ও অবস্থা বদলানো যায় না।",
+  "permission.payment.payment.read": "পেমেন্ট দেখা",
+  "permission.payment.payment.receive": "পেমেন্ট গ্রহণ করা",
+  "permission.payment.payment.refund": "পেমেন্ট রিফান্ড করা",
+  "permission.payment.payment.reverse": "পেমেন্ট রিভার্স করা",
+  "permission.payment.due.read": "বকেয়া দেখা",
+  "permission.payment.storeCredit.read": "স্টোর ক্রেডিট দেখা",
+  "permission.payment.storeCredit.adjust": "স্টোর ক্রেডিট সমন্বয় করা"
 }

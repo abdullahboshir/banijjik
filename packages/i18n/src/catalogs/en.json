@@ -397,5 +397,12 @@
   "permission.bookkeeping.journal.read": "View journals",
   "permission.bookkeeping.journal.createManual": "Post and reverse manual entries",
   "permission.bookkeeping.statement.read": "View financial statements",
-  "errors.system_account_locked": "System account code, type and status cannot be changed."
+  "errors.system_account_locked": "System account code, type and status cannot be changed.",
+  "permission.payment.payment.read": "View payments",
+  "permission.payment.payment.receive": "Receive payments",
+  "permission.payment.payment.refund": "Refund payments",
+  "permission.payment.payment.reverse": "Reverse payments",
+  "permission.payment.due.read": "View dues",
+  "permission.payment.storeCredit.read": "View store credit",
+  "permission.payment.storeCredit.adjust": "Adjust store credit"
 }

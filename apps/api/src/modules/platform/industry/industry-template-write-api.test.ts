@@ -31,6 +31,7 @@ const RETAIL_MODULES = [
   "iam",
   "inventory",
   "organization",
+  "payment",
   "pricing",
   "settings",
 ];
@@ -47,6 +48,7 @@ const WITH_BOOKING = [
   "iam",
   "inventory",
   "organization",
+  "payment",
   "pricing",
   "settings",
 ];
