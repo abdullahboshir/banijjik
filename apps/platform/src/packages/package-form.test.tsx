@@ -35,18 +35,23 @@ function submit(): HTMLElement {
 
 async function fillNewBasePackage(): Promise<void> {
   const user = userEvent.setup();
-  await user.type(
-    screen.getByLabelText(banglaText("platform.package.field.packageKey"), { exact: false }),
-    "GOLD",
-  );
-  await user.type(
-    screen.getByLabelText(banglaText("platform.package.field.name"), { exact: false }),
-    "Gold",
-  );
-  await user.click(screen.getByLabelText(texts.moduleLabels.pos));
-  for (const limitLabel of Object.values(texts.limitLabels)) {
-    await user.type(screen.getByLabelText(limitLabel, { exact: true }), "5");
+  // These tests exercise submitting full field values, not per-keystroke behaviour.
+  const fields: [HTMLElement, string][] = [
+    [
+      screen.getByLabelText(banglaText("platform.package.field.packageKey"), { exact: false }),
+      "GOLD",
+    ],
+    [screen.getByLabelText(banglaText("platform.package.field.name"), { exact: false }), "Gold"],
+    ...Object.values(texts.limitLabels).map((label): [HTMLElement, string] => [
+      screen.getByLabelText(label, { exact: true }),
+      "5",
+    ]),
+  ];
+  for (const [field, value] of fields) {
+    await user.click(field);
+    await user.paste(value);
   }
+  await user.click(screen.getByLabelText(texts.moduleLabels.pos));
 }
 
 describe("PackageForm to create", () => {

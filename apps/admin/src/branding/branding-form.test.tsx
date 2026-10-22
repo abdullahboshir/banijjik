@@ -53,8 +53,8 @@ function colourBox(kind: "primary" | "accent"): HTMLInputElement {
   return document.querySelector(`#branding-${kind}`) as HTMLInputElement;
 }
 
-function previewButton(): HTMLElement {
-  return screen.getByTestId("branding-preview-button");
+async function previewButton(): Promise<HTMLElement> {
+  return screen.findByTestId("branding-preview-button");
 }
 
 beforeEach(() => {
@@ -69,7 +69,7 @@ describe("the colour presets", () => {
 
     await userEvent.click(screen.getByRole("button", { name: GREEN_PRESET_NAME }));
 
-    expect(previewButton().style.backgroundColor).toBe("rgb(21, 128, 61)");
+    expect((await previewButton()).style.backgroundColor).toBe("rgb(21, 128, 61)");
     expect(screen.getByTestId("branding-preview-link").style.color).toBe("rgb(22, 163, 74)");
     expect(
       screen.getByRole("button", { name: GREEN_PRESET_NAME }).getAttribute("aria-pressed"),
@@ -98,12 +98,12 @@ describe("a custom colour", () => {
 
     await userEvent.type(box, "#ffffff");
     expect(screen.getByText(/1\.0:1/)).not.toBeNull();
-    expect(previewButton().getAttribute("style")).toBeNull();
+    expect((await previewButton()).getAttribute("style")).toBeNull();
 
     await userEvent.clear(box);
     await userEvent.type(box, "#15803d");
     expect(screen.getByText(/5\.0:1/)).not.toBeNull();
-    expect(previewButton().style.backgroundColor).toBe("rgb(21, 128, 61)");
+    expect((await previewButton()).style.backgroundColor).toBe("rgb(21, 128, 61)");
   });
 
   it("asks less of the second colour than of the main one", async () => {
@@ -136,7 +136,7 @@ describe("the preview", () => {
 
     await userEvent.type(screen.getByLabelText(labels.taglineLabel), "প্রতিদিন তাজা");
 
-    const preview = screen.getByTestId("branding-preview");
+    const preview = await screen.findByTestId("branding-preview");
     expect(within(preview).getByText("রহিম ট্রেডার্স")).not.toBeNull();
     expect(within(preview).getByText("প্রতিদিন তাজা")).not.toBeNull();
     expect(within(preview).getByAltText("রহিম ট্রেডার্স")).not.toBeNull();
