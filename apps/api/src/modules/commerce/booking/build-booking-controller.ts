@@ -42,6 +42,8 @@ import { MongoResourceTimeOffRepository } from "./infrastructure/mongo-resource-
 import { MongoResourceSlotUsageRepository } from "./infrastructure/mongo-slot-usage.repository.js";
 import { BookingController } from "./presentation/booking.controller.js";
 
+import type { DepositCheckPort, PaymentStatusReader } from "./application/ports/payment-ports.js";
+
 type WiringInput = {
   readonly clock: Clock;
   readonly audit: AuditRecorder;
@@ -49,6 +51,8 @@ type WiringInput = {
   readonly manifests: readonly ModuleManifest[];
   readonly quoter: PriceQuoterPort;
   readonly contacts: ContactCreator;
+  readonly depositCheck?: DepositCheckPort;
+  readonly paymentStatusReader?: PaymentStatusReader;
 };
 
 type BookingRepos = {
@@ -112,7 +116,7 @@ function bookingQueryUseCases(wiring: AppointmentWiring) {
       bookings: wiring.repos.bookings,
       timeZone: wiring.timeZoneReader,
     }),
-    getBooking: new GetBookingUseCase(wiring.repos.bookings),
+    getBooking: new GetBookingUseCase(wiring.repos.bookings, wiring.input.paymentStatusReader),
   };
 }
 
@@ -142,6 +146,7 @@ function bookingLifecycleUseCases(wiring: AppointmentWiring) {
       events,
       audit: wiring.input.audit,
       clock: wiring.input.clock,
+      ...(wiring.input.depositCheck ? { depositCheck: wiring.input.depositCheck } : {}),
     }),
     requestFromHold: new RequestFromHoldUseCase({
       bookings: wiring.repos.bookings,

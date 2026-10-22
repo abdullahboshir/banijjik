@@ -170,6 +170,7 @@ export interface BookingResponse {
   readonly contactName?: string;
   readonly offeringName?: string;
   readonly resourceNames?: readonly string[];
+  readonly paymentStatus?: string;
 }
 
 /** Narrow kind check: card 3.6 only creates SERVICE bookings. */

@@ -113,3 +113,5 @@ export const listDuesQuerySchema = paginationQuerySchema.extend({
 export const listStoreCreditEntriesQuerySchema = paginationQuerySchema.extend({
   contactId: uuidV7Schema.optional(),
 });
+
+export const paymentMethodsSettingSchema = z.array(z.enum(acceptedMethodValues));

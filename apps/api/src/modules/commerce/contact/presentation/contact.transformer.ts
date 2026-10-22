@@ -29,6 +29,7 @@ export function toContactResponse(view: ContactDetailView): ContactResponse {
     tagKeys: [...contact.tagKeys],
     homeLocationId: contact.homeLocationId ?? null,
     customFields: view.customFields,
+    ...(contact.summary ? { summary: contact.summary } : {}),
     source: contact.source,
     status: contact.status,
     anonymizedAt: contact.anonymizedAt?.toISOString() ?? null,

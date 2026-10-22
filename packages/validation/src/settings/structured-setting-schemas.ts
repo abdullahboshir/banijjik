@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 import { creditPaymentMethodsSettingSchema } from "../credit/credit-schemas.js";
+import { paymentMethodsSettingSchema } from "../payment/payment-schemas.js";
 
 /**
  * STRUCTURED setting values are checked by a schema registered under `schemaKey` (ADR-103).
@@ -8,6 +9,7 @@ import { creditPaymentMethodsSettingSchema } from "../credit/credit-schemas.js";
  */
 const schemas: Record<string, ZodType> = {
   "credit.payment.methods": creditPaymentMethodsSettingSchema,
+  "payment.methods": paymentMethodsSettingSchema,
 };
 
 export const STRUCTURED_SETTING_SCHEMAS: Readonly<Record<string, ZodType>> = schemas;

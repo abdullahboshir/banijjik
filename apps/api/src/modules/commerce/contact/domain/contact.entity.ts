@@ -6,6 +6,7 @@ import {
   type ContactRelation,
   type ContactSource,
   type ContactStatus,
+  type ContactSummary,
   type ContactType,
 } from "@banijjik/contracts/contact";
 import {
@@ -33,6 +34,7 @@ export interface ContactProps {
   readonly homeLocationId: LocationId | undefined;
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly customFieldSearch: readonly CustomFieldSearchEntry[];
+  readonly summary?: ContactSummary | undefined;
   readonly source: ContactSource;
   readonly status: ContactStatus;
   /** Set once by anonymize; the record stays for ledgers (09 section 5.1). */
@@ -120,6 +122,7 @@ export class Contact implements ContactProps {
   readonly homeLocationId: LocationId | undefined;
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly customFieldSearch: readonly CustomFieldSearchEntry[];
+  readonly summary?: ContactSummary | undefined;
   readonly source: ContactSource;
   readonly status: ContactStatus;
   readonly anonymizedAt: Date | undefined;
@@ -143,6 +146,7 @@ export class Contact implements ContactProps {
     this.homeLocationId = props.homeLocationId;
     this.customFields = props.customFields;
     this.customFieldSearch = props.customFieldSearch;
+    this.summary = props.summary;
     this.source = props.source;
     this.status = props.status;
     this.anonymizedAt = props.anonymizedAt;

@@ -33,6 +33,13 @@ export function capacityFullError(): DomainRuleError {
   });
 }
 
+export function depositRequiredError(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    details: { ruleKey: "errors.deposit_required" },
+  });
+}
+
 export function bookingRuleError(
   ruleKey: (typeof BOOKING_RULE_KEY)[keyof typeof BOOKING_RULE_KEY],
   code: (typeof ERROR_CODE)[keyof typeof ERROR_CODE] = ERROR_CODE.BUSINESS_RULE,

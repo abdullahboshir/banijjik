@@ -53,6 +53,8 @@ describe("audit vocabulary", () => {
       "creditAccount",
       "listingUnlock",
       "creditPurchase",
+      "payment",
+      "storeCreditEntry",
     ]);
   });
 });

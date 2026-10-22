@@ -3,13 +3,24 @@ import type { BookingId } from "@banijjik/ids";
 import { recordNotFound } from "../../domain/errors.js";
 import { toBookingResponse } from "../booking-views.js";
 import type { BookingRepository } from "../ports/booking-repositories.js";
+import type { PaymentStatusReader } from "../ports/payment-ports.js";
 
 export class GetBookingUseCase {
-  constructor(private readonly bookings: BookingRepository) {}
+  constructor(
+    private readonly bookings: BookingRepository,
+    private readonly paymentStatusReader?: PaymentStatusReader,
+  ) {}
 
   async execute(bookingId: BookingId): Promise<BookingResponse> {
     const booking = await this.bookings.findById(bookingId);
     if (booking === undefined) throw recordNotFound();
-    return toBookingResponse(booking);
+    let paymentStatus: string | undefined;
+    if (this.paymentStatusReader) {
+      paymentStatus = await this.paymentStatusReader.readStatus({
+        organizationId: booking.organizationId,
+        requestId: booking.bookingId,
+      });
+    }
+    return toBookingResponse(booking, paymentStatus ? { paymentStatus } : undefined);
   }
 }

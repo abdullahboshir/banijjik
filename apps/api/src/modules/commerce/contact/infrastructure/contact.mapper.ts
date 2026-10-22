@@ -20,6 +20,7 @@ const EMPTY_SUMMARY = {
   lifetimeValueMinor: 0,
   lastActivityAt: null,
   codReturnCount: 0,
+  storeCreditBalanceMinor: 0,
 } as const;
 
 /** Optional fields that are absent are left out, not stored as null. */
@@ -142,6 +143,15 @@ export function toContact(document: ContactDocument): Contact {
       stored.homeLocationId === undefined ? undefined : asId<LocationId>(stored.homeLocationId),
     customFields: stored.customFields ?? {},
     customFieldSearch: stored.customFieldSearch ?? [],
+    summary: stored.summary
+      ? {
+          requestCount: stored.summary.requestCount,
+          lifetimeValueMinor: stored.summary.lifetimeValueMinor,
+          lastActivityAt: stored.summary.lastActivityAt?.toISOString() ?? null,
+          codReturnCount: stored.summary.codReturnCount,
+          storeCreditBalanceMinor: stored.summary.storeCreditBalanceMinor,
+        }
+      : undefined,
     source: stored.source,
     status: stored.status,
     anonymizedAt: stored.anonymizedAt,

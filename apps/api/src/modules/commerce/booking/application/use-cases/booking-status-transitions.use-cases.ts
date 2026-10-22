@@ -5,7 +5,8 @@ import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import type { BookingId, OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
-import { holdExpiredError, recordNotFound } from "../../domain/errors.js";
+import { depositRequiredError, holdExpiredError, recordNotFound } from "../../domain/errors.js";
+import type { DepositCheckPort } from "../ports/payment-ports.js";
 import {
   assertLocationAllowed,
   bookingOrderingKey,
@@ -28,6 +29,7 @@ export class ConfirmBookingUseCase {
       readonly events: BookingEventPublisher;
       readonly audit: AuditRecorder;
       readonly clock: Clock;
+      readonly depositCheck?: DepositCheckPort;
     },
   ) {}
 
@@ -37,6 +39,21 @@ export class ConfirmBookingUseCase {
     readonly actorUserId: UserId | null;
     readonly allowedLocationIds: readonly string[] | "ALL";
   }): Promise<BookingResponse> {
+    const existing = await this.dependencies.bookings.findById(input.bookingId);
+    if (existing === undefined) throw recordNotFound();
+    assertLocationAllowed(existing.locationId, input.allowedLocationIds);
+
+    if (existing.depositRequired.amount > 0 && this.dependencies.depositCheck) {
+      const satisfied = await this.dependencies.depositCheck.isDepositSatisfied({
+        organizationId: existing.organizationId,
+        requestId: existing.bookingId,
+        requiredAmount: existing.depositRequired,
+      });
+      if (!satisfied) {
+        throw depositRequiredError();
+      }
+    }
+
     return persistSimpleTransition({
       ...this.dependencies,
       input,

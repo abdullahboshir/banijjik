@@ -42,7 +42,7 @@ export class ListBookingsUseCase {
       ...(input.query.contactId === undefined ? {} : { contactId: input.query.contactId }),
     });
     return {
-      items: page.items.map(toBookingResponse),
+      items: page.items.map((b) => toBookingResponse(b)),
       hasNext: page.hasNext,
     };
   }

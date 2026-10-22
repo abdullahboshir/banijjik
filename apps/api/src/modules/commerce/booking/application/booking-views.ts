@@ -36,7 +36,10 @@ export function toResourceTimeOffResponse(row: ResourceTimeOffRecord): ResourceT
   };
 }
 
-export function toBookingResponse(booking: Booking): BookingResponse {
+export function toBookingResponse(
+  booking: Booking,
+  options?: { paymentStatus?: string },
+): BookingResponse {
   const props = booking.toProps();
   return {
     bookingId: props.bookingId,
@@ -61,5 +64,6 @@ export function toBookingResponse(booking: Booking): BookingResponse {
     version: props.version,
     createdAt: props.createdAt.toISOString(),
     updatedAt: props.updatedAt.toISOString(),
+    ...(options?.paymentStatus ? { paymentStatus: options.paymentStatus } : {}),
   };
 }

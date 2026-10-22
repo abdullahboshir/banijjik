@@ -10,7 +10,12 @@ import { buildInlineContactCreator } from "../modules/commerce/contact/index.js"
 import {
   buildBookingRouter,
   type BookingTenantDependencies,
+  type DepositCheckPort,
+  type PaymentStatusReader,
 } from "../modules/commerce/booking/index.js";
+import { PAYMENT_REQUEST_TYPE, PAYMENT_STATUS, type Money } from "@banijjik/contracts/payment";
+import { MongoPaymentSummaryRepository } from "../modules/commerce/payment/index.js";
+import type { OrganizationId } from "@banijjik/ids";
 import {
   buildPriceQuoter,
   type PricingTenantDependencies,
@@ -149,6 +154,44 @@ function contactCreatorOf(input: BookingRouterInput): BookingTenantDependencies[
   };
 }
 
+function depositCheckOf(): DepositCheckPort {
+  const summaries = new MongoPaymentSummaryRepository();
+  return {
+    async isDepositSatisfied(input: {
+      readonly organizationId: OrganizationId;
+      readonly requestId: string;
+      readonly requiredAmount: Money;
+    }) {
+      if (input.requiredAmount.amount <= 0) return true;
+      const summary = await summaries.findByRequest(
+        input.organizationId,
+        PAYMENT_REQUEST_TYPE.BOOKING,
+        input.requestId,
+      );
+      if (!summary) return false;
+      return summary.allocated.amount >= input.requiredAmount.amount;
+    },
+  };
+}
+
+function paymentStatusReaderOf(): PaymentStatusReader {
+  const summaries = new MongoPaymentSummaryRepository();
+  return {
+    async readStatus(input: {
+      readonly organizationId: OrganizationId;
+      readonly requestId: string;
+    }) {
+      const summary = await summaries.findByRequest(
+        input.organizationId,
+        PAYMENT_REQUEST_TYPE.BOOKING,
+        input.requestId,
+      );
+      if (!summary) return PAYMENT_STATUS.UNPAID;
+      return summary.paymentStatus;
+    },
+  };
+}
+
 /** Booking API on the tenant pipeline (card 3.6). */
 export function buildBookingTenantRouter(input: BookingRouterInput): Router {
   return buildBookingRouter({
@@ -160,5 +203,7 @@ export function buildBookingTenantRouter(input: BookingRouterInput): Router {
     manifests: input.manifests,
     quoter: quoterOf(input),
     contacts: contactCreatorOf(input),
+    depositCheck: depositCheckOf(),
+    paymentStatusReader: paymentStatusReaderOf(),
   });
 }

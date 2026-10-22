@@ -5,6 +5,7 @@ export {
   listStoreCreditEntriesQuerySchema,
   paymentAllocationSchema,
   paymentIdParamsSchema,
+  paymentMethodsSettingSchema,
   receivePaymentRequestSchema,
   refundPaymentRequestSchema,
   reversePaymentRequestSchema,

@@ -47,6 +47,7 @@ export interface ContactSummaryDocument {
   lifetimeValueMinor: number;
   lastActivityAt: Date | null;
   codReturnCount: number;
+  storeCreditBalanceMinor: number;
 }
 
 export interface ContactDocument {
@@ -105,6 +106,7 @@ const summarySchema = new Schema<ContactSummaryDocument>(
     lifetimeValueMinor: { type: Number, required: true, default: 0 },
     lastActivityAt: { type: Date, default: null },
     codReturnCount: { type: Number, required: true, default: 0 },
+    storeCreditBalanceMinor: { type: Number, required: true, default: 0 },
   },
   SUB_SCHEMA_OPTIONS,
 );

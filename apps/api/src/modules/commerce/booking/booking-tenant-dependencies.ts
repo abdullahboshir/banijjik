@@ -5,6 +5,7 @@ import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import type { OrgConfigService } from "../../platform/entitlement/index.js";
 import type { ContactCreator, PriceQuoterPort } from "./application/ports/booking-context-ports.js";
+import type { DepositCheckPort, PaymentStatusReader } from "./application/ports/payment-ports.js";
 
 export interface BookingTenantDependencies {
   readonly clock: Clock;
@@ -15,4 +16,6 @@ export interface BookingTenantDependencies {
   readonly manifests: readonly ModuleManifest[];
   readonly quoter: PriceQuoterPort;
   readonly contacts: ContactCreator;
+  readonly depositCheck?: DepositCheckPort;
+  readonly paymentStatusReader?: PaymentStatusReader;
 }

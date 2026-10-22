@@ -41,6 +41,7 @@ import { registerInventoryModels } from "../modules/commerce/inventory/index.js"
 import { registerDirectoryModels } from "../modules/commerce/directory/index.js";
 import { registerBookingModels } from "../modules/commerce/booking/index.js";
 import { registerCreditModels } from "../modules/commerce/credit/index.js";
+import { registerPaymentModels } from "../modules/commerce/payment/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
@@ -120,6 +121,7 @@ export function registerModuleModels(): void {
   registerDirectoryModels();
   registerBookingModels();
   registerCreditModels();
+  registerPaymentModels();
   registerSettingsModels();
   registerFileModels();
 }

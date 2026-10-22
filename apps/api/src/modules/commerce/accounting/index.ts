@@ -28,6 +28,8 @@ export type { BookingPostingSource } from "./application/ports/booking-posting-s
 export type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
 export type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 export type {
+  PaymentAllocationForPosting,
+  PaymentMethodCode,
   PaymentPostingSnapshot,
   StoreCreditPostingSnapshot,
   BookingPostingSnapshot,
