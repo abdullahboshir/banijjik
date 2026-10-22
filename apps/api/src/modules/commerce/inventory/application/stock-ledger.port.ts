@@ -122,6 +122,10 @@ export class StockLedger {
       throw recordNotFound();
     }
     const orgCurrency = await currency.read(input.organizationId);
+    // The reservation is freed before the SALE movements: the on-hand guard reads
+    // `onHand - reserved`, so a sale would otherwise be blocked by its own reservation.
+    // Both writes are in the caller's transaction, so the pair stays atomic.
+    await this.release(input);
     // SALE quantities come from the reservation (frozen at reserve time), not a re-expand.
     for (const line of reservation.lines) {
       const inventoryItemId = line.inventoryItemId as InventoryItemId;
@@ -144,7 +148,6 @@ export class StockLedger {
         allowNegativeStock: input.allowNegativeStock,
       });
     }
-    await this.release(input);
   }
 
   async returnStock(
