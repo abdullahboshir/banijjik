@@ -13,7 +13,6 @@ import type {
   PaymentSummaryReader,
   SalesApprovalVerifier,
   SalesCurrencyReader,
-  SalesOwnerReader,
   SalesQuoter,
   SalesStockLedger,
   SalesUnitCostReader,
@@ -34,7 +33,10 @@ import {
 } from "./application/use-cases/transition-order.use-cases.js";
 import { UpdateOrderUseCase } from "./application/use-cases/update-order.use-case.js";
 import { buildSalesCatalogReader } from "./infrastructure/sales-catalog.adapter.js";
-import { buildSalesTimeZoneReader } from "./infrastructure/sales-org.adapter.js";
+import {
+  buildSalesOwnerReader,
+  buildSalesTimeZoneReader,
+} from "./infrastructure/sales-org.adapter.js";
 import {
   MongoOrderCounter,
   MongoOrderRepository,
@@ -43,8 +45,8 @@ import { OrderController } from "./presentation/order.controller.js";
 
 /**
  * The ports this module cannot build itself: pricing's quoter, inventory's ledger, iam's
- * approval verifier, the entitlement limit guard, the organization currency and owner reads, the
- * payment projection and the unit-cost reader. Routes adapts them, tests pass fakes.
+ * approval verifier, the entitlement limit guard, the organization currency read, the payment
+ * projection and the unit-cost reader. Routes adapts them, tests pass fakes.
  */
 export interface SalesTenantPorts {
   readonly clock: Clock;
@@ -55,7 +57,6 @@ export interface SalesTenantPorts {
   readonly stock: SalesStockLedger;
   readonly approvals: SalesApprovalVerifier;
   readonly limits: LimitGuard;
-  readonly owner: SalesOwnerReader;
   readonly currency: SalesCurrencyReader;
   readonly unitCosts: SalesUnitCostReader;
   readonly payments: PaymentSummaryReader;
@@ -83,7 +84,7 @@ export function buildSalesDependencies(ports: SalesTenantPorts): SalesDependenci
     approvals: ports.approvals,
     payments: ports.payments,
     limits: ports.limits,
-    owner: ports.owner,
+    owner: buildSalesOwnerReader(),
     unitCosts: ports.unitCosts,
   };
 }

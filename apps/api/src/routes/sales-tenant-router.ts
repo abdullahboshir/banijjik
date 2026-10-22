@@ -1,7 +1,6 @@
 import {
   ERROR_CODE,
   PERMISSION_KEY,
-  SYSTEM_ROLE_KEY,
   type CurrencyCode,
   type ModuleManifest,
 } from "@banijjik/contracts";
@@ -17,11 +16,9 @@ import {
   isPricingRounding,
   type PricingRounding,
 } from "@banijjik/contracts/pricing";
-import { asId, type OrganizationId, type RoleId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
-import { getRequestContext } from "../kernel/context/index.js";
 import { AppError } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildDefaultCatalogQuoteReader } from "../modules/commerce/catalog/index.js";
@@ -36,11 +33,8 @@ import {
   buildPriceQuoter,
   type PricingTenantDependencies,
 } from "../modules/commerce/pricing/index.js";
-import {
-  buildMemberAccessReader,
-  buildOrganizationCurrencyReader,
-} from "../modules/core/organization/index.js";
-import { buildApprovalVerifier, buildRoleKeyReader } from "../modules/core/iam/index.js";
+import { buildOrganizationCurrencyReader } from "../modules/core/organization/index.js";
+import { buildApprovalVerifier } from "../modules/core/iam/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import { buildLimitGuard, type OrgConfigService } from "../modules/platform/entitlement/index.js";
 
@@ -177,29 +171,6 @@ function unitCostReaderOf(): SalesTenantPorts["unitCosts"] {
 }
 
 /**
- * A discount above the pricing threshold needs an approval token, unless the seller is the OWNER
- * and `discountOwnerWithoutApproval` is on. The member of the request is compared to the system
- * OWNER role in the active organization.
- */
-function ownerReaderOf(): SalesTenantPorts["owner"] {
-  const members = buildMemberAccessReader();
-  const roles = buildRoleKeyReader();
-  return {
-    async isOwner() {
-      const { organizationId, memberId } = getRequestContext();
-      if (organizationId === undefined || memberId === undefined) return false;
-      const assignments = await members.findAssignments(memberId);
-      if (assignments.length === 0) return false;
-      const keys = await roles.findRoleKeysByIds(
-        [asId<OrganizationId>(organizationId)],
-        assignments.map((assignment) => asId<RoleId>(assignment.roleId)),
-      );
-      return [...keys.values()].includes(SYSTEM_ROLE_KEY.OWNER);
-    },
-  };
-}
-
-/**
  * Card 3.8 replaces this with the payment `PaymentSummary` projection. Until then an order can
  * have no payment, so every total is zero (decision 8).
  */
@@ -219,7 +190,6 @@ export function buildSalesTenantPorts(input: SalesRouterInput): SalesTenantPorts
     stock: stockLedgerOf(input),
     approvals: buildApprovalVerifier({ audit: input.audit, clock: input.clock }),
     limits: buildLimitGuard(input.orgConfig),
-    owner: ownerReaderOf(),
     currency: {
       read: async (organizationId) => {
         const currency = await currencies.read(organizationId);
