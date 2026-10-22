@@ -185,6 +185,12 @@ describe("GET /settings", () => {
       "pricing.defaultTaxClassKey",
       "pricing.rounding",
       "pricing.taxInclusive",
+      "sales.advance.required",
+      "sales.autoConfirm",
+      "sales.discountOwnerWithoutApproval",
+      "sales.draftExpiryHours",
+      "sales.placedAutoCancelHours",
+      "sales.usePacking",
     ]);
     expect(settingsOf(response)["organization.digitScript"]).toEqual({
       value: "LATIN",
