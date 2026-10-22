@@ -55,6 +55,7 @@ export async function publishOffering(
     kind: input.kind,
     name: input.name,
     ...(input.taxClassKey === undefined ? {} : { taxClassKey: input.taxClassKey }),
+    ...(input.kindDetails === undefined ? {} : { kindDetails: input.kindDetails }),
     variants: [
       {
         name: "Default",

@@ -118,5 +118,7 @@ export interface OfferingInput {
     readonly inventoryItemId: string;
     readonly quantity: number;
   }[];
+  /** What the catalog requires for the kind: a SERVICE needs a duration, a PLAN a billing period. */
+  readonly kindDetails?: Readonly<Record<string, unknown>>;
   readonly taxClassKey?: string;
 }
