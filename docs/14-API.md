@@ -339,3 +339,10 @@ Webhook rules:
 | ADR-079 | Lists use fixed summary shapes, `page/limit ≤ 100`, `hasNext`, and `total` only on request (`includeTotal=true`). Detail endpoints return full shapes. No generic field selection at launch. | Accepted (proposed) |
 | ADR-080 | Error model: fixed `ERROR_CODE` set (§3) with i18n `messageKey` and `requestId`. Resources of another org return 404, never 403. Approvals via `X-Approval-Token` (`APPROVAL_REQUIRED`). | Accepted (proposed) |
 | ADR-081 | Webhooks verify the signature, store the raw event deduped by the provider event id, reply 200 fast and process via the queue. Storefront pricing is always server-side (`POST /quotes`, `POST /checkout`). | Accepted (proposed) |
+
+### Card 3.7 part A API implementation (2026-10-22, ADR-126)
+- Enrollment create requires `Idempotency-Key` and `{ locationId, contactId, offeringId, variantId, startsOn, billToContactId?, autoRenew?, resourceIds?, customFields? }`. The payer defaults from effective contact-link metadata, then to the enrolled contact. An explicit missing/archived/foreign payer is 400.
+- Enrollment actions take `{ version }` and an idempotency key. Cancellation returns `{ enrollment, refundableAmount }`; other actions return `{ enrollment }`. Actual payment refunds and their approval remain with 3.8.
+- Lists accept `page`, `limit` (maximum 100), `locationId`, `contactId`, `status`, `offeringId` and `overdue=true|false`. Detail includes up to 100 periods; `GET /enrollments/{enrollmentId}/periods?page=&limit=` pages the complete period history.
+- `POST /check-ins` takes `{ locationId, contactId, enrollmentId?, bookingId?, approvalToken? }` and an idempotency key. `SESSION_LIMIT_OVERRIDE` uses subject `enrollment:<enrollmentId>` and binds the requesting user and location. `GET /check-ins` uses enrollment read permission and accepts `page`, `limit`, `locationId`, `contactId`, `checkedInOn`.
+- Pending-first-payment activation and paid-period updates await the 3.8 request-reader integration; `commerce/payment` is unchanged by this card. Screens remain part B.

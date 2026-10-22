@@ -600,3 +600,7 @@ Owner-decided (2026-10-09) and recorded as **Accepted**; the rest are **Accepted
 - **Q2. Shared family phone:** the guardian's contact holds the phone; the child is a contact without a phone, linked by `GUARDIAN_OF`. `phoneE164` stays unique per org.
 - **Q3. Contact roles:** `CUSTOMER | SUPPLIER | LEAD | RELATED` (RELATED added by card 3.1c, ADR-113). New roles are added to the contracts enum when needed.
 - **Q4. Location types:** `STORE | WAREHOUSE` is enough. An online-only seller's default location is a STORE that simply has no POS device.
+
+### Card 3.7 part A implementation note (2026-10-22, ADR-126)
+Enrollment stores its immutable PLAN configuration and first recurring price snapshot, ordered lifecycle history and `freezes[{ frozenOn, unfrozenOn?, daysFrozen }]` (embedded without Mongo identity). `EnrollmentPeriod` is versioned; only sessions/status and the latest period's freeze metadata may change. The latest end moves only on unfreeze, preserving `originalEndsOn`. CheckIn is append-only and records both `checkedInAt` and organization-local `checkedInOn`.
+Booking stores open-ended ResourceExclusiveHold rows and one ResourceHoldGuard per organization/resource. Nonterminal enrollments retain their beds across renewals and freezes. A terminal transition dates the hold's release without deleting it, with half-open date overlap and transactional guard serialization. A same-date new arrival is allowed after release.
