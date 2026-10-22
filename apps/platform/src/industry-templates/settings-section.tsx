@@ -176,7 +176,7 @@ function SettingRowFields(props: {
   const id = domId(row.definition.settingKey);
   return (
     <div className="flex flex-col gap-2 border-b border-default py-2">
-      <p className="text-small font-semibold">{row.definition.settingKey}</p>
+      <p className="break-words text-small font-semibold">{row.definition.settingKey}</p>
       <p className="text-caption text-secondary">
         {t("platform.industry.field.systemDefault")} {textOf(row.definition.systemDefault)}
       </p>
