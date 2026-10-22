@@ -1,3 +1,6 @@
+import { businessDateOf } from "../../booking/index.js";
+import { money } from "../../../../test-support/catalog-world.js";
+import type { TwoOrganizations } from "../../../../test-support/two-organizations.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { newId } from "@banijjik/ids";
 import { startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
@@ -5,7 +8,6 @@ import {
   registerIamApiModels,
   type IamApiHarness,
 } from "../../../../test-support/iam-api-harness.js";
-import { publishPlan, contact, enroll, today } from "../test-support/enrollment-api-world.js";
 
 registerIamApiModels();
 let harness: IamApiHarness;
@@ -96,3 +98,62 @@ describe("enrollment payer API", () => {
     expect(explicit.status).toBe(400);
   });
 });
+
+async function publishPlan(
+  world: TwoOrganizations,
+  details: object = {},
+): Promise<{ offeringId: string; variantId: string }> {
+  const created = await world.alice.call("post", `/orgs/${world.organizationA}/offerings`, {
+    kind: "PLAN",
+    name: "Membership",
+    kindDetails: {
+      billingPeriod: { unit: "MONTH", count: 1 },
+      freezeAllowed: true,
+      maxFreezeDaysPerYear: 30,
+      ...details,
+    },
+    variants: [{ name: "Monthly", price: money(10001), unitKey: "SESSION" }],
+  });
+  expect(created.status, JSON.stringify(created.body)).toBe(201);
+  const offering = created.body.data as {
+    offeringId: string;
+    version: number;
+    variants: { variantId: string }[];
+  };
+  const published = await world.alice.call(
+    "post",
+    `/orgs/${world.organizationA}/offerings/${offering.offeringId}/publish`,
+    { version: offering.version },
+  );
+  expect(published.status, JSON.stringify(published.body)).toBe(200);
+  const variantId = offering.variants[0]?.variantId;
+  if (variantId === undefined) throw new Error("Missing variant");
+  return { offeringId: offering.offeringId, variantId };
+}
+
+async function contact(world: TwoOrganizations, fields: object = {}): Promise<string> {
+  const response = await world.alice.call("post", `/orgs/${world.organizationA}/contacts`, {
+    name: "Member",
+    contactType: "PERSON",
+    contactRoles: ["RELATED"],
+    ...fields,
+  });
+  expect(response.status, JSON.stringify(response.body)).toBe(201);
+  return (response.body.data as { contactId: string }).contactId;
+}
+
+function today(harness: IamApiHarness): string {
+  return businessDateOf(harness.clock.now(), "Asia/Dhaka");
+}
+
+async function enroll(
+  world: TwoOrganizations,
+  body: object,
+): Promise<import("supertest").Response> {
+  return world.alice.callWith({
+    method: "post",
+    path: `/orgs/${world.organizationA}/enrollments`,
+    idempotencyKey: newId(),
+    body: { locationId: world.locationA1, ...body },
+  });
+}
