@@ -7,7 +7,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
 - No secrets, passwords or `.env` values.
 
-Last updated: 2026-10-22 (late night) by Opus 5.5 · `origin/main` is `8cf2b8c` (3.15 + 3.16). Local `main` is ahead by docs commits only (two state saves and the M.5 review R1), not pushed
+Last updated: 2026-10-22 (late night, 2) by Opus 5.5 · `origin/main` is `8cf2b8c` (3.15 + 3.16). Local `main` is ahead by docs commits only (state saves, M.5 R1, plan 3.7 bed-hold decision, 3.8 R2), not pushed
 
 ## 1. Where the project stands
 - Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, 3.8a, 3.8b, 3.8c, 3.12, 3.13, 3.14, 3.15, 3.16. Track M merged: M.1 to M.4. Details per card: `docs/STATUS.md`.
@@ -18,9 +18,9 @@ Last updated: 2026-10-22 (late night) by Opus 5.5 · `origin/main` is `8cf2b8c` 
 ## 2. Open branches (checked 2026-10-22 late night)
 | Card / part | Branch | Folder | Tier | State and next step |
 |---|---|---|---|---|
-| 3.8 Part A payments | `s/3.8-api-payments` (pushed, PR #2) | `banijjik-lead` | T1 | CI green on `f101ae4`, but **review R1 says changes required**: 20 findings, 9 blockers (`docs/handoffs/3.8-api-review-R1.md`). R1 fixes are in progress: about 20 files are modified in `banijjik-lead` and not yet committed. Next: when the session reports done, check the R1 fixes item by item, require the new tests, then green CI, then merge. |
-| M.5 Part A credit purchase | `s/M.5-api-credit-purchases` (pushed, head `3a6ae6f`, 0 behind main) | `banijjik` | T1 | CI green (run 39761614746). **Review R1: changes required**, 11 items, 5 blockers (`docs/handoffs/M.5-api-review-R1.md`): unescaped staff-search regex, missing unique indexes and audit fields, repository `updateVersioned` swallows errors, submit not idempotent (lead decision: replay by natural key), 8 missing plan tests. The diff contains no booking or enrollment file. Next: the owner gives R1 to the session; re-review item by item. |
-| 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` | `banijjik-1.7b` | T1 | Still no commits and 0 ahead of main; 4 untracked paths (3 booking hold files and `enrollment/`). Told: commit, push, CI, handoff (§8). It must add `immutable: true` to `organizationId` in `resource-exclusive-hold.schema.ts`. |
+| 3.8 Part A payments | `s/3.8-api-payments` (pushed, PR #2, head `2ea32f2`) | `banijjik-lead` | T1 | R1 fixes pushed, CI green (run 39774463702). **Review R2: changes required** (`docs/handoffs/3.8-api-review-R2.md`): B1 a bKash/Nagad payment cannot be reversed (the reversal copies externalReference into the unique index; lead decision: the reversal stores null), B2 org timezone never wired (R1 item 13 not done), plus 5 smaller items. R1 items other than 13 are fixed. Next: the owner gives R2 to the session; re-review, then merge. |
+| M.5 Part A credit purchase | `s/M.5-api-credit-purchases` (pushed, PR #3) | `banijjik` | T1 | R1 (11 items) given to the session; it asked 11 questions and the lead answered them (items 1-4 and 9 as it read them; corrections on 3, 4, 5, 6, 8, 10, 11). Fixing now. Next: re-review against R1 and the answers, then merge after 3.8. |
+| 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` | `banijjik-1.7b` | T1 | Session started from the implement prompt. Commit `5633e61` holds the bed hold. Lead decisions so far: the bed hold is open-ended until a terminal transition (plan 3.7, new section), and a narrow read-only `buildContactBillToReader` may be added to contact `index.ts` (findActive, readLinkValue; write it in the handoff deviations). Not pushed yet. Next: wait for done (§8), then a strict T1 review. |
 | 3.5a Part A orders | `s/3.5a-api-orders` | `banijjik-3.5a` | T1 | 4 commits, clean folder, local branch not pushed (`origin/s/3.5a-api-orders` points at an old docs commit), 53 behind main. Its commit messages wrongly say "M.5 Part A". Next: rebase, push, CI, handoff (§8). |
 | 3.6b rental/event Part A | `s/3.6b-api-rental-event` (not created) | none | T1 | Plan on main. **Waits** until 3.8 or 3.7 Part A merges (same `booking` files); no new full folder (disk). |
 
@@ -35,7 +35,7 @@ Free folders: `banijjik-m2` (3.15 done). `banijjik-docs` is the docs folder.
 Stash `stash@{4}` ("owner-edits-AGENTS-and-05-CONVENTIONS…") in `banijjik` holds the owner's uncommitted edits to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). The owner has not said keep or drop.
 
 ## 3. Waiting on the owner
-- Give `docs/handoffs/M.5-api-review-R1.md` to the M.5 session (in `banijjik`).
+- Give `docs/handoffs/3.8-api-review-R2.md` to the 3.8 session (in `banijjik-lead`).
 - Sessions must report "done" (committed, pushed, CI green, handoff written) for 3.8 (R1 fixes), M.5 (R1 fixes), 3.7, 3.5a. Nothing merges before that.
 - Standing permission to push `main` after each reviewed merge: today the owner again said yes for one push only. An older lead session claimed a standing yes; not confirmed by the owner in this session, so ask before each push.
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
@@ -43,7 +43,7 @@ Stash `stash@{4}` ("owner-edits-AGENTS-and-05-CONVENTIONS…") in `banijjik` hol
 
 ## 4. Next actions, in order
 1. `gh run list` and `git log`/`git status` in each folder of §2 (sessions often leave work uncommitted or claim done early).
-2. 3.8 R1 fixes: re-review against `docs/handoffs/3.8-api-review-R1.md` item by item. The lead decisions in it (items 1, 6, 15) are binding. Item 11 (cancellation/no-show policy) may come back as a request to split into a follow-up card; decide then. Item 7 touches 3.8c accounting code (`post-payments.handler.ts`); that is allowed for this card.
+2. 3.8 R2 fixes: re-review against `docs/handoffs/3.8-api-review-R2.md` (B1 and B2 first, with their tests). On green CI: rebase on main, merge via `s/merge-3.8`, ask the owner before pushing main.
 3. M.5 R1 fixes: re-review against `docs/handoffs/M.5-api-review-R1.md` item by item (item 4 is a binding lead decision). Require the 8 tests of item 5 and a green CI run on the new head. Then 3.7 and 3.5a as they report done. Order of arrival; each later branch rebases. Merge hot spots: `routes/*`, `start-worker.ts`, contracts index files, booking files (3.8, 3.7, 3.6b), STATUS.md rows (the 3.15/3.16 rows conflicted today: resolve by hand, never commit markers; check with `git grep -n "^<<<<<<<"`).
 4. After 3.8 Part A merges: refresh and release 3.8 Part B, 3.11 plan, 3.9 plan inputs; release 3.6b. After 3.5a Part A: 3.5a Part B, plan 3.5b. After M.5 Part A: M.5 Part B, plan M.6. After 3.7 Part A: 3.7 Part B (enrollment payment link: plan 3.7 refresh item 1).
 5. Later: 3.9 POS, 3.11, 3.10, M.6 to M.9, then `docs/handoffs/phase-3-review.md`.
@@ -62,8 +62,8 @@ Stash `stash@{4}` ("owner-edits-AGENTS-and-05-CONVENTIONS…") in `banijjik` hol
 - **Token cost** (measured 2026-10-22): about 90% of a day's usage went to carrying a 900k-token session, mostly full cache rewrites after a break of over an hour or a `/model` switch. Keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-22 late night (2)** (Opus): answered the M.5 session's R1 questions; gave 3.7 its implement prompt and two lead decisions (open-ended bed hold in plan 3.7, contact bill-to reader); re-reviewed 3.8 R1: R2 changes required (bKash reversal blocked, timezone not wired).
 - **2026-10-22 late night** (Opus): checked all branches. Strict T1 review of M.5 Part A (CI green): changes required, R1 with 11 items, on main `9ebc07a`. 3.8 R1 fixes uncommitted in `banijjik-lead`; 3.7 not committed; 3.5a not pushed.
 - **2026-10-22 night** (Opus): T1 review of 3.16 (no findings) and merge check of 3.15; merged both via `s/merge-3.16`, CI green, pushed main `8cf2b8c` (owner yes); removed the cloud agent worktree. Strict review of 3.8 Part A: changes required (R1, 20 items). Found M.5 CI red (i18n keys). Agreed with a second lead session that this one leads.
 - **2026-10-22 late evening** (Opus): gave a session 3.15 instead of 3.6b; found the stray 3.7 copy in the M.5 folder; confirmed the dead-letter replay race and wrote plan 3.16 (T1); pushed main `bab9b99` (owner yes); started 3.16 as a cloud agent.
 - **2026-10-22 evening** (Sonnet): pushed main (owner yes); refreshed plans 3.8 and 3.7, decided 3.7 freeze rule; wrote plans 3.15 and 3.6b; audited all branches; found main CI flake and re-ran it.
-- **2026-10-22 afternoon** (Sonnet): checked state, refreshed plans 3.8 and 3.7 against main (accounting adapter duty, existing payment contracts, bed-hold port risk for 3.7). No code merged.
