@@ -1,5 +1,6 @@
 import { MAX_MODIFIER_OPTIONS_PER_LINE, MANUAL_DISCOUNT_TYPE } from "@banijjik/contracts/pricing";
 import {
+  FULFILLMENT_METHOD,
   MAX_ORDER_CANCEL_REASON_LENGTH,
   MAX_ORDER_LINES,
   MAX_ORDER_NOTE_LENGTH,
@@ -35,12 +36,16 @@ const orderLinesSchema = z.array(orderLineInputSchema).max(MAX_ORDER_LINES);
 
 const noteSchema = z.string().trim().max(MAX_ORDER_NOTE_LENGTH).nullable().optional();
 
-/** `POST /orders`: a DRAFT, always PICKUP until fulfillment methods arrive (decision 4). */
+/**
+ * `POST /orders`: a DRAFT, PICKUP unless the caller names a method (decision 4). A method this
+ * card does not serve is refused by the use case, not by the schema, so the caller gets the rule.
+ */
 export const orderCreateRequestSchema = z.strictObject({
   locationId: uuidV7Schema,
   contactId: uuidV7Schema.optional(),
   lines: orderLinesSchema.default([]),
   orderDiscount: manualDiscountSchema.optional(),
+  fulfillmentMethod: z.enum(FULFILLMENT_METHOD).optional(),
   note: noteSchema,
   customFields: customFieldValuesRequestSchema.optional(),
 });
@@ -65,6 +70,7 @@ export const orderInstantRequestSchema = z.strictObject({
   contactId: uuidV7Schema.optional(),
   lines: orderLinesSchema.min(1),
   orderDiscount: manualDiscountSchema.optional(),
+  fulfillmentMethod: z.enum(FULFILLMENT_METHOD).optional(),
   approvalToken: z.string().min(1).optional(),
   note: noteSchema,
   customFields: customFieldValuesRequestSchema.optional(),

@@ -27,6 +27,7 @@ import {
   formatInvoiceNumber,
   formatOrderNumber,
   orderOrderingKey,
+  resolveFulfillmentMethod,
   stockInputOf,
 } from "../sales-transition-shared.js";
 import { toOrderResponse } from "../sales-views.js";
@@ -152,7 +153,9 @@ export class InstantOrderUseCase {
       organizationId: ctx.organizationId,
       locationId: asId<LocationId>(ctx.locationId),
       contactId: ctx.contactId,
-      fulfillment: { method: FULFILLMENT_METHOD.INSTANT },
+      fulfillment: {
+        method: resolveFulfillmentMethod(ctx.body.fulfillmentMethod, FULFILLMENT_METHOD.INSTANT),
+      },
       lines: ctx.prepared.lines,
       totals: ctx.prepared.totals,
       businessDate: businessDateOf(ctx.now, ctx.timeZone),

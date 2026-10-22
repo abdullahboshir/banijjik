@@ -1,6 +1,7 @@
 import { STOCK_SOURCE_TYPE } from "@banijjik/contracts/inventory";
+import type { FulfillmentMethod } from "@banijjik/contracts/sales";
 import type { OrderId } from "@banijjik/ids";
-import { locationForbidden } from "../domain/errors.js";
+import { fulfillmentMethodUnsupported, locationForbidden } from "../domain/errors.js";
 import type { StockLedgerReserveInput } from "./ports/sales-ports.js";
 
 export function assertLocationAllowed(
@@ -10,6 +11,20 @@ export function assertLocationAllowed(
   if (allowedLocationIds !== "ALL" && !allowedLocationIds.includes(locationId)) {
     throw locationForbidden();
   }
+}
+
+/**
+ * The method of the order, or the business rule. A draft hands over by pickup and a counter sale
+ * hands over now, so each path serves exactly one method; COURIER and OWN_RIDER stay declared
+ * until Phase 5 (plan decision 1).
+ */
+export function resolveFulfillmentMethod(
+  requested: FulfillmentMethod | undefined,
+  served: FulfillmentMethod,
+): FulfillmentMethod {
+  if (requested === undefined) return served;
+  if (requested !== served) throw fulfillmentMethodUnsupported(requested);
+  return requested;
 }
 
 export function formatOrderNumber(value: number): string {

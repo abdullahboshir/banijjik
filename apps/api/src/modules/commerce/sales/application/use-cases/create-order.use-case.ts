@@ -5,6 +5,7 @@ import {
   FULFILLMENT_METHOD,
   ORDER_SOURCE,
   SALES_EVENT_TYPE,
+  type FulfillmentMethod,
   type OrderResponse,
   type OrderTotals,
 } from "@banijjik/contracts/sales";
@@ -23,7 +24,11 @@ import { Order } from "../../domain/order.entity.js";
 import type { SalesDependencies } from "../sales-dependencies.js";
 import type { OrderLineInput, PreparedLines } from "../sales-line-preparation.js";
 import { quoteAndPrepare } from "../sales-quote-lines.js";
-import { assertLocationAllowed, orderOrderingKey } from "../sales-transition-shared.js";
+import {
+  assertLocationAllowed,
+  orderOrderingKey,
+  resolveFulfillmentMethod,
+} from "../sales-transition-shared.js";
 import { toOrderResponse } from "../sales-views.js";
 
 /** The totals of a draft with no lines yet, in the organization currency. */
@@ -69,6 +74,7 @@ export interface OrderBodyBase {
   readonly locationId: string;
   readonly contactId?: string | undefined;
   readonly orderDiscount?: ManualDiscount | undefined;
+  readonly fulfillmentMethod?: FulfillmentMethod | undefined;
   readonly note?: string | null | undefined;
   readonly customFields?: Readonly<Record<string, unknown>> | undefined;
   readonly approvalToken?: string | undefined;
@@ -104,7 +110,9 @@ export class CreateOrderUseCase {
       organizationId: input.organizationId,
       locationId: asId<LocationId>(input.body.locationId),
       contactId,
-      fulfillment: { method: FULFILLMENT_METHOD.PICKUP },
+      fulfillment: {
+        method: resolveFulfillmentMethod(input.body.fulfillmentMethod, FULFILLMENT_METHOD.PICKUP),
+      },
       lines: prepared?.lines ?? [],
       totals,
       businessDate: businessDateOf(now, timeZone),
