@@ -1,5 +1,6 @@
 import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { registerModel } from "../../../../kernel/db/index.js";
+import { registerResourceExclusiveHoldModel } from "./resource-exclusive-hold.schema.js";
 import {
   BOOKING_COLLECTION_NAME,
   BOOKING_MODEL_NAME,
@@ -25,6 +26,7 @@ export function registerBookingModels(): void {
     schema: eventSessionSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
   });
+  registerResourceExclusiveHoldModel();
   const tenant = { database: DATABASE_KIND.TENANT } as const;
   registerModel({
     ...tenant,
