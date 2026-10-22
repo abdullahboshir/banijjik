@@ -19,6 +19,9 @@ export {
 } from "./use-cases/staff-credit-purchase.use-cases.js";
 export { VerifyCreditPurchaseUseCase } from "./use-cases/verify-credit-purchase.use-case.js";
 export { RejectCreditPurchaseUseCase } from "./use-cases/reject-credit-purchase.use-case.js";
-export { CancelExpiredPurchasesUseCase } from "./use-cases/cancel-expired-purchases.use-case.js";
+export {
+  CancelExpiredPurchasesUseCase,
+  type CancelExpiredPurchasesDependencies,
+} from "./use-cases/cancel-expired-purchases.use-case.js";
 export { buildCancelExpiredPurchasesJob } from "./jobs/cancel-expired-purchases.job.js";
 export type { CreditDependencies } from "./ports/credit-dependencies.js";

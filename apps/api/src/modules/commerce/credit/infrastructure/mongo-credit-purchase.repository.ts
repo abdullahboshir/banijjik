@@ -192,17 +192,36 @@ export class MongoCreditPurchaseRepository implements CreditPurchaseRepository {
     const Model = models({ organizationId }).get<CreditPurchaseDocument>(
       CREDIT_PURCHASE_MODEL_NAME,
     );
-    const docs = await Model.find(
-      {
-        organizationId,
-        status: CREDIT_PURCHASE_STATUS.PENDING,
-        expiresAt: { $lte: now },
-      },
-      { _id: 0 },
-    )
-      .session(getActiveSession() ?? null)
-      .lean<CreditPurchaseDocument[]>();
-    return docs.map((d) => this.fromDocument(d));
+    const pageSize = 100;
+    const purchases: CreditPurchase[] = [];
+    let cursor: CreditPurchaseDocument | undefined;
+    for (;;) {
+      const after = cursor
+        ? {
+            $or: [
+              { expiresAt: { $gt: cursor.expiresAt } },
+              { expiresAt: cursor.expiresAt, creditPurchaseId: { $gt: cursor.creditPurchaseId } },
+            ],
+          }
+        : {};
+      const page = await Model.find(
+        {
+          organizationId,
+          status: CREDIT_PURCHASE_STATUS.PENDING,
+          expiresAt: { $lte: now },
+          ...after,
+        },
+        { _id: 0 },
+      )
+        .sort({ expiresAt: 1, creditPurchaseId: 1 })
+        .limit(pageSize)
+        .session(getActiveSession() ?? null)
+        .lean<CreditPurchaseDocument[]>();
+      purchases.push(...page.map((d) => this.fromDocument(d)));
+      const last = page[page.length - 1];
+      if (page.length < pageSize || last === undefined) return purchases;
+      cursor = last;
+    }
   }
 
   private getOrganizationId(): OrganizationId {

@@ -17,9 +17,12 @@ import {
   type UserId,
 } from "@banijjik/ids";
 import { getRequestContext } from "../../../../../kernel/context/index.js";
-import { conflict } from "../../../../../kernel/http/index.js";
 import type { CreditPurchase } from "../../domain/credit-purchase.entity.js";
-import { CreditPurchaseNotFoundError, CreditPurchaseNotPendingError } from "../../domain/errors.js";
+import {
+  CreditPurchaseNotFoundError,
+  CreditPurchaseNotPendingError,
+  CreditPurchaseVersionConflictError,
+} from "../../domain/errors.js";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { assertNotSelfService } from "./assert-not-self-service.js";
 import { businessDateOf } from "./business-date.js";
@@ -58,7 +61,9 @@ export class VerifyCreditPurchaseUseCase {
       if (current.status !== CREDIT_PURCHASE_STATUS.PENDING)
         throw new CreditPurchaseNotPendingError();
       // A stale version on a still-PENDING purchase is the standard 409, not "not pending".
-      if (current.version !== input.version) throw conflict({ currentVersion: current.version });
+      if (current.version !== input.version) {
+        throw new CreditPurchaseVersionConflictError(current.version);
+      }
 
       if (requiresApproval && input.approvalToken) {
         await this.deps.approvals.consume(input.approvalToken, {

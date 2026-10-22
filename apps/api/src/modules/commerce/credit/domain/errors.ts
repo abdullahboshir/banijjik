@@ -147,6 +147,16 @@ export class CreditPurchaseNotPendingError extends DomainRuleError {
   }
 }
 
+/** The caller's `version` is stale although the purchase is still PENDING: the standard 409 (ADR-036). */
+export class CreditPurchaseVersionConflictError extends DomainRuleError {
+  constructor(readonly currentVersion: number) {
+    super({
+      code: ERROR_CODE.CONFLICT,
+      details: { currentVersion },
+    });
+  }
+}
+
 export class CreditMaxPendingExceededError extends DomainRuleError {
   constructor() {
     super({

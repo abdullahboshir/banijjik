@@ -21,11 +21,11 @@ import {
   RejectCreditPurchaseUseCase,
   UpdateCreditPackUseCase,
   VerifyCreditPurchaseUseCase,
+  buildCreditEventPublisher,
   buildCreditTenantRouter as buildCreditTenantRouterFromModule,
   type CreditDependencies,
 } from "../modules/commerce/credit/index.js";
 import { MongoUnitOfWork } from "../kernel/db/index.js";
-import { kernelEventPublisher } from "../kernel/events/index.js";
 import {
   directorySettingsFromResolver,
   listingFieldsFromEffectiveReader,
@@ -90,19 +90,7 @@ export function buildCreditModuleDeps(input: CreditModuleDepsInput): CreditDepen
     listings: new MongoListingRepository() as ListingRepository,
     fields: listingFieldsFromEffectiveReader(buildEffectiveCustomFieldReader()),
     unitOfWork: new MongoUnitOfWork(),
-    events: {
-      publish: async (
-        type: string,
-        payload: unknown,
-        options?: { version?: number; orderingKey?: string },
-      ) => {
-        await kernelEventPublisher.publish(
-          type as import("@banijjik/contracts").EventType,
-          payload as import("@banijjik/contracts").EventPayloadMap[import("@banijjik/contracts").EventType],
-          options,
-        );
-      },
-    },
+    events: buildCreditEventPublisher(),
     audit: input.audit,
     clock: input.clock,
     directorySettings: directorySettingsFromResolver(settingsResolver),

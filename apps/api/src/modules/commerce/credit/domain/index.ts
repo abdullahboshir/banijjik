@@ -24,6 +24,7 @@ export {
   CreditSelfVerifyForbiddenError,
   CreditPurchaseNotFoundError,
   CreditPurchaseNotPendingError,
+  CreditPurchaseVersionConflictError,
   CreditMaxPendingExceededError,
   CreditPaymentMethodNotConfiguredError,
   CreditPackNotActiveError,

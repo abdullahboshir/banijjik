@@ -28,14 +28,15 @@ import {
   RejectCreditPurchaseUseCase,
   CancelExpiredPurchasesUseCase,
   buildCancelExpiredPurchasesJob,
+  type CancelExpiredPurchasesDependencies,
   type CreditDependencies,
 } from "./application/index.js";
 import { CreditListingUnlockReader } from "./application/adapters/index.js";
 import { registerScheduledJob } from "../../../kernel/jobs/index.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
-import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
+import { buildCreditEventPublisher } from "./infrastructure/credit-event-publisher.js";
 
 export { creditManifest } from "./module.manifest.js";
 
@@ -43,29 +44,15 @@ export function registerCreditScheduledJobs(input: {
   readonly clock: Clock;
   readonly audit: AuditRecorder;
 }): void {
-  const purchases = new MongoCreditPurchaseRepository();
-  const unitOfWork = new MongoUnitOfWork();
+  const dependencies: CancelExpiredPurchasesDependencies = {
+    purchases: new MongoCreditPurchaseRepository(),
+    unitOfWork: new MongoUnitOfWork(),
+    audit: input.audit,
+    events: buildCreditEventPublisher(),
+  };
   registerScheduledJob(
     buildCancelExpiredPurchasesJob({
-      cancelExpiredPurchases: new CancelExpiredPurchasesUseCase({
-        purchases,
-        unitOfWork,
-        audit: input.audit,
-        events: {
-          publish: async (
-            type: string,
-            payload: unknown,
-            options?: { version?: number; orderingKey?: string },
-          ) => {
-            await (
-              kernelEventPublisher as unknown as {
-                publish: (t: string, p: unknown, o?: unknown) => Promise<void>;
-              }
-            ).publish(type, payload, options);
-          },
-        },
-        clock: input.clock,
-      } as unknown as import("./application/ports/credit-dependencies.js").CreditDependencies),
+      cancelExpiredPurchases: new CancelExpiredPurchasesUseCase(dependencies),
     }),
   );
 }
@@ -98,6 +85,8 @@ export {
   RejectCreditPurchaseUseCase,
   CancelExpiredPurchasesUseCase,
   buildCancelExpiredPurchasesJob,
+  buildCreditEventPublisher,
   CreditListingUnlockReader,
+  type CancelExpiredPurchasesDependencies,
   type CreditDependencies,
 };

@@ -664,7 +664,7 @@ describe("credit purchase API", () => {
       unitOfWork,
       audit: { record: async () => {} },
       events: { publish: async () => {} },
-    } as unknown as import("../application/ports/credit-dependencies.js").CreditDependencies);
+    });
 
     await runInOrganizationContext(organizationId, async () => {
       // Run expiry now (not yet expired) -> 0 cancelled
