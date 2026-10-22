@@ -20,6 +20,11 @@ import {
   LISTING_UNLOCK_MODEL_NAME,
   LISTING_UNLOCK_COLLECTION_NAME,
 } from "./listing-unlock.schema.js";
+import {
+  creditPurchaseSchema,
+  CREDIT_PURCHASE_MODEL_NAME,
+  CREDIT_PURCHASE_COLLECTION_NAME,
+} from "./credit-purchase.schema.js";
 
 export function registerCreditModels(): void {
   registerModel({
@@ -49,6 +54,13 @@ export function registerCreditModels(): void {
     modelName: LISTING_UNLOCK_MODEL_NAME,
     collectionName: LISTING_UNLOCK_COLLECTION_NAME,
     schema: listingUnlockSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: CREDIT_PURCHASE_MODEL_NAME,
+    collectionName: CREDIT_PURCHASE_COLLECTION_NAME,
+    schema: creditPurchaseSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

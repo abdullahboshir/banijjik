@@ -15,6 +15,7 @@ export const SEQUENCE_KEY = defineEnum([
   "ZREPORT",
   "RETURN",
   "CUSTOM_ACCOUNT",
+  "CREDIT_PURCHASE",
 ]);
 
 export type SequenceKey = (typeof SEQUENCE_KEY)[keyof typeof SEQUENCE_KEY];

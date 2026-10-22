@@ -1,16 +1,78 @@
 import {
   CREDIT_ADJUST_REASON_MAX_LENGTH,
   CREDIT_PACK_NAME_MAX_LENGTH,
+  CREDIT_PURCHASE_METHOD,
+  CREDIT_PURCHASE_STATUS,
 } from "@banijjik/contracts/credit";
 import { z } from "zod";
 import { moneySchema } from "../catalog/catalog-parts.js";
 import { paginationQuerySchema } from "../pagination.js";
+import { phoneE164Schema } from "../phone.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 
 const packNameSchema = z.strictObject({
   bn: z.string().trim().min(1).max(CREDIT_PACK_NAME_MAX_LENGTH),
   en: z.string().trim().min(1).max(CREDIT_PACK_NAME_MAX_LENGTH),
 });
+
+export const creditPaymentMethodSettingItemSchema = z.strictObject({
+  method: z.enum([CREDIT_PURCHASE_METHOD.BKASH, CREDIT_PURCHASE_METHOD.NAGAD]),
+  accountNumber: z.string().trim().min(5).max(30),
+  accountType: z.string().trim().min(1).max(30),
+  instructions: z.strictObject({
+    bn: z.string().trim().min(1).max(500),
+    en: z.string().trim().min(1).max(500),
+  }),
+});
+
+export const creditPaymentMethodsSettingSchema = z
+  .array(creditPaymentMethodSettingItemSchema)
+  .min(1);
+
+export const transactionReferenceSchema = z
+  .string()
+  .trim()
+  .transform((val) => val.toUpperCase())
+  .pipe(
+    z
+      .string()
+      .regex(/^[A-Z0-9]{6,30}$/, "Invalid transaction reference (must be 6-30 letters and digits)"),
+  );
+
+export const creditPurchaseSubmitRequestSchema = z.strictObject({
+  creditPackId: uuidV7Schema,
+  method: z.enum([CREDIT_PURCHASE_METHOD.BKASH, CREDIT_PURCHASE_METHOD.NAGAD]),
+  senderPhone: phoneE164Schema,
+  transactionReference: transactionReferenceSchema,
+});
+
+export const creditPurchaseVerifyRequestSchema = z.strictObject({
+  version: z.number().int().positive(),
+  approvalToken: z.string().trim().min(1).max(200).optional(),
+});
+
+export const creditPurchaseRejectRequestSchema = z.strictObject({
+  version: z.number().int().positive(),
+  reason: z.string().trim().min(1).max(200),
+});
+
+export const creditPurchaseIdParamsSchema = z.object({
+  creditPurchaseId: uuidV7Schema,
+});
+
+export const creditPurchasesStaffQuerySchema = paginationQuerySchema.extend({
+  status: z
+    .enum([
+      CREDIT_PURCHASE_STATUS.PENDING,
+      CREDIT_PURCHASE_STATUS.VERIFIED,
+      CREDIT_PURCHASE_STATUS.REJECTED,
+      CREDIT_PURCHASE_STATUS.CANCELLED,
+    ])
+    .optional(),
+  q: z.string().trim().min(1).max(100).optional(),
+});
+
+export const myCreditPurchasesQuerySchema = paginationQuerySchema;
 
 export const creditPackCreateRequestSchema = z.strictObject({
   name: packNameSchema,

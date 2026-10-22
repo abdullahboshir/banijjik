@@ -110,3 +110,66 @@ export class ListingUnlockAlreadyExistsError extends DomainRuleError {
     });
   }
 }
+
+export class CreditReferenceTakenError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.CONFLICT,
+      messageKey: CREDIT_API_MESSAGE_KEYS.referenceTaken,
+    });
+  }
+}
+
+export class CreditSelfVerifyForbiddenError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.FORBIDDEN,
+      messageKey: CREDIT_API_MESSAGE_KEYS.selfVerifyForbidden,
+    });
+  }
+}
+
+export class CreditPurchaseNotFoundError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.NOT_FOUND,
+      messageKey: CREDIT_API_MESSAGE_KEYS.purchaseNotFound,
+    });
+  }
+}
+
+export class CreditPurchaseNotPendingError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.INVALID_TRANSITION,
+      messageKey: CREDIT_API_MESSAGE_KEYS.purchaseNotPending,
+    });
+  }
+}
+
+export class CreditMaxPendingExceededError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.LIMIT_REACHED,
+      messageKey: CREDIT_API_MESSAGE_KEYS.maxPendingExceeded,
+    });
+  }
+}
+
+export class CreditPaymentMethodNotConfiguredError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.BUSINESS_RULE,
+      messageKey: CREDIT_API_MESSAGE_KEYS.paymentMethodNotConfigured,
+    });
+  }
+}
+
+export class CreditPackNotActiveError extends DomainRuleError {
+  constructor() {
+    super({
+      code: ERROR_CODE.BUSINESS_RULE,
+      messageKey: CREDIT_API_MESSAGE_KEYS.packNotActive,
+    });
+  }
+}

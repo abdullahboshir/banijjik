@@ -34,6 +34,7 @@ describe("system enums", () => {
       "ZREPORT",
       "RETURN",
       "CUSTOM_ACCOUNT",
+      "CREDIT_PURCHASE",
     ]);
   });
 

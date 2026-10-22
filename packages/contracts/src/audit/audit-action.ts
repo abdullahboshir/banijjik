@@ -92,6 +92,10 @@ export const AUDIT_ACTION = {
   CREDIT_PACK_UPDATED: "credit.pack.updated",
   CREDIT_PACK_ARCHIVED: "credit.pack.archived",
   CREDIT_ACCOUNT_ADJUSTED: "credit.creditAccount.adjusted",
+  CREDIT_PURCHASE_SUBMITTED: "credit.purchase.submitted",
+  CREDIT_PURCHASE_VERIFIED: "credit.purchase.verified",
+  CREDIT_PURCHASE_REJECTED: "credit.purchase.rejected",
+  CREDIT_PURCHASE_CANCELLED: "credit.purchase.cancelled",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -134,6 +138,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "creditEntry",
   "creditAccount",
   "listingUnlock",
+  "creditPurchase",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

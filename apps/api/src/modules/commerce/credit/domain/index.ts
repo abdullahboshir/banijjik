@@ -1,3 +1,4 @@
+export { CreditPurchase, type CreditPurchaseProps } from "./credit-purchase.entity.js";
 export type { CreditPack } from "./credit-pack.entity.js";
 export type { CreditEntry } from "./credit-entry.entity.js";
 export type { CreditBalance } from "./credit-balance.entity.js";
@@ -19,4 +20,11 @@ export {
   CreditAdjustmentWouldGoNegativeError,
   CreditEntryAlreadyExistsError,
   ListingUnlockAlreadyExistsError,
+  CreditReferenceTakenError,
+  CreditSelfVerifyForbiddenError,
+  CreditPurchaseNotFoundError,
+  CreditPurchaseNotPendingError,
+  CreditMaxPendingExceededError,
+  CreditPaymentMethodNotConfiguredError,
+  CreditPackNotActiveError,
 } from "./errors.js";

@@ -2,7 +2,15 @@ export const CREDIT_RULE_KEY = {
   UNLOCK_COST: "credit.unlockCost",
   UNLOCKS_PER_DAY: "credit.unlocksPerDay",
   SHOW_UNLOCKERS_TO_OWNER: "credit.showUnlockersToOwner",
+  PURCHASE_PENDING_DAYS: "credit.purchase.pendingDays",
+  PURCHASE_MAX_PENDING: "credit.purchase.maxPending",
+  PURCHASE_APPROVAL_ABOVE: "credit.purchase.approvalAbove",
+  PAYMENT_METHODS: "credit.payment.methods",
 } as const;
+
+export const DEFAULT_PURCHASE_PENDING_DAYS = 7;
+export const DEFAULT_PURCHASE_MAX_PENDING = 3;
+export const DEFAULT_PURCHASE_APPROVAL_ABOVE = 0;
 
 export type CreditRuleKey = (typeof CREDIT_RULE_KEY)[keyof typeof CREDIT_RULE_KEY];
 

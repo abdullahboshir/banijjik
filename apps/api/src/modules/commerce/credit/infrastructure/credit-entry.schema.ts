@@ -68,6 +68,15 @@ creditEntrySchema.index(
     },
   },
 );
+creditEntrySchema.index(
+  { organizationId: 1, "source.sourceId": 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      type: CREDIT_ENTRY_TYPE.PURCHASE,
+    },
+  },
+);
 creditEntrySchema.index({ organizationId: 1, type: 1, expiresOn: 1 });
 creditEntrySchema.index({ organizationId: 1, type: 1, occurredAt: 1, creditEntryId: 1 });
 creditEntrySchema.index({
