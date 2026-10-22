@@ -119,7 +119,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.11 staff commission | todo | ADR-100 |
 | 3.10 reports and dashboard | todo | last |
 | 3.14 CI for every card branch | merged (2026-10-22, implemented by the lead (Opus 5.5); CI run 39719375443 green) | `s/**` pushes run verify, browser (admin 90, platform 16 passed, about 5 min) and secrets; flaky 3.8a replay test noted in the handoff |
-| 3.15 test stability (flaky tests) | planned (2026-10-22, `docs/plans/3.15.md`, Sonnet; T3) | can start now; evidence-first, no skips or global timeouts |
+| 3.15 test stability (flaky tests) | implemented (awaiting merge check, 2026-10-22; [CI green](https://github.com/abdullahboshir/banijjik/actions/runs/39750660851)) | branch `s/3.15-test-stability`; handoff `docs/handoffs/3.15.md`; branding lazy-preview wait and package form input scheduling, both 20/20; unchanged worker baseline 20/20. Known gap → 3.16 (owner): `event-worker.ts:55,115–116` writes Mongo FAILED before BullMQ finishes; `dead-letter-replayer.ts:92–104` can leave ACTIVE old job, duplicate-add the same ID, then falsely mark REPLAYED and block its stream. No worker/production changes, skips or timeout increases. First CI font-build failure recorded; verify rerun passed |
 | 3.16 dead-letter replay race fix | planned (2026-10-22, `docs/plans/3.16.md`, Opus; T1) | found by the 3.15 session: replayer can write REPLAYED while BullMQ ignores the new job (old job still active); fix in the replayer only, failing test first |
 | Phase 3 review | todo | |
 
