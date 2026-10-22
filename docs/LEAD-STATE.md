@@ -7,7 +7,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
 - No secrets, passwords or `.env` values.
 
-Last updated: 2026-10-22 (after the four merges) by Sonnet 5.5 · local main `04e52aa` (3.6, M.3, M.4, 3.8b merged) · GitHub main `c4968f2` (not pushed; needs the owner's yes)
+Last updated: 2026-10-22 (plans 3.8 and 3.7 refreshed) by Sonnet 5.5 · local main `433c179` · GitHub main `c4968f2` (not pushed; needs the owner's yes)
 
 ## 1. Where the project stands
 - Phase 3 merged: 3.6, 3.8b, 3.0, 3.1a, 3.1b, 3.1c, 3.2a, 3.2b, 3.3, 3.4, 3.4b, 3.8a, 3.8c, 3.12, 3.13, 3.14 (CI for card branches). Track M merged: M.1, M.2, M.3, M.4. Details per card: `docs/STATUS.md`.
@@ -30,7 +30,7 @@ Stash `stash@{0}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - Older open items: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
 
 ## 4. Next actions, in order
-1. Plan refresh, then implementers: **3.8 Part A** (payments), **3.7 Part A** (enrollment), **3.6b** (rental/event booking plan to write). Plans 3.8 and 3.7 are based on `3c0165b`, older than 3.8c, 3.6 and 3.8b.
+1. Plans 3.8 and 3.7 are refreshed (last section of each, based on `8f4c63e`). Implementers can start **3.8 Part A** (payments; also supplies the accounting `PaymentPostingSource` adapter) and **3.7 Part A** (enrollment; no payment link, no `commerce/payment` edits). Still to write: **3.6b** (rental/event booking plan).
 2. **M.5 Part A** (credit purchase) can start now (M.4 is merged).
 3. **3.5a Part A** is running; review when done. Then Part B of 3.5a, 3.8, 3.7, M.5 after their Part A.
 4. Small card: fix the flaky `ordered-event-worker` test.
@@ -50,8 +50,8 @@ Stash `stash@{0}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - **Token cost** (measured 2026-10-22): about 90% of a day's usage went to carrying a 900k-token session, mostly full cache rewrites after a break of over an hour or a `/model` switch. Keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-22 afternoon** (Sonnet): checked state (3.5a branch unpushed, one commit only), refreshed plans 3.8 and 3.7 against main (accounting adapter duty, existing payment contracts, bed-hold port risk for 3.7). No code merged.
 - **2026-10-22 morning** (Sonnet): reviewed, rebased, pushed and merged 3.6, M.3, M.4 and 3.8b in that order, each green on CI. Fixed on the way: JS budget (contact credit section lazy, admin budget 180 KiB by owner), duplicate probe module in the platform browser stack, router builder length, long setting key overflow. All branches stayed unpushed to main.
 - **2026-10-22 night** (Sonnet): rebased 3.6 on main (STATUS.md conflicts), CI green, reviewed R1 delta, fast-forwarded local main to `e5af140`. banijjik-lead folder is now free. M.3, M.4, 3.8b not yet reviewed; none pushed.
 - **2026-10-22** (Opus): parallel sessions guide; plans 3.14, 3.5a, M.5; session parts for 3.7 and 3.8; pushed main `c4968f2`; implemented and merged 3.14 locally (CI green after one flaky rerun); token-usage analysis; created this file and the user-level `/lead` and `/save-state` skills. The owner reports 3.6, M.3, M.4 and 3.8b finished (not yet reviewed).
 - **2026-10-20 to 21** (Opus): merged 3.8c, 3.4, 3.3 and M.2 together (`8258669`); planned 3.8b, M.3, M.4; reviewed 3.6 (R1: bookable service fields missing in the offering editor).
-- **2026-10-19** (Opus): merged M.1 and 3.4b; planned 3.4, 3.4b, 3.6, 3.8, 3.8c, 3.3, 3.7, M.2.
