@@ -40,3 +40,12 @@ export interface SalesDependencies {
   readonly owner: SalesOwnerReader;
   readonly unitCosts: SalesUnitCostReader;
 }
+
+/**
+ * What the two hourly jobs run: they discard a DRAFT and cancel a PLACED order, so they never
+ * quote, approve, count a limit or take a margin snapshot.
+ */
+export type SalesJobDependencies = Pick<
+  SalesDependencies,
+  "orders" | "unitOfWork" | "events" | "audit" | "clock" | "settings" | "stock" | "payments"
+>;

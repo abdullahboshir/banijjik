@@ -22,6 +22,7 @@ import { bookingManifest } from "../modules/commerce/booking/index.js";
 import { creditManifest } from "../modules/commerce/credit/index.js";
 import { paymentManifest } from "../modules/commerce/payment/index.js";
 import { commissionManifest } from "../modules/commerce/commission/index.js";
+import { salesManifest } from "../modules/commerce/sales/index.js";
 import { settingsManifest } from "../modules/core/settings/index.js";
 import { tenantAdminManifest } from "../modules/platform/tenant-admin/index.js";
 
@@ -51,6 +52,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   creditManifest,
   paymentManifest,
   commissionManifest,
+  salesManifest,
 ];
 
 /**

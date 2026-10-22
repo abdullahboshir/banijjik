@@ -10,7 +10,7 @@ import {
 } from "../../domain/errors.js";
 import { Order } from "../../domain/order.entity.js";
 import type { SalesSettings } from "../ports/sales-ports.js";
-import type { SalesDependencies } from "../sales-dependencies.js";
+import type { SalesDependencies, SalesJobDependencies } from "../sales-dependencies.js";
 import {
   assertLocationAllowed,
   formatInvoiceNumber,
@@ -27,7 +27,7 @@ interface OrderTransitionInput {
 
 /** Shared guard for every transition: the order must exist and stay inside the caller's locations. */
 async function loadTransitionOrder(
-  dependencies: SalesDependencies,
+  dependencies: Pick<SalesDependencies, "orders">,
   input: OrderWriteInput & OrderTransitionInput,
 ): Promise<Order> {
   const order = await dependencies.orders.findById(input.orderId);
@@ -190,7 +190,7 @@ export class CompleteOrderUseCase {
  * order never reached place (a DRAFT has no reservation). Jobs call this with a null actor.
  */
 export class CancelOrderUseCase {
-  constructor(private readonly dependencies: SalesDependencies) {}
+  constructor(private readonly dependencies: SalesJobDependencies) {}
 
   async execute(
     input: OrderWriteInput &

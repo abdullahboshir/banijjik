@@ -6,7 +6,7 @@ import type { SalesDependencies } from "../sales-dependencies.js";
 
 /** The only delete in the module: a DRAFT that never had a number (plan decision 4). */
 export class DeleteDraftUseCase {
-  constructor(private readonly dependencies: SalesDependencies) {}
+  constructor(private readonly dependencies: Pick<SalesDependencies, "orders" | "unitOfWork">) {}
 
   async execute(input: {
     readonly orderId: OrderId;

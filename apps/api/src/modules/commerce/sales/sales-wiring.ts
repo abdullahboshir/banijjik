@@ -8,7 +8,7 @@ import type { Clock } from "../../../kernel/time/index.js";
 import type { OrgConfigService } from "../../platform/entitlement/index.js";
 import { buildSalesContactReader } from "../contact/index.js";
 import { buildSalesSettingsReader } from "./application/sales-settings-reader.js";
-import type { SalesDependencies } from "./application/sales-dependencies.js";
+import type { SalesDependencies, SalesJobDependencies } from "./application/sales-dependencies.js";
 import type {
   PaymentSummaryReader,
   SalesApprovalVerifier,
@@ -107,4 +107,33 @@ export function buildSalesController(dependencies: SalesDependencies): OrderCont
 export interface SalesTenantRouterDependencies extends SalesTenantPorts {
   readonly permission: PermissionMiddlewareFactory;
   readonly idempotency: RequestHandler;
+}
+
+/**
+ * What the worker needs for the two hourly jobs: the ledger to release stock, the payment stub for
+ * the cancelled order's view, and the settings of the module. Jobs never quote or approve.
+ */
+export interface SalesJobPorts {
+  readonly clock: Clock;
+  readonly audit: AuditRecorder;
+  readonly orgConfig: OrgConfigService;
+  readonly manifests: readonly ModuleManifest[];
+  readonly stock: SalesStockLedger;
+  readonly payments: PaymentSummaryReader;
+}
+
+export function buildSalesJobDependencies(ports: SalesJobPorts): SalesJobDependencies {
+  return {
+    orders: new MongoOrderRepository(),
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+    audit: ports.audit,
+    clock: ports.clock,
+    settings: buildSalesSettingsReader({
+      orgConfig: ports.orgConfig,
+      manifests: ports.manifests,
+    }),
+    stock: ports.stock,
+    payments: ports.payments,
+  };
 }

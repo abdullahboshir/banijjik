@@ -1,7 +1,7 @@
 import { MODULE_KEY } from "@banijjik/contracts";
 import { asId, type OrganizationId } from "@banijjik/ids";
 import type { ScheduledJob } from "../../../../../kernel/jobs/index.js";
-import type { SalesDependencies } from "../sales-dependencies.js";
+import type { SalesJobDependencies } from "../sales-dependencies.js";
 import { CancelOrderUseCase } from "../use-cases/transition-order.use-cases.js";
 
 /** One hourly pass reads at most this many candidates; the rest wait for the next pass. */
@@ -14,7 +14,7 @@ const AUTO_CANCEL_REASON = "Auto-cancelled: not confirmed within the placed-orde
  * Hourly: PLACED orders older than `sales.placedAutoCancelHours` are cancelled and their stock
  * released (decision 5). `0` means the rule is off, so the job returns without reading.
  */
-export function buildAutoCancelPlacedJob(dependencies: SalesDependencies): ScheduledJob {
+export function buildAutoCancelPlacedJob(dependencies: SalesJobDependencies): ScheduledJob {
   const cancelOrder = new CancelOrderUseCase(dependencies);
   return {
     jobKey: "sales.autoCancelPlaced",
