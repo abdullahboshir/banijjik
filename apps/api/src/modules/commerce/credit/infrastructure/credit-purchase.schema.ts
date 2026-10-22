@@ -6,7 +6,12 @@ import {
   type CreditPurchaseStatus,
 } from "@banijjik/contracts/credit";
 import { Schema } from "mongoose";
-import { domainIdField, SCHEMA_OPTIONS } from "../../../../kernel/db/index.js";
+import {
+  auditFields,
+  domainIdField,
+  SCHEMA_OPTIONS,
+  versionField,
+} from "../../../../kernel/db/index.js";
 
 export const CREDIT_PURCHASE_MODEL_NAME = "CreditPurchase";
 export const CREDIT_PURCHASE_COLLECTION_NAME = "credit_purchases";
@@ -73,6 +78,10 @@ export const creditPurchaseSchema = new Schema<CreditPurchaseDocument>(
     version: { type: Number, required: true, default: 1 },
     createdAt: { type: Date, required: true, immutable: true },
     updatedAt: { type: Date, required: true },
+    createdByUserId: { type: String, default: null },
+    updatedByUserId: { type: String, default: null },
+    ...auditFields,
+    ...versionField,
   },
   SCHEMA_OPTIONS,
 );
@@ -97,5 +106,6 @@ creditPurchaseSchema.index(
 // Staff queue: oldest PENDING first, or filtering by status
 creditPurchaseSchema.index({ organizationId: 1, status: 1, submittedAt: 1 });
 
-// Daily expiry job
-creditPurchaseSchema.index({ organizationId: 1, status: 1, expiresAt: 1 });
+// Additional unique indexes for creditPurchaseId and purchaseNumber
+creditPurchaseSchema.index({ organizationId: 1, creditPurchaseId: 1 }, { unique: true });
+creditPurchaseSchema.index({ organizationId: 1, purchaseNumber: 1 }, { unique: true });

@@ -13,6 +13,7 @@ import {
   sessionOption,
   updateVersioned,
 } from "../../../../kernel/db/index.js";
+import { escapeRegExp } from "@banijjik/validation";
 import type {
   CreditPurchaseRepository,
   ListCreditPurchasesStaffFilter,
@@ -163,10 +164,10 @@ export class MongoCreditPurchaseRepository implements CreditPurchaseRepository {
       query["status"] = filter.status;
     }
     if (filter.q !== undefined && filter.q.trim() !== "") {
-      const q = filter.q.trim();
+      const q = filter.q.trim().toUpperCase();
       query["$or"] = [
-        { transactionReference: { $regex: q, $options: "i" } },
-        { purchaseNumber: { $regex: q, $options: "i" } },
+        { transactionReference: { $regex: `^${escapeRegExp(q)}` } },
+        { purchaseNumber: { $regex: `^${escapeRegExp(q)}` } },
       ];
     }
 
