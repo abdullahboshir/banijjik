@@ -47,6 +47,10 @@
       "types": "./dist/booking/index.d.ts",
       "default": "./dist/booking/index.js"
     },
+    "./enrollment": {
+      "types": "./dist/enrollment/index.d.ts",
+      "default": "./dist/enrollment/index.js"
+    },
     "./credit": {
       "types": "./dist/credit/index.d.ts",
       "default": "./dist/credit/index.js"

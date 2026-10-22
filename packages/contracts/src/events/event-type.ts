@@ -1,3 +1,4 @@
+import { ENROLLMENT_EVENT_TYPE } from "../enrollment/index.js";
 import { ACCOUNTING_EVENT_TYPE, EXPENSE_EVENT_TYPE } from "../accounting/accounting-event-type.js";
 import { BOOKING_EVENT_TYPE } from "../booking/booking-event-type.js";
 import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
@@ -16,6 +17,7 @@ import { SETTINGS_EVENT_TYPE } from "../settings/settings-event-type.js";
 
 /** Every domain event type. A module adds its own constant object here when it starts to emit (card 1.5b). */
 export const EVENT_TYPE = Object.freeze({
+  ...ENROLLMENT_EVENT_TYPE,
   ...IAM_EVENT_TYPE,
   ...ORGANIZATION_EVENT_TYPE,
   ...CUSTOM_FIELD_EVENT_TYPE,

@@ -3,6 +3,12 @@
  * A key is `<moduleKey>.<entity>.<action>`. A later module card adds its own keys here, add-only.
  */
 export const PERMISSION_KEY = {
+  ENROLLMENT_ENROLLMENT_READ: "enrollment.enrollment.read",
+  ENROLLMENT_ENROLLMENT_CREATE: "enrollment.enrollment.create",
+  ENROLLMENT_ENROLLMENT_UPDATE: "enrollment.enrollment.update",
+  ENROLLMENT_ENROLLMENT_RENEW: "enrollment.enrollment.renew",
+  ENROLLMENT_ENROLLMENT_CANCEL: "enrollment.enrollment.cancel",
+  ENROLLMENT_CHECK_IN_CREATE: "enrollment.checkIn.create",
   IAM_ROLE_READ: "iam.role.read",
   IAM_ROLE_CREATE: "iam.role.create",
   IAM_ROLE_UPDATE: "iam.role.update",

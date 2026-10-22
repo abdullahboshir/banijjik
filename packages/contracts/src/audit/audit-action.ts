@@ -1,3 +1,4 @@
+import { ENROLLMENT_EVENT_TYPE } from "../enrollment/index.js";
 import { defineEnum } from "../define-enum.js";
 
 /**
@@ -5,6 +6,7 @@ import { defineEnum } from "../define-enum.js";
  * A module card adds the actions of its own use cases here, add-only.
  */
 export const AUDIT_ACTION = {
+  ...ENROLLMENT_EVENT_TYPE,
   ORGANIZATION_CREATED: "organization.organization.created",
   ORGANIZATION_UPDATED: "organization.organization.updated",
   LOCATION_CREATED: "organization.location.created",
@@ -116,6 +118,8 @@ export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
 
 /** The kind of record an audit entry is about. Add-only. */
 export const AUDIT_ENTITY_TYPE = defineEnum([
+  "enrollment",
+  "checkIn",
   "organization",
   "location",
   "member",

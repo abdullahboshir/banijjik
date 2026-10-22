@@ -1,3 +1,8 @@
+import {
+  ENROLLMENT_EVENT_TYPE,
+  type EnrollmentEventPayload,
+  type CheckInEventPayload,
+} from "../enrollment/index.js";
 import { ACCOUNTING_EVENT_TYPE, EXPENSE_EVENT_TYPE } from "../accounting/accounting-event-type.js";
 import {
   BOOKING_EVENT_TYPE,
@@ -98,6 +103,17 @@ export interface InvitationPayload {
 
 /** The payload of each event type. `publishEvent` takes its payload type from this map. */
 export interface EventPayloadMap {
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_CREATED]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_ACTIVATED]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_FROZEN]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_UNFROZEN]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_CANCELLED]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_RENEWED]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_EXPIRED]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_COMPLETED]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_OVERDUE]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_RENEWAL_DUE]: EnrollmentEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_CREATED]: CheckInEventPayload;
   readonly [IAM_EVENT_TYPE.USER_REGISTERED]: UserRegisteredPayload;
   readonly [IAM_EVENT_TYPE.ROLE_CREATED]: RolePayload;
   readonly [IAM_EVENT_TYPE.ROLE_PERMISSIONS_CHANGED]: RolePayload;
