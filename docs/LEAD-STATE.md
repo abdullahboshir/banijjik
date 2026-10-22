@@ -7,33 +7,35 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
 - No secrets, passwords or `.env` values.
 
-Last updated: 2026-10-22 by Opus 5.5 · main `c4968f2` (pushed to GitHub)
+Last updated: 2026-10-22 (evening) by Opus 5.5 · local main `798b934` · GitHub main `c4968f2` (local main is 5 commits ahead, including card 3.14: push needs the owner's yes)
 
 ## 1. Where the project stands
-- Phase 3 merged: 3.0, 3.1a, 3.1b, 3.1c, 3.2a, 3.2b, 3.3, 3.4, 3.4b, 3.8a, 3.8c, 3.12, 3.13. Track M merged: M.1, M.2. Details per card: `docs/STATUS.md`.
+- Phase 3 merged: 3.0, 3.1a, 3.1b, 3.1c, 3.2a, 3.2b, 3.3, 3.4, 3.4b, 3.8a, 3.8c, 3.12, 3.13, 3.14 (CI for card branches). Track M merged: M.1, M.2. Details per card: `docs/STATUS.md`.
 - From 2026-10-22, every plan and session follows `docs/plans/parallel-sessions-guide.md`: Part A (API) and Part B (screens) per card, file ownership, fast local checks, full verification on GitHub CI for every pushed `s/**` branch, one finish checklist. Ready board: guide §9.
 
 ## 2. Open branches
+The owner reported on 2026-10-22 that all four are fixed and finished. None has been reviewed since. They branch from a main **without** card 3.14, so CI runs on them only after a rebase onto a main that has 3.14 (and, for GitHub, after 3.14 is pushed).
+
 | Branch | Folder | Tier | State and next step |
 |---|---|---|---|
-| `s/3.14-ci-card-branches` | `banijjik-docs` | T2 | Implemented by the lead: `s/**` push trigger and a `browser` job. Run `39719375443`: browser green (admin 90 passed, platform 16 passed, about 5 min), secrets green, verify failed once on `ordered-event-worker.test.ts` "runs a replayed event again with fresh attempts" (timing; the same code was green on main run `39719326709`). Failed job rerun started. If green: write `docs/handoffs/3.14.md`, STATUS row, ff main. If it fails again: record the flaky 3.8a test as a finding for a fix card. |
-| `s/3.6-booking-core` | `banijjik-lead` | T1 | R1-1/R1-2 fixes committed (`b962581`). Next: review the delta, push the branch for CI, merge. |
-| `s/m3-moderation-screens` | `banijjik-1.7b` | T2 | Rebased on an older 3.6 head (`cdd75a1`); verified except the 3.6 SALON test. Next: rebase on main after 3.6 merges, CI, merge check, merge. |
-| `s/m4-credits` | `banijjik-m2` | T1 | Another Opus review (`docs/handoffs/M.4-review.md`): PASS WITH FIXES, B1 storefront credit routes not module-gated, B2 `CreditEntry` not append-only. Fix commit `3fd0c89`. Next: review the delta, rebase, CI, merge. |
-| `s/3.8b-bookkeeping` | `banijjik` | T1 | Cursor says finished (`693f223`, `997d13c`). The folder has **uncommitted out-of-scope edits** to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). Next: ask the owner whether to keep them as a separate docs change; then the full T1 review. |
-| `s/docs-lead-state` | `banijjik-docs` | docs | This file and the `/lead` and `/save-state` skills. |
+| `s/3.6-booking-core` | `banijjik-lead` | T1 | Head `96450b5` (R1 fixes and a clean Done-means pass recorded). Merge first: rebase on main, push, CI, review the R1 delta, ff main. |
+| `s/m3-moderation-screens` | `banijjik-1.7b` | T2 | Head `f2ecb32`, based on an old 3.6 head (`cdd75a1`). After 3.6 merges: rebase on main (drop the duplicated 3.6 commits), push, CI, merge check, merge. |
+| `s/m4-credits` | `banijjik-m2` | T1 | Head `3fd0c89` fixes B1 (storefront credit routes not module-gated) and B2 (`CreditEntry` not append-only) from `docs/handoffs/M.4-review.md`. Review the delta, rebase, push, CI, merge. |
+| `s/3.8b-bookkeeping` | `banijjik` | T1 | Head `997d13c`. The folder has **uncommitted out-of-scope edits** to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"); do not let them into the card. Full T1 review, rebase, push, CI, merge. |
+
+Known flaky test (from 3.14): `apps/api/src/kernel/events/ordered-event-worker.test.ts` › "runs a replayed event again with fresh attempts…" timed out once on CI and passed on rerun. Rerun once; plan a small fix card (condition-based wait) when it repeats.
 
 ## 3. Waiting on the owner
+- **Push main** (`798b934`, includes 3.14). Needed before rebased card branches and cloud agents get CI on GitHub. Standing permission to push `main` after each reviewed merge was asked; until it is given, ask before each push.
 - Keep or drop the `AGENTS.md` / `05-CONVENTIONS.md` edits found in the 3.8b folder.
-- Standing permission to push `main` after each reviewed merge (asked 2026-10-22; until answered, ask before each push of `main`). Card-branch pushes need no permission.
 - Older open items: P1 rotate leaked secrets (repo is public), phone usability check (deferred by the owner), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
 
 ## 4. Next actions, in order
-1. Finish 3.14 (see §2), then merge it so every card branch gets CI.
-2. Review and merge 3.6, then M.3 (rebased), M.4, 3.8b, one by one, each green on CI after its rebase.
-3. Give the owner the 3.5a Part A prompt (guide §6) for a free folder or a cloud agent.
-4. After 3.6 merges: refresh plans 3.8 and 3.7 (based on `3c0165b`, older than 3.8c and 3.6), then 3.8-A and 3.7-A; plan 3.6b.
-5. After M.4 merges: M.5 Part A.
+1. Review and merge, one by one, each green on CI after its rebase: **3.6 → M.3 → M.4 → 3.8b**.
+2. Implementers now: **3.5a Part A** (prompt in the guide §6, branch `s/3.5a-api-orders`). It needs a free folder or a cloud agent; local folders free up as the four branches merge.
+3. After 3.6 merges: refresh plans **3.8** and **3.7** (based on `3c0165b`, older than 3.8c and 3.6), then 3.8 Part A and 3.7 Part A; write the **3.6b** plan.
+4. After M.4 merges: **M.5 Part A**.
+5. After each Part A merges: its Part B (3.5a, 3.8, 3.7, M.5).
 6. Later: 3.5b, 3.9 POS, 3.11, 3.10, M.6 to M.9, then the Phase 3 review (`docs/handoffs/phase-3-review.md`).
 
 ## 5. How the lead works
@@ -48,6 +50,6 @@ Last updated: 2026-10-22 by Opus 5.5 · main `c4968f2` (pushed to GitHub)
 - **Token cost** (measured 2026-10-22): about 90% of a day's usage went to carrying a 900k-token session, mostly full cache rewrites after a break of over an hour or a `/model` switch. Keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
-- **2026-10-22** (Opus): wrote the parallel sessions guide, plans 3.14, 3.5a, M.5, session parts for 3.7 and 3.8; pushed main `c4968f2`; implemented 3.14 (CI rerun pending); token-usage analysis; created this file and the `/lead` and `/save-state` skills.
+- **2026-10-22** (Opus): parallel sessions guide; plans 3.14, 3.5a, M.5; session parts for 3.7 and 3.8; pushed main `c4968f2`; implemented and merged 3.14 locally (CI green after one flaky rerun); token-usage analysis; created this file and the user-level `/lead` and `/save-state` skills. The owner reports 3.6, M.3, M.4 and 3.8b finished (not yet reviewed).
 - **2026-10-20 to 21** (Opus): merged 3.8c, 3.4, 3.3 and M.2 together (`8258669`); planned 3.8b, M.3, M.4; reviewed 3.6 (R1: bookable service fields missing in the offering editor).
 - **2026-10-19** (Opus): merged M.1 and 3.4b; planned 3.4, 3.4b, 3.6, 3.8, 3.8c, 3.3, 3.7, M.2.
