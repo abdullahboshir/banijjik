@@ -23,3 +23,6 @@ from the pricing quoter; stock effects only from the inventory `StockLedger`.
 - `paymentStatus` is derived; card 3.8 replaces the zero `PaymentSummaryReader` stub.
 - Card 3.5a serves INSTANT and PICKUP only; COURIER, OWN_RIDER and the shipping statuses are
   declared and refused until Phase 5.
+- `sales.expireDrafts` and `sales.autoCancelPlaced` are hourly `kernel/jobs` passes, each run
+  idempotently per organization. A job cannot resolve tenant settings through `OrgConfigReader.current()`
+  yet — that request-less read is a foundation gap recorded in `docs/STATUS.md` (ADR-131).

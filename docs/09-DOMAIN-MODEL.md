@@ -448,6 +448,7 @@ Three aggregates share one **request contract**: `requestType` (`ORDER \| BOOKIN
 | `checkoutId`, `source`, `channelId?`, `conversationId?`, `customFields`, STF + `version` | | |
 
 - Invariants: ≥ 1 line. A line with a kind that needs time or capacity (RENTAL, EVENT, or a SERVICE with a required resource/slot) is refused: those go to a Booking. Lines whose variant has stock components create one stock movement per component in the same transaction as the state change that commits stock (D3 says which). Totals are recomputed on every change.
+- Card 3.5a (ADR-131) ships this record for PRODUCT lines and `INSTANT` / `PICKUP` fulfillment only: the shipping statuses stay declared-but-refused until Phase 5, `invoiceNumber` comes from sequence `INVOICE` at completion, `unitCostSnapshot` is filled by the same commit, and `paymentStatus` is derived from a zero payment reader until 3.8.
 
 **Booking** (`commerce/booking`)
 | Field | Type | Notes |

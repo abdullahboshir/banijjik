@@ -174,16 +174,18 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 ### 5.4 sales (orders, returns)
 | Method & path | Permission | Flags | Notes |
 |---|---|---|---|
-| `GET /orders` · `GET /orders/{orderId}` | `sales.order.read` | L | `?status=&paymentStatus=&source=&from=&to=&contactId=` |
-| `POST /orders` | `sales.order.create` | I L | creates DRAFT (or `?place=true` → PLACED) |
-| `PATCH /orders/{orderId}` | `sales.order.update` | L A* | edit in DRAFT/PLACED/CONFIRMED; discounts over threshold need approval |
-| `POST /orders/{orderId}/place` · `/confirm` · `/pack` · `/complete` · `/cancel` · `/mark-delivered` · `/mark-delivery-failed` · `/reship` · `/receive-return-to-sender` | per `11 §4.2` | I L | body `{ version, … }` |
-| `DELETE /orders/{orderId}` | `sales.order.update` | L | DRAFT only |
-| `POST /orders/{orderId}/receipt` | `sales.order.read` | | printable receipt payload (POS/thermal) |
-| `GET /returns` · `GET /returns/{salesReturnId}` | `sales.return.read` | L | |
-| `POST /orders/{orderId}/returns` | `sales.return.create` | I L A | `SalesReturnCreateRequest { lines[{ orderLineId, quantity, disposition }], refund { method }, reasonKey }` (server computes amounts) |
-| `POST /returns/{salesReturnId}/reverse` | `sales.return.reverse` | I A | |
-| `POST /orders/{orderId}/exchange` | `sales.return.create` + `sales.order.create` | I L A | `ExchangeRequest` (return lines + new lines) |
+| `GET /orders` · `GET /orders/{orderId}` | `sales.order.read` | L | `?locationId=&status=&q=&from=&to=&contactId=&page=&limit=` (≤ 100); `q` matches an exact order number or a contact name/phone prefix; location-scoped rows only (3.5a). `?paymentStatus=&source=` filters wait for 3.8 |
+| `POST /orders` | `sales.order.create` | I L | creates DRAFT (3.5a); `?place=true` is a later card |
+| `POST /orders/instant` | `sales.order.create` | I L | creates, places and completes in one transaction: INSTANT counter sale, the POS primitive (3.5a, ADR-131) |
+| `PATCH /orders/{orderId}` | `sales.order.update` | L A* | edit in DRAFT/PLACED/CONFIRMED; re-quotes and re-reserves in one transaction; a discount over `pricing.approval.discountPercentAbove` needs `approvalToken` else `403 APPROVAL_REQUIRED` (3.5a) |
+| `POST /orders/{orderId}/place` · `/confirm` · `/pack` · `/complete` · `/cancel` | per `11 §4.2` | I L | body `{ version, … }`; place takes the `ORDER` number and reserves, complete takes `INVOICE` and commits stock, cancel releases (3.5a) |
+| `POST /orders/{orderId}/mark-delivered` · `/mark-delivery-failed` · `/reship` · `/receive-return-to-sender` | per `11 §4.2` | I L | Phase 5 fulfillment; the statuses are declared and every call is refused until then |
+| `DELETE /orders/{orderId}` | `sales.order.update` | L | DRAFT only, `?version=` (3.5a) |
+| `POST /orders/{orderId}/receipt` | `sales.order.read` | | printable receipt payload (POS/thermal) — 3.9 |
+| `GET /returns` · `GET /returns/{salesReturnId}` | `sales.return.read` | L | 3.5b |
+| `POST /orders/{orderId}/returns` | `sales.return.create` | I L A | `SalesReturnCreateRequest { lines[{ orderLineId, quantity, disposition }], refund { method }, reasonKey }` (server computes amounts) — 3.5b |
+| `POST /returns/{salesReturnId}/reverse` | `sales.return.reverse` | I A | 3.5b |
+| `POST /orders/{orderId}/exchange` | `sales.return.create` + `sales.order.create` | I L A | `ExchangeRequest` (return lines + new lines) — 3.5b |
 
 ### 5.5 booking, enrollment
 | Method & path | Permission | Flags | Notes |
