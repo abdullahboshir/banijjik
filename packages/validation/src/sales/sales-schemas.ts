@@ -80,6 +80,9 @@ export const orderTransitionRequestSchema = z.strictObject({
   version: versionSchema,
 });
 
+/** `DELETE /orders/{orderId}?version=`: a draft is discarded only at the version it was read at. */
+export const orderDeleteQuerySchema = z.strictObject({ version: versionSchema });
+
 export const orderCancelRequestSchema = z.strictObject({
   version: versionSchema,
   reason: z.string().trim().min(1).max(MAX_ORDER_CANCEL_REASON_LENGTH),
@@ -105,5 +108,6 @@ export type OrderUpdateBody = z.infer<typeof orderUpdateRequestSchema>;
 export type OrderInstantBody = z.infer<typeof orderInstantRequestSchema>;
 export type OrderPlaceBody = z.infer<typeof orderPlaceRequestSchema>;
 export type OrderTransitionBody = z.infer<typeof orderTransitionRequestSchema>;
+export type OrderDeleteQuery = z.infer<typeof orderDeleteQuerySchema>;
 export type OrderCancelBody = z.infer<typeof orderCancelRequestSchema>;
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;

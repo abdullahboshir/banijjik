@@ -9,12 +9,12 @@ import { toOrderListItem, toOrderResponse } from "../sales-views.js";
 import type { OrderWriteInput } from "./create-order.use-case.js";
 
 export interface OrderListQuery {
-  readonly locationId?: string;
+  readonly locationId?: string | undefined;
   readonly status?: OrderListFilter["status"];
-  readonly contactId?: string;
-  readonly q?: string;
-  readonly from?: string;
-  readonly to?: string;
+  readonly contactId?: string | undefined;
+  readonly q?: string | undefined;
+  readonly from?: string | undefined;
+  readonly to?: string | undefined;
   readonly page: number;
   readonly limit: number;
 }

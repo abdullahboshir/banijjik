@@ -5,6 +5,7 @@
 export {
   orderCancelRequestSchema,
   orderCreateRequestSchema,
+  orderDeleteQuerySchema,
   orderIdParamsSchema,
   orderInstantRequestSchema,
   orderLineInputSchema,
@@ -14,6 +15,7 @@ export {
   orderUpdateRequestSchema,
   type OrderCancelBody,
   type OrderCreateBody,
+  type OrderDeleteQuery,
   type OrderInstantBody,
   type OrderLineInputBody,
   type OrderListQuery,

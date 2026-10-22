@@ -67,10 +67,10 @@ export interface OrderWriteInput {
 
 export interface OrderBodyBase {
   readonly locationId: string;
-  readonly contactId?: string;
+  readonly contactId?: string | undefined;
   readonly orderDiscount?: ManualDiscount | undefined;
-  readonly note?: string | null;
-  readonly customFields?: Readonly<Record<string, unknown>>;
+  readonly note?: string | null | undefined;
+  readonly customFields?: Readonly<Record<string, unknown>> | undefined;
   readonly approvalToken?: string | undefined;
 }
 

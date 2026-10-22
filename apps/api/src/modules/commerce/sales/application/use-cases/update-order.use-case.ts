@@ -27,14 +27,15 @@ type ClearedContent = Pick<OrderContentChanges, "lines" | "totals" | "hasStockLi
   readonly approval: null;
 };
 
-interface UpdateBody {
+/** `PATCH /orders/{orderId}`: every optional field is sent only when it changes. */
+export interface UpdateBody {
   readonly version: number;
-  readonly contactId?: string | null;
-  readonly lines?: readonly OrderLineInput[];
-  readonly orderDiscount?: ManualDiscount | null;
-  readonly approvalToken?: string;
-  readonly note?: string | null;
-  readonly customFields?: Readonly<Record<string, unknown>>;
+  readonly contactId?: string | null | undefined;
+  readonly lines?: readonly OrderLineInput[] | undefined;
+  readonly orderDiscount?: ManualDiscount | null | undefined;
+  readonly approvalToken?: string | undefined;
+  readonly note?: string | null | undefined;
+  readonly customFields?: Readonly<Record<string, unknown>> | undefined;
 }
 
 interface UpdateInput extends OrderWriteInput {
@@ -109,13 +110,7 @@ export class UpdateOrderUseCase {
 
   private async requote(
     existing: Order,
-    input: {
-      readonly organizationId: Order["organizationId"];
-      readonly body: {
-        readonly lines?: readonly OrderLineInput[];
-        readonly orderDiscount?: ManualDiscount | null;
-      };
-    },
+    input: UpdateInput,
     quoteChanged: boolean,
   ): Promise<PreparedLines | undefined> {
     if (!quoteChanged) return undefined;

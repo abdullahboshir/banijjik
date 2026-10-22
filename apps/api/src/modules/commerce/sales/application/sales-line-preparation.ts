@@ -13,7 +13,7 @@ export interface OrderLineInput {
   readonly variantId: string;
   readonly quantity: number;
   readonly modifierOptionIds: readonly string[];
-  readonly manualDiscount?: ManualDiscount;
+  readonly manualDiscount?: ManualDiscount | undefined;
 }
 
 /** Quote result merged with the catalog facts an order line must freeze. */
