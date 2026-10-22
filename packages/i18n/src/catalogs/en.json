@@ -414,5 +414,16 @@
   "errors.commission_rule_duplicate": "An active commission rule already exists for this person and target.",
   "errors.commission_currency_mismatch": "The fixed amount must be in your business currency.",
   "errors.commission_kind_not_enabled": "That kind of offering is not enabled for your business.",
-  "package.ADDON_COMMISSION.name": "Commission add-on"
+  "package.ADDON_COMMISSION.name": "Commission add-on",
+  "permission.sales.order.read": "View orders",
+  "permission.sales.order.create": "Create orders",
+  "permission.sales.order.update": "Edit orders",
+  "permission.sales.order.confirm": "Confirm orders",
+  "permission.sales.order.cancel": "Cancel orders",
+  "errors.kind_needs_booking": "That offering needs a booking, not an order.",
+  "errors.fulfillment_method_unsupported": "That fulfillment method is not used by this business.",
+  "errors.advance_needs_payments": "An advance needs the payments module.",
+  "errors.order_contact_phone_required": "A pickup order needs a contact with a phone number.",
+  "errors.order_needs_line": "An order needs at least one line.",
+  "errors.packing_disabled": "Packing is off for this business."
 }

@@ -414,5 +414,16 @@
   "errors.commission_rule_duplicate": "এই ব্যক্তি ও লক্ষ্যের জন্য একটি সক্রিয় কমিশন নিয়ম আগেই আছে।",
   "errors.commission_currency_mismatch": "নির্দিষ্ট পরিমাণ আপনার ব্যবসার মুদ্রায় হতে হবে।",
   "errors.commission_kind_not_enabled": "এই ধরনের পণ্য বা সেবা আপনার ব্যবসায় চালু নেই।",
-  "package.ADDON_COMMISSION.name": "কমিশন অ্যাড-অন"
+  "package.ADDON_COMMISSION.name": "কমিশন অ্যাড-অন",
+  "permission.sales.order.read": "অর্ডার দেখা",
+  "permission.sales.order.create": "অর্ডার তৈরি করা",
+  "permission.sales.order.update": "অর্ডার সম্পাদনা করা",
+  "permission.sales.order.confirm": "অর্ডার কনফার্ম করা",
+  "permission.sales.order.cancel": "অর্ডার বাতিল করা",
+  "errors.kind_needs_booking": "এই অফারিংয়ের জন্য অর্ডার নয়, বুকিং দরকার।",
+  "errors.fulfillment_method_unsupported": "এই ব্যবসা সেই ফুলফিলমেন্ট পদ্ধতি নেয় না।",
+  "errors.advance_needs_payments": "অগ্রিম নেওয়ার জন্য পেমেন্ট মডিউল দরকার।",
+  "errors.order_contact_phone_required": "পিকআপ অর্ডারে ফোন নম্বর থাকা কনটাক্ট দরকার।",
+  "errors.order_needs_line": "অর্ডারে কমপক্ষে একটি লাইন থাকতে হবে।",
+  "errors.packing_disabled": "এই ব্যবসায় প্যাকিং চালু নেই।"
 }
