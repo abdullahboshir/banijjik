@@ -38,6 +38,22 @@ type ModuleGrants = Readonly<Record<SystemRoleKey, GrantSpec>>;
  * OWNER is listed for readability; its keys are always computed as the whole catalogue.
  */
 export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
+  enrollment: {
+    [SYSTEM_ROLE_KEY.OWNER]: "ALL",
+    [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
+    [SYSTEM_ROLE_KEY.STAFF]: {
+      only: [
+        PERMISSION_KEY.ENROLLMENT_ENROLLMENT_READ,
+        PERMISSION_KEY.ENROLLMENT_ENROLLMENT_CREATE,
+        PERMISSION_KEY.ENROLLMENT_CHECK_IN_CREATE,
+      ],
+    },
+    [SYSTEM_ROLE_KEY.CASHIER]: {
+      only: [PERMISSION_KEY.ENROLLMENT_ENROLLMENT_READ, PERMISSION_KEY.ENROLLMENT_CHECK_IN_CREATE],
+    },
+    [SYSTEM_ROLE_KEY.VIEWER]: "READ",
+    [SYSTEM_ROLE_KEY.RIDER]: "NONE",
+  },
   organization: {
     [SYSTEM_ROLE_KEY.OWNER]: "ALL",
     [SYSTEM_ROLE_KEY.MANAGER]: {

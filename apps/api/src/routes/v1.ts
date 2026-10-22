@@ -1,3 +1,4 @@
+import { registerEnrollmentModels } from "../modules/commerce/enrollment/index.js";
 import { SYSTEM_REASON, TOKEN_AUDIENCE, type ModuleManifest } from "@banijjik/contracts";
 import { Router, type RequestHandler } from "express";
 import type { AppConfig } from "../config/index.js";
@@ -126,6 +127,7 @@ export function registerModuleModels(): void {
   registerPaymentModels();
   registerCommissionModels();
   registerSalesModels();
+  registerEnrollmentModels();
   registerSettingsModels();
   registerFileModels();
 }
@@ -312,3 +314,5 @@ function buildAccessParts(options: {
     permission: createPermissionMiddleware(permissionGate),
   };
 }
+
+export { buildAccessParts };

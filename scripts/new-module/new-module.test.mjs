@@ -88,13 +88,10 @@ function buildTree() {
           "@banijjik/contracts/directory": [directoryEntry],
           "@banijjik/contracts/booking": [bookingEntry],
           "@banijjik/contracts/credit": [creditEntry],
-<<<<<<< HEAD
           "@banijjik/contracts/payment": [paymentEntry],
           "@banijjik/contracts/commission": [commissionEntry],
           "@banijjik/contracts/sales": [salesEntry],
-=======
           "@banijjik/contracts/enrollment": [enrollmentEntry],
->>>>>>> d67d8256 (feat(enrollment): define contracts and request validation)
           "@banijjik/contracts": [contractsEntry],
           "@banijjik/validation": [VALIDATION_ENTRY],
           "@banijjik/ids": [IDS_ENTRY],
@@ -105,11 +102,7 @@ function buildTree() {
   );
   writeFileSync(
     join(treeRoot, "vitest.config.mjs"),
-<<<<<<< HEAD
-    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts/booking": ${JSON.stringify(bookingEntry)}, "@banijjik/contracts/credit": ${JSON.stringify(creditEntry)}, "@banijjik/contracts/payment": ${JSON.stringify(paymentEntry)}, "@banijjik/contracts/commission": ${JSON.stringify(commissionEntry)}, "@banijjik/contracts/sales": ${JSON.stringify(salesEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
-=======
-    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts/booking": ${JSON.stringify(bookingEntry)}, "@banijjik/contracts/credit": ${JSON.stringify(creditEntry)}, "@banijjik/contracts/enrollment": ${JSON.stringify(enrollmentEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
->>>>>>> d67d8256 (feat(enrollment): define contracts and request validation)
+    `export default { resolve: { alias: { "@banijjik/contracts/file": ${JSON.stringify(fileEntry)}, "@banijjik/contracts/contact": ${JSON.stringify(contactEntry)}, "@banijjik/contracts/catalog": ${JSON.stringify(catalogEntry)}, "@banijjik/contracts/iam": ${JSON.stringify(iamEntry)}, "@banijjik/contracts/accounting": ${JSON.stringify(accountingEntry)}, "@banijjik/contracts/pricing": ${JSON.stringify(pricingEntry)}, "@banijjik/contracts/directory": ${JSON.stringify(directoryEntry)}, "@banijjik/contracts/booking": ${JSON.stringify(bookingEntry)}, "@banijjik/contracts/credit": ${JSON.stringify(creditEntry)}, "@banijjik/contracts/payment": ${JSON.stringify(paymentEntry)}, "@banijjik/contracts/commission": ${JSON.stringify(commissionEntry)}, "@banijjik/contracts/sales": ${JSON.stringify(salesEntry)}, "@banijjik/contracts/enrollment": ${JSON.stringify(enrollmentEntry)}, "@banijjik/contracts": ${JSON.stringify(contractsEntry)} } } };\n`,
   );
 }
 

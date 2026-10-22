@@ -1503,5 +1503,13 @@
   "bookings.detail.depositRequired": "Deposit required",
   "payments.requestType.BOOKING": "Booking",
   "payments.requestType.ORDER": "Order",
-  "payments.requestType.ENROLLMENT": "Enrollment"
+  "payments.requestType.ENROLLMENT": "Enrollment",
+  "menu.enrollment.enrollments": "Enrollments",
+  "menu.enrollment.checkIns": "Check-ins",
+  "setting.enrollment.graceDays": "Grace days",
+  "setting.enrollment.renewalReminderDays": "Days before renewal reminder",
+  "setting.enrollment.requirePaymentToActivate": "Require payment to activate",
+  "setting.enrollment.blockCheckInWhenOverdue": "Block check-in when overdue",
+  "setting.enrollment.lockPriceOnRenewal": "Keep the original renewal price",
+  "setting.enrollment.refundPolicy": "Enrollment refund policy"
 }

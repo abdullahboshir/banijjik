@@ -449,5 +449,19 @@
   "errors.payment_original_not_found": "Original payment not found.",
   "errors.store_credit_contact_required": "Contact is required for store credit.",
   "errors.event_handler_invalid_stream": "The event handler declares an invalid stream.",
-  "errors.event_handler_stream_mismatch": "The event stream does not match the handler declaration."
+  "errors.event_handler_stream_mismatch": "The event stream does not match the handler declaration.",
+  "enrollment.errors.transition": "This enrollment action is not allowed.",
+  "enrollment.errors.start_date": "Choose a valid plan start date.",
+  "enrollment.errors.freeze_limit": "The yearly freeze limit has been reached.",
+  "enrollment.errors.session_limit": "Approval is required for another session.",
+  "enrollment.errors.contact": "Choose an active contact in this organization.",
+  "enrollment.errors.plan": "Choose an available plan and variant.",
+  "enrollment.errors.payment_required": "Payment is required before activation.",
+  "enrollment.errors.not_due": "The current period has not ended.",
+  "permission.enrollment.enrollment.read": "View enrollments",
+  "permission.enrollment.enrollment.create": "Create enrollments",
+  "permission.enrollment.enrollment.update": "Update enrollments",
+  "permission.enrollment.enrollment.renew": "Renew enrollments",
+  "permission.enrollment.enrollment.cancel": "Cancel enrollments",
+  "permission.enrollment.checkIn.create": "Record check-ins"
 }

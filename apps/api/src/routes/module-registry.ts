@@ -1,3 +1,4 @@
+import { enrollmentManifest } from "../modules/commerce/enrollment/index.js";
 import type { ModuleManifest } from "@banijjik/contracts";
 import { createModuleRegistry, type ModuleRegistry } from "../kernel/modules/index.js";
 import { auditManifest } from "../modules/core/audit/index.js";
@@ -53,6 +54,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   paymentManifest,
   commissionManifest,
   salesManifest,
+  enrollmentManifest,
 ];
 
 /**

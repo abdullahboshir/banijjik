@@ -139,6 +139,8 @@ function quoterOf(input: BookingRouterInput): BookingTenantDependencies["quoter"
   };
 }
 
+export { quoterOf as buildRequestQuoter };
+
 /** The inline `{ create: { name, phone } }` of a booking body, served by the contact module. */
 function contactCreatorOf(input: BookingRouterInput): BookingTenantDependencies["contacts"] {
   const creator = buildInlineContactCreator({ audit: input.audit, clock: input.clock });

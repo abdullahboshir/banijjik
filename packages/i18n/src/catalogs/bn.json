@@ -449,5 +449,19 @@
   "errors.payment_original_not_found": "মূল পেমেন্টটি খুঁজে পাওয়া যায়নি।",
   "errors.store_credit_contact_required": "স্টোর ক্রেডিটের জন্য গ্রাহক থাকা আবশ্যক।",
   "errors.event_handler_invalid_stream": "ইভেন্ট হ্যান্ডলারের স্ট্রিম ঘোষণা সঠিক নয়।",
-  "errors.event_handler_stream_mismatch": "ইভেন্ট স্ট্রিম হ্যান্ডলারের ঘোষণার সাথে মেলে না।"
+  "errors.event_handler_stream_mismatch": "ইভেন্ট স্ট্রিম হ্যান্ডলারের ঘোষণার সাথে মেলে না।",
+  "enrollment.errors.transition": "এই ভর্তি কার্যক্রমটি অনুমোদিত নয়।",
+  "enrollment.errors.start_date": "পরিকল্পনার সঠিক শুরুর তারিখ দিন।",
+  "enrollment.errors.freeze_limit": "বার্ষিক স্থগিত রাখার সীমা শেষ হয়েছে।",
+  "enrollment.errors.session_limit": "আরেকটি সেশনের জন্য অনুমোদন প্রয়োজন।",
+  "enrollment.errors.contact": "এই প্রতিষ্ঠানের সক্রিয় পরিচিতি নির্বাচন করুন।",
+  "enrollment.errors.plan": "উপলব্ধ পরিকল্পনা ও ধরন নির্বাচন করুন।",
+  "enrollment.errors.payment_required": "সক্রিয় করার আগে অর্থ পরিশোধ প্রয়োজন।",
+  "enrollment.errors.not_due": "বর্তমান মেয়াদ শেষ হয়নি।",
+  "permission.enrollment.enrollment.read": "ভর্তি দেখুন",
+  "permission.enrollment.enrollment.create": "ভর্তি তৈরি করুন",
+  "permission.enrollment.enrollment.update": "ভর্তি হালনাগাদ করুন",
+  "permission.enrollment.enrollment.renew": "ভর্তি নবায়ন করুন",
+  "permission.enrollment.enrollment.cancel": "ভর্তি বাতিল করুন",
+  "permission.enrollment.checkIn.create": "উপস্থিতি নথিভুক্ত করুন"
 }

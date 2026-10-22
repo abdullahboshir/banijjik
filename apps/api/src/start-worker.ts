@@ -1,3 +1,4 @@
+import { registerEnrollmentWorkerJobs } from "./routes/enrollment-worker-jobs.js";
 import type { Logger } from "pino";
 import type { AppConfig } from "./config/index.js";
 import { createCloseDatabasesTask, type DatabaseConnections } from "./kernel/db/index.js";
@@ -73,6 +74,7 @@ export function startWorker(
       manifests: registry.all(),
     }),
   );
+  registerEnrollmentWorkerJobs({ clock: systemClock, orgConfig, registry });
   const effectiveness = buildEventModuleEffectiveness(systemClock);
   const scheduledJobs = startScheduledJobs({ redis, effectiveness, clock: systemClock });
   const processing = startEventProcessing({

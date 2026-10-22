@@ -20,6 +20,8 @@ import { registerScheduledJob } from "../../../kernel/jobs/index.js";
 import { buildBookingTenantRouter } from "./presentation/booking-tenant.router.js";
 
 export { bookingManifest } from "./module.manifest.js";
+export { MongoBookingRepository } from "./infrastructure/mongo-booking.repositories.js";
+export { businessDateOf, localDateTimeToUtc } from "./domain/timezone.js";
 export { MongoResourceExclusiveHolds } from "./infrastructure/mongo-resource-exclusive-holds.js";
 export type { ResourceExclusiveHoldPort } from "./application/ports/resource-exclusive-holds.js";
 export { registerBookingModels } from "./infrastructure/register-booking-models.js";

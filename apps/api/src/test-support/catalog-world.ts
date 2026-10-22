@@ -1,12 +1,5 @@
-import {
-  ALL_LOCATIONS,
-  MODULE_CLASS,
-  MODULE_KEY,
-  OFFERING_KIND,
-  type ModuleManifest,
-  type SystemRoleKey,
-} from "@banijjik/contracts";
-import { defineModule } from "../kernel/modules/index.js";
+import { ALL_LOCATIONS, type SystemRoleKey } from "@banijjik/contracts";
+
 import { startIamApi, type IamApiHarness } from "./iam-api-harness.js";
 import { addMemberWithAssignments, findSystemRoleId } from "./rbac-world.js";
 import {
@@ -15,49 +8,14 @@ import {
   type TwoOrganizations,
 } from "./two-organizations.js";
 
-/** Everything a probe module leaves empty: no permissions, menu, settings, events or limits. */
-const EMPTY_PARTS = {
-  dependsOn: [],
-  requiresAnyKind: [],
-  permissions: [],
-  menu: [],
-  settings: [],
-  customFieldEntities: [],
-  botTools: [],
-  storefrontSections: [],
-  events: { emits: [], consumes: [] },
-  limitKeys: [],
-  sequenceKeys: [],
-  routes: {},
-  tenantCanDisable: false,
-  moduleClass: MODULE_CLASS.CORE,
-} as const;
-
-/**
- * Stand-in for enrollment (card 3.7). Booking's real module provides SERVICE after card 3.6;
- * catalog tests still need PLAN until enrollment lands.
- */
-export const ENROLLMENT_PROBE = defineModule({
-  ...EMPTY_PARTS,
-  key: MODULE_KEY.ENROLLMENT,
-  path: "commerce/enrollment",
-  providesKinds: [OFFERING_KIND.PLAN],
-});
-
-export const CATALOG_PROBES: readonly ModuleManifest[] = [ENROLLMENT_PROBE];
-
-/**
- * The API with the enrollment kind provider registered. Booking is already in MODULE_MANIFESTS.
- * An empty `tenantRouters` list is what makes the harness build its own router, so the extra
- * manifests take effect.
- */
+/** Catalog tests now use the production SERVICE and PLAN providers. */
 export function startCatalogApi(
   options: Omit<
     Parameters<typeof startIamApi>[0] & object,
     "extraManifests" | "tenantRouters"
   > = {},
 ): Promise<IamApiHarness> {
-  return startIamApi({ ...options, tenantRouters: [], extraManifests: CATALOG_PROBES });
+  return startIamApi({ ...options, tenantRouters: [], extraManifests: [] });
 }
 
 export function offeringsPath(organizationId: string, suffix = ""): string {

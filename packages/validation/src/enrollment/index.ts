@@ -19,7 +19,7 @@ export type EnrollmentCreateBody = z.infer<typeof enrollmentCreateRequestSchema>
 export const enrollmentVersionRequestSchema = z.strictObject({
   version: z.number().int().positive(),
 });
-export const enrollmentIdParamsSchema = z.strictObject({ enrollmentId: uuidV7Schema });
+export const enrollmentIdParamsSchema = z.object({ enrollmentId: uuidV7Schema });
 export const enrollmentListQuerySchema = paginationQuerySchema.extend({
   locationId: uuidV7Schema.optional(),
   status: z.enum(ENROLLMENT_STATUS).optional(),

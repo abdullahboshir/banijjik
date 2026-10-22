@@ -1503,5 +1503,13 @@
   "bookings.detail.depositRequired": "অগ্রিম আবশ্যক",
   "payments.requestType.BOOKING": "বুকিং",
   "payments.requestType.ORDER": "অর্ডার",
-  "payments.requestType.ENROLLMENT": "ভর্তি"
+  "payments.requestType.ENROLLMENT": "ভর্তি",
+  "menu.enrollment.enrollments": "ভর্তি",
+  "menu.enrollment.checkIns": "উপস্থিতি",
+  "setting.enrollment.graceDays": "অতিরিক্ত সময় (দিন)",
+  "setting.enrollment.renewalReminderDays": "নবায়নের কত দিন আগে মনে করাবে",
+  "setting.enrollment.requirePaymentToActivate": "সক্রিয় করতে অর্থ পরিশোধ প্রয়োজন",
+  "setting.enrollment.blockCheckInWhenOverdue": "বকেয়া হলে উপস্থিতি বন্ধ রাখুন",
+  "setting.enrollment.lockPriceOnRenewal": "নবায়নে মূল মূল্য রাখুন",
+  "setting.enrollment.refundPolicy": "ভর্তির অর্থ ফেরতের নীতি"
 }
