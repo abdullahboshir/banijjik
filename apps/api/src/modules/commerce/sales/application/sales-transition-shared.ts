@@ -16,6 +16,10 @@ export function formatOrderNumber(value: number): string {
   return String(value).padStart(6, "0");
 }
 
+export function formatInvoiceNumber(value: number): string {
+  return String(value).padStart(6, "0");
+}
+
 export function orderOrderingKey(orderId: OrderId): string {
   return `order:${orderId}`;
 }

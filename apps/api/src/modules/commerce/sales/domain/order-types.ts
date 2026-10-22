@@ -1,4 +1,5 @@
 import type { OfferingKind } from "@banijjik/contracts";
+import type { StockComponent } from "@banijjik/contracts/catalog";
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import type {
   Money,
@@ -32,6 +33,8 @@ export interface OrderLineProps {
   readonly returnedQuantity: number;
   readonly promotionIds: readonly string[];
   readonly taxClassKey: string | null;
+  /** Internal like `manualDiscount`: what the line draws from stock, for the commit-time cost. */
+  readonly costComponents: readonly StockComponent[];
   readonly manualDiscount: ManualDiscount | null;
 }
 

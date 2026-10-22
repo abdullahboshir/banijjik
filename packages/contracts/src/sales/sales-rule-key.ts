@@ -4,6 +4,8 @@ export const SALES_RULE_KEY = {
   FULFILLMENT_METHOD_UNSUPPORTED: "FULFILLMENT_METHOD_UNSUPPORTED",
   ADVANCE_NEEDS_PAYMENTS: "ADVANCE_NEEDS_PAYMENTS",
   CONTACT_PHONE_REQUIRED: "CONTACT_PHONE_REQUIRED",
+  /** Placing an order without any line (plan 3.5a transition table: place needs ≥ 1 line). */
+  ORDER_NEEDS_LINE: "ORDER_NEEDS_LINE",
   /** `POST …/pack` when `sales.usePacking` is off (plan 3.5a transition table). */
   PACKING_DISABLED: "PACKING_DISABLED",
 } as const;
@@ -16,5 +18,6 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.fulfillment_method_unsupported",
   "errors.advance_needs_payments",
   "errors.order_contact_phone_required",
+  "errors.order_needs_line",
   "errors.packing_disabled",
 ];

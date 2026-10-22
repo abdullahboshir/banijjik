@@ -52,3 +52,13 @@ export function contactPhoneRequired(contactId: string): DomainRuleError {
     contactId,
   });
 }
+
+/** Placing an order with no line at all (a draft may be empty; a placed order may not). */
+export function orderNeedsLine(): DomainRuleError {
+  return salesRuleError(SALES_RULE_KEY.ORDER_NEEDS_LINE);
+}
+
+/** Packing is a workflow step organizations turn on or off with `sales.usePacking`. */
+export function packingDisabled(): DomainRuleError {
+  return salesRuleError(SALES_RULE_KEY.PACKING_DISABLED);
+}

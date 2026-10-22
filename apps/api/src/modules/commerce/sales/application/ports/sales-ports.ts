@@ -1,10 +1,11 @@
-import type { OfferingKind } from "@banijjik/contracts";
+import type { CurrencyCode, OfferingKind } from "@banijjik/contracts";
 import type { StockComponent } from "@banijjik/contracts/catalog";
 import type {
   OrderLineModifierSnapshot,
   OrderStatus,
   SalesAdvanceRequired,
 } from "@banijjik/contracts/sales";
+import type { Money } from "@banijjik/contracts/pricing";
 import type { ContactId, OfferingId, OrderId, OrganizationId } from "@banijjik/ids";
 import type { PriceQuoter } from "../../../pricing/index.js";
 import type { StockLedger } from "../../../inventory/index.js";
@@ -19,11 +20,13 @@ export type SalesApprovalVerifier = Pick<ApprovalVerifier, "consume">;
 export type StockLedgerReserveInput = Parameters<StockLedger["reserve"]>[0];
 
 export interface OrderListFilter {
-  readonly allowedLocationIds: readonly string[] | "ALL";
-  readonly locationId?: string;
+  /** The locations the caller reaches, narrowed by the query; empty means an empty page. */
+  readonly locationIds: readonly string[] | "ALL";
   readonly status?: OrderStatus;
   readonly contactIds?: readonly string[];
   readonly orderNumber?: string;
+  /** `q`: an exact order number or one of the found contacts, as an `$or` of indexed branches. */
+  readonly search?: { readonly orderNumber: string; readonly contactIds: readonly string[] };
   readonly from?: Date;
   readonly to?: Date;
   readonly page: number;
@@ -92,7 +95,6 @@ export interface SalesCatalogLine {
   readonly stockComponents: readonly StockComponent[];
   readonly taxClassKey: string | null;
 }
-
 export interface SalesCatalogLineRequest {
   readonly offeringId: OfferingId;
   readonly variantId: string;
@@ -108,13 +110,26 @@ export interface SalesCatalogReader {
   }): Promise<readonly SalesCatalogLine[]>;
 }
 
+/** The inventory average cost of one sales unit per ordered variant (ADR-125). */
+export interface SalesUnitCostReader {
+  read(input: {
+    readonly organizationId: OrganizationId;
+    readonly locationId: string;
+    readonly lines: readonly {
+      readonly offeringId: string;
+      readonly variantId: string;
+      readonly stockComponents: readonly StockComponent[];
+    }[];
+  }): Promise<ReadonlyMap<string, Money | null>>;
+}
+
 export interface SalesTimeZoneReader {
   read(organizationId: OrganizationId): Promise<string>;
 }
 
 /** The organization currency, for the zero delivery charge and the totals of an empty draft. */
 export interface SalesCurrencyReader {
-  read(organizationId: OrganizationId): Promise<string>;
+  read(organizationId: OrganizationId): Promise<CurrencyCode>;
 }
 
 export interface SalesOwnerReader {
