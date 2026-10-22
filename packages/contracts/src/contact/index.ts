@@ -29,6 +29,7 @@ export {
   type ContactResponse,
   type ContactSource,
   type ContactStatus,
+  type ContactSummary,
   type ContactType,
   type ContactUpdateRequest,
   type CustomerAccountBlockRequest,

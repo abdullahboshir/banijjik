@@ -92,6 +92,13 @@ export const PERMISSION_KEY = {
   BOOKKEEPING_JOURNAL_READ: "bookkeeping.journal.read",
   BOOKKEEPING_JOURNAL_CREATE_MANUAL: "bookkeeping.journal.createManual",
   BOOKKEEPING_STATEMENT_READ: "bookkeeping.statement.read",
+  PAYMENT_PAYMENT_READ: "payment.payment.read",
+  PAYMENT_PAYMENT_RECEIVE: "payment.payment.receive",
+  PAYMENT_PAYMENT_REFUND: "payment.payment.refund",
+  PAYMENT_PAYMENT_REVERSE: "payment.payment.reverse",
+  PAYMENT_DUE_READ: "payment.due.read",
+  PAYMENT_STORE_CREDIT_READ: "payment.storeCredit.read",
+  PAYMENT_STORE_CREDIT_ADJUST: "payment.storeCredit.adjust",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

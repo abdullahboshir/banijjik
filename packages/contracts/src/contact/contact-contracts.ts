@@ -63,6 +63,14 @@ export interface ContactListItem {
   updatedAt: string;
 }
 
+export interface ContactSummary {
+  readonly requestCount: number;
+  readonly lifetimeValueMinor: number;
+  readonly lastActivityAt: string | null;
+  readonly codReturnCount: number;
+  readonly storeCreditBalanceMinor: number;
+}
+
 export interface ContactResponse {
   contactId: string;
   contactType: ContactType;
@@ -77,6 +85,7 @@ export interface ContactResponse {
   homeLocationId: string | null;
   /** Sensitive values only with `contact.contact.readSensitive` at every location (ADR-107). */
   customFields: Record<string, unknown>;
+  summary?: ContactSummary;
   source: ContactSource;
   status: ContactStatus;
   /** Set once the contact's personal data was erased (anonymize); null otherwise. */
