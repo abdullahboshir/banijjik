@@ -99,6 +99,7 @@ export type {
   InventoryComponentsPort,
 } from "./application/ports/inventory-ports.js";
 export { MongoOfferingRepository } from "./infrastructure/mongo-offering.repository.js";
+export { MongoCategoryRepository } from "./infrastructure/mongo-category.repository.js";
 export { MongoOfferingLocationRepository } from "./infrastructure/mongo-record.repositories.js";
 export { isActiveVariant } from "./domain/variant.js";
 

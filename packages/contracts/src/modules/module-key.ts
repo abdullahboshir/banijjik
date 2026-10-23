@@ -46,6 +46,7 @@ export const MODULE_KEY = {
   ACADEMIC: "academic",
   CLINICAL: "clinical",
   KITCHEN_DISPLAY: "kitchen-display",
+  COMMISSION: "commission",
 } as const;
 
 export type ModuleKey = (typeof MODULE_KEY)[keyof typeof MODULE_KEY];

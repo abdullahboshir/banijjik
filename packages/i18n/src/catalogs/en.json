@@ -346,7 +346,6 @@
   "permission.credit.account.adjust": "Add or take back customer credits",
   "permission.credit.purchase.read": "View credit pack purchases",
   "permission.credit.purchase.verify": "Verify or reject credit pack purchases",
-  "menu.directory.queue": "Listing queue",
   "menu.directory.queue": "Review queue",
   "menu.directory.listings": "All listings",
   "errors.directory_listing_not_found": "That listing was not found.",
@@ -405,5 +404,12 @@
   "permission.payment.payment.reverse": "Reverse payments",
   "permission.payment.due.read": "View dues",
   "permission.payment.storeCredit.read": "View store credit",
-  "permission.payment.storeCredit.adjust": "Adjust store credit"
+  "permission.payment.storeCredit.adjust": "Adjust store credit",
+  "permission.commission.rule.read": "View commission rules",
+  "permission.commission.rule.update": "Create, change and archive commission rules",
+  "permission.commission.entry.read": "View staff commission of all members",
+  "permission.commission.entry.readOwn": "View my own commission",
+  "errors.commission_rule_duplicate": "An active commission rule already exists for this person and target.",
+  "errors.commission_currency_mismatch": "The fixed amount must be in your business currency.",
+  "errors.commission_kind_not_enabled": "That kind of offering is not enabled for your business."
 }

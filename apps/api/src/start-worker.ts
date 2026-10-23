@@ -11,6 +11,7 @@ import { buildBookingDepositCheckAdapter } from "./routes/booking-deposit-adapte
 import { buildAuditRecorder } from "./modules/core/audit/index.js";
 import { startScheduledJobs } from "./kernel/jobs/index.js";
 import { registerAccountingAndExpenseHandlers } from "./routes/accounting-event-handlers.js";
+import { registerCommissionHandlers } from "./routes/commission-adapters.js";
 import { registerContactHandlers } from "./routes/contact-event-handlers.js";
 import { buildEventModuleEffectiveness } from "./routes/module-effectiveness.js";
 import { buildModuleRegistry } from "./routes/module-registry.js";
@@ -46,6 +47,7 @@ export function startWorker(
     ...buildResolvedConfigSources(registry),
     templates: buildIndustryTemplateReader(systemClock),
   });
+  registerCommissionHandlers(systemClock, orgConfig);
   registerBookingScheduledJobs({
     clock: systemClock,
     orgConfig,

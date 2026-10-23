@@ -25,6 +25,10 @@ import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type
 import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
 import type { ListingEventPayload } from "../directory/directory-contracts.js";
 import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
+import {
+  COMMISSION_EVENT_TYPE,
+  type CommissionEntryRecordedPayload,
+} from "../commission/commission-event-type.js";
 import type {
   CreditEntryCreatedPayload,
   CreditPurchaseEventPayload,
@@ -165,4 +169,5 @@ export interface EventPayloadMap {
   readonly [CREDIT_EVENT_TYPE.PURCHASE_VERIFIED]: CreditPurchaseEventPayload;
   readonly [CREDIT_EVENT_TYPE.PURCHASE_REJECTED]: CreditPurchaseEventPayload;
   readonly [CREDIT_EVENT_TYPE.PURCHASE_CANCELLED]: CreditPurchaseEventPayload;
+  readonly [COMMISSION_EVENT_TYPE.ENTRY_RECORDED]: CommissionEntryRecordedPayload;
 }

@@ -35,5 +35,8 @@ export type {
   StockMovementId,
   StockReservationId,
   CreditPurchaseId,
+  CommissionRuleId,
+  CommissionEntryId,
+  CommissionPayoutId,
   UserId,
 } from "./branded-ids.js";

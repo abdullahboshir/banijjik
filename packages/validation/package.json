@@ -37,6 +37,10 @@
     "./payment": {
       "types": "./dist/payment/index.d.ts",
       "default": "./dist/payment/index.js"
+    },
+    "./commission": {
+      "types": "./dist/commission/index.d.ts",
+      "default": "./dist/commission/index.js"
     }
   },
   "files": [

@@ -346,7 +346,6 @@
   "permission.credit.account.adjust": "গ্রাহকের ক্রেডিট যোগ বা বাদ দেওয়া",
   "permission.credit.purchase.read": "ক্রেডিট প্যাক ক্রয় দেখা",
   "permission.credit.purchase.verify": "ক্রেডিট প্যাক ক্রয় যাচাই বা প্রত্যাখ্যান",
-  "menu.directory.queue": "তালিকার সারি",
   "menu.directory.queue": "রিভিউ সারি",
   "menu.directory.listings": "সব তালিকা",
   "errors.directory_listing_not_found": "সেই তালিকা পাওয়া যায়নি।",
@@ -405,5 +404,12 @@
   "permission.payment.payment.reverse": "পেমেন্ট রিভার্স করা",
   "permission.payment.due.read": "বকেয়া দেখা",
   "permission.payment.storeCredit.read": "স্টোর ক্রেডিট দেখা",
-  "permission.payment.storeCredit.adjust": "স্টোর ক্রেডিট সমন্বয় করা"
+  "permission.payment.storeCredit.adjust": "স্টোর ক্রেডিট সমন্বয় করা",
+  "permission.commission.rule.read": "কমিশনের নিয়ম দেখা",
+  "permission.commission.rule.update": "কমিশনের নিয়ম তৈরি, পরিবর্তন ও আর্কাইভ করা",
+  "permission.commission.entry.read": "সব সদস্যের স্টাফ কমিশন দেখা",
+  "permission.commission.entry.readOwn": "নিজের কমিশন দেখা",
+  "errors.commission_rule_duplicate": "এই ব্যক্তি ও লক্ষ্যের জন্য একটি সক্রিয় কমিশন নিয়ম আগেই আছে।",
+  "errors.commission_currency_mismatch": "নির্দিষ্ট পরিমাণ আপনার ব্যবসার মুদ্রায় হতে হবে।",
+  "errors.commission_kind_not_enabled": "এই ধরনের পণ্য বা সেবা আপনার ব্যবসায় চালু নেই।"
 }

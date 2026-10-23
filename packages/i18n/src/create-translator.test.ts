@@ -11,6 +11,7 @@ import {
 } from "@banijjik/contracts";
 import { CATALOG_MESSAGE_KEYS } from "@banijjik/contracts/catalog";
 import { BOOKING_MESSAGE_KEYS } from "@banijjik/contracts/booking";
+import { COMMISSION_API_MESSAGE_KEY_LIST } from "@banijjik/contracts/commission";
 import { CREDIT_API_MESSAGE_KEY_LIST } from "@banijjik/contracts/credit";
 import { PRICING_MESSAGE_KEYS } from "@banijjik/contracts/pricing";
 import { FILE_MESSAGE_KEYS } from "@banijjik/contracts/file";
@@ -54,6 +55,7 @@ describe("bundled catalogs", () => {
       ...PRICING_MESSAGE_KEYS,
       ...BOOKING_MESSAGE_KEYS,
       ...CREDIT_API_MESSAGE_KEY_LIST,
+      ...COMMISSION_API_MESSAGE_KEY_LIST,
     ];
     for (const locale of SUPPORTED_LOCALES) {
       for (const key of emittedKeys) {

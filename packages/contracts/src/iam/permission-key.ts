@@ -100,6 +100,10 @@ export const PERMISSION_KEY = {
   PAYMENT_DUE_READ: "payment.due.read",
   PAYMENT_STORE_CREDIT_READ: "payment.storeCredit.read",
   PAYMENT_STORE_CREDIT_ADJUST: "payment.storeCredit.adjust",
+  COMMISSION_RULE_READ: "commission.rule.read",
+  COMMISSION_RULE_UPDATE: "commission.rule.update",
+  COMMISSION_ENTRY_READ: "commission.entry.read",
+  COMMISSION_ENTRY_READ_OWN: "commission.entry.readOwn",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

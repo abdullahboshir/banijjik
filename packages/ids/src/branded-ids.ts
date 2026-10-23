@@ -36,6 +36,9 @@ export type InventoryItemId = Id<"InventoryItem">;
 export type StockMovementId = Id<"StockMovement">;
 export type StockReservationId = Id<"StockReservation">;
 export type CreditPurchaseId = Id<"CreditPurchase">;
+export type CommissionRuleId = Id<"CommissionRule">;
+export type CommissionEntryId = Id<"CommissionEntry">;
+export type CommissionPayoutId = Id<"CommissionPayout">;
 
 export class InvalidIdError extends Error {
   constructor() {

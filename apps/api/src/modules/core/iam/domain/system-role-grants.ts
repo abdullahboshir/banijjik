@@ -217,6 +217,15 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
     [SYSTEM_ROLE_KEY.RIDER]: "NONE",
     [SYSTEM_ROLE_KEY.VIEWER]: "READ",
   },
+  commission: {
+    [SYSTEM_ROLE_KEY.OWNER]: "ALL",
+    [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
+    // Staff-like roles see their own commission only, never another member's.
+    [SYSTEM_ROLE_KEY.CASHIER]: { only: [PERMISSION_KEY.COMMISSION_ENTRY_READ_OWN] },
+    [SYSTEM_ROLE_KEY.STAFF]: { only: [PERMISSION_KEY.COMMISSION_ENTRY_READ_OWN] },
+    [SYSTEM_ROLE_KEY.RIDER]: { only: [PERMISSION_KEY.COMMISSION_ENTRY_READ_OWN] },
+    [SYSTEM_ROLE_KEY.VIEWER]: "NONE",
+  },
   settings: {
     [SYSTEM_ROLE_KEY.OWNER]: "ALL",
     [SYSTEM_ROLE_KEY.MANAGER]: "ALL",

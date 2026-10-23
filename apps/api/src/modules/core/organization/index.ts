@@ -14,6 +14,7 @@ import {
 import type { ActorProfileReader, SystemRoleProvisioner } from "./application/ports/iam-ports.js";
 import type { OrganizationContextRunner } from "./application/ports/organization-context-runner.js";
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
+import type { MemberNameReader } from "./application/ports/member-name-reader.js";
 import type { OrganizationCurrencyReader } from "./application/ports/organization-currency-reader.js";
 import type { OrganizationTimezoneReader } from "./application/ports/organization-timezone-reader.js";
 import type { StorefrontOrganizationReader } from "./application/ports/storefront-organization-reader.js";
@@ -43,6 +44,7 @@ import { MongoOrganizationCurrencyReader } from "./infrastructure/mongo-organiza
 import { MongoOrganizationTimezoneReader } from "./infrastructure/mongo-organization-timezone.reader.js";
 import { MongoMemberNumberSequence } from "./infrastructure/mongo-member-number-sequence.js";
 import { MongoMemberAccessReader } from "./infrastructure/mongo-member-access-reader.js";
+import { MongoMemberNameReader } from "./infrastructure/mongo-member-name-reader.js";
 import { MongoMembershipDirectory } from "./infrastructure/mongo-membership-directory.js";
 import { MongoMemberRepository } from "./infrastructure/mongo-member.repository.js";
 import { MongoOrganizationRepository } from "./infrastructure/mongo-organization.repository.js";
@@ -134,6 +136,13 @@ export function buildMembershipDirectory(): MembershipDirectory {
 /** Members of the active organization for iam role checks; runs in the organization context. */
 export function buildMemberAccessReader(): MemberAccessReader {
   return new MongoMemberAccessReader();
+}
+
+export type { MemberNameReader } from "./application/ports/member-name-reader.js";
+
+/** Display names of members of the active organization, for modules that show who a record is about (card 3.11). */
+export function buildMemberNameReader(): MemberNameReader {
+  return new MongoMemberNameReader();
 }
 
 /** Approval PIN fields on Member for iam (card 3.4b). */

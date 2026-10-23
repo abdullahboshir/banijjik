@@ -3,6 +3,7 @@ import { BOOKING_EVENT_TYPE } from "../booking/booking-event-type.js";
 import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
 import { INVENTORY_EVENT_TYPE } from "../inventory/inventory-event-type.js";
 import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
+import { COMMISSION_EVENT_TYPE } from "../commission/commission-event-type.js";
 import { CREDIT_EVENT_TYPE } from "../credit/credit-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
@@ -28,6 +29,7 @@ export const EVENT_TYPE = Object.freeze({
   ...INVENTORY_EVENT_TYPE,
   ...DIRECTORY_EVENT_TYPE,
   ...CREDIT_EVENT_TYPE,
+  ...COMMISSION_EVENT_TYPE,
 } as const);
 
 export type EventType = (typeof EVENT_TYPE)[keyof typeof EVENT_TYPE];
