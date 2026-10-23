@@ -110,6 +110,7 @@ describe("event session API", () => {
           organizationId: world.organizationA,
           locationId: world.locationA1,
           offeringId: offering.offeringId,
+          ...(mode === "VARIANT_OFF" ? { variantId: body.variantId } : {}),
           isAvailable: false,
         });
       } else {

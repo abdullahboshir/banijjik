@@ -13,7 +13,7 @@ export const eventSessionCreateSchema = z
     capacity: z.number().int().positive(),
     resourceIds: z.array(uuidV7Schema).default([]),
   })
-  .refine((body) => body.startsAt < body.endsAt, { path: ["endsAt"] });
+  .refine((body) => Date.parse(body.startsAt) < Date.parse(body.endsAt), { path: ["endsAt"] });
 export const eventSessionUpdateSchema = z.strictObject({
   version: z.number().int().positive(),
   startsAt: z.iso.datetime().optional(),
