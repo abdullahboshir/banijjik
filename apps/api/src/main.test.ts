@@ -134,7 +134,7 @@ describe("main entry", () => {
         await second.waitForText('"event":"worker.started"');
         const afterSecond = await packages().find({}).sort({ packageKey: 1 }).toArray();
 
-        expect(afterFirst).toHaveLength(17);
+        expect(afterFirst).toHaveLength(18);
         expect(afterSecond).toEqual(afterFirst);
         expect(second.output()).toContain('"createdCount":0');
       } finally {

@@ -205,6 +205,7 @@
   "platform.module.academic": "Academic",
   "platform.module.clinical": "Clinical",
   "platform.module.kitchen-display": "Kitchen display",
+  "platform.module.commission": "Staff commission",
   "platform.operators.title": "Operators",
   "platform.operators.empty": "No operators yet.",
   "platform.operators.you": "You",
