@@ -425,5 +425,20 @@
   "errors.advance_needs_payments": "An advance needs the payments module.",
   "errors.order_contact_phone_required": "A pickup order needs a contact with a phone number.",
   "errors.order_needs_line": "An order needs at least one line.",
-  "errors.packing_disabled": "Packing is off for this business."
+  "errors.packing_disabled": "Packing is off for this business.",
+  "errors.payment_reference_taken": "This payment reference has already been used.",
+  "errors.deposit_required": "Advance deposit is required to confirm booking.",
+  "errors.payment_allocations_invalid": "Payment allocation is invalid.",
+  "errors.payment_overpayment_requires_contact": "Selecting a contact is required to keep excess payment as store credit.",
+  "errors.payment_refund_exceeds_paid": "Refund cannot exceed the paid amount.",
+  "errors.payment_reversal_already_reversed": "This payment has already been reversed.",
+  "errors.payment_reversal_has_refund": "A payment with refunds cannot be reversed.",
+  "errors.overpayment_credit_spent": "The store credit from excess payment has already been spent and cannot be reversed.",
+  "errors.payment_contact_not_found": "Contact not found.",
+  "errors.store_credit_insufficient": "Contact does not have sufficient store credit balance.",
+  "errors.payment_method_not_allowed": "This payment method is not allowed.",
+  "errors.payment_request_not_found": "Request not found.",
+  "errors.payment_approval_required": "Manager approval is required for this action.",
+  "errors.payment_original_not_found": "Original payment not found.",
+  "errors.store_credit_contact_required": "Contact is required for store credit."
 }

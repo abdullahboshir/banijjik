@@ -68,7 +68,7 @@ export const paymentManifest = defineModule({
       value: { kind: "BOOLEAN" },
       systemDefault: true,
       allowsLocationOverride: false,
-      isClientVisible: false,
+      isClientVisible: true,
     },
     {
       settingKey: PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
