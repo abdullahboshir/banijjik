@@ -43,7 +43,12 @@
        - `verifies a pending purchase in the queue and updates the contact balance`
 
 ## Deviations from plan
-None. Implemented decision 7 and admin test specifications exactly.
+Recorded by the lead at the merge check (2026-10-23); the implementer listed none:
+- `apps/api/src/modules/commerce/credit/module.manifest.ts` gained the `credit.purchases` menu item. The plan said Part B changes no API file, but menus come only from the manifest, so the screen needs it.
+- The browser test inserts the PENDING purchase into Mongo instead of submitting it through the customer API. The customer submission path is covered by the Part A API tests.
+- The lead added the initial-script budget check for `/credit/packs` and `/credit/purchases` to `credit-screens.browser.test.ts` (the shared 180 KiB admin budget; the plan's 170 KiB predates the owner's 2026-10-22 budget).
+
+CI: https://github.com/abdullahboshir/banijjik/actions/runs/39920274298 (green before the lead's budget test).
 
 ## Guide Section 11 Checklist Walk
 1. Balance change writes ledger entry: yes (`verifyCreditPurchase` calls grant use case with PURCHASE entry).

@@ -3,7 +3,7 @@ import { CUSTOMER_ACCOUNT_STATUS } from "@banijjik/contracts/contact";
 import { newId } from "@banijjik/ids";
 import { MongoClient } from "mongodb";
 import type { Page } from "puppeteer-core";
-import { afterAll, beforeAll, describe, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { fillLabel } from "../catalog/catalog-labels";
 import {
   clickButton,
@@ -28,6 +28,7 @@ import {
   type BrowserStack,
   type SeededPerson,
 } from "../test-support/browser-stack";
+import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
 
 const ORG_SLUG = "acme";
 const BUSINESS_NAME = "ক্রেডিট টেস্ট";
@@ -260,4 +261,18 @@ describe("credit screens", () => {
     await waitForText(page, fillLabel(message("contacts.credits.balanceValue"), { balance: "15" }));
     await closePage(page);
   }, 180_000);
+
+  const routes = [
+    ["packs", `/${ORG_SLUG}/credit/packs`],
+    ["purchases", `/${ORG_SLUG}/credit/purchases`],
+  ] as const;
+
+  it.each(routes)("%s stays within the initial JavaScript budget", async (name, path) => {
+    const page = await ownerPage();
+    const size = await measureInitialJs(page, path);
+    process.stdout.write(`initial JS credit ${name}: ${toKiB(size.gzipBytes)} KiB\n`);
+    await closePage(page);
+
+    expect(toKiB(size.gzipBytes), name).toBeLessThanOrEqual(INITIAL_JS_BUDGET_KIB);
+  });
 });
