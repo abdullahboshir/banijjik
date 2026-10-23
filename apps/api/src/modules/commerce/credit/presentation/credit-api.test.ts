@@ -15,7 +15,7 @@ import type {
 } from "@banijjik/contracts/credit";
 import { LISTING_FIELD_TIER } from "@banijjik/contracts/directory";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
-import { asId, newId, type CustomerAccountId } from "@banijjik/ids";
+import { asId, newId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
 import type { Response } from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { API_PASSWORD } from "../../../../test-support/auth-api-scenarios.js";
@@ -948,8 +948,12 @@ describe("adjustments and isolation", () => {
         timeZone: { read: async () => "Asia/Dhaka" },
       } as unknown as CreditDependencies;
       const results = await Promise.all([
-        new ExpireCreditsUseCase(deps).execute(),
-        new ExpireCreditsUseCase(deps).execute(),
+        new ExpireCreditsUseCase(deps).execute({
+          organizationId: asId<OrganizationId>(world.organizationA),
+        }),
+        new ExpireCreditsUseCase(deps).execute({
+          organizationId: asId<OrganizationId>(world.organizationA),
+        }),
       ]);
       expect(results.reduce((sum, result) => sum + result.expiredEntries, 0)).toBe(1);
       expect((await credit.getBalance(customerAccountId))?.balance).toBe(10);

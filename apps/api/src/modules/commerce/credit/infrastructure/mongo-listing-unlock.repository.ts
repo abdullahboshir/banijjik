@@ -79,17 +79,17 @@ export class MongoListingUnlockRepository implements ListingUnlockRepository {
     return Model.countDocuments({ organizationId, listingId });
   }
 
-  async countByCustomerToday(customerAccountId: CustomerAccountId, today: string): Promise<number> {
+  async countByCustomerToday(
+    customerAccountId: CustomerAccountId,
+    businessDay: { readonly from: Date; readonly to: Date },
+  ): Promise<number> {
     const organizationId = getOrganizationId();
     const Model = models({ organizationId }).get<ListingUnlockDocument>(LISTING_UNLOCK_MODEL_NAME);
-    const startOfDay = new Date(today);
-    const endOfDay = new Date(today);
-    endOfDay.setUTCHours(23, 59, 59, 999);
     return Model.countDocuments(
       {
         organizationId,
         customerAccountId,
-        unlockedAt: { $gte: startOfDay, $lte: endOfDay },
+        unlockedAt: { $gte: businessDay.from, $lt: businessDay.to },
       },
       sessionOption(getActiveSession()),
     );

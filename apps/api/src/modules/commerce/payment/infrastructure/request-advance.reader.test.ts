@@ -90,6 +90,7 @@ describe("RequestAdvanceReader", () => {
       const held = await reader.readHeldAdvance({
         organizationId,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        currency: CURRENCY_CODE.BDT,
         requestId: "booking-unpaid",
       });
       expect(held).toEqual({ amount: 0, currency: CURRENCY_CODE.BDT });
@@ -112,6 +113,7 @@ describe("RequestAdvanceReader", () => {
       const held = await reader.readHeldAdvance({
         organizationId,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        currency: CURRENCY_CODE.BDT,
         requestId,
       });
       expect(held).toEqual({ amount: 500, currency: CURRENCY_CODE.BDT });
@@ -134,6 +136,7 @@ describe("RequestAdvanceReader", () => {
       const held = await reader.readHeldAdvance({
         organizationId,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        currency: CURRENCY_CODE.BDT,
         requestId,
       });
       expect(held).toEqual({ amount: 800, currency: CURRENCY_CODE.BDT });
@@ -163,6 +166,7 @@ describe("RequestAdvanceReader", () => {
       const held = await reader.readHeldAdvance({
         organizationId,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        currency: CURRENCY_CODE.BDT,
         requestId,
       });
       expect(held).toEqual({ amount: 300, currency: CURRENCY_CODE.BDT });
@@ -193,6 +197,7 @@ describe("RequestAdvanceReader", () => {
       const held = await reader.readHeldAdvance({
         organizationId,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        currency: CURRENCY_CODE.BDT,
         requestId,
       });
       expect(held).toEqual({ amount: 0, currency: CURRENCY_CODE.BDT });
@@ -216,6 +221,7 @@ describe("RequestAdvanceReader", () => {
       const held = await reader.readHeldAdvance({
         organizationId,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        currency: CURRENCY_CODE.BDT,
         requestId,
       });
       expect(held).toEqual({ amount: 0, currency: CURRENCY_CODE.BDT });
@@ -252,6 +258,7 @@ describe("RequestAdvanceReader", () => {
       const heldA = await reader.readHeldAdvance({
         organizationId: organizationIdA,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        currency: CURRENCY_CODE.BDT,
         requestId,
       });
       expect(heldA.amount).toBe(500);
@@ -261,9 +268,33 @@ describe("RequestAdvanceReader", () => {
       const heldB = await reader.readHeldAdvance({
         organizationId: organizationIdB,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        currency: CURRENCY_CODE.BDT,
         requestId,
       });
       expect(heldB.amount).toBe(900);
+    });
+  });
+
+  it("refuses an allocation in another currency instead of assuming one", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const organizationId = asId<OrganizationId>(world.organizationA);
+    const requestId = newId();
+    await withOrganizationContext(organizationId, async () => {
+      await insertPayment({
+        organizationId,
+        direction: PAYMENT_DIRECTION.IN,
+        amount: 500,
+        requestId,
+        currency: "USD",
+      });
+      await expect(
+        reader.readHeldAdvance({
+          organizationId,
+          requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+          requestId,
+          currency: CURRENCY_CODE.BDT,
+        }),
+      ).rejects.toMatchObject({ code: "INTERNAL" });
     });
   });
 });

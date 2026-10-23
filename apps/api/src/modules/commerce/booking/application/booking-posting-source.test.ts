@@ -167,6 +167,7 @@ describe("booking posting source", () => {
         organizationId: ORGANIZATION_ID,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,
         requestId: booking.bookingId,
+        currency: CURRENCY_CODE.BDT,
       },
     ]);
   });

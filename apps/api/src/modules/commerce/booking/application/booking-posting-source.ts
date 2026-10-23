@@ -46,6 +46,7 @@ export function buildBookingPostingSource(input: {
           organizationId: booking.organizationId,
           requestType: PAYMENT_REQUEST_TYPE.BOOKING,
           requestId: booking.bookingId,
+          currency: booking.price.currency,
         }),
         ...(booking.cancellationFeeRetained
           ? { cancellationFeeRetained: booking.cancellationFeeRetained }

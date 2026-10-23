@@ -22,5 +22,9 @@ export interface ListingUnlockRepository {
     customerAccountId: CustomerAccountId,
     listingIds: readonly ListingId[],
   ): Promise<ReadonlySet<ListingId>>;
-  countByCustomerToday(customerAccountId: CustomerAccountId, today: string): Promise<number>;
+  /** Unlocks inside one business day of the organization (`from` inclusive, `to` exclusive). */
+  countByCustomerToday(
+    customerAccountId: CustomerAccountId,
+    businessDay: { readonly from: Date; readonly to: Date },
+  ): Promise<number>;
 }

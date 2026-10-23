@@ -1,5 +1,5 @@
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
-import { asId, newId, type CustomerAccountId } from "@banijjik/ids";
+import { asId, newId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
 import { describe, expect, it, vi } from "vitest";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import {
@@ -11,6 +11,7 @@ import { ExpireCreditsUseCase } from "./expire-credits.use-case.js";
 
 const CUSTOMER_ACCOUNT_ID = asId<CustomerAccountId>(newId());
 const NOW = new Date("2026-10-21T08:00:00.000Z");
+const ORGANIZATION_ID = newId<OrganizationId>();
 
 function purchaseEntry(input: {
   readonly creditEntryId: string;
@@ -125,12 +126,15 @@ describe("ExpireCreditsUseCase", () => {
       balance: 10,
     });
     vi.mocked(ledger.deps.events.publish).mockRejectedValueOnce(new Error("outbox unavailable"));
-    await expect(new ExpireCreditsUseCase(ledger.deps).execute()).rejects.toThrow(
-      "outbox unavailable",
-    );
+    await expect(
+      new ExpireCreditsUseCase(ledger.deps).execute({ organizationId: ORGANIZATION_ID }),
+    ).rejects.toThrow("outbox unavailable");
     expect(ledger.balance.value).toBe(10);
     expect(ledger.entries).toHaveLength(0);
-    expect((await new ExpireCreditsUseCase(ledger.deps).execute()).expiredEntries).toBe(1);
+    expect(
+      (await new ExpireCreditsUseCase(ledger.deps).execute({ organizationId: ORGANIZATION_ID }))
+        .expiredEntries,
+    ).toBe(1);
   });
   it("writes one EXPIRE for the unused remainder and is idempotent on a second run", async () => {
     const ledger = aLedger({
@@ -139,7 +143,7 @@ describe("ExpireCreditsUseCase", () => {
     });
     const useCase = new ExpireCreditsUseCase(ledger.deps);
 
-    const first = await useCase.execute();
+    const first = await useCase.execute({ organizationId: ORGANIZATION_ID });
     expect(first.expiredEntries).toBe(1);
     expect(ledger.balance.value).toBe(0);
     expect(ledger.entries).toHaveLength(1);
@@ -151,7 +155,7 @@ describe("ExpireCreditsUseCase", () => {
       businessDate: "2026-10-21",
     });
 
-    const second = await useCase.execute();
+    const second = await useCase.execute({ organizationId: ORGANIZATION_ID });
     expect(second.expiredEntries).toBe(0);
     expect(ledger.entries).toHaveLength(1);
     expect(ledger.balance.value).toBe(0);
@@ -164,7 +168,9 @@ describe("ExpireCreditsUseCase", () => {
       balance: 6,
     });
 
-    const result = await new ExpireCreditsUseCase(ledger.deps).execute();
+    const result = await new ExpireCreditsUseCase(ledger.deps).execute({
+      organizationId: ORGANIZATION_ID,
+    });
 
     expect(result.expiredEntries).toBe(1);
     expect(ledger.entries[0]?.credits).toBe(-6);
@@ -178,7 +184,9 @@ describe("ExpireCreditsUseCase", () => {
       balance: 0,
     });
 
-    const result = await new ExpireCreditsUseCase(ledger.deps).execute();
+    const result = await new ExpireCreditsUseCase(ledger.deps).execute({
+      organizationId: ORGANIZATION_ID,
+    });
 
     expect(result.expiredEntries).toBe(0);
     expect(ledger.entries).toHaveLength(0);
@@ -190,7 +198,9 @@ describe("ExpireCreditsUseCase", () => {
       balance: 3,
     });
 
-    const result = await new ExpireCreditsUseCase(ledger.deps).execute();
+    const result = await new ExpireCreditsUseCase(ledger.deps).execute({
+      organizationId: ORGANIZATION_ID,
+    });
 
     expect(result.expiredEntries).toBe(0);
     expect(ledger.entries).toHaveLength(0);
@@ -206,7 +216,9 @@ describe("ExpireCreditsUseCase", () => {
       balance: 20,
     });
 
-    const result = await new ExpireCreditsUseCase(ledger.deps).execute();
+    const result = await new ExpireCreditsUseCase(ledger.deps).execute({
+      organizationId: ORGANIZATION_ID,
+    });
 
     expect(result.expiredEntries).toBe(2);
     expect(ledger.entries.map((entry) => entry.source.sourceId)).toEqual([

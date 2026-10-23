@@ -5,14 +5,8 @@ import {
   CREDIT_SOURCE_TYPE,
 } from "@banijjik/contracts/credit";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
-import {
-  asId,
-  newId,
-  type CustomerAccountId,
-  type OrganizationId,
-  type UserId,
-} from "@banijjik/ids";
-import { getRequestContext } from "../../../../../kernel/context/index.js";
+import { newId, type CustomerAccountId, type UserId } from "@banijjik/ids";
+import { activeOrganizationId } from "./active-organization.js";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import {
   CreditAccountNotFoundError,
@@ -80,8 +74,7 @@ export class AdjustCreditsUseCase {
 
   /** The entry is dated in the acting organization's day, never UTC (3.25 decision 4). */
   private async organizationTimeZone(): Promise<string> {
-    const organizationId = asId<OrganizationId>(String(getRequestContext().organizationId));
-    return this.deps.timeZone.read(organizationId);
+    return this.deps.timeZone.read(activeOrganizationId());
   }
 
   private buildEntry(input: AdjustCreditsInput, timeZone: string) {

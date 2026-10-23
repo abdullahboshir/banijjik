@@ -1,4 +1,4 @@
-import { CURRENCY_CODE, type CurrencyCode } from "@banijjik/contracts";
+import { ERROR_CODE } from "@banijjik/contracts";
 import { REVENUE_STATE } from "@banijjik/contracts/accounting";
 import {
   PAYMENT_DIRECTION,
@@ -7,6 +7,7 @@ import {
 } from "@banijjik/contracts/payment";
 import type { OrganizationId } from "@banijjik/ids";
 import { models } from "../../../../kernel/db/index.js";
+import { AppError } from "../../../../kernel/http/index.js";
 import type { RequestAdvanceReader } from "../application/ports/request-advance-reader.js";
 import { PAYMENT_MODEL_NAME, type PaymentDocument } from "./payment.schema.js";
 
@@ -28,6 +29,7 @@ async function readHeldAdvance(input: {
   readonly organizationId: OrganizationId;
   readonly requestType: PaymentRequestType;
   readonly requestId: string;
+  readonly currency: Money["currency"];
 }): Promise<Money> {
   const docs = await models({})
     .get<PaymentDocument>(PAYMENT_MODEL_NAME)
@@ -42,8 +44,6 @@ async function readHeldAdvance(input: {
     .lean<Pick<PaymentDocument, "direction" | "allocations">[]>();
 
   let netMinor = 0;
-  let currency: CurrencyCode = CURRENCY_CODE.BDT;
-
   for (const doc of docs) {
     for (const alloc of doc.allocations ?? []) {
       const isTarget =
@@ -51,13 +51,16 @@ async function readHeldAdvance(input: {
         alloc.requestId === input.requestId &&
         alloc.revenueState === REVENUE_STATE.BEFORE_REVENUE;
       if (!isTarget) continue;
-
-      if (alloc.amount?.currency) currency = alloc.amount.currency as CurrencyCode;
+      if (alloc.amount.currency !== input.currency) throw currencyMismatch();
       netMinor += allocationDelta(doc.direction, alloc.amount.amount);
     }
   }
 
-  return { amount: Math.max(0, netMinor), currency };
+  return { amount: Math.max(0, netMinor), currency: input.currency };
+}
+
+function currencyMismatch(): AppError {
+  return new AppError({ code: ERROR_CODE.INTERNAL, messageKey: "errors.internal" });
 }
 
 export function buildRequestAdvanceReader(): RequestAdvanceReader {

@@ -19,7 +19,7 @@ import {
 } from "../../domain/index.js";
 import { getRequestContext } from "../../../../../kernel/context/index.js";
 import type { OrganizationId } from "@banijjik/ids";
-import { businessDateOf } from "./business-date.js";
+import { businessDateOf, businessDayBounds } from "./business-date.js";
 
 export interface UnlockListingInput {
   readonly listingNumber: string;
@@ -66,7 +66,8 @@ export class UnlockListingUseCase {
       DEFAULT_UNLOCKS_PER_DAY,
     );
     const now = this.deps.clock.now();
-    const today = businessDateOf(now, await this.deps.timeZone.read(organizationId));
+    const timeZone = await this.deps.timeZone.read(organizationId);
+    const today = businessDateOf(now, timeZone);
 
     try {
       return await this.performUnlock({
@@ -74,6 +75,7 @@ export class UnlockListingUseCase {
         listingId: listing.listingId,
         unlockCost,
         businessDate: today,
+        businessDay: businessDayBounds(today, timeZone),
         dailyLimit,
         now,
       });
@@ -109,9 +111,9 @@ export class UnlockListingUseCase {
   private async assertWithinDailyLimit(
     customerAccountId: CustomerAccountId,
     dailyLimit: number,
-    today: string,
+    businessDay: { readonly from: Date; readonly to: Date },
   ): Promise<void> {
-    const todayCount = await this.deps.unlocks.countByCustomerToday(customerAccountId, today);
+    const todayCount = await this.deps.unlocks.countByCustomerToday(customerAccountId, businessDay);
     if (todayCount >= dailyLimit) throw new UnlocksPerDayExceededError();
   }
 
@@ -120,6 +122,7 @@ export class UnlockListingUseCase {
     readonly listingId: ListingId;
     readonly unlockCost: number;
     readonly businessDate: string;
+    readonly businessDay: { readonly from: Date; readonly to: Date };
     readonly dailyLimit: number;
     readonly now: Date;
   }): Promise<UnlockListingOutput> {
@@ -135,7 +138,7 @@ export class UnlockListingUseCase {
       await this.assertWithinDailyLimit(
         input.customerAccountId,
         input.dailyLimit,
-        input.businessDate,
+        input.businessDay,
       );
       const updatedBalance = await this.deps.credit.applyDelta({
         customerAccountId: input.customerAccountId,

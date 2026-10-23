@@ -3,8 +3,7 @@ import {
   CREDIT_EVENT_TYPE,
   CREDIT_SOURCE_TYPE,
 } from "@banijjik/contracts/credit";
-import { newId, asId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
-import { findRequestContext } from "../../../../../kernel/context/index.js";
+import { newId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { CreditEntryAlreadyExistsError, type CreditEntry } from "../../domain/index.js";
 import { businessDateOf } from "./business-date.js";
@@ -21,14 +20,8 @@ export interface ExpireCreditsResult {
 export class ExpireCreditsUseCase {
   constructor(private readonly deps: CreditDependencies) {}
 
-  async execute(input?: {
-    readonly organizationId?: OrganizationId;
-  }): Promise<ExpireCreditsResult> {
-    const ctx = findRequestContext();
-    const organizationId =
-      input?.organizationId ??
-      (ctx?.organizationId ? asId<OrganizationId>(ctx.organizationId) : newId<OrganizationId>());
-    const timeZone = await this.deps.timeZone.read(organizationId);
+  async execute(input: { readonly organizationId: OrganizationId }): Promise<ExpireCreditsResult> {
+    const timeZone = await this.deps.timeZone.read(input.organizationId);
     const today = businessDateOf(this.deps.clock.now(), timeZone);
     const purchases = await this.deps.credit.listExpiringPurchases(today);
     let expiredEntries = 0;
