@@ -8,52 +8,67 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-23 (afternoon, Dhaka) by Opus 5.5 · local `main` has 3.17 (`8bf386e` + this state save); `origin/main` is still `8cf2b8c`. **Not pushed: waiting for the owner's yes.**
+Last updated: 2026-10-23 (afternoon, Dhaka) by Opus 5.5 · `main` = `origin/main` = `8793398` plus this state save (pushed; CI 39905353952 green on the merge branch)
 
 ## 1. Where the project stands
-- Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, 3.8a, 3.8b, 3.8c, 3.12, 3.13, 3.14, 3.15, 3.16. Track M merged: M.1 to M.4. Details per card: `docs/STATUS.md`.
-- 3.16 fixed the dead-letter replay race in the kernel, so ORDERED handlers (3.8 adds the first production one) can now merge. Known rest, written in STATUS: two replayer processes at once can still remove a fresh job between `getState` and `remove`. Only one worker process runs today.
-- Every plan and session follows `docs/plans/parallel-sessions-guide.md` (Part A API, Part B screens, finish checklist §8, review §10). Ready board §9 is stale; refresh it at the next merge.
-- Plans on main: 3.6b (rental and event bookings); refreshed: 3.8, 3.7 (3.7 has lead decisions on freeze, bed hold, event names).
-- **3.17 (lead card, owner asked) fixed both shared CI blockers**, CI run 39901508552 green, on local main: `next` 16.4.0 → 16.4.2 (critical advisories) and `ip-address` 10.7.4; the SALON booking browser test took its Monday from the UTC runner's clock (Tuesday between Dhaka 00:00 and 06:00). Every card branch must rebase on main after main is pushed.
+- Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, 3.8a, 3.8b, 3.8c, 3.12–3.19. Track M merged: M.1 to M.5 Part A. Details per card: `docs/STATUS.md`.
+- **Merged today by the lead:**
+  - 3.17: `next` 16.4.2, plus the booking browser test taking its Monday from the Dhaka date.
+  - 3.18 delivery guardrails:
+    - `npm run card:check` is the finish gate.
+    - Guide §11 is the T1 self-review checklist; guide §10 adds the entry ticket and "lead fixes small leftovers".
+    - A T1 part is about 15 production files; CI runs nightly on main at 21:30 UTC.
+  - 3.19: `OrgConfigService.current()` reads `configVersion` from the organization inside jobs and handlers. Before this, every job that reads settings failed hourly in production.
+  - M.5 Part A.
+- **Still left in Phase 3** after the open Part A's: Part B of 3.5a, 3.7, 3.8 and M.5; 3.6b; 3.5b; 3.11; 3.9 POS; 3.10; the phase review. Track M: M.6 to M.9.
+- Owner's tools (2026-10-23): Claude Code in VS Code is the lead; Qoder and Antigravity implement. Cursor is off until its weekly limit resets.
 - Note: `npm audit fix --omit=dev` deletes devDependencies from `node_modules`; run `npm install` after it.
-- **Foundation gap found in 3.5a's handoff (needs a card):** a scheduled job cannot read tenant settings (`OrgConfigReader.current()` needs the request's `configVersion`; `runInOrganizationContext` sets none). Hits `sales.expireDrafts`, `sales.autoCancelPlaced` and booking's `markNoShows`. Verify, then plan a `core/settings` or `kernel/tenancy` fix card (T1).
+- CI flake seen once: a browser Build failed fetching Google Fonts (`@vercel/turbopack-next/internal/font/google/font`). A rerun passed. Follow-up: self-host the fonts with `next/font/local`.
 
-## 2. Open branches (checked 2026-10-23 afternoon; all claimed "done" by their agents, verified by the lead)
+## 2. Open branches (checked 2026-10-23 afternoon)
 | Card / part | Branch | Folder | Tier | State and next step |
 |---|---|---|---|---|
-| 3.8 Part A payments | `s/3.8-api-payments` (PR #2, local = origin `1b7e94a`) | `banijjik-lead` | T1 | **Not done**, despite the claim. R2 fixes pushed at `1b7e94a`, but its CI run 39831812881 fails typecheck and build (`BookingSettings.feePercent` missing in `cancel-booking.use-case.ts:52`, `transition-booking.use-cases.ts:37`); the one-line fix sits **uncommitted** in `booking-context-ports.ts`. Owner was given the message. Next: commit, rebase on main (3.17), push, green CI, then re-review against R2 (`docs/handoffs/3.8-api-review-R2.md`; B1 bKash/Nagad reversal, B2 org timezone first). |
-| M.5 Part A credit purchase | `s/M.5-api-credit-purchases` (PR #3, local = origin `2e835e3`) | `banijjik` | T1 | **Not done**, despite the claim: no commit since `2e835e3`. Left: item 7 (`CancelExpiredPurchasesUseCase` still takes one array from `listExpiredPending(now)`: process per keyset batch, test with more than one batch); item 8 test (USD threshold, BDT pack price → token required; every test is BDT); rebase (11 behind). Owner was given the message. Next: on a real "done", check those three and a green CI run, then merge. |
-| 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` (local = origin `779f472`) | `banijjik-1.7b` | T1 | **Review R1: changes required** (`docs/handoffs/3.7-api-review-R1.md`, 10 items; B1 manual renew, B2 frozen past limit, B3 one bad enrollment stops the job loop, B4 midnight gate). No commit since R1. Next: wait for "done", re-review. |
-| 3.5a Part A orders | `s/3.5a-api-orders` (local = origin `6043913`) | `banijjik-3.5a` | T1 | **Done per checklist** (all committed and pushed, handoff and STATUS row, `debug-place-api.test.ts` gone). CI run 39840606412 red only on the two shared reasons that 3.17 fixed. Next: session rebases on main and pushes (green CI), then **strict T1 review by the lead (not started)**; include the scheduled-job settings gap (§1). |
-| 3.6b rental/event Part A | `s/3.6b-api-rental-event` (not created) | none | T1 | Plan on main. **Waits** until 3.8 or 3.7 Part A merges (same `booking` files); no new full folder (disk). |
+| 3.8 Part A payments | `s/3.8-api-payments` (PR #2, `9146407`, rebased, CI green) | `banijjik-lead` | T1 | **R3: small changes** (`docs/handoffs/3.8-api-review-R3.md`). R2 is fully done. Open: the automatic no-show job settles no fee (wire the deposit port in the worker); optional booking deps and port methods must become required; `"CANCEL"`/`"NO_SHOW"`/fee-mode literals; wrong timezone error key; CI link in the handoff. Next: on a real done (`card:check`), verify and merge. If only ≤3 small items are left, the lead fixes them itself. |
+| 3.5a Part A orders | `s/3.5a-api-orders` (`6043913`) | `banijjik-3.5a` | T1 | **R1: changes required** (`docs/handoffs/3.5a-api-review-R1.md`). Blockers: the approval token is not bound to the discount amount (instant sales share one subject); the edit consumes the token outside the transaction; an edit can empty a PLACED order or drop the pickup contact; one failing order stops the hourly jobs forever. Plus literals, actor on edit stock, list projection, ADR drift, missing tests. Not rebased yet. Next: wait for done, then re-review. |
+| 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` (`779f472`) | `banijjik-1.7b` | T1 | **R1: changes required** (`docs/handoffs/3.7-api-review-R1.md`, 10 items). **No commit since R1**: check that the owner gave it to a session. |
+| M.5 Part B screens | `s/M.5-ui-credit-purchases` (not created) | `banijjik-m2` (free) | T2 | **Ready now.** Plan `docs/plans/M.5.md` Part B (decision 7, the Admin tests, `apps/admin/src/credit/**`, i18n add-only). Merge check by the lead. |
+| 3.6b rental/event Part A | not created | none | T1 | Plan on main. Waits until 3.8 or 3.7 Part A merges (same `booking` files). |
 
-Merged and safe to delete (local and `origin`) when convenient: `s/3.15-test-stability`, `s/3.16-dead-letter-replay-race`, `s/3.17-next-security`, and the old docs branches `s/docs-state-2026-10-22h`, `s/docs-state-2026-10-22l`, `s/docs-3.7-event-names`, `s/docs-3.7-review-r1`, `s/docs-state-2026-10-22m`, `s/docs-state-2026-10-23` (all on main).
+Merged and safe to delete (local and `origin`):
+- card branches: `s/3.15-test-stability`, `s/3.16-dead-letter-replay-race`, `s/3.17-next-security`, `s/3.18-delivery-guardrails`, `s/3.19-job-config-version`, `s/M.5-api-credit-purchases`
+- merge branches: `s/merge-M.5`, `s/merge-3.18-3.19`
+- docs branches: `s/docs-state-2026-10-22h`, `-22l`, `-22m`, `s/docs-state-2026-10-23`, `-23b`, `s/docs-3.7-event-names`, `s/docs-3.7-review-r1`, `s/docs-3.5a-review-r1`
 
-Free folders: `banijjik-m2` (3.17 done, on `s/3.17-next-security`). `banijjik-docs` is the docs folder. This lead session ran in `banijjik` (the M.5 folder): the next lead session opens in `banijjik-docs` (one chat per folder).
+Folders:
+- `banijjik-m2` is free (its last branch, 3.19, is merged).
+- `banijjik` (the M.5 folder) is free once the M.5 session is closed.
+- `banijjik-docs` is the docs and merge folder; this lead session ran in `banijjik`.
 
-**Agents claim "done" early.** On 2026-10-23 all three of 3.8, M.5, 3.5a were claimed done; only 3.5a was. Earlier the first M.5 agent pasted invented `git log` output. Always verify with `git status` in the folder, `origin/<branch>`, `gh run view <run> --json jobs` and `--log-failed` before reviewing.
+**Agents claim "done" early.** On 2026-10-23 three cards were claimed done; one was. From now on, a "done" without the full `npm run card:check` output (all PASS) is not reviewed. Verify anyway: `git status` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`, `--log-failed`.
 
-**CI on main:** green on 3.17 head `384acc5` (run 39901508552); `8bf386e` adds only a STATUS row.
-
-Stash `stash@{4}` ("owner-edits-AGENTS-and-05-CONVENTIONS…") in `banijjik` holds the owner's uncommitted edits to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). The owner has not said keep or drop.
+Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). The owner has not said keep or drop.
 
 ## 3. Waiting on the owner
-- **Push `main`** (3.17 + docs commits since `8cf2b8c`): asked 2026-10-23, no answer yet. Branches can only rebase on the fix after this push (cloud sessions use `origin/main`; local folders can rebase on local `main` already).
-- Paste the "not done" messages to the 3.8 and M.5 sessions; tell 3.5a and 3.7 sessions to rebase on main after the push.
-- Sessions must report "done" (committed, pushed, CI green, handoff written) for 3.8, M.5, 3.7. Nothing merges before that.
-- Pushing `main`: ask before each push.
+- Paste the review files to the sessions: 3.5a R1 (Antigravity suggested), 3.8 R3 (Qoder suggested), 3.7 R1 (whichever is free first). Start M.5 Part B in `banijjik-m2` with the guide §6 prompt.
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
 
 ## 4. Next actions, in order
-1. Verify reality (`git status` in each folder, `origin/<branch>`, `gh run list`, failed-step logs). If the owner said yes, `git push origin main` (fast-forward from `8cf2b8c`).
-2. **Strict T1 review of 3.5a Part A** (after its rebase shows a green CI run; can start on the current diff). Findings to `docs/handoffs/3.5a-api-review-R1.md`.
-3. Verify the scheduled-job settings gap (§1) in `core/settings` / `kernel/tenancy`; if real, write a T1 fix plan (3.18), since it blocks 3.5a jobs and booking `markNoShows` in production.
-4. Re-reviews as sessions report a real done: M.5 (three items), 3.8 against R2, 3.7 against R1. Merge in order of passing; each later branch rebases. Merge hot spots: `routes/*`, `start-worker.ts`, contracts index files, booking files (3.8, 3.7, 3.6b), STATUS.md rows (resolve by hand, never commit markers; check with `git grep -n "^<<<<<<<"`).
-5. After 3.8 Part A merges: refresh and release 3.8 Part B, 3.11 plan, 3.9 plan inputs; release 3.6b. After 3.5a Part A: 3.5a Part B, plan 3.5b. After M.5 Part A: M.5 Part B, plan M.6. After 3.7 Part A: 3.7 Part B (enrollment payment link: plan 3.7 refresh item 1). Refresh the ready board (guide §9) at the next merge.
-6. Later: 3.9 POS, 3.11, 3.10, M.6 to M.9, then `docs/handoffs/phase-3-review.md`.
-7. Follow-ups: reports and approval amounts in bookkeeping hardcode `"BDT"`. Admin script budget is 180 KiB (owner, 2026-10-22). Replayer: if more than one worker process is ever run, make `remove`+`add` safe across processes (STATUS 3.16 note).
+1. Verify reality (folders, `origin/<branch>`, `gh run list`). For every "done", run `npm run card:check` in that folder.
+2. Re-review as sessions report done:
+   - 3.8 against R3. It is small: if at most three small items remain, the lead fixes them on the branch and merges.
+   - 3.5a against R1, blockers first.
+   - 3.7 against R1, B1–B4 first.
+   - Merge through `s/merge-<card>` in `banijjik-docs` when a branch is behind main.
+   - Merge hot spots: `routes/*`, `start-worker.ts`, contracts index files, booking files (3.8, 3.7, 3.6b), STATUS.md rows. Keep both rows; check `git grep -n "^<<<<<<<"`.
+3. Merge check of M.5 Part B when done.
+4. After 3.8 Part A merges: refresh and release 3.8 Part B and 3.6b, plan 3.11, refresh the 3.9 inputs. After 3.5a Part A: 3.5a Part B, plan 3.5b. After 3.7 Part A: 3.7 Part B (plan 3.7 refresh item 1). Plan M.6 when a session is free. Refresh the ready board (guide §9).
+5. Later: 3.9 POS, 3.11, 3.10, M.6 to M.9, then `docs/handoffs/phase-3-review.md`.
+6. Follow-ups:
+   - Bookkeeping reports and approval amounts hardcode `"BDT"`.
+   - The admin script budget is 180 KiB (owner, 2026-10-22).
+   - Replayer safety across more than one worker process (STATUS 3.16 note).
+   - Self-host the Google Fonts (CI flake).
 
 ## 5. How the lead works
 - **Role:** plans (just in time), strict T1 reviews, merge checks, integration (rebases, conflicts), fast-forward of `main`. Implementation is done by the owner's sessions (Cursor, Antigravity, Claude Code, Qoder), not by the lead, unless the owner asks.
@@ -64,12 +79,14 @@ Stash `stash@{4}` ("owner-edits-AGENTS-and-05-CONVENTIONS…") in `banijjik` hol
 - **Folders:** one chat per folder. `banijjik`, `banijjik-1.7b`, `banijjik-lead`, `banijjik-m2` have their own `node_modules`. `banijjik-docs` is light: its `node_modules` is a junction to `banijjik`'s (enough for the commit hooks; not for builds). Disk is nearly full (E: about 5.5 GB, C: about 4.3 GB free), so there are no new full folders. Extra sessions run as cloud agents (they leave a local worktree under `banijjik/.claude/worktrees/`; remove it with `git worktree remove` after the merge).
 - **Docs commits:** in `banijjik-docs`, `git switch -c s/docs-<slug> main`, commit, then from any folder `git fetch . s/docs-<slug>:main` (fast-forward only).
 - **Local verify** (only for integration of several branches; one heavy run at a time): environment `MONGOMS_SYSTEM_BINARY="C:/Program Files/MongoDB/Server/8.2/bin/mongod.exe" MONGOMS_VERSION_CHECK=false TEST_REDIS_URL=redis://127.0.0.1:6380 NEXT_PUBLIC_API_BASE_URL=http://localhost:4000 NEXT_PUBLIC_BRAND_NAME=Example CHROME_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe"`. Then `npm run lint`, `npm run format:check`, `VITEST_MAX_WORKERS=2 npx turbo run build typecheck test --force --env-mode=loose --concurrency=1 --continue`, and the browser suites with `VITEST_MAX_WORKERS=1 npm run test:browser` in `apps/admin` and `apps/platform`. Move `apps/api/.env` aside during the run (it exists only in `banijjik`) and put it back. Docker (`infra/docker-compose.yml`: Mongo 27018, Redis 6380) may need starting after a reboot; never touch other containers.
-- **Never:** `--no-verify`, resetting existing commits, committing `.env` files, printing env values, pushing `main` without permission.
+- **Finish gate and leftovers (owner, 2026-10-23):** a review starts only from a `card:check` output with every line PASS. When a re-review leaves at most three small items, the lead fixes them on the branch and merges instead of starting another round.
+- **Pushing `main`:** on 2026-10-23 the owner said to do whatever is needed, and the lead pushed green-CI merges that day without asking each time. Confirm at the start of a new session that this still holds.
+- **Never:** `--no-verify`, resetting existing commits, committing `.env` files, printing env values.
 - **Token cost** (measured 2026-10-22): about 90% of a day's usage went to carrying a 900k-token session, mostly full cache rewrites after a break of over an hour or a `/model` switch. Keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-23 afternoon (2)** (Opus): owner asked why delivery is slow (answer: review round trips, false "done" claims, shared CI breakage, big cards; CI itself is ~10 min). Built and merged 3.18 (card:check, T1 checklist, nightly CI) and 3.19 (config in jobs, found in 3.5a). Verified and merged M.5 Part A. Reviews: 3.5a R1 (4 blockers, approval amount unbound), 3.8 R3 (small; auto no-show keeps no fee). Pushed main `8793398`.
 - **2026-10-23 afternoon** (Opus): owner said the lead does the bump: 3.17 (`next` 16.4.2, `ip-address` 10.7.4, booking test Monday from the Dhaka date), CI 39901508552 green, local main `8bf386e` (push not yet allowed). Verified three "done" claims: 3.8 not done (typecheck red, fix uncommitted), M.5 not done (no commits), 3.5a done and ready for T1 review.
 - **2026-10-22 late night (4)** (Opus): checked all branches (3.7 CI green, 3.8 R2 and M.5 R1 fixes not committed, 3.5a not pushed). Strict T1 review of 3.7 Part A: changes required, R1 with 10 items, on main `ed8299b`. Guided the M.5 fixing agent (caught two invented reports), verified its R1 fixes at `2e835e3` (3 small items left). Found the shared CI blockers: a critical Next.js audit advisory and a booking browser test failing after local midnight.
 - **2026-10-22 late night (2-3)** (Opus): answered the M.5 session's R1 questions. Gave 3.7 its implement prompt and three lead decisions (open-ended bed hold, contact bill-to reader, past-tense event names). Re-reviewed 3.8: R2 changes required (bKash reversal blocked, timezone not wired), and answered its R2 questions.
 - **2026-10-22 late night** (Opus): checked all branches. Strict T1 review of M.5 Part A (CI green): changes required, R1 with 11 items, on main `9ebc07a`. 3.8 R1 fixes uncommitted in `banijjik-lead`; 3.7 not committed; 3.5a not pushed.
-- **2026-10-22 night** (Opus): T1 review of 3.16 (no findings) and merge check of 3.15; merged both via `s/merge-3.16`, CI green, pushed main `8cf2b8c` (owner yes); removed the cloud agent worktree. Strict review of 3.8 Part A: changes required (R1, 20 items). Found M.5 CI red (i18n keys). Agreed with a second lead session that this one leads.
