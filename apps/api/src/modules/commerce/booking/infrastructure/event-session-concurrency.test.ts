@@ -82,6 +82,10 @@ describe("event session atomic writes", () => {
       const query = { page: 1, limit: 10 };
       expect((await repository.list(query, [world.locationA2])).items).toHaveLength(0);
       expect((await repository.list(query, [])).items).toHaveLength(0);
+      expect(
+        (await repository.list({ ...query, locationId: world.locationA1 }, [world.locationA2]))
+          .items,
+      ).toHaveLength(0);
       expect((await repository.list(query, [world.locationA1])).items).toHaveLength(1);
       expect((await repository.list(query, "ALL")).items).toHaveLength(1);
     });

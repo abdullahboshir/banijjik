@@ -32,7 +32,9 @@ export class MongoEventSessionRepository implements EventSessionRepository {
     if (allowedLocationIds !== "ALL") {
       filter.locationId = { $in: allowedLocationIds.map((value) => asId<LocationId>(value)) };
     }
-    if (query.locationId !== undefined) filter.locationId = asId<LocationId>(query.locationId);
+    if (query.locationId !== undefined) {
+      filter.$and = [{ locationId: asId<LocationId>(query.locationId) }];
+    }
     if (query.offeringId !== undefined) filter.offeringId = asId<OfferingId>(query.offeringId);
     if (query.status !== undefined) filter.status = query.status;
     const rows = await sessionModel()
