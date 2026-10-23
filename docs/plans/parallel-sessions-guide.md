@@ -163,7 +163,7 @@ These are the findings that came back in the 3.7, 3.8 and M.5 reviews. Walk ever
 18. Location-owned data is registered with LOCATION tenancy and has a cross-location test. Every route param is read and checked.
 
 **Code and records**
-19. No `as unknown as` or other casts, in production code or tests. Narrow a use case's dependencies with `Pick<...>` so a test can pass only what it uses.
+19. No `as unknown as` or other casts in production code (job wiring included). Narrow a use case's dependencies with `Pick<...>` so a test can pass only what it uses; a cast partial fake in a unit test is the last resort.
 20. No optional dependency that silently changes behaviour when it is missing. Make it required.
 21. Event names, posting keys, error codes and audit actions come from contracts. None is built at runtime.
 22. Schemas carry the audit fields and `version`, with indexes that start with `organizationId`. Validation schemas carry no message literals.
