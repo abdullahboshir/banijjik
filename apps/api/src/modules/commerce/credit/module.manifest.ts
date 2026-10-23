@@ -52,6 +52,18 @@ export const creditManifest = defineModule({
       permissionKey: PERMISSION_KEY.CREDIT_PACK_READ,
       order: 50,
     },
+    {
+      menuKey: "credit.purchases",
+      surface: SURFACE.ADMIN,
+      groupKey: "sales",
+      labelTermKey: "menu.credit.purchases",
+      termKey: "credit",
+      path: "credit/purchases",
+      iconKey: "receipt",
+      settingsTopicKey: SETTINGS_TOPIC.SALES,
+      permissionKey: PERMISSION_KEY.CREDIT_PURCHASE_READ,
+      order: 55,
+    },
   ],
   settings: [
     {

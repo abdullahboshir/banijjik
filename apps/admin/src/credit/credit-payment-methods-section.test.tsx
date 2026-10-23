@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { ERROR_CODE } from "@banijjik/contracts";
 import type { CreditPaymentMethodSetting } from "@banijjik/contracts/credit";
 import { screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
@@ -101,7 +102,7 @@ describe("CreditPaymentMethodsSection", () => {
   it("shows conflict error when save fails with 409", async () => {
     const user = userEvent.setup();
     updateSettingsMock.mockRejectedValueOnce(
-      new ApiError({ status: 409, messageKey: "errors.conflict" }),
+      new ApiError({ status: 409, code: ERROR_CODE.CONFLICT, messageKey: "errors.conflict" }),
     );
 
     renderInBangla(

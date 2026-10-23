@@ -44,6 +44,7 @@ let stack: BrowserStack;
 let owner: SeededPerson;
 let organizationId: string;
 let contactId: string;
+let customerAccountId: string;
 
 interface ContactCreateAnswer {
   data: { contactId: string };
@@ -114,8 +115,9 @@ async function seedCreditWorld(): Promise<void> {
       .collection("organizations")
       .updateOne({ slug: ORG_SLUG }, { $inc: { configVersion: 1 } });
     contactId = await createContact();
+    customerAccountId = newId();
     await client.db("browser_tenant").collection("customer_accounts").insertOne({
-      customerAccountId: newId(),
+      customerAccountId,
       organizationId,
       contactId,
       phoneE164: CONTACT_PHONE,
@@ -196,6 +198,69 @@ describe("credit screens", () => {
     );
     await waitForText(page, message("contacts.credits.adjusted"));
     await waitForText(page, ADJUST_REASON);
+    await closePage(page);
+  }, 180_000);
+
+  it("verifies a pending purchase in the queue and updates the contact balance", async () => {
+    const client = await MongoClient.connect(stack.mongoUri);
+    const purchaseId = newId();
+    const now = new Date();
+    try {
+      await client
+        .db("browser_tenant")
+        .collection("credit_purchases")
+        .insertOne({
+          creditPurchaseId: purchaseId,
+          organizationId,
+          purchaseNumber: "CP-000001",
+          customerAccountId,
+          creditPackId: "pack-test-1",
+          snapshot: {
+            name: { bn: "১০ ক্রেডিট", en: "10 Credits" },
+            credits: 10,
+            price: { amount: 500, currency: "BDT" },
+            validityDays: 30,
+          },
+          method: "BKASH",
+          senderPhoneE164: CONTACT_PHONE,
+          transactionReference: "TRXREF001",
+          status: "PENDING",
+          verifiedByUserId: null,
+          verifiedAt: null,
+          rejectionReason: null,
+          creditEntryId: null,
+          submittedAt: now,
+          expiresAt: new Date(now.getTime() + 7 * 86400000),
+          version: 1,
+          createdAt: now,
+          updatedAt: now,
+          createdByUserId: null,
+          updatedByUserId: null,
+        });
+    } finally {
+      await client.close();
+    }
+
+    const page = await ownerPage();
+    await gotoWhenHydrated(page, `/${ORG_SLUG}/credit/purchases`, "main");
+    await waitForText(page, "TRXREF001");
+
+    const card = await page.waitForSelector("main [role='button']");
+    await card?.click();
+
+    await page.waitForSelector("[role='dialog']");
+    await waitForText(page, message("credit.purchases.verify"));
+    await clickButton(
+      page,
+      "[role='dialog'] button",
+      (text) => text === message("credit.purchases.verify"),
+    );
+
+    await page.waitForFunction(() => document.querySelector("[role='dialog']") === null);
+
+    await gotoWhenHydrated(page, `/${ORG_SLUG}/contacts/${contactId}`, "main");
+    await page.waitForSelector("#credit-adjust-amount");
+    await waitForText(page, fillLabel(message("contacts.credits.balanceValue"), { balance: "15" }));
     await closePage(page);
   }, 180_000);
 });

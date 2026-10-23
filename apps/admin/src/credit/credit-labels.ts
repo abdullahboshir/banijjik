@@ -1,4 +1,8 @@
-import type { CreditEntryType, CreditPackStatus } from "@banijjik/contracts/credit";
+import type {
+  CreditEntryType,
+  CreditPackStatus,
+  CreditPurchaseMethod,
+} from "@banijjik/contracts/credit";
 import type { Translator } from "@banijjik/i18n";
 
 /** All text of the credit screens, translated on the server (the browser bundle has no screen catalog). */
