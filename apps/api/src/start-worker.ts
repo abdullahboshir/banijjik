@@ -53,6 +53,7 @@ export function startWorker(
     orgConfig,
     manifests: registry.all(),
     depositCheck: buildBookingDepositCheckAdapter(),
+    audit: buildAuditRecorder(systemClock),
   });
   registerCreditScheduledJobs({
     clock: systemClock,

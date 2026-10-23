@@ -10,6 +10,8 @@ export const BOOKING_RULE_KEY = {
   UNKNOWN_RESOURCE_TYPE: "UNKNOWN_RESOURCE_TYPE",
   HOLD_EXPIRED: "HOLD_EXPIRED",
   BOOKING_NOT_SERVICE: "BOOKING_NOT_SERVICE",
+  BOOKING_RENTAL_UNITS_OUT_OF_RANGE: "BOOKING_RENTAL_UNITS_OUT_OF_RANGE",
+  BOOKING_RENTAL_DURATION_EXCEEDED: "BOOKING_RENTAL_DURATION_EXCEEDED",
 } as const;
 
 export type BookingRuleKey = (typeof BOOKING_RULE_KEY)[keyof typeof BOOKING_RULE_KEY];
@@ -27,4 +29,6 @@ export const BOOKING_MESSAGE_KEYS: readonly string[] = [
   "errors.hold_expired",
   "errors.booking_not_service",
   "errors.capacity_full",
+  "errors.booking_rental_units_out_of_range",
+  "errors.booking_rental_duration_exceeded",
 ];

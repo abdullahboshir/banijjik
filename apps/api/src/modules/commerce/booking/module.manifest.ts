@@ -8,6 +8,8 @@ import {
   permissionDefinition,
 } from "@banijjik/contracts";
 import {
+  BOOKING_COMPLETE_GRACE_MINUTES_DEFAULT,
+  BOOKING_COMPLETE_GRACE_MINUTES_SETTING_KEY,
   BOOKING_DEPOSIT_REQUIRED_DEFAULT,
   BOOKING_DEPOSIT_REQUIRED_SETTING_KEY,
   BOOKING_DEPOSIT_VALUE_DEFAULT,
@@ -41,7 +43,7 @@ export const bookingManifest = defineModule({
   path: "commerce/booking",
   moduleClass: MODULE_CLASS.CORE,
   dependsOn: [MODULE_KEY.CATALOG, MODULE_KEY.CONTACT, MODULE_KEY.PRICING],
-  providesKinds: [OFFERING_KIND.SERVICE],
+  providesKinds: [OFFERING_KIND.SERVICE, OFFERING_KIND.RENTAL],
   requiresAnyKind: [],
   tenantCanDisable: false,
   permissions: [
@@ -166,6 +168,13 @@ export const bookingManifest = defineModule({
       settingKey: BOOKING_FEE_PERCENT_SETTING_KEY,
       value: { kind: "INTEGER", min: 0, max: 100 },
       systemDefault: BOOKING_FEE_PERCENT_DEFAULT,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+    {
+      settingKey: BOOKING_COMPLETE_GRACE_MINUTES_SETTING_KEY,
+      value: { kind: "INTEGER", min: 0, max: 10_080 },
+      systemDefault: BOOKING_COMPLETE_GRACE_MINUTES_DEFAULT,
       allowsLocationOverride: false,
       isClientVisible: true,
     },

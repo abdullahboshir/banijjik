@@ -1,3 +1,4 @@
+import { OFFERING_KIND } from "@banijjik/contracts";
 import type { BookingResponse } from "@banijjik/contracts/booking";
 import {
   asId,
@@ -9,6 +10,7 @@ import {
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { slotBounds } from "../../domain/availability.js";
+import { computeRentalTime } from "../../domain/rental-time.js";
 import { recordNotFound } from "../../domain/errors.js";
 import { assertLocationAllowed } from "../booking-transition-shared.js";
 import { toBookingResponse } from "../booking-views.js";
@@ -19,9 +21,44 @@ import type {
   ResourceRepository,
   ResourceSlotUsagePort,
 } from "../ports/booking-repositories.js";
-import type { BookingOfferingReader } from "../ports/booking-context-ports.js";
+import type { BookingOfferingReader, OfferingBookingView } from "../ports/booking-context-ports.js";
 import type { BookingEventPublisher } from "./create-booking.use-case.js";
 import { runWithTxnRetry } from "../run-with-txn-retry.js";
+
+async function resolveRescheduleBounds(input: {
+  readonly offering: OfferingBookingView;
+  readonly requestedStartsAt: Date;
+  readonly quantity: number;
+  readonly timeZoneReader?: { read(organizationId: OrganizationId): Promise<string> } | undefined;
+  readonly organizationId: OrganizationId;
+}): Promise<{ startsAt: Date; endsAt: Date; blockedEndsAt: Date }> {
+  if (input.offering.kind === OFFERING_KIND.RENTAL) {
+    const timeZone = input.timeZoneReader
+      ? await input.timeZoneReader.read(input.organizationId)
+      : "Asia/Dhaka";
+    const rentalTime = computeRentalTime({
+      startsAt: input.requestedStartsAt,
+      quantity: input.quantity,
+      rental: input.offering.rental,
+      timeZone,
+    });
+    return {
+      startsAt: rentalTime.startsAt,
+      endsAt: rentalTime.endsAt,
+      blockedEndsAt: rentalTime.blockedEndsAt,
+    };
+  }
+  const bounds = slotBounds(
+    input.requestedStartsAt,
+    input.offering.durationMinutes,
+    input.offering.service.bufferAfterMinutes,
+  );
+  return {
+    startsAt: input.requestedStartsAt,
+    endsAt: bounds.endsAt,
+    blockedEndsAt: bounds.blockedEndsAt,
+  };
+}
 
 export class RescheduleBookingUseCase {
   constructor(
@@ -34,6 +71,7 @@ export class RescheduleBookingUseCase {
       readonly audit: AuditRecorder;
       readonly clock: Clock;
       readonly offerings: BookingOfferingReader;
+      readonly timeZone?: { read(organizationId: OrganizationId): Promise<string> };
     },
   ) {}
 
@@ -49,19 +87,23 @@ export class RescheduleBookingUseCase {
     const existing = await this.dependencies.bookings.findById(input.bookingId);
     if (existing === undefined) throw recordNotFound();
     assertLocationAllowed(existing.locationId, input.allowedLocationIds);
-    const startsAt = new Date(input.startsAt);
-    const offering = await this.dependencies.offerings.readServiceOffering({
+    const requestedStartsAt = new Date(input.startsAt);
+    const offering = await this.dependencies.offerings.readOffering({
       organizationId: input.organizationId,
       offeringId: existing.offeringId,
       variantId: existing.variantId,
       locationId: existing.locationId,
     });
     if (offering === undefined) throw recordNotFound();
-    const { endsAt, blockedEndsAt } = slotBounds(
-      startsAt,
-      offering.durationMinutes,
-      offering.service.bufferAfterMinutes,
-    );
+
+    const { startsAt, endsAt, blockedEndsAt } = await resolveRescheduleBounds({
+      offering,
+      requestedStartsAt,
+      quantity: existing.quantity,
+      timeZoneReader: this.dependencies.timeZone,
+      organizationId: input.organizationId,
+    });
+
     const preferredId = input.resourceId ?? existing.resourceIds[0];
     if (preferredId === undefined) throw recordNotFound();
     const resourceId = asId<ResourceId>(preferredId);
@@ -89,7 +131,7 @@ export class RescheduleBookingUseCase {
         version: input.version,
         existing,
         updated,
-        resource,
+        resource: { resourceId: resource.resourceId, capacity: resource.capacity },
         startsAt,
         blockedEndsAt,
       });

@@ -46,6 +46,7 @@ export interface ResourceRepository {
   listActiveForOffering(input: {
     readonly locationId: LocationId;
     readonly offeringId: OfferingId;
+    readonly resourceTypeKeys?: readonly string[] | undefined;
   }): Promise<readonly Resource[]>;
 }
 
@@ -68,6 +69,10 @@ export interface BookingRepository {
   ): Promise<{ readonly items: Booking[]; readonly hasNext: boolean }>;
   listHeldExpired(now: Date): Promise<readonly Booking[]>;
   listNoShowCandidates(input: {
+    readonly now: Date;
+    readonly graceMinutes: number;
+  }): Promise<readonly Booking[]>;
+  listAutoCompleteCandidates(input: {
     readonly now: Date;
     readonly graceMinutes: number;
   }): Promise<readonly Booking[]>;

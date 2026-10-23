@@ -70,7 +70,7 @@ export function buildResourceContextPorts(): {
           const offering = await offerings.findById(offeringId);
           if (
             offering === undefined ||
-            offering.kind !== OFFERING_KIND.SERVICE ||
+            (offering.kind !== OFFERING_KIND.SERVICE && offering.kind !== OFFERING_KIND.RENTAL) ||
             offering.status !== OFFERING_STATUS.ACTIVE
           ) {
             throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);

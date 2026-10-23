@@ -23,6 +23,8 @@ import { MongoBookingRepository, MongoResourceRepository } from "./mongo-booking
 import { MongoResourceSlotUsageRepository } from "./mongo-slot-usage.repository.js";
 import { buildExpireHoldsJob } from "../application/jobs/expire-holds.job.js";
 import { buildMarkNoShowsJob } from "../application/jobs/mark-no-shows.job.js";
+import { buildAutoCompleteJob } from "../application/jobs/auto-complete.job.js";
+import { BOOKING_KIND } from "@banijjik/contracts/booking";
 import type { BookingEventPublisher } from "../application/use-cases/create-booking.use-case.js";
 import type { DepositCheckPort } from "../application/ports/payment-ports.js";
 
@@ -214,6 +216,71 @@ describe("booking scheduled jobs", () => {
 
       const updated = await bookings.findById(confirmed.bookingId);
       expect(updated?.status).toBe(BOOKING_STATUS.NO_SHOW);
+    });
+  });
+
+  it("auto-completes checked-in rental bookings past grace period idempotently", async () => {
+    const world = await worldFor(harness, RETAIL, SALON);
+    const organizationRef = asId<OrganizationId>(world.organizationA);
+    const locationId = asId<LocationId>(world.locationA1);
+    const startsAt = new Date("2026-11-01T04:00:00.000Z");
+    const endsAt = new Date("2026-11-01T08:00:00.000Z");
+    const nowWithinGrace = new Date("2026-11-01T08:30:00.000Z");
+    const nowPastGrace = new Date("2026-11-01T09:30:00.000Z");
+    const orgConfig = {
+      current: async () => ({ modules: [MODULE_KEY.BOOKING] }),
+    } as unknown as OrgConfigService;
+
+    await runInOrganizationContext(world.organizationA, async () => {
+      const bookings = new MongoBookingRepository();
+      const rental = Booking.createStaff({
+        organizationId: organizationRef,
+        locationId,
+        contactId: asId<ContactId>(newId()),
+        offeringId: asId<OfferingId>(newId()),
+        variantId: newId(),
+        kind: BOOKING_KIND.RENTAL,
+        quantity: 4,
+        depositRequired: { amount: 0, currency: "BDT" },
+        startsAt,
+        endsAt,
+        blockedEndsAt: endsAt,
+        resourceIds: [asId<import("@banijjik/ids").ResourceId>(newId())],
+        providerMemberId: null,
+        price: zeroPrice,
+        status: BOOKING_STATUS.CHECKED_IN,
+        bookingNumber: "B-RENTAL-1",
+        note: null,
+        now: startsAt,
+        actorUserId: null,
+      });
+      await bookings.insert(rental);
+
+      const noopAudit: import("../../../../kernel/audit/index.js").AuditRecorder = {
+        record: vi.fn(async () => undefined),
+      };
+
+      const job = buildAutoCompleteJob({
+        bookings,
+        unitOfWork: new MongoUnitOfWork(),
+        events: noopEvents(),
+        audit: noopAudit,
+        orgConfig,
+        manifests: [bookingManifest],
+      });
+
+      // 1. Within grace (30 mins after end; grace is 60 mins) -> stays CHECKED_IN
+      await job.run(organizationRef, nowWithinGrace);
+      const afterGraceRun = await bookings.findById(rental.bookingId);
+      expect(afterGraceRun?.status).toBe(BOOKING_STATUS.CHECKED_IN);
+
+      // 2. Past grace (90 mins after end) -> completes
+      await job.run(organizationRef, nowPastGrace);
+      // Run again to verify idempotency
+      await job.run(organizationRef, nowPastGrace);
+
+      const completed = await bookings.findById(rental.bookingId);
+      expect(completed?.status).toBe(BOOKING_STATUS.COMPLETED);
     });
   });
 });

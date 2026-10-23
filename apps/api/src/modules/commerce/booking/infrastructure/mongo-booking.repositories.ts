@@ -1,3 +1,4 @@
+import { BOOKING_KIND } from "@banijjik/contracts/booking";
 import { type BookingId, type LocationId, type OfferingId, type ResourceId } from "@banijjik/ids";
 import type { Model, QueryFilter } from "mongoose";
 import {
@@ -104,13 +105,22 @@ export class MongoResourceRepository implements ResourceRepository {
   async listActiveForOffering(input: {
     readonly locationId: LocationId;
     readonly offeringId: OfferingId;
+    readonly resourceTypeKeys?: readonly string[];
   }): Promise<readonly Resource[]> {
+    const filter: Record<string, unknown> = {
+      locationId: input.locationId,
+      status: "ACTIVE",
+    };
+    if (input.resourceTypeKeys !== undefined && input.resourceTypeKeys.length > 0) {
+      filter.$or = [
+        { offeringIds: input.offeringId },
+        { resourceTypeKey: { $in: input.resourceTypeKeys } },
+      ];
+    } else {
+      filter.offeringIds = input.offeringId;
+    }
     const rows = await resourceModel()
-      .find({
-        locationId: input.locationId,
-        offeringIds: input.offeringId,
-        status: "ACTIVE",
-      })
+      .find(filter)
       .sort({ resourceId: 1 })
       .lean<ResourceDocument[]>();
     return rows.map(toResource);
@@ -200,6 +210,23 @@ export class MongoBookingRepository implements BookingRepository {
         startsAt: { $lte: cutoff },
       })
       .sort({ startsAt: 1, bookingId: 1 })
+      .limit(SCHEDULED_BOOKING_BATCH_LIMIT)
+      .lean<BookingDocument[]>();
+    return rows.map(toBooking);
+  }
+
+  async listAutoCompleteCandidates(input: {
+    readonly now: Date;
+    readonly graceMinutes: number;
+  }): Promise<readonly Booking[]> {
+    const cutoff = new Date(input.now.getTime() - input.graceMinutes * 60_000);
+    const rows = await bookingModel()
+      .find({
+        kind: BOOKING_KIND.RENTAL,
+        status: "CHECKED_IN",
+        endsAt: { $lte: cutoff },
+      })
+      .sort({ endsAt: 1, bookingId: 1 })
       .limit(SCHEDULED_BOOKING_BATCH_LIMIT)
       .lean<BookingDocument[]>();
     return rows.map(toBooking);

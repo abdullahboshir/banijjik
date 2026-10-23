@@ -71,6 +71,7 @@ export const BOOKING_FREE_CANCEL_HOURS_SETTING_KEY = "booking.freeCancelHours";
 export const BOOKING_LATE_CANCEL_FEE_SETTING_KEY = "booking.lateCancelFee";
 export const BOOKING_NO_SHOW_FEE_SETTING_KEY = "booking.noShowFee";
 export const BOOKING_FEE_PERCENT_SETTING_KEY = "booking.feePercent";
+export const BOOKING_COMPLETE_GRACE_MINUTES_SETTING_KEY = "booking.completeGraceMinutes";
 
 export const BOOKING_SLOT_STEP_MINUTES_DEFAULT = 15;
 export const BOOKING_MIN_NOTICE_MINUTES_DEFAULT = 60;
@@ -84,6 +85,7 @@ export const BOOKING_FREE_CANCEL_HOURS_DEFAULT = 24;
 export const BOOKING_LATE_CANCEL_FEE_DEFAULT = CANCEL_FEE_MODE.NONE;
 export const BOOKING_NO_SHOW_FEE_DEFAULT = CANCEL_FEE_MODE.NONE;
 export const BOOKING_FEE_PERCENT_DEFAULT = 50;
+export const BOOKING_COMPLETE_GRACE_MINUTES_DEFAULT = 60;
 
 export const MAX_RESOURCE_NAME_LENGTH = 120;
 export const MAX_BOOKING_NOTE_LENGTH = 500;
@@ -183,4 +185,9 @@ export interface BookingResponse {
 /** Narrow kind check: card 3.6 only creates SERVICE bookings. */
 export function isServiceBookingKind(kind: OfferingKind | BookingKind): boolean {
   return kind === "SERVICE";
+}
+
+/** Narrow kind check: card 3.6b Part A1 creates RENTAL bookings. */
+export function isRentalBookingKind(kind: OfferingKind | BookingKind): boolean {
+  return kind === "RENTAL";
 }

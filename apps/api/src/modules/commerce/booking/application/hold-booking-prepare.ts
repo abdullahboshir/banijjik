@@ -1,12 +1,16 @@
 import type { ContactId, LocationId, OfferingId, OrganizationId, UserId } from "@banijjik/ids";
 import type { BookingHoldBody } from "@banijjik/validation/booking";
-import type { Money } from "@banijjik/contracts/booking";
+import type { BookingKind, Money } from "@banijjik/contracts/booking";
 import { resolveBookingContactId } from "./booking-slot-selection.js";
 import type { HoldBookingDependencies } from "./use-cases/hold-booking.use-case.js";
 import { quoteDepositForBooking } from "./staff-booking-quote.js";
 import type { PriceQuoterPort } from "./ports/booking-context-ports.js";
-import { loadActiveServiceOffering } from "./staff-booking-quote.js";
+import { loadActiveOffering } from "./staff-booking-quote.js";
 import { reserveHoldSlot } from "./hold-booking-reserve.js";
+
+function computeHoldExpiry(now: Date, holdMinutes: number): Date {
+  return new Date(now.getTime() + holdMinutes * 60_000);
+}
 
 export async function prepareHoldBooking(input: {
   dependencies: HoldBookingDependencies;
@@ -18,6 +22,8 @@ export async function prepareHoldBooking(input: {
   locationId: LocationId;
   offeringId: OfferingId;
   contactId: ContactId;
+  kind: BookingKind;
+  quantity: number;
   startsAt: Date;
   endsAt: Date;
   blockedEndsAt: Date;
@@ -30,7 +36,7 @@ export async function prepareHoldBooking(input: {
   now: Date;
 }> {
   const slot = await reserveHoldSlot(input);
-  const offering = await loadActiveServiceOffering({
+  const offering = await loadActiveOffering({
     dependencies: input.dependencies,
     organizationId: input.organizationId,
     offeringId: slot.offeringId,
@@ -45,23 +51,16 @@ export async function prepareHoldBooking(input: {
     locationId: input.body.locationId,
     offeringId: input.body.offeringId,
     variantId: input.body.variantId,
+    quantity: slot.quantity,
     offering,
   });
   const now = input.dependencies.clock.now();
-  const holdExpiresAt = new Date(now.getTime() + settings.holdMinutes * 60_000);
   return {
-    locationId: slot.locationId,
-    offeringId: slot.offeringId,
+    ...slot,
     contactId,
-    startsAt: slot.startsAt,
-    endsAt: slot.endsAt,
-    blockedEndsAt: slot.blockedEndsAt,
     depositRequired,
-    holdExpiresAt,
+    holdExpiresAt: computeHoldExpiry(now, settings.holdMinutes),
     line,
-    resourceId: slot.resourceId,
-    resourceCapacity: slot.resourceCapacity,
-    memberId: slot.memberId,
     now,
   };
 }

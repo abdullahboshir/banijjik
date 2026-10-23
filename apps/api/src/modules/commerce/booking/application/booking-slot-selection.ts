@@ -100,8 +100,10 @@ export async function reserveResourceForSlot(input: {
   readonly offeringId: OfferingId;
   readonly startsAt: Date;
   readonly blockedEndsAt: Date;
-  readonly preferredResourceId?: ResourceId;
+  readonly preferredResourceId?: ResourceId | undefined;
   readonly timeZone: string;
+  readonly resourceTypeKeys?: readonly string[] | undefined;
+  readonly isRental?: boolean | undefined;
   readonly timeOff: {
     listOverlapping(
       resourceId: ResourceId,
@@ -113,6 +115,7 @@ export async function reserveResourceForSlot(input: {
   const candidates = await input.resources.listActiveForOffering({
     locationId: input.locationId,
     offeringId: input.offeringId,
+    resourceTypeKeys: input.resourceTypeKeys,
   });
   if (candidates.length === 0) throw bookingRuleError(BOOKING_RULE_KEY.RESOURCE_CANNOT_SERVE);
   const resource = await pickResourceForSlot({
@@ -132,6 +135,7 @@ export async function reserveResourceForSlot(input: {
     throw slotUnavailableError();
   }
   if (
+    !input.isRental &&
     !isWithinSchedule({
       startsAt: input.startsAt,
       endsAt: input.blockedEndsAt,

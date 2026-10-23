@@ -1,4 +1,4 @@
-import { BOOKING_STATUS } from "@banijjik/contracts/booking";
+import { BOOKING_STATUS, type BookingKind } from "@banijjik/contracts/booking";
 import type {
   LocationId,
   MemberId,
@@ -16,6 +16,8 @@ export function createStaffBookingFromParts(input: {
   contactId: import("@banijjik/ids").ContactId;
   offeringId: OfferingId;
   variantId: string;
+  kind?: BookingKind;
+  quantity?: number;
   depositRequired: Money;
   startsAt: Date;
   endsAt: Date;
@@ -35,6 +37,8 @@ export function createStaffBookingFromParts(input: {
     contactId: input.contactId,
     offeringId: input.offeringId,
     variantId: input.variantId,
+    kind: input.kind,
+    quantity: input.quantity,
     depositRequired: input.depositRequired,
     startsAt: input.startsAt,
     endsAt: input.endsAt,

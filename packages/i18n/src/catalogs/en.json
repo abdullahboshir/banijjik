@@ -340,6 +340,8 @@
   "errors.unknown_resource_type": "That resource type is not in this business template.",
   "errors.hold_expired": "That hold has expired.",
   "errors.booking_not_service": "Only service bookings are supported here.",
+  "errors.booking_rental_units_out_of_range": "Rental units are outside the allowed minimum and maximum.",
+  "errors.booking_rental_duration_exceeded": "Rental duration exceeds the maximum allowed limit.",
   "permission.credit.pack.read": "View credit packs",
   "permission.credit.pack.update": "Create, change and archive credit packs",
   "permission.credit.account.read": "View customer credit balances and history",

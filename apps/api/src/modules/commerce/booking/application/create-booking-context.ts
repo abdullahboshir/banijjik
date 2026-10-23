@@ -30,6 +30,8 @@ export async function buildStaffBookingForSlot(input: {
     contactId: prepared.contactId,
     offeringId: prepared.offeringId,
     variantId: input.body.variantId,
+    kind: prepared.kind,
+    quantity: prepared.quantity,
     depositRequired: prepared.depositRequired,
     startsAt: prepared.startsAt,
     endsAt: prepared.endsAt,

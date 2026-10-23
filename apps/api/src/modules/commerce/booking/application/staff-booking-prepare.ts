@@ -1,17 +1,19 @@
+import { OFFERING_KIND } from "@banijjik/contracts";
 import type { ContactId, LocationId, OfferingId, OrganizationId, UserId } from "@banijjik/ids";
 import type { BookingCreateBody } from "@banijjik/validation/booking";
-import type { Money } from "@banijjik/contracts/booking";
-import { BOOKING_STATUS } from "@banijjik/contracts/booking";
+import type { BookingKind, Money } from "@banijjik/contracts/booking";
+import { BOOKING_KIND, BOOKING_STATUS } from "@banijjik/contracts/booking";
 import { asId } from "@banijjik/ids";
 import { slotBounds } from "../domain/availability.js";
+import { computeRentalTime } from "../domain/rental-time.js";
 import { resolveBookingContactId } from "./booking-slot-selection.js";
 import type { CreateBookingDependencies } from "./use-cases/create-booking.use-case.js";
 import {
-  loadActiveServiceOffering,
+  loadActiveOffering,
   quoteDepositForBooking,
   staffBookingStatusAndNumber,
 } from "./staff-booking-quote.js";
-import type { PriceQuoterPort } from "./ports/booking-context-ports.js";
+import type { OfferingBookingView, PriceQuoterPort } from "./ports/booking-context-ports.js";
 
 async function staffQuoteContext(input: {
   dependencies: CreateBookingDependencies;
@@ -22,7 +24,7 @@ async function staffQuoteContext(input: {
   locationId: LocationId;
   offeringId: OfferingId;
 }) {
-  const offering = await loadActiveServiceOffering({
+  const offering = await loadActiveOffering({
     dependencies: input.dependencies,
     organizationId: input.organizationId,
     offeringId: input.offeringId,
@@ -41,9 +43,47 @@ async function staffQuoteContext(input: {
     locationId: input.body.locationId,
     offeringId: input.body.offeringId,
     variantId: input.body.variantId,
+    quantity: input.body.quantity,
     offering,
   });
   return { offering, contactId, line, depositRequired };
+}
+
+async function resolveStaffBookingBounds(input: {
+  readonly offering: OfferingBookingView;
+  readonly requestedStartsAt: Date;
+  readonly requestedQuantity: number | undefined;
+  readonly timeZoneReader: { read(organizationId: OrganizationId): Promise<string> };
+  readonly organizationId: OrganizationId;
+}) {
+  if (input.offering.kind === OFFERING_KIND.RENTAL) {
+    const timeZone = await input.timeZoneReader.read(input.organizationId);
+    const rentalTime = computeRentalTime({
+      startsAt: input.requestedStartsAt,
+      quantity: input.requestedQuantity,
+      rental: input.offering.rental,
+      timeZone,
+    });
+    return {
+      kind: BOOKING_KIND.RENTAL,
+      startsAt: rentalTime.startsAt,
+      endsAt: rentalTime.endsAt,
+      blockedEndsAt: rentalTime.blockedEndsAt,
+      quantity: rentalTime.quantity,
+    };
+  }
+  const bounds = slotBounds(
+    input.requestedStartsAt,
+    input.offering.durationMinutes,
+    input.offering.service.bufferAfterMinutes,
+  );
+  return {
+    kind: BOOKING_KIND.SERVICE,
+    startsAt: input.requestedStartsAt,
+    endsAt: bounds.endsAt,
+    blockedEndsAt: bounds.blockedEndsAt,
+    quantity: 1,
+  };
 }
 
 export async function prepareStaffBooking(input: {
@@ -56,6 +96,8 @@ export async function prepareStaffBooking(input: {
   locationId: LocationId;
   offeringId: OfferingId;
   contactId: ContactId;
+  kind: BookingKind;
+  quantity: number;
   startsAt: Date;
   endsAt: Date;
   blockedEndsAt: Date;
@@ -67,7 +109,7 @@ export async function prepareStaffBooking(input: {
 }> {
   const locationId = asId<LocationId>(input.body.locationId);
   const offeringId = asId<OfferingId>(input.body.offeringId);
-  const startsAt = new Date(input.body.startsAt);
+  const requestedStartsAt = new Date(input.body.startsAt);
   const quoted = await staffQuoteContext({
     dependencies: input.dependencies,
     organizationId: input.organizationId,
@@ -77,28 +119,30 @@ export async function prepareStaffBooking(input: {
     locationId,
     offeringId,
   });
-  const { endsAt, blockedEndsAt } = slotBounds(
-    startsAt,
-    quoted.offering.durationMinutes,
-    quoted.offering.service.bufferAfterMinutes,
-  );
+
+  const bounds = await resolveStaffBookingBounds({
+    offering: quoted.offering,
+    requestedStartsAt,
+    requestedQuantity: input.body.quantity,
+    timeZoneReader: input.dependencies.timeZone,
+    organizationId: input.organizationId,
+  });
+
   const settings = await input.dependencies.settings.read(input.organizationId);
   const now = input.dependencies.clock.now();
-  const hasDeposit = quoted.depositRequired.amount > 0;
-  const { status, bookingNumber } = await staffBookingStatusAndNumber({
+  const requireApproval = settings.requireApproval || quoted.depositRequired.amount > 0;
+  const outcome = await staffBookingStatusAndNumber({
     organizationId: input.organizationId,
-    requireApproval: settings.requireApproval || hasDeposit,
+    requireApproval,
   });
   return {
     locationId,
     offeringId,
     contactId: quoted.contactId,
-    startsAt,
-    endsAt,
-    blockedEndsAt,
+    ...bounds,
     depositRequired: quoted.depositRequired,
-    status,
-    bookingNumber,
+    status: outcome.status,
+    bookingNumber: outcome.bookingNumber,
     line: quoted.line,
     now,
   };

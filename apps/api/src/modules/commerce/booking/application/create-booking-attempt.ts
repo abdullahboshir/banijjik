@@ -1,3 +1,4 @@
+import { OFFERING_KIND } from "@banijjik/contracts";
 import { BOOKING_STATUS, type BookingResponse } from "@banijjik/contracts/booking";
 import {
   asId,
@@ -11,6 +12,7 @@ import {
 import type { BookingCreateBody } from "@banijjik/validation/booking";
 import { BOOKING_RULE_KEY } from "@banijjik/contracts/booking";
 import { slotBounds } from "../domain/availability.js";
+import { computeRentalTime } from "../domain/rental-time.js";
 import { bookingRuleError } from "../domain/errors.js";
 import { buildStaffBookingForSlot } from "./create-booking-context.js";
 import { runWithTxnRetry } from "./run-with-txn-retry.js";
@@ -27,8 +29,8 @@ export async function createBookingWithRetries(input: {
 }): Promise<BookingResponse> {
   const locationId = asId<LocationId>(input.body.locationId);
   const offeringId = asId<OfferingId>(input.body.offeringId);
-  const startsAt = new Date(input.body.startsAt);
-  const slotOffering = await input.dependencies.offerings.readServiceOffering({
+  const requestedStartsAt = new Date(input.body.startsAt);
+  const slotOffering = await input.dependencies.offerings.readOffering({
     organizationId: input.organizationId,
     offeringId,
     variantId: input.body.variantId,
@@ -37,12 +39,34 @@ export async function createBookingWithRetries(input: {
   if (slotOffering === undefined || !slotOffering.isActive) {
     throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
   }
-  const { blockedEndsAt } = slotBounds(
-    startsAt,
-    slotOffering.durationMinutes,
-    slotOffering.service.bufferAfterMinutes,
-  );
   const timeZone = await input.dependencies.timeZone.read(input.organizationId);
+
+  let startsAt = requestedStartsAt;
+  let blockedEndsAt: Date;
+  let resourceTypeKeys: readonly string[] | undefined;
+  let isRental = false;
+
+  if (slotOffering.kind === OFFERING_KIND.RENTAL) {
+    isRental = true;
+    resourceTypeKeys = slotOffering.rental.resourceTypeKeys;
+    const rentalTime = computeRentalTime({
+      startsAt: requestedStartsAt,
+      quantity: input.body.quantity,
+      rental: slotOffering.rental,
+      timeZone,
+    });
+    startsAt = rentalTime.startsAt;
+    blockedEndsAt = rentalTime.blockedEndsAt;
+  } else {
+    resourceTypeKeys = slotOffering.service.resourceTypeKeys;
+    const bounds = slotBounds(
+      startsAt,
+      slotOffering.durationMinutes,
+      slotOffering.service.bufferAfterMinutes,
+    );
+    blockedEndsAt = bounds.blockedEndsAt;
+  }
+
   const preferred =
     input.body.resourceId === undefined ? undefined : asId<ResourceId>(input.body.resourceId);
 
@@ -54,6 +78,8 @@ export async function createBookingWithRetries(input: {
       startsAt,
       blockedEndsAt,
       timeZone,
+      resourceTypeKeys,
+      isRental,
       preferred,
     }),
   );
@@ -70,6 +96,8 @@ async function tryCreateBookingOnce(input: {
   startsAt: Date;
   blockedEndsAt: Date;
   timeZone: string;
+  resourceTypeKeys?: readonly string[] | undefined;
+  isRental?: boolean | undefined;
   preferred: ResourceId | undefined;
 }): Promise<BookingResponse> {
   const resource = await reserveResourceForSlot({
@@ -80,6 +108,8 @@ async function tryCreateBookingOnce(input: {
     offeringId: input.offeringId,
     startsAt: input.startsAt,
     blockedEndsAt: input.blockedEndsAt,
+    resourceTypeKeys: input.resourceTypeKeys,
+    isRental: input.isRental,
     ...(input.preferred === undefined ? {} : { preferredResourceId: input.preferred }),
     timeZone: input.timeZone,
     timeOff: input.dependencies.timeOff,

@@ -1,8 +1,10 @@
-import type { ServiceDetails } from "@banijjik/contracts/catalog";
+import { OFFERING_KIND } from "@banijjik/contracts";
+import type { RentalDetails, ServiceDetails } from "@banijjik/contracts/catalog";
 import type { QuoteResponse } from "@banijjik/contracts/pricing";
 import type { ContactId, LocationId, OfferingId, OrganizationId } from "@banijjik/ids";
 
 export interface ServiceOfferingView {
+  readonly kind?: typeof OFFERING_KIND.SERVICE;
   readonly offeringId: OfferingId;
   readonly variantId: string;
   readonly name: string;
@@ -11,6 +13,17 @@ export interface ServiceOfferingView {
   readonly isActive: boolean;
 }
 
+export interface RentalOfferingView {
+  readonly kind: typeof OFFERING_KIND.RENTAL;
+  readonly offeringId: OfferingId;
+  readonly variantId: string;
+  readonly name: string;
+  readonly rental: RentalDetails;
+  readonly isActive: boolean;
+}
+
+export type OfferingBookingView = ServiceOfferingView | RentalOfferingView;
+
 export interface BookingOfferingReader {
   readServiceOffering(input: {
     readonly organizationId: OrganizationId;
@@ -18,6 +31,13 @@ export interface BookingOfferingReader {
     readonly variantId: string;
     readonly locationId: LocationId;
   }): Promise<ServiceOfferingView | undefined>;
+
+  readOffering(input: {
+    readonly organizationId: OrganizationId;
+    readonly offeringId: OfferingId;
+    readonly variantId: string;
+    readonly locationId: LocationId;
+  }): Promise<OfferingBookingView | undefined>;
 }
 
 export interface BookingSettings {
@@ -32,6 +52,7 @@ export interface BookingSettings {
   readonly lateCancelFee?: import("@banijjik/contracts/booking").CancelFeeMode;
   readonly noShowFee?: import("@banijjik/contracts/booking").CancelFeeMode;
   readonly feePercent?: number;
+  readonly completeGraceMinutes?: number;
 }
 
 export interface BookingSettingsReader {
@@ -68,5 +89,6 @@ export interface PriceQuoterPort {
     readonly locationId: string;
     readonly offeringId: string;
     readonly variantId: string;
+    readonly quantity?: number;
   }): Promise<QuoteResponse>;
 }

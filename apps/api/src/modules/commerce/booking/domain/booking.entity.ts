@@ -63,6 +63,8 @@ export class Booking {
     readonly contactId: ContactId;
     readonly offeringId: OfferingId;
     readonly variantId: string;
+    readonly kind?: BookingKind | undefined;
+    readonly quantity?: number | undefined;
     readonly depositRequired: Money;
     readonly startsAt: Date;
     readonly endsAt: Date;
@@ -84,14 +86,14 @@ export class Booking {
       contactId: input.contactId,
       offeringId: input.offeringId,
       variantId: input.variantId,
-      kind: BOOKING_KIND.SERVICE,
+      kind: input.kind ?? BOOKING_KIND.SERVICE,
       depositRequired: input.depositRequired,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
       blockedEndsAt: input.blockedEndsAt,
       resourceIds: input.resourceIds,
       providerMemberId: input.providerMemberId,
-      quantity: 1,
+      quantity: input.quantity ?? 1,
       price: input.price,
       status: input.status,
       source: BOOKING_SOURCE.STAFF,
@@ -112,6 +114,8 @@ export class Booking {
     readonly contactId: ContactId;
     readonly offeringId: OfferingId;
     readonly variantId: string;
+    readonly kind?: BookingKind | undefined;
+    readonly quantity?: number | undefined;
     readonly depositRequired: Money;
     readonly startsAt: Date;
     readonly endsAt: Date;
@@ -133,14 +137,14 @@ export class Booking {
       contactId: input.contactId,
       offeringId: input.offeringId,
       variantId: input.variantId,
-      kind: BOOKING_KIND.SERVICE,
+      kind: input.kind ?? BOOKING_KIND.SERVICE,
       depositRequired: input.depositRequired,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
       blockedEndsAt: input.blockedEndsAt,
       resourceIds: input.resourceIds,
       providerMemberId: input.providerMemberId,
-      quantity: 1,
+      quantity: input.quantity ?? 1,
       price: input.price,
       status: BOOKING_STATUS.HELD,
       source: input.source,

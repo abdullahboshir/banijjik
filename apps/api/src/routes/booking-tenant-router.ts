@@ -131,7 +131,7 @@ function quoterOf(input: BookingRouterInput): BookingTenantDependencies["quoter"
           {
             offeringId: payload.offeringId,
             variantId: payload.variantId,
-            quantity: 1,
+            quantity: payload.quantity ?? 1,
             modifierOptionIds: [],
           },
         ],

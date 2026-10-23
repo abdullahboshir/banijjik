@@ -340,6 +340,8 @@
   "errors.unknown_resource_type": "এই রিসোর্স টাইপ টেমপ্লেটে নেই।",
   "errors.hold_expired": "হোল্ডের মেয়াদ শেষ।",
   "errors.booking_not_service": "এখানে শুধু সার্ভিস বুকিং চলে।",
+  "errors.booking_rental_units_out_of_range": "ভাড়ার ইউনিটের পরিমাণ অনুমোদিত সীমার বাইরে।",
+  "errors.booking_rental_duration_exceeded": "ভাড়ার সময়সীমা অনুমোদিত সর্বোচ্চ সীমা অতিক্রম করেছে।",
   "permission.credit.pack.read": "ক্রেডিট প্যাক দেখা",
   "permission.credit.pack.update": "ক্রেডিট প্যাক তৈরি, পরিবর্তন ও আর্কাইভ",
   "permission.credit.account.read": "গ্রাহকের ক্রেডিট ব্যালেন্স ও ইতিহাস দেখা",

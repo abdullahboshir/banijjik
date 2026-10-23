@@ -100,6 +100,7 @@ function bookingShared(wiring: AppointmentWiring) {
     offerings: wiring.offerings,
     settings: wiring.settings,
     depositCheck: wiring.input.depositCheck,
+    timeZone: wiring.timeZoneReader,
   };
 }
 

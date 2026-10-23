@@ -1,4 +1,6 @@
 import {
+  BOOKING_COMPLETE_GRACE_MINUTES_DEFAULT,
+  BOOKING_COMPLETE_GRACE_MINUTES_SETTING_KEY,
   BOOKING_DEPOSIT_REQUIRED_DEFAULT,
   BOOKING_DEPOSIT_REQUIRED_SETTING_KEY,
   BOOKING_DEPOSIT_VALUE_DEFAULT,
@@ -67,6 +69,7 @@ const BOOKING_SETTING_KEYS = [
   BOOKING_LATE_CANCEL_FEE_SETTING_KEY,
   BOOKING_NO_SHOW_FEE_SETTING_KEY,
   BOOKING_FEE_PERCENT_SETTING_KEY,
+  BOOKING_COMPLETE_GRACE_MINUTES_SETTING_KEY,
 ] as const;
 
 function readVal(resolved: ReadonlyMap<string, { readonly value: unknown }>, key: string): unknown {
@@ -112,6 +115,10 @@ function mapResolvedSettings(resolved: ReadonlyMap<string, { readonly value: unk
     feePercent: numberOrDefault(
       readVal(resolved, BOOKING_FEE_PERCENT_SETTING_KEY),
       BOOKING_FEE_PERCENT_DEFAULT,
+    ),
+    completeGraceMinutes: numberOrDefault(
+      readVal(resolved, BOOKING_COMPLETE_GRACE_MINUTES_SETTING_KEY),
+      BOOKING_COMPLETE_GRACE_MINUTES_DEFAULT,
     ),
   };
 }

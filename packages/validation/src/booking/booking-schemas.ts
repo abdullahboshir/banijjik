@@ -111,6 +111,7 @@ export const bookingCreateRequestSchema = z
     variantId: uuidV7Schema,
     locationId: uuidV7Schema,
     startsAt: z.string().datetime(),
+    quantity: z.number().int().positive().optional(),
     resourceId: uuidV7Schema.optional(),
     note: z.string().trim().min(1).max(MAX_BOOKING_NOTE_LENGTH).optional(),
     contactId: uuidV7Schema.optional(),

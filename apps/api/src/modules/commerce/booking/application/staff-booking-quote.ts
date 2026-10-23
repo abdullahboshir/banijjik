@@ -1,18 +1,22 @@
+import { OFFERING_KIND, SEQUENCE_KEY } from "@banijjik/contracts";
 import { BOOKING_MODE } from "@banijjik/contracts/catalog";
-import { SEQUENCE_KEY } from "@banijjik/contracts";
-import { BOOKING_STATUS } from "@banijjik/contracts/booking";
-import { BOOKING_RULE_KEY } from "@banijjik/contracts/booking";
-import type { LocationId, OfferingId, OrganizationId } from "@banijjik/ids";
+import { BOOKING_RULE_KEY, BOOKING_STATUS, type Money } from "@banijjik/contracts/booking";
+import type {
+  LocationId,
+  OfferingId,
+  OrganizationId,
+  OrganizationId as OrgId,
+} from "@banijjik/ids";
 import { nextSequenceValue } from "../../../../kernel/sequence/index.js";
 import { bookingRuleError } from "../domain/errors.js";
 import { computeDepositRequired } from "../domain/deposit.js";
 import type {
   BookingOfferingReader,
   BookingSettingsReader,
+  OfferingBookingView,
   PriceQuoterPort,
   ServiceOfferingView,
 } from "./ports/booking-context-ports.js";
-import type { OrganizationId as OrgId } from "@banijjik/ids";
 
 type StaffQuoteDependencies = {
   readonly offerings: BookingOfferingReader;
@@ -24,6 +28,26 @@ function formatBookingNumber(value: number): string {
   return String(value).padStart(6, "0");
 }
 
+export async function loadActiveOffering(input: {
+  dependencies: StaffQuoteDependencies;
+  organizationId: OrganizationId;
+  offeringId: OfferingId;
+  variantId: string;
+  locationId: LocationId;
+}): Promise<OfferingBookingView> {
+  const offering = await input.dependencies.offerings.readOffering(input);
+  if (offering === undefined || !offering.isActive) {
+    throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
+  }
+  if (
+    offering.kind === OFFERING_KIND.SERVICE &&
+    offering.service.bookingMode === BOOKING_MODE.WALK_IN_ONLY
+  ) {
+    throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
+  }
+  return offering;
+}
+
 export async function loadActiveServiceOffering(input: {
   dependencies: StaffQuoteDependencies;
   organizationId: OrganizationId;
@@ -31,11 +55,8 @@ export async function loadActiveServiceOffering(input: {
   variantId: string;
   locationId: LocationId;
 }): Promise<ServiceOfferingView> {
-  const offering = await input.dependencies.offerings.readServiceOffering(input);
-  if (offering === undefined || !offering.isActive) {
-    throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
-  }
-  if (offering.service.bookingMode === BOOKING_MODE.WALK_IN_ONLY) {
+  const offering = await loadActiveOffering(input);
+  if (offering.kind !== OFFERING_KIND.SERVICE) {
     throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
   }
   return offering;
@@ -64,20 +85,37 @@ export async function quoteDepositForBooking(input: {
   locationId: string;
   offeringId: string;
   variantId: string;
-  offering: ServiceOfferingView;
+  quantity?: number | undefined;
+  offering: OfferingBookingView;
 }): Promise<{
   line: NonNullable<Awaited<ReturnType<PriceQuoterPort["quote"]>>["lines"][0]>;
-  depositRequired: ReturnType<typeof computeDepositRequired>;
+  depositRequired: Money;
 }> {
-  const settings = await input.dependencies.settings.read(input.organizationId);
   const quote = await input.dependencies.quoter.quote({
     organizationId: input.organizationId,
     locationId: input.locationId,
     offeringId: input.offeringId,
     variantId: input.variantId,
+    quantity: input.quantity ?? 1,
   });
   const line = quote.lines[0];
   if (line === undefined) throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
+
+  if (input.offering.kind === OFFERING_KIND.RENTAL) {
+    if (input.offering.rental.depositAmount !== undefined) {
+      return { line, depositRequired: input.offering.rental.depositAmount };
+    }
+    const settings = await input.dependencies.settings.read(input.organizationId);
+    const depositRequired = computeDepositRequired({
+      orgMode: settings.depositRequired,
+      orgValue: settings.depositValue,
+      offeringRule: undefined,
+      lineTotal: line.lineNetTotal,
+    });
+    return { line, depositRequired };
+  }
+
+  const settings = await input.dependencies.settings.read(input.organizationId);
   const depositRequired = computeDepositRequired({
     orgMode: settings.depositRequired,
     orgValue: settings.depositValue,
