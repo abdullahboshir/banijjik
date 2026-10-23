@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
 import { fillLabel } from "../catalog/catalog-labels";
 import { CreditPurchaseCard } from "./credit-purchase-card";
-import { CreditPurchaseDetailSheet } from "./credit-purchase-detail-sheet";
+import { CreditPurchaseDetailSheetLazy } from "./credit-purchase-detail-sheet-lazy";
 import type { CreditPurchaseLabels } from "./credit-purchase-labels";
 import {
   creditPurchasesHasNext,
@@ -111,17 +111,19 @@ export function CreditPurchasesManager(props: CreditPurchasesManagerProps): Reac
 
       <Pager basePath={basePath} query={query} total={total} labels={labels.page} />
 
-      <CreditPurchaseDetailSheet
-        purchase={selectedPurchase}
-        organizationId={organizationId}
-        canVerify={canVerify}
-        isOwner={isOwner}
-        locations={locations}
-        locale={locale}
-        labels={labels}
-        onClose={() => setSelectedId(undefined)}
-        onUpdated={handleUpdated}
-      />
+      {selectedPurchase ? (
+        <CreditPurchaseDetailSheetLazy
+          purchase={selectedPurchase}
+          organizationId={organizationId}
+          canVerify={canVerify}
+          isOwner={isOwner}
+          locations={locations}
+          locale={locale}
+          labels={labels}
+          onClose={() => setSelectedId(undefined)}
+          onUpdated={handleUpdated}
+        />
+      ) : null}
     </div>
   );
 }

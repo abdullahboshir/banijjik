@@ -29,6 +29,12 @@ vi.mock("./credit-api", () => ({
   grantApproval: (...args: unknown[]) => approvalWrites.grantApproval(...args),
 }));
 
+// The page loads the sheet lazily for the script budget; the unit tests render it directly.
+vi.mock("./credit-purchase-detail-sheet-lazy", async () => ({
+  CreditPurchaseDetailSheetLazy: (await import("./credit-purchase-detail-sheet"))
+    .CreditPurchaseDetailSheet,
+}));
+
 const { CreditPurchasesManager } = await import("./credit-purchases-manager");
 const { creditPurchaseLabelsOf } = await import("./credit-purchase-labels");
 

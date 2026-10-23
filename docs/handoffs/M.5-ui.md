@@ -46,6 +46,7 @@
 Recorded by the lead at the merge check (2026-10-23); the implementer listed none:
 - `apps/api/src/modules/commerce/credit/module.manifest.ts` gained the `credit.purchases` menu item. The plan said Part B changes no API file, but menus come only from the manifest, so the screen needs it.
 - The browser test inserts the PENDING purchase into Mongo instead of submitting it through the customer API. The customer submission path is covered by the Part A API tests.
+- The new budget check measured `/credit/purchases` at 186 KiB (over 180). The lead made the detail sheet (with the approval PIN dialog and the verify/reject hooks) load lazily through `credit-purchase-detail-sheet-lazy.tsx`, rendered only while a purchase is open.
 - The lead added the initial-script budget check for `/credit/packs` and `/credit/purchases` to `credit-screens.browser.test.ts` (the shared 180 KiB admin budget; the plan's 170 KiB predates the owner's 2026-10-22 budget).
 
 CI: https://github.com/abdullahboshir/banijjik/actions/runs/39920274298 (green before the lead's budget test).
