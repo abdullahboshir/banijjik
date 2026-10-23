@@ -117,6 +117,26 @@ async function performRefund(
   }
 }
 
+function submitPendingApproval(opts: {
+  readonly organizationId: string;
+  readonly pendingInput?: RefundPaymentInput | undefined;
+  readonly pinInput: { approverMemberId: string; pin: string };
+  readonly approval: ReturnType<typeof useApprovalDialogState>;
+  readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
+}): Promise<PaymentResponse | undefined> {
+  if (!opts.pendingInput) return Promise.resolve(undefined);
+  return submitApprovalPin({
+    organizationId: opts.organizationId,
+    pendingInput: opts.pendingInput,
+    pinInput: opts.pinInput,
+    setIsApproving: opts.approval.setIsApproving,
+    setApprovalError: opts.approval.setApprovalError,
+    closeApproval: opts.approval.closeApproval,
+    handlePinError: opts.approval.handlePinError,
+    onSuccess: opts.onSuccess,
+  });
+}
+
 export function useRefundFlow(props: {
   readonly organizationId: string;
   readonly noApproversMessage: string;
@@ -125,16 +145,7 @@ export function useRefundFlow(props: {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [pendingInput, setPendingInput] = useState<RefundPaymentInput | undefined>();
-  const {
-    dialogState,
-    approvalError,
-    setApprovalError,
-    isApproving,
-    setIsApproving,
-    openApproval,
-    closeApproval,
-    handlePinError,
-  } = useApprovalDialogState();
+  const approval = useApprovalDialogState();
 
   async function openApprovalFor(input: RefundPaymentInput): Promise<void> {
     setPendingInput(input);
@@ -147,7 +158,7 @@ export function useRefundFlow(props: {
       setErrorMessage(result.error);
       return;
     }
-    openApproval(result.approvers);
+    approval.openApproval(result.approvers);
   }
 
   async function executeRefund(input: RefundPaymentInput): Promise<PaymentResponse | undefined> {
@@ -163,29 +174,26 @@ export function useRefundFlow(props: {
     }
   }
 
+  const handleApprovalSubmit = (pinInput: { approverMemberId: string; pin: string }) =>
+    submitPendingApproval({
+      organizationId: props.organizationId,
+      pendingInput,
+      pinInput,
+      approval,
+      onSuccess: props.onSuccess,
+    });
+
   return {
     isSubmitting,
-    isApproving,
-    showApprovalDialog: dialogState.open,
-    approvers: dialogState.approvers,
-    isPinLocked: dialogState.isLocked,
+    isApproving: approval.isApproving,
+    showApprovalDialog: approval.dialogState.open,
+    approvers: approval.dialogState.approvers,
+    isPinLocked: approval.dialogState.isLocked,
     errorMessage,
-    approvalError,
+    approvalError: approval.approvalError,
     executeRefund,
-    handleApprovalSubmit: (pinInput) =>
-      pendingInput
-        ? submitApprovalPin({
-            organizationId: props.organizationId,
-            pendingInput,
-            pinInput,
-            setIsApproving,
-            setApprovalError,
-            closeApproval,
-            handlePinError,
-            onSuccess: props.onSuccess,
-          })
-        : Promise.resolve(undefined),
-    closeApprovalDialog: closeApproval,
+    handleApprovalSubmit,
+    closeApprovalDialog: approval.closeApproval,
     resetError: () => setErrorMessage(undefined),
   };
 }

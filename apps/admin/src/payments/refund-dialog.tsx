@@ -3,7 +3,6 @@
 import {
   ACCEPTED_PAYMENT_METHODS,
   PAYMENT_METHOD,
-  type PaymentAllocation,
   type PaymentMethod,
   type PaymentResponse,
 } from "@banijjik/contracts/payment";
@@ -20,6 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
 import type { PaymentLabels } from "./payment-labels";
+import { RefundAllocationsList, buildRefundAllocations } from "./refund-allocations";
 import { useRefundFlow, type RefundFlowState } from "./use-refund-flow";
 
 export interface RefundDialogProps {
@@ -52,40 +52,6 @@ interface RefundFormProps {
   readonly labels: RefundDialogProps["labels"];
   readonly refundFlow: RefundFlowState;
   readonly onCancel: () => void;
-}
-
-function RefundAllocationsList(props: {
-  readonly allocations: readonly PaymentAllocation[];
-  readonly allocationAmounts: readonly number[];
-  readonly label: string;
-  readonly disabled: boolean;
-  readonly onChange: (index: number, newMinor: number) => void;
-}): ReactElement | null {
-  const { allocations, allocationAmounts, label, disabled, onChange } = props;
-  if (allocations.length === 0) return null;
-  return (
-    <div className="flex flex-col gap-2 rounded-md border border-default p-3">
-      <span className="text-body-sm font-semibold text-primary">{label}</span>
-      {allocations.map((alloc, idx) => (
-        <div key={alloc.requestId} className="flex items-center justify-between gap-2">
-          <span className="text-body-sm text-secondary">
-            {`${alloc.requestType} (${alloc.requestId.slice(0, 8)}...)`}
-          </span>
-          <div className="w-32">
-            <TextInput
-              inputMode="decimal"
-              value={String((allocationAmounts[idx] ?? alloc.amount.amount) / 100)}
-              onChange={(e) => {
-                const parsed = parseMoneyInput(e.target.value, 2)?.minorUnits ?? 0;
-                onChange(idx, parsed);
-              }}
-              disabled={disabled}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 interface RefundMethodAndRefProps {
@@ -191,17 +157,12 @@ function useRefundFormState(payment: PaymentResponse, refundFlow: RefundFlowStat
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     if (parsedAmount <= 0) return;
-    const allocations: PaymentAllocation[] = payment.allocations.map((alloc, idx) => ({
-      requestType: alloc.requestType,
-      requestId: alloc.requestId,
-      amount: {
-        amount:
-          payment.allocations.length === 1
-            ? parsedAmount
-            : (allocationAmounts[idx] ?? alloc.amount.amount),
-        currency: payment.amount.currency,
-      },
-    }));
+    const allocations = buildRefundAllocations({
+      allocations: payment.allocations,
+      parsedAmount,
+      allocationAmounts,
+      currency: payment.amount.currency,
+    });
     await refundFlow.executeRefund({
       locationId: payment.locationId,
       method,

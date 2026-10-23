@@ -89,6 +89,50 @@ function SelectFilters(props: SelectFiltersProps): ReactElement {
   );
 }
 
+function buildUpdatedQuery(
+  limit: number,
+  fields: { method: string; direction: string; locationId: string; from: string; to: string },
+): PaymentsQuery {
+  return {
+    page: 1,
+    limit,
+    method: (fields.method as PaymentMethod) || undefined,
+    direction: (fields.direction as PaymentDirection) || undefined,
+    locationId: fields.locationId || undefined,
+    from: fields.from || undefined,
+    to: fields.to || undefined,
+  };
+}
+
+function DateFilters(props: {
+  readonly from: string;
+  readonly to: string;
+  readonly labels: PaymentLabels;
+  readonly onFromChange: (val: string) => void;
+  readonly onToChange: (val: string) => void;
+}): ReactElement {
+  return (
+    <>
+      <FormField label={props.labels.filter.from} htmlFor="filter-from">
+        <TextInput
+          id="filter-from"
+          type="date"
+          value={props.from}
+          onChange={(e) => props.onFromChange(e.target.value)}
+        />
+      </FormField>
+      <FormField label={props.labels.filter.to} htmlFor="filter-to">
+        <TextInput
+          id="filter-to"
+          type="date"
+          value={props.to}
+          onChange={(e) => props.onToChange(e.target.value)}
+        />
+      </FormField>
+    </>
+  );
+}
+
 export function PaymentsFilterForm(props: PaymentsFilterFormProps): ReactElement {
   const router = useRouter();
   const [method, setMethod] = useState<string>(props.query.method ?? "");
@@ -99,15 +143,13 @@ export function PaymentsFilterForm(props: PaymentsFilterFormProps): ReactElement
 
   function handleApply(e: React.FormEvent): void {
     e.preventDefault();
-    const updatedQuery: PaymentsQuery = {
-      page: 1,
-      limit: props.query.limit,
-      method: (method as PaymentMethod) || undefined,
-      direction: (direction as PaymentDirection) || undefined,
-      locationId: locationId || undefined,
-      from: from || undefined,
-      to: to || undefined,
-    };
+    const updatedQuery = buildUpdatedQuery(props.query.limit, {
+      method,
+      direction,
+      locationId,
+      from,
+      to,
+    });
     const search = paymentsApiQuery(updatedQuery);
     router.push(search ? `${props.basePath}?${search}` : props.basePath);
   }
@@ -136,17 +178,13 @@ export function PaymentsFilterForm(props: PaymentsFilterFormProps): ReactElement
         onDirectionChange={setDirection}
         onLocationChange={setLocationId}
       />
-      <FormField label={props.labels.filter.from} htmlFor="filter-from">
-        <TextInput
-          id="filter-from"
-          type="date"
-          value={from}
-          onChange={(e) => setFrom(e.target.value)}
-        />
-      </FormField>
-      <FormField label={props.labels.filter.to} htmlFor="filter-to">
-        <TextInput id="filter-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-      </FormField>
+      <DateFilters
+        from={from}
+        to={to}
+        labels={props.labels}
+        onFromChange={setFrom}
+        onToChange={setTo}
+      />
       <div className="flex items-end gap-2 sm:col-span-2 md:col-span-5 md:justify-end">
         <Button type="button" variant="secondary" onClick={handleReset}>
           {props.labels.filter.reset}
