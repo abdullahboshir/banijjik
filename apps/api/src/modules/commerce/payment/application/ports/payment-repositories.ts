@@ -128,8 +128,8 @@ export interface PaymentSummaryRepository {
     requestType: PaymentRequestType,
     requestId: string,
   ): Promise<PaymentSummary | undefined>;
-  ensureSummary?(input: EnsureSummaryInput): Promise<void>;
-  setTotal?(input: SetSummaryTotalInput): Promise<void>;
+  ensureSummary(input: EnsureSummaryInput): Promise<void>;
+  setTotal(input: SetSummaryTotalInput): Promise<void>;
   applyAllocation(input: ApplyAllocationInput): Promise<void>;
   applyRefund(input: ApplyRefundInput): Promise<void>;
   restoreAllocation(input: RestoreAllocationInput): Promise<void>;

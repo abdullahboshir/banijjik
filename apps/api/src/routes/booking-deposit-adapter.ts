@@ -105,7 +105,7 @@ export function buildBookingDepositCheckAdapter(
   return {
     isDepositSatisfied: (input) => isBookingDepositSatisfied(repos.summaries, input),
     initializeSummary: async (input) => {
-      await repos.summaries.ensureSummary?.({
+      await repos.summaries.ensureSummary({
         organizationId: input.organizationId,
         locationId: input.locationId,
         requestType: PAYMENT_REQUEST_TYPE.BOOKING,

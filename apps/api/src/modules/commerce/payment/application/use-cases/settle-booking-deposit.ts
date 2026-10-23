@@ -207,7 +207,7 @@ export async function settleBookingTermination(
   if (creditAmount > 0) {
     await creditRefundForTermination(deps, input, creditAmount);
   }
-  await deps.summaries.setTotal?.({
+  await deps.summaries.setTotal({
     organizationId: input.organizationId,
     requestType: PAYMENT_REQUEST_TYPE.BOOKING,
     requestId: input.requestId,

@@ -6,6 +6,7 @@ import {
   BOOKING_TERMINATION_MODE,
 } from "@banijjik/contracts/booking";
 import type { ScheduledJob } from "../../../../../kernel/jobs/index.js";
+import { getLogger } from "../../../../../kernel/logger/index.js";
 import type { OrganizationId, ResourceId } from "@banijjik/ids";
 import { buildBookingSettingsReader } from "../booking-settings-reader.js";
 import type { BookingSettings } from "../ports/booking-context-ports.js";
@@ -97,8 +98,17 @@ export function buildMarkNoShowsJob(input: MarkNoShowsDependencies): ScheduledJo
         if (resourceId === undefined) continue;
         try {
           await settleCandidateNoShow({ input, row, orgSettings, now, resourceId });
-        } catch {
-          // catch per row, continue (T1 checklist #8)
+        } catch (error) {
+          // One failing booking (or a 409 from a staff edit meanwhile) must not stop the others.
+          getLogger().error(
+            {
+              event: "booking.mark_no_show_failed",
+              organizationId,
+              bookingId: row.bookingId,
+              err: error,
+            },
+            "marking one booking as no-show failed",
+          );
         }
       }
     },
