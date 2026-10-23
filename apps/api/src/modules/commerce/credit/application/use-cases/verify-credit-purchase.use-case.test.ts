@@ -30,35 +30,53 @@ function bdtPurchase(): CreditPurchase {
 }
 
 /** Only the ports the approval check touches; the use case stops before any write. */
-function buildDeps(purchase: CreditPurchase, threshold: unknown): CreditDependencies {
+function buildDeps(
+  purchase: CreditPurchase,
+  input: { readonly threshold: number; readonly organizationCurrency: string },
+): CreditDependencies {
   const partial = {
     purchases: { findById: vi.fn(async () => purchase) },
     users: { findIdentifiers: vi.fn(async () => undefined) },
     resolveSettings: vi.fn(
-      async () => new Map([[CREDIT_RULE_KEY.PURCHASE_APPROVAL_ABOVE, { value: threshold }]]),
+      async () => new Map([[CREDIT_RULE_KEY.PURCHASE_APPROVAL_ABOVE, { value: input.threshold }]]),
     ),
+    currency: { read: vi.fn(async () => input.organizationCurrency) },
     unitOfWork: { run: vi.fn() },
   };
   return partial as unknown as CreditDependencies;
 }
 
+function verifyWithoutToken(deps: CreditDependencies, purchase: CreditPurchase): Promise<unknown> {
+  const verify = new VerifyCreditPurchaseUseCase(deps);
+  return runWithRequestContext({ requestId: newId(), organizationId }, () =>
+    verify.execute({
+      creditPurchaseId: purchase.creditPurchaseId,
+      version: purchase.version,
+      actorUserId: newId(),
+      isOwner: false,
+    }),
+  );
+}
+
 describe("VerifyCreditPurchaseUseCase approval threshold", () => {
-  it("asks for an approval token when the threshold is in USD and the pack price is in BDT", async () => {
+  it("asks for an approval token when the price is above the threshold", async () => {
     const purchase = bdtPurchase();
-    // 10 000 000 USD minor units is far above 500, so only the currency mismatch can require approval.
-    const deps = buildDeps(purchase, { amount: 10_000_000, currency: "USD" });
-    const verify = new VerifyCreditPurchaseUseCase(deps);
+    const deps = buildDeps(purchase, { threshold: 400, organizationCurrency: "BDT" });
 
-    const attempt = runWithRequestContext({ requestId: newId(), organizationId }, () =>
-      verify.execute({
-        creditPurchaseId: purchase.creditPurchaseId,
-        version: purchase.version,
-        actorUserId: newId(),
-        isOwner: false,
-      }),
-    );
+    await expect(verifyWithoutToken(deps, purchase)).rejects.toMatchObject({
+      code: ERROR_CODE.APPROVAL_REQUIRED,
+    });
+    expect(deps.unitOfWork.run).not.toHaveBeenCalled();
+  });
 
-    await expect(attempt).rejects.toMatchObject({ code: ERROR_CODE.APPROVAL_REQUIRED });
+  it("asks for an approval token when the price is not in the organization's currency", async () => {
+    const purchase = bdtPurchase();
+    // 10 000 000 minor units is far above 500, so only the currency mismatch can require approval.
+    const deps = buildDeps(purchase, { threshold: 10_000_000, organizationCurrency: "USD" });
+
+    await expect(verifyWithoutToken(deps, purchase)).rejects.toMatchObject({
+      code: ERROR_CODE.APPROVAL_REQUIRED,
+    });
     expect(deps.unitOfWork.run).not.toHaveBeenCalled();
   });
 });

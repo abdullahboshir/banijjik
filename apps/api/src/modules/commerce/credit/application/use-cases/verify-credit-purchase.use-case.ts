@@ -29,12 +29,6 @@ import { assertNotSelfService } from "./assert-not-self-service.js";
 import { businessDateOf } from "./business-date.js";
 import { viewCreditPurchase } from "./credit-purchase-view.js";
 
-/** `currency` is null when the setting is a bare number, which carries no currency to compare. */
-interface ApprovalThreshold {
-  readonly amount: number;
-  readonly currency: string | null;
-}
-
 export interface VerifyCreditPurchaseInput {
   readonly creditPurchaseId: CreditPurchaseId;
   readonly version: number;
@@ -94,7 +88,10 @@ export class VerifyCreditPurchaseUseCase {
     ]);
     const settingVal = settings.get(CREDIT_RULE_KEY.PURCHASE_APPROVAL_ABOVE)?.value;
     const threshold = this.resolveApprovalThreshold(settingVal);
-    const requires = this.exceedsThreshold(threshold, purchase.snapshot.price) && !input.isOwner;
+    const organizationCurrency = await this.deps.currency.read(organizationId);
+    const requires =
+      this.exceedsThreshold(threshold, organizationCurrency, purchase.snapshot.price) &&
+      !input.isOwner;
 
     if (requires && !input.approvalToken) {
       throw new DomainRuleError({
@@ -197,25 +194,23 @@ export class VerifyCreditPurchaseUseCase {
     );
   }
 
-  private resolveApprovalThreshold(setting: unknown): ApprovalThreshold {
-    if (typeof setting === "number") return { amount: setting, currency: null };
-    if (typeof setting === "object" && setting !== null && "amount" in setting) {
-      const { amount, currency } = setting as { amount: unknown; currency?: unknown };
-      return {
-        amount: typeof amount === "number" ? amount : DEFAULT_PURCHASE_APPROVAL_ABOVE,
-        currency: typeof currency === "string" ? currency : null,
-      };
-    }
-    return { amount: DEFAULT_PURCHASE_APPROVAL_ABOVE, currency: null };
+  /** The setting is MONEY: integer minor units in the organization's currency (ADR-013). */
+  private resolveApprovalThreshold(setting: unknown): number {
+    return typeof setting === "number" ? setting : DEFAULT_PURCHASE_APPROVAL_ABOVE;
   }
 
-  /** Amounts of two currencies are never compared: a mismatch fails safe and asks for approval. */
+  /**
+   * The threshold is in the organization's currency. Amounts of two currencies are never
+   * compared: a price in another currency (or an unknown organization currency) fails safe and
+   * asks for approval.
+   */
   private exceedsThreshold(
-    threshold: ApprovalThreshold,
+    threshold: number,
+    organizationCurrency: string | undefined,
     price: CreditPurchaseSnapshot["price"],
   ): boolean {
-    if (threshold.amount <= 0) return false;
-    if (threshold.currency !== null && threshold.currency !== price.currency) return true;
-    return price.amount > threshold.amount;
+    if (threshold <= 0) return false;
+    if (price.currency !== organizationCurrency) return true;
+    return price.amount > threshold;
   }
 }
