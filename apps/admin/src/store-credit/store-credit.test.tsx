@@ -84,7 +84,7 @@ describe("store-credit adjust with approval", () => {
     expect(screen.getByRole("status").textContent).toBe(labels.adjusted);
   });
 
-  it("rejects invalid amounts and hides adjustments without write permission", async () => {
+  it("rejects invalid amounts before requesting approval", async () => {
     renderInBangla(<StoreCreditSection {...props} />);
     await userEvent.click(screen.getByRole("button", { name: labels.save }));
     expect(screen.getByRole("alert").textContent).toBe(labels.invalid);
