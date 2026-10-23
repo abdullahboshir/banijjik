@@ -1,4 +1,4 @@
-import type { JournalSourceType, Money, PostingKey } from "@banijjik/contracts/accounting";
+import type { JournalSourceType, PostingKey } from "@banijjik/contracts/accounting";
 import {
   asId,
   newId,
@@ -126,21 +126,5 @@ export class JournalEntry {
 
   get createdByUserId(): UserId | null {
     return this.props.createdByUserId;
-  }
-
-  debitTotal(): Money {
-    const currency = this.props.lines[0]?.debit.currency ?? "BDT";
-    return {
-      amount: this.props.lines.reduce((sum, line) => sum + line.debit.amount, 0),
-      currency,
-    };
-  }
-
-  creditTotal(): Money {
-    const currency = this.props.lines[0]?.credit.currency ?? "BDT";
-    return {
-      amount: this.props.lines.reduce((sum, line) => sum + line.credit.amount, 0),
-      currency,
-    };
   }
 }
