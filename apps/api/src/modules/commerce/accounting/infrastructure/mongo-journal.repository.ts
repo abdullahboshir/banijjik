@@ -1,4 +1,4 @@
-import type { JournalSourceType, PostingKey } from "@banijjik/contracts/accounting";
+import type { JournalSourceType, Money, PostingKey } from "@banijjik/contracts/accounting";
 import {
   asId,
   type JournalEntryId,
@@ -37,11 +37,12 @@ function toEntity(row: JournalEntryDocument): JournalEntry {
     entryNumber: row.entryNumber,
     businessDate: row.businessDate,
     locationId: row.locationId === null ? null : asId<LocationId>(row.locationId),
+    // Stored as a plain string; journals are validated against the organization currency on write (ADR-128).
     lines: row.lines.map((line) => ({
       accountId: line.accountId,
       accountCode: line.accountCode,
-      debit: { amount: line.debit.amount, currency: line.debit.currency as "BDT" },
-      credit: { amount: line.credit.amount, currency: line.credit.currency as "BDT" },
+      debit: { amount: line.debit.amount, currency: line.debit.currency as Money["currency"] },
+      credit: { amount: line.credit.amount, currency: line.credit.currency as Money["currency"] },
     })),
     sourceType: row.sourceType,
     sourceId: row.sourceId,

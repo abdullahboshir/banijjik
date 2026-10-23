@@ -609,3 +609,37 @@ async function postAutomaticDrafts(
     }),
   );
 }
+
+describe("organization currency in bookkeeping", () => {
+  async function usdWorld() {
+    const world = await worldWithBooks();
+    await harness.connections.platform
+      .collection("organizations")
+      .updateOne({ organizationId: world.organizationA }, { $set: { currencyCode: "USD" } });
+    return world;
+  }
+  it("answers the trial balance in the organization currency, also with no entries", async () => {
+    const world = await usdWorld();
+    const trial = await world.alice.call("get", world.path + "/trial-balance?asOf=2026-10-20");
+    expect(trial.status).toBe(200);
+    expect(trial.body.data.debitTotal.currency).toBe("USD");
+    expect(trial.body.data.accounts[0].balance.currency).toBe("USD");
+  });
+  it("answers the account list, profit and loss and balance sheet in the organization currency", async () => {
+    const world = await usdWorld();
+    const accounts = await world.alice.call("get", world.path + "/accounts");
+    expect(accounts.body.data[0].balance.currency).toBe("USD");
+    const profit = await world.alice.call(
+      "get",
+      world.path + "/statements/profit-and-loss?from=2026-10-01&to=2026-10-20",
+    );
+    expect(profit.body.data.netProfit.currency).toBe("USD");
+    expect(profit.body.data.accounts[0].net.currency).toBe("USD");
+    const sheet = await world.alice.call(
+      "get",
+      world.path + "/statements/balance-sheet?asOf=2026-10-20",
+    );
+    expect(sheet.body.data.totalAssets.currency).toBe("USD");
+    expect(sheet.body.data.assets[0].balance.currency).toBe("USD");
+  });
+});
