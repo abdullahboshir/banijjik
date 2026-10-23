@@ -5,7 +5,14 @@ import {
   CREDIT_SOURCE_TYPE,
 } from "@banijjik/contracts/credit";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
-import { newId, type CustomerAccountId, type UserId } from "@banijjik/ids";
+import {
+  asId,
+  newId,
+  type CustomerAccountId,
+  type OrganizationId,
+  type UserId,
+} from "@banijjik/ids";
+import { getRequestContext } from "../../../../../kernel/context/index.js";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import {
   CreditAccountNotFoundError,
@@ -41,6 +48,7 @@ export class AdjustCreditsUseCase {
       });
     }
 
+    const timeZone = await this.organizationTimeZone();
     return this.deps.unitOfWork.run(async () => {
       // Consumed in the same transaction as the adjustment: a spent token never outlives a failed write.
       if (!input.isOwner && input.approvalToken !== undefined) {
@@ -61,7 +69,7 @@ export class AdjustCreditsUseCase {
         );
       }
 
-      const entry = this.buildEntry(input);
+      const entry = this.buildEntry(input, timeZone);
       await this.deps.credit.insertEntry(entry);
       await this.recordAudit(input, entry.creditEntryId);
       await this.publish(entry);
@@ -70,7 +78,13 @@ export class AdjustCreditsUseCase {
     });
   }
 
-  private buildEntry(input: AdjustCreditsInput) {
+  /** The entry is dated in the acting organization's day, never UTC (3.25 decision 4). */
+  private async organizationTimeZone(): Promise<string> {
+    const organizationId = asId<OrganizationId>(String(getRequestContext().organizationId));
+    return this.deps.timeZone.read(organizationId);
+  }
+
+  private buildEntry(input: AdjustCreditsInput, timeZone: string) {
     const now = this.deps.clock.now();
     const creditEntryId = newId();
     return {
@@ -84,7 +98,7 @@ export class AdjustCreditsUseCase {
       reason: input.reason,
       createdByUserId: input.actorUserId,
       occurredAt: now.toISOString(),
-      businessDate: businessDateOf(now),
+      businessDate: businessDateOf(now, timeZone),
       createdAt: now.toISOString(),
     };
   }

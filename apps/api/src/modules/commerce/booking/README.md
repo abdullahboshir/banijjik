@@ -8,6 +8,7 @@ Service appointments and rentals: resources, availability, bookings and schedule
 - **API:** `GET /availability`, `GET/POST /bookings`, `POST /bookings/holds`, transitions (`confirm`, `request`, `check-in`, `complete`, `no-show`, `reschedule`, `cancel`), resource CRUD.
 - **Deposits:** computed, stored, and enforced at confirmation via `DepositCheckPort` (card 3.8). Rental fixed `depositAmount` support.
 - **Jobs:** `booking.expireHolds` (1 min), `booking.markNoShows` (5 min), `booking.autoComplete` (5 min), registered via `registerBookingScheduledJobs`.
+- **Accounting posting (card 3.25):** `BookingPostingSource` uses the organization's timezone (`endsAt` for completed bookings; status change timestamp for cancellation-fee and no-show entries); `advancesToSettle` queries `RequestAdvanceReader` in payment for held `BEFORE_REVENUE` funds (never the required deposit).
 
 ## Event sessions (3.6b A2)
 

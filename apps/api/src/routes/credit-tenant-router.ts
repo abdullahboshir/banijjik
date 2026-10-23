@@ -1,7 +1,8 @@
 import type { RequestHandler, Router } from "express";
-import { SEQUENCE_KEY } from "@banijjik/contracts";
+import { ERROR_CODE, SEQUENCE_KEY } from "@banijjik/contracts";
 import { asId, type OrganizationId, type RoleId, type UserId } from "@banijjik/ids";
 import { getRequestContext } from "../kernel/context/index.js";
+import { AppError } from "../kernel/http/index.js";
 import { nextSequenceValue } from "../kernel/sequence/index.js";
 import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
@@ -47,6 +48,7 @@ import {
 import {
   buildApprovalMemberStore,
   buildOrganizationCurrencyReader,
+  buildOrganizationTimezoneReader,
 } from "../modules/core/organization/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 
@@ -81,6 +83,7 @@ export function buildCreditModuleDeps(input: CreditModuleDepsInput): CreditDepen
     orgConfig: input.orgConfig,
     manifests: input.manifests,
   });
+  const organizationTimezones = buildOrganizationTimezoneReader();
 
   return {
     credit: new MongoCreditRepository(),
@@ -93,6 +96,16 @@ export function buildCreditModuleDeps(input: CreditModuleDepsInput): CreditDepen
     events: buildCreditEventPublisher(),
     audit: input.audit,
     clock: input.clock,
+    // No UTC fallback: a credit entry without its organization's day must fail, not drift (3.25).
+    timeZone: {
+      read: async (organizationId: OrganizationId) => {
+        const timezone = await organizationTimezones.read(organizationId);
+        if (timezone === undefined) {
+          throw new AppError({ code: ERROR_CODE.NOT_FOUND, messageKey: "errors.not_found" });
+        }
+        return timezone;
+      },
+    },
     directorySettings: directorySettingsFromResolver(settingsResolver),
     resolveSettings: (oid: string, keys: readonly string[]) =>
       settingsResolver.resolve(oid as OrganizationId, { keys }),

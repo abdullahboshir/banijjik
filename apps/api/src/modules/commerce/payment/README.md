@@ -16,3 +16,4 @@ Core module for recording, refunding and reversing tenant payments, tracking req
 - Daily `payment.expireStoreCredit` scheduled job.
 - Event stream ordered by `paymentAccount:<organizationId>`.
 - Provides `PaymentPostingSource` adapter for accounting journal entries.
+- Provides `RequestAdvanceReader` (`buildRequestAdvanceReader`) to calculate net `BEFORE_REVENUE` funds currently held on requests (IN minus refunds and reversals, clamped ≥ 0) backed by the `{ organizationId: 1, "allocations.requestType": 1, "allocations.requestId": 1 }` multikey index (card 3.25).

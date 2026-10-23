@@ -945,6 +945,7 @@ describe("adjustments and isolation", () => {
         unitOfWork,
         clock: { now: () => new Date("2026-10-21T08:00:00Z") },
         events: { publish: async () => undefined },
+        timeZone: { read: async () => "Asia/Dhaka" },
       } as unknown as CreditDependencies;
       const results = await Promise.all([
         new ExpireCreditsUseCase(deps).execute(),

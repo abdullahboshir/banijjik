@@ -21,6 +21,7 @@ import {
   type RequestReader,
   type RequestReadSnapshot,
 } from "./application/ports/request-reader.js";
+import type { RequestAdvanceReader } from "./application/ports/request-advance-reader.js";
 import { AdjustStoreCreditUseCase } from "./application/use-cases/adjust-store-credit.use-case.js";
 import {
   GetPaymentUseCase,
@@ -39,6 +40,7 @@ import { MongoContactStoreCreditAdapter } from "./infrastructure/contact-store-c
 import { MongoPaymentRepository } from "./infrastructure/mongo-payment.repository.js";
 import { MongoPaymentSummaryRepository } from "./infrastructure/mongo-payment-summary.repository.js";
 import { MongoStoreCreditRepository } from "./infrastructure/mongo-store-credit.repository.js";
+import { buildRequestAdvanceReader } from "./infrastructure/request-advance.reader.js";
 import { registerPaymentModels } from "./infrastructure/register-payment-models.js";
 export { paymentManifest } from "./module.manifest.js";
 import { PaymentController } from "./presentation/payment.controller.js";
@@ -63,10 +65,12 @@ export {
   MongoStoreCreditRepository,
   MongoPaymentSummaryRepository,
   MongoContactStoreCreditAdapter,
+  buildRequestAdvanceReader,
   settleBookingTermination,
   toPaymentResponse,
   type RequestReader,
   type RequestReadSnapshot,
+  type RequestAdvanceReader,
   type PaymentRepository,
   type StoreCreditRepository,
   type PaymentSummaryRepository,

@@ -12,6 +12,8 @@ import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { buildAuditRecorder } from "../../core/audit/index.js";
 import { MongoBookingRepository } from "./infrastructure/mongo-booking.repositories.js";
 import { MongoResourceSlotUsageRepository } from "./infrastructure/mongo-slot-usage.repository.js";
+import { buildOrganizationTimezoneReader } from "./infrastructure/booking-org-adapter.js";
+import { buildRequestAdvanceReader } from "../payment/index.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import { registerScheduledJob } from "../../../kernel/jobs/index.js";
@@ -26,7 +28,11 @@ export { buildExpireHoldsJob, buildMarkNoShowsJob };
 export type { BookingPostingSource } from "../accounting/index.js";
 
 export function buildBookingPostingSourceAdapter(): import("../accounting/index.js").BookingPostingSource {
-  return buildBookingPostingSource({ bookings: new MongoBookingRepository() });
+  return buildBookingPostingSource({
+    bookings: new MongoBookingRepository(),
+    advances: buildRequestAdvanceReader(),
+    timeZone: buildOrganizationTimezoneReader(),
+  });
 }
 
 import type { BookingTenantDependencies } from "./booking-tenant-dependencies.js";

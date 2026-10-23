@@ -66,7 +66,7 @@ export class UnlockListingUseCase {
       DEFAULT_UNLOCKS_PER_DAY,
     );
     const now = this.deps.clock.now();
-    const today = businessDateOf(now);
+    const today = businessDateOf(now, await this.deps.timeZone.read(organizationId));
 
     try {
       return await this.performUnlock({

@@ -124,6 +124,11 @@ paymentSchema.index({ organizationId: 1, paymentId: 1 }, { unique: true });
 paymentSchema.index({ organizationId: 1, paymentNumber: 1 });
 paymentSchema.index({ organizationId: 1, locationId: 1, createdAt: -1 });
 paymentSchema.index({ organizationId: 1, contactId: 1, createdAt: -1 });
+paymentSchema.index({
+  organizationId: 1,
+  "allocations.requestType": 1,
+  "allocations.requestId": 1,
+});
 paymentSchema.index(
   { organizationId: 1, reversesPaymentId: 1 },
   {

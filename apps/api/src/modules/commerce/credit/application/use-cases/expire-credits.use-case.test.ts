@@ -112,6 +112,7 @@ function aLedger(input: {
     unitOfWork,
     events: { publish: vi.fn(async () => undefined) },
     clock: { now: () => NOW },
+    timeZone: { read: vi.fn(async () => "Asia/Dhaka") },
   } as unknown as CreditDependencies;
 
   return { deps, entries, balance };

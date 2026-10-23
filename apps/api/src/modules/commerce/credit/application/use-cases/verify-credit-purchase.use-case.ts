@@ -54,6 +54,7 @@ export class VerifyCreditPurchaseUseCase {
 
     await assertNotSelfService(this.deps, input.actorUserId, purchase.customerAccountId);
     const requiresApproval = await this.checkApproval(organizationId, purchase, input);
+    const timeZone = await this.deps.timeZone.read(organizationId);
 
     return this.deps.unitOfWork.run(async () => {
       const current = await this.deps.purchases.findById(input.creditPurchaseId);
@@ -74,7 +75,7 @@ export class VerifyCreditPurchaseUseCase {
         });
       }
 
-      return this.grantAndVerify(current, input);
+      return this.grantAndVerify(current, input, timeZone);
     });
   }
 
@@ -106,6 +107,7 @@ export class VerifyCreditPurchaseUseCase {
   private async grantAndVerify(
     current: CreditPurchase,
     input: VerifyCreditPurchaseInput,
+    timeZone: string,
   ): Promise<CreditPurchaseResponse> {
     const now = this.deps.clock.now();
     const creditEntryId = newId();
@@ -124,7 +126,7 @@ export class VerifyCreditPurchaseUseCase {
       reason: `Credit pack purchase ${current.purchaseNumber}`,
       createdByUserId: input.actorUserId,
       occurredAt: now.toISOString(),
-      businessDate: businessDateOf(now),
+      businessDate: businessDateOf(now, timeZone),
       createdAt: now.toISOString(),
     };
 

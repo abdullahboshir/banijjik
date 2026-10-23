@@ -31,6 +31,8 @@ export interface CreditDependencies {
   };
   readonly audit: AuditRecorder;
   readonly clock: Clock;
+  /** The organization's IANA time zone for its business date. Fails when it is missing: no UTC fallback. */
+  readonly timeZone: { read(organizationId: OrganizationId): Promise<string> };
   readonly directorySettings: DirectorySettingsReader;
   readonly resolveSettings: (
     organizationId: OrganizationId,
