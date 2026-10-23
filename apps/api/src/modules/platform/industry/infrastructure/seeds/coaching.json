@@ -26,7 +26,8 @@
     "messaging",
     "bot",
     "workflow",
-    "bookkeeping"
+    "bookkeeping",
+    "commission"
   ],
   "configuration": {
     "contactRoleKeys": ["CUSTOMER", "LEAD", "RELATED", "SUPPLIER"],

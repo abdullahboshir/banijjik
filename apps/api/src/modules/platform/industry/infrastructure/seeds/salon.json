@@ -32,7 +32,8 @@
     "social",
     "workflow",
     "bookkeeping",
-    "booking"
+    "booking",
+    "commission"
   ],
   "configuration": {
     "contactRoleKeys": ["CUSTOMER", "SUPPLIER", "RELATED"],

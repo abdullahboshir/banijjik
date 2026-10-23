@@ -33,7 +33,8 @@
     "workflow",
     "bookkeeping",
     "booking",
-    "enrollment"
+    "enrollment",
+    "commission"
   ],
   "configuration": {
     "contactRoleKeys": ["CUSTOMER", "LEAD", "RELATED", "SUPPLIER"],
