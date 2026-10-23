@@ -1,5 +1,4 @@
 import { COMMISSION_RULE_STATUS, COMMISSION_SUBJECT_TYPE } from "@banijjik/contracts/commission";
-import type { OfferingKind } from "@banijjik/contracts";
 import type { Money } from "@banijjik/contracts/accounting";
 import {
   asId,
@@ -41,9 +40,7 @@ function ruleModel(): Model<CommissionRuleDocument> {
 }
 
 function toMoney(value: MoneyDocument | null): Money | null {
-  return value === null
-    ? null
-    : { amount: value.amount, currency: value.currency as Money["currency"] };
+  return value === null ? null : { amount: value.amount, currency: value.currency };
 }
 
 function toUserId(value: string | null): UserId | null {
@@ -58,7 +55,7 @@ function toRule(row: CommissionRuleDocument): CommissionRule {
     memberId: row.memberId === null ? null : asId<MemberId>(row.memberId),
     roleId: row.roleId === null ? null : asId<RoleId>(row.roleId),
     targetType: row.targetType,
-    offeringKind: row.offeringKind as OfferingKind | null,
+    offeringKind: row.offeringKind,
     categoryId: row.categoryId === null ? null : asId<CategoryId>(row.categoryId),
     offeringId: row.offeringId === null ? null : asId<OfferingId>(row.offeringId),
     calculation: row.calculation,

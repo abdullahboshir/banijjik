@@ -1,4 +1,4 @@
-import type { OfferingKind } from "@banijjik/contracts";
+import type { CurrencyCode, OfferingKind } from "@banijjik/contracts";
 import {
   COMMISSION_CALCULATION,
   COMMISSION_ENTRY_KIND,
@@ -29,7 +29,7 @@ export const COMMISSION_ENTRY_COLLECTION_NAME = "commission_entries";
 
 export interface MoneyDocument {
   amount: number;
-  currency: string;
+  currency: CurrencyCode;
 }
 
 export interface CommissionRuleDocument {

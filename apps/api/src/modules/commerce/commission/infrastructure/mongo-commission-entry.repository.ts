@@ -30,7 +30,7 @@ function entryModel(): Model<CommissionEntryDocument> {
 }
 
 function toMoney(value: MoneyDocument): Money {
-  return { amount: value.amount, currency: value.currency as Money["currency"] };
+  return { amount: value.amount, currency: value.currency };
 }
 
 function toUserId(value: string | null): UserId | null {

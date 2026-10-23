@@ -416,6 +416,26 @@ describe("commission reconcile after a refund", () => {
     expect(entries.reduce((total, entry) => total + entry.amount.amount, 0)).toBe(5000);
   });
 
+  it("skips the reconcile and logs when the payment summary is in another currency", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    await runAs(scene, () => handler.handle(completedEnvelope(scene, bookingId)));
+    const refund = refundOf(scene, bookingId, GROSS);
+    scene.refunded.set(bookingId, { amount: GROSS, currency: "USD" as Money["currency"] });
+
+    await runAs(scene, () =>
+      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, refund)),
+    );
+
+    expect(await entriesOf(scene, bookingId)).toHaveLength(1);
+    expect(scene.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceId: bookingId }),
+      "commission.reconcile_skipped_currency",
+    );
+  });
+
   it("does nothing for a payment refund that has no booking allocation", async () => {
     const scene = newScene();
     const bookingId = addBooking(scene);

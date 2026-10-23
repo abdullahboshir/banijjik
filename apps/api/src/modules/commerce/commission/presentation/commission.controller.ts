@@ -51,7 +51,7 @@ export class CommissionController {
   constructor(private readonly dependencies: CommissionControllerDependencies) {}
 
   readonly listRules: RequestHandler = async (_request, response) => {
-    const query = response.locals["validated"].query as CommissionRuleListQuery;
+    const query: CommissionRuleListQuery = response.locals["validated"].query;
     const result = await this.dependencies.listRules.execute(query);
     sendData(response, result.items, {
       meta: { page: query.page, limit: query.limit, hasNext: result.hasNext },
@@ -97,7 +97,7 @@ export class CommissionController {
   };
 
   readonly listEntries: RequestHandler = async (_request, response) => {
-    const query = response.locals["validated"].query as CommissionEntryListQuery;
+    const query: CommissionEntryListQuery = response.locals["validated"].query;
     const { allowedLocationIds } = readTenantCaller();
     const result = await this.dependencies.listEntries.execute({ query, allowedLocationIds });
     sendData(response, result.items, {
@@ -106,7 +106,7 @@ export class CommissionController {
   };
 
   readonly listMyEntries: RequestHandler = async (_request, response) => {
-    const query = response.locals["validated"].query as CommissionMyEntriesQuery;
+    const query: CommissionMyEntriesQuery = response.locals["validated"].query;
     const result = await this.dependencies.listMyEntries.execute({
       memberId: readCallerMemberId(),
       query,
@@ -117,7 +117,7 @@ export class CommissionController {
   };
 
   readonly summary: RequestHandler = async (_request, response) => {
-    const query = response.locals["validated"].query as CommissionSummaryQuery;
+    const query: CommissionSummaryQuery = response.locals["validated"].query;
     const { organizationId, allowedLocationIds } = readTenantCaller();
     const result = await this.dependencies.summary.execute({
       organizationId,
