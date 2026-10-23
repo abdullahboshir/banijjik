@@ -16,6 +16,7 @@ export function buildPostBookingsHandler(input: {
     eventType: EVENT_TYPE.BOOKING_COMPLETED,
     alsoHandles: [EVENT_TYPE.BOOKING_CANCELLED, EVENT_TYPE.BOOKING_NO_SHOW_MARKED],
     ordering: "ORDERED",
+    streamPrefixes: ["booking:"],
     async handle(envelope) {
       await handleBookingEvent(input, envelope as unknown as EventEnvelope<{ bookingId: string }>);
     },

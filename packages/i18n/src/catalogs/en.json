@@ -447,5 +447,7 @@
   "errors.payment_request_not_found": "Request not found.",
   "errors.payment_approval_required": "Manager approval is required for this action.",
   "errors.payment_original_not_found": "Original payment not found.",
-  "errors.store_credit_contact_required": "Contact is required for store credit."
+  "errors.store_credit_contact_required": "Contact is required for store credit.",
+  "errors.event_handler_invalid_stream": "The event handler declares an invalid stream.",
+  "errors.event_handler_stream_mismatch": "The event stream does not match the handler declaration."
 }

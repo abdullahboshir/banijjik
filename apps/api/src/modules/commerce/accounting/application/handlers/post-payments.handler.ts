@@ -37,6 +37,7 @@ export function buildPostPaymentsHandler(
       EVENT_TYPE.STORE_CREDIT_CHANGED,
     ],
     ordering: "ORDERED",
+    streamPrefixes: ["paymentAccount:"],
     async handle(envelope) {
       await handlePaymentEvent(input, envelope as unknown as AnyPaymentEnvelope);
     },

@@ -1,16 +1,23 @@
 import {
+  ERROR_CODE,
   SYSTEM_REASON,
   type EventEnvelope,
   type EventPayloadMap,
   type EventType,
 } from "@banijjik/contracts";
+import { AppError } from "../http/app-error.js";
 import { newId } from "@banijjik/ids";
 import { runAsSystem, runWithRequestContext } from "../context/index.js";
 import { getActiveSession, models, sessionOption, withTransaction } from "../db/index.js";
 import { getLogger } from "../logger/index.js";
 import { runInOrganizationContext } from "../tenancy/index.js";
 import { systemClock } from "../time/index.js";
-import type { EventHandler, EventHandlerRegistry } from "./event-handler-registry.js";
+import {
+  followsStream,
+  handlesType,
+  type EventHandler,
+  type EventHandlerRegistry,
+} from "./event-handler-registry.js";
 import type { EventJobData } from "./event-job.js";
 import type { ModuleEffectiveness } from "./module-effectiveness.js";
 import {
@@ -27,7 +34,11 @@ import {
 
 /** WAITING_FOR_EARLIER_EVENT: an ORDERED handler got an event whose stream has an earlier, unhandled event (ADR-115). */
 export type HandlerRunResult =
-  "HANDLED" | "ALREADY_PROCESSED" | "SKIPPED_MODULE_OFF" | "WAITING_FOR_EARLIER_EVENT";
+  | "HANDLED"
+  | "ALREADY_PROCESSED"
+  | "SKIPPED_MODULE_OFF"
+  | "SKIPPED_NOT_HANDLED"
+  | "WAITING_FOR_EARLIER_EVENT";
 
 function toEnvelope(event: OutboxEventDocument): EventEnvelope<EventPayloadMap[EventType]> {
   return {
@@ -109,6 +120,17 @@ function orderedDeliveryOf(
   event: OutboxEventDocument,
 ): OrderedDelivery | undefined {
   const { orderingKey, streamSequence } = event;
+  if (
+    handler.ordering === "ORDERED" &&
+    orderingKey !== null &&
+    !followsStream(handler, orderingKey)
+  ) {
+    throw new AppError({
+      code: ERROR_CODE.INTERNAL,
+      messageKey: "errors.event_handler_stream_mismatch",
+      details: { handlerKey: handler.handlerKey, orderingKey },
+    });
+  }
   if (handler.ordering !== "ORDERED" || orderingKey === null || streamSequence === null) {
     return undefined;
   }
@@ -133,6 +155,10 @@ async function runOrdered(input: {
     const check = checkSequence(await readPosition(delivery.key), delivery.streamSequence);
     if (check === "ALREADY_HANDLED") return "ALREADY_PROCESSED";
     if (check === "AHEAD") return "WAITING_FOR_EARLIER_EVENT";
+    if (!handlesType(handler, event.type)) {
+      await advancePosition(delivery.key, delivery.streamSequence);
+      return "SKIPPED_NOT_HANDLED";
+    }
     if (!isAllowed) {
       await advancePosition(delivery.key, delivery.streamSequence);
       return "SKIPPED_MODULE_OFF";

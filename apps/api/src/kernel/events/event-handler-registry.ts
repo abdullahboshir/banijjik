@@ -9,7 +9,7 @@ import { AppError } from "../http/app-error.js";
 
 export type HandlerOrdering = "ORDERED" | "UNORDERED";
 
-export interface EventHandler<Type extends EventType = EventType> {
+interface EventHandlerBase<Type extends EventType> {
   /** `<module>.<purpose>`, unique across the application. It names the job, so it has no ":" (BullMQ job ids). */
   readonly handlerKey: string;
   /** The module that owns the handler: it runs for an organization only while this module is effective there. */
@@ -17,15 +17,52 @@ export interface EventHandler<Type extends EventType = EventType> {
   readonly eventType: Type;
   /**
    * Extra event types the same handler consumes. Needed when one ORDERED handler follows a shared
-   * per-organization stream that carries several types (card 3.8c: paymentAccount, bookingAccount).
+   * stream that carries several handled types (card 3.8c: paymentAccount, expenseAccount).
    */
   readonly alsoHandles?: readonly EventType[];
-  /**
-   * ORDERED: events with an `orderingKey` reach the handler in stream order, each exactly once (ADR-115).
-   * UNORDERED: any order, as before. Every handler states it, so nobody gets ordering by accident.
-   */
-  readonly ordering: HandlerOrdering;
   handle(envelope: EventEnvelope<EventPayloadMap[Type]>): Promise<void>;
+}
+
+/** An ORDERED handler receives every event of its streams, handles its types and steps over the rest. */
+export type EventHandler<Type extends EventType = EventType> =
+  | (EventHandlerBase<Type> & {
+      readonly ordering: "UNORDERED";
+      readonly streamPrefixes?: never;
+    })
+  | (EventHandlerBase<Type> & {
+      readonly ordering: "ORDERED";
+      /** Every event whose orderingKey starts with one of these reaches the handler (ADR-136). */
+      readonly streamPrefixes: readonly [string, ...string[]];
+    });
+
+export function handlesType(handler: EventHandler, eventType: string): boolean {
+  return (
+    handler.eventType === eventType ||
+    (handler.alsoHandles?.some((type) => type === eventType) ?? false)
+  );
+}
+
+export function followsStream(handler: EventHandler, orderingKey: string | null): boolean {
+  return (
+    handler.ordering === "ORDERED" &&
+    orderingKey !== null &&
+    handler.streamPrefixes.some((prefix) => orderingKey.startsWith(prefix))
+  );
+}
+
+function validateStreams(handler: EventHandler): void {
+  if (handler.ordering !== "ORDERED") return;
+  const prefixes = handler.streamPrefixes;
+  if (
+    prefixes.length === 0 ||
+    prefixes.some(
+      (prefix, index) =>
+        !/^[a-z][a-zA-Z]*:$/.test(prefix) ||
+        prefixes.some((other, otherIndex) => index !== otherIndex && prefix.startsWith(other)),
+    )
+  ) {
+    throw registryError("errors.event_handler_invalid_stream", handler.handlerKey);
+  }
 }
 
 const HANDLER_KEY_PATTERN = /^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)+$/;
@@ -53,6 +90,7 @@ export class EventHandlerRegistry {
     if (this.handlers.has(handler.handlerKey)) {
       throw registryError("errors.duplicate_event_handler", handler.handlerKey);
     }
+    validateStreams(handler);
     this.handlers.set(handler.handlerKey, handler);
   }
 
@@ -64,11 +102,12 @@ export class EventHandlerRegistry {
     return this.handlers.get(handlerKey);
   }
 
-  handlersFor(eventType: string): readonly EventHandler[] {
+  handlersFor(event: {
+    readonly type: string;
+    readonly orderingKey: string | null;
+  }): readonly EventHandler[] {
     return [...this.handlers.values()].filter(
-      (handler) =>
-        handler.eventType === eventType ||
-        (handler.alsoHandles?.includes(eventType as EventType) ?? false),
+      (handler) => handlesType(handler, event.type) || followsStream(handler, event.orderingKey),
     );
   }
 }

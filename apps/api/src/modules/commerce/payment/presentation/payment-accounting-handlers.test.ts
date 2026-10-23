@@ -8,6 +8,14 @@ import {
   STORE_CREDIT_DIRECTION,
   STORE_CREDIT_ENTRY_KIND,
 } from "@banijjik/contracts/payment";
+import { asId, type OrganizationId } from "@banijjik/ids";
+import { BOOKING_REQUIRE_APPROVAL_SETTING_KEY } from "@banijjik/contracts/booking";
+import { EventHandlerRegistry, startEventProcessing } from "../../../../kernel/events/index.js";
+import { models } from "../../../../kernel/db/index.js";
+import { EVENT_STREAM_POSITION_MODEL_NAME } from "../../../../kernel/events/event-stream.schema.js";
+import { outboxModel } from "../../../../test-support/event-fixtures.js";
+import { createRedisTestScope, describeWithRedis } from "../../../../test-support/test-redis.js";
+import { waitFor } from "../../../../test-support/wait-for.js";
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MongoUnitOfWork } from "../../../../kernel/db/index.js";
@@ -494,5 +502,113 @@ describe("payment and booking accounting posting through real handlers", () => {
     expect(tbRes.body.data.balances).toBe(true);
     expect(tbRes.body.data.debitTotal.amount).toBe(tbRes.body.data.creditTotal.amount);
     expect(tbRes.body.data.debitTotal.amount).toBeGreaterThan(0);
+  });
+});
+
+describeWithRedis("booking accounting follows the real lifecycle stream", (redisUrl) => {
+  it("posts booking_completed once after real creation, confirmation, check-in and completion", async () => {
+    const world = await worldFor(harness, RETAIL, SALON);
+    const setting = await world.alice.call("patch", `/orgs/${world.organizationA}/settings`, {
+      items: [{ settingKey: BOOKING_REQUIRE_APPROVAL_SETTING_KEY, value: true }],
+    });
+    expect(setting.status).toBe(200);
+    const contactId = await createCustomer(world);
+    const booking = await createBooking(world, contactId);
+    const confirmed = await world.alice.call(
+      "post",
+      `/orgs/${world.organizationA}/bookings/${booking.bookingId}/confirm`,
+      { version: booking.version },
+    );
+    expect(confirmed.status).toBe(200);
+    const checkedIn = await world.alice.call(
+      "post",
+      `/orgs/${world.organizationA}/bookings/${booking.bookingId}/check-in`,
+      { version: confirmed.body.data.version },
+    );
+    expect(checkedIn.status).toBe(200);
+    const completed = await world.alice.call(
+      "post",
+      `/orgs/${world.organizationA}/bookings/${booking.bookingId}/complete`,
+      { version: checkedIn.body.data.version },
+    );
+    expect(completed.status).toBe(200);
+
+    const accounts = new MongoAccountRepository();
+    const journals = new MongoJournalRepository();
+    await withOrganizationContext(world.organizationA, () =>
+      seedSystemAccounts(
+        { accounts, clock: systemClock },
+        { organizationId: asId<OrganizationId>(world.organizationA), actorUserId: null },
+      ),
+    );
+    const registry = new EventHandlerRegistry();
+    registry.register(
+      buildPostBookingsHandler({
+        bookings: buildBookingPostingSourceAdapter(),
+        posting: {
+          accounts,
+          journals,
+          events: kernelEventPublisher,
+          audit: { record: async () => undefined },
+          clock: systemClock,
+        },
+      }),
+    );
+    const events = await outboxModel()
+      .find({ organizationId: world.organizationA, orderingKey: `booking:${booking.bookingId}` })
+      .sort({ streamSequence: 1 })
+      .lean();
+    expect(events.map((event) => event.type)).toEqual([
+      EVENT_TYPE.BOOKING_REQUESTED,
+      EVENT_TYPE.BOOKING_CONFIRMED,
+      EVENT_TYPE.BOOKING_CHECK_IN_RECORDED,
+      EVENT_TYPE.BOOKING_COMPLETED,
+    ]);
+    const scope = createRedisTestScope(redisUrl);
+    const processing = startEventProcessing({
+      redis: scope.client,
+      registry,
+      effectiveness: { isEffective: async () => true },
+      clock: systemClock,
+      queuePrefix: scope.prefix,
+      pollIntervalMs: 20,
+      retryBaseDelayMs: 20,
+      streamWaitBaseDelayMs: 20,
+    });
+    try {
+      await waitFor("booking stream position 4", async () => {
+        const row = await models({})
+          .get(EVENT_STREAM_POSITION_MODEL_NAME)
+          .findOne({
+            handlerKey: "accounting.postBookings",
+            organizationId: world.organizationA,
+            orderingKey: `booking:${booking.bookingId}`,
+          })
+          .lean<{ lastSequence: number }>();
+        return row?.lastSequence === 4 ? true : undefined;
+      });
+      await withOrganizationContext(world.organizationA, async () => {
+        const journal = await journals.findBySource({
+          sourceType: "BOOKING",
+          sourceId: booking.bookingId,
+          postingKey: POSTING_KEY.booking_completed,
+        });
+        expect(journal).toBeDefined();
+        expect(journal?.lines.reduce((total, line) => total + line.debit.amount, 0)).toBe(
+          booking.price.total.amount,
+        );
+        const all = await journals.list({ page: 1, limit: 100 });
+        expect(
+          all.items.filter(
+            (entry) =>
+              entry.sourceId === booking.bookingId &&
+              entry.postingKey === POSTING_KEY.booking_completed,
+          ),
+        ).toHaveLength(1);
+      });
+    } finally {
+      for (const task of processing.shutdownTasks) await task.run();
+      await scope.dispose();
+    }
   });
 });

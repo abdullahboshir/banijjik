@@ -37,4 +37,6 @@ const TRANSPORT_MESSAGE_KEYS = [
 export const KERNEL_ERROR_MESSAGE_KEYS: readonly string[] = [
   ...Object.values(ERROR_CODE).map((code) => `errors.${code.toLowerCase()}`),
   ...TRANSPORT_MESSAGE_KEYS,
+  "errors.event_handler_invalid_stream",
+  "errors.event_handler_stream_mismatch",
 ];

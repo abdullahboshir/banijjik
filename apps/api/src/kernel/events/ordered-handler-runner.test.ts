@@ -61,7 +61,7 @@ function recorder(ordering: HandlerOrdering, failOn: readonly number[] = []): Re
     handlerKey: HANDLER_KEY,
     moduleKey: MODULE_KEY.WORKFLOW,
     eventType: EVENT_TYPE.USER_REGISTERED,
-    ordering,
+    ...(ordering === "ORDERED" ? { ordering, streamPrefixes: ["order:"] as const } : { ordering }),
     handle: async (envelope) => {
       const event = await outboxModel().findOne({ eventId: envelope.eventId }).lean();
       const sequence = event?.streamSequence ?? 0;
@@ -234,5 +234,47 @@ describe("an UNORDERED handler and a keyless event", () => {
 
     expect(result).toBe("HANDLED");
     expect(await models({}).get(EVENT_STREAM_POSITION_MODEL_NAME).countDocuments()).toBe(0);
+  });
+});
+
+describe("ordered stream step-over", () => {
+  it("advances an unhandled NEXT event without a marker or handle call, and a repeat is already processed", async () => {
+    const first = await publishOne();
+    const probe = recorder("ORDERED");
+    const handler = probe.registry.find(HANDLER_KEY);
+    if (handler === undefined) throw new Error("missing handler");
+    const registry = new EventHandlerRegistry();
+    registry.register({ ...handler, eventType: EVENT_TYPE.MEMBER_JOINED });
+    expect(await run(first, registry)).toBe("SKIPPED_NOT_HANDLED");
+    expect(await positionOf(first)).toBe(1);
+    expect(probe.handled).toEqual([]);
+    expect(await models({}).get(PROCESSED_EVENT_MODEL_NAME).countDocuments()).toBe(0);
+    expect(await run(first, registry)).toBe("ALREADY_PROCESSED");
+  });
+
+  it("advances through unhandled types while the module is off", async () => {
+    const { first, second } = await publishPair();
+    const probe = recorder("ORDERED");
+    const handler = probe.registry.find(HANDLER_KEY);
+    if (handler === undefined) throw new Error("missing handler");
+    const registry = new EventHandlerRegistry();
+    registry.register({ ...handler, eventType: EVENT_TYPE.MEMBER_JOINED });
+    expect(await run(first, registry, ALWAYS_OFF)).toBe("SKIPPED_NOT_HANDLED");
+    expect(await run(second, registry, ALWAYS_OFF)).toBe("SKIPPED_NOT_HANDLED");
+    expect(await positionOf(first)).toBe(2);
+    expect(probe.handled).toEqual([]);
+    expect(await models({}).get(PROCESSED_EVENT_MODEL_NAME).countDocuments()).toBe(0);
+  });
+
+  it("refuses a handled type on an undeclared stream before any effect", async () => {
+    const first = await publishTestEvent(newId(), `booking:${newId()}`);
+    const probe = recorder("ORDERED");
+    await expect(run(first, probe.registry)).rejects.toMatchObject({
+      messageKey: "errors.event_handler_stream_mismatch",
+      details: { handlerKey: HANDLER_KEY, orderingKey: expect.stringMatching(/^booking:/) },
+    });
+    expect(probe.handled).toEqual([]);
+    expect(await models({}).get(PROCESSED_EVENT_MODEL_NAME).countDocuments()).toBe(0);
+    expect(await positionOf(first)).toBe(0);
   });
 });

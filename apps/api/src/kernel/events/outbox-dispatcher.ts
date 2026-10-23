@@ -86,7 +86,7 @@ export class OutboxDispatcher {
   private async dispatchOne(event: OutboxEventDocument): Promise<void> {
     const { registry, queue, clock } = this.options;
     try {
-      for (const handler of registry.handlersFor(event.type)) {
+      for (const handler of registry.handlersFor(event)) {
         await queue.enqueue({
           eventId: event.eventId,
           handlerKey: handler.handlerKey,

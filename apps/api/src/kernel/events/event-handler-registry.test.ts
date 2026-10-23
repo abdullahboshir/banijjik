@@ -6,7 +6,7 @@ import { EventHandlerRegistry, type EventHandler } from "./event-handler-registr
 function aHandler(
   handlerKey: string,
   eventType: EventType = EVENT_TYPE.USER_REGISTERED,
-): EventHandler {
+): Extract<EventHandler, { ordering: "UNORDERED" }> {
   return {
     handlerKey,
     moduleKey: MODULE_KEY.IAM,
@@ -26,8 +26,11 @@ describe("EventHandlerRegistry", () => {
     registry.register(aHandler("audit.roleCreated", EVENT_TYPE.ROLE_CREATED));
 
     expect(registry.find("notification.welcome")).toBe(welcome);
-    expect(registry.handlersFor(EVENT_TYPE.USER_REGISTERED)).toEqual([welcome, audit]);
-    expect(registry.handlersFor(EVENT_TYPE.MEMBER_JOINED)).toEqual([]);
+    expect(registry.handlersFor({ type: EVENT_TYPE.USER_REGISTERED, orderingKey: null })).toEqual([
+      welcome,
+      audit,
+    ]);
+    expect(registry.handlersFor({ type: EVENT_TYPE.MEMBER_JOINED, orderingKey: null })).toEqual([]);
     expect(registry.find("unknown.handler")).toBeUndefined();
   });
 
@@ -39,13 +42,20 @@ describe("EventHandlerRegistry", () => {
       eventType: EVENT_TYPE.PAYMENT_RECEIVED,
       alsoHandles: [EVENT_TYPE.PAYMENT_REFUNDED, EVENT_TYPE.PAYMENT_REVERSED],
       ordering: "ORDERED",
+      streamPrefixes: ["paymentAccount:"],
       handle: async () => undefined,
     };
     registry.register(payments);
 
-    expect(registry.handlersFor(EVENT_TYPE.PAYMENT_RECEIVED)).toEqual([payments]);
-    expect(registry.handlersFor(EVENT_TYPE.PAYMENT_REFUNDED)).toEqual([payments]);
-    expect(registry.handlersFor(EVENT_TYPE.PAYMENT_REVERSED)).toEqual([payments]);
+    expect(registry.handlersFor({ type: EVENT_TYPE.PAYMENT_RECEIVED, orderingKey: null })).toEqual([
+      payments,
+    ]);
+    expect(registry.handlersFor({ type: EVENT_TYPE.PAYMENT_REFUNDED, orderingKey: null })).toEqual([
+      payments,
+    ]);
+    expect(registry.handlersFor({ type: EVENT_TYPE.PAYMENT_REVERSED, orderingKey: null })).toEqual([
+      payments,
+    ]);
   });
 
   it("throws when a handler key is registered twice", () => {
@@ -77,4 +87,72 @@ describe("EventHandlerRegistry", () => {
       );
     },
   );
+});
+
+function orderedHandler(streamPrefixes: readonly [string, ...string[]]): EventHandler {
+  return { ...aHandler("ledger.post"), ordering: "ORDERED", streamPrefixes };
+}
+
+describe("declared ordered streams", () => {
+  it("fans out unhandled types only to stream followers and never duplicates a handler", () => {
+    const registry = new EventHandlerRegistry();
+    const follower = orderedHandler(["booking:"]);
+    const unordered = aHandler("audit.record");
+    registry.register(follower);
+    registry.register(unordered);
+    expect(
+      registry.handlersFor({ type: EVENT_TYPE.MEMBER_JOINED, orderingKey: "booking:one" }),
+    ).toEqual([follower]);
+    expect(
+      registry.handlersFor({ type: EVENT_TYPE.MEMBER_JOINED, orderingKey: "order:one" }),
+    ).toEqual([]);
+    expect(registry.handlersFor({ type: EVENT_TYPE.MEMBER_JOINED, orderingKey: null })).toEqual([]);
+    expect(
+      registry.handlersFor({ type: EVENT_TYPE.USER_REGISTERED, orderingKey: "booking:one" }),
+    ).toEqual([follower, unordered]);
+    expect(registry.handlersFor({ type: EVENT_TYPE.USER_REGISTERED, orderingKey: null })).toEqual([
+      follower,
+      unordered,
+    ]);
+  });
+
+  it.each(["Booking", "booking", ""])("refuses invalid stream prefix %s", (prefix) => {
+    expect(() => new EventHandlerRegistry().register(orderedHandler([prefix]))).toThrow(
+      /event_handler_invalid_stream/,
+    );
+  });
+
+  it("refuses overlapping stream prefixes", () => {
+    expect(() =>
+      new EventHandlerRegistry().register(orderedHandler(["booking:", "booking:"])),
+    ).toThrow(/event_handler_invalid_stream/);
+  });
+
+  it("requires nonempty stream prefixes only for ordered handlers at compile time", () => {
+    const base = {
+      handlerKey: "ledger.post",
+      moduleKey: MODULE_KEY.IAM,
+      eventType: EVENT_TYPE.USER_REGISTERED,
+      handle: async () => undefined,
+    };
+    // @ts-expect-error ORDERED handlers must declare the streams they follow.
+    const missing: EventHandler = { ...base, ordering: "ORDERED" };
+    const empty: EventHandler = {
+      ...base,
+      ordering: "ORDERED",
+      // @ts-expect-error An ordered handler must follow at least one stream.
+      streamPrefixes: [],
+    };
+    // @ts-expect-error UNORDERED handlers cannot follow streams.
+    const unordered: EventHandler = {
+      ...base,
+      ordering: "UNORDERED",
+      streamPrefixes: ["booking:"] as const,
+    };
+    expect(missing.ordering).toBe("ORDERED");
+    expect(() => new EventHandlerRegistry().register(empty)).toThrow(
+      /event_handler_invalid_stream/,
+    );
+    expect(unordered.ordering).toBe("UNORDERED");
+  });
 });

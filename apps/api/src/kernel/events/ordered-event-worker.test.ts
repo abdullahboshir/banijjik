@@ -83,6 +83,7 @@ function orderedLedger(failingSequences: readonly number[] = []): Ledger {
     moduleKey: MODULE_KEY.IAM,
     eventType: EVENT_TYPE.USER_REGISTERED,
     ordering: "ORDERED",
+    streamPrefixes: ["order:"],
     handle: async (envelope) => {
       const row = await outboxModel().findOne({ eventId: envelope.eventId }).lean();
       const sequence = row?.streamSequence ?? 0;
@@ -308,6 +309,7 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
       moduleKey: MODULE_KEY.IAM,
       eventType: EVENT_TYPE.USER_REGISTERED,
       ordering: "ORDERED",
+      streamPrefixes: ["order:"],
       handle: async (envelope) => {
         const row = await outboxModel().findOne({ eventId: envelope.eventId }).lean();
         if (row?.streamSequence === 1 && isBroken) throw new Error("not yet fixed");

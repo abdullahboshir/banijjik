@@ -2,7 +2,7 @@ import { EVENT_TYPE, type ModuleManifest } from "@banijjik/contracts";
 import { expect } from "vitest";
 import { publishTestEvent } from "../event-fixtures.js";
 import { EventHandlerRegistry } from "../../kernel/events/event-handler-registry.js";
-import { runEventHandler } from "../../kernel/events/handler-runner.js";
+import { runEventHandler, type HandlerRunResult } from "../../kernel/events/handler-runner.js";
 import { buildModuleEffectiveness } from "../../modules/platform/entitlement/index.js";
 import type { ContractWorld } from "./contract-world.js";
 import type { ContractCaller, ContractOrganization, ModuleDataAccess } from "./contract-types.js";
@@ -177,8 +177,7 @@ function handlerKeyOf(manifest: ModuleManifest): string {
   return `contract.${camel}Probe`;
 }
 
-export type HandlerOutcome =
-  "HANDLED" | "SKIPPED_MODULE_OFF" | "ALREADY_PROCESSED" | "WAITING_FOR_EARLIER_EVENT";
+export type HandlerOutcome = HandlerRunResult;
 
 /** Assertion 6 helper: publishes one event for the organization and runs the module's probe handler through the real runner. */
 export async function runProbeHandler(

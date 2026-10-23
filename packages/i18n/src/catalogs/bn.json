@@ -447,5 +447,7 @@
   "errors.payment_request_not_found": "অনুরোধ খুঁজে পাওয়া যায়নি।",
   "errors.payment_approval_required": "এই কাজের জন্য ম্যানেজারের অনুমোদন প্রয়োজন।",
   "errors.payment_original_not_found": "মূল পেমেন্টটি খুঁজে পাওয়া যায়নি।",
-  "errors.store_credit_contact_required": "স্টোর ক্রেডিটের জন্য গ্রাহক থাকা আবশ্যক।"
+  "errors.store_credit_contact_required": "স্টোর ক্রেডিটের জন্য গ্রাহক থাকা আবশ্যক।",
+  "errors.event_handler_invalid_stream": "ইভেন্ট হ্যান্ডলারের স্ট্রিম ঘোষণা সঠিক নয়।",
+  "errors.event_handler_stream_mismatch": "ইভেন্ট স্ট্রিম হ্যান্ডলারের ঘোষণার সাথে মেলে না।"
 }

@@ -17,6 +17,7 @@ export function buildPostExpensesHandler(input: {
     eventType: EVENT_TYPE.EXPENSE_POSTED,
     alsoHandles: [EVENT_TYPE.EXPENSE_VOIDED],
     ordering: "ORDERED",
+    streamPrefixes: ["expenseAccount:"],
     async handle(envelope) {
       await handleExpenseEvent(input, envelope as unknown as EventEnvelope<{ expenseId: string }>);
     },
