@@ -112,7 +112,7 @@ async function resolveManualLines(
   return lines;
 }
 export async function consumeJournalApproval(
-  deps: PostManualEntryDependencies,
+  deps: Pick<PostManualEntryDependencies, "approvals" | "currencies" | "policy">,
   expected: {
     organizationId: OrganizationId;
     requestedByUserId: UserId;
