@@ -7,7 +7,7 @@ import {
 } from "@banijjik/contracts/booking";
 import type { ScheduledJob } from "../../../../../kernel/jobs/index.js";
 import { getLogger } from "../../../../../kernel/logger/index.js";
-import type { OrganizationId, ResourceId } from "@banijjik/ids";
+import { asId, type OrganizationId, type ResourceId } from "@banijjik/ids";
 import { buildBookingSettingsReader } from "../booking-settings-reader.js";
 import type { BookingSettings } from "../ports/booking-context-ports.js";
 import type { Booking } from "../../domain/booking.entity.js";
@@ -88,7 +88,7 @@ export function buildMarkNoShowsJob(input: MarkNoShowsDependencies): ScheduledJo
     everyMinutes: 5,
     moduleKey: MODULE_KEY.BOOKING,
     run: async (organizationId, now) => {
-      const orgSettings = await settings.read(organizationId as OrganizationId);
+      const orgSettings = await settings.read(asId<OrganizationId>(organizationId));
       const candidates = await input.bookings.listNoShowCandidates({
         now,
         graceMinutes: orgSettings.noShowAfterMinutes,

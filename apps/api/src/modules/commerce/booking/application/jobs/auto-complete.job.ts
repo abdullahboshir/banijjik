@@ -5,7 +5,7 @@ import {
 } from "@banijjik/contracts/booking";
 import type { ScheduledJob } from "../../../../../kernel/jobs/index.js";
 import { getLogger } from "../../../../../kernel/logger/index.js";
-import type { OrganizationId } from "@banijjik/ids";
+import { asId, type OrganizationId } from "@banijjik/ids";
 import { buildBookingSettingsReader } from "../booking-settings-reader.js";
 import type { Booking } from "../../domain/booking.entity.js";
 import type { BookingRepository, BookingUnitOfWork } from "../ports/booking-repositories.js";
@@ -58,7 +58,7 @@ export function buildAutoCompleteJob(input: AutoCompleteJobDependencies): Schedu
     everyMinutes: 5,
     moduleKey: MODULE_KEY.BOOKING,
     run: async (organizationId, now) => {
-      const orgSettings = await settings.read(organizationId as OrganizationId);
+      const orgSettings = await settings.read(asId<OrganizationId>(organizationId));
       const graceMinutes =
         orgSettings.completeGraceMinutes ?? BOOKING_COMPLETE_GRACE_MINUTES_DEFAULT;
       const candidates = await input.bookings.listAutoCompleteCandidates({

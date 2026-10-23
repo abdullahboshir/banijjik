@@ -4,7 +4,7 @@ import { asId, type BookingId } from "@banijjik/ids";
 import type { BookingRepository } from "./ports/booking-repositories.js";
 
 export function buildBookingPostingSource(input: {
-  readonly bookings: BookingRepository;
+  readonly bookings: Pick<BookingRepository, "findById">;
 }): BookingPostingSource {
   return {
     async readBooking(bookingId: string): Promise<BookingPostingSnapshot | undefined> {
@@ -14,7 +14,8 @@ export function buildBookingPostingSource(input: {
         bookingId: booking.bookingId,
         businessDate: booking.startsAt.toISOString().slice(0, 10),
         locationId: booking.locationId,
-        kind: "SERVICE",
+        // Each kind posts to its own revenue account (11 §10): a rental is not service revenue.
+        kind: booking.kind,
         revenueExcludingTax: {
           amount: booking.price.total.amount - booking.price.tax.amount,
           currency: booking.price.currency,
