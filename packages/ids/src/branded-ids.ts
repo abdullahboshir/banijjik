@@ -40,6 +40,7 @@ export type CreditPurchaseId = Id<"CreditPurchase">;
 export type CommissionRuleId = Id<"CommissionRule">;
 export type CommissionEntryId = Id<"CommissionEntry">;
 export type CommissionPayoutId = Id<"CommissionPayout">;
+export type ListingReportId = Id<"ListingReport">;
 
 export class InvalidIdError extends Error {
   constructor() {

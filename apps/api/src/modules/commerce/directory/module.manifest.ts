@@ -13,6 +13,7 @@ import {
   DIRECTORY_PHOTO_POLICY_SETTING_KEY,
   DIRECTORY_REVIEW_EDITS_SETTING_KEY,
 } from "@banijjik/contracts/directory";
+import { CONTACT_EVENT_TYPE } from "@banijjik/contracts/contact";
 import { defineModule } from "../../../kernel/modules/index.js";
 
 /** The directory manifest (doc 16 §3.1, ADR-127). */
@@ -28,12 +29,15 @@ export const directoryManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.DIRECTORY_LISTING_READ),
     permissionDefinition(PERMISSION_KEY.DIRECTORY_LISTING_REVIEW),
     permissionDefinition(PERMISSION_KEY.DIRECTORY_LISTING_HIDE),
+    permissionDefinition(PERMISSION_KEY.DIRECTORY_REPORT_READ),
+    permissionDefinition(PERMISSION_KEY.DIRECTORY_REPORT_RESOLVE),
   ],
   routes: {
     admin: ["/orgs/:organizationId/directory"],
     storefront: [
       "/storefront/orgs/:organizationId/listings",
       "/storefront/orgs/:organizationId/my/listing",
+      "/storefront/orgs/:organizationId/listing-report-reasons",
     ],
   },
   menu: [
@@ -58,6 +62,17 @@ export const directoryManifest = defineModule({
       iconKey: "list",
       permissionKey: PERMISSION_KEY.DIRECTORY_LISTING_READ,
       order: 20,
+    },
+    {
+      menuKey: "directory.reports",
+      surface: SURFACE.ADMIN,
+      groupKey: "directory",
+      labelTermKey: "menu.directory.reports",
+      termKey: "listing",
+      path: "directory/reports",
+      iconKey: "list",
+      permissionKey: PERMISSION_KEY.DIRECTORY_REPORT_READ,
+      order: 30,
     },
   ],
   settings: [
@@ -95,8 +110,10 @@ export const directoryManifest = defineModule({
       DIRECTORY_EVENT_TYPE.LISTING_UNHIDDEN,
       DIRECTORY_EVENT_TYPE.LISTING_ARCHIVED,
       DIRECTORY_EVENT_TYPE.LISTING_UPDATED,
+      DIRECTORY_EVENT_TYPE.LISTING_REPORT_FILED,
+      DIRECTORY_EVENT_TYPE.LISTING_REPORT_RESOLVED,
     ],
-    consumes: [],
+    consumes: [CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_BLOCKED],
   },
   limitKeys: [],
   sequenceKeys: [SEQUENCE_KEY.LISTING],

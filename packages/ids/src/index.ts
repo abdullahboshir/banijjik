@@ -42,3 +42,4 @@ export type {
   UserId,
 } from "./branded-ids.js";
 export type { EventSessionId } from "./branded-ids.js";
+export type { ListingReportId } from "./branded-ids.js";

@@ -225,7 +225,8 @@ export class Listing implements ListingProps {
     });
   }
 
-  hide(now: Date, actorUserId: UserId): Listing {
+  /** A null actor is the system (blocked-account handler, M.7 decision 7). */
+  hide(now: Date, actorUserId: UserId | null): Listing {
     if (this.status !== LISTING_STATUS.APPROVED) throw invalidListingTransition(this.status);
     return new Listing({
       ...this.snapshot(),

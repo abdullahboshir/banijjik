@@ -1,6 +1,7 @@
 import { DIRECTORY_SEARCH_RULES, LISTING_VIEWER } from "@banijjik/contracts/directory";
 import {
   listingNumberParamsSchema,
+  listingReportFileRequestSchema,
   listingSearchQuerySchema,
   listingSubmitRequestSchema,
   listingUpsertRequestSchema,
@@ -11,6 +12,10 @@ import { requireCurrentCustomerAccountId } from "../../../../kernel/auth/index.j
 import { sendData, validate } from "../../../../kernel/http/index.js";
 import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
 import { readUpload, type ReadUploadOptions } from "../../../core/file/index.js";
+import type {
+  FileListingReportUseCase,
+  GetListingReportReasonsUseCase,
+} from "../application/use-cases/listing-report.use-cases.js";
 import type { GetMyListingUseCase } from "../application/use-cases/my-listing.use-cases.js";
 import type {
   ArchiveMyListingUseCase,
@@ -26,6 +31,8 @@ import { asId, type OrganizationId } from "@banijjik/ids";
 
 const SEARCH_IP_BUCKET = "directory.search.ip";
 const SEARCH_ACCOUNT_BUCKET = "directory.search.account";
+const DETAIL_IP_BUCKET = "directory.detail.ip";
+const DETAIL_ACCOUNT_BUCKET = "directory.detail.account";
 const HTTP_CREATED = 201;
 
 export interface DirectoryStorefrontRouterDependencies {
@@ -36,6 +43,8 @@ export interface DirectoryStorefrontRouterDependencies {
   readonly uploadListingPhoto: UploadListingPhotoUseCase;
   readonly searchListings: SearchListingsUseCase;
   readonly getPublicListing: GetPublicListingUseCase;
+  readonly fileReport: FileListingReportUseCase;
+  readonly reportReasons: GetListingReportReasonsUseCase;
   readonly limiter: RateLimiter;
   readonly authenticateCustomer: RequestHandler;
   readonly authenticateCustomerOptional: RequestHandler;
@@ -96,9 +105,22 @@ function mountListingSearch(router: Router, input: DirectoryStorefrontRouterDepe
 }
 
 function mountSingleListing(router: Router, input: DirectoryStorefrontRouterDependencies): void {
+  // Listing numbers run in sequence, so reading the detail page is the cheapest way to copy the
+  // whole directory: it gets the same two limits as search, in their own buckets (M.7 decision 8).
   router.get(
     "/listings/:listingNumber",
+    rateLimit({
+      limiter: input.limiter,
+      bucket: DETAIL_IP_BUCKET,
+      ...DIRECTORY_SEARCH_RULES.detailPerIp,
+    }),
     input.authenticateCustomerOptional,
+    rateLimit({
+      limiter: input.limiter,
+      bucket: DETAIL_ACCOUNT_BUCKET,
+      ...DIRECTORY_SEARCH_RULES.detailPerAccount,
+      keyOf: (request) => getRequestContext().customerAccountId ?? request.ip ?? "anon",
+    }),
     validate({ params: listingNumberParamsSchema }),
     async (_request, response) => {
       const { listingNumber } = response.locals["validated"].params as { listingNumber: string };
@@ -198,11 +220,35 @@ function mountMyListingLifecycle(
   });
 }
 
+/** A report comes from a signed-in customer only: anonymous reports are spam (M.7 decision 3). */
+function mountReports(router: Router, input: DirectoryStorefrontRouterDependencies): void {
+  router.get("/listing-report-reasons", input.authenticateCustomer, async (_request, response) => {
+    sendData(response, await input.reportReasons.execute({ organizationId: organizationIdOf() }));
+  });
+
+  router.post(
+    "/listings/:listingNumber/reports",
+    input.authenticateCustomer,
+    validate({ params: listingNumberParamsSchema, body: listingReportFileRequestSchema }),
+    async (_request, response) => {
+      const { listingNumber } = response.locals["validated"].params as { listingNumber: string };
+      const filed = await input.fileReport.execute({
+        organizationId: organizationIdOf(),
+        listingNumber,
+        reporterCustomerAccountId: requireCurrentCustomerAccountId(),
+        body: response.locals["validated"].body,
+      });
+      sendData(response, filed.report, { status: filed.created ? HTTP_CREATED : 200 });
+    },
+  );
+}
+
 export function buildDirectoryStorefrontRouter(
   input: DirectoryStorefrontRouterDependencies,
 ): Router {
   const router = Router({ mergeParams: true });
   mountPublicRoutes(router, input);
+  mountReports(router, input);
   mountMyListingReadWrite(router, input);
   mountMyListingLifecycle(router, input);
   return router;

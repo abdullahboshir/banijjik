@@ -46,7 +46,7 @@ function auditChanges(before: Listing | undefined, after: Listing): AuditChanges
 }
 
 export async function recordListingChange(
-  dependencies: DirectoryDependencies,
+  dependencies: Pick<DirectoryDependencies, "audit" | "events">,
   input: {
     readonly action: AuditAction;
     readonly before: Listing | undefined;

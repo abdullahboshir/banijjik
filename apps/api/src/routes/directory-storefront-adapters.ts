@@ -9,6 +9,7 @@ import {
 } from "../modules/commerce/directory/index.js";
 import { buildCustomerPhoneReader } from "../modules/commerce/contact/index.js";
 import { buildEffectiveCustomFieldReader } from "../modules/core/custom-field/index.js";
+import { buildOrganizationTimezoneReader } from "../modules/core/organization/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import { buildDirectoryBlockReader } from "../modules/platform/industry/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
@@ -54,5 +55,6 @@ export function buildDirectoryAdapters(input: {
     phones: buildCustomerPhoneReader(),
     unlockReader: buildCreditGatedUnlockReader(input.orgConfig),
     unlockCounter: null,
+    timezones: buildOrganizationTimezoneReader(),
   };
 }

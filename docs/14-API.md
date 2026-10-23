@@ -263,7 +263,9 @@ Public reads are cacheable (`Cache-Control` + CDN). Writes need the storefront c
 | `GET /me` | customer | | `StorefrontMeResponse` |
 | `GET /my/listing` · `PUT /my/listing` · `POST /my/listing/submit` · `DELETE /my/listing` | customer | | own listing (all tiers); create/replace draft data; submit with consents; archive (ADR-127) |
 | `POST /my/listing/photos` | customer | | multipart upload, purpose `LISTING_PHOTO`; refused when `directory.photoPolicy` is `NONE` |
-| `GET /listings` · `GET /listings/{listingNumber}` | public / optional customer | rate | APPROVED only; PUBLIC fields always, MEMBERS when signed in; filters `f.<fieldKey>…`; UNLOCKED only for the account that unlocked it (ADR-130); PRIVATE never |
+| `GET /listings` · `GET /listings/{listingNumber}` | public / optional customer | rate | APPROVED only; PUBLIC fields always, MEMBERS when signed in; filters `f.<fieldKey>…`; UNLOCKED only for the account that unlocked it (ADR-130); PRIVATE never. The detail has its own buckets `directory.detail.ip` and `directory.detail.account`, 60 per minute each (ADR-134) |
+| `GET /listing-report-reasons` | customer | | the template `directory.reportReasons` for the report form, `[{ reasonKey, label }]` (ADR-134) |
+| `POST /listings/{listingNumber}/reports` | customer | | `{ reasonKey, note? }` on an APPROVED listing → 201; 200 with the reporter's existing OPEN report; 404 when the listing is not APPROVED, 409 own listing, 400 unknown reason, 409 when the template lists no reasons, 429 after `DIRECTORY_SAFETY_RULES.reportsPerAccountPerDay` reports in the organization's business day (ADR-134) |
 | `POST /listings/{listingNumber}/unlock` | customer | rate I | spends `credit.unlockCost`; idempotent per account and listing; `Idempotency-Key` header required; 422 when the balance is short, 429 at the daily limit, 400 for the customer's own listing |
 | `GET /my/credits` · `GET /my/unlocks` | customer | | balance with paged entries / unlocked listings with their UNLOCKED fields, paged |
 | `GET /credit-packs` | public / optional customer | cache | ACTIVE packs only (sold in M.5) |
@@ -272,16 +274,19 @@ Public reads are cacheable (`Cache-Control` + CDN). Writes need the storefront c
 | `GET /my/credit-purchases` | customer | | own purchase history with statuses, paged |
 | `POST /credit-purchases/{creditPurchaseId}/cancel` | customer | | cancels own PENDING purchase (ADR-132) |
 
-Staff (tenant, module `directory`, permissions `directory.listing.{read,review,hide}`):
+Staff (tenant, module `directory`, permissions `directory.listing.{read,review,hide}`, `directory.report.{read,resolve}`):
 
 | Method & path | Permission | Notes |
 |---|---|---|
-| `GET /directory/config` | read | template `directory` block for screens: `sections`, `rejectionReasons` (with `isFinal`), `consents` (ADR-129); empty arrays when the template has no block |
+| `GET /directory/config` | read | template `directory` block for screens: `sections`, `rejectionReasons` (with `isFinal`), `consents` (ADR-129), `reportReasons` (ADR-134); empty arrays when the template has no block |
 | `GET /directory/queue?status=&page&limit` | read | review queue; default SUBMITTED, oldest first; `total` for the menu badge |
 | `GET /directory/listings?status=&listingNumber=&from=&to=&page&limit` | read | all listings; limit ≤ 50; newest first by `submittedAt` (or `publishedAt` when status is APPROVED); rows carry first-section PUBLIC fields only and `editedAfterApproval` (ADR-129) |
 | `GET /directory/listings/{listingId}` | read | every tier (staff projection); rejection checklist comes from config, not this body |
 | `POST …/approve` · `…/reject` | review | body includes `version`; reject needs `reasonKeys` from the template |
 | `POST …/hide` · `…/unhide` | hide | published listings only |
+| `GET /directory/reports?status=OPEN&page&limit` | report.read | OPEN reports grouped by listing, oldest first; rows `{ listingId, listingNumber, listingStatus, openCount, reasonKeys, oldestReportAt, newestReportAt }`, never a note; limit ≤ 100 (ADR-134) |
+| `GET /directory/listings/{listingId}/reports?status=&page&limit` | report.read | one listing's reports with `reporterCustomerAccountId` — the reporter's account id, never their phone (ADR-134) |
+| `POST /directory/listings/{listingId}/reports/resolve` | report.resolve | `{ reportIds 1..100, outcome, note? }` closes exactly those OPEN reports, so a report filed after the screen opened stays OPEN; unknown, foreign or already-resolved ids → 409 stale, nothing written. `LISTING_HIDDEN` also needs `directory.listing.hide`, `ACCOUNT_BLOCKED` also `contact.customerAccount.block`; the ban never writes the listing — the `directory.hideOnAccountBlocked` handler hides it (ADR-134) |
 Staff (tenant, module `credit`): `GET/POST /credit/packs`, `PATCH /credit/packs/{creditPackId}`, `POST …/archive` with `credit.pack.{read,update}` (writes carry `Idempotency-Key`); `GET /credit/accounts/{customerAccountId}` (`credit.account.read`); `POST …/adjust` (`credit.account.adjust`, `Idempotency-Key`, approval token unless OWNER). `GET /credit/purchases` and `GET /credit/purchases/{creditPurchaseId}` (`credit.purchase.read`); `POST /credit/purchases/{creditPurchaseId}/verify` (`credit.purchase.verify`, `Idempotency-Key`, approval token when pack price > `credit.purchase.approvalAbove` unless OWNER); `POST /credit/purchases/{creditPurchaseId}/reject` (`credit.purchase.verify`, `Idempotency-Key`). `GET /directory/listings/{listingId}/unlock-count` returns a count only (`directory.listing.read`, ADR-130).
 
 Every customer route answers `404 errors.storefront_not_available` while the business has `contact.customerLogin` off.

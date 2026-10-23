@@ -69,6 +69,7 @@ export class GetDirectoryConfigUseCase {
       sections: directory?.sections ?? [],
       rejectionReasons: directory?.rejectionReasons ?? [],
       consents: directory?.consents ?? [],
+      reportReasons: directory?.reportReasons ?? [],
     };
   }
 }

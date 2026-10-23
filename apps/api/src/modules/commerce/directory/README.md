@@ -2,27 +2,28 @@
 
 OPTIONAL module: customer-submitted **listings** (biodata, tutor profile, room, …) with
 template custom fields, per-field visibility tiers, staff moderation and public search.
+`GEO_BD` values are checked against the Bangladesh BBS registry in `@banijjik/contracts/directory`.
 
 ## Surface
 
 - Storefront (`/api/v1/storefront/orgs/{organizationId}`): my listing CRUD/submit, public
-  search and detail, listing photo upload (`LISTING_PHOTO`).
-- Tenant (`/orgs/{organizationId}/directory/…`): `GET /config` (template directory block),
-  review queue, all-listings filters, listing detail, approve/reject/hide/unhide (ADR-129).
-  Admin screens: `/{orgSlug}/directory/queue`, `/directory/listings`, `/directory/listings/{id}`.
+  search and detail, photo upload (`LISTING_PHOTO`), report reasons and filing a report.
+- Tenant (`/orgs/{organizationId}/directory/…`): config, review queue, all listings, detail,
+  approve/reject/hide/unhide (ADR-129), report queue and resolve (ADR-134).
 
-## Privacy
+## Trust and safety (ADR-134)
 
-Every response goes through `projectListingFields` / `projectListingPhotos` (ADR-127). Controllers
-never filter fields themselves. Until M.4, `UNLOCKED` fields are never sent to customers.
+Reports name a template `reportReasons` key on an APPROVED listing; one OPEN per reporter per
+listing, capped per business day. The queue groups OPEN reports by listing, oldest first.
+`LISTING_HIDDEN` also needs `directory.listing.hide`, `ACCOUNT_BLOCKED` also
+`contact.customerAccount.block`, through `moderationAccess`. No owner-facing body or event
+carries the reporter or note. `directory.hideOnAccountBlocked` hides a blocked account's
+listing as the system actor; unblock does not unhide. Detail is rate limited per IP and account.
+
+**Privacy.** Every response goes through `projectListingFields` / `projectListingPhotos` (ADR-127).
 
 ## Settings
 
 - `directory.oneListingPerAccount` (default true)
 - `directory.reviewEdits` (default true): an edit of an APPROVED listing returns it to SUBMITTED
 - `directory.photoPolicy`: `NONE` | `BLURRED_PUBLIC` | `UNLOCKED_ONLY`
-
-## Geography
-
-`GEO_BD` custom-field values are checked against the Bangladesh BBS administrative registry in
-`@banijjik/contracts/directory` (8 divisions, 64 districts, upazilas).

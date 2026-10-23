@@ -1,7 +1,7 @@
 import type { EffectiveCustomField } from "@banijjik/contracts";
 import type { IndustryTemplateDirectoryBlock } from "@banijjik/contracts/directory";
 import type { DirectoryPhotoPolicy } from "@banijjik/contracts/directory";
-import type { OrganizationId } from "@banijjik/ids";
+import type { CustomerAccountId, OrganizationId, UserId } from "@banijjik/ids";
 import type { CustomFieldRule } from "@banijjik/validation";
 
 export interface ListingFieldReader {
@@ -40,6 +40,26 @@ export interface ListingUnlockReader {
 /** Count-only privacy (M.4 decision 6): never who unlocked. Null when the credit module is off. */
 export interface ListingUnlockCounter {
   countByListing(listingId: string): Promise<number | null>;
+}
+
+/** The second permission of a resolve, asked by permission key, never by role (M.7 decision 6). */
+export interface ListingModerationAccess {
+  mayHide(): Promise<boolean>;
+  mayBlockAccounts(): Promise<boolean>;
+}
+
+/** Blocks the customer account behind a listing; reuses the existing contact block path (M.7 decision 7). */
+export interface CustomerAccountBlocker {
+  block(input: {
+    readonly organizationId: OrganizationId;
+    readonly customerAccountId: CustomerAccountId;
+    readonly actorUserId: UserId;
+  }): Promise<void>;
+}
+
+/** The organization timezone, for the business day of the report daily cap (M.7 decision 3). */
+export interface OrganizationTimezoneSource {
+  read(organizationId: OrganizationId): Promise<string | undefined>;
 }
 
 export function asListingFieldRules(

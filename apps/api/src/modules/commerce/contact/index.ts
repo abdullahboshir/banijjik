@@ -67,6 +67,7 @@ export { contactManifest } from "./module.manifest.js";
 export { buildContactBillToReader } from "./infrastructure/contact-bill-to-reader.js";
 export { registerContactModels } from "./infrastructure/register-contact-models.js";
 export { buildSalesContactReader } from "./sales-contact-reader.js";
+export { buildCustomerAccountBlocker } from "./customer-account-blocker.js";
 export type {
   ContactCustomFieldReader,
   ContactRoleCatalog,
