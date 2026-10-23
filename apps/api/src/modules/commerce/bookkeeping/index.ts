@@ -10,6 +10,7 @@ import {
   GetTrialBalanceUseCase,
   MongoAccountRepository,
   MongoJournalRepository,
+  type OrganizationCurrencyPort,
 } from "../accounting/index.js";
 import { buildApprovalVerifier } from "../../core/iam/index.js";
 import { CreateAccountUseCase } from "./application/use-cases/create-account.use-case.js";
@@ -28,9 +29,7 @@ export interface BookkeepingTenantDependencies {
   readonly audit: AuditRecorder;
   readonly permission: PermissionMiddlewareFactory;
   readonly idempotency: RequestHandler;
-  readonly currencies: {
-    read(organizationId: import("@banijjik/ids").OrganizationId): Promise<string | undefined>;
-  };
+  readonly currencies: OrganizationCurrencyPort;
   readonly policy: {
     ownerMaySkip(organizationId: import("@banijjik/ids").OrganizationId): Promise<boolean>;
   };
@@ -42,9 +41,14 @@ export function buildBookkeepingRouter(dependencies: BookkeepingTenantDependenci
   const journals = new MongoJournalRepository();
   const approvals = buildApprovalVerifier({ audit: dependencies.audit, clock: dependencies.clock });
   const controller = new BookkeepingController({
-    listAccounts: new ListBookkeepingAccountsUseCase(accounts, journals, dependencies.clock),
+    listAccounts: new ListBookkeepingAccountsUseCase({
+      accounts,
+      journals,
+      clock: dependencies.clock,
+      currencies: dependencies.currencies,
+    }),
     listJournal: new ListJournalUseCase(journals),
-    trialBalance: new GetTrialBalanceUseCase(accounts, journals),
+    trialBalance: new GetTrialBalanceUseCase(accounts, journals, dependencies.currencies),
     createAccount: new CreateAccountUseCase(accounts, dependencies.clock, dependencies.audit),
     updateAccount: new UpdateAccountUseCase(accounts, dependencies.clock, dependencies.audit),
     postManualEntry: new PostManualEntryUseCase({
@@ -71,8 +75,8 @@ export function buildBookkeepingRouter(dependencies: BookkeepingTenantDependenci
       locations: dependencies.locations,
       unitOfWork: new MongoUnitOfWork(),
     }),
-    profitAndLoss: new ProfitAndLossUseCase(accounts, journals),
-    balanceSheet: new BalanceSheetUseCase(accounts, journals),
+    profitAndLoss: new ProfitAndLossUseCase(accounts, journals, dependencies.currencies),
+    balanceSheet: new BalanceSheetUseCase(accounts, journals, dependencies.currencies),
   });
   return buildBookkeepingTenantRouter({
     controller,

@@ -15,6 +15,10 @@ import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import { AppError, conflict, notFound } from "../../../../../kernel/http/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import type { ApprovalVerifier } from "../../../../core/iam/index.js";
+import {
+  requireOrganizationCurrency,
+  type OrganizationCurrencyPort,
+} from "../organization-currency.js";
 import type { AccountRepository } from "../ports/account-repository.js";
 import type { JournalRepository } from "../ports/journal-repository.js";
 import { postJournalEntry, toJournalResponse, type EventPublisher } from "../post-journal.js";
@@ -34,7 +38,7 @@ export interface PostManualEntryDependencies {
   readonly clock: Clock;
   readonly approvals: Pick<ApprovalVerifier, "consume">;
   readonly unitOfWork: { run<T>(work: () => Promise<T>): Promise<T> };
-  readonly currencies: { read(organizationId: OrganizationId): Promise<string | undefined> };
+  readonly currencies: OrganizationCurrencyPort;
   readonly policy: { ownerMaySkip(organizationId: OrganizationId): Promise<boolean> };
   readonly locations: { isActiveLocation(locationId: string): Promise<boolean> };
 }
@@ -121,12 +125,13 @@ export async function consumeJournalApproval(
   const { organizationId, requestedByUserId, locationId, token, subjectKey, amount } = expected;
   if (await deps.policy.ownerMaySkip(organizationId)) return;
   if (token === undefined) throw new AppError({ code: ERROR_CODE.APPROVAL_REQUIRED });
+  const currency = await requireOrganizationCurrency(deps.currencies, organizationId);
   await deps.approvals.consume(token, {
     action: APPROVAL_ACTION.MANUAL_JOURNAL,
     requestedByUserId,
     locationId,
     subjectKey,
-    amount: { amount, currency: "BDT" },
+    amount: { amount, currency },
   });
 }
 export async function assertJournalLocation(

@@ -1,5 +1,10 @@
+import type { CurrencyCode } from "@banijjik/contracts";
 import { ACCOUNT_TYPE, type BalanceSheetResponse } from "@banijjik/contracts/accounting";
 import type { OrganizationId } from "@banijjik/ids";
+import {
+  requireOrganizationCurrency,
+  type OrganizationCurrencyPort,
+} from "../organization-currency.js";
 import type { AccountRepository } from "../ports/account-repository.js";
 import type { JournalRepository } from "../ports/journal-repository.js";
 
@@ -12,11 +17,13 @@ export class BalanceSheetUseCase {
   constructor(
     private readonly accounts: AccountRepository,
     private readonly journals: JournalRepository,
+    private readonly currencies: OrganizationCurrencyPort,
   ) {}
 
   async execute(input: BalanceSheetInput): Promise<BalanceSheetResponse> {
     if (this.journals.aggregateBalances === undefined)
       throw new Error("Statement aggregation required");
+    const currency = await requireOrganizationCurrency(this.currencies, input.organizationId);
     const totals = await this.journals.aggregateBalances({ to: input.asOf });
     const accounts = await this.accounts.listByOrganization(input.organizationId);
     const types = new Map(
@@ -33,7 +40,7 @@ export class BalanceSheetUseCase {
         ];
       }),
     );
-    const { assets, liabilities, equity } = this.groupAccounts(accounts, accountBalances);
+    const { assets, liabilities, equity } = this.groupAccounts(accounts, accountBalances, currency);
     const retainedEarnings = this.calculateRetainedEarnings(accounts, accountBalances);
 
     const totalAssets = this.sumBalances(assets);
@@ -48,10 +55,10 @@ export class BalanceSheetUseCase {
       assets,
       liabilities,
       equity,
-      retainedEarnings: { amount: retainedEarnings, currency: "BDT" as const },
-      totalAssets: { amount: totalAssets, currency: "BDT" as const },
-      totalLiabilities: { amount: totalLiabilities, currency: "BDT" as const },
-      totalEquity: { amount: totalEquity, currency: "BDT" as const },
+      retainedEarnings: { amount: retainedEarnings, currency },
+      totalAssets: { amount: totalAssets, currency },
+      totalLiabilities: { amount: totalLiabilities, currency },
+      totalEquity: { amount: totalEquity, currency },
       isBalanced,
     };
   }
@@ -64,13 +71,14 @@ export class BalanceSheetUseCase {
       readonly accountType: import("@banijjik/contracts/accounting").AccountType;
     }[],
     balances: Map<string, number>,
+    currency: CurrencyCode,
   ) {
     const toRow = (account: (typeof accounts)[number]) => ({
       accountId: account.accountId,
       accountCode: account.accountCode,
       name: account.name,
       accountType: account.accountType,
-      balance: { amount: balances.get(account.accountId) ?? 0, currency: "BDT" as const },
+      balance: { amount: balances.get(account.accountId) ?? 0, currency },
     });
 
     return {

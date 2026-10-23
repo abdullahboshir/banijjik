@@ -92,7 +92,7 @@ export class BookkeepingController {
   };
   readonly listAccounts: RequestHandler = async (_request, response) => {
     const query = response.locals["validated"].query as AccountListQuery;
-    const result = await this.deps.listAccounts.execute(query);
+    const result = await this.deps.listAccounts.execute(readTenantCaller().organizationId, query);
     sendData(response, result.items, { meta: { ...query, hasNext: result.hasNext } });
   };
   readonly listJournal: RequestHandler = async (_request, response) => {
@@ -104,6 +104,9 @@ export class BookkeepingController {
   };
   readonly trialBalance: RequestHandler = async (_request, response) => {
     const query = response.locals["validated"].query as BalanceSheetQuery;
-    sendData(response, await this.deps.trialBalance.execute(query.asOf));
+    sendData(
+      response,
+      await this.deps.trialBalance.execute(readTenantCaller().organizationId, query.asOf),
+    );
   };
 }
