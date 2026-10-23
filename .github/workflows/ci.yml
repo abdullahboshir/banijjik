@@ -5,6 +5,11 @@ on:
   push:
     # Card branches too, so every session gets the full verification without running it locally (card 3.14).
     branches: [main, "s/**"]
+  # Nightly on main (card 3.18): a new audit advisory or a date-dependent test turns main red before
+  # it blocks every card branch. 21:30 UTC is 03:30 in Dhaka, inside the hours where the UTC and
+  # Dhaka calendar dates differ.
+  schedule:
+    - cron: "30 21 * * *"
 
 # Least privilege: the jobs only read the repository and use no secrets.
 permissions:

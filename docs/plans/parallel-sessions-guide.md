@@ -28,7 +28,7 @@ Two limits decide it. More chats than either limit allows only creates waiting a
    - **Part A, API:** contracts, validation, the module, routes registration, grants, API tests, doc rows, ADR
    - **Part B, screens:** `apps/admin` (or `apps/platform`), i18n keys, unit and browser tests
    - Part B starts after Part A is **merged**, because its browser test needs the real API. Meanwhile that session takes another ready card.
-2. **Size:** a part should touch about 25 files or fewer and one module folder. A bigger part is split again when it is planned.
+2. **Size:** a part should touch about 25 files or fewer and one module folder. A **T1** part: about 15 production files (tests not counted), because review rounds grow with the diff (3.8 R1 had 20 findings). A bigger part is split again when it is planned (A1, A2).
 3. **Names:** card `3.5a` gives branches `s/3.5a-api-orders` and `s/3.5a-ui-orders`, handoffs `docs/handoffs/3.5a-api.md` and `docs/handoffs/3.5a-ui.md`. The card keeps one STATUS row; each part writes its own line in that row's note.
 4. **Plans** list the parts in a "Session parts" section near the top: which decisions and tests belong to each part.
 
@@ -68,7 +68,8 @@ IMPLEMENT card <card>, part <A (API) | B (screens)>, exactly as the plan says.
 Branch: s/<card>-<api|ui>-<slug> from main. Folder: <folder or "cloud">.
 Only touch the files the plan lists for this part. Stop and ask if the plan has a gap or conflicts with the code.
 Commit after each step. Run only the fast local checks of the guide, section 7.
-Finish with every step of the guide, section 8, and report the CI run link and result.
+For a T1 card, walk the guide, section 11, before the handoff.
+Finish with every step of the guide, section 8. Report "done" only with the full `npm run card:check` output.
 ```
 
 ## 7. Checks while working (fast, local)
@@ -96,8 +97,10 @@ A session is finished only when all of these hold. "Done" without a green CI run
    - test names
    - the green CI run link
    - known gaps (they also go in the STATUS note)
+   - T1 only: the section 11 table (item → test name or file, or "n/a" with a reason)
 7. Update your own STATUS row: `implemented (awaiting review), part <A|B>, CI <run link>`.
 8. Commit and push the handoff and STATUS. CI must be green on this last push too.
+9. Run `npm run card:check` after that CI run is green. Every line must say PASS. Paste the whole output into the "done" message. A "done" without this output is not done, and the lead does not start a review.
 
 ## 9. Ready board (2026-10-22)
 | Card / part | Ready? | Waits for | Tier |
@@ -125,3 +128,44 @@ The lead updates this board after each merge.
 - **Merging:** the lead rebases the branch on main, waits for green CI on the rebased head, fast-forwards main and pushes main (with the owner's permission).
 - **Several branches at once:** merged one by one in the order they pass; each later branch is rebased and must be green again.
 - Findings go back to the same session as a numbered list. The session fixes them, pushes, and reports the new CI run.
+- **Entry ticket for a review:** the session's "done" message carries a `npm run card:check` output with every line PASS. The lead reruns `npm run card:check` in that folder (or checks the same facts for a cloud branch) before reading the diff.
+- **Small leftovers, no new round (owner, 2026-10-23):** when a re-review leaves at most three small items (each about an hour or less, no design choice), the lead fixes them on the branch, waits for green CI and merges. Only blockers and design gaps go back to the session.
+
+## 11. T1 self-review checklist (implementer, before the handoff)
+These are the findings that came back in the 3.7, 3.8 and M.5 reviews. Walk every line and put the table in the handoff (item → test name or file, or "n/a" with a reason). The lead reviews against the same list.
+
+**Money, credit and ledgers**
+1. Every balance change writes its ledger entry, and the result of every balance call is checked. A failed adjust stops the use case.
+2. Limits (refund, allocation, stock, credits) are read and checked inside the same transaction as the write, with the session. A double action (reverse twice, refund twice) is stopped by a unique index, not only by a read.
+3. Currency is compared, never assumed. A setting or threshold in another currency fails safe (asks for approval or refuses). No `"BDT"` literal.
+4. A percentage is clamped to 0–100, and 0 means none.
+5. Reversals undo everything the original wrote (every journal, store credit, refunds).
+
+**Concurrency and retries**
+6. Updates use `version`. A stale version returns 409. A repository never turns an unknown error into `false` or `null`.
+7. A money-, credit- or stock-creating POST replays: the same `Idempotency-Key` (and the natural key, such as a transaction reference) returns the first response, not an error and not a second record.
+
+**Scheduled jobs**
+8. One bad row never stops the loop: catch per row, log with the row id, continue. A row that staff changed meanwhile (409) is skipped.
+9. Rows are read and processed one keyset batch at a time, never collected into one array.
+10. A job never depends on running at one exact minute. It catches up: "on or after the due time", and a rerun does nothing twice.
+11. Every state has a way out. Check each state: what moves a record out of it, and is that path tested (no member frozen forever, no future start that never activates).
+12. Settings read inside a job really resolve outside a request (see STATUS: the scheduled-job settings gap).
+
+**Dates and clocks**
+13. A business date is the organization's local date, never the UTC date. Payments, jobs and reports between 00:00 and 06:00 Dhaka time are the usual bug.
+14. Tests that depend on the date use a fixed clock (`vi.useFakeTimers()` + `vi.setSystemTime(...)`) or compute dates in the organization's timezone, and one test covers a time between 00:00 and 06:00 Dhaka time.
+
+**Security and tenancy**
+15. User input that reaches `$regex` is escaped and anchored. No unbounded case-insensitive search.
+16. No secret, token or part of one is stored, logged or returned.
+17. Rules ask for permission keys, never role keys.
+18. Location-owned data is registered with LOCATION tenancy and has a cross-location test. Every route param is read and checked.
+
+**Code and records**
+19. No `as unknown as` or other casts, in production code or tests. Narrow a use case's dependencies with `Pick<...>` so a test can pass only what it uses.
+20. No optional dependency that silently changes behaviour when it is missing. Make it required.
+21. Event names, posting keys, error codes and audit actions come from contracts. None is built at runtime.
+22. Schemas carry the audit fields and `version`, with indexes that start with `organizationId`. Validation schemas carry no message literals.
+23. Other modules are imported only through their `index.ts`, and an `index.ts` exports no infrastructure class.
+24. Each plan test exists under its name, and its body checks what the name promises. The ADR, doc notes and handoff match the code.
