@@ -116,7 +116,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.5a orders (draft, place, confirm, edit, cancel, complete, with stock) | planned (2026-10-22, `docs/plans/3.5a.md`, Opus; part A T1, part B T2) | part A can start now; PRODUCT lines only, quote-only totals, reservation lifecycle, instant sale for POS, payment status port stubbed until 3.8; ADR-131 |
 | 3.5b returns and exchanges | todo | after 3.5a |
 | 3.9 POS | todo |  |
-| 3.11 staff commission | planned (2026-10-23, `docs/plans/3.11.md`; parts A1 → A2 → B, C after 3.5a) | ADR-100, ADR-135 |
+| 3.11 staff commission | implemented (awaiting review), part A1 (rules, accrual ledger, refund reconcile; API), CI https://github.com/abdullahboshir/banijjik/actions/runs/39939046247; handoff `docs/handoffs/3.11-api-accruals.md`; parts A2 → B, C after 3.5a still open | ADR-100, ADR-135 (unchanged). Known gaps: no payouts or accounting posting yet (A2); no seed template allows `commission`; no payout void; order lines wait for Part C; `accounting.postBookings` stream defect noted for the lead |
 | 3.10 reports and dashboard | todo | last |
 | 3.14 CI for every card branch | merged (2026-10-22, implemented by the lead (Opus 5.5); CI run 39719375443 green) | `s/**` pushes run verify, browser (admin 90, platform 16 passed, about 5 min) and secrets; flaky 3.8a replay test noted in the handoff |
 | 3.15 test stability (flaky tests) | merged (2026-10-22, merge check by the lead; CI run 39755931800 green) | `docs/handoffs/3.15.md`; branding lazy-preview wait and package form input scheduling, both 20/20; no skips or timeout increases; the replay race it found is fixed by 3.16 |
