@@ -1,6 +1,6 @@
 import { getLocale } from "@banijjik/web-client/server";
 import { BUNDLED_CATALOGS } from "@banijjik/i18n";
-import { Inter, Noto_Sans_Bengali } from "next/font/google";
+import localFont from "next/font/local";
 import type { Metadata } from "next";
 import type { ReactElement, ReactNode } from "react";
 import { env } from "../src/config/env";
@@ -8,19 +8,23 @@ import { getTranslator } from "../src/i18n/get-translator";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "600"],
+const inter = localFont({
+  src: [
+    { path: "./fonts/inter-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/inter-latin-600.woff2", weight: "600", style: "normal" },
+  ],
   display: "swap",
-  adjustFontFallback: true,
   preload: false,
+  adjustFontFallback: "Arial",
   variable: "--font-inter",
 });
-const notoSansBengali = Noto_Sans_Bengali({
-  subsets: ["bengali"],
-  weight: ["400", "600"],
-  adjustFontFallback: true,
+const notoSansBengali = localFont({
+  src: [
+    { path: "./fonts/noto-sans-bengali-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/noto-sans-bengali-600.woff2", weight: "600", style: "normal" },
+  ],
   display: "swap",
+  adjustFontFallback: "Arial",
   variable: "--font-noto-bengali",
 });
 
