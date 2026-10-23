@@ -1,4 +1,4 @@
-import type { CancelFeeMode } from "@banijjik/contracts/booking";
+import type { BookingTerminationMode, CancelFeeMode } from "@banijjik/contracts/booking";
 import type { Money, PaymentStatus } from "@banijjik/contracts/payment";
 import type { ContactId, LocationId, OrganizationId, UserId } from "@banijjik/ids";
 
@@ -9,7 +9,7 @@ export interface DepositCheckPort {
     readonly requiredAmount: Money;
   }): Promise<boolean>;
 
-  initializeSummary?(input: {
+  initializeSummary(input: {
     readonly organizationId: OrganizationId;
     readonly requestId: string;
     readonly contactId: ContactId;
@@ -19,7 +19,7 @@ export interface DepositCheckPort {
     readonly now: Date;
   }): Promise<void>;
 
-  settleBookingTermination?(input: {
+  settleBookingTermination(input: {
     readonly organizationId: OrganizationId;
     readonly requestId: string;
     readonly contactId: ContactId;
@@ -27,7 +27,7 @@ export interface DepositCheckPort {
     readonly startsAt: Date;
     readonly depositRequired: Money;
     readonly priceTotal: Money;
-    readonly mode: "CANCEL" | "NO_SHOW";
+    readonly mode: BookingTerminationMode;
     readonly freeCancelHours: number;
     readonly feeMode: CancelFeeMode;
     readonly feePercent: number;

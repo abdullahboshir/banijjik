@@ -7,6 +7,7 @@ import { createCloseRedisTask, createQueueRedisClient } from "./kernel/redis/ind
 import { registerBookingScheduledJobs } from "./modules/commerce/booking/index.js";
 import { registerCreditScheduledJobs } from "./modules/commerce/credit/index.js";
 import { registerPaymentScheduledJobs } from "./modules/commerce/payment/index.js";
+import { buildBookingDepositCheckAdapter } from "./routes/booking-deposit-adapter.js";
 import { buildAuditRecorder } from "./modules/core/audit/index.js";
 import { startScheduledJobs } from "./kernel/jobs/index.js";
 import { registerAccountingAndExpenseHandlers } from "./routes/accounting-event-handlers.js";
@@ -49,6 +50,7 @@ export function startWorker(
     clock: systemClock,
     orgConfig,
     manifests: registry.all(),
+    depositCheck: buildBookingDepositCheckAdapter(),
   });
   registerCreditScheduledJobs({
     clock: systemClock,

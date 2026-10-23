@@ -1,4 +1,5 @@
 import { SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { BOOKING_EVENT_TYPE } from "@banijjik/contracts/booking";
 import {
   PAYMENT_METHOD,
   PAYMENT_REQUEST_TYPE,
@@ -7,7 +8,15 @@ import {
 } from "@banijjik/contracts/payment";
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { models } from "../../../../kernel/db/index.js";
+import { models, MongoUnitOfWork } from "../../../../kernel/db/index.js";
+import { runInOrganizationContext } from "../../../../kernel/tenancy/index.js";
+import {
+  bookingManifest,
+  buildMarkNoShowsJob,
+  MongoBookingRepository,
+  MongoResourceSlotUsageRepository,
+} from "../../booking/index.js";
+import { buildBookingDepositCheckAdapter } from "../../../../routes/booking-deposit-adapter.js";
 import {
   createStylistResource,
   publishBookableService,
@@ -692,5 +701,127 @@ describe("dues lifecycle, deposit policy, events, permissions, cross-location, a
       `/orgs/${world.organizationA}/contacts/${contactId}`,
     );
     expect(contactRes.body.data.summary?.storeCreditBalanceMinor).toBe(7500 + (t1 - 20000));
+  });
+
+  it("retains fee and writes the same event as the manual path on job-marked no-show; running the job twice settles nothing on the second run", async () => {
+    const world = await worldFor(harness, RETAIL, SALON);
+    await world.alice.call("patch", `/orgs/${world.organizationA}/settings`, {
+      items: [
+        { settingKey: "booking.requireApproval", value: false },
+        { settingKey: "booking.deposit.required", value: "FULL" },
+        { settingKey: "booking.noShowFee", value: "DEPOSIT" },
+        { settingKey: "booking.noShowAfterMinutes", value: 30 },
+      ],
+    });
+
+    const contactId = await createCustomer(world);
+    const bookingDate = "2027-03-07T04:00:00.000Z";
+    const b1 = await createBookingAtLocation(world, contactId, world.locationA1, bookingDate);
+    expect(b1.status).toBe("REQUESTED");
+    const depositAmount = b1.price.total.amount;
+
+    // Pay full deposit
+    const payRes = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/payments`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: world.locationA1,
+        method: PAYMENT_METHOD.CASH,
+        amount: money(depositAmount),
+        contactId,
+        allocations: [
+          {
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+            requestId: b1.bookingId,
+            amount: money(depositAmount),
+          },
+        ],
+      },
+    });
+    expect(payRes.status).toBe(201);
+
+    // Confirm booking
+    const confirmRes = await world.alice.call(
+      "post",
+      `/orgs/${world.organizationA}/bookings/${b1.bookingId}/confirm`,
+      { version: b1.version },
+    );
+    expect(confirmRes.status).toBe(200);
+
+    // Build the markNoShows job
+    const publishedEvents: Array<{
+      eventType: string;
+      payload: unknown;
+      options?: { orderingKey?: string };
+    }> = [];
+    const eventCollector = {
+      publish: async (eventType: string, payload: unknown, options?: { orderingKey?: string }) => {
+        publishedEvents.push(options ? { eventType, payload, options } : { eventType, payload });
+      },
+    };
+
+    const job = buildMarkNoShowsJob({
+      bookings: new MongoBookingRepository(),
+      slots: new MongoResourceSlotUsageRepository(),
+      unitOfWork: new MongoUnitOfWork(),
+      events: eventCollector,
+      orgConfig: {
+        current: async () => ({
+          modules: ["booking"],
+          config: {
+            settings: {
+              "booking.noShowAfterMinutes": 30,
+              "booking.noShowFee": "DEPOSIT",
+              "booking.deposit.required": "FULL",
+            },
+          },
+        }),
+        forOrganization: async () => ({
+          modules: ["booking"],
+          config: {
+            settings: {
+              "booking.noShowAfterMinutes": 30,
+              "booking.noShowFee": "DEPOSIT",
+              "booking.deposit.required": "FULL",
+            },
+          },
+        }),
+      } as unknown as import("../../../platform/entitlement/index.js").OrgConfigService,
+      manifests: [bookingManifest],
+      depositCheck: buildBookingDepositCheckAdapter({ events: eventCollector }),
+    });
+
+    // Run job 1 hour after start (beyond 30 min grace)
+    const runTime = new Date("2027-03-07T05:00:00.000Z");
+    await runInOrganizationContext(world.organizationA, () =>
+      job.run(world.organizationA, runTime),
+    );
+
+    // Verify booking is marked NO_SHOW and retained fee
+    const getRes = await world.alice.call(
+      "get",
+      `/orgs/${world.organizationA}/bookings/${b1.bookingId}`,
+    );
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.data.status).toBe("NO_SHOW");
+    expect(getRes.body.data.cancellationFeeRetained?.amount).toBe(depositAmount);
+
+    // Verify published event matches manual path
+    const noShowEvent = publishedEvents.find(
+      (e) => e.eventType === BOOKING_EVENT_TYPE.BOOKING_NO_SHOW_MARKED,
+    );
+    expect(noShowEvent).toBeDefined();
+    expect(noShowEvent?.payload).toEqual({ bookingId: b1.bookingId });
+    expect(noShowEvent?.options?.orderingKey).toBe(`booking:${b1.bookingId}`);
+
+    // Clear events and run job second time
+    publishedEvents.length = 0;
+    await runInOrganizationContext(world.organizationA, () =>
+      job.run(world.organizationA, runTime),
+    );
+
+    // Second run settles nothing
+    expect(publishedEvents).toHaveLength(0);
   });
 });

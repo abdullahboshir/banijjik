@@ -7,6 +7,12 @@ import {
   STORE_CREDIT_ENTRY_KIND,
   type Money,
 } from "@banijjik/contracts/payment";
+import {
+  BOOKING_TERMINATION_MODE,
+  CANCEL_FEE_MODE,
+  type BookingTerminationMode,
+  type CancelFeeMode,
+} from "@banijjik/contracts/booking";
 import { SEQUENCE_KEY } from "@banijjik/contracts";
 import {
   asId,
@@ -50,9 +56,9 @@ export interface SettleBookingTerminationInput {
   readonly startsAt: Date;
   readonly depositRequired: Money;
   readonly priceTotal: Money;
-  readonly mode: "CANCEL" | "NO_SHOW";
+  readonly mode: BookingTerminationMode;
   readonly freeCancelHours: number;
-  readonly feeMode: "NONE" | "DEPOSIT" | "PERCENT";
+  readonly feeMode: CancelFeeMode;
   readonly feePercent: number;
   readonly actorUserId: UserId | null;
   readonly now: Date;
@@ -63,13 +69,13 @@ function computeTerminationFeeAmount(
   input: SettleBookingTerminationInput,
 ): number {
   if (netPaidAmount <= 0) return 0;
-  if (input.mode === "CANCEL") {
+  if (input.mode === BOOKING_TERMINATION_MODE.CANCEL) {
     const msUntilStart = input.startsAt.getTime() - input.now.getTime();
     const freeWindowMs = Math.max(0, input.freeCancelHours) * 3_600_000;
     if (msUntilStart >= freeWindowMs) return 0;
   }
-  if (input.feeMode === "NONE") return 0;
-  if (input.feeMode === "PERCENT") {
+  if (input.feeMode === CANCEL_FEE_MODE.NONE) return 0;
+  if (input.feeMode === CANCEL_FEE_MODE.PERCENT) {
     const percent = Math.min(100, Math.max(0, input.feePercent));
     if (percent === 0) return 0;
     const cap = Math.floor((input.priceTotal.amount * percent) / 100);
@@ -87,7 +93,10 @@ function buildTerminationRefundPayment(opts: {
 }): Payment {
   const { input, creditAmount, seq, timeZone } = opts;
   const { currency } = input.priceTotal;
-  const note = input.mode === "CANCEL" ? "Booking cancellation credit" : "Booking no-show credit";
+  const note =
+    input.mode === BOOKING_TERMINATION_MODE.CANCEL
+      ? "Booking cancellation credit"
+      : "Booking no-show credit";
   return Payment.create({
     paymentId: asId<PaymentId>(newId()),
     organizationId: input.organizationId,

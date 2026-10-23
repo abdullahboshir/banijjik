@@ -43,7 +43,7 @@ export interface CreateBookingDependencies {
   readonly settings: BookingSettingsReader;
   readonly quoter: PriceQuoterPort;
   readonly contacts: ContactCreator;
-  readonly depositCheck?: DepositCheckPort;
+  readonly depositCheck: DepositCheckPort;
   readonly timeZone: { read(organizationId: OrganizationId): Promise<string> };
   readonly timeOff: {
     listOverlapping(

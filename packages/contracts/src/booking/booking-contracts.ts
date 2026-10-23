@@ -52,6 +52,10 @@ export type DepositRequired = (typeof DEPOSIT_REQUIRED)[keyof typeof DEPOSIT_REQ
 export const CANCEL_FEE_MODE = defineEnum(["NONE", "DEPOSIT", "PERCENT"]);
 export type CancelFeeMode = (typeof CANCEL_FEE_MODE)[keyof typeof CANCEL_FEE_MODE];
 
+export const BOOKING_TERMINATION_MODE = defineEnum(["CANCEL", "NO_SHOW"]);
+export type BookingTerminationMode =
+  (typeof BOOKING_TERMINATION_MODE)[keyof typeof BOOKING_TERMINATION_MODE];
+
 /** Fixed bucket size for capacity counters (ADR-122). Independent of slotStepMinutes. */
 export const BOOKING_BUCKET_MINUTES = 5;
 

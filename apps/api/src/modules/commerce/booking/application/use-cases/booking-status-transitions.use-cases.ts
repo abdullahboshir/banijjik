@@ -61,10 +61,10 @@ export class ConfirmBookingUseCase {
 }
 
 async function verifyDepositIfNeeded(
-  depositCheck: DepositCheckPort | undefined,
+  depositCheck: DepositCheckPort,
   existing: import("../../domain/booking.entity.js").Booking,
 ): Promise<void> {
-  if (existing.depositRequired.amount <= 0 || !depositCheck) return;
+  if (existing.depositRequired.amount <= 0) return;
   const satisfied = await depositCheck.isDepositSatisfied({
     organizationId: existing.organizationId,
     requestId: existing.bookingId,
@@ -82,7 +82,7 @@ export class RequestFromHoldUseCase {
       readonly audit: AuditRecorder;
       readonly clock: Clock;
       readonly settings: BookingSettingsReader;
-      readonly depositCheck?: DepositCheckPort;
+      readonly depositCheck: DepositCheckPort;
     },
   ) {}
 
@@ -118,7 +118,7 @@ export class RequestFromHoldUseCase {
     let persisted = requested;
     await this.dependencies.unitOfWork.run(async () => {
       persisted = await this.dependencies.bookings.update(requested, input.version);
-      await this.dependencies.depositCheck?.initializeSummary?.({
+      await this.dependencies.depositCheck.initializeSummary({
         organizationId: input.organizationId,
         requestId: persisted.bookingId,
         contactId: persisted.contactId,

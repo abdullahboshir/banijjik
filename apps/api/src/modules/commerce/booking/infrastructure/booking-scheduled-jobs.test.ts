@@ -24,6 +24,7 @@ import { MongoResourceSlotUsageRepository } from "./mongo-slot-usage.repository.
 import { buildExpireHoldsJob } from "../application/jobs/expire-holds.job.js";
 import { buildMarkNoShowsJob } from "../application/jobs/mark-no-shows.job.js";
 import type { BookingEventPublisher } from "../application/use-cases/create-booking.use-case.js";
+import type { DepositCheckPort } from "../application/ports/payment-ports.js";
 
 registerIamApiModels();
 
@@ -192,6 +193,12 @@ describe("booking scheduled jobs", () => {
       });
       await bookings.insert(confirmed);
 
+      const noopDepositCheck: DepositCheckPort = {
+        isDepositSatisfied: async () => true,
+        initializeSummary: async () => {},
+        settleBookingTermination: async () => ({ feeRetained: null }),
+      };
+
       const job = buildMarkNoShowsJob({
         bookings,
         slots,
@@ -199,6 +206,7 @@ describe("booking scheduled jobs", () => {
         events: noopEvents(),
         orgConfig,
         manifests: [bookingManifest],
+        depositCheck: noopDepositCheck,
       });
 
       await job.run(organizationRef, now);

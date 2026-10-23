@@ -4,6 +4,7 @@ import {
   BOOKING_FREE_CANCEL_HOURS_DEFAULT,
   BOOKING_LATE_CANCEL_FEE_DEFAULT,
   BOOKING_STATUS,
+  BOOKING_TERMINATION_MODE,
 } from "@banijjik/contracts/booking";
 import type { BookingResponse } from "@banijjik/contracts/booking";
 import type { BookingId, OrganizationId, UserId } from "@banijjik/ids";
@@ -45,25 +46,21 @@ async function releaseCancelCapacity(
   });
 }
 
-function resolveFeePercent(
-  settings: Awaited<ReturnType<BookingSettingsReader["read"]>> | undefined,
-): number {
-  if (!settings) return 0;
+function resolveFeePercent(settings: Awaited<ReturnType<BookingSettingsReader["read"]>>): number {
   return settings.feePercent ?? settings.depositValue;
 }
 
 async function settleCancelDeposit(input: {
-  readonly depositCheck: DepositCheckPort | undefined;
+  readonly depositCheck: DepositCheckPort;
   readonly organizationId: OrganizationId;
   readonly existing: import("../../domain/booking.entity.js").Booking;
-  readonly settings: Awaited<ReturnType<BookingSettingsReader["read"]>> | undefined;
+  readonly settings: Awaited<ReturnType<BookingSettingsReader["read"]>>;
   readonly actorUserId: UserId | null;
   readonly now: Date;
 }) {
   const { depositCheck, settings, existing } = input;
-  if (!depositCheck?.settleBookingTermination) return undefined;
-  const freeCancelHours = settings?.freeCancelHours ?? BOOKING_FREE_CANCEL_HOURS_DEFAULT;
-  const feeMode = settings?.lateCancelFee ?? BOOKING_LATE_CANCEL_FEE_DEFAULT;
+  const freeCancelHours = settings.freeCancelHours ?? BOOKING_FREE_CANCEL_HOURS_DEFAULT;
+  const feeMode = settings.lateCancelFee ?? BOOKING_LATE_CANCEL_FEE_DEFAULT;
   const feePercent = resolveFeePercent(settings);
   return depositCheck.settleBookingTermination({
     organizationId: input.organizationId,
@@ -73,7 +70,7 @@ async function settleCancelDeposit(input: {
     startsAt: existing.startsAt,
     depositRequired: existing.depositRequired,
     priceTotal: existing.price.total,
-    mode: "CANCEL",
+    mode: BOOKING_TERMINATION_MODE.CANCEL,
     freeCancelHours,
     feeMode,
     feePercent,
@@ -92,8 +89,8 @@ export class CancelBookingUseCase {
       readonly events: BookingEventPublisher;
       readonly audit: AuditRecorder;
       readonly clock: Clock;
-      readonly settings?: BookingSettingsReader;
-      readonly depositCheck?: DepositCheckPort;
+      readonly settings: BookingSettingsReader;
+      readonly depositCheck: DepositCheckPort;
     },
   ) {}
 
@@ -109,7 +106,7 @@ export class CancelBookingUseCase {
     if (existing === undefined) throw recordNotFound();
     assertLocationAllowed(existing.locationId, input.allowedLocationIds);
     const now = this.dependencies.clock.now();
-    const settings = await this.dependencies.settings?.read(input.organizationId);
+    const settings = await this.dependencies.settings.read(input.organizationId);
     let persisted = existing.transition("cancel", {
       now,
       actorUserId: input.actorUserId,

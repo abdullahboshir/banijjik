@@ -24,7 +24,7 @@ export async function persistCreatedBooking(input: {
     readonly unitOfWork: BookingUnitOfWork;
     readonly events: BookingEventPublisher;
     readonly audit: AuditRecorder;
-    readonly depositCheck?: DepositCheckPort;
+    readonly depositCheck: DepositCheckPort;
   };
   organizationId: OrganizationId;
   resourceId: ResourceId;
@@ -41,7 +41,7 @@ export async function persistCreatedBooking(input: {
       blockedEndsAt: input.booking.blockedEndsAt,
     });
     await input.dependencies.bookings.insert(input.booking);
-    await input.dependencies.depositCheck?.initializeSummary?.({
+    await input.dependencies.depositCheck.initializeSummary({
       organizationId: input.organizationId,
       requestId: input.booking.bookingId,
       contactId: input.booking.contactId,

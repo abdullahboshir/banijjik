@@ -3,6 +3,7 @@ import {
   BOOKING_EVENT_TYPE,
   BOOKING_FREE_CANCEL_HOURS_DEFAULT,
   BOOKING_NO_SHOW_FEE_DEFAULT,
+  BOOKING_TERMINATION_MODE,
 } from "@banijjik/contracts/booking";
 import type { BookingResponse } from "@banijjik/contracts/booking";
 import type { BookingId, OrganizationId, UserId } from "@banijjik/ids";
@@ -30,25 +31,21 @@ export {
   RequestFromHoldUseCase,
 } from "./booking-status-transitions.use-cases.js";
 
-function resolveFeePercent(
-  settings: Awaited<ReturnType<BookingSettingsReader["read"]>> | undefined,
-): number {
-  if (!settings) return 0;
+function resolveFeePercent(settings: Awaited<ReturnType<BookingSettingsReader["read"]>>): number {
   return settings.feePercent ?? settings.depositValue;
 }
 
 async function settleNoShowDeposit(input: {
-  readonly depositCheck: DepositCheckPort | undefined;
+  readonly depositCheck: DepositCheckPort;
   readonly organizationId: OrganizationId;
   readonly existing: import("../../domain/booking.entity.js").Booking;
-  readonly settings: Awaited<ReturnType<BookingSettingsReader["read"]>> | undefined;
+  readonly settings: Awaited<ReturnType<BookingSettingsReader["read"]>>;
   readonly actorUserId: UserId | null;
   readonly now: Date;
 }) {
   const { depositCheck, settings, existing } = input;
-  if (!depositCheck?.settleBookingTermination) return undefined;
-  const freeCancelHours = settings?.freeCancelHours ?? BOOKING_FREE_CANCEL_HOURS_DEFAULT;
-  const feeMode = settings?.noShowFee ?? BOOKING_NO_SHOW_FEE_DEFAULT;
+  const freeCancelHours = settings.freeCancelHours ?? BOOKING_FREE_CANCEL_HOURS_DEFAULT;
+  const feeMode = settings.noShowFee ?? BOOKING_NO_SHOW_FEE_DEFAULT;
   const feePercent = resolveFeePercent(settings);
   return depositCheck.settleBookingTermination({
     organizationId: input.organizationId,
@@ -58,7 +55,7 @@ async function settleNoShowDeposit(input: {
     startsAt: existing.startsAt,
     depositRequired: existing.depositRequired,
     priceTotal: existing.price.total,
-    mode: "NO_SHOW",
+    mode: BOOKING_TERMINATION_MODE.NO_SHOW,
     freeCancelHours,
     feeMode,
     feePercent,
@@ -76,8 +73,8 @@ export class NoShowBookingUseCase {
       readonly events: BookingEventPublisher;
       readonly audit: AuditRecorder;
       readonly clock: Clock;
-      readonly settings?: BookingSettingsReader;
-      readonly depositCheck?: DepositCheckPort;
+      readonly settings: BookingSettingsReader;
+      readonly depositCheck: DepositCheckPort;
     },
   ) {}
 
@@ -92,7 +89,7 @@ export class NoShowBookingUseCase {
     if (existing === undefined) throw recordNotFound();
     assertLocationAllowed(existing.locationId, input.allowedLocationIds);
     const now = this.dependencies.clock.now();
-    const settings = await this.dependencies.settings?.read(input.organizationId);
+    const settings = await this.dependencies.settings.read(input.organizationId);
     let persisted = existing.transition("noShow", { now, actorUserId: input.actorUserId });
     await this.dependencies.unitOfWork.run(async () => {
       const resourceId = existing.resourceIds[0];

@@ -2,6 +2,7 @@ import type { Router } from "express";
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { Clock } from "../../../kernel/time/index.js";
 import type { OrgConfigService } from "../../platform/entitlement/index.js";
+import type { DepositCheckPort } from "./application/ports/payment-ports.js";
 import { buildBookingPostingSource } from "./application/booking-posting-source.js";
 import { buildBookingController } from "./build-booking-controller.js";
 import { buildExpireHoldsJob } from "./application/jobs/expire-holds.job.js";
@@ -17,6 +18,8 @@ export { bookingManifest } from "./module.manifest.js";
 export { registerBookingModels } from "./infrastructure/register-booking-models.js";
 export { buildBookingPostingSource };
 export { MongoBookingRepository };
+export { MongoResourceSlotUsageRepository };
+export { buildExpireHoldsJob, buildMarkNoShowsJob };
 export type { BookingPostingSource } from "../accounting/index.js";
 
 export function buildBookingPostingSourceAdapter(): import("../accounting/index.js").BookingPostingSource {
@@ -45,6 +48,7 @@ export function registerBookingScheduledJobs(input: {
   readonly clock: Clock;
   readonly orgConfig: OrgConfigService;
   readonly manifests: readonly ModuleManifest[];
+  readonly depositCheck: DepositCheckPort;
 }): void {
   const bookings = new MongoBookingRepository();
   const slots = new MongoResourceSlotUsageRepository();
@@ -66,6 +70,7 @@ export function registerBookingScheduledJobs(input: {
       events: kernelEventPublisher,
       orgConfig: input.orgConfig,
       manifests: input.manifests,
+      depositCheck: input.depositCheck,
     }),
   );
 }

@@ -4,35 +4,25 @@ import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { AppError } from "../kernel/http/index.js";
-import { kernelEventPublisher } from "../kernel/events/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildDefaultCatalogQuoteReader } from "../modules/commerce/catalog/index.js";
 import { buildInlineContactCreator } from "../modules/commerce/contact/index.js";
 import {
   buildBookingRouter,
   type BookingTenantDependencies,
-  type DepositCheckPort,
   type PaymentStatusReader,
 } from "../modules/commerce/booking/index.js";
-import { PAYMENT_REQUEST_TYPE, PAYMENT_STATUS, type Money } from "@banijjik/contracts/payment";
-import {
-  MongoContactStoreCreditAdapter,
-  MongoPaymentRepository,
-  MongoPaymentSummaryRepository,
-  MongoStoreCreditRepository,
-  settleBookingTermination,
-} from "../modules/commerce/payment/index.js";
+import { PAYMENT_REQUEST_TYPE, PAYMENT_STATUS } from "@banijjik/contracts/payment";
+import { MongoPaymentSummaryRepository } from "../modules/commerce/payment/index.js";
 import type { OrganizationId } from "@banijjik/ids";
 import {
   buildPriceQuoter,
   type PricingTenantDependencies,
 } from "../modules/commerce/pricing/index.js";
-import {
-  buildOrganizationCurrencyReader,
-  buildOrganizationTimezoneReader,
-} from "../modules/core/organization/index.js";
+import { buildOrganizationCurrencyReader } from "../modules/core/organization/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
+import { buildBookingDepositCheckAdapter } from "./booking-deposit-adapter.js";
 import {
   PRICING_APPROVAL_DISCOUNT_AMOUNT_ABOVE_SETTING_KEY,
   PRICING_APPROVAL_DISCOUNT_PERCENT_ABOVE_SETTING_KEY,
@@ -164,66 +154,6 @@ function contactCreatorOf(input: BookingRouterInput): BookingTenantDependencies[
   };
 }
 
-function depositCheckOf(): DepositCheckPort {
-  const summaries = new MongoPaymentSummaryRepository();
-  const payments = new MongoPaymentRepository();
-  const storeCredits = new MongoStoreCreditRepository();
-  const contactStoreCredit = new MongoContactStoreCreditAdapter();
-  const timezones = buildOrganizationTimezoneReader();
-  return {
-    async isDepositSatisfied(input: {
-      readonly organizationId: OrganizationId;
-      readonly requestId: string;
-      readonly requiredAmount: Money;
-    }) {
-      if (input.requiredAmount.amount <= 0) return true;
-      const summary = await summaries.findByRequest(
-        input.organizationId,
-        PAYMENT_REQUEST_TYPE.BOOKING,
-        input.requestId,
-      );
-      if (!summary) return false;
-      const netPaid = summary.allocated.amount - summary.refunded.amount;
-      return netPaid >= input.requiredAmount.amount;
-    },
-    async initializeSummary(input) {
-      await summaries.ensureSummary({
-        organizationId: input.organizationId,
-        locationId: input.locationId,
-        requestType: PAYMENT_REQUEST_TYPE.BOOKING,
-        requestId: input.requestId,
-        contactId: input.contactId,
-        total: input.total,
-        now: input.now,
-      });
-    },
-    async settleBookingTermination(input) {
-      return settleBookingTermination(
-        {
-          payments,
-          storeCredits,
-          summaries,
-          contactStoreCredit,
-          events: kernelEventPublisher,
-          timeZone: {
-            read: async (organizationId: OrganizationId) => {
-              const tz = await timezones.read(organizationId);
-              if (tz === undefined) {
-                throw new AppError({
-                  code: ERROR_CODE.INTERNAL,
-                  messageKey: "errors.missing_tenant_context",
-                });
-              }
-              return tz;
-            },
-          },
-        },
-        input,
-      );
-    },
-  };
-}
-
 function paymentStatusReaderOf(): PaymentStatusReader {
   const summaries = new MongoPaymentSummaryRepository();
   return {
@@ -253,7 +183,7 @@ export function buildBookingTenantRouter(input: BookingRouterInput): Router {
     manifests: input.manifests,
     quoter: quoterOf(input),
     contacts: contactCreatorOf(input),
-    depositCheck: depositCheckOf(),
+    depositCheck: buildBookingDepositCheckAdapter(),
     paymentStatusReader: paymentStatusReaderOf(),
   });
 }
