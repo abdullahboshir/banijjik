@@ -122,10 +122,20 @@ describe("MongoRateLimiter", () => {
 
 describe("rateLimit middleware", () => {
   it("answers 429 RATE_LIMITED with Retry-After once the limit is passed", async () => {
+    await connections.platform.collection(RATE_LIMIT_COUNTER_COLLECTION_NAME).deleteMany({});
+    // MongoDB's TTL monitor uses real time, so a historical clock can lose counters mid-test.
+    const middlewareClock = new MutableClock(new Date("2099-10-23T08:00:00.000Z"));
+    const middlewareLimiter = new MongoRateLimiter(middlewareClock);
     const { app } = createTestApp((router) => {
       router.get(
         "/limited",
-        rateLimit({ limiter, bucket: "test.http", limit: 2, windowSeconds: 60 }),
+        rateLimit({
+          limiter: middlewareLimiter,
+          bucket: "test.http.middleware",
+          limit: 2,
+          windowSeconds: 60,
+          keyOf: () => "middleware-subject",
+        }),
         (_request, response) => {
           response.json({ data: "ok" });
         },
