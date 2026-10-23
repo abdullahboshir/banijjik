@@ -33,7 +33,7 @@ export interface AllocationsEditorProps {
   readonly label: string;
   readonly disabled: boolean;
   readonly requestTypeLabels?: Readonly<Record<PaymentRequestType, string>> | undefined;
-  readonly invalidAmountLabel?: string | undefined;
+  readonly invalidAmountLabel: string;
   readonly onChange: (index: number, newMinor: number) => void;
 }
 
@@ -101,7 +101,7 @@ export function AllocationsEditor(props: AllocationsEditorProps): ReactElement |
           index={idx}
           disabled={disabled}
           requestTypeLabel={requestTypeLabels?.[alloc.requestType] ?? alloc.requestType}
-          invalidAmountLabel={invalidAmountLabel ?? "Amount must be greater than zero"}
+          invalidAmountLabel={invalidAmountLabel}
           onChange={onChange}
         />
       ))}

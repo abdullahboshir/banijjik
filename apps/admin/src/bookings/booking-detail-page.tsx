@@ -9,6 +9,8 @@ import type { BookingResponse } from "@banijjik/contracts/booking";
 import {
   PAYMENT_METHODS_DEFAULT,
   PAYMENT_METHODS_SETTING_KEY,
+  PAYMENT_REQUEST_TYPE,
+  PAYMENT_STATUS,
   type DueItemResponse,
   type PaymentMethod,
 } from "@banijjik/contracts/payment";
@@ -26,6 +28,12 @@ import { bookingStatusLabelOf } from "./booking-labels";
 import { BookingDetailActions } from "./booking-detail-actions";
 import { BookingDetailHistory } from "./booking-detail-history";
 import { BookingDetailPaymentSection } from "./booking-detail-payment-section";
+
+/**
+ * `GET /dues` has no request filter, so the page is narrowed by contact, type and location and
+ * read at the API maximum; a row still missing falls back safely in `resolveRemainingDue`.
+ */
+const DUES_PAGE_LIMIT = 100;
 
 function resolveAllowedMethods(
   settingsResult: SettingsResponse | null | undefined,
@@ -108,13 +116,19 @@ function BookingActionsSection(props: {
   );
 }
 
+/**
+ * The amount the receive sheet offers. Without a dues row the full price is safe only for an
+ * UNPAID booking; for any other status it offers nothing, so a cashier never takes the price twice
+ * and turns the excess into store credit by accident.
+ */
 function resolveRemainingDue(
   booking: BookingResponse,
   dueItem: DueItemResponse | undefined,
 ): number {
   if (dueItem) return dueItem.due.amount;
-  if (booking.paymentStatus === "PAID") return 0;
-  return booking.price.total.amount;
+  const unpaid =
+    booking.paymentStatus === undefined || booking.paymentStatus === PAYMENT_STATUS.UNPAID;
+  return unpaid ? booking.price.total.amount : 0;
 }
 
 function resolveBookingPermissions(permissions: CallerPermissionsResponse, canWrite: boolean) {
@@ -204,7 +218,7 @@ export async function BookingDetailPage(props: {
       `/orgs/${organizationId}/settings?keys=${PAYMENT_METHODS_SETTING_KEY}`,
     ),
     fetchBusinessResourceIfAllowed<DueItemResponse[]>(
-      `/orgs/${organizationId}/dues?contactId=${booking.contactId}&requestType=BOOKING`,
+      `/orgs/${organizationId}/dues?contactId=${booking.contactId}&requestType=${PAYMENT_REQUEST_TYPE.BOOKING}&locationId=${booking.locationId}&limit=${DUES_PAGE_LIMIT}`,
     ),
     fetchBusinessResourceIfAllowed<LocationResponse[]>(
       `/orgs/${organizationId}/locations?status=ACTIVE&limit=100`,

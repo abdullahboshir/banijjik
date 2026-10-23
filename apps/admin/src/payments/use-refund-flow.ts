@@ -149,9 +149,9 @@ function submitPendingApproval(opts: {
 export interface UseRefundFlowProps {
   readonly organizationId: string;
   readonly noApproversMessage: string;
-  readonly failedMessage?: string | undefined;
-  readonly approvalFailedMessage?: string | undefined;
-  readonly loadApproversFailedMessage?: string | undefined;
+  readonly failedMessage: string;
+  readonly approvalFailedMessage: string;
+  readonly loadApproversFailedMessage: string;
   readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
 }
 
@@ -190,9 +190,9 @@ export function useRefundFlow(props: UseRefundFlowProps): RefundFlowState {
   const [pendingInput, setPendingInput] = useState<RefundPaymentInput | undefined>();
   const approval = useApprovalDialogState();
 
-  const failedMsg = props.failedMessage ?? "Refund failed";
-  const approvalFailedMsg = props.approvalFailedMessage ?? "Approval failed";
-  const loadApproversMsg = props.loadApproversFailedMessage ?? "Failed to load approvers";
+  const failedMsg = props.failedMessage;
+  const approvalFailedMsg = props.approvalFailedMessage;
+  const loadApproversMsg = props.loadApproversFailedMessage;
 
   async function openApprovalFor(input: RefundPaymentInput): Promise<void> {
     setPendingInput(input);

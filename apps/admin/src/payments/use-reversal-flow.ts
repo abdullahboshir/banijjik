@@ -111,8 +111,8 @@ export interface UseReversalFlowProps {
   readonly organizationId: string;
   readonly payment: PaymentResponse;
   readonly noApproversMessage: string;
-  readonly failedMessage?: string | undefined;
-  readonly loadApproversFailedMessage?: string | undefined;
+  readonly failedMessage: string;
+  readonly loadApproversFailedMessage: string;
   readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
 }
 
@@ -123,8 +123,8 @@ export function useReversalFlow(props: UseReversalFlowProps): ReversalFlowState 
   const [reversalNote, setReversalNote] = useState<string | null>(null);
   const approval = useApprovalDialogState();
 
-  const failedMsg = props.failedMessage ?? "Reversal failed";
-  const loadApproversMsg = props.loadApproversFailedMessage ?? "Failed to load approvers";
+  const failedMsg = props.failedMessage;
+  const loadApproversMsg = props.loadApproversFailedMessage;
 
   async function initiateReversal(note?: string | null): Promise<void> {
     setReversalNote(note ?? null);

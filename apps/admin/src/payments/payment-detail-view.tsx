@@ -131,7 +131,7 @@ function PaymentAllocationsSection(props: {
                 >
                   <div className="flex flex-col">
                     <span className="font-medium text-primary">
-                      {`${alloc.requestType} (${alloc.requestId.slice(0, 8)}...)`}
+                      {labels.requestType[alloc.requestType]}
                     </span>
                     {revenueLabel ? (
                       <span className="text-caption text-secondary">{revenueLabel}</span>
