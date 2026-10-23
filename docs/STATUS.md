@@ -138,7 +138,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | M.5 credit pack purchase with manual verification | merged part A (2026-10-23, T1 review R1 by the lead, all 11 items verified; CI run 39903416547 green) | bKash/Nagad reference unique per method with natural-key replay (201), idempotent verify grants once, self-service guard, approval above limit, scheduled expiry job, no accounting yet; known gap: maxPending check is not atomic (bounded by 10/hour limit); handoff `docs/handoffs/M.5-api.md` |
 | M.6 minimal storefront | todo | |
 | M.7 trust and safety | planned (2026-10-23, `docs/plans/M.7.md`, Opus; A1 and A2 T1, B T2) | A1 (reports, banned account hides its listing, detail rate limit) can start now; A2 and B after A1 merges; ADR-134 reserved |
-| M.8 matrimony templates and notifications | todo | |
+| M.8 matrimony templates and notifications | M.8a planned (2026-10-23, `docs/plans/M.8a.md`, Opus; T2) | M.8a (two DRAFT seed templates, data only) can start now beside M.7 A1; M.8b (SMS for review results) after an SMS provider exists |
 | M.9 owner's site live | todo | |
 
 ## Phases 4–8
