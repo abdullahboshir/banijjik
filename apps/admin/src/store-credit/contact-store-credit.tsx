@@ -42,6 +42,7 @@ export async function ContactStoreCredit(props: {
   ]);
   return (
     <ContactStoreCreditLazy
+      key={contact.contactId}
       organizationId={organizationId}
       contactId={contact.contactId}
       balanceMinor={contact.summary?.storeCreditBalanceMinor ?? 0}
