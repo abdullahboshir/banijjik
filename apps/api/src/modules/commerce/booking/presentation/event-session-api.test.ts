@@ -100,32 +100,34 @@ describe("event session API", () => {
       200,
     );
   });
-  it.each(["SERVICE", "ARCHIVED", "LOCATION_OFF", "VARIANT_OFF"])(
-    "refuses unusable offering: %s",
-    async (mode) => {
-      const { world, offering, path, body } = await setup();
-      if (mode === "LOCATION_OFF" || mode === "VARIANT_OFF") {
-        await harness.connections.tenantShared.collection("offering_locations").insertOne({
-          offeringLocationId: newId(),
-          organizationId: world.organizationA,
-          locationId: world.locationA1,
-          offeringId: offering.offeringId,
-          ...(mode === "VARIANT_OFF" ? { variantId: body.variantId } : {}),
-          isAvailable: false,
-        });
-      } else {
-        await harness.connections.tenantShared
-          .collection("offerings")
-          .updateOne(
-            { offeringId: offering.offeringId },
-            { $set: mode === "SERVICE" ? { kind: "SERVICE" } : { status: "ARCHIVED" } },
-          );
-      }
-      const response = await world.alice.call("post", path, body);
-      expect(response.status).toBe(422);
-      expect(response.body.error.details.ruleKey).toBe("OFFERING_NOT_BOOKABLE");
-    },
-  );
+  it.each([
+    { mode: "SERVICE", behavior: "refuses a SERVICE offering" },
+    { mode: "ARCHIVED", behavior: "refuses an archived EVENT offering" },
+    { mode: "LOCATION_OFF", behavior: "refuses an EVENT offering turned off at the location" },
+    { mode: "VARIANT_OFF", behavior: "refuses an EVENT variant turned off at the location" },
+  ])("$behavior", async ({ mode }) => {
+    const { world, offering, path, body } = await setup();
+    if (mode === "LOCATION_OFF" || mode === "VARIANT_OFF") {
+      await harness.connections.tenantShared.collection("offering_locations").insertOne({
+        offeringLocationId: newId(),
+        organizationId: world.organizationA,
+        locationId: world.locationA1,
+        offeringId: offering.offeringId,
+        ...(mode === "VARIANT_OFF" ? { variantId: body.variantId } : {}),
+        isAvailable: false,
+      });
+    } else {
+      await harness.connections.tenantShared
+        .collection("offerings")
+        .updateOne(
+          { offeringId: offering.offeringId },
+          { $set: mode === "SERVICE" ? { kind: "SERVICE" } : { status: "ARCHIVED" } },
+        );
+    }
+    const response = await world.alice.call("post", path, body);
+    expect(response.status).toBe(422);
+    expect(response.body.error.details.ruleKey).toBe("OFFERING_NOT_BOOKABLE");
+  });
   it("rejects invalid dates and organization IDs in input", async () => {
     const { world, path, body } = await setup();
     expect((await world.alice.call("post", path, { ...body, endsAt: body.startsAt })).status).toBe(
@@ -173,6 +175,7 @@ describe("event session API", () => {
     expect(
       (await actor.call("post", `${single}/cancel`, { version: 1 })).status,
     ).toBeGreaterThanOrEqual(400);
+    expect((await actor.call("get", `${path}?locationId=${world.locationA1}`)).status).toBe(403);
     const list = await actor.call("get", path);
     expect(list.body.data).toHaveLength(0);
   });

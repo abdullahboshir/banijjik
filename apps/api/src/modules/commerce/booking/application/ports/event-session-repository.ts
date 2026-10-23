@@ -5,6 +5,13 @@ import type { EventSession } from "../../domain/event-session.entity.js";
 export interface EventSessionRepository {
   insert(session: EventSession): Promise<void>;
   findById(eventSessionId: EventSessionId): Promise<EventSession | undefined>;
-  update(session: EventSession, expectedVersion: number): Promise<EventSession>;
-  list(query: EventSessionListQuery): Promise<{ items: EventSession[]; hasNext: boolean }>;
+  update(
+    session: EventSession,
+    expectedVersion: number,
+    previous: EventSession,
+  ): Promise<EventSession>;
+  list(
+    query: EventSessionListQuery,
+    allowedLocationIds: readonly string[] | "ALL",
+  ): Promise<{ items: EventSession[]; hasNext: boolean }>;
 }

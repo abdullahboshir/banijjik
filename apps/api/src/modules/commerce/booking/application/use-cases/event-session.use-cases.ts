@@ -83,7 +83,7 @@ export class EventSessionUseCases {
     allowedLocationIds: readonly string[] | "ALL",
   ): Promise<{ items: EventSession[]; hasNext: boolean }> {
     if (query.locationId !== undefined) assertLocationAllowed(query.locationId, allowedLocationIds);
-    return this.dependencies.sessions.list(query);
+    return this.dependencies.sessions.list(query, allowedLocationIds);
   }
   async update(
     input: Caller & { eventSessionId: EventSessionId; body: EventSessionUpdateBody },
@@ -96,13 +96,13 @@ export class EventSessionUseCases {
       now: this.dependencies.clock.now(),
       actorUserId: input.actorUserId,
     });
-    return this.dependencies.sessions.update(updated, input.body.version);
+    return this.dependencies.sessions.update(updated, input.body.version, existing);
   }
   async cancel(
     input: Caller & { eventSessionId: EventSessionId; version: number },
   ): Promise<EventSession> {
     const existing = await this.get(input.eventSessionId, input.allowedLocationIds);
     const cancelled = existing.cancel(this.dependencies.clock.now(), input.actorUserId);
-    return this.dependencies.sessions.update(cancelled, input.version);
+    return this.dependencies.sessions.update(cancelled, input.version, existing);
   }
 }
