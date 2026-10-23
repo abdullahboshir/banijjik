@@ -8,68 +8,60 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-23 (late night, Dhaka) by Opus 5.5 · `main` = `origin/main` = `964d8f9` (3.6b A1 merged, CI 39955634661; 3.11 A1 merged before at `7f55fa5`) plus this state save (pushed). Earlier this session: plan 3.11 + ADR-135 + Amendments 1–2, 3.8 B2 merged (`7a4e289`), 3.6b Clarification 1 (A2 EVENT offering reader).
+Last updated: 2026-10-23 (late night 2, Dhaka) by Opus 5.5 · `main` = `origin/main` = `2ac23ba` (3.5a Part A merged at `5958710`, CI 39970558864 green after one flaky rerun; review files for 3.8 B1 and 3.6b A2) plus this state save (pushed).
 
 ## 1. Where the project stands
-- Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, **3.8 Part A**, 3.8a, 3.8b, 3.8c, 3.12–3.21. Track M merged: M.1 to **M.5 (both parts)**. Details per card: `docs/STATUS.md`.
-- **Merged this session by the lead:**
-  - 3.8 Part A after R3. The lead fixed the last two leftovers on the branch: the no-show job's empty per-row `catch` now logs `booking.mark_no_show_failed` with the booking id, and `PaymentSummaryRepository.ensureSummary`/`setTotal` are required (they were optional and called with `?.`).
-  - M.5 Part B merge check. The lead added the script-budget browser check for `/credit/packs` (171.8 KiB) and `/credit/purchases`. Purchases measured 186 KiB, so the lead made the detail sheet lazy (`credit-purchase-detail-sheet-lazy.tsx`), giving 170.6 KiB. The deviations the implementer left out (manifest menu item, purchase seeded through Mongo in the browser test) are in `docs/handoffs/M.5-ui.md`.
-- **Still left in Phase 3:** Part A of 3.5a and 3.7 (in review rounds); Part B of 3.5a, 3.7 and 3.8; 3.6b; 3.5b; 3.11; 3.9 POS; 3.10; the phase review. Track M: M.6 to M.9.
+- Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, **3.5a Part A**, 3.6, **3.6b A1**, 3.8 Part A and B2, 3.8a, 3.8b, 3.8c, **3.11 A1**, 3.12–3.21. Track M merged: M.1 to M.5. Details per card: `docs/STATUS.md`.
+- **Still left in Phase 3:** 3.5a Part B; 3.5b; 3.6b A2, A3, B; 3.7 Part A (R1 open) and B; 3.8 B1; 3.9 POS; 3.10; 3.11 A2, B, C; 3.22; the phase review. Track M: M.6 to M.9.
 - Owner's tools (2026-10-23): Claude Code in VS Code is the lead; Qoder and Antigravity implement. Cursor is off until its weekly limit resets.
 - Note: `npm audit fix --omit=dev` deletes devDependencies from `node_modules`; run `npm install` after it.
 - `gh run watch` sometimes exits early on this PC (TLS timeouts). Poll with `gh run view <id> --json status` in a loop instead.
+- **Flaky CI tests** (seen 2026-10-23 on docs-only heads, green on rerun): `kernel/idempotency/idempotency.middleware.test.ts` "takes over a request whose lock has expired" (sleep-based timing) and `kernel/events/ordered-event-worker.test.ts` "lets the stream continue after a skip" (timeout). Rerun failed jobs with `gh run rerun <id> --failed`; a test-stability card should remove the sleeps.
 
-## 2. Open branches (checked 2026-10-23 night)
+## 2. Open branches (checked 2026-10-23 late night 2)
 | Card / part | Branch | Folder | Tier | State and next step |
 |---|---|---|---|---|
-| 3.5a Part A orders | `s/3.5a-api-orders` (`6043913`) | `banijjik-3.5a` | T1 | **R1: changes required** (`docs/handoffs/3.5a-api-review-R1.md`). Blockers: the approval token is not bound to the discount amount (instant sales share one subject); the edit consumes the token outside the transaction; an edit can empty a PLACED order or drop the pickup contact; one failing order stops the hourly jobs forever. Plus literals, actor on edit stock, list projection, ADR drift, missing tests. **No commit since R1**, 40+ commits behind main (3.8 and 3.21 changed shared code; check on rebase). Next: wait for done, then re-review. |
-| 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` (`779f472`) | `banijjik-1.7b` | T1 | **R1: changes required** (`docs/handoffs/3.7-api-review-R1.md`, 10 items). **No commit since R1**: ask the owner whether a session has it. Now that 3.8 merged, its rebase touches the same booking files. |
-| M.7 Part A1 reports | `s/M.7-api-reports` (prompt given) | cloud | T1 | Plan `docs/plans/M.7.md` A1, ADR-134. **No branch on origin yet** (checked 2026-10-23 night). Next: T1 review on a done. |
-| M.8a matrimony templates | `s/M.8a-matrimony-templates` (prompt given) | cloud | T2 | Plan `docs/plans/M.8a.md`. **No branch on origin yet.** **At merge of the second of M.7 A1 / M.8a, the lead adds `reportReasons`** (keys in M.8a decision 5) to both seeds. Next: merge check. |
-| 3.22 ordered handlers follow whole streams | `s/3.22-ordered-stream-follow` (prompt given 2026-10-23 late night) | `banijjik` | T1 | Plan `docs/plans/3.22.md`, ADR-136 reserved. Merge before 3.11 A2 if possible (3.11 Amendment 3). Next: T1 review on a done. |
-| 3.6b A2 event sessions | `s/3.6b-api-event-sessions` | `banijjik-m2` | T2 | **A1 merged** (`964d8f9`, T1 review passed; lead fixed: bookings post to the revenue account of their kind, `asId` in two jobs, ADR-133 DAY wording). A2: lead clarifications 1 (own EVENT reader, in the plan) and 2 (manifest add-only, chat only). Last seen: CI failing on the permission count test (101 vs 105), no handoff. A2 must rebase on main (A1 touched the manifest). Then A3 (lead refreshes), then B. Next: merge check of A2. |
-| 3.8 B1 payments | `s/3.8-ui-payments` (prompt given 2026-10-23 night) | `banijjik-lead` | T2 | Plan `docs/plans/3.8.md` "Refresh 2". **B2 merged** (`7a4e289`). B1 must rebase on main (STATUS row 3.8 already says B2 merged; B1 edits only its part). Next: merge check. |
-| 3.11 A2 payouts and posting | `s/3.11-api-payouts` (prompt given 2026-10-23 late night) | `banijjik-3.11` (new full folder made by the A1 session) | T1 | **A1 merged** (`7f55fa5`, T1 review passed; the lead allowed `commission` in salon, gym, coaching templates). A2 = decisions 7–8 + Amendment 1 (stream key) + Amendment 2 (race marker). Then B (lead refreshes first), C after 3.5a A. Next: T1 review on a done. |
-
-(Checked 2026-10-23 late night: none of the branches above had moved on origin, and no folder had uncommitted work.)
+| 3.8 B1 payments screens | `s/3.8-ui-payments` (`6010ceb`) | `banijjik-lead` | T2 | **Merge check R1: changes required** (`docs/handoffs/3.8-ui-payments-review-R1.md`): float money in the allocation editor, booking prefills the full price instead of the due, raw message keys and English literals, PIN dialog on any 403/422, literals. Manifest `isClientVisible` change accepted. Owner pasted it to the session. Next: re-check on done (must rebase on main: 3.5a merged). |
+| 3.6b A2 event sessions | `s/3.6b-api-event-sessions` (`cf18a5d`) | `banijjik-m2` | T2 | **Merge check R1: not done** (`docs/handoffs/3.6b-api-event-sessions-review-R1.md`): CI red (permission count), list leaks other locations, capacity/time rules must be in the update filter (race with A3 seat `$inc`), Clarification 1 tests missing, no handoff/STATUS. Owner pasted it. Next: re-check on done; then refresh and release A3 (T1), then B. |
+| 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` (`779f472`) | `banijjik-1.7b` | T1 | **R1: changes required** (`docs/handoffs/3.7-api-review-R1.md`, 10 items). No commit since R1 (2026-10-22), 85+ behind main; its rebase touches booking files (3.8, 3.6b A1 merged). Ask the owner whether a session has it. |
+| 3.22 ordered handlers follow whole streams | `s/3.22-ordered-stream-follow` | `banijjik` (still on old `s/3.6b-api-rental`) | T1 | Plan `docs/plans/3.22.md`, ADR-136 reserved. **Not started** (no branch on origin). Must merge before 3.11 A2 (Amendment 3). Next: T1 review on done. |
+| 3.11 A2 payouts and posting | `s/3.11-api-payouts` | `banijjik-3.11` (still on old `s/3.11-api-accruals`) | T1 | **Not started.** A2 = decisions 7–8 + Amendments 1–3. Runs after 3.22. Next: T1 review on done. |
+| M.7 Part A1 reports | `s/M.7-api-reports` | cloud | T1 | Plan `docs/plans/M.7.md` A1, ADR-134. Not started (waits for capacity). |
+| M.8a matrimony templates | `s/M.8a-matrimony-templates` | cloud | T2 | Plan `docs/plans/M.8a.md`. Not started. **At merge of the second of M.7 A1 / M.8a, the lead adds `reportReasons`** (keys in M.8a decision 5) to both seeds. |
 
 Merged and safe to delete (local and `origin`):
-- card branches: `s/3.8-api-payments`, `s/M.5-ui-credit-purchases`, `s/3.15-test-stability`, `s/3.16-dead-letter-replay-race`, `s/3.17-next-security`, `s/3.18-delivery-guardrails`, `s/3.19-job-config-version`, `s/M.5-api-credit-purchases`, `s/M.5-threshold-cleanup`, `s/3.20-local-fonts`, `s/3.21-accounting-currency`
-- merge branches: `s/merge-M.5`, `s/merge-3.18-3.19`, `s/merge-3.20`, `s/merge-3.21`
-- docs branches: `s/docs-state-2026-10-22h`, `-22l`, `-22m`, `s/docs-state-2026-10-23`, `-23b` to `-23g`, `s/docs-3.7-event-names`, `s/docs-3.7-review-r1`, `s/docs-3.5a-review-r1`, `s/docs-plans-3.20-3.21`, `s/docs-3.21-amendment`, `s/docs-plan-M.7`
+- card branches: `s/3.5a-api-orders`, `s/3.6b-api-rental`, `s/3.11-api-accruals`, `s/3.8-ui-dues-store-credit`, `s/3.8-api-payments`, `s/M.5-ui-credit-purchases`, `s/3.15-test-stability`, `s/3.16-dead-letter-replay-race`, `s/3.17-next-security`, `s/3.18-delivery-guardrails`, `s/3.19-job-config-version`, `s/M.5-api-credit-purchases`, `s/M.5-threshold-cleanup`, `s/3.20-local-fonts`, `s/3.21-accounting-currency`
+- merge branches: `s/merge-3.5a`, `s/merge-M.5`, `s/merge-3.18-3.19`, `s/merge-3.20`, `s/merge-3.21`
+- docs branches: `s/docs-reviews-2026-10-23`, `s/docs-state-2026-10-23*`, `s/docs-state-2026-10-22h/l/m`, `s/docs-3.7-event-names`, `s/docs-3.7-review-r1`, `s/docs-3.5a-review-r1`, `s/docs-plans-3.20-3.21`, `s/docs-3.21-amendment`, `s/docs-plan-M.7`
 - PR #2 (3.8) can be closed as merged.
 
-Folders:
-- Assigned 2026-10-23 late night: `banijjik` → 3.22, `banijjik-lead` → 3.8 B1, `banijjik-m2` → 3.6b A2, `banijjik-3.11` → 3.11 A2 (new full folder; check disk space). Delete merged branches `s/3.8-ui-dues-store-credit`, `s/3.11-api-accruals`, `s/3.6b-api-rental` (local and origin).
-- `banijjik-docs` is the docs and merge folder. The next lead session opens in `banijjik-docs`.
+Folders: `banijjik-3.5a` is free now (3.5a Part A merged; switch it to a new card branch from main). `banijjik` → 3.22, `banijjik-3.11` → 3.11 A2 (both idle). `banijjik-docs` is the docs and merge folder; the next lead session opens there.
 
-**Agents claim "done" early.** A "done" without the full `npm run card:check` output (all PASS) is not reviewed. Verify anyway: `git status` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`, `--log-failed`. Handoffs often say "Deviations: none" when there are some; diff against the plan's file list.
+**Agents claim "done" early** (this session: 3.8 B1 and 3.6b A2 both claimed done; B1 had 5 defects, A2 had red CI and no handoff). A "done" without the full `npm run card:check` output (all PASS) is not reviewed. Verify anyway: `git status` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`, `--log-failed`. Always `git fetch` and compare with `origin/main`, not a stale local `main`.
 
 Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). The owner has not said keep or drop.
 
 ## 3. Waiting on the owner
-- Owner chose (2026-10-23 late night): plan 3.22 first (done, `5d2af30`); M.8a and M.7 A1 still wait for free capacity. Running now: 3.8 B1, 3.6b A2, 3.5a (R1 fixes); 3.11 A2 prompt given but not started when last checked.
-- 3.5a: the session claimed done, but origin is still `6043913` (before R1); the owner got a message for it. 3.7 R1: no commit since. Start M.7 A1 and M.8a as cloud sessions if not yet running (no branches on origin).
-- Owner capacity (2026-10-23): 6–7 implement sessions at once.
-- Model rule given to the owner: Sonnet 5.5 for T1/T2 implementation (the lead reviews strictly); Haiku 5.5 only for T3 mechanical cards, never for money, stock or security.
+- Start 3.22 (folder `banijjik`) and then 3.11 A2 (`banijjik-3.11`): prompts were given but neither started.
+- 3.7 R1: does any session have it?
+- M.7 A1 and M.8a as cloud sessions when capacity allows. 3.5a Part B can start now (`banijjik-3.5a` is free).
+- Owner capacity (2026-10-23): 6–7 implement sessions at once. Model rule: Sonnet 5.5 for T1/T2 implementation; Haiku 5.5 only for T3 mechanical cards.
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
 
 ## 4. Next actions, in order
-1. Verify reality (folders, `origin/<branch>`, `gh run list`). For every "done", run `npm run card:check` in that folder.
-2. **Plans still missing (owner is waiting on them):** 3.11 is planned (`16b70e8`, A1 prompt given).
-   - Refresh the 3.9 POS inputs.
-   - Plan M.6 (minimal storefront; M.5 merged) in a fresh session. A new app `apps/storefront` (cloud session). Read first: ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open questions: host → organization resolution (no subdomain lookup endpoint yet), customer cookies across the app and API hosts. M.6a (shell, home, search, listing page, sign-in) T1; M.6b (my biodata, connections, credits incl. the M.5 purchase flow, report/block buttons from M.7, static pages) T2. Domain: platform subdomain until doc 16 §6.6 is decided.
-   - Refresh the ready board (guide §9).
-3. Re-review as sessions report done: 3.5a against R1 (blockers first), 3.7 against R1 (B1–B4 first). If at most three small items remain, the lead fixes them and merges. Merge through `s/merge-<card>` in `banijjik-docs` when a branch is behind main. Hot spots: `routes/*`, `start-worker.ts`, contracts index files, booking files (3.7, 3.6b now collide with merged 3.8), STATUS.md rows; check `git grep -n "^<<<<<<<"`.
-4. Merge check of M.8a; T1 review of M.7 A1. When the second of the two merges, add `reportReasons` to both matrimony seeds.
-5. After 3.5a Part A: 3.5a Part B, plan 3.5b. After 3.7 Part A: 3.7 Part B (plan 3.7 refresh item 1). After M.7 A1: refresh M.7 A2 and release A2 and B. Later: 3.9 POS, 3.10, M.8b, M.9, then `docs/handoffs/phase-3-review.md`.
-6. Follow-ups:
-   - The admin script budget is 180 KiB (owner, 2026-10-22). New admin routes need a budget check in their browser test (M.5 had none until the lead added it).
+1. Verify reality (`git fetch`, folders, `origin/<branch>`, `gh run list`). For every "done", require the `card:check` output.
+2. Re-check 3.8 B1 and 3.6b A2 against their R1 files. At most three small leftovers → the lead fixes and merges.
+3. **Refresh 3.5a Part B** (screens, plan `docs/plans/3.5a.md`) against the merged API and give the prompt. **Plan a small T1 card "orders as a payment request"**: register the `ORDER` request reader in payment, replace the zero `PaymentSummaryReader` stub in `routes/`, enforce `sales.advance.required` on confirm (see `docs/handoffs/3.5a-api-review-R2.md` follow-ups). Part B shows payment status only after it.
+4. T1 review of 3.22 on done, then 3.11 A2. After 3.6b A2 merges: refresh and release A3.
+5. Plans still missing: refresh 3.9 POS inputs; plan M.6 (storefront app, see M.6 notes in STATUS/doc 16: host → organization resolution, customer cookies across hosts; M.6a T1, M.6b T2); plan 3.5b; refresh the ready board (guide §9).
+6. After 3.7 Part A: 3.7 Part B. After M.7 A1: refresh M.7 A2 and B. Later: 3.9, 3.10, M.8b, M.9, then `docs/handoffs/phase-3-review.md`.
+7. Follow-ups:
+   - Test-stability card for the two flaky kernel tests (§1).
+   - `sales` job rows log at `warn`; booking jobs use `error`. Align in 3.5a Part B or 3.5b.
+   - The admin script budget is 180 KiB. New admin routes need a budget check in their browser test.
    - Replayer safety across more than one worker process (STATUS 3.16 note).
-   - **FOUNDATION BUG → card 3.22 (planned, running):** an ORDERED handler advances its stream position only on the event types it handles (`kernel/events/handler-runner.ts` `runOrdered`, `checkSequence` → AHEAD). So `accounting.postBookings` (listens to completed/cancelled/noShow on `booking:<id>`, where created/confirmed come first) likely never posts booking revenue. Proposed fix: in the AHEAD case, skip a gap whose sequences are all visible in the outbox and none is a type the handler handles; plus a test that publishes created → confirmed → completed. Check `postPayments` covers every type on `paymentAccount:<org>`. Found by the 3.11 A1 session; 3.11 plan Amendment 1 made `commission.accrue` UNORDERED.
-   - **Bug found while planning 3.11:** `commerce/booking/application/booking-posting-source.ts` uses `startsAt.toISOString().slice(0, 10)` as the journal business date (UTC, §11 item 13) and `kind: "SERVICE"` for every booking; `advancesToSettle` = `depositRequired`, not the deposit actually paid. Check whether 3.6b A1 fixes `kind`; plan a small T2 fix card for the rest.
+   - Booking posting source: the business date is the UTC date of `startsAt` and `advancesToSettle` = `depositRequired`, not the deposit paid (`kind` was fixed in 3.6b A1). Plan a small T2 fix card.
 
 ## 5. How the lead works
 - **Role:** plans (just in time), strict T1 reviews, merge checks, integration (rebases, conflicts), fast-forward of `main`. Implementation is done by the owner's sessions (Antigravity, Claude Code, Qoder, Cursor), not by the lead, unless the owner asks.
@@ -86,8 +78,8 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-23 late night 2** (Opus): owner asked to verify every "done". 3.5a Part A: R2 passed, merged (`5958710`, one flaky kernel test rerun). 3.6b A1 and 3.11 A1 confirmed merged. 3.8 B1 merge check R1 (5 must-fix) and 3.6b A2 R1 (not done) written to `docs/handoffs/` and pasted by the owner. 3.22 and 3.11 A2 never started.
 - **2026-10-23 late night** (Opus): T1 review and merge of 3.6b A1 (`964d8f9`). T1 review and merge of 3.11 A1 (`7f55fa5`; lead added the commission module to three templates, plan Amendment 2 for the refund/accrual race); merge check and merge of 3.8 B2 (`7a4e289`; done message lacked card:check, the lead ran it: all PASS). Before that: nothing moved on any branch. Planned 3.11 (A1 → A2 → B, C after 3.5a; ADR-135) after four owner decisions (base after discount without tax, proportional refund adjustment, expense at accrual, higher role rule wins). Found the booking posting business-date bug. Main pushed after the A1 session asked for the plan on origin.
 - **2026-10-23 night** (Opus): refreshed 3.8 Part B (B1/B2 parallel) and 3.6b (A1/A2 parallel, A3 after) and gave four prompts; 3.5a claimed done but nothing new on origin (still `6043913`), owner told. Earlier: 3.8 R3 fixes arrived; the lead fixed the last two leftovers (empty job catch, optional summary methods) and merged 3.8 Part A (`471a773`). M.5 Part B merge check: added the credit budget check, found purchases at 186 KiB, made the detail sheet lazy (170.6 KiB), merged (`cf17e3c`). Owner allowed pushing main. Owner is waiting on the unblocked work (3.8 B, 3.6b, 3.11, M.6).
 - **2026-10-23 late evening** (Haiku then Opus): Haiku wrongly told the owner plans 3.20/3.21 were missing (it read the M.5 branch, not `main`); corrected. Answered 3.21's two conflicts with plan Amendment 1. Wrote plans M.7 (A1 now, A2/B later, ADR-134) and M.8a (seed data); 3.6b → ADR-133. Merge checks: 3.20 and 3.21. Pushed main `c333375`.
 - **2026-10-23 evening** (Opus): answered the M.5 agent (removed the unreachable threshold branch myself, CI green). Wrote plans 3.20 (fonts, T3) and 3.21 (accounting currency, T2); gave prompts for M.5 Part B, 3.20, 3.21. Pushed main `b616bbf`.
-- **2026-10-23 afternoon (2)** (Opus): owner asked why delivery is slow (review round trips, false "done" claims, shared CI breakage, big cards). Built and merged 3.18 (card:check, T1 checklist, nightly CI) and 3.19 (config in jobs). Merged M.5 Part A. Reviews: 3.5a R1 (4 blockers), 3.8 R3 (small). Pushed main `8793398`.
