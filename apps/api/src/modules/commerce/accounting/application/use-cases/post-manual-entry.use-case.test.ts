@@ -11,12 +11,12 @@ const organizationId = asId<OrganizationId>(newId());
 const requestedByUserId = asId<UserId>(newId());
 
 function buildDependencies(currency: string | undefined) {
-  const consume = vi.fn(async () => undefined);
-  const deps = {
+  const consume = vi.fn<PostManualEntryDependencies["approvals"]["consume"]>();
+  const deps: Pick<PostManualEntryDependencies, "approvals" | "currencies" | "policy"> = {
     approvals: { consume },
     currencies: { read: async () => currency as CurrencyCode | undefined },
     policy: { ownerMaySkip: async () => false },
-  } as unknown as PostManualEntryDependencies;
+  };
   return { deps, consume };
 }
 
