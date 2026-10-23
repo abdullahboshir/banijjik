@@ -8,7 +8,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-23 (late night, Dhaka) by Opus 5.5 · `main` = `origin/main` = `7f55fa5` (3.11 A1 merged, CI 39942762264) plus this state save (pushed). Earlier this session: plan 3.11 + ADR-135 + Amendments 1–2, 3.8 B2 merged (`7a4e289`), 3.6b Clarification 1 (A2 EVENT offering reader).
+Last updated: 2026-10-23 (late night, Dhaka) by Opus 5.5 · `main` = `origin/main` = `964d8f9` (3.6b A1 merged, CI 39955634661; 3.11 A1 merged before at `7f55fa5`) plus this state save (pushed). Earlier this session: plan 3.11 + ADR-135 + Amendments 1–2, 3.8 B2 merged (`7a4e289`), 3.6b Clarification 1 (A2 EVENT offering reader).
 
 ## 1. Where the project stands
 - Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, **3.8 Part A**, 3.8a, 3.8b, 3.8c, 3.12–3.21. Track M merged: M.1 to **M.5 (both parts)**. Details per card: `docs/STATUS.md`.
@@ -27,7 +27,7 @@ Last updated: 2026-10-23 (late night, Dhaka) by Opus 5.5 · `main` = `origin/mai
 | 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` (`779f472`) | `banijjik-1.7b` | T1 | **R1: changes required** (`docs/handoffs/3.7-api-review-R1.md`, 10 items). **No commit since R1**: ask the owner whether a session has it. Now that 3.8 merged, its rebase touches the same booking files. |
 | M.7 Part A1 reports | `s/M.7-api-reports` (prompt given) | cloud | T1 | Plan `docs/plans/M.7.md` A1, ADR-134. **No branch on origin yet** (checked 2026-10-23 night). Next: T1 review on a done. |
 | M.8a matrimony templates | `s/M.8a-matrimony-templates` (prompt given) | cloud | T2 | Plan `docs/plans/M.8a.md`. **No branch on origin yet.** **At merge of the second of M.7 A1 / M.8a, the lead adds `reportReasons`** (keys in M.8a decision 5) to both seeds. Next: merge check. |
-| 3.6b A1 rentals / A2 event sessions | `s/3.6b-api-rental` / `s/3.6b-api-event-sessions` (prompts given 2026-10-23 night) | `banijjik` / `banijjik-m2` | T1 / T2 | Plan `docs/plans/3.6b.md` + "Refresh (2026-10-23)": three parts; A1 and A2 run in parallel, A3 (event bookings, T1) after both merge. Next: T1 review of A1, merge check of A2, then refresh and release A3. | A2 started 2026-10-23 late night; lead clarification 2 (given in chat, not in the plan): A2 may add its permissions and `/event-sessions` route to `booking/module.manifest.ts`, add-only, never `providesKinds`.
+| 3.6b A2 event sessions | `s/3.6b-api-event-sessions` | `banijjik-m2` | T2 | **A1 merged** (`964d8f9`, T1 review passed; lead fixed: bookings post to the revenue account of their kind, `asId` in two jobs, ADR-133 DAY wording). A2: lead clarifications 1 (own EVENT reader, in the plan) and 2 (manifest add-only, chat only). Last seen: CI failing on the permission count test (101 vs 105), no handoff. A2 must rebase on main (A1 touched the manifest). Then A3 (lead refreshes), then B. Next: merge check of A2. |
 | 3.8 B1 payments | `s/3.8-ui-payments` (prompt given 2026-10-23 night) | `banijjik-lead` | T2 | Plan `docs/plans/3.8.md` "Refresh 2". **B2 merged** (`7a4e289`). B1 must rebase on main (STATUS row 3.8 already says B2 merged; B1 edits only its part). Next: merge check. |
 | 3.11 A2 payouts and posting | `s/3.11-api-payouts` (prompt given 2026-10-23 late night) | `banijjik-3.11` (new full folder made by the A1 session) | T1 | **A1 merged** (`7f55fa5`, T1 review passed; the lead allowed `commission` in salon, gym, coaching templates). A2 = decisions 7–8 + Amendment 1 (stream key) + Amendment 2 (race marker). Then B (lead refreshes first), C after 3.5a A. Next: T1 review on a done. |
 
@@ -40,7 +40,7 @@ Merged and safe to delete (local and `origin`):
 - PR #2 (3.8) can be closed as merged.
 
 Folders:
-- Assigned 2026-10-23 late night: `banijjik` → 3.6b A1, `banijjik-lead` → 3.8 B1, `banijjik-m2` → 3.6b A2, `banijjik-3.11` → 3.11 A2 (new full folder; check disk space). Delete merged branches `s/3.8-ui-dues-store-credit`, `s/3.11-api-accruals` (local and origin).
+- Assigned 2026-10-23 late night: `banijjik` free (3.6b A1 merged), `banijjik-lead` → 3.8 B1, `banijjik-m2` → 3.6b A2, `banijjik-3.11` → 3.11 A2 (new full folder; check disk space). Delete merged branches `s/3.8-ui-dues-store-credit`, `s/3.11-api-accruals`, `s/3.6b-api-rental` (local and origin).
 - `banijjik-docs` is the docs and merge folder. The next lead session opens in `banijjik-docs`.
 
 **Agents claim "done" early.** A "done" without the full `npm run card:check` output (all PASS) is not reviewed. Verify anyway: `git status` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`, `--log-failed`. Handoffs often say "Deviations: none" when there are some; diff against the plan's file list.
@@ -48,9 +48,9 @@ Folders:
 Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). The owner has not said keep or drop.
 
 ## 3. Waiting on the owner
-- **Open question to the owner:** next session = plan 3.22 kernel fix now (lead recommends; foundation bug) or start M.8a? Running now: 3.8 B1, 3.6b A1, 3.6b A2, 3.5a (R1 fixes), 3.11 A2.
+- **Open question to the owner:** next session = plan 3.22 kernel fix now (lead recommends; foundation bug) or start M.8a? Running now: 3.8 B1, 3.6b A2, 3.5a (R1 fixes); 3.11 A2 prompt given but not started when last checked. `banijjik` is free.
 - 3.5a: the session claimed done, but origin is still `6043913` (before R1); the owner got a message for it. 3.7 R1: no commit since. Start M.7 A1 and M.8a as cloud sessions if not yet running (no branches on origin).
-- Owner capacity (2026-10-23): 6–7 implement sessions at once. No full folder is free now (5 running).
+- Owner capacity (2026-10-23): 6–7 implement sessions at once. `banijjik` is free.
 - Model rule given to the owner: Sonnet 5.5 for T1/T2 implementation (the lead reviews strictly); Haiku 5.5 only for T3 mechanical cards, never for money, stock or security.
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
@@ -85,7 +85,7 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
-- **2026-10-23 late night** (Opus): T1 review and merge of 3.11 A1 (`7f55fa5`; lead added the commission module to three templates, plan Amendment 2 for the refund/accrual race); merge check and merge of 3.8 B2 (`7a4e289`; done message lacked card:check, the lead ran it: all PASS). Before that: nothing moved on any branch. Planned 3.11 (A1 → A2 → B, C after 3.5a; ADR-135) after four owner decisions (base after discount without tax, proportional refund adjustment, expense at accrual, higher role rule wins). Found the booking posting business-date bug. Main pushed after the A1 session asked for the plan on origin.
+- **2026-10-23 late night** (Opus): T1 review and merge of 3.6b A1 (`964d8f9`). T1 review and merge of 3.11 A1 (`7f55fa5`; lead added the commission module to three templates, plan Amendment 2 for the refund/accrual race); merge check and merge of 3.8 B2 (`7a4e289`; done message lacked card:check, the lead ran it: all PASS). Before that: nothing moved on any branch. Planned 3.11 (A1 → A2 → B, C after 3.5a; ADR-135) after four owner decisions (base after discount without tax, proportional refund adjustment, expense at accrual, higher role rule wins). Found the booking posting business-date bug. Main pushed after the A1 session asked for the plan on origin.
 - **2026-10-23 night** (Opus): refreshed 3.8 Part B (B1/B2 parallel) and 3.6b (A1/A2 parallel, A3 after) and gave four prompts; 3.5a claimed done but nothing new on origin (still `6043913`), owner told. Earlier: 3.8 R3 fixes arrived; the lead fixed the last two leftovers (empty job catch, optional summary methods) and merged 3.8 Part A (`471a773`). M.5 Part B merge check: added the credit budget check, found purchases at 186 KiB, made the detail sheet lazy (170.6 KiB), merged (`cf17e3c`). Owner allowed pushing main. Owner is waiting on the unblocked work (3.8 B, 3.6b, 3.11, M.6).
 - **2026-10-23 late evening** (Haiku then Opus): Haiku wrongly told the owner plans 3.20/3.21 were missing (it read the M.5 branch, not `main`); corrected. Answered 3.21's two conflicts with plan Amendment 1. Wrote plans M.7 (A1 now, A2/B later, ADR-134) and M.8a (seed data); 3.6b → ADR-133. Merge checks: 3.20 and 3.21. Pushed main `c333375`.
 - **2026-10-23 evening** (Opus): answered the M.5 agent (removed the unreachable threshold branch myself, CI green). Wrote plans 3.20 (fonts, T3) and 3.21 (accounting currency, T2); gave prompts for M.5 Part B, 3.20, 3.21. Pushed main `b616bbf`.
