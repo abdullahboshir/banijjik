@@ -55,6 +55,7 @@ describe("audit vocabulary", () => {
       "creditPurchase",
       "payment",
       "storeCreditEntry",
+      "commissionRule",
     ]);
   });
 });

@@ -262,13 +262,16 @@ describe("commission rules API", () => {
       expect(response.status, JSON.stringify(body)).toBe(404);
     }
     templateReader.excludeKinds(["RENTAL"]);
-    const notEnabled = await world.alice
-      .call("post", rulesPath(world.organizationA), {
+    let notEnabled;
+    try {
+      notEnabled = await world.alice.call("post", rulesPath(world.organizationA), {
         ...percentRule(await memberIdOf(world.organizationA, world.alice.userId)),
         targetType: COMMISSION_TARGET_TYPE.KIND,
         offeringKind: "RENTAL",
-      })
-      .finally(() => templateReader.reset());
+      });
+    } finally {
+      templateReader.reset();
+    }
     expect(notEnabled.status).toBe(422);
     expect(notEnabled.body.error.messageKey).toBe("errors.commission_kind_not_enabled");
   });
@@ -457,14 +460,16 @@ describe("commission module switch", () => {
     const paths = ["/rules", "/entries", "/my-entries", "/summary"];
     for (const suffix of paths) {
       const response = await world.alice.call("get", commissionPath(world.organizationA, suffix));
-      expect(response.status, suffix).toBe(404);
+      expect(response.status, suffix).toBe(403);
+      expect(response.body.error.code).toBe("MODULE_DISABLED");
     }
     const create = await world.alice.call(
       "post",
       rulesPath(world.organizationA),
       percentRule(await memberIdOf(world.organizationA, world.alice.userId)),
     );
-    expect(create.status).toBe(404);
+    expect(create.status).toBe(403);
+    expect(create.body.error.code).toBe("MODULE_DISABLED");
   });
 
   it("keeps the commission routes closed when the add-on was never granted", async () => {
@@ -474,6 +479,7 @@ describe("commission module switch", () => {
     const rules = await world.alice.call("get", rulesPath(world.organizationA));
     const mine = await staff.call("get", commissionPath(world.organizationA, "/my-entries"));
 
-    expect([rules.status, mine.status]).toEqual([404, 404]);
+    expect([rules.status, mine.status]).toEqual([403, 403]);
+    expect(rules.body.error.code).toBe("MODULE_DISABLED");
   });
 });

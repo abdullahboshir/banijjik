@@ -3,6 +3,7 @@ import { ACCOUNTING_EVENT_TYPE, EXPENSE_EVENT_TYPE } from "../accounting/account
 import { BOOKING_EVENT_TYPE } from "../booking/booking-event-type.js";
 import { CATALOG_EVENT_TYPE } from "../catalog/catalog-event-type.js";
 import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
+import { COMMISSION_EVENT_TYPE } from "../commission/commission-event-type.js";
 import { CREDIT_EVENT_TYPE } from "../credit/credit-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
@@ -35,6 +36,7 @@ describe("event types", () => {
       ...Object.values(INVENTORY_EVENT_TYPE),
       ...Object.values(DIRECTORY_EVENT_TYPE),
       ...Object.values(CREDIT_EVENT_TYPE),
+      ...Object.values(COMMISSION_EVENT_TYPE),
     ].sort();
 
     expect(Object.values(EVENT_TYPE).sort()).toEqual(expected);

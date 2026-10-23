@@ -411,5 +411,6 @@
   "permission.commission.entry.readOwn": "View my own commission",
   "errors.commission_rule_duplicate": "An active commission rule already exists for this person and target.",
   "errors.commission_currency_mismatch": "The fixed amount must be in your business currency.",
-  "errors.commission_kind_not_enabled": "That kind of offering is not enabled for your business."
+  "errors.commission_kind_not_enabled": "That kind of offering is not enabled for your business.",
+  "package.ADDON_COMMISSION.name": "Commission add-on"
 }

@@ -411,5 +411,6 @@
   "permission.commission.entry.readOwn": "নিজের কমিশন দেখা",
   "errors.commission_rule_duplicate": "এই ব্যক্তি ও লক্ষ্যের জন্য একটি সক্রিয় কমিশন নিয়ম আগেই আছে।",
   "errors.commission_currency_mismatch": "নির্দিষ্ট পরিমাণ আপনার ব্যবসার মুদ্রায় হতে হবে।",
-  "errors.commission_kind_not_enabled": "এই ধরনের পণ্য বা সেবা আপনার ব্যবসায় চালু নেই।"
+  "errors.commission_kind_not_enabled": "এই ধরনের পণ্য বা সেবা আপনার ব্যবসায় চালু নেই।",
+  "package.ADDON_COMMISSION.name": "কমিশন অ্যাড-অন"
 }
