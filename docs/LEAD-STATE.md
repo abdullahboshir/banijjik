@@ -66,6 +66,7 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 6. Follow-ups:
    - The admin script budget is 180 KiB (owner, 2026-10-22). New admin routes need a budget check in their browser test (M.5 had none until the lead added it).
    - Replayer safety across more than one worker process (STATUS 3.16 note).
+   - **FOUNDATION BUG, plan a T1 kernel fix card next (3.22):** an ORDERED handler advances its stream position only on the event types it handles (`kernel/events/handler-runner.ts` `runOrdered`, `checkSequence` → AHEAD). So `accounting.postBookings` (listens to completed/cancelled/noShow on `booking:<id>`, where created/confirmed come first) likely never posts booking revenue. Proposed fix: in the AHEAD case, skip a gap whose sequences are all visible in the outbox and none is a type the handler handles; plus a test that publishes created → confirmed → completed. Check `postPayments` covers every type on `paymentAccount:<org>`. Found by the 3.11 A1 session; 3.11 plan Amendment 1 made `commission.accrue` UNORDERED.
    - **Bug found while planning 3.11:** `commerce/booking/application/booking-posting-source.ts` uses `startsAt.toISOString().slice(0, 10)` as the journal business date (UTC, §11 item 13) and `kind: "SERVICE"` for every booking; `advancesToSettle` = `depositRequired`, not the deposit actually paid. Check whether 3.6b A1 fixes `kind`; plan a small T2 fix card for the rest.
 
 ## 5. How the lead works
