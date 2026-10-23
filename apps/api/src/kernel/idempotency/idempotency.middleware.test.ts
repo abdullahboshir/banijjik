@@ -32,6 +32,7 @@ let clock: MutableClock;
 let probe: TestApp;
 let handlerRuns = 0;
 const heldRequests: (() => void)[] = [];
+let notifyHeldRequestStarted: (() => void) | undefined;
 
 function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -40,6 +41,14 @@ function sleep(milliseconds: number): Promise<void> {
 function holdUntilReleased(): Promise<void> {
   return new Promise((resolve) => {
     heldRequests.push(resolve);
+    notifyHeldRequestStarted?.();
+    notifyHeldRequestStarted = undefined;
+  });
+}
+
+function nextHeldRequestStarted(): Promise<void> {
+  return new Promise((resolve) => {
+    notifyHeldRequestStarted = resolve;
   });
 }
 
@@ -239,14 +248,16 @@ describe("Idempotency-Key middleware", () => {
 
   it("takes over a request whose lock has expired", async () => {
     const key = newId();
+    const firstStarted = nextHeldRequestStarted();
     const stuck = startProbe({ key, body: { mode: "hold" } });
-    await sleep(SLOW_MILLISECONDS);
+    await firstStarted;
     const whileLocked = await callProbe({ key, body: { mode: "hold" } });
     expect(whileLocked.status).toBe(409);
 
     clock.advanceSeconds(LOCK_SECONDS_PLUS_ONE);
+    const takeoverStarted = nextHeldRequestStarted();
     const takeover = startProbe({ key, body: { mode: "hold" } });
-    await sleep(SLOW_MILLISECONDS);
+    await takeoverStarted;
     for (const release of heldRequests.splice(0)) release();
     const taken = await takeover;
     await stuck;
