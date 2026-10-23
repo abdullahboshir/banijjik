@@ -46,7 +46,6 @@ import {
   findOrCreateInlineContact,
   type InlineContactCreate,
 } from "./application/inline-contact-creator.js";
-import { buildContactSearch } from "./application/contact-search.js";
 import { ListContactsUseCase } from "./application/use-cases/list-contacts.use-case.js";
 import { SendCustomerOtpUseCase } from "./application/use-cases/send-customer-otp.use-case.js";
 import { UpdateContactUseCase } from "./application/use-cases/update-contact.use-case.js";
@@ -66,6 +65,7 @@ import { CustomerCookies } from "./presentation/customer-cookies.js";
 
 export { contactManifest } from "./module.manifest.js";
 export { registerContactModels } from "./infrastructure/register-contact-models.js";
+export { buildSalesContactReader } from "./sales-contact-reader.js";
 export type {
   ContactCustomFieldReader,
   ContactRoleCatalog,
@@ -229,48 +229,6 @@ export function buildCustomerPhoneReader(): {
       if (account === undefined) return undefined;
       const contact = await contacts.findById(account.contactId);
       return contact?.phoneE164;
-    },
-  };
-}
-
-/** One active contact as another module (sales, 3.5a) needs it: a name, a phone and nothing sensitive. */
-export interface SalesContact {
-  readonly contactId: ContactId;
-  readonly name: string | null;
-  readonly phoneE164: string | null;
-}
-
-const SALES_CONTACT_SEARCH_LIMIT = 20;
-
-/**
- * The read side of contacts for orders: one contact, batched names, and the ids whose name or
- * phone starts with the list search term, using the contact indexes instead of a scan.
- */
-export function buildSalesContactReader(): {
-  findActive(contactId: ContactId): Promise<SalesContact | undefined>;
-  findNames(contactIds: readonly ContactId[]): Promise<ReadonlyMap<string, string | null>>;
-  searchActiveIds(term: string): Promise<readonly ContactId[]>;
-} {
-  const contacts = new MongoContactRepository();
-  return {
-    async findActive(contactId) {
-      const contact = await contacts.findById(contactId);
-      if (contact === undefined || contact.status !== CONTACT_STATUS.ACTIVE) return undefined;
-      return {
-        contactId: contact.contactId,
-        name: contact.name ?? null,
-        phoneE164: contact.phoneE164 ?? null,
-      };
-    },
-    findNames: (contactIds) => contacts.findNames(contactIds),
-    async searchActiveIds(term) {
-      const page = await contacts.list({
-        search: buildContactSearch(term),
-        status: CONTACT_STATUS.ACTIVE,
-        page: 1,
-        limit: SALES_CONTACT_SEARCH_LIMIT,
-      });
-      return page.items.map((row) => row.contactId);
     },
   };
 }
