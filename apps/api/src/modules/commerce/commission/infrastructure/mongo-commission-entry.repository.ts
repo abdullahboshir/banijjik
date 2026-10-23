@@ -118,18 +118,18 @@ interface TotalsRow {
 
 export class MongoCommissionEntryRepository implements CommissionEntryRepository {
   async insertIfAbsent(entry: CommissionEntry): Promise<"inserted" | "exists"> {
-    const document = toDocument(entry);
-    // Timestamps are written by the entry itself: an existing row is never touched, not even its updatedAt.
+    const { organizationId, ...rest } = toDocument(entry);
+    // The organization comes from the filter (the tenant plugin refuses to assign it). Timestamps are written by the entry itself: an existing row is never touched, not even its updatedAt.
     const result = await entryModel().updateOne(
       {
-        organizationId: document.organizationId,
-        sourceType: document.sourceType,
-        sourceId: document.sourceId,
-        sourceLineId: document.sourceLineId,
-        memberId: document.memberId,
-        sequence: document.sequence,
+        organizationId,
+        sourceType: rest.sourceType,
+        sourceId: rest.sourceId,
+        sourceLineId: rest.sourceLineId,
+        memberId: rest.memberId,
+        sequence: rest.sequence,
       },
-      { $setOnInsert: document },
+      { $setOnInsert: rest },
       { upsert: true, timestamps: false, ...sessionOption(getActiveSession()) },
     );
     return result.upsertedCount > 0 ? "inserted" : "exists";

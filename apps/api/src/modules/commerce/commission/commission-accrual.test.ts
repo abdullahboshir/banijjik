@@ -1,0 +1,490 @@
+import { EVENT_TYPE, MODULE_KEY, type EventEnvelope } from "@banijjik/contracts";
+import type { Money } from "@banijjik/contracts/accounting";
+import { BOOKING_STATUS, type BookingStatus } from "@banijjik/contracts/booking";
+import {
+  COMMISSION_CALCULATION,
+  COMMISSION_ENTRY_KIND,
+  COMMISSION_SOURCE_TYPE,
+  COMMISSION_SUBJECT_TYPE,
+  COMMISSION_TARGET_TYPE,
+} from "@banijjik/contracts/commission";
+import { PAYMENT_REQUEST_TYPE, type PaymentRequestType } from "@banijjik/contracts/payment";
+import {
+  asId,
+  newId,
+  type MemberId,
+  type OfferingId,
+  type OrganizationId,
+  type RoleId,
+} from "@banijjik/ids";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { MongoUnitOfWork, initializeModels, withTransaction } from "../../../kernel/db/index.js";
+import { EventHandlerRegistry } from "../../../kernel/events/event-handler-registry.js";
+import { runEventHandler } from "../../../kernel/events/handler-runner.js";
+import { publishEvent } from "../../../kernel/events/publish-event.js";
+import { registerEventModels } from "../../../kernel/events/register-event-models.js";
+import { outboxModel } from "../../../test-support/event-fixtures.js";
+import { withOrganizationContext } from "../../../test-support/organization-context.js";
+import {
+  connectTestDatabases,
+  disposeTestDatabases,
+  installTestLogger,
+} from "../../../test-support/test-databases.js";
+import type { DatabaseConnections } from "../../../kernel/db/index.js";
+import { CommissionRule } from "./domain/commission-rule.entity.js";
+import { MongoCommissionEntryRepository } from "./infrastructure/mongo-commission-entry.repository.js";
+import { MongoCommissionRuleRepository } from "./infrastructure/mongo-commission-rule.repository.js";
+import { registerCommissionModels } from "./infrastructure/register-commission-models.js";
+import {
+  accrueCompletedBooking,
+  type AccrualDependencies,
+  type CommissionEventContext,
+} from "./application/accrue-commission.js";
+import { buildAccrueCommissionHandler } from "./application/handlers/accrue-commission.handler.js";
+import type { BookingCommissionFacts } from "./application/ports/commission-ports.js";
+
+registerEventModels();
+registerCommissionModels();
+
+let connections: DatabaseConnections;
+
+beforeAll(async () => {
+  installTestLogger();
+  connections = await connectTestDatabases();
+  await initializeModels();
+});
+
+afterAll(async () => {
+  await disposeTestDatabases(connections);
+});
+
+const GROSS = 115_000;
+const TAX = 15_000;
+const BASE = GROSS - TAX;
+const TEN_PERCENT = 1000;
+/** 02:00 on 23 October in Dhaka, which is still 22 October in UTC. */
+const COMPLETED_AT = new Date("2026-10-22T20:00:00Z");
+const DHAKA_DATE = "2026-10-23";
+
+function bdt(amount: number): Money {
+  return { amount, currency: "BDT" };
+}
+
+interface Scene {
+  readonly organizationId: OrganizationId;
+  readonly locationId: string;
+  readonly memberId: MemberId;
+  readonly offeringId: OfferingId;
+  readonly dependencies: AccrualDependencies;
+  readonly published: { type: string; payload: object; orderingKey: string }[];
+  readonly bookings: Map<string, BookingCommissionFacts>;
+  readonly refunded: Map<string, Money>;
+  readonly allocations: Map<string, { requestType: PaymentRequestType; requestId: string }[]>;
+  readonly warn: ReturnType<typeof vi.fn>;
+}
+
+function newScene(): Scene {
+  const organizationId = asId<OrganizationId>(newId());
+  const memberId = asId<MemberId>(newId());
+  const offeringId = asId<OfferingId>(newId());
+  const locationId = newId();
+  const published: Scene["published"] = [];
+  const bookings = new Map<string, BookingCommissionFacts>();
+  const refunded = new Map<string, Money>();
+  const allocations: Scene["allocations"] = new Map();
+  const warn = vi.fn();
+  const dependencies: AccrualDependencies = {
+    rules: new MongoCommissionRuleRepository(),
+    entries: new MongoCommissionEntryRepository(),
+    bookings: { readBooking: async (bookingId) => bookings.get(bookingId) },
+    payments: {
+      readAllocations: async (paymentId) => allocations.get(paymentId) ?? [],
+      readRefunded: async (_requestType, requestId) => refunded.get(requestId),
+    },
+    offerings: { readOffering: async () => ({ kind: "SERVICE", categoryIds: [] }) },
+    memberRoles: { roleIdsAt: async () => [] },
+    timezones: { read: async () => "Asia/Dhaka" },
+    events: {
+      publish: async (type, payload, options) => {
+        published.push({ type, payload, orderingKey: options.orderingKey });
+      },
+    },
+    unitOfWork: new MongoUnitOfWork(),
+    clock: { now: () => new Date("2026-10-23T10:00:00Z") },
+    logger: { debug: vi.fn(), warn },
+  };
+  return {
+    organizationId,
+    locationId,
+    memberId,
+    offeringId,
+    dependencies,
+    published,
+    bookings,
+    refunded,
+    allocations,
+    warn,
+  };
+}
+
+function addBooking(scene: Scene, overrides: Partial<BookingCommissionFacts> = {}): string {
+  const bookingId = newId();
+  scene.bookings.set(bookingId, {
+    bookingId,
+    bookingNumber: "000042",
+    locationId: scene.locationId,
+    providerMemberId: scene.memberId,
+    offeringId: scene.offeringId,
+    quantity: 1,
+    status: BOOKING_STATUS.COMPLETED as BookingStatus,
+    price: { unitPrice: bdt(GROSS), total: bdt(GROSS), tax: bdt(TAX), currency: "BDT" },
+    ...overrides,
+  });
+  return bookingId;
+}
+
+async function addMemberRule(
+  scene: Scene,
+  fields: { percentBasisPoints?: number | null; fixedAmount?: Money | null } = {},
+): Promise<CommissionRule> {
+  const isFixed = fields.fixedAmount !== undefined && fields.fixedAmount !== null;
+  const rule = CommissionRule.create({
+    organizationId: scene.organizationId,
+    subjectType: COMMISSION_SUBJECT_TYPE.MEMBER,
+    memberId: scene.memberId,
+    roleId: null as RoleId | null,
+    targetType: COMMISSION_TARGET_TYPE.ALL,
+    offeringKind: null,
+    categoryId: null,
+    offeringId: null,
+    calculation: isFixed ? COMMISSION_CALCULATION.FIXED : COMMISSION_CALCULATION.PERCENT,
+    percentBasisPoints: isFixed ? null : (fields.percentBasisPoints ?? TEN_PERCENT),
+    fixedAmount: fields.fixedAmount ?? null,
+    now: new Date("2026-10-01T00:00:00Z"),
+    actorUserId: null,
+  });
+  await new MongoCommissionRuleRepository().insert(rule);
+  return rule;
+}
+
+type HandlerInput = EventEnvelope<{ bookingId: string }>;
+
+function completedEnvelope(scene: Scene, bookingId: string): HandlerInput {
+  return envelope(scene, EVENT_TYPE.BOOKING_COMPLETED, { bookingId });
+}
+
+function paymentEnvelope(
+  scene: Scene,
+  type: typeof EVENT_TYPE.PAYMENT_REFUNDED | typeof EVENT_TYPE.PAYMENT_REVERSED,
+  paymentId: string,
+): HandlerInput {
+  return envelope(scene, type, { paymentId });
+}
+
+/**
+ * The handler is typed by its main event (booking completed); a payment event has another payload.
+ * The real runner reaches it through the untyped registry, so the test widens the type once, here.
+ */
+function envelope(scene: Scene, type: string, payload: object): HandlerInput {
+  const built = {
+    eventId: newId(),
+    type,
+    version: 1,
+    occurredAt: COMPLETED_AT.toISOString(),
+    organizationId: scene.organizationId,
+    actorUserId: null,
+    payload,
+  };
+  return built as unknown as HandlerInput;
+}
+
+async function entriesOf(scene: Scene, bookingId: string) {
+  return withOrganizationContext(scene.organizationId, () =>
+    scene.dependencies.entries.listBySource(COMMISSION_SOURCE_TYPE.BOOKING, bookingId),
+  );
+}
+
+function runAs<Result>(scene: Scene, work: () => Promise<Result>): Promise<Result> {
+  return withOrganizationContext(scene.organizationId, work);
+}
+
+function refundOf(scene: Scene, bookingId: string, refundedAmount: number): string {
+  scene.refunded.set(bookingId, bdt(refundedAmount));
+  const paymentId = newId();
+  scene.allocations.set(paymentId, [
+    { requestType: PAYMENT_REQUEST_TYPE.BOOKING, requestId: bookingId },
+  ]);
+  return paymentId;
+}
+
+describe("commission accrual on booking completion", () => {
+  it("writes one ACCRUAL with the rule snapshot, the base after discount without tax and the organization date", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    const rule = await runAs(scene, () => addMemberRule(scene));
+
+    await runAs(scene, () => handler.handle(completedEnvelope(scene, bookingId)));
+
+    const entries = await entriesOf(scene, bookingId);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      memberId: scene.memberId,
+      sourceId: bookingId,
+      sourceNumber: "000042",
+      sequence: 1,
+      entryKind: COMMISSION_ENTRY_KIND.ACCRUAL,
+      amount: bdt(BASE / 10),
+      base: bdt(BASE),
+      sourceGrossTotal: bdt(GROSS),
+      businessDate: DHAKA_DATE,
+      payoutId: null,
+      ruleSnapshot: {
+        commissionRuleId: rule.commissionRuleId,
+        calculation: COMMISSION_CALCULATION.PERCENT,
+        percentBasisPoints: TEN_PERCENT,
+      },
+    });
+    expect(scene.published).toEqual([
+      {
+        type: "commission.entry.recorded",
+        payload: { commissionEntryId: entries[0]?.commissionEntryId },
+        orderingKey: `commission:${scene.memberId}`,
+      },
+    ]);
+  });
+
+  it("writes nothing for a booking without a provider", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene, { providerMemberId: null });
+    await runAs(scene, () => addMemberRule(scene));
+
+    await runAs(scene, () =>
+      buildAccrueCommissionHandler(scene.dependencies).handle(completedEnvelope(scene, bookingId)),
+    );
+
+    expect(await entriesOf(scene, bookingId)).toHaveLength(0);
+  });
+
+  it("writes nothing when no rule matches", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+
+    await runAs(scene, () =>
+      buildAccrueCommissionHandler(scene.dependencies).handle(completedEnvelope(scene, bookingId)),
+    );
+
+    expect(await entriesOf(scene, bookingId)).toHaveLength(0);
+    expect(scene.published).toHaveLength(0);
+  });
+
+  it("writes nothing for a booking that is not completed", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene, { status: BOOKING_STATUS.CONFIRMED });
+    await runAs(scene, () => addMemberRule(scene));
+
+    await runAs(scene, () =>
+      buildAccrueCommissionHandler(scene.dependencies).handle(completedEnvelope(scene, bookingId)),
+    );
+
+    expect(await entriesOf(scene, bookingId)).toHaveLength(0);
+  });
+
+  it("skips a fixed rule in another currency, logs it and counts it", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () =>
+      addMemberRule(scene, { fixedAmount: { amount: 500, currency: "USD" as Money["currency"] } }),
+    );
+    const context: CommissionEventContext = {
+      organizationId: scene.organizationId,
+      actorUserId: null,
+      occurredAt: COMPLETED_AT,
+    };
+
+    const result = await runAs(scene, () =>
+      accrueCompletedBooking(scene.dependencies, { bookingId, context }),
+    );
+
+    expect(result).toEqual({ accruals: 0, adjustments: 0, skippedCurrency: 1 });
+    expect(scene.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ bookingId }),
+      "commission.accrual_skipped_currency",
+    );
+    expect(await entriesOf(scene, bookingId)).toHaveLength(0);
+  });
+
+  it("writes one accrual when the same completion is handled twice (replay)", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    const event = completedEnvelope(scene, bookingId);
+
+    await runAs(scene, () => handler.handle(event));
+    await runAs(scene, () => handler.handle(event));
+
+    expect(await entriesOf(scene, bookingId)).toHaveLength(1);
+    expect(scene.published).toHaveLength(1);
+  });
+});
+
+describe("commission reconcile after a refund", () => {
+  it("writes a REFUND_ADJUSTMENT in proportion, then the next sequence for a second partial refund", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    await runAs(scene, () => handler.handle(completedEnvelope(scene, bookingId)));
+
+    const firstRefund = refundOf(scene, bookingId, GROSS / 2);
+    await runAs(scene, () =>
+      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, firstRefund)),
+    );
+    const secondRefund = refundOf(scene, bookingId, GROSS);
+    await runAs(scene, () =>
+      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, secondRefund)),
+    );
+
+    const entries = await entriesOf(scene, bookingId);
+    expect(entries.map((entry) => [entry.sequence, entry.entryKind, entry.amount.amount])).toEqual([
+      [1, COMMISSION_ENTRY_KIND.ACCRUAL, 10_000],
+      [2, COMMISSION_ENTRY_KIND.REFUND_ADJUSTMENT, -5000],
+      [3, COMMISSION_ENTRY_KIND.REFUND_ADJUSTMENT, -5000],
+    ]);
+    expect(entries.reduce((total, entry) => total + entry.amount.amount, 0)).toBe(0);
+    expect(entries[2]?.refundedTotalSeen).toEqual(bdt(GROSS));
+  });
+
+  it("restores the commission when the refund is reversed", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    await runAs(scene, () => handler.handle(completedEnvelope(scene, bookingId)));
+    const refund = refundOf(scene, bookingId, GROSS / 2);
+    await runAs(scene, () =>
+      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, refund)),
+    );
+
+    scene.refunded.set(bookingId, bdt(0));
+    await runAs(scene, () =>
+      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REVERSED, refund)),
+    );
+
+    const entries = await entriesOf(scene, bookingId);
+    expect(entries.map((entry) => entry.amount.amount)).toEqual([10_000, -5000, 5000]);
+  });
+
+  it("gives the same ledger when the refund event is handled before the completion event", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    const refund = refundOf(scene, bookingId, GROSS / 2);
+
+    await runAs(scene, () =>
+      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, refund)),
+    );
+    expect(await entriesOf(scene, bookingId)).toHaveLength(0);
+
+    await runAs(scene, () => handler.handle(completedEnvelope(scene, bookingId)));
+
+    const entries = await entriesOf(scene, bookingId);
+    expect(entries.map((entry) => entry.amount.amount)).toEqual([10_000, -5000]);
+  });
+
+  it("ends with one adjustment when two reconciles race for the same booking", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    await runAs(scene, () => handler.handle(completedEnvelope(scene, bookingId)));
+    const refund = refundOf(scene, bookingId, GROSS / 2);
+
+    await Promise.all([
+      runAs(scene, () =>
+        handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, refund)),
+      ),
+      runAs(scene, () =>
+        handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REVERSED, refund)),
+      ),
+    ]);
+
+    const entries = await entriesOf(scene, bookingId);
+    expect(entries.map((entry) => entry.sequence)).toEqual([1, 2]);
+    expect(entries.reduce((total, entry) => total + entry.amount.amount, 0)).toBe(5000);
+  });
+
+  it("does nothing for a payment refund that has no booking allocation", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    await runAs(scene, () => handler.handle(completedEnvelope(scene, bookingId)));
+    scene.refunded.set(bookingId, bdt(GROSS));
+    const orderPayment = newId();
+    scene.allocations.set(orderPayment, [
+      { requestType: PAYMENT_REQUEST_TYPE.ORDER, requestId: newId() },
+    ]);
+
+    await runAs(scene, () =>
+      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, orderPayment)),
+    );
+
+    expect(await entriesOf(scene, bookingId)).toHaveLength(1);
+  });
+});
+
+describe("commission handler when the module is off", () => {
+  it("does nothing for an organization whose commission module is off, and accrues when it is on", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const registry = new EventHandlerRegistry();
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    registry.register(handler);
+    expect(handler.moduleKey).toBe(MODULE_KEY.COMMISSION);
+
+    const publishCompleted = async (): Promise<string> => {
+      await runAs(scene, () =>
+        withTransaction(() =>
+          publishEvent(
+            EVENT_TYPE.BOOKING_COMPLETED,
+            { bookingId },
+            { orderingKey: `booking:${bookingId}` },
+          ),
+        ),
+      );
+      const row = await outboxModel()
+        .findOne({ "payload.bookingId": bookingId })
+        .sort({ createdAt: -1 })
+        .lean<{ eventId: string }>();
+      if (row === null) throw new Error("the completed event was not written");
+      return row.eventId;
+    };
+    const jobFor = (eventId: string) => ({
+      eventId,
+      handlerKey: handler.handlerKey,
+      type: EVENT_TYPE.BOOKING_COMPLETED,
+      organizationId: scene.organizationId,
+    });
+    const effectiveness = (isOn: boolean) => ({ isEffective: async () => isOn });
+
+    const offResult = await runEventHandler(
+      jobFor(await publishCompleted()),
+      registry,
+      effectiveness(false),
+    );
+    expect(offResult).toBe("SKIPPED_MODULE_OFF");
+    expect(await entriesOf(scene, bookingId)).toHaveLength(0);
+
+    const onResult = await runEventHandler(
+      jobFor(await publishCompleted()),
+      registry,
+      effectiveness(true),
+    );
+    expect(onResult).toBe("HANDLED");
+    expect(await entriesOf(scene, bookingId)).toHaveLength(1);
+  });
+});
