@@ -115,16 +115,7 @@ export function useReversalFlow(props: {
   const [isConflict, setIsConflict] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [reversalNote, setReversalNote] = useState<string | null>(null);
-  const {
-    dialogState,
-    approvalError,
-    setApprovalError,
-    isApproving,
-    setIsApproving,
-    openApproval,
-    closeApproval,
-    handlePinError,
-  } = useApprovalDialogState();
+  const approval = useApprovalDialogState();
 
   async function initiateReversal(note?: string | null): Promise<void> {
     setReversalNote(note ?? null);
@@ -136,7 +127,7 @@ export function useReversalFlow(props: {
         organizationId: props.organizationId,
         locationId: props.payment.locationId,
         noApproversMsg: props.noApproversMessage,
-        openApproval,
+        openApproval: approval.openApproval,
       });
       if (err) setErrorMessage(err);
     } finally {
@@ -144,30 +135,32 @@ export function useReversalFlow(props: {
     }
   }
 
+  const submitPin = (pinInput: { approverMemberId: string; pin: string }) =>
+    executePinReversal({
+      organizationId: props.organizationId,
+      payment: props.payment,
+      reversalNote,
+      pinInput,
+      setIsApproving: approval.setIsApproving,
+      setApprovalError: approval.setApprovalError,
+      setIsConflict,
+      closeApproval: approval.closeApproval,
+      handlePinError: approval.handlePinError,
+      onSuccess: props.onSuccess,
+    });
+
   return {
     isSubmitting,
-    isApproving,
-    showPinDialog: dialogState.open,
-    approvers: dialogState.approvers,
-    isPinLocked: dialogState.isLocked,
+    isApproving: approval.isApproving,
+    showPinDialog: approval.dialogState.open,
+    approvers: approval.dialogState.approvers,
+    isPinLocked: approval.dialogState.isLocked,
     isConflict,
     errorMessage,
-    approvalError,
+    approvalError: approval.approvalError,
     initiateReversal,
-    submitPin: (pinInput) =>
-      executePinReversal({
-        organizationId: props.organizationId,
-        payment: props.payment,
-        reversalNote,
-        pinInput,
-        setIsApproving,
-        setApprovalError,
-        setIsConflict,
-        closeApproval,
-        handlePinError,
-        onSuccess: props.onSuccess,
-      }),
-    closePinDialog: closeApproval,
-    reset: () => resetReversalState(setErrorMessage, setApprovalError, setIsConflict),
+    submitPin,
+    closePinDialog: approval.closeApproval,
+    reset: () => resetReversalState(setErrorMessage, approval.setApprovalError, setIsConflict),
   };
 }

@@ -103,8 +103,7 @@ function MethodCheckboxesGrid(props: {
   );
 }
 
-export function PaymentMethodsSection(props: PaymentMethodsSectionProps): ReactElement {
-  const router = useRouter();
+function usePaymentMethodsState(props: PaymentMethodsSectionProps, routerRefresh: () => void) {
   const [selectedMethods, setSelectedMethods] = useState<readonly PaymentMethod[]>(
     props.methods.length > 0 ? props.methods : ACCEPTED_PAYMENT_METHODS,
   );
@@ -135,13 +134,20 @@ export function PaymentMethodsSection(props: PaymentMethodsSectionProps): ReactE
         version: props.version,
       });
       setNotice(props.labels.saved);
-      router.refresh();
+      routerRefresh();
     } catch (error) {
       setErrorMessage(resolveSettingError(error, props.labels.conflict, props.labels.invalid));
     } finally {
       setIsSaving(false);
     }
   }
+
+  return { selectedMethods, isSaving, errorMessage, notice, toggleMethod, handleSave };
+}
+
+export function PaymentMethodsSection(props: PaymentMethodsSectionProps): ReactElement {
+  const router = useRouter();
+  const state = usePaymentMethodsState(props, () => router.refresh());
 
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-default bg-surface p-5">
@@ -151,22 +157,22 @@ export function PaymentMethodsSection(props: PaymentMethodsSectionProps): ReactE
       </div>
 
       <MethodCheckboxesGrid
-        selectedMethods={selectedMethods}
+        selectedMethods={state.selectedMethods}
         canUpdate={props.canUpdate}
         methodLabels={props.labels.methodLabels}
-        onToggle={toggleMethod}
+        onToggle={state.toggleMethod}
       />
 
-      {notice ? <p className="text-body-sm text-success">{notice}</p> : null}
-      {errorMessage ? <p className="text-body-sm text-error">{errorMessage}</p> : null}
+      {state.notice ? <p className="text-body-sm text-success">{state.notice}</p> : null}
+      {state.errorMessage ? <p className="text-body-sm text-error">{state.errorMessage}</p> : null}
 
       {props.canUpdate ? (
         <div className="flex justify-end pt-2">
           <Button
             type="button"
-            isLoading={isSaving}
-            disabled={isSaving || selectedMethods.length === 0}
-            onClick={() => void handleSave()}
+            isLoading={state.isSaving}
+            disabled={state.isSaving || state.selectedMethods.length === 0}
+            onClick={() => void state.handleSave()}
           >
             {props.labels.save}
           </Button>

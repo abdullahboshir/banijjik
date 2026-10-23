@@ -46,6 +46,36 @@ interface BookingDetailLayoutProps {
   readonly t: Translator["t"];
 }
 
+function BookingDetailHeaderSection(props: {
+  readonly orgSlug: string;
+  readonly booking: BookingResponse;
+  readonly locale: Locale;
+  readonly timeZone: string;
+  readonly t: Translator["t"];
+}): ReactElement {
+  const { orgSlug, booking, locale, timeZone, t } = props;
+  return (
+    <DetailHeader
+      title={booking.bookingNumber ?? t("bookings.unnumbered")}
+      backHref={`/${orgSlug}/bookings`}
+      backLabel={t("bookings.detail.back")}
+      status={
+        <span className="text-body text-primary">{bookingStatusLabelOf(booking.status, t)}</span>
+      }
+      facts={
+        <span className="text-body text-primary">
+          {formatLocalTimeRange({
+            startsAt: booking.startsAt,
+            endsAt: booking.endsAt,
+            locale,
+            timeZone,
+          })}
+        </span>
+      }
+    />
+  );
+}
+
 function BookingDetailLayout(props: BookingDetailLayoutProps): ReactElement {
   const {
     orgSlug,
@@ -62,23 +92,12 @@ function BookingDetailLayout(props: BookingDetailLayoutProps): ReactElement {
 
   return (
     <div className="flex flex-col gap-6">
-      <DetailHeader
-        title={booking.bookingNumber ?? t("bookings.unnumbered")}
-        backHref={`/${orgSlug}/bookings`}
-        backLabel={t("bookings.detail.back")}
-        status={
-          <span className="text-body text-primary">{bookingStatusLabelOf(booking.status, t)}</span>
-        }
-        facts={
-          <span className="text-body text-primary">
-            {formatLocalTimeRange({
-              startsAt: booking.startsAt,
-              endsAt: booking.endsAt,
-              locale,
-              timeZone,
-            })}
-          </span>
-        }
+      <BookingDetailHeaderSection
+        orgSlug={orgSlug}
+        booking={booking}
+        locale={locale}
+        timeZone={timeZone}
+        t={t}
       />
       <BookingDetailActions
         organizationId={organizationId}

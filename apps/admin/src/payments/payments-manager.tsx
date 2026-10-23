@@ -198,6 +198,30 @@ function PaymentsContentList(props: ContentListProps): ReactElement {
   );
 }
 
+function PaymentsTopBar(props: {
+  readonly duesPath: string;
+  readonly duesLabel: string;
+  readonly canReceive: boolean;
+  readonly receiveLabel: string;
+  readonly onReceiveClick: () => void;
+}): ReactElement {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <Link
+        href={props.duesPath}
+        className="inline-flex min-h-11 items-center rounded-md border border-default bg-surface px-4 text-body font-semibold text-primary transition-colors hover:bg-subtle"
+      >
+        {props.duesLabel}
+      </Link>
+      {props.canReceive ? (
+        <Button type="button" onClick={props.onReceiveClick}>
+          {props.receiveLabel}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function PaymentsManager(props: PaymentsManagerProps): ReactElement {
   const router = useRouter();
   const [isReceiveOpen, setIsReceiveOpen] = useState(false);
@@ -213,19 +237,13 @@ export function PaymentsManager(props: PaymentsManagerProps): ReactElement {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href={props.duesPath}
-          className="inline-flex min-h-11 items-center rounded-md border border-default bg-surface px-4 text-body font-semibold text-primary transition-colors hover:bg-subtle"
-        >
-          {props.labels.duesLink}
-        </Link>
-        {props.canReceive ? (
-          <Button type="button" onClick={() => setIsReceiveOpen(true)}>
-            {props.labels.receive}
-          </Button>
-        ) : null}
-      </div>
+      <PaymentsTopBar
+        duesPath={props.duesPath}
+        duesLabel={props.labels.duesLink}
+        canReceive={props.canReceive}
+        receiveLabel={props.labels.receive}
+        onReceiveClick={() => setIsReceiveOpen(true)}
+      />
 
       <PaymentsFilterForm
         query={props.query}
