@@ -14,4 +14,7 @@ export const DIRECTORY_SEARCH_RULES = {
   perIp: { limit: 60, windowSeconds: 60 },
   perAccount: { limit: 120, windowSeconds: 60 },
   maxPageLimit: 50,
+  /** Listing numbers are sequential, so the detail page needs the same guard as search (M.7 decision 8). */
+  detailPerIp: { limit: 60, windowSeconds: 60 },
+  detailPerAccount: { limit: 60, windowSeconds: 60 },
 } as const;

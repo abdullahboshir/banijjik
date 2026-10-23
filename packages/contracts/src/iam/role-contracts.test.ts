@@ -38,7 +38,7 @@ describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
 
 describe("PERMISSION_KEY", () => {
   it("lists the keys of every built module", () => {
-    expect(Object.values(PERMISSION_KEY)).toHaveLength(116);
+    expect(Object.values(PERMISSION_KEY)).toHaveLength(118);
     expect(Object.values(PERMISSION_KEY)).toEqual(
       expect.arrayContaining([
         "bookkeeping.account.read",
@@ -105,7 +105,7 @@ describe("PERMISSION_KEY", () => {
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.credit.purchase.read");
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.credit.purchase.verify");
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.payment.payment.receive");
-    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(116);
+    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(118);
   });
 });
 

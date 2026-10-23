@@ -8,6 +8,8 @@ export const DIRECTORY_EVENT_TYPE = Object.freeze({
   LISTING_UNHIDDEN: "directory.listing.revealed",
   LISTING_ARCHIVED: "directory.listing.archived",
   LISTING_UPDATED: "directory.listing.updated",
+  LISTING_REPORT_FILED: "directory.listingReport.filed",
+  LISTING_REPORT_RESOLVED: "directory.listingReport.resolved",
 } as const);
 
 export type DirectoryEventType = (typeof DIRECTORY_EVENT_TYPE)[keyof typeof DIRECTORY_EVENT_TYPE];

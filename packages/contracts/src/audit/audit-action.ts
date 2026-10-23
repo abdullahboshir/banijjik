@@ -78,6 +78,8 @@ export const AUDIT_ACTION = {
   LISTING_CONCEALED: "directory.listing.concealed",
   LISTING_REVEALED: "directory.listing.revealed",
   LISTING_ARCHIVED: "directory.listing.archived",
+  LISTING_REPORT_FILED: "directory.listingReport.filed",
+  LISTING_REPORTS_RESOLVED: "directory.listingReport.resolved",
   BOOKING_CREATED: "booking.booking.created",
   BOOKING_CONFIRMED: "booking.booking.confirmed",
   BOOKING_RESCHEDULED: "booking.booking.rescheduled",
@@ -163,6 +165,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "order",
   "enrollment",
   "checkIn",
+  "listingReport",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

@@ -92,7 +92,59 @@ describe("industryTemplateConfigurationSchema", () => {
 
     expect(result.success).toBe(true);
   });
+
+  // Card M.7 decision 1: templates stored before reportReasons existed must still validate.
+  it("accepts a directory block without reportReasons and defaults it to empty", () => {
+    const result = industryTemplateConfigurationSchema.safeParse({
+      ...aConfiguration(),
+      directory: aDirectoryBlock({}),
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const parsed = result.data as { directory: { reportReasons: unknown[] } };
+      expect(parsed.directory.reportReasons).toEqual([]);
+    }
+  });
+
+  it("accepts reportReasons with unique keys", () => {
+    const result = industryTemplateConfigurationSchema.safeParse({
+      ...aConfiguration(),
+      directory: aDirectoryBlock({
+        reportReasons: [
+          { reasonKey: "fake_profile", label: TERM },
+          { reasonKey: "already_married", label: TERM },
+        ],
+      }),
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("refuses duplicate reportReasons keys", () => {
+    const result = industryTemplateConfigurationSchema.safeParse({
+      ...aConfiguration(),
+      directory: aDirectoryBlock({
+        reportReasons: [
+          { reasonKey: "fake_profile", label: TERM },
+          { reasonKey: "fake_profile", label: TERM },
+        ],
+      }),
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
+
+function aDirectoryBlock(override: object): object {
+  return {
+    sections: [{ sectionKey: "basics", label: TERM }],
+    consents: [{ consentKey: "truthful_info", text: TERM }],
+    rejectionReasons: [{ reasonKey: "photo_unclear", label: TERM, isFinal: false }],
+    listingNumberPrefix: "BIO",
+    ...override,
+  };
+}
 
 function changedField(override: object): object {
   const [field] = aConfiguration().customFields as object[];

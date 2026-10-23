@@ -71,6 +71,8 @@ export const PERMISSION_KEY = {
   DIRECTORY_LISTING_READ: "directory.listing.read",
   DIRECTORY_LISTING_REVIEW: "directory.listing.review",
   DIRECTORY_LISTING_HIDE: "directory.listing.hide",
+  DIRECTORY_REPORT_READ: "directory.report.read",
+  DIRECTORY_REPORT_RESOLVE: "directory.report.resolve",
   BOOKING_BOOKING_READ: "booking.booking.read",
   BOOKING_BOOKING_CREATE: "booking.booking.create",
   BOOKING_BOOKING_UPDATE: "booking.booking.update",

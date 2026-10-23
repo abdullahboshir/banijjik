@@ -3,12 +3,16 @@
  * Kept off the root index so that file stays within the line limit.
  */
 export {
+  directoryListingReportsQuerySchema,
   directoryListingsQuerySchema,
   directoryQueueQuerySchema,
+  directoryReportsQueueQuerySchema,
   geoBdValueSchema,
   listingIdParamsSchema,
   listingNumberParamsSchema,
   listingRejectRequestSchema,
+  listingReportFileRequestSchema,
+  listingReportResolveRequestSchema,
   listingSearchQuerySchema,
   listingSubmitRequestSchema,
   listingTransitionRequestSchema,

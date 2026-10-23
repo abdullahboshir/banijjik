@@ -45,10 +45,25 @@ export {
 export { LISTING_FIELD_TIER, type ListingFieldTier } from "./listing-field-tier.js";
 export { LISTING_STATUS, type ListingStatus } from "./listing-status.js";
 export { LISTING_VIEWER, type ListingViewer } from "./listing-viewer.js";
+export {
+  DIRECTORY_SAFETY_RULES,
+  LISTING_REPORT_OUTCOME,
+  LISTING_REPORT_STATUS,
+  type DirectoryReportReason,
+  type ListingReportFileRequest,
+  type ListingReportOutcome,
+  type ListingReportQueueItem,
+  type ListingReportResolvedPayload,
+  type ListingReportResponse,
+  type ListingReportResolveRequest,
+  type ListingReportStatus,
+  type ListingReportFiledPayload,
+} from "./listing-report.js";
 /** Template `directory` block types live on the industry template; re-exported here so the root index stays at its line limit. */
 export type {
   IndustryTemplateDirectoryBlock,
   IndustryTemplateDirectoryConsent,
   IndustryTemplateDirectoryRejectionReason,
+  IndustryTemplateDirectoryReportReason,
   IndustryTemplateDirectorySection,
 } from "../platform/industry-template.js";

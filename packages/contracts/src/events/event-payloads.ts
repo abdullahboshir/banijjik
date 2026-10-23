@@ -30,6 +30,10 @@ import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
 import type { ListingEventPayload } from "../directory/directory-contracts.js";
+import type {
+  ListingReportFiledPayload,
+  ListingReportResolvedPayload,
+} from "../directory/listing-report.js";
 import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
 import {
   COMMISSION_EVENT_TYPE,
@@ -183,6 +187,8 @@ export interface EventPayloadMap {
   readonly [DIRECTORY_EVENT_TYPE.LISTING_UNHIDDEN]: ListingEventPayload;
   readonly [DIRECTORY_EVENT_TYPE.LISTING_ARCHIVED]: ListingEventPayload;
   readonly [DIRECTORY_EVENT_TYPE.LISTING_UPDATED]: ListingEventPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_REPORT_FILED]: ListingReportFiledPayload;
+  readonly [DIRECTORY_EVENT_TYPE.LISTING_REPORT_RESOLVED]: ListingReportResolvedPayload;
   readonly [CREDIT_EVENT_TYPE.CREDIT_ENTRY_CREATED]: CreditEntryCreatedPayload;
   readonly [CREDIT_EVENT_TYPE.UNLOCK_CREATED]: UnlockCreatedPayload;
   readonly [CREDIT_EVENT_TYPE.PURCHASE_SUBMITTED]: CreditPurchaseEventPayload;

@@ -93,6 +93,15 @@ const directoryBlockSchema = z.strictObject({
       isFinal: z.boolean(),
     }),
   ),
+  /** Templates stored before card M.7 carry none; the default keeps readers total (M.7 decision 1). */
+  reportReasons: z
+    .array(
+      z.strictObject({
+        reasonKey: z.string().regex(DIRECTORY_REASON_KEY_PATTERN),
+        label: localizedTextSchema,
+      }),
+    )
+    .default([]),
   listingNumberPrefix: z.string().trim().min(1).max(LISTING_NUMBER_PREFIX_MAX_LENGTH),
 });
 
@@ -170,6 +179,7 @@ function directoryBlockConsistent(value: {
         readonly sections: readonly { readonly sectionKey: string }[];
         readonly consents: readonly { readonly consentKey: string }[];
         readonly rejectionReasons: readonly { readonly reasonKey: string }[];
+        readonly reportReasons?: readonly { readonly reasonKey: string }[] | undefined;
       }
     | undefined;
   readonly customFields: readonly FieldShape[];
@@ -183,6 +193,8 @@ function directoryBlockConsistent(value: {
     new Set(block.rejectionReasons.map((r) => r.reasonKey)).size !== block.rejectionReasons.length
   )
     return false;
+  const reportKeys = (block.reportReasons ?? []).map((r) => r.reasonKey);
+  if (new Set(reportKeys).size !== reportKeys.length) return false;
   const known = new Set(sectionKeys);
   return value.customFields.every(
     (field) =>

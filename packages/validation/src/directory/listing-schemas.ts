@@ -1,7 +1,10 @@
 import {
   DIRECTORY_CONSENT_KEY_PATTERN,
   DIRECTORY_REASON_KEY_PATTERN,
+  DIRECTORY_SAFETY_RULES,
   DIRECTORY_SEARCH_RULES,
+  LISTING_REPORT_OUTCOME,
+  LISTING_REPORT_STATUS,
   LISTING_REJECTION_NOTE_MAX_LENGTH,
   LISTING_STATUS,
 } from "@banijjik/contracts/directory";
@@ -87,6 +90,38 @@ export const listingSearchQuerySchema = paginationQuerySchema
     limit: z.coerce.number().int().min(1).max(DIRECTORY_SEARCH_RULES.maxPageLimit).default(20),
   })
   .passthrough();
+
+/** Customer report body (M.7 decision 3). The reason key is checked against the template in the use case. */
+export const listingReportFileRequestSchema = z.strictObject({
+  reasonKey: z.string().regex(DIRECTORY_REASON_KEY_PATTERN),
+  note: z.string().trim().min(1).max(DIRECTORY_SAFETY_RULES.reportNoteMaxLength).optional(),
+});
+
+/** Resolve body (M.7 decision 5): the ids on the staff member's screen, never a bulk "all". */
+export const listingReportResolveRequestSchema = z.strictObject({
+  reportIds: z
+    .array(uuidV7Schema)
+    .min(1)
+    .max(DIRECTORY_SAFETY_RULES.maxReportIdsPerResolve)
+    .refine((ids) => new Set(ids).size === ids.length),
+  outcome: z.enum([
+    LISTING_REPORT_OUTCOME.DISMISSED,
+    LISTING_REPORT_OUTCOME.WARNED,
+    LISTING_REPORT_OUTCOME.LISTING_HIDDEN,
+    LISTING_REPORT_OUTCOME.ACCOUNT_BLOCKED,
+  ]),
+  note: z.string().trim().min(1).max(DIRECTORY_SAFETY_RULES.resolutionNoteMaxLength).optional(),
+});
+
+/** Queue query (M.7 decision 4): only the open-per-listing queue is served. */
+export const directoryReportsQueueQuerySchema = paginationQuerySchema.extend({
+  status: z.enum([LISTING_REPORT_STATUS.OPEN]).optional(),
+});
+
+/** Reports of one listing, open or resolved (M.7 decision 4). */
+export const directoryListingReportsQuerySchema = paginationQuerySchema.extend({
+  status: z.enum([LISTING_REPORT_STATUS.OPEN, LISTING_REPORT_STATUS.RESOLVED]).optional(),
+});
 
 export const geoBdValueSchema = z
   .strictObject({

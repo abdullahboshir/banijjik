@@ -17,6 +17,12 @@ export const DIRECTORY_API_MESSAGE_KEYS = {
   phoneMustDiffer: "errors.directory_phone_must_differ",
   consentRequired: "errors.directory_consent_required",
   filterNotAllowed: "errors.directory_filter_not_allowed",
+  reportNotConfigured: "errors.directory_report_not_configured",
+  reportOwnListing: "errors.directory_report_own_listing",
+  reportUnknownReason: "errors.directory_report_unknown_reason",
+  reportDailyLimit: "errors.directory_report_daily_limit",
+  reportStale: "errors.directory_report_stale",
+  reportCannotHide: "errors.directory_report_cannot_hide",
 } as const;
 
 /** Message keys the directory endpoints can send. Both i18n catalogs need each. */
@@ -76,6 +82,11 @@ export interface DirectoryConfigResponse {
   readonly consents: readonly {
     readonly consentKey: string;
     readonly text: { readonly bn: string; readonly en: string };
+  }[];
+  /** Template report reasons (M.7 decision 1); empty when the template configures none. */
+  readonly reportReasons: readonly {
+    readonly reasonKey: string;
+    readonly label: { readonly bn: string; readonly en: string };
   }[];
 }
 

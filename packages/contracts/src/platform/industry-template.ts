@@ -80,10 +80,18 @@ export interface IndustryTemplateDirectoryRejectionReason {
   readonly isFinal: boolean;
 }
 
+/** Reason a customer can pick when reporting a listing (M.7 decision 1). */
+export interface IndustryTemplateDirectoryReportReason {
+  readonly reasonKey: string;
+  readonly label: LocalizedText;
+}
+
 export interface IndustryTemplateDirectoryBlock {
   readonly sections: readonly IndustryTemplateDirectorySection[];
   readonly consents: readonly IndustryTemplateDirectoryConsent[];
   readonly rejectionReasons: readonly IndustryTemplateDirectoryRejectionReason[];
+  /** Absent on templates stored before M.7; the schema defaults it to []. */
+  readonly reportReasons?: readonly IndustryTemplateDirectoryReportReason[] | undefined;
   readonly listingNumberPrefix: string;
 }
 
