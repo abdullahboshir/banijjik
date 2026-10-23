@@ -311,7 +311,9 @@ describe("posting engine with payment fake", () => {
       ],
     });
 
-    const trial = await new GetTrialBalanceUseCase(accounts, journals).execute("2026-10-19");
+    const trial = await new GetTrialBalanceUseCase(accounts, journals, {
+      read: async () => "BDT",
+    }).execute(organizationId, "2026-10-19");
     expect(trial.balances).toBe(true);
     expect(trial.debitTotal.amount).toBe(trial.creditTotal.amount);
   });

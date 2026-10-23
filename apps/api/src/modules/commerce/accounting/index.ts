@@ -4,6 +4,7 @@ import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
+import type { OrganizationCurrencyPort } from "./application/organization-currency.js";
 import { buildExpenseAccountWriter } from "./application/ensure-expense-account.js";
 import type { BookingPostingSource } from "./application/ports/booking-posting-source.js";
 import type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
@@ -21,6 +22,7 @@ import { buildAccountingTenantRouter } from "./presentation/accounting-tenant.ro
 
 export { accountingManifest } from "./module.manifest.js";
 export { registerAccountingModels } from "./infrastructure/register-accounting-models.js";
+export type { OrganizationCurrencyPort } from "./application/organization-currency.js";
 export type { PaymentPostingSource } from "./application/ports/payment-posting-source.js";
 export type { BookingPostingSource } from "./application/ports/booking-posting-source.js";
 export type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
@@ -54,6 +56,7 @@ export interface AccountingTenantDependencies {
   readonly clock: Clock;
   readonly audit: AuditRecorder;
   readonly permission: PermissionMiddlewareFactory;
+  readonly currencies: OrganizationCurrencyPort;
 }
 
 export function buildAccountingRouter(dependencies: AccountingTenantDependencies): Router {
@@ -62,7 +65,7 @@ export function buildAccountingRouter(dependencies: AccountingTenantDependencies
   const controller = new AccountingController({
     listAccounts: new ListAccountsUseCase(accounts),
     listJournal: new ListJournalUseCase(journals),
-    getTrialBalance: new GetTrialBalanceUseCase(accounts, journals),
+    getTrialBalance: new GetTrialBalanceUseCase(accounts, journals, dependencies.currencies),
   });
   return buildAccountingTenantRouter({
     controller,

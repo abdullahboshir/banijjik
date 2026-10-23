@@ -1,5 +1,6 @@
 import type { JournalListQuery, TrialBalanceQuery } from "@banijjik/validation/accounting";
 import type { RequestHandler, Response } from "express";
+import { readTenantCaller } from "../../../../kernel/access/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
 import type { GetTrialBalanceUseCase } from "../application/use-cases/get-trial-balance.use-case.js";
 import type { ListAccountsUseCase } from "../application/use-cases/list-accounts.use-case.js";
@@ -36,6 +37,9 @@ export class AccountingController {
 
   readonly trialBalance: RequestHandler = async (_request, response) => {
     const { asOf } = readTrialBalanceQuery(response);
-    sendData(response, await this.dependencies.getTrialBalance.execute(asOf));
+    sendData(
+      response,
+      await this.dependencies.getTrialBalance.execute(readTenantCaller().organizationId, asOf),
+    );
   };
 }

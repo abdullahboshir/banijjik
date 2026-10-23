@@ -1,5 +1,10 @@
+import type { CurrencyCode } from "@banijjik/contracts";
 import { ACCOUNT_TYPE, type ProfitAndLossStatementResponse } from "@banijjik/contracts/accounting";
 import type { OrganizationId } from "@banijjik/ids";
+import {
+  requireOrganizationCurrency,
+  type OrganizationCurrencyPort,
+} from "../organization-currency.js";
 import type { AccountRepository } from "../ports/account-repository.js";
 import type { JournalRepository } from "../ports/journal-repository.js";
 
@@ -14,11 +19,13 @@ export class ProfitAndLossUseCase {
   constructor(
     private readonly accounts: AccountRepository,
     private readonly journals: JournalRepository,
+    private readonly currencies: OrganizationCurrencyPort,
   ) {}
 
   async execute(input: ProfitAndLossInput): Promise<ProfitAndLossStatementResponse> {
     if (this.journals.aggregateBalances === undefined)
       throw new Error("Statement aggregation required");
+    const currency = await requireOrganizationCurrency(this.currencies, input.organizationId);
     const totals = await this.journals.aggregateBalances({
       from: input.from,
       to: input.to,
@@ -36,16 +43,16 @@ export class ProfitAndLossUseCase {
           : row.debit - row.credit,
       ]),
     );
-    const statementAccounts = this.buildStatementAccounts(accounts, accountBalances);
+    const statementAccounts = this.buildStatementAccounts(accounts, accountBalances, currency);
     const { totalIncome, totalExpense } = this.calculateTotals(statementAccounts);
 
     return {
       from: input.from,
       to: input.to,
       accounts: statementAccounts,
-      totalIncome: { amount: totalIncome, currency: "BDT" as const },
-      totalExpense: { amount: totalExpense, currency: "BDT" as const },
-      netProfit: { amount: totalIncome - totalExpense, currency: "BDT" as const },
+      totalIncome: { amount: totalIncome, currency },
+      totalExpense: { amount: totalExpense, currency },
+      netProfit: { amount: totalIncome - totalExpense, currency },
     };
   }
 
@@ -57,6 +64,7 @@ export class ProfitAndLossUseCase {
       readonly accountType: import("@banijjik/contracts/accounting").AccountType;
     }[],
     balances: Map<string, number>,
+    currency: CurrencyCode,
   ) {
     const toRow = (account: (typeof accounts)[number], isIncome: boolean) => {
       const balance = balances.get(account.accountId) ?? 0;
@@ -65,13 +73,9 @@ export class ProfitAndLossUseCase {
         accountCode: account.accountCode,
         name: account.name,
         accountType: account.accountType,
-        incomeTotal: isIncome
-          ? { amount: balance, currency: "BDT" as const }
-          : { amount: 0, currency: "BDT" as const },
-        expenseTotal: isIncome
-          ? { amount: 0, currency: "BDT" as const }
-          : { amount: balance, currency: "BDT" as const },
-        net: { amount: isIncome ? balance : -balance, currency: "BDT" as const },
+        incomeTotal: isIncome ? { amount: balance, currency } : { amount: 0, currency },
+        expenseTotal: isIncome ? { amount: 0, currency } : { amount: balance, currency },
+        net: { amount: isIncome ? balance : -balance, currency },
       };
     };
 

@@ -2,6 +2,7 @@ import type { Router } from "express";
 import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import type { Clock } from "../kernel/time/index.js";
+import { buildOrganizationCurrencyReader } from "../modules/core/organization/index.js";
 import { buildAccountingRouter } from "../modules/commerce/accounting/index.js";
 
 export interface AccountingRouterInput {
@@ -16,5 +17,6 @@ export function buildAccountingTenantRouter(input: AccountingRouterInput): Route
     clock: input.clock,
     audit: input.audit,
     permission: input.permission,
+    currencies: buildOrganizationCurrencyReader(),
   });
 }

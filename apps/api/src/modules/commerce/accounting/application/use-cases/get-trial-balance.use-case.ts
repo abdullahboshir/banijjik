@@ -4,6 +4,11 @@ import {
   type TrialBalanceAccountRow,
   type TrialBalanceResponse,
 } from "@banijjik/contracts/accounting";
+import type { OrganizationId } from "@banijjik/ids";
+import {
+  requireOrganizationCurrency,
+  type OrganizationCurrencyPort,
+} from "../organization-currency.js";
 import type { AccountRepository } from "../ports/account-repository.js";
 import type { JournalRepository } from "../ports/journal-repository.js";
 
@@ -11,14 +16,15 @@ export class GetTrialBalanceUseCase {
   constructor(
     private readonly accounts: AccountRepository,
     private readonly journals: JournalRepository,
+    private readonly currencies: OrganizationCurrencyPort,
   ) {}
 
-  async execute(asOf: string): Promise<TrialBalanceResponse> {
-    const [accounts, entries] = await Promise.all([
+  async execute(organizationId: OrganizationId, asOf: string): Promise<TrialBalanceResponse> {
+    const [accounts, entries, currency] = await Promise.all([
       this.accounts.listAll?.() ?? this.accounts.listActive(),
       this.journals.listThrough(asOf),
+      requireOrganizationCurrency(this.currencies, organizationId),
     ]);
-    const currency = entries[0]?.lines[0]?.debit.currency ?? "BDT";
     const totals = new Map<string, { debit: number; credit: number }>();
     for (const account of accounts) {
       totals.set(account.accountId, { debit: 0, credit: 0 });
@@ -35,7 +41,7 @@ export class GetTrialBalanceUseCase {
       const bucket = totals.get(account.accountId) ?? { debit: 0, credit: 0 };
       const money = (amount: number): Money => ({
         amount,
-        currency: currency as Money["currency"],
+        currency,
       });
       // Signed balance: debit − credit (assets/expenses positive when debit-heavy).
       const balanceAmount =
@@ -56,7 +62,7 @@ export class GetTrialBalanceUseCase {
     const creditTotalAmount = rows.reduce((sum, row) => sum + row.creditTotal.amount, 0);
     const money = (amount: number): Money => ({
       amount,
-      currency: currency as Money["currency"],
+      currency,
     });
     return {
       asOf,
