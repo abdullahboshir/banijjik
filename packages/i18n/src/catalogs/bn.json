@@ -432,5 +432,20 @@
   "errors.advance_needs_payments": "অগ্রিম নেওয়ার জন্য পেমেন্ট মডিউল দরকার।",
   "errors.order_contact_phone_required": "পিকআপ অর্ডারে ফোন নম্বর থাকা কনটাক্ট দরকার।",
   "errors.order_needs_line": "অর্ডারে কমপক্ষে একটি লাইন থাকতে হবে।",
-  "errors.packing_disabled": "এই ব্যবসায় প্যাকিং চালু নেই।"
+  "errors.packing_disabled": "এই ব্যবসায় প্যাকিং চালু নেই।",
+  "errors.payment_reference_taken": "এই পেমেন্ট রেফারেন্সটি আগেই ব্যবহার করা হয়েছে।",
+  "errors.deposit_required": "বুকিং নিশ্চিত করতে অগ্রিম ডিপোজিট প্রয়োজন।",
+  "errors.payment_allocations_invalid": "পেমেন্ট বরাদ্দ সঠিক নয়।",
+  "errors.payment_overpayment_requires_contact": "অতিরিক্ত টাকা স্টোর ক্রেডিটে রাখতে গ্রাহক নির্বাচন প্রয়োজন।",
+  "errors.payment_refund_exceeds_paid": "পরিশোধিত পরিমাণের বেশি রিফান্ড করা যাবে না।",
+  "errors.payment_reversal_already_reversed": "এই পেমেন্টটি আগেই রিভার্স করা হয়েছে।",
+  "errors.payment_reversal_has_refund": "যে পেমেন্টে রিফান্ড হয়েছে তা রিভার্স করা যাবে না।",
+  "errors.overpayment_credit_spent": "অতিরিক্ত টাকার স্টোর ক্রেডিট খরচ হয়ে গেছে, রিভার্স সম্ভব নয়।",
+  "errors.payment_contact_not_found": "গ্রাহক খুঁজে পাওয়া যায়নি।",
+  "errors.store_credit_insufficient": "গ্রাহকের পর্যাপ্ত স্টোর ক্রেডিট ব্যালেন্স নেই।",
+  "errors.payment_method_not_allowed": "এই পেমেন্ট মাধ্যমটি অনুমোদিত নয়।",
+  "errors.payment_request_not_found": "অনুরোধ খুঁজে পাওয়া যায়নি।",
+  "errors.payment_approval_required": "এই কাজের জন্য ম্যানেজারের অনুমোদন প্রয়োজন।",
+  "errors.payment_original_not_found": "মূল পেমেন্টটি খুঁজে পাওয়া যায়নি।",
+  "errors.store_credit_contact_required": "স্টোর ক্রেডিটের জন্য গ্রাহক থাকা আবশ্যক।"
 }
