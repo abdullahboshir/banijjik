@@ -62,6 +62,26 @@ export interface ContactCreditsLabels {
   approval: ContactCreditsApprovalLabels;
 }
 
+export interface CreditPaymentMethodsLabels {
+  title: string;
+  help: string;
+  empty: string;
+  add: string;
+  remove: string;
+  method: string;
+  methodLabels: Readonly<Record<CreditPurchaseMethod, string>>;
+  accountNumber: string;
+  accountType: string;
+  accountTypeHint: string;
+  instructionsBn: string;
+  instructionsEn: string;
+  save: string;
+  saved: string;
+  invalid: string;
+  conflict: string;
+  reload: string;
+}
+
 export function creditPackLabelsOf(t: Translator["t"]): CreditPackLabels {
   return {
     title: t("credit.packs.title"),
@@ -130,5 +150,30 @@ export function contactCreditsLabelsOf(t: Translator["t"]): ContactCreditsLabels
       close: t("contacts.credits.approval.close"),
       locked: t("contacts.credits.approval.locked"),
     },
+  };
+}
+
+export function creditPaymentMethodsLabelsOf(t: Translator["t"]): CreditPaymentMethodsLabels {
+  return {
+    title: t("credit.paymentMethods.title"),
+    help: t("credit.paymentMethods.help"),
+    empty: t("credit.paymentMethods.empty"),
+    add: t("credit.paymentMethods.add"),
+    remove: t("credit.paymentMethods.remove"),
+    method: t("credit.paymentMethods.method"),
+    methodLabels: {
+      BKASH: t("credit.purchases.method.BKASH"),
+      NAGAD: t("credit.purchases.method.NAGAD"),
+    },
+    accountNumber: t("credit.paymentMethods.accountNumber"),
+    accountType: t("credit.paymentMethods.accountType"),
+    accountTypeHint: t("credit.paymentMethods.accountTypeHint"),
+    instructionsBn: t("credit.paymentMethods.instructionsBn"),
+    instructionsEn: t("credit.paymentMethods.instructionsEn"),
+    save: t("credit.paymentMethods.save"),
+    saved: t("credit.paymentMethods.saved"),
+    invalid: t("credit.paymentMethods.invalid"),
+    conflict: t("credit.purchases.conflict"),
+    reload: t("credit.purchases.reload"),
   };
 }
