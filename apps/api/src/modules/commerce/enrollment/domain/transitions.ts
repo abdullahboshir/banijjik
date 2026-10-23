@@ -60,8 +60,11 @@ export function unfreezeEnrollment(
   const freeze = enrollment.freezes.at(-1);
   if (freeze === undefined || freeze.unfrozenOn !== undefined) transitionRefused();
   const maximum = enrollment.plan.maxFreezeDaysPerYear;
-  if (maximum !== undefined && frozenDaysInYear(enrollment, today) > maximum)
-    transitionRefused(ENROLLMENT_RULE_KEY.FREEZE_LIMIT);
+  const usedBefore = frozenDaysInYear(
+    { ...enrollment, freezes: enrollment.freezes.slice(0, -1) },
+    freeze.frozenOn,
+  );
+  const allowance = maximum === undefined ? Infinity : Math.max(0, maximum - usedBefore);
   const daysFrozen = daysBetween(freeze.frozenOn, today);
   if (daysFrozen < 0) transitionRefused();
   return {
@@ -70,6 +73,9 @@ export function unfreezeEnrollment(
       status: ENROLLMENT_STATUS.ACTIVE,
       freezes: [...enrollment.freezes.slice(0, -1), { ...freeze, unfrozenOn: today, daysFrozen }],
     },
-    period: { ...period, periodEndsOn: addDays(period.periodEndsOn, daysFrozen) },
+    period: {
+      ...period,
+      periodEndsOn: addDays(period.periodEndsOn, Math.min(daysFrozen, allowance)),
+    },
   };
 }

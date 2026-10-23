@@ -66,6 +66,8 @@ export const ENROLLMENT_RULE_KEY = {
   CONTACT: "enrollment.errors.contact",
   PLAN: "enrollment.errors.plan",
   PAYMENT_REQUIRED: "enrollment.errors.payment_required",
+  ALREADY_RENEWED: "enrollment.errors.already_renewed",
+  ADVANCE_PERIOD: "enrollment.errors.advance_period",
   NOT_DUE: "enrollment.errors.not_due",
 } as const;
 export const ENROLLMENT_MESSAGE_KEYS = Object.values(ENROLLMENT_RULE_KEY);

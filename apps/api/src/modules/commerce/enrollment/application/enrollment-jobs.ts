@@ -1,3 +1,5 @@
+import { getLogger } from "../../../../kernel/logger/index.js";
+import { frozenDaysInYear } from "../domain/transitions.js";
 import { MODULE_KEY } from "@banijjik/contracts";
 import {
   ENROLLMENT_STATUS,
@@ -9,7 +11,7 @@ import {
 import type { ScheduledJob } from "../../../../kernel/jobs/index.js";
 import type { Enrollment, EnrollmentPeriod } from "../domain/enrollment.entity.js";
 import type { EnrollmentSettings } from "./ports.js";
-import { addDays } from "../domain/period-dates.js";
+import { addDays, daysBetween } from "../domain/period-dates.js";
 import { transitionEnrollment } from "./transition-enrollment.js";
 import { recordEnrollment, type EnrollmentDependencies } from "./dependencies.js";
 
@@ -22,16 +24,24 @@ type JobState = {
 export function buildEnrollmentJobs(dependencies: EnrollmentDependencies): readonly ScheduledJob[] {
   return Object.values(ENROLLMENT_JOB).map((jobKey) => ({
     jobKey,
-    everyMinutes: 1,
+    everyMinutes: 60,
     moduleKey: MODULE_KEY.ENROLLMENT,
     run: async (organizationId, now) => {
-      if (!(await dependencies.context.isLocalMidnight(organizationId, now))) return;
+      void organizationId;
       let after: string | undefined;
       for (;;) {
         const rows = await dependencies.repository.candidates(after);
         if (rows.length === 0) return;
-        for (const row of rows)
-          await runEnrollmentJob(dependencies, { jobKey, candidate: row, now });
+        for (const row of rows) {
+          try {
+            await runEnrollmentJob(dependencies, { jobKey, candidate: row, now });
+          } catch (err) {
+            getLogger().error(
+              { event: "enrollment.job_item_failed", jobKey, enrollmentId: row.enrollmentId, err },
+              "Enrollment job item failed; continuing",
+            );
+          }
+        }
         after = rows.at(-1)?.enrollmentId;
       }
     },
@@ -42,13 +52,12 @@ async function runEnrollmentJob(
   input: { jobKey: string; candidate: Enrollment; now: Date },
 ) {
   await dependencies.unitOfWork.run(async () => {
-    const enrollment = await dependencies.repository.find(input.candidate.enrollmentId);
-    if (
-      enrollment === undefined ||
-      enrollment.status === ENROLLMENT_STATUS.FROZEN ||
-      ENROLLMENT_TERMINAL_STATUSES.includes(enrollment.status)
-    )
+    let enrollment = await dependencies.repository.find(input.candidate.enrollmentId);
+    if (enrollment === undefined || ENROLLMENT_TERMINAL_STATUSES.includes(enrollment.status))
       return;
+    if (input.jobKey === ENROLLMENT_JOB.RENEW)
+      enrollment = await prepareRenewal(dependencies, enrollment, input.now);
+    if (enrollment.status === ENROLLMENT_STATUS.FROZEN) return;
     const state: JobState = {
       enrollment,
       period: await dependencies.repository.currentPeriod(enrollment),
@@ -79,7 +88,11 @@ async function renewOrExpire(dependencies: EnrollmentDependencies, state: JobSta
     await transitionEnrollment(dependencies, { ...callerOf(enrollment), action: "complete" }, true);
     return;
   }
-  if (enrollment.autoRenew && enrollment.status !== ENROLLMENT_STATUS.PENDING) {
+  const advancePeriod = await dependencies.repository.nextPeriod(enrollment, period);
+  const mayRenew =
+    advancePeriod !== undefined ||
+    (enrollment.autoRenew && (await dependencies.context.canRenew(enrollment)));
+  if (mayRenew && enrollment.status !== ENROLLMENT_STATUS.PENDING) {
     await transitionEnrollment(dependencies, { ...callerOf(enrollment), action: "renew" }, true);
     return;
   }
@@ -101,11 +114,54 @@ async function markOverdue(dependencies: EnrollmentDependencies, state: JobState
   );
 }
 async function remind(dependencies: EnrollmentDependencies, state: JobState) {
-  if (state.today !== addDays(state.period.periodEndsOn, -state.settings.reminderDays)) return;
-  if (!(await dependencies.repository.markReminder(state.enrollment, state.today))) return;
+  if (
+    state.today < addDays(state.period.periodEndsOn, -state.settings.reminderDays) ||
+    state.today > state.period.periodEndsOn
+  )
+    return;
+  if (!(await dependencies.repository.markReminder(state.enrollment))) return;
   await recordEnrollment(
     dependencies,
     state.enrollment,
     ENROLLMENT_EVENT_TYPE.ENROLLMENT_RENEWAL_DUE,
   );
+}
+
+async function prepareRenewal(
+  dependencies: EnrollmentDependencies,
+  enrollment: Enrollment,
+  now: Date,
+): Promise<Enrollment> {
+  const today = await dependencies.context.today(enrollment.organizationId, now);
+  if (enrollment.status === ENROLLMENT_STATUS.FROZEN) {
+    const maximum = enrollment.plan.maxFreezeDaysPerYear;
+    const freeze = enrollment.freezes.at(-1);
+    if (maximum === undefined || freeze === undefined || freeze.unfrozenOn !== undefined)
+      return enrollment;
+    const usedBefore = frozenDaysInYear(
+      { ...enrollment, freezes: enrollment.freezes.slice(0, -1) },
+      freeze.frozenOn,
+    );
+    const elapsed = daysBetween(freeze.frozenOn, today);
+    if (elapsed < Math.max(0, maximum - usedBefore)) return enrollment;
+    return (
+      await transitionEnrollment(
+        dependencies,
+        { ...callerOf(enrollment), action: "unfreeze" },
+        true,
+      )
+    ).enrollment;
+  }
+  if (enrollment.status === ENROLLMENT_STATUS.PENDING && today >= enrollment.startsOn) {
+    const settings = await dependencies.context.settings(enrollment.organizationId);
+    if (!settings.requirePayment)
+      return (
+        await transitionEnrollment(
+          dependencies,
+          { ...callerOf(enrollment), action: "activate" },
+          true,
+        )
+      ).enrollment;
+  }
+  return enrollment;
 }

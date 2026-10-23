@@ -1,3 +1,5 @@
+import { enrollmentJobsAt } from "../../../../test-support/enrollment-job-runtime.js";
+import { withOrganizationContext } from "../../../../test-support/organization-context.js";
 import { newId } from "@banijjik/ids";
 import { businessDateOf } from "../../booking/index.js";
 import { money } from "../../../../test-support/catalog-world.js";
@@ -16,6 +18,9 @@ registerIamApiModels();
 let harness: IamApiHarness;
 beforeAll(async () => {
   harness = await startCatalogApi();
+  harness.clock.advanceSeconds(
+    (new Date("2026-03-01T02:00:00+06:00").getTime() - harness.clock.now().getTime()) / 1000,
+  );
 });
 afterAll(async () => {
   await harness.dispose();
@@ -68,20 +73,20 @@ describe("enrollment open-ended beds", () => {
       ...plan,
       contactId,
       resourceIds: [resourceId],
-      startsOn: addDays(today(harness), -35),
+      startsOn: today(harness),
       autoRenew: false,
     };
     const created = await enroll(world, payload);
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     let enrollment = created.body.data as Enrollment;
+    enrollment = await action(world, enrollment, "freeze");
+    expect((await enroll(world, { ...payload, startsOn: today(harness) })).status).toBe(409);
+    enrollment = await action(world, enrollment, "unfreeze");
     enrollment = await action(world, enrollment, "renew");
     let hold = await harness.connections.tenantShared
       .collection("resource_exclusive_holds")
       .findOne({ organizationId: world.organizationA, enrollmentId: enrollment.enrollmentId });
     expect(hold?.["endsOn"]).toBeNull();
-    enrollment = await action(world, enrollment, "freeze");
-    expect((await enroll(world, { ...payload, startsOn: today(harness) })).status).toBe(409);
-    enrollment = await action(world, enrollment, "unfreeze");
     enrollment = await action(world, enrollment, "cancel");
     hold = await harness.connections.tenantShared
       .collection("resource_exclusive_holds")
@@ -96,6 +101,72 @@ describe("enrollment open-ended beds", () => {
         .collection("resource_exclusive_holds")
         .countDocuments({ organizationId: world.organizationA, resourceId }),
     ).toBe(2);
+  });
+  it("releases expired beds on the exclusive day after the last period", async () => {
+    const world = await worldFor(harness, RETAIL, HOSTEL);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    const resource = await world.alice.call("post", "/orgs/" + world.organizationA + "/resources", {
+      locationId: world.locationA1,
+      resourceTypeKey: "BED",
+      name: "Expiry bed",
+      capacity: 1,
+      weeklySchedule: [],
+      offeringIds: [],
+    });
+    expect(resource.status).toBe(201);
+    const plan = await publishPlan(world);
+    const contactId = await contact(world);
+    const payload = {
+      ...plan,
+      contactId,
+      resourceIds: [(resource.body.data as { resourceId: string }).resourceId],
+      autoRenew: false,
+    };
+    const created = await enroll(world, { ...payload, startsOn: "2026-03-01" });
+    expect(created.status).toBe(201);
+    const { jobs, now } = enrollmentJobsAt("2026-04-01T01:00:00+06:00");
+    const renew = jobs.find((job) => job.jobKey === "enrollment.renew");
+    if (renew === undefined) throw new Error("Missing renew job");
+    await withOrganizationContext(world.organizationA, () => renew.run(world.organizationA, now));
+    const detail = await world.alice.call(
+      "get",
+      "/orgs/" +
+        world.organizationA +
+        "/enrollments/" +
+        (created.body.data as Enrollment).enrollmentId,
+    );
+    expect(detail.body.data).toMatchObject({ status: "EXPIRED", endsOn: "2026-03-31" });
+    expect((await enroll(world, { ...payload, startsOn: "2026-03-31" })).status).toBe(409);
+    expect((await enroll(world, { ...payload, startsOn: "2026-04-01" })).status).toBe(201);
+  });
+  it("cancels a future bed hold to zero length and permits the same start date", async () => {
+    const world = await worldFor(harness, RETAIL, HOSTEL);
+    const resource = await world.alice.call("post", "/orgs/" + world.organizationA + "/resources", {
+      locationId: world.locationA1,
+      resourceTypeKey: "BED",
+      name: "Future bed",
+      capacity: 1,
+      weeklySchedule: [],
+      offeringIds: [],
+    });
+    expect(resource.status).toBe(201);
+    const plan = await publishPlan(world);
+    const startsOn = addDays(today(harness), 10);
+    const payload = {
+      ...plan,
+      contactId: await contact(world),
+      resourceIds: [(resource.body.data as { resourceId: string }).resourceId],
+      startsOn,
+    };
+    const created = await enroll(world, payload);
+    expect(created.status).toBe(201);
+    const row = created.body.data as Enrollment;
+    await action(world, row, "cancel");
+    const hold = await harness.connections.tenantShared
+      .collection("resource_exclusive_holds")
+      .findOne({ organizationId: world.organizationA, enrollmentId: row.enrollmentId });
+    expect(hold?.["endsOn"]).toBe(startsOn);
+    expect((await enroll(world, payload)).status).toBe(201);
   });
 });
 

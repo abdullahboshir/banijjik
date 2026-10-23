@@ -33,7 +33,7 @@ export const ENROLLMENT_PERIOD_MODEL = "EnrollmentPeriod";
 export const ENROLLMENT_SEATS_MODEL = "EnrollmentSeats";
 export const CHECK_IN_MODEL = "CheckIn";
 
-const enrollment = new Schema<Enrollment & { lastReminderOn?: string }>(
+const enrollment = new Schema<Enrollment>(
   {
     ...domainIdField("enrollmentId"),
     ...auditFields,
@@ -47,7 +47,7 @@ const enrollment = new Schema<Enrollment & { lastReminderOn?: string }>(
     variantId: { type: String, required: true },
     startsOn: { type: String, required: true },
     endsOn: String,
-    lastReminderOn: String,
+    reminderSentForEnrollmentPeriodId: String,
     status: { type: String, enum: Object.values(ENROLLMENT_STATUS), required: true },
     autoRenew: { type: Boolean, required: true },
     currentEnrollmentPeriodId: { type: String, required: true },
@@ -62,6 +62,7 @@ const enrollment = new Schema<Enrollment & { lastReminderOn?: string }>(
   SCHEMA_OPTIONS,
 );
 enrollment.index({ organizationId: 1, enrollmentId: 1 }, { unique: true });
+enrollment.index({ organizationId: 1, status: 1, enrollmentId: 1 });
 enrollment.index({ organizationId: 1, locationId: 1, status: 1, enrollmentId: 1 });
 enrollment.index({ organizationId: 1, contactId: 1, status: 1 });
 enrollment.index({ organizationId: 1, offeringId: 1, enrollmentId: 1 });

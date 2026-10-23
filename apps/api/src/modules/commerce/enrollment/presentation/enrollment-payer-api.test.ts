@@ -13,6 +13,9 @@ registerIamApiModels();
 let harness: IamApiHarness;
 beforeAll(async () => {
   harness = await startCatalogApi();
+  harness.clock.advanceSeconds(
+    (new Date("2026-03-01T02:00:00+06:00").getTime() - harness.clock.now().getTime()) / 1000,
+  );
 });
 afterAll(async () => {
   await harness.dispose();

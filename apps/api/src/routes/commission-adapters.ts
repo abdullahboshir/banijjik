@@ -14,7 +14,7 @@ import type { AuditRecorder } from "../kernel/audit/index.js";
 import { getRequestContext } from "../kernel/context/index.js";
 import { AppError } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
-import { MongoBookingRepository } from "../modules/commerce/booking/index.js";
+import { buildBookingReader } from "../modules/commerce/booking/index.js";
 import {
   MongoCategoryRepository,
   MongoOfferingRepository,
@@ -46,7 +46,7 @@ function requireOrganizationId(): string {
 }
 
 function buildSourceReader(): CommissionReaders["bookings"] {
-  const bookings = new MongoBookingRepository();
+  const bookings = buildBookingReader();
   return {
     async readBooking(bookingId) {
       const booking = await bookings.findById(asId<BookingId>(bookingId));

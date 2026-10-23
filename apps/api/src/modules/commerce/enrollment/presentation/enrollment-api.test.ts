@@ -23,6 +23,9 @@ registerIamApiModels();
 let harness: IamApiHarness;
 beforeAll(async () => {
   harness = await startCatalogApi();
+  harness.clock.advanceSeconds(
+    (new Date("2026-03-01T02:00:00+06:00").getTime() - harness.clock.now().getTime()) / 1000,
+  );
 });
 afterAll(async () => {
   await harness.dispose();
@@ -71,7 +74,6 @@ describe("enrollment API", () => {
     enrollment = await action(world, enrollment, "unfreeze");
     const extended = await getEnrollment(world, enrollment.enrollmentId);
     expect(extended.periods[0]?.periodEndsOn).toBe(addDays(firstPeriod.periodEndsOn, 2));
-    await advanceDays(harness, world, 35);
     enrollment = await action(world, enrollment, "renew");
     const renewed = await getEnrollment(world, enrollment.enrollmentId);
     expect(renewed.periods).toHaveLength(2);
@@ -80,12 +82,6 @@ describe("enrollment API", () => {
       addDays(extended.periods[0]?.periodEndsOn ?? "", 1),
     );
     expect(renewed.periods[0]).toEqual(extended.periods[0]);
-    enrollment = await action(world, enrollment, "freeze");
-    await advanceDays(harness, world, 1);
-    enrollment = await action(world, enrollment, "unfreeze");
-    expect((await getEnrollment(world, enrollment.enrollmentId)).periods[0]).toEqual(
-      renewed.periods[0],
-    );
     enrollment = await action(world, enrollment, "cancel");
     expect(enrollment.status).toBe("CANCELLED");
     const repeat = await world.alice.call(
@@ -190,7 +186,7 @@ describe("enrollment API", () => {
         ...plan,
         locationId: world.locationA1,
         contactId,
-        startsOn: addDays(today(harness), -35),
+        startsOn: today(harness),
         autoRenew: false,
       },
     };
@@ -220,7 +216,7 @@ describe("enrollment API", () => {
     const created = await enroll(world, {
       ...plan,
       contactId: await contact(world),
-      startsOn: addDays(today(harness), -35),
+      startsOn: today(harness),
       autoRenew: false,
     });
     const renewed = await action(world, created.body.data as Enrollment, "renew");
@@ -237,6 +233,24 @@ describe("enrollment API", () => {
     expect(
       (await world.alice.call("get", `${path}?organizationId=${world.organizationB}`)).status,
     ).toBe(400);
+  });
+  it("returns custom-field validation details for an unknown enrollment field", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    const plan = await publishPlan(world);
+    const response = await enroll(world, {
+      ...plan,
+      contactId: await contact(world),
+      startsOn: today(harness),
+      customFields: { unknownField: "invalid" },
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toMatchObject({
+      code: "VALIDATION_ERROR",
+      messageKey: "errors.validation_error",
+      details: {
+        fields: [{ path: "customFields.unknownField", messageKey: "validation.unrecognized_keys" }],
+      },
+    });
   });
 });
 

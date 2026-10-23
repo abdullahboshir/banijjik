@@ -231,7 +231,7 @@ PENDING ──activate──► ACTIVE ──freeze──► FROZEN ──unfree
 
 ### 8.2 Periods
 New append-only-by-period **EnrollmentPeriod** (enrollment, location scope): `enrollmentPeriodId`, `enrollmentId`, `periodNumber`, `periodStartsOn`, `periodEndsOn`, `fee: Money` (admission fee added to period 1), `sessionsAllowed?`, `sessionsUsed`, `status` (`OPEN \| PAID \| PARTIAL \| WAIVED`). Replaces `Enrollment.currentPeriod` in `09` (which becomes `currentEnrollmentPeriodId`).
-- Renewal job at `periodEndsOn` + 1: when `autoRenew`, it creates the next period with fee = the current variant price (or the locked price when `enrollment.lockPriceOnRenewal`) and sends a reminder `enrollment.renewalReminderDays` before. Otherwise the enrollment goes to EXPIRED.
+- Manual renewal while ACTIVE/OVERDUE, on or before the current end, creates one advance period without moving the current pointer. The hourly renewal job on or after `periodEndsOn + 1` promotes an existing advance (audit only), otherwise auto-renews a sellable plan or expires the enrollment. Renewal cadence/session/fixed-term rules use the stored snapshot; fees use the current quote or locked recurring fee. Reminders fire once per period anywhere inside the configured window.
 - Revenue is recognized per period at `periodStartsOn` (AR raised). Payments allocate to a period (`enrollmentPeriodId`).
 - Capacity: ACTIVE + FROZEN + OVERDUE + PENDING enrollments of a PLAN ≤ `capacity`.
 
@@ -296,7 +296,7 @@ System accounts are seeded per org with fixed `accountCode`s (contracts enum `SY
 | Booking hold expiry | every minute | expires HELD bookings past `booking.holdMinutes` |
 | No-show | every 5 min | CONFIRMED bookings past start + `booking.noShowAfterMinutes` → NO_SHOW |
 | Auto-complete | every 5 min | EVENT bookings after session end; RENTAL past check-out + grace |
-| Enrollment renewal / overdue / expiry | daily at org midnight | creates periods, marks OVERDUE/EXPIRED/COMPLETED, sends reminders |
+| Enrollment renewal / overdue / expiry | hourly, org-local business dates | creates periods, marks OVERDUE/EXPIRED/COMPLETED, sends reminders |
 | Store credit expiry | daily | writes EXPIRY entries |
 | Courier status poll | every 15 min (webhook fallback) | updates consignments → order transitions |
 
@@ -353,5 +353,5 @@ System accounts are seeded per org with fixed `accountCode`s (contracts enum `SY
 | ADR-068 | COD: optional advance rule per org (`sales.advance.required`, default NONE) gating CONFIRMED. Courier COD is a `COD_COURIER` payment cleared by `CourierSettlement`; own-rider COD is `RIDER_CASH`, cleared by `RiderCashHandover`. Journal postings follow the matrix in §10, idempotent per `(sourceType, sourceId, postingKey)`. | Accepted (owner: advance as setting, default off) + proposed (rest) |
 
 ### Card 3.7 part A implementation note (2026-10-22)
-The first freeze preserves the latest period's `originalEndsOn`; only unfreeze extends its end, while earlier periods remain unchanged. Renew and overdue jobs skip FROZEN. Beds remain held open-ended until cancellation, expiry or completion; renewal, freeze and unfreeze never change the hold (ADR-126).
+The first freeze preserves the latest period's `originalEndsOn`; only unfreeze extends its end, while earlier periods remain unchanged. Overdue skips FROZEN; the renew job first unfreezes limited freezes whose yearly credit allowance is exhausted. Unfreeze always succeeds with real freeze days recorded and credited extension capped; unlimited freezes remain untouched. Freeze is refused while an advance period waits. Beds remain held open-ended until cancellation, expiry or completion; renewal, freeze and unfreeze never change the hold (ADR-126).
 The PLAN provider, periods, recurring-price lock, capacity counter, staff check-in and reminder events are implemented. Payment allocation, payment-triggered activation/reactivation and payment refunds are deferred to 3.8 or a follow-up. Cancellation returns the calculated `refundableAmount`; no refund is executed here.

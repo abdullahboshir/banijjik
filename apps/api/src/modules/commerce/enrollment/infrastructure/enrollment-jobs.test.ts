@@ -31,6 +31,9 @@ registerIamApiModels();
 let harness: IamApiHarness;
 beforeAll(async () => {
   harness = await startCatalogApi();
+  harness.clock.advanceSeconds(
+    (new Date("2026-03-01T02:00:00+06:00").getTime() - harness.clock.now().getTime()) / 1000,
+  );
 });
 afterAll(async () => {
   await harness.dispose();
@@ -120,6 +123,7 @@ describe("enrollment daily jobs", () => {
     const end = detail.periods[0]?.periodEndsOn;
     if (end === undefined) throw new Error("Missing period");
     await runTwice(world.organizationA, addDays(end, -3), ENROLLMENT_JOB.REMIND);
+    await runTwice(world.organizationA, addDays(end, -2), ENROLLMENT_JOB.REMIND);
     const events = await harness.connections.platform
       .collection("outbox_events")
       .find({
@@ -165,6 +169,83 @@ describe("enrollment daily jobs", () => {
     );
     expect(seen).toContain(world.organizationA);
     expect(seen).toContain(world.organizationB);
+  });
+  it("promotes a manual advance renewal once without moving the current period early", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    const plan = await publishPlan(world);
+    const created = await enroll(world, {
+      ...plan,
+      contactId: await contact(world),
+      startsOn: today(harness),
+      autoRenew: false,
+    });
+    const row = created.body.data as Enrollment;
+    const renewed = await action(world, row, "renew");
+    expect(renewed.currentEnrollmentPeriodId).toBe(row.currentEnrollmentPeriodId);
+    const detail = await getEnrollment(world, row.enrollmentId);
+    expect(detail.periods).toHaveLength(2);
+    const next = detail.periods[1];
+    if (next === undefined) throw new Error("Missing advance period");
+    await runTwice(world.organizationA, next.periodStartsOn, ENROLLMENT_JOB.RENEW);
+    expect((await getEnrollment(world, row.enrollmentId)).currentEnrollmentPeriodId).toBe(
+      next.enrollmentPeriodId,
+    );
+    expect(
+      await harness.connections.platform.collection("outbox_events").countDocuments({
+        organizationId: world.organizationA,
+        type: ENROLLMENT_EVENT_TYPE.ENROLLMENT_RENEWED,
+      }),
+    ).toBe(1);
+  });
+  it("expires an archived plan and renews the later member of the same organization", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    const firstPlan = await publishPlan(world, { billingPeriod: { unit: "DAY", count: 1 } });
+    const secondPlan = await publishPlan(world, { billingPeriod: { unit: "DAY", count: 1 } });
+    const contactId = await contact(world);
+    const first = await enroll(world, {
+      ...firstPlan,
+      contactId,
+      startsOn: addDays(today(harness), -1),
+      autoRenew: true,
+    });
+    const second = await enroll(world, {
+      ...secondPlan,
+      contactId,
+      startsOn: addDays(today(harness), -1),
+      autoRenew: true,
+    });
+    await harness.connections.tenantShared
+      .collection("offerings")
+      .updateOne(
+        { organizationId: world.organizationA, offeringId: firstPlan.offeringId },
+        { $set: { status: "ARCHIVED" } },
+      );
+    await runTwice(world.organizationA, today(harness), ENROLLMENT_JOB.RENEW);
+    expect((await getEnrollment(world, (first.body.data as Enrollment).enrollmentId)).status).toBe(
+      "EXPIRED",
+    );
+    expect(
+      (await getEnrollment(world, (second.body.data as Enrollment).enrollmentId)).periods,
+    ).toHaveLength(2);
+  });
+  it("activates a future-start enrollment on its start date once", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    const plan = await publishPlan(world);
+    const startsOn = addDays(today(harness), 1);
+    const created = await enroll(world, { ...plan, contactId: await contact(world), startsOn });
+    const row = created.body.data as Enrollment;
+    expect(row.status).toBe("PENDING");
+    await runTwice(world.organizationA, startsOn, ENROLLMENT_JOB.RENEW);
+    expect((await getEnrollment(world, row.enrollmentId)).status).toBe("ACTIVE");
+    expect(
+      await harness.connections.platform.collection("outbox_events").countDocuments({
+        organizationId: world.organizationA,
+        type: ENROLLMENT_EVENT_TYPE.ENROLLMENT_ACTIVATED,
+      }),
+    ).toBe(1);
   });
 });
 

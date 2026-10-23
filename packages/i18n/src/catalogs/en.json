@@ -457,6 +457,8 @@
   "enrollment.errors.contact": "Choose an active contact in this organization.",
   "enrollment.errors.plan": "Choose an available plan and variant.",
   "enrollment.errors.payment_required": "Payment is required before activation.",
+  "enrollment.errors.already_renewed": "The next period has already been renewed.",
+  "enrollment.errors.advance_period": "Freeze is unavailable while a renewed period is waiting to start.",
   "enrollment.errors.not_due": "The current period has not ended.",
   "permission.enrollment.enrollment.read": "View enrollments",
   "permission.enrollment.enrollment.create": "Create enrollments",

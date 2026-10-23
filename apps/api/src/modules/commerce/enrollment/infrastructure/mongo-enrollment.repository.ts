@@ -1,6 +1,6 @@
 import type { QueryFilter } from "mongoose";
 import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
-import { ENROLLMENT_TERMINAL_STATUSES } from "@banijjik/contracts/enrollment";
+import { ENROLLMENT_STATUS, ENROLLMENT_TERMINAL_STATUSES } from "@banijjik/contracts/enrollment";
 import { newId } from "@banijjik/ids";
 import type { EnrollmentListQuery, CheckInListQuery } from "@banijjik/validation/enrollment";
 import {
@@ -37,6 +37,19 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
     const row = await enrollments()
       .findOne({ enrollmentId }, projection, options())
       .lean<Enrollment>();
+    return row ?? undefined;
+  }
+  async nextPeriod(
+    enrollment: Enrollment,
+    period: EnrollmentPeriod,
+  ): Promise<EnrollmentPeriod | undefined> {
+    const row = await periods()
+      .findOne(
+        { enrollmentId: enrollment.enrollmentId, periodNumber: period.periodNumber + 1 },
+        projection,
+        options(),
+      )
+      .lean<EnrollmentPeriod>();
     return row ?? undefined;
   }
   async currentPeriod(enrollment: Enrollment): Promise<EnrollmentPeriod> {
@@ -158,7 +171,11 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
     return enrollments()
       .find(
         {
-          status: { $nin: ENROLLMENT_TERMINAL_STATUSES },
+          status: {
+            $in: Object.values(ENROLLMENT_STATUS).filter(
+              (status) => !ENROLLMENT_TERMINAL_STATUSES.includes(status),
+            ),
+          },
           ...(afterEnrollmentId === undefined ? {} : { enrollmentId: { $gt: afterEnrollmentId } }),
         },
         projection,
@@ -185,14 +202,20 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
       .lean<CheckIn[]>();
     return { items: rows.slice(0, limit), hasNext: rows.length > limit };
   }
-  async markReminder(enrollment: Enrollment, on: string): Promise<boolean> {
+  async markReminder(enrollment: Enrollment): Promise<boolean> {
     const result = await enrollments().updateOne(
       {
         enrollmentId: enrollment.enrollmentId,
         currentEnrollmentPeriodId: enrollment.currentEnrollmentPeriodId,
-        lastReminderOn: { $ne: on },
+        reminderSentForEnrollmentPeriodId: { $ne: enrollment.currentEnrollmentPeriodId },
       },
-      { $set: { lastReminderOn: on, updatedByUserId: null }, $inc: { version: 1 } },
+      {
+        $set: {
+          reminderSentForEnrollmentPeriodId: enrollment.currentEnrollmentPeriodId,
+          updatedByUserId: null,
+        },
+        $inc: { version: 1 },
+      },
       options(),
     );
     return result.modifiedCount === 1;

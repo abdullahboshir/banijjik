@@ -30,6 +30,7 @@ export interface Enrollment extends EnrollmentAuditFields {
   readonly status: EnrollmentStatus;
   readonly autoRenew: boolean;
   readonly currentEnrollmentPeriodId: string;
+  readonly reminderSentForEnrollmentPeriodId?: string;
   readonly securityDepositHeld: Money;
   readonly resourceIds: readonly string[];
   readonly freezes: readonly EnrollmentFreeze[];

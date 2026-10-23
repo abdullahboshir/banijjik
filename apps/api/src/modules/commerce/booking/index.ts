@@ -20,13 +20,25 @@ import { registerScheduledJob } from "../../../kernel/jobs/index.js";
 import { buildBookingTenantRouter } from "./presentation/booking-tenant.router.js";
 
 export { bookingManifest } from "./module.manifest.js";
-export { MongoBookingRepository } from "./infrastructure/mongo-booking.repositories.js";
-export { businessDateOf, localDateTimeToUtc } from "./domain/timezone.js";
+
+export { businessDateOf } from "./domain/timezone.js";
 export { MongoResourceExclusiveHolds } from "./infrastructure/mongo-resource-exclusive-holds.js";
 export type { ResourceExclusiveHoldPort } from "./application/ports/resource-exclusive-holds.js";
 export { registerBookingModels } from "./infrastructure/register-booking-models.js";
 export { buildBookingPostingSource };
-export { MongoBookingRepository };
+export { buildConfirmedBookingReader } from "./build-confirmed-booking-reader.js";
+export function buildBookingReader(): Pick<
+  import("./application/ports/booking-repositories.js").BookingRepository,
+  "findById"
+> {
+  const bookings = new MongoBookingRepository();
+  return { findById: (bookingId) => bookings.findById(bookingId) };
+}
+export function buildMarkNoShowsJobWithPersistence(
+  input: Omit<Parameters<typeof buildMarkNoShowsJob>[0], "bookings">,
+): ReturnType<typeof buildMarkNoShowsJob> {
+  return buildMarkNoShowsJob({ ...input, bookings: new MongoBookingRepository() });
+}
 export { MongoResourceSlotUsageRepository };
 export { buildExpireHoldsJob, buildMarkNoShowsJob };
 export type { BookingPostingSource } from "../accounting/index.js";

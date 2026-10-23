@@ -1,36 +1,38 @@
 import { buildLocationLookup } from "../../../core/organization/index.js";
 import { CUSTOM_FIELD_AUDIENCE } from "@banijjik/validation";
-import { DomainRuleError, ERROR_CODE, OFFERING_KIND } from "@banijjik/contracts";
+import {
+  VALIDATION_MESSAGE_KEYS,
+  VALIDATION_FALLBACK_MESSAGE_KEY,
+  DomainRuleError,
+  ERROR_CODE,
+  OFFERING_KIND,
+} from "@banijjik/contracts";
 import { OFFERING_STATUS, type PlanDetails } from "@banijjik/contracts/catalog";
 import {
   ENROLLMENT_RULE_KEY,
   ENROLLMENT_SETTING,
   ENROLLMENT_REFUND_POLICY,
 } from "@banijjik/contracts/enrollment";
-import { BOOKING_STATUS } from "@banijjik/contracts/booking";
 import {
   asId,
   type ContactId,
   type OfferingId,
   type LocationId,
   type OrganizationId,
-  type BookingId,
 } from "@banijjik/ids";
 import { buildCustomFieldValuesSchema, CUSTOM_FIELD_VALUE_MODE } from "@banijjik/validation";
 import type { EnrollmentCreateBody } from "@banijjik/validation/enrollment";
 import { models } from "../../../../kernel/db/index.js";
-import { getRequestContext } from "../../../../kernel/context/index.js";
 import { buildContactBillToReader } from "../../contact/index.js";
 import {
   MongoOfferingRepository,
   MongoOfferingLocationRepository,
   isActiveVariant,
 } from "../../catalog/index.js";
-import { MongoBookingRepository, businessDateOf, localDateTimeToUtc } from "../../booking/index.js";
+import { buildConfirmedBookingReader, businessDateOf } from "../../booking/index.js";
 import { buildEffectiveCustomFieldReader } from "../../../core/custom-field/index.js";
 import { buildSettingsResolver } from "../../../core/settings/index.js";
 import type { EnrollmentContext } from "../application/ports.js";
-import { addDays } from "../domain/period-dates.js";
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { OrgConfigService } from "../../../platform/entitlement/index.js";
 import type { Money } from "@banijjik/contracts/catalog";
@@ -87,17 +89,19 @@ async function readPlan(
 }
 export function buildEnrollmentContext(input: EnrollmentContextInput): EnrollmentContext {
   const contacts = buildContactBillToReader();
+  const bookings = buildConfirmedBookingReader();
   const fields = buildEffectiveCustomFieldReader();
   const settings = buildSettingsResolver(input);
   return {
-    isLocalMidnight: async (organizationId, now) => {
-      const time = new Intl.DateTimeFormat("en-GB", {
-        timeZone: await timezone(organizationId),
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
-      }).format(now);
-      return time === "00:00";
+    canRenew: async (body) => {
+      try {
+        await readPlan(body);
+        return true;
+      } catch (error) {
+        if (error instanceof DomainRuleError && error.messageKey === ENROLLMENT_RULE_KEY.PLAN)
+          return false;
+        throw error;
+      }
     },
     today: async (organizationId, now) => businessDateOf(now, await timezone(organizationId)),
     plan: readPlan,
@@ -124,12 +128,13 @@ export function buildEnrollmentContext(input: EnrollmentContextInput): Enrollmen
         audience: CUSTOM_FIELD_AUDIENCE.ADMIN,
         mode: CUSTOM_FIELD_VALUE_MODE.CREATE,
       }).safeParse(values);
-      if (!parsed.success) invalid(ENROLLMENT_RULE_KEY.PLAN);
+      if (!parsed.success) throw customFieldFailure(parsed.error.issues);
       // Safe: the field schema accepts only a strict record of effective field values.
       return parsed.data as Readonly<Record<string, unknown>>;
     },
     settings: async (organizationId) => readSettings(settings, organizationId),
-    bookingForToday: (payload) => bookingForToday(payload),
+    bookingForToday: ({ today, ...payload }) =>
+      bookings.findForCheckIn({ ...payload, businessDate: today }),
   };
 }
 async function readSettings(
@@ -156,35 +161,22 @@ async function readSettings(
         : ENROLLMENT_REFUND_POLICY.NONE,
   };
 }
-async function bookingForToday(input: Parameters<EnrollmentContext["bookingForToday"]>[0]) {
-  const bookings = new MongoBookingRepository();
-  if (input.bookingId !== undefined) {
-    const booking = await bookings.findById(asId<BookingId>(input.bookingId));
-    if (
-      booking === undefined ||
-      booking.status !== BOOKING_STATUS.CONFIRMED ||
-      booking.contactId !== input.contactId ||
-      booking.locationId !== input.locationId
-    )
-      return undefined;
-    return businessDateOf(booking.startsAt, await timezone(booking.organizationId)) === input.today
-      ? booking.bookingId
-      : undefined;
-  }
-  // The organization is already validated by the tenant pipeline; no request-supplied organization id.
-  const organizationId = getRequestContext().organizationId;
-  if (organizationId === undefined) throw new DomainRuleError({ code: ERROR_CODE.INTERNAL });
-  const zone = await timezone(organizationId);
-  const rows = await bookings.list({
-    page: 1,
-    limit: 1,
-    locationId: input.locationId,
-    contactId: input.contactId,
-    status: BOOKING_STATUS.CONFIRMED,
-    from: localDateTimeToUtc(input.today, "00:00", zone).toISOString(),
-    to: new Date(
-      localDateTimeToUtc(addDays(input.today, 1), "00:00", zone).getTime() - 1,
-    ).toISOString(),
+function customFieldFailure(
+  issues: readonly { path: readonly PropertyKey[]; code: string; message?: string }[],
+): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.VALIDATION_ERROR,
+    details: {
+      fields: issues.map((issue) => {
+        const key =
+          issue.message !== undefined && VALIDATION_MESSAGE_KEYS.includes(issue.message)
+            ? issue.message
+            : "validation." + issue.code;
+        return {
+          path: ["customFields", ...issue.path.map(String)].join("."),
+          messageKey: VALIDATION_MESSAGE_KEYS.includes(key) ? key : VALIDATION_FALLBACK_MESSAGE_KEY,
+        };
+      }),
+    },
   });
-  return rows.items[0]?.bookingId;
 }

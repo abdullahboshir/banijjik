@@ -100,7 +100,10 @@ describe("enrollment business rules", () => {
     });
     expect(() => freezeEnrollment(used, period(), "2026-01-10")).toThrow();
     const frozen = freezeEnrollment(enrollment(), period(), "2026-01-10");
-    expect(() => unfreezeEnrollment(frozen.enrollment, frozen.period, "2026-01-16")).toThrow();
+    const result = unfreezeEnrollment(frozen.enrollment, frozen.period, "2026-01-16");
+    expect(result.enrollment.status).toBe("ACTIVE");
+    expect(result.period.periodEndsOn).toBe("2026-02-05");
+    expect(result.enrollment.freezes[0]?.daysFrozen).toBe(6);
   });
 
   it("refuses every transition outside the lifecycle table", () => {

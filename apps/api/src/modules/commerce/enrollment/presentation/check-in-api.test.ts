@@ -18,6 +18,9 @@ registerIamApiModels();
 let harness: IamApiHarness;
 beforeAll(async () => {
   harness = await startCatalogApi();
+  harness.clock.advanceSeconds(
+    (new Date("2026-03-01T02:00:00+06:00").getTime() - harness.clock.now().getTime()) / 1000,
+  );
 });
 afterAll(async () => {
   await harness.dispose();
@@ -156,6 +159,12 @@ describe("staff check-in API", () => {
     });
     expect(checked.status, JSON.stringify(checked.body)).toBe(201);
     expect(checked.body.data.bookingId).toBe(bookingId);
+    const discovered = await world.alice.call("post", path, {
+      contactId,
+      locationId: world.locationA1,
+    });
+    expect(discovered.status, JSON.stringify(discovered.body)).toBe(201);
+    expect(discovered.body.data.bookingId).toBe(bookingId);
   });
 });
 

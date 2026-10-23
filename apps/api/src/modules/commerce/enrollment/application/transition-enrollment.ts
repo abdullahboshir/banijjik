@@ -43,6 +43,7 @@ type TransitionState = {
   period: EnrollmentPeriod;
   today: string;
   automated: boolean;
+  advancePeriod: EnrollmentPeriod | undefined;
 };
 export interface TransitionResult {
   readonly enrollment: Enrollment;
@@ -60,12 +61,14 @@ export async function transitionEnrollment(
     assertTransition(enrollment, input.action);
     const period = await dependencies.repository.currentPeriod(enrollment);
     const today = await dependencies.context.today(input.organizationId, dependencies.clock.now());
+    const advancePeriod = await dependencies.repository.nextPeriod(enrollment, period);
     const next = await applyTransition(dependencies, {
       input,
       enrollment,
       period,
       today,
       automated,
+      advancePeriod,
     });
     const saved = await dependencies.repository.save(
       {
@@ -83,7 +86,26 @@ export async function transitionEnrollment(
       next.status === ENROLLMENT_STATUS.COMPLETED
         ? ENROLLMENT_EVENT_TYPE.ENROLLMENT_COMPLETED
         : events[input.action];
-    await recordEnrollment(dependencies, saved, event);
+    if (input.action === "renew" && automated && advancePeriod !== undefined) {
+      await dependencies.audit.record({
+        action: event,
+        entityType: "enrollment",
+        entityId: saved.enrollmentId,
+      });
+    } else {
+      const renewed =
+        input.action === "renew"
+          ? await dependencies.repository.nextPeriod(saved, period)
+          : undefined;
+      await recordEnrollment(
+        dependencies,
+        {
+          ...saved,
+          currentEnrollmentPeriodId: renewed?.enrollmentPeriodId ?? saved.currentEnrollmentPeriodId,
+        },
+        event,
+      );
+    }
     if (input.action !== "cancel") return { enrollment: saved };
     return cancellationResult(dependencies, saved, today);
   });
@@ -112,17 +134,8 @@ async function applyTransition(
 ): Promise<Enrollment> {
   const { input, enrollment, period, today } = state;
   if (input.action === "renew") return renewEnrollment(dependencies, state);
-  if (input.action === "freeze" || input.action === "unfreeze") {
-    const next =
-      input.action === "freeze"
-        ? freezeEnrollment(enrollment, period, today)
-        : unfreezeEnrollment(enrollment, period, today);
-    await dependencies.repository.savePeriod(
-      { ...next.period, updatedByUserId: input.actorUserId },
-      input.action === "unfreeze",
-    );
-    return next.enrollment;
-  }
+  if (input.action === "freeze" || input.action === "unfreeze")
+    return updateFreeze(dependencies, state);
   if (input.action === "activate") return activateEnrollment(dependencies, state);
   if (input.action === "markOverdue") return { ...enrollment, status: ENROLLMENT_STATUS.OVERDUE };
   const statuses = {
@@ -137,8 +150,28 @@ async function applyTransition(
     endsOn,
     updatedByUserId: input.actorUserId,
   };
-  await releaseEnrollment(dependencies, next, endsOn);
+  let releaseOn = addDays(endsOn, 1);
+  if (input.action === "cancel")
+    releaseOn = today < enrollment.startsOn ? enrollment.startsOn : today;
+  await releaseEnrollment(dependencies, next, releaseOn);
   return next;
+}
+async function updateFreeze(
+  dependencies: EnrollmentDependencies,
+  state: TransitionState,
+): Promise<Enrollment> {
+  const { input, enrollment, period, today } = state;
+  if (input.action === "freeze" && state.advancePeriod !== undefined)
+    transitionRefused(ENROLLMENT_RULE_KEY.ADVANCE_PERIOD);
+  const next =
+    input.action === "freeze"
+      ? freezeEnrollment(enrollment, period, today)
+      : unfreezeEnrollment(enrollment, period, today);
+  await dependencies.repository.savePeriod(
+    { ...next.period, updatedByUserId: input.actorUserId },
+    input.action === "unfreeze",
+  );
+  return next.enrollment;
 }
 async function activateEnrollment(
   dependencies: EnrollmentDependencies,
@@ -152,28 +185,47 @@ async function activateEnrollment(
   if (settings.requirePayment && !paid) transitionRefused(ENROLLMENT_RULE_KEY.PAYMENT_REQUIRED);
   return { ...state.enrollment, status: ENROLLMENT_STATUS.ACTIVE };
 }
+function validateRenewalTiming(state: TransitionState): void {
+  const { enrollment, period, today, automated } = state;
+  if (!automated && enrollment.autoRenew) transitionRefused();
+  if (automated && today <= period.periodEndsOn) transitionRefused(ENROLLMENT_RULE_KEY.NOT_DUE);
+  if (!automated && today > period.periodEndsOn) transitionRefused(ENROLLMENT_RULE_KEY.NOT_DUE);
+}
 async function renewEnrollment(
   dependencies: EnrollmentDependencies,
   state: TransitionState,
 ): Promise<Enrollment> {
-  const { input, enrollment, period, today, automated } = state;
-  if (!automated && enrollment.autoRenew) transitionRefused();
-  if (today <= period.periodEndsOn) transitionRefused(ENROLLMENT_RULE_KEY.NOT_DUE);
+  const { input, enrollment, period, automated } = state;
+  validateRenewalTiming(state);
+  if (state.advancePeriod !== undefined) {
+    if (!automated) transitionRefused(ENROLLMENT_RULE_KEY.ALREADY_RENEWED);
+    return { ...enrollment, currentEnrollmentPeriodId: state.advancePeriod.enrollmentPeriodId };
+  }
   if (
     enrollment.plan.fixedTermPeriods !== undefined &&
     period.periodNumber >= enrollment.plan.fixedTermPeriods
   ) {
+    if (!automated) transitionRefused(ENROLLMENT_RULE_KEY.NOT_DUE);
     const next = {
       ...enrollment,
       status: ENROLLMENT_STATUS.COMPLETED,
       endsOn: period.periodEndsOn,
       updatedByUserId: input.actorUserId,
     };
-    await releaseEnrollment(dependencies, next, period.periodEndsOn);
+    await releaseEnrollment(dependencies, next, addDays(period.periodEndsOn, 1));
     return next;
   }
+  return appendRenewalPeriod(dependencies, state);
+}
+async function appendRenewalPeriod(
+  dependencies: EnrollmentDependencies,
+  state: TransitionState,
+): Promise<Enrollment> {
+  const { input, enrollment, period, automated } = state;
   const settings = await dependencies.context.settings(input.organizationId);
-  const plan = await dependencies.context.plan(enrollment);
+  if (!(await dependencies.context.canRenew(enrollment)))
+    transitionRefused(ENROLLMENT_RULE_KEY.PLAN);
+  const plan = enrollment.plan;
   const fee = settings.lockPrice
     ? enrollment.firstRecurringFee
     : await dependencies.context.fee(input.organizationId, enrollment);
@@ -194,7 +246,7 @@ async function renewEnrollment(
     status: ENROLLMENT_PERIOD_STATUS.OPEN,
     version: 1,
   });
-  return { ...enrollment, currentEnrollmentPeriodId: enrollmentPeriodId };
+  return automated ? { ...enrollment, currentEnrollmentPeriodId: enrollmentPeriodId } : enrollment;
 }
 export function transitionEvent(action: EnrollmentAction): (typeof events)[EnrollmentAction] {
   return events[action];

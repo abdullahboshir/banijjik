@@ -27,6 +27,10 @@ export interface CheckIn {
 export interface EnrollmentRepository {
   insert(enrollment: Enrollment, period: EnrollmentPeriod): Promise<void>;
   find(enrollmentId: string): Promise<Enrollment | undefined>;
+  nextPeriod(
+    enrollment: Enrollment,
+    period: EnrollmentPeriod,
+  ): Promise<EnrollmentPeriod | undefined>;
   currentPeriod(enrollment: Enrollment): Promise<EnrollmentPeriod>;
   periods(enrollmentId: string): Promise<readonly EnrollmentPeriod[]>;
   periodPage(
@@ -42,7 +46,7 @@ export interface EnrollmentRepository {
   candidates(afterEnrollmentId?: string): Promise<readonly Enrollment[]>;
   checkIn(checkIn: CheckIn): Promise<void>;
   checkIns(query: CheckInListQuery): Promise<{ items: CheckIn[]; hasNext: boolean }>;
-  markReminder(enrollment: Enrollment, on: string): Promise<boolean>;
+  markReminder(enrollment: Enrollment): Promise<boolean>;
 }
 export interface EnrollmentSettings {
   readonly graceDays: number;
@@ -53,7 +57,9 @@ export interface EnrollmentSettings {
   readonly refundPolicy: string;
 }
 export interface EnrollmentContext {
-  isLocalMidnight(organizationId: string, now: Date): Promise<boolean>;
+  canRenew(
+    body: Pick<EnrollmentCreateBody, "offeringId" | "variantId" | "locationId">,
+  ): Promise<boolean>;
   today(organizationId: string, now: Date): Promise<string>;
   settings(organizationId: string): Promise<EnrollmentSettings>;
   plan(

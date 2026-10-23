@@ -12,8 +12,7 @@ import { models, MongoUnitOfWork } from "../../../../kernel/db/index.js";
 import { runInOrganizationContext } from "../../../../kernel/tenancy/index.js";
 import {
   bookingManifest,
-  buildMarkNoShowsJob,
-  MongoBookingRepository,
+  buildMarkNoShowsJobWithPersistence,
   MongoResourceSlotUsageRepository,
 } from "../../booking/index.js";
 import { buildBookingDepositCheckAdapter } from "../../../../routes/booking-deposit-adapter.js";
@@ -761,8 +760,7 @@ describe("dues lifecycle, deposit policy, events, permissions, cross-location, a
       },
     };
 
-    const job = buildMarkNoShowsJob({
-      bookings: new MongoBookingRepository(),
+    const job = buildMarkNoShowsJobWithPersistence({
       slots: new MongoResourceSlotUsageRepository(),
       unitOfWork: new MongoUnitOfWork(),
       events: eventCollector,
