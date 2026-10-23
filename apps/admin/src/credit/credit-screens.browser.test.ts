@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, it } from "vitest";
 import { fillLabel } from "../catalog/catalog-labels";
 import {
   clickButton,
+  clickInDialog,
   gotoWhenHydrated,
   message,
   waitForText,
@@ -250,11 +251,7 @@ describe("credit screens", () => {
 
     await page.waitForSelector("[role='dialog']");
     await waitForText(page, message("credit.purchases.verify"));
-    await clickButton(
-      page,
-      "[role='dialog'] button",
-      (text) => text === message("credit.purchases.verify"),
-    );
+    await clickInDialog(page, message("credit.purchases.verify"));
 
     await page.waitForFunction(() => document.querySelector("[role='dialog']") === null);
 
