@@ -17,6 +17,8 @@ import {
 } from "../../../../kernel/db/index.js";
 import type {
   CreditPurchaseRepository,
+  ExpiredPurchaseBatch,
+  ExpiredPurchaseCursor,
   ListCreditPurchasesStaffFilter,
 } from "../application/ports/credit-purchase-repository.js";
 import { CreditPurchase } from "../domain/credit-purchase.entity.js";
@@ -187,41 +189,46 @@ export class MongoCreditPurchaseRepository implements CreditPurchaseRepository {
     };
   }
 
-  async listExpiredPending(now: Date): Promise<readonly CreditPurchase[]> {
+  async listExpiredPendingBatch(
+    now: Date,
+    after: ExpiredPurchaseCursor | null,
+    limit: number,
+  ): Promise<ExpiredPurchaseBatch> {
     const organizationId = this.getOrganizationId();
     const Model = models({ organizationId }).get<CreditPurchaseDocument>(
       CREDIT_PURCHASE_MODEL_NAME,
     );
-    const pageSize = 100;
-    const purchases: CreditPurchase[] = [];
-    let cursor: CreditPurchaseDocument | undefined;
-    for (;;) {
-      const after = cursor
-        ? {
-            $or: [
-              { expiresAt: { $gt: cursor.expiresAt } },
-              { expiresAt: cursor.expiresAt, creditPurchaseId: { $gt: cursor.creditPurchaseId } },
-            ],
-          }
-        : {};
-      const page = await Model.find(
-        {
-          organizationId,
-          status: CREDIT_PURCHASE_STATUS.PENDING,
-          expiresAt: { $lte: now },
-          ...after,
-        },
-        { _id: 0 },
-      )
-        .sort({ expiresAt: 1, creditPurchaseId: 1 })
-        .limit(pageSize)
-        .session(getActiveSession() ?? null)
-        .lean<CreditPurchaseDocument[]>();
-      purchases.push(...page.map((d) => this.fromDocument(d)));
-      const last = page[page.length - 1];
-      if (page.length < pageSize || last === undefined) return purchases;
-      cursor = last;
-    }
+    const afterCursor = after
+      ? {
+          $or: [
+            { expiresAt: { $gt: after.expiresAt } },
+            { expiresAt: after.expiresAt, creditPurchaseId: { $gt: after.creditPurchaseId } },
+          ],
+        }
+      : {};
+    const docs = await Model.find(
+      {
+        organizationId,
+        status: CREDIT_PURCHASE_STATUS.PENDING,
+        expiresAt: { $lte: now },
+        ...afterCursor,
+      },
+      { _id: 0 },
+    )
+      .sort({ expiresAt: 1, creditPurchaseId: 1 })
+      .limit(limit)
+      .session(getActiveSession() ?? null)
+      .lean<CreditPurchaseDocument[]>();
+
+    const items = docs.map((d) => this.fromDocument(d));
+    const last = items[items.length - 1];
+    const isFullBatch = items.length === limit && last !== undefined;
+    return {
+      items,
+      nextCursor: isFullBatch
+        ? { expiresAt: last.expiresAt, creditPurchaseId: last.creditPurchaseId }
+        : null,
+    };
   }
 
   private getOrganizationId(): OrganizationId {

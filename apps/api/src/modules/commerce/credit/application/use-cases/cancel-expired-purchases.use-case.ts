@@ -2,6 +2,12 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, ERROR_CODE } from "@banijjik/contracts
 import { CREDIT_EVENT_TYPE } from "@banijjik/contracts/credit";
 import type { CreditPurchase } from "../../domain/credit-purchase.entity.js";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
+import type {
+  ExpiredPurchaseBatch,
+  ExpiredPurchaseCursor,
+} from "../ports/credit-purchase-repository.js";
+
+const EXPIRY_BATCH_SIZE = 100;
 
 /** Matches the kernel's 409 and the domain conflict alike, without importing the transport layer. */
 function isConflictError(error: unknown): boolean {
@@ -22,10 +28,25 @@ export class CancelExpiredPurchasesUseCase {
   constructor(private readonly deps: CancelExpiredPurchasesDependencies) {}
 
   async execute(now: Date): Promise<number> {
-    const expired = await this.deps.purchases.listExpiredPending(now);
     let cancelledCount = 0;
+    let cursor: ExpiredPurchaseCursor | null = null;
 
-    for (const purchase of expired) {
+    do {
+      const batch: ExpiredPurchaseBatch = await this.deps.purchases.listExpiredPendingBatch(
+        now,
+        cursor,
+        EXPIRY_BATCH_SIZE,
+      );
+      cancelledCount += await this.cancelBatch(batch.items, now);
+      cursor = batch.nextCursor;
+    } while (cursor !== null);
+
+    return cancelledCount;
+  }
+
+  private async cancelBatch(batch: readonly CreditPurchase[], now: Date): Promise<number> {
+    let cancelledCount = 0;
+    for (const purchase of batch) {
       try {
         const cancelled = await this.deps.unitOfWork.run(() =>
           this.cancelIfStillExpired(purchase, now),
@@ -36,7 +57,6 @@ export class CancelExpiredPurchasesUseCase {
         if (!isConflictError(error)) throw error;
       }
     }
-
     return cancelledCount;
   }
 

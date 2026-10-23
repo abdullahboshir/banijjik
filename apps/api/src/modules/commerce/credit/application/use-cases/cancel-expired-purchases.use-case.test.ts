@@ -10,6 +10,10 @@ import { describe, expect, it, vi } from "vitest";
 import { AppError } from "../../../../../kernel/http/index.js";
 import { ERROR_CODE } from "@banijjik/contracts";
 import { CreditPurchase } from "../../domain/index.js";
+import type {
+  ExpiredPurchaseBatch,
+  ExpiredPurchaseCursor,
+} from "../ports/credit-purchase-repository.js";
 import {
   CancelExpiredPurchasesUseCase,
   type CancelExpiredPurchasesDependencies,
@@ -50,14 +54,34 @@ interface Harness {
   readonly deps: CancelExpiredPurchasesDependencies;
   readonly stored: Map<string, CreditPurchase>;
   readonly updateVersioned: ReturnType<typeof vi.fn>;
+  readonly listBatch: ReturnType<typeof vi.fn>;
 }
 
 function buildHarness(input: {
   readonly listed: readonly CreditPurchase[];
   readonly stored: readonly CreditPurchase[];
   readonly failUpdateFor?: ReadonlySet<string>;
+  readonly batchSize?: number;
 }): Harness {
   const stored = new Map(input.stored.map((purchase) => [purchase.creditPurchaseId, purchase]));
+  const batchSize = input.batchSize ?? input.listed.length + 1;
+  // Serves the listed rows in fixed-size batches, like the keyset query does.
+  const listBatch = vi.fn(
+    async (_now: Date, after: ExpiredPurchaseCursor | null): Promise<ExpiredPurchaseBatch> => {
+      const start = after
+        ? input.listed.findIndex((p) => p.creditPurchaseId === after.creditPurchaseId) + 1
+        : 0;
+      const items = input.listed.slice(start, start + batchSize);
+      const last = items[items.length - 1];
+      const hasMore = start + batchSize < input.listed.length && last !== undefined;
+      return {
+        items,
+        nextCursor: hasMore
+          ? { expiresAt: last.expiresAt, creditPurchaseId: last.creditPurchaseId }
+          : null,
+      };
+    },
+  );
   const updateVersioned = vi.fn(async (purchase: CreditPurchase) => {
     if (input.failUpdateFor?.has(purchase.creditPurchaseId)) {
       throw new AppError({ code: ERROR_CODE.CONFLICT, details: { currentVersion: 2 } });
@@ -73,16 +97,36 @@ function buildHarness(input: {
       listByAccount: vi.fn(),
       countPendingByAccount: vi.fn(),
       listForStaff: vi.fn(),
-      listExpiredPending: vi.fn(async () => input.listed),
+      listExpiredPendingBatch: listBatch,
     },
     unitOfWork: { run: async (work) => work() },
     audit: { record: vi.fn(async () => undefined) },
     events: { publish: vi.fn(async () => undefined) },
   };
-  return { deps, stored, updateVersioned };
+  return { deps, stored, updateVersioned, listBatch };
 }
 
 describe("CancelExpiredPurchasesUseCase", () => {
+  it("processes each keyset batch on its own and cancels rows from every batch", async () => {
+    const purchases = ["E1", "E2", "E3", "E4", "E5"].map(expiredPurchase);
+    const { deps, stored, listBatch } = buildHarness({
+      listed: purchases,
+      stored: purchases,
+      batchSize: 2,
+    });
+
+    const cancelled = await new CancelExpiredPurchasesUseCase(deps).execute(NOW);
+
+    expect(cancelled).toBe(5);
+    expect(listBatch).toHaveBeenCalledTimes(3);
+    expect(listBatch.mock.calls[0]?.[1]).toBeNull();
+    expect(listBatch.mock.calls[1]?.[1]?.creditPurchaseId).toBe(purchases[1]?.creditPurchaseId);
+    expect(listBatch.mock.calls[2]?.[1]?.creditPurchaseId).toBe(purchases[3]?.creditPurchaseId);
+    for (const purchase of purchases) {
+      expect(stored.get(purchase.creditPurchaseId)?.status).toBe(CREDIT_PURCHASE_STATUS.CANCELLED);
+    }
+  });
+
   it("cancels every expired PENDING purchase", async () => {
     const first = expiredPurchase("A1");
     const second = expiredPurchase("A2");
