@@ -210,6 +210,10 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
   - **Visual quality:** type scale, spacing, colour use, cards, icons, empty-state illustrations, loading skeletons, a friendlier dashboard frame for 3.10.
   - Usability check on a phone with two or three pilot owners (P3) before it is called done.
 **3.14 CI for every card branch** (chore, 2026-10-22: every push of an `s/**` branch runs the full verification and the admin and platform browser suites on GitHub, so sessions do not run whole suites locally; `docs/plans/parallel-sessions-guide.md`).
+**3.23 Orders as payment requests** (2026-10-23: orders become payable and refundable, real payment status, the advance rule on confirm, cancel to store credit; ADR-137).
+**3.24 Order and stock posting** (2026-10-23: the order, stock-commit, stock purchase, opening, adjustment and write-off rows of `11 §10` that 3.3 and 3.5a left out; ADR-138).
+**3.25 Local posting dates and held advances** (2026-10-23: booking and credit postings on the organization's local date; bookings settle the advance actually paid).
+**3.26 Stable kernel tests** (2026-10-23: three time-dependent kernel tests without sleeps).
 **3.11 Staff commission** (OPTIONAL `commission`, ADR-100: rules per member or role and per offering, category or kind; performer on booking and order lines; append-only accruals; payouts posted through `accounting`).
 - Phase done: a salon, a gym and a coaching centre from templates take bookings and enrollments, sell services and products at the counter, collect fees and dues, and pay staff commission, with correct numbers in reports; **and** a product seller runs a full day (stock in → POS + online orders → returns → day close), including loose and packed sale from one stock. No industry-specific code.
 
