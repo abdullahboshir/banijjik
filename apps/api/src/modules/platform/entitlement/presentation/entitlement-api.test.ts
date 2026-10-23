@@ -488,6 +488,31 @@ describe("handlers of a module that is off", () => {
   });
 });
 
+describe("the config inside a scheduled job or an event handler", () => {
+  it("resolves the organization's modules without a request's configVersion (card 3.19)", async () => {
+    const { organizationId } = await createTrialOrganization();
+    await writeModuleOverride({
+      organizationId,
+      moduleKey: "workflow",
+      effect: MODULE_OVERRIDE_EFFECT.PLATFORM_REVOKE,
+    });
+    const registry = buildModuleRegistry([KERNEL_PROBE_MANIFEST, ...PROBE_MANIFESTS]);
+    const service = buildOrgConfigService({
+      registry,
+      clock: harness.clock,
+      ...buildOrganizationConfigPorts(),
+      ...buildResolvedConfigSources(registry),
+      templates: buildIndustryTemplateReader(harness.clock),
+    });
+
+    // The job runner's context: an organization, no member and no configVersion.
+    const effective = await withOrganizationContext(organizationId, () => service.current());
+
+    expect(effective.modules).toContain("iam");
+    expect(effective.modules).not.toContain("workflow");
+  });
+});
+
 describe("access modes over time", () => {
   it("shows the banner after the trial, then refuses writes but not reads after the grace period", async () => {
     const { owner, organizationId } = await createTrialOrganization();

@@ -53,12 +53,15 @@ function internalMissingContext(): AppError {
 export class OrgConfigService implements OrgConfigReader {
   constructor(private readonly dependencies: OrgConfigServiceDependencies) {}
 
-  /** The config of the organization of the current request. */
+  /**
+   * The config of the organization of the current context. A request carries `configVersion`
+   * (tenantContext). A scheduled job or an event handler runs in an organization context without
+   * one, so the version is read from the organization, as `forOrganization` does (card 3.19).
+   */
   async current(): Promise<EffectiveOrgConfig> {
     const { organizationId, configVersion } = getRequestContext();
-    if (organizationId === undefined || configVersion === undefined) {
-      throw internalMissingContext();
-    }
+    if (organizationId === undefined) throw internalMissingContext();
+    if (configVersion === undefined) return this.forOrganization(organizationId);
     return this.effective(organizationId, configVersion);
   }
 
