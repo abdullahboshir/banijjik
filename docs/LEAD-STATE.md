@@ -8,7 +8,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-23 (late night, Dhaka) by Opus 5.5 · `main` = `origin/main` = `0ccab2f` plus this note (pushed; the owner forwarded the 3.11 A1 session blocked on the unpushed plan). Since `7ddfb1f`: plan 3.11 + ADR-135 only; no branch moved.
+Last updated: 2026-10-23 (late night, Dhaka) by Opus 5.5 · `main` = `origin/main` = `7a4e289` (3.8 B2 merged, CI 39934644858) plus this state save (pushed). Earlier this session: plan 3.11 + ADR-135, 3.11 Amendment 1 (accrual handler UNORDERED).
 
 ## 1. Where the project stands
 - Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, **3.8 Part A**, 3.8a, 3.8b, 3.8c, 3.12–3.21. Track M merged: M.1 to **M.5 (both parts)**. Details per card: `docs/STATUS.md`.
@@ -28,7 +28,7 @@ Last updated: 2026-10-23 (late night, Dhaka) by Opus 5.5 · `main` = `origin/mai
 | M.7 Part A1 reports | `s/M.7-api-reports` (prompt given) | cloud | T1 | Plan `docs/plans/M.7.md` A1, ADR-134. **No branch on origin yet** (checked 2026-10-23 night). Next: T1 review on a done. |
 | M.8a matrimony templates | `s/M.8a-matrimony-templates` (prompt given) | cloud | T2 | Plan `docs/plans/M.8a.md`. **No branch on origin yet.** **At merge of the second of M.7 A1 / M.8a, the lead adds `reportReasons`** (keys in M.8a decision 5) to both seeds. Next: merge check. |
 | 3.6b A1 rentals / A2 event sessions | `s/3.6b-api-rental` / `s/3.6b-api-event-sessions` (prompts given 2026-10-23 night) | `banijjik` / cloud | T1 / T2 | Plan `docs/plans/3.6b.md` + "Refresh (2026-10-23)": three parts; A1 and A2 run in parallel, A3 (event bookings, T1) after both merge. Next: T1 review of A1, merge check of A2, then refresh and release A3. |
-| 3.8 B1 payments / B2 dues and store credit | `s/3.8-ui-payments` / `s/3.8-ui-dues-store-credit` (prompts given 2026-10-23 night) | `banijjik-lead` / `banijjik-m2` | T2 | Plan `docs/plans/3.8.md` "Refresh 2": parallel, separate folders; each must carry a 180 KiB budget check per new route. Next: merge checks. |
+| 3.8 B1 payments | `s/3.8-ui-payments` (prompt given 2026-10-23 night) | `banijjik-lead` | T2 | Plan `docs/plans/3.8.md` "Refresh 2". **B2 merged** (`7a4e289`). B1 must rebase on main (STATUS row 3.8 already says B2 merged; B1 edits only its part). Next: merge check. |
 | 3.11 A1 commission rules and accruals | `s/3.11-api-accruals` (prompt given 2026-10-23 late night) | cloud (no free full folder) | T1 | Plan `docs/plans/3.11.md`, ADR-135. Then A2 payouts (after A1), B screens (lead refreshes first), C order lines (after 3.5a A). Next: T1 review on a done. |
 
 (Checked 2026-10-23 late night: none of the branches above had moved on origin, and no folder had uncommitted work.)
@@ -40,7 +40,7 @@ Merged and safe to delete (local and `origin`):
 - PR #2 (3.8) can be closed as merged.
 
 Folders:
-- Assigned 2026-10-23 night: `banijjik` → 3.6b A1, `banijjik-lead` → 3.8 B1, `banijjik-m2` → 3.8 B2 (if the owner followed the prompts). `banijjik-3.5a` has 3.5a, `banijjik-1.7b` has 3.7. E: had 4.2 GB free (2026-10-23).
+- Assigned 2026-10-23 night: `banijjik` → 3.6b A1, `banijjik-lead` → 3.8 B1, `banijjik-m2` free again (3.8 B2 merged; delete `s/3.8-ui-dues-store-credit` local and origin) (if the owner followed the prompts). `banijjik-3.5a` has 3.5a, `banijjik-1.7b` has 3.7. E: had 4.2 GB free (2026-10-23).
 - `banijjik-docs` is the docs and merge folder. The next lead session opens in `banijjik-docs`.
 
 **Agents claim "done" early.** A "done" without the full `npm run card:check` output (all PASS) is not reviewed. Verify anyway: `git status` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`, `--log-failed`. Handoffs often say "Deviations: none" when there are some; diff against the plan's file list.
@@ -84,7 +84,7 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
-- **2026-10-23 late night** (Opus): nothing moved on any branch. Planned 3.11 (A1 → A2 → B, C after 3.5a; ADR-135) after four owner decisions (base after discount without tax, proportional refund adjustment, expense at accrual, higher role rule wins). Found the booking posting business-date bug. Main pushed after the A1 session asked for the plan on origin.
+- **2026-10-23 late night** (Opus): merge check and merge of 3.8 B2 (`7a4e289`; done message lacked card:check, the lead ran it: all PASS). Before that: nothing moved on any branch. Planned 3.11 (A1 → A2 → B, C after 3.5a; ADR-135) after four owner decisions (base after discount without tax, proportional refund adjustment, expense at accrual, higher role rule wins). Found the booking posting business-date bug. Main pushed after the A1 session asked for the plan on origin.
 - **2026-10-23 night** (Opus): refreshed 3.8 Part B (B1/B2 parallel) and 3.6b (A1/A2 parallel, A3 after) and gave four prompts; 3.5a claimed done but nothing new on origin (still `6043913`), owner told. Earlier: 3.8 R3 fixes arrived; the lead fixed the last two leftovers (empty job catch, optional summary methods) and merged 3.8 Part A (`471a773`). M.5 Part B merge check: added the credit budget check, found purchases at 186 KiB, made the detail sheet lazy (170.6 KiB), merged (`cf17e3c`). Owner allowed pushing main. Owner is waiting on the unblocked work (3.8 B, 3.6b, 3.11, M.6).
 - **2026-10-23 late evening** (Haiku then Opus): Haiku wrongly told the owner plans 3.20/3.21 were missing (it read the M.5 branch, not `main`); corrected. Answered 3.21's two conflicts with plan Amendment 1. Wrote plans M.7 (A1 now, A2/B later, ADR-134) and M.8a (seed data); 3.6b → ADR-133. Merge checks: 3.20 and 3.21. Pushed main `c333375`.
 - **2026-10-23 evening** (Opus): answered the M.5 agent (removed the unreachable threshold branch myself, CI green). Wrote plans 3.20 (fonts, T3) and 3.21 (accounting currency, T2); gave prompts for M.5 Part B, 3.20, 3.21. Pushed main `b616bbf`.
