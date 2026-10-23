@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { PAYMENT_METHOD } from "@banijjik/contracts/payment";
+import { PAYMENT_METHOD, PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import { screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,6 +20,7 @@ const labels = paymentLabelsOf(banglaTranslator().t);
 const sheetLabels = {
   ...labels.receiveSheet,
   methodLabels: labels.method,
+  requestTypeLabels: labels.requestType,
 };
 
 const LOCATIONS = [{ locationId: "loc-1", name: "প্রধান শাখা" }];
@@ -98,7 +99,7 @@ describe("ReceivePaymentSheet", () => {
         locations={LOCATIONS}
         initialAllocations={[
           {
-            requestType: "BOOKING",
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
             requestId: "0192e2b0-8a71-7000-8000-000000000001",
             amount: { amount: 50000, currency: "BDT" },
           },
@@ -130,7 +131,7 @@ describe("ReceivePaymentSheet", () => {
         locations={LOCATIONS}
         initialAllocations={[
           {
-            requestType: "BOOKING",
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
             requestId: "0192e2b0-8a71-7000-8000-000000000001",
             amount: { amount: 50000, currency: "BDT" },
           },
@@ -161,7 +162,7 @@ describe("ReceivePaymentSheet", () => {
         locations={LOCATIONS}
         initialAllocations={[
           {
-            requestType: "BOOKING",
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
             requestId: "0192e2b0-8a71-7000-8000-000000000001",
             amount: { amount: 50000, currency: "BDT" },
           },
@@ -178,5 +179,72 @@ describe("ReceivePaymentSheet", () => {
     expect(screen.getByText(sheetLabels.overpaymentError)).toBeDefined();
     const submitBtn = screen.getByRole("button", { name: sheetLabels.submit }) as HTMLButtonElement;
     expect(submitBtn.disabled).toBe(true);
+  });
+
+  it("preserves typed decimal in allocation editor without float rounding glitches", async () => {
+    const user = userEvent.setup();
+    renderInBangla(
+      <ReceivePaymentSheet
+        open
+        onOpenChange={() => {}}
+        organizationId="org-1"
+        currency="BDT"
+        currencySymbol="৳"
+        allowedMethods={[PAYMENT_METHOD.CASH]}
+        locations={LOCATIONS}
+        initialAllocations={[
+          {
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+            requestId: "0192e2b0-8a71-7000-8000-000000000001",
+            requestNumber: "BK-1001",
+            amount: { amount: 5000, currency: "BDT" },
+          },
+        ]}
+        labels={sheetLabels}
+      />,
+    );
+
+    const allocInputs = screen.getAllByDisplayValue("50");
+    const allocInput = allocInputs[1];
+    expect(allocInput).toBeDefined();
+    if (!allocInput) throw new Error("allocation input not found");
+    await user.clear(allocInput);
+    await user.type(allocInput, "12.");
+    expect((allocInput as HTMLInputElement).value).toBe("12.");
+
+    await user.type(allocInput, "50");
+    expect((allocInput as HTMLInputElement).value).toBe("12.50");
+  });
+
+  it("shows field error when allocation input text is invalid", async () => {
+    const user = userEvent.setup();
+    renderInBangla(
+      <ReceivePaymentSheet
+        open
+        onOpenChange={() => {}}
+        organizationId="org-1"
+        currency="BDT"
+        currencySymbol="৳"
+        allowedMethods={[PAYMENT_METHOD.CASH]}
+        locations={LOCATIONS}
+        initialAllocations={[
+          {
+            requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+            requestId: "0192e2b0-8a71-7000-8000-000000000001",
+            requestNumber: "BK-1001",
+            amount: { amount: 5000, currency: "BDT" },
+          },
+        ]}
+        labels={sheetLabels}
+      />,
+    );
+
+    const allocInputs = screen.getAllByDisplayValue("50");
+    const allocInput = allocInputs[1];
+    expect(allocInput).toBeDefined();
+    if (!allocInput) throw new Error("allocation input not found");
+    await user.clear(allocInput);
+    await user.type(allocInput, "invalid");
+    expect(screen.getByText(sheetLabels.amountInvalid)).toBeDefined();
   });
 });

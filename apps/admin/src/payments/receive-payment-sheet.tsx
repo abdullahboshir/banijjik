@@ -4,6 +4,7 @@ import type { CurrencyCode } from "@banijjik/contracts";
 import type {
   PaymentAllocation,
   PaymentMethod,
+  PaymentRequestType,
   PaymentResponse,
 } from "@banijjik/contracts/payment";
 import { Button, Sheet, SheetContent, formatMoney } from "@banijjik/ui";
@@ -38,11 +39,17 @@ export interface ReceivePaymentSheetProps {
   };
   readonly initialLocationId?: string | undefined;
   readonly initialContactId?: string | undefined;
-  readonly initialAllocations?: readonly PaymentAllocation[] | undefined;
+  readonly initialAllocations?:
+    | readonly (PaymentAllocation & {
+        readonly requestNumber?: string | null;
+        readonly label?: string;
+      })[]
+    | undefined;
   readonly initialDueMinor?: number | undefined;
   readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
   readonly labels: PaymentLabels["receiveSheet"] & {
     readonly methodLabels: Readonly<Record<PaymentMethod, string>>;
+    readonly requestTypeLabels?: Readonly<Record<PaymentRequestType, string>> | undefined;
   };
 }
 
@@ -98,6 +105,8 @@ function ReceivePaymentAllocationsSection(props: {
         allocations={props.allocations}
         label={props.label}
         disabled={props.disabled}
+        requestTypeLabels={props.labels.requestTypeLabels}
+        invalidAmountLabel={props.labels.amountInvalid}
         onChange={props.onAllocChange}
       />
       <OverpaymentNotice

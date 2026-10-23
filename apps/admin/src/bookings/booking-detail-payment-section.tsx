@@ -2,7 +2,11 @@
 
 import type { CurrencyCode } from "@banijjik/contracts";
 import type { BookingResponse } from "@banijjik/contracts/booking";
-import type { PaymentMethod } from "@banijjik/contracts/payment";
+import {
+  PAYMENT_REQUEST_TYPE,
+  type PaymentMethod,
+  type PaymentRequestType,
+} from "@banijjik/contracts/payment";
 import { Button, formatMoney, type DisplayLocale } from "@banijjik/ui";
 import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
@@ -12,6 +16,8 @@ import { ReceivePaymentSheetLazy } from "../payments/receive-payment-sheet-lazy"
 export interface BookingDetailPaymentSectionProps {
   readonly organizationId: string;
   readonly booking: BookingResponse;
+  readonly locationName: string;
+  readonly remainingDueMinor: number;
   readonly currency: CurrencyCode;
   readonly currencySymbol: string;
   readonly allowedMethods: readonly PaymentMethod[];
@@ -25,6 +31,7 @@ export interface BookingDetailPaymentSectionProps {
     readonly statusLabels: Readonly<Record<string, string>>;
     readonly sheetLabels: PaymentLabels["receiveSheet"] & {
       readonly methodLabels: Readonly<Record<PaymentMethod, string>>;
+      readonly requestTypeLabels?: Readonly<Record<PaymentRequestType, string>> | undefined;
     };
   };
 }
@@ -99,13 +106,18 @@ export function BookingDetailPaymentSection(props: BookingDetailPaymentSectionPr
           currency={props.currency}
           currencySymbol={props.currencySymbol}
           allowedMethods={props.allowedMethods}
-          locations={[{ locationId: booking.locationId, name: "Booking location" }]}
+          locations={[{ locationId: booking.locationId, name: props.locationName }]}
           initialLocationId={booking.locationId}
           initialContactId={booking.contactId}
           initialAllocations={[
-            { requestType: "BOOKING", requestId: booking.bookingId, amount: booking.price.total },
+            {
+              requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+              requestId: booking.bookingId,
+              requestNumber: booking.bookingNumber,
+              amount: { amount: props.remainingDueMinor, currency: props.currency },
+            },
           ]}
-          initialDueMinor={booking.price.total.amount}
+          initialDueMinor={props.remainingDueMinor}
           onSuccess={() => {
             setIsSheetOpen(false);
             router.refresh();

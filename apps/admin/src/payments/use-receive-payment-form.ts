@@ -7,18 +7,21 @@ import {
   type PaymentMethod,
   type PaymentResponse,
 } from "@banijjik/contracts/payment";
+import type { Translator } from "@banijjik/i18n";
 import { parseMoneyInput } from "@banijjik/ui";
+import { useTranslator } from "@banijjik/web-client/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { ApiError } from "../lib/api/api-error";
 import { receivePayment } from "./payment-api";
-import type { AllocationDraft } from "./receive-payment-allocations";
+import { minorUnitsToDecimal, type AllocationDraft } from "./receive-payment-allocations";
 import type { BusinessAccountInfo, ReceivePaymentSheetProps } from "./receive-payment-sheet";
 
 function resolveInitialAmount(props: ReceivePaymentSheetProps): string {
-  if (props.initialDueMinor) return String(props.initialDueMinor / 100);
+  if (props.initialDueMinor) return minorUnitsToDecimal(props.initialDueMinor);
   const alloc = props.initialAllocations?.[0];
-  return alloc ? String(alloc.amount.amount / 100) : "";
+  return alloc ? minorUnitsToDecimal(alloc.amount.amount) : "";
 }
 
 function resolveDefaultMethod(allowed: readonly PaymentMethod[]): PaymentMethod {
@@ -42,18 +45,27 @@ function validateInput(opts: {
   readonly overpaymentRequiresContact: boolean;
   readonly refRequiredMsg: string;
   readonly overpaymentMsg: string;
+  readonly amountInvalidMsg: string;
+  readonly locationRequiredMsg: string;
 }): string | undefined {
-  if (opts.parsedAmount <= 0) return "Amount must be greater than zero";
-  if (!opts.locationId) return "Location is required";
+  if (opts.parsedAmount <= 0) return opts.amountInvalidMsg;
+  if (!opts.locationId) return opts.locationRequiredMsg;
   if (opts.isMobileMoney && !opts.externalReference.trim()) return opts.refRequiredMsg;
   if (opts.overpaymentRequiresContact) return opts.overpaymentMsg;
   return undefined;
 }
 
-function formatError(error: unknown): string {
-  if (error instanceof ApiError) return error.messageKey;
+function formatError(
+  error: unknown,
+  labels: ReceivePaymentSheetProps["labels"],
+  t: Translator["t"],
+): string {
+  if (error instanceof ApiError) {
+    if (error.status === 409) return labels.conflict;
+    return t(knownMessageKeyOrInternal(error.messageKey));
+  }
   if (error instanceof Error) return error.message;
-  return "Payment failed";
+  return labels.failed;
 }
 
 async function executeReceivePayment(opts: {
@@ -98,6 +110,8 @@ function useReceivePaymentFields(props: ReceivePaymentSheetProps) {
       requestType: a.requestType,
       requestId: a.requestId,
       amountMinor: a.amount.amount,
+      requestNumber: a.requestNumber,
+      label: a.label,
     })),
   );
 
@@ -148,6 +162,7 @@ async function executeFormSubmit(opts: {
   readonly parsedAmount: number;
   readonly isMobileMoney: boolean;
   readonly overpaymentRequiresContact: boolean;
+  readonly t: Translator["t"];
   readonly setIsSubmitting: (v: boolean) => void;
   readonly setErrorMessage: (v: string | undefined) => void;
   readonly setSuccessMessage: (v: string | undefined) => void;
@@ -161,6 +176,8 @@ async function executeFormSubmit(opts: {
     overpaymentRequiresContact: opts.overpaymentRequiresContact,
     refRequiredMsg: opts.props.labels.referenceRequired,
     overpaymentMsg: opts.props.labels.overpaymentError,
+    amountInvalidMsg: opts.props.labels.amountInvalid,
+    locationRequiredMsg: opts.props.labels.locationRequired,
   });
   if (err) {
     opts.setErrorMessage(err);
@@ -183,9 +200,9 @@ async function executeFormSubmit(opts: {
     opts.setSuccessMessage(opts.props.labels.success);
     opts.props.onSuccess?.(payment);
     opts.routerRefresh();
-    setTimeout(() => opts.props.onOpenChange(false), 600);
+    opts.props.onOpenChange(false);
   } catch (error) {
-    opts.setErrorMessage(formatError(error));
+    opts.setErrorMessage(formatError(error, opts.props.labels, opts.t));
   } finally {
     opts.setIsSubmitting(false);
   }
@@ -220,6 +237,7 @@ export interface ReceivePaymentFormResult {
 
 export function useReceivePaymentForm(props: ReceivePaymentSheetProps): ReceivePaymentFormResult {
   const router = useRouter();
+  const { t } = useTranslator();
   const fields = useReceivePaymentFields(props);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
@@ -246,6 +264,7 @@ export function useReceivePaymentForm(props: ReceivePaymentSheetProps): ReceiveP
       parsedAmount,
       isMobileMoney,
       overpaymentRequiresContact,
+      t,
       setIsSubmitting,
       setErrorMessage,
       setSuccessMessage,

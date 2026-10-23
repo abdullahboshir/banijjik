@@ -2,7 +2,10 @@
 
 import { ERROR_CODE } from "@banijjik/contracts";
 import type { ApproverSummary } from "@banijjik/contracts/iam";
+import type { Translator } from "@banijjik/i18n";
+import { useTranslator } from "@banijjik/web-client/client";
 import { type Dispatch, type SetStateAction, useState } from "react";
+import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { ApiError } from "../lib/api/api-error";
 
 export interface ApprovalDialogState {
@@ -22,13 +25,14 @@ export interface UseApprovalDialogStateResult {
   readonly handlePinError: (error: unknown, fallback: string) => void;
 }
 
-function formatPinError(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.messageKey;
+function formatPinError(error: unknown, fallback: string, t: Translator["t"]): string {
+  if (error instanceof ApiError) return t(knownMessageKeyOrInternal(error.messageKey));
   if (error instanceof Error) return error.message;
   return fallback;
 }
 
 export function useApprovalDialogState(): UseApprovalDialogStateResult {
+  const { t } = useTranslator();
   const [dialogState, setDialogState] = useState<ApprovalDialogState>({
     open: false,
     approvers: [],
@@ -49,7 +53,7 @@ export function useApprovalDialogState(): UseApprovalDialogStateResult {
   function handlePinError(error: unknown, fallback: string): void {
     const isLocked = error instanceof ApiError && error.code === ERROR_CODE.APPROVAL_PIN_LOCKED;
     setDialogState((prev) => ({ ...prev, isLocked }));
-    setApprovalError(formatPinError(error, fallback));
+    setApprovalError(formatPinError(error, fallback, t));
   }
 
   return {

@@ -97,6 +97,8 @@ export function ReversalDialog(props: ReversalDialogProps): ReactElement {
     organizationId: props.organizationId,
     payment: props.payment,
     noApproversMessage: labels.noApprovers,
+    failedMessage: labels.failed,
+    loadApproversFailedMessage: labels.loadApproversFailed,
     onSuccess: (res) => {
       props.onSuccess?.(res);
       router.refresh();
