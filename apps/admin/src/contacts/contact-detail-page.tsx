@@ -18,6 +18,7 @@ import { fieldAppliesToContactRoles } from "@banijjik/validation";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { ContactCredits } from "../credit/contact-credits";
+import { ContactStoreCredit } from "../store-credit/contact-store-credit";
 import { CustomFieldDetailList } from "../custom-fields/custom-field-detail-list";
 import type { LinkedContacts } from "../custom-fields/custom-field-display";
 import { customFieldPartsOf } from "../custom-fields/custom-field-parts";
@@ -294,25 +295,24 @@ export async function ContactDetailPage({
     return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const data = await loadDetailData(access, translator, contactId);
-  const { contact, abilities } = data;
-  const basePath = `/${orgSlug}/contacts`;
   return (
     <div className="flex flex-col gap-6">
-      <DetailHead data={data} basePath={basePath} t={t} />
+      <DetailHead data={data} basePath={`/${orgSlug}/contacts`} t={t} />
       <CustomFieldDetailList {...data.parts.list} />
       <ContactAddresses
         organizationId={access.organization.organizationId}
-        contactId={contact.contactId}
-        version={contact.version}
-        addresses={contact.addresses}
-        canEdit={abilities.canEdit}
+        contactId={data.contact.contactId}
+        version={data.contact.version}
+        addresses={data.contact.addresses}
+        canEdit={data.abilities.canEdit}
         labels={addressLabelsOf(t)}
       />
       <PageSection title={t("contacts.relations.title")} help={t("contacts.relations.help")}>
-        <RelationList contact={contact} basePath={basePath} t={t} />
+        <RelationList contact={data.contact} basePath={`/${orgSlug}/contacts`} t={t} />
       </PageSection>
-      <WebsiteLogin access={access} contact={contact} translator={translator} />
-      <ContactCredits access={access} contact={contact} translator={translator} />
+      <WebsiteLogin access={access} contact={data.contact} translator={translator} />
+      <ContactCredits access={access} contact={data.contact} translator={translator} />
+      <ContactStoreCredit access={access} contact={data.contact} translator={translator} />
       <DetailActions access={access} translator={translator} data={data} />
     </div>
   );
