@@ -55,9 +55,10 @@ export function PaymentDetailActions(props: PaymentDetailActionsProps): ReactEle
           labels={{
             ...labels.refundDialog,
             methodLabels: labels.method,
+            requestTypeLabels: labels.requestType,
             cancelLabel: labels.refundDialog.cancel,
             closeLabel: labels.refundDialog.cancel,
-            lockedMessage: "PIN locked",
+            lockedMessage: labels.refundDialog.approvalLocked,
           }}
         />
       ) : null}
@@ -72,7 +73,7 @@ export function PaymentDetailActions(props: PaymentDetailActionsProps): ReactEle
             ...labels.reversalDialog,
             cancelLabel: labels.reversalDialog.cancel,
             closeLabel: labels.reversalDialog.cancel,
-            lockedMessage: "PIN locked",
+            lockedMessage: labels.reversalDialog.approvalLocked,
           }}
         />
       ) : null}

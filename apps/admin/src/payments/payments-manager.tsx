@@ -281,6 +281,7 @@ export function PaymentsManager(props: PaymentsManagerProps): ReactElement {
           labels={{
             ...props.labels.receiveSheet,
             methodLabels: props.labels.method,
+            requestTypeLabels: props.labels.requestType,
           }}
         />
       ) : null}

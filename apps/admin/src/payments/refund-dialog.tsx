@@ -4,6 +4,7 @@ import {
   ACCEPTED_PAYMENT_METHODS,
   PAYMENT_METHOD,
   type PaymentMethod,
+  type PaymentRequestType,
   type PaymentResponse,
 } from "@banijjik/contracts/payment";
 import {
@@ -20,6 +21,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
 import type { PaymentLabels } from "./payment-labels";
 import { RefundAllocationsList, buildRefundAllocations } from "./refund-allocations";
+import { minorUnitsToDecimal } from "./receive-payment-allocations";
 import { useRefundFlow, type RefundFlowState } from "./use-refund-flow";
 
 export interface RefundDialogProps {
@@ -33,6 +35,7 @@ export interface RefundDialogProps {
     readonly cancelLabel: string;
     readonly closeLabel: string;
     readonly lockedMessage: string;
+    readonly requestTypeLabels?: Readonly<Record<PaymentRequestType, string>> | undefined;
   };
 }
 
@@ -130,7 +133,9 @@ function RefundFooterActions(props: {
 
 function useRefundFormState(payment: PaymentResponse, refundFlow: RefundFlowState) {
   const [method, setMethod] = useState<PaymentMethod>(resolveDefaultRefundMethod(payment.method));
-  const [amountText, setAmountText] = useState<string>(String(payment.amount.amount / 100));
+  const [amountText, setAmountText] = useState<string>(() =>
+    minorUnitsToDecimal(payment.amount.amount),
+  );
   const [externalReference, setExternalReference] = useState<string>("");
   const [note, setNote] = useState<string>("");
   const [allocationAmounts, setAllocationAmounts] = useState<readonly number[]>(() =>
@@ -220,6 +225,8 @@ function RefundForm(props: RefundFormProps): ReactElement {
         allocationAmounts={form.allocationAmounts}
         label={labels.allocations}
         disabled={refundFlow.isSubmitting}
+        requestTypeLabels={labels.requestTypeLabels}
+        invalidAmountLabel={labels.failed}
         onChange={form.handleAllocChange}
       />
       <FormField label={labels.note} htmlFor="refund-note">
@@ -249,6 +256,9 @@ export function RefundDialog(props: RefundDialogProps): ReactElement {
   const refundFlow = useRefundFlow({
     organizationId: props.organizationId,
     noApproversMessage: labels.noApprovers,
+    failedMessage: labels.failed,
+    approvalFailedMessage: labels.approvalFailed,
+    loadApproversFailedMessage: labels.loadApproversFailed,
     onSuccess: (res) => {
       props.onSuccess?.(res);
       router.refresh();

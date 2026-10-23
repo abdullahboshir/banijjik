@@ -51,6 +51,7 @@ async function executePinReversal(opts: {
   readonly payment: PaymentResponse;
   readonly reversalNote: string | null;
   readonly pinInput: { approverMemberId: string; pin: string };
+  readonly fallbackError: string;
   readonly setIsApproving: (v: boolean) => void;
   readonly setApprovalError: (v: string | undefined) => void;
   readonly setIsConflict: (v: boolean) => void;
@@ -71,7 +72,7 @@ async function executePinReversal(opts: {
     if (isConflict) {
       opts.closeApproval();
     } else {
-      opts.handlePinError(error, "Reversal failed");
+      opts.handlePinError(error, opts.fallbackError);
     }
     return undefined;
   } finally {
@@ -83,6 +84,7 @@ async function loadAndOpenApprovers(opts: {
   readonly organizationId: string;
   readonly locationId: string;
   readonly noApproversMsg: string;
+  readonly fallbackError: string;
   readonly openApproval: (list: readonly ApproverSummary[]) => void;
 }): Promise<string | undefined> {
   try {
@@ -91,7 +93,7 @@ async function loadAndOpenApprovers(opts: {
     opts.openApproval(list);
     return undefined;
   } catch (err) {
-    return err instanceof Error ? err.message : "Failed to load approvers";
+    return err instanceof Error ? err.message : opts.fallbackError;
   }
 }
 
@@ -105,17 +107,24 @@ function resetReversalState(
   setIsConflict(false);
 }
 
-export function useReversalFlow(props: {
+export interface UseReversalFlowProps {
   readonly organizationId: string;
   readonly payment: PaymentResponse;
   readonly noApproversMessage: string;
-  readonly onSuccess?: (payment: PaymentResponse) => void;
-}): ReversalFlowState {
+  readonly failedMessage?: string | undefined;
+  readonly loadApproversFailedMessage?: string | undefined;
+  readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
+}
+
+export function useReversalFlow(props: UseReversalFlowProps): ReversalFlowState {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConflict, setIsConflict] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [reversalNote, setReversalNote] = useState<string | null>(null);
   const approval = useApprovalDialogState();
+
+  const failedMsg = props.failedMessage ?? "Reversal failed";
+  const loadApproversMsg = props.loadApproversFailedMessage ?? "Failed to load approvers";
 
   async function initiateReversal(note?: string | null): Promise<void> {
     setReversalNote(note ?? null);
@@ -127,6 +136,7 @@ export function useReversalFlow(props: {
         organizationId: props.organizationId,
         locationId: props.payment.locationId,
         noApproversMsg: props.noApproversMessage,
+        fallbackError: loadApproversMsg,
         openApproval: approval.openApproval,
       });
       if (err) setErrorMessage(err);
@@ -141,6 +151,7 @@ export function useReversalFlow(props: {
       payment: props.payment,
       reversalNote,
       pinInput,
+      fallbackError: failedMsg,
       setIsApproving: approval.setIsApproving,
       setApprovalError: approval.setApprovalError,
       setIsConflict,

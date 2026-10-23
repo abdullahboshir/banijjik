@@ -2,8 +2,11 @@
 
 import { ERROR_CODE } from "@banijjik/contracts";
 import { APPROVAL_ACTION, type ApproverSummary } from "@banijjik/contracts/iam";
-import { PAYMENT_RULE_KEYS, type PaymentResponse } from "@banijjik/contracts/payment";
+import { type PaymentResponse } from "@banijjik/contracts/payment";
+import type { Translator } from "@banijjik/i18n";
+import { useTranslator } from "@banijjik/web-client/client";
 import { useState } from "react";
+import { knownMessageKeyOrInternal } from "../auth/field-errors";
 import { ApiError } from "../lib/api/api-error";
 import {
   grantApproval,
@@ -32,28 +35,29 @@ export interface RefundFlowState {
 
 function isApprovalError(error: unknown): boolean {
   if (!(error instanceof ApiError)) return false;
-  return (
-    error.messageKey === PAYMENT_RULE_KEYS.PAYMENT_APPROVAL_REQUIRED ||
-    error.code === ERROR_CODE.APPROVAL_REQUIRED ||
-    error.code === ERROR_CODE.VALIDATION_ERROR ||
-    error.status === 422 ||
-    error.status === 403
-  );
+  return error.code === ERROR_CODE.APPROVAL_REQUIRED;
 }
 
-async function loadApproversList(
-  organizationId: string,
-  locationId: string,
-  noApproversMsg: string,
-): Promise<{ approvers: readonly ApproverSummary[]; error?: string }> {
+function formatRefundError(error: unknown, fallback: string, t: Translator["t"]): string {
+  if (error instanceof ApiError) return t(knownMessageKeyOrInternal(error.messageKey));
+  if (error instanceof Error) return error.message;
+  return fallback;
+}
+
+async function loadApproversList(opts: {
+  readonly organizationId: string;
+  readonly locationId: string;
+  readonly noApproversMsg: string;
+  readonly fallbackError: string;
+}): Promise<{ approvers: readonly ApproverSummary[]; error?: string }> {
   try {
-    const list = await listApprovers(organizationId, locationId);
-    if (list.length === 0) return { approvers: [], error: noApproversMsg };
+    const list = await listApprovers(opts.organizationId, opts.locationId);
+    if (list.length === 0) return { approvers: [], error: opts.noApproversMsg };
     return { approvers: list };
   } catch (err) {
     return {
       approvers: [],
-      error: err instanceof Error ? err.message : "Failed to load approvers",
+      error: err instanceof Error ? err.message : opts.fallbackError,
     };
   }
 }
@@ -81,6 +85,7 @@ async function submitApprovalPin(opts: {
   readonly organizationId: string;
   readonly pendingInput: RefundPaymentInput;
   readonly pinInput: { approverMemberId: string; pin: string };
+  readonly approvalFailedMsg: string;
   readonly setIsApproving: (v: boolean) => void;
   readonly setApprovalError: (v: string | undefined) => void;
   readonly closeApproval: () => void;
@@ -95,25 +100,27 @@ async function submitApprovalPin(opts: {
     opts.onSuccess?.(response);
     return response;
   } catch (error) {
-    opts.handlePinError(error, "Approval failed");
+    opts.handlePinError(error, opts.approvalFailedMsg);
     return undefined;
   } finally {
     opts.setIsApproving(false);
   }
 }
 
-async function performRefund(
-  organizationId: string,
-  input: RefundPaymentInput,
-  onSuccess?: (payment: PaymentResponse) => void,
-): Promise<{ response?: PaymentResponse; needsApproval?: boolean; error?: string }> {
+async function performRefund(opts: {
+  readonly organizationId: string;
+  readonly input: RefundPaymentInput;
+  readonly fallbackError: string;
+  readonly t: Translator["t"];
+  readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
+}): Promise<{ response?: PaymentResponse; needsApproval?: boolean; error?: string }> {
   try {
-    const response = await refundPayment(organizationId, input);
-    onSuccess?.(response);
+    const response = await refundPayment(opts.organizationId, opts.input);
+    opts.onSuccess?.(response);
     return { response };
   } catch (error) {
     if (isApprovalError(error)) return { needsApproval: true };
-    return { error: error instanceof Error ? error.message : "Refund failed" };
+    return { error: formatRefundError(error, opts.fallbackError, opts.t) };
   }
 }
 
@@ -122,6 +129,7 @@ function submitPendingApproval(opts: {
   readonly pendingInput?: RefundPaymentInput | undefined;
   readonly pinInput: { approverMemberId: string; pin: string };
   readonly approval: ReturnType<typeof useApprovalDialogState>;
+  readonly approvalFailedMsg: string;
   readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
 }): Promise<PaymentResponse | undefined> {
   if (!opts.pendingInput) return Promise.resolve(undefined);
@@ -129,6 +137,7 @@ function submitPendingApproval(opts: {
     organizationId: opts.organizationId,
     pendingInput: opts.pendingInput,
     pinInput: opts.pinInput,
+    approvalFailedMsg: opts.approvalFailedMsg,
     setIsApproving: opts.approval.setIsApproving,
     setApprovalError: opts.approval.setApprovalError,
     closeApproval: opts.approval.closeApproval,
@@ -137,23 +146,62 @@ function submitPendingApproval(opts: {
   });
 }
 
-export function useRefundFlow(props: {
+export interface UseRefundFlowProps {
   readonly organizationId: string;
   readonly noApproversMessage: string;
-  readonly onSuccess?: (payment: PaymentResponse) => void;
-}): RefundFlowState {
+  readonly failedMessage?: string | undefined;
+  readonly approvalFailedMessage?: string | undefined;
+  readonly loadApproversFailedMessage?: string | undefined;
+  readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
+}
+
+async function executeRefundCall(opts: {
+  readonly organizationId: string;
+  readonly input: RefundPaymentInput;
+  readonly failedMsg: string;
+  readonly t: Translator["t"];
+  readonly onSuccess?: ((payment: PaymentResponse) => void) | undefined;
+  readonly setIsSubmitting: (v: boolean) => void;
+  readonly setErrorMessage: (v: string | undefined) => void;
+  readonly openApprovalFor: (input: RefundPaymentInput) => Promise<void>;
+}): Promise<PaymentResponse | undefined> {
+  opts.setIsSubmitting(true);
+  opts.setErrorMessage(undefined);
+  try {
+    const res = await performRefund({
+      organizationId: opts.organizationId,
+      input: opts.input,
+      fallbackError: opts.failedMsg,
+      t: opts.t,
+      onSuccess: opts.onSuccess,
+    });
+    if (res.needsApproval) await opts.openApprovalFor(opts.input);
+    if (res.error) opts.setErrorMessage(res.error);
+    return res.response;
+  } finally {
+    opts.setIsSubmitting(false);
+  }
+}
+
+export function useRefundFlow(props: UseRefundFlowProps): RefundFlowState {
+  const { t } = useTranslator();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [pendingInput, setPendingInput] = useState<RefundPaymentInput | undefined>();
   const approval = useApprovalDialogState();
 
+  const failedMsg = props.failedMessage ?? "Refund failed";
+  const approvalFailedMsg = props.approvalFailedMessage ?? "Approval failed";
+  const loadApproversMsg = props.loadApproversFailedMessage ?? "Failed to load approvers";
+
   async function openApprovalFor(input: RefundPaymentInput): Promise<void> {
     setPendingInput(input);
-    const result = await loadApproversList(
-      props.organizationId,
-      input.locationId,
-      props.noApproversMessage,
-    );
+    const result = await loadApproversList({
+      organizationId: props.organizationId,
+      locationId: input.locationId,
+      noApproversMsg: props.noApproversMessage,
+      fallbackError: loadApproversMsg,
+    });
     if (result.error) {
       setErrorMessage(result.error);
       return;
@@ -161,18 +209,17 @@ export function useRefundFlow(props: {
     approval.openApproval(result.approvers);
   }
 
-  async function executeRefund(input: RefundPaymentInput): Promise<PaymentResponse | undefined> {
-    setIsSubmitting(true);
-    setErrorMessage(undefined);
-    try {
-      const res = await performRefund(props.organizationId, input, props.onSuccess);
-      if (res.needsApproval) await openApprovalFor(input);
-      if (res.error) setErrorMessage(res.error);
-      return res.response;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const executeRefund = (input: RefundPaymentInput) =>
+    executeRefundCall({
+      organizationId: props.organizationId,
+      input,
+      failedMsg,
+      t,
+      onSuccess: props.onSuccess,
+      setIsSubmitting,
+      setErrorMessage,
+      openApprovalFor,
+    });
 
   const handleApprovalSubmit = (pinInput: { approverMemberId: string; pin: string }) =>
     submitPendingApproval({
@@ -180,6 +227,7 @@ export function useRefundFlow(props: {
       pendingInput,
       pinInput,
       approval,
+      approvalFailedMsg,
       onSuccess: props.onSuccess,
     });
 

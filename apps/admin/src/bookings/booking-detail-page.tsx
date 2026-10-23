@@ -1,8 +1,15 @@
-import { PERMISSION_KEY, type CurrencyCode, type SettingsResponse } from "@banijjik/contracts";
+import {
+  PERMISSION_KEY,
+  type CallerPermissionsResponse,
+  type CurrencyCode,
+  type LocationResponse,
+  type SettingsResponse,
+} from "@banijjik/contracts";
 import type { BookingResponse } from "@banijjik/contracts/booking";
 import {
   PAYMENT_METHODS_DEFAULT,
   PAYMENT_METHODS_SETTING_KEY,
+  type DueItemResponse,
   type PaymentMethod,
 } from "@banijjik/contracts/payment";
 import type { Locale, Translator } from "@banijjik/i18n";
@@ -38,6 +45,8 @@ interface BookingDetailLayoutProps {
   readonly orgSlug: string;
   readonly organizationId: string;
   readonly booking: BookingResponse;
+  readonly locationName: string;
+  readonly remainingDueMinor: number;
   readonly currency: CurrencyCode;
   readonly allowedMethods: readonly PaymentMethod[];
   readonly permissions: { canUpdate: boolean; canCancel: boolean; canReceive: boolean };
@@ -76,6 +85,46 @@ function BookingDetailHeaderSection(props: {
   );
 }
 
+function BookingActionsSection(props: {
+  readonly organizationId: string;
+  readonly booking: BookingResponse;
+  readonly permissions: { canUpdate: boolean; canCancel: boolean };
+  readonly t: Translator["t"];
+}): ReactElement {
+  return (
+    <BookingDetailActions
+      organizationId={props.organizationId}
+      booking={props.booking}
+      permissions={props.permissions}
+      labels={{
+        confirm: props.t("bookings.action.confirm"),
+        checkIn: props.t("bookings.action.checkIn"),
+        complete: props.t("bookings.action.complete"),
+        noShow: props.t("bookings.action.noShow"),
+        cancel: props.t("bookings.action.cancel"),
+        cancelReason: props.t("bookings.cancel.reason"),
+      }}
+    />
+  );
+}
+
+function resolveRemainingDue(
+  booking: BookingResponse,
+  dueItem: DueItemResponse | undefined,
+): number {
+  if (dueItem) return dueItem.due.amount;
+  if (booking.paymentStatus === "PAID") return 0;
+  return booking.price.total.amount;
+}
+
+function resolveBookingPermissions(permissions: CallerPermissionsResponse, canWrite: boolean) {
+  return {
+    canUpdate: canWrite && holdsPermission(permissions, PERMISSION_KEY.BOOKING_BOOKING_UPDATE),
+    canCancel: canWrite && holdsPermission(permissions, PERMISSION_KEY.BOOKING_BOOKING_CANCEL),
+    canReceive: canWrite && holdsPermission(permissions, PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE),
+  };
+}
+
 function BookingDetailLayout(props: BookingDetailLayoutProps): ReactElement {
   const {
     orgSlug,
@@ -99,22 +148,17 @@ function BookingDetailLayout(props: BookingDetailLayoutProps): ReactElement {
         timeZone={timeZone}
         t={t}
       />
-      <BookingDetailActions
+      <BookingActionsSection
         organizationId={organizationId}
         booking={booking}
         permissions={{ canUpdate: permissions.canUpdate, canCancel: permissions.canCancel }}
-        labels={{
-          confirm: t("bookings.action.confirm"),
-          checkIn: t("bookings.action.checkIn"),
-          complete: t("bookings.action.complete"),
-          noShow: t("bookings.action.noShow"),
-          cancel: t("bookings.action.cancel"),
-          cancelReason: t("bookings.cancel.reason"),
-        }}
+        t={t}
       />
       <BookingDetailPaymentSection
         organizationId={organizationId}
         booking={booking}
+        locationName={props.locationName}
+        remainingDueMinor={props.remainingDueMinor}
         currency={currency}
         currencySymbol={currencySymbolOf(currency)}
         allowedMethods={allowedMethods}
@@ -126,7 +170,11 @@ function BookingDetailLayout(props: BookingDetailLayoutProps): ReactElement {
           totalPrice: t("bookings.detail.totalPrice"),
           depositRequired: t("bookings.detail.depositRequired"),
           statusLabels: paymentLabels.status,
-          sheetLabels: { ...paymentLabels.receiveSheet, methodLabels: paymentLabels.method },
+          sheetLabels: {
+            ...paymentLabels.receiveSheet,
+            methodLabels: paymentLabels.method,
+            requestTypeLabels: paymentLabels.requestType,
+          },
         }}
       />
       <BookingDetailHistory history={booking.history} title={t("bookings.detail.history")} />
@@ -147,31 +195,39 @@ export async function BookingDetailPage(props: {
     return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
   }
   const organizationId = access.organization.organizationId;
-  const [{ data: booking }, currency, settingsResult] = await Promise.all([
-    fetchBusinessResource<BookingResponse>(`/orgs/${organizationId}/bookings/${props.bookingId}`),
+  const { data: booking } = await fetchBusinessResource<BookingResponse>(
+    `/orgs/${organizationId}/bookings/${props.bookingId}`,
+  );
+  const [currency, settingsResult, duesResult, locationsResult] = await Promise.all([
     loadCurrency(access),
     fetchBusinessResourceIfAllowed<SettingsResponse>(
       `/orgs/${organizationId}/settings?keys=${PAYMENT_METHODS_SETTING_KEY}`,
     ),
+    fetchBusinessResourceIfAllowed<DueItemResponse[]>(
+      `/orgs/${organizationId}/dues?contactId=${booking.contactId}&requestType=BOOKING`,
+    ),
+    fetchBusinessResourceIfAllowed<LocationResponse[]>(
+      `/orgs/${organizationId}/locations?status=ACTIVE&limit=100`,
+    ),
   ]);
 
+  const dueItem = duesResult?.find((d) => d.requestId === booking.bookingId);
+  const remainingDueMinor = resolveRemainingDue(booking, dueItem);
+  const locationName =
+    locationsResult?.find((l) => l.locationId === booking.locationId)?.name ?? booking.locationId;
   const allowedMethods = resolveAllowedMethods(settingsResult);
-  const permissions = access.config.permissions;
-  const canUpdate =
-    access.canWrite && holdsPermission(permissions, PERMISSION_KEY.BOOKING_BOOKING_UPDATE);
-  const canCancel =
-    access.canWrite && holdsPermission(permissions, PERMISSION_KEY.BOOKING_BOOKING_CANCEL);
-  const canReceive =
-    access.canWrite && holdsPermission(permissions, PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE);
+  const permissions = resolveBookingPermissions(access.config.permissions, access.canWrite);
 
   return (
     <BookingDetailLayout
       orgSlug={props.orgSlug}
       organizationId={organizationId}
       booking={booking}
+      locationName={locationName}
+      remainingDueMinor={remainingDueMinor}
       currency={currency}
       allowedMethods={allowedMethods}
-      permissions={{ canUpdate, canCancel, canReceive }}
+      permissions={permissions}
       locale={locale}
       timeZone={access.timeZone}
       t={t}

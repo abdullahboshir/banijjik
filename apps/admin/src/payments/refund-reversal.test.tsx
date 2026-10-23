@@ -3,6 +3,7 @@ import { ERROR_CODE } from "@banijjik/contracts";
 import {
   PAYMENT_DIRECTION,
   PAYMENT_METHOD,
+  PAYMENT_REQUEST_TYPE,
   PAYMENT_RULE_KEYS,
   type PaymentResponse,
 } from "@banijjik/contracts/payment";
@@ -46,7 +47,7 @@ const MOCK_PAYMENT: PaymentResponse = {
   reversesPaymentId: null,
   allocations: [
     {
-      requestType: "BOOKING",
+      requestType: PAYMENT_REQUEST_TYPE.BOOKING,
       requestId: "0192e2b0-8a71-7000-8000-000000000003",
       amount: { amount: 50000, currency: "BDT" },
       revenueState: "BEFORE_REVENUE",
@@ -79,8 +80,8 @@ describe("Refund and Reversal flows", () => {
     // First refund call fails with approval required
     refundPaymentMock.mockRejectedValueOnce(
       new ApiError({
-        status: 422,
-        code: ERROR_CODE.VALIDATION_ERROR,
+        status: 403,
+        code: ERROR_CODE.APPROVAL_REQUIRED,
         messageKey: PAYMENT_RULE_KEYS.PAYMENT_APPROVAL_REQUIRED,
       }),
     );
@@ -103,9 +104,10 @@ describe("Refund and Reversal flows", () => {
         labels={{
           ...labels.refundDialog,
           methodLabels: labels.method,
+          requestTypeLabels: labels.requestType,
           cancelLabel: labels.refundDialog.cancel,
           closeLabel: labels.refundDialog.cancel,
-          lockedMessage: "PIN locked",
+          lockedMessage: labels.refundDialog.approvalLocked,
         }}
       />,
     );
@@ -207,5 +209,85 @@ describe("Refund and Reversal flows", () => {
     const reloadBtn = screen.getByRole("button", { name: labels.reversalDialog.reload });
     await user.click(reloadBtn);
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows error and no PIN dialog when refund exceeds paid amount", async () => {
+    const user = userEvent.setup();
+
+    refundPaymentMock.mockRejectedValueOnce(
+      new ApiError({
+        status: 422,
+        code: ERROR_CODE.VALIDATION_ERROR,
+        messageKey: PAYMENT_RULE_KEYS.PAYMENT_REFUND_EXCEEDS_PAID,
+      }),
+    );
+
+    renderInBangla(
+      <RefundDialog
+        open
+        onOpenChange={() => {}}
+        organizationId="org-1"
+        payment={MOCK_PAYMENT}
+        labels={{
+          ...labels.refundDialog,
+          methodLabels: labels.method,
+          requestTypeLabels: labels.requestType,
+          cancelLabel: labels.refundDialog.cancel,
+          closeLabel: labels.refundDialog.cancel,
+          lockedMessage: labels.refundDialog.approvalLocked,
+        }}
+      />,
+    );
+
+    const submitBtn = screen.getByRole("button", { name: labels.refundDialog.submit });
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(banglaTranslator().t("errors.payment_refund_exceeds_paid")),
+      ).toBeDefined();
+    });
+
+    expect(screen.queryByText(labels.refundDialog.approvalTitle)).toBeNull();
+    expect(listApproversMock).not.toHaveBeenCalled();
+  });
+
+  it("translates raw message keys to user language on error", async () => {
+    const user = userEvent.setup();
+
+    refundPaymentMock.mockRejectedValueOnce(
+      new ApiError({
+        status: 400,
+        code: ERROR_CODE.VALIDATION_ERROR,
+        messageKey: "errors.payment_original_not_found",
+      }),
+    );
+
+    renderInBangla(
+      <RefundDialog
+        open
+        onOpenChange={() => {}}
+        organizationId="org-1"
+        payment={MOCK_PAYMENT}
+        labels={{
+          ...labels.refundDialog,
+          methodLabels: labels.method,
+          requestTypeLabels: labels.requestType,
+          cancelLabel: labels.refundDialog.cancel,
+          closeLabel: labels.refundDialog.cancel,
+          lockedMessage: labels.refundDialog.approvalLocked,
+        }}
+      />,
+    );
+
+    const submitBtn = screen.getByRole("button", { name: labels.refundDialog.submit });
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByText("errors.payment_original_not_found")).toBeNull();
+      expect(
+        screen.getByText(banglaTranslator().t("errors.payment_original_not_found")),
+      ).toBeDefined();
+    });
   });
 });
