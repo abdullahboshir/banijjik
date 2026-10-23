@@ -56,17 +56,22 @@ afterAll(async () => {
   await stack?.stop();
 });
 
-/** The next Monday as YYYY-MM-DD: the only weekday the test gives the stylist hours, always in the future. */
+/**
+ * The next Monday as YYYY-MM-DD: the only weekday the test gives the stylist hours, always in the future.
+ * The weekday comes from today's Dhaka date, not the runner's clock: CI runs in UTC, so between
+ * Dhaka midnight and 06:00 the two calendars disagree and a local weekday lands on a Tuesday.
+ */
 function nextMonday(): string {
-  const now = new Date();
-  const weekday = now.getDay() === 0 ? 7 : now.getDay();
-  now.setDate(now.getDate() + (weekday === 1 ? 7 : 8 - weekday));
-  return new Intl.DateTimeFormat("en-CA", {
+  const todayInDhaka = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Dhaka",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(now);
+  }).format(new Date());
+  const date = new Date(`${todayInDhaka}T00:00:00Z`);
+  const weekday = date.getUTCDay() === 0 ? 7 : date.getUTCDay();
+  date.setUTCDate(date.getUTCDate() + (weekday === 1 ? 7 : 8 - weekday));
+  return date.toISOString().slice(0, 10);
 }
 
 /** The Monday row is first: the editor lists the weekdays Monday to Sunday. */
