@@ -31,6 +31,7 @@ export interface BookingSettings {
   readonly freeCancelHours?: number;
   readonly lateCancelFee?: import("@banijjik/contracts/booking").CancelFeeMode;
   readonly noShowFee?: import("@banijjik/contracts/booking").CancelFeeMode;
+  readonly feePercent?: number;
 }
 
 export interface BookingSettingsReader {
