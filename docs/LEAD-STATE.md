@@ -8,7 +8,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-23 (night, Dhaka) by Opus 5.5 · `main` = `origin/main` = `cf17e3c` plus this state save (pushed). Since `c333375`: **3.8 Part A merged** (`471a773`, CI 39920689431) and **M.5 Part B merged** (`cf17e3c`, CI 39922589973)
+Last updated: 2026-10-23 (night, Dhaka) by Opus 5.5 · `main` = `origin/main` = `17f37d3` plus this state save (pushed). Since `c333375`: **3.8 Part A merged** (`471a773`, CI 39920689431) and **M.5 Part B merged** (`cf17e3c`, CI 39922589973)
 
 ## 1. Where the project stands
 - Phase 3 merged: 3.0, 3.1a/b/c, 3.2a/b, 3.3, 3.4, 3.4b, 3.6, **3.8 Part A**, 3.8a, 3.8b, 3.8c, 3.12–3.21. Track M merged: M.1 to **M.5 (both parts)**. Details per card: `docs/STATUS.md`.
@@ -27,8 +27,8 @@ Last updated: 2026-10-23 (night, Dhaka) by Opus 5.5 · `main` = `origin/main` = 
 | 3.7 Part A enrollment | `s/3.7-api-enrollment-v2` (`779f472`) | `banijjik-1.7b` | T1 | **R1: changes required** (`docs/handoffs/3.7-api-review-R1.md`, 10 items). **No commit since R1**: ask the owner whether a session has it. Now that 3.8 merged, its rebase touches the same booking files. |
 | M.7 Part A1 reports | `s/M.7-api-reports` (prompt given) | cloud | T1 | Plan `docs/plans/M.7.md` A1, ADR-134. **No branch on origin yet** (checked 2026-10-23 night). Next: T1 review on a done. |
 | M.8a matrimony templates | `s/M.8a-matrimony-templates` (prompt given) | cloud | T2 | Plan `docs/plans/M.8a.md`. **No branch on origin yet.** **At merge of the second of M.7 A1 / M.8a, the lead adds `reportReasons`** (keys in M.8a decision 5) to both seeds. Next: merge check. |
-| 3.6b rental/event Part A | not created | none | T1 | Plan on main, ADR-133. **Unblocked** (3.8 Part A merged). Next: check the plan against current booking code (3.8 changed `cancel-booking`, `transition-booking`, `mark-no-shows.job`, `DepositCheckPort`), then give the owner a prompt. Do not touch 3.7 hold files. |
-| 3.8 Part B payment screens | not created | none | T2 | **Unblocked.** Plan `docs/plans/3.8.md` Part B. Next: refresh against the merged API (handoff `docs/handoffs/3.8-api.md`), then a prompt. |
+| 3.6b A1 rentals / A2 event sessions | `s/3.6b-api-rental` / `s/3.6b-api-event-sessions` (prompts given 2026-10-23 night) | `banijjik` / cloud | T1 / T2 | Plan `docs/plans/3.6b.md` + "Refresh (2026-10-23)": three parts; A1 and A2 run in parallel, A3 (event bookings, T1) after both merge. Next: T1 review of A1, merge check of A2, then refresh and release A3. |
+| 3.8 B1 payments / B2 dues and store credit | `s/3.8-ui-payments` / `s/3.8-ui-dues-store-credit` (prompts given 2026-10-23 night) | `banijjik-lead` / `banijjik-m2` | T2 | Plan `docs/plans/3.8.md` "Refresh 2": parallel, separate folders; each must carry a 180 KiB budget check per new route. Next: merge checks. |
 
 Merged and safe to delete (local and `origin`):
 - card branches: `s/3.8-api-payments`, `s/M.5-ui-credit-purchases`, `s/3.15-test-stability`, `s/3.16-dead-letter-replay-race`, `s/3.17-next-security`, `s/3.18-delivery-guardrails`, `s/3.19-job-config-version`, `s/M.5-api-credit-purchases`, `s/M.5-threshold-cleanup`, `s/3.20-local-fonts`, `s/3.21-accounting-currency`
@@ -37,7 +37,7 @@ Merged and safe to delete (local and `origin`):
 - PR #2 (3.8) can be closed as merged.
 
 Folders:
-- **Free:** `banijjik` (M.5 merged; still on the merged branch), `banijjik-lead` (3.8 merged), `banijjik-m2` (3.21 merged). Switch each to `main` (or a new card branch) before reuse. `banijjik-3.5a` has 3.5a, `banijjik-1.7b` has 3.7. E: had 4.2 GB free (2026-10-23).
+- Assigned 2026-10-23 night: `banijjik` → 3.6b A1, `banijjik-lead` → 3.8 B1, `banijjik-m2` → 3.8 B2 (if the owner followed the prompts). `banijjik-3.5a` has 3.5a, `banijjik-1.7b` has 3.7. E: had 4.2 GB free (2026-10-23).
 - `banijjik-docs` is the docs and merge folder. The next lead session opens in `banijjik-docs`.
 
 **Agents claim "done" early.** A "done" without the full `npm run card:check` output (all PASS) is not reviewed. Verify anyway: `git status` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`, `--log-failed`. Handoffs often say "Deviations: none" when there are some; diff against the plan's file list.
@@ -45,7 +45,7 @@ Folders:
 Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.md` and `docs/05-CONVENTIONS.md` ("Engineering safeguards"). The owner has not said keep or drop.
 
 ## 3. Waiting on the owner
-- Give the review files to the sessions: 3.5a R1, 3.7 R1 (neither has a commit since). Start M.7 A1 and M.8a as cloud sessions if not yet running (no branches on origin).
+- 3.5a: the session claimed done, but origin is still `6043913` (before R1); the owner got a message for it. 3.7 R1: no commit since. Start M.7 A1 and M.8a as cloud sessions if not yet running (no branches on origin).
 - Owner capacity (2026-10-23): 6–7 implement sessions at once. Three folders are free now.
 - Model rule given to the owner: Sonnet 5.5 for T1/T2 implementation (the lead reviews strictly); Haiku 5.5 only for T3 mechanical cards, never for money, stock or security.
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
@@ -53,9 +53,7 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 
 ## 4. Next actions, in order
 1. Verify reality (folders, `origin/<branch>`, `gh run list`). For every "done", run `npm run card:check` in that folder.
-2. **Release the unblocked work (owner is waiting on it):**
-   - 3.8 Part B: refresh `docs/plans/3.8.md` Part B against the merged API, then a prompt (T2, Sonnet).
-   - 3.6b Part A: check the plan against the post-3.8 booking code, then a prompt (T1, Sonnet).
+2. **Plans still missing (owner is waiting on them):** 3.8 Part B and 3.6b were refreshed and released (`17f37d3`, prompts given).
    - Plan 3.11 (commission; inputs 3.8 now merged) and refresh the 3.9 POS inputs.
    - Plan M.6 (minimal storefront; M.5 merged) in a fresh session. A new app `apps/storefront` (cloud session). Read first: ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open questions: host → organization resolution (no subdomain lookup endpoint yet), customer cookies across the app and API hosts. M.6a (shell, home, search, listing page, sign-in) T1; M.6b (my biodata, connections, credits incl. the M.5 purchase flow, report/block buttons from M.7, static pages) T2. Domain: platform subdomain until doc 16 §6.6 is decided.
    - Refresh the ready board (guide §9).
@@ -81,7 +79,7 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
-- **2026-10-23 night** (Opus): 3.8 R3 fixes arrived; the lead fixed the last two leftovers (empty job catch, optional summary methods) and merged 3.8 Part A (`471a773`). M.5 Part B merge check: added the credit budget check, found purchases at 186 KiB, made the detail sheet lazy (170.6 KiB), merged (`cf17e3c`). Owner allowed pushing main. Owner is waiting on the unblocked work (3.8 B, 3.6b, 3.11, M.6).
+- **2026-10-23 night** (Opus): refreshed 3.8 Part B (B1/B2 parallel) and 3.6b (A1/A2 parallel, A3 after) and gave four prompts; 3.5a claimed done but nothing new on origin (still `6043913`), owner told. Earlier: 3.8 R3 fixes arrived; the lead fixed the last two leftovers (empty job catch, optional summary methods) and merged 3.8 Part A (`471a773`). M.5 Part B merge check: added the credit budget check, found purchases at 186 KiB, made the detail sheet lazy (170.6 KiB), merged (`cf17e3c`). Owner allowed pushing main. Owner is waiting on the unblocked work (3.8 B, 3.6b, 3.11, M.6).
 - **2026-10-23 late evening** (Haiku then Opus): Haiku wrongly told the owner plans 3.20/3.21 were missing (it read the M.5 branch, not `main`); corrected. Answered 3.21's two conflicts with plan Amendment 1. Wrote plans M.7 (A1 now, A2/B later, ADR-134) and M.8a (seed data); 3.6b → ADR-133. Merge checks: 3.20 and 3.21. Pushed main `c333375`.
 - **2026-10-23 evening** (Opus): answered the M.5 agent (removed the unreachable threshold branch myself, CI green). Wrote plans 3.20 (fonts, T3) and 3.21 (accounting currency, T2); gave prompts for M.5 Part B, 3.20, 3.21. Pushed main `b616bbf`.
 - **2026-10-23 afternoon (2)** (Opus): owner asked why delivery is slow (review round trips, false "done" claims, shared CI breakage, big cards). Built and merged 3.18 (card:check, T1 checklist, nightly CI) and 3.19 (config in jobs). Merged M.5 Part A. Reviews: 3.5a R1 (4 blockers), 3.8 R3 (small). Pushed main `8793398`.
