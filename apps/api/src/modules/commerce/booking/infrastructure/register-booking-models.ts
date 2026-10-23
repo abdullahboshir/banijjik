@@ -15,7 +15,16 @@ import {
   resourceTimeOffSchema,
 } from "./booking.schema.js";
 
+import { EVENT_SESSION_MODEL_NAME, eventSessionSchema } from "./event-session.schema.js";
+
 export function registerBookingModels(): void {
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: EVENT_SESSION_MODEL_NAME,
+    collectionName: "event_sessions",
+    schema: eventSessionSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
+  });
   const tenant = { database: DATABASE_KIND.TENANT } as const;
   registerModel({
     ...tenant,

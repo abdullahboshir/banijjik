@@ -74,3 +74,8 @@ export {
   type ResourceEventPayload,
 } from "./booking-event-type.js";
 export { BOOKING_MESSAGE_KEYS, BOOKING_RULE_KEY, type BookingRuleKey } from "./booking-rule-key.js";
+export {
+  EVENT_SESSION_STATUS,
+  EVENT_SESSION_RULE_KEY,
+  type EventSessionStatus,
+} from "./event-session-contracts.js";

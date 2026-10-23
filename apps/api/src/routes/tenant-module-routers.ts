@@ -1,3 +1,4 @@
+import { buildEventSessionRouter } from "../modules/commerce/booking/index.js";
 import { Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
@@ -91,6 +92,7 @@ export function buildTenantRouters(input: TenantRoutersInput): readonly Router[]
     inventoryRouter,
     directoryRouter,
     expenseRouter,
+    buildEventSessionRouter({ clock, permission }),
     bookingRouter,
     creditRouter,
     paymentRouter,

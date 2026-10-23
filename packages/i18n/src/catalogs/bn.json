@@ -1,4 +1,11 @@
 {
+  "permission.booking.eventSession.read": "ইভেন্ট সেশন দেখা",
+  "permission.booking.eventSession.create": "ইভেন্ট সেশন তৈরি",
+  "permission.booking.eventSession.update": "ইভেন্ট সেশন আপডেট",
+  "permission.booking.eventSession.cancel": "ইভেন্ট সেশন বাতিল",
+  "errors.event_session_invalid_dates": "সেশনের শেষ সময় শুরুর পরে হতে হবে।",
+  "errors.event_session_capacity_below_sold": "বিক্রি হওয়া আসনের চেয়ে ধারণক্ষমতা কম হতে পারে না।",
+  "errors.event_session_time_locked": "আসন বিক্রির পরে সেশনের সময় বদলানো যাবে না।",
   "nav.home": "হোম",
   "nav.more": "আরও",
   "nav.quickCreate": "নতুন তৈরি করুন",

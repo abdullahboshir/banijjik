@@ -54,3 +54,4 @@ export function asId<IdType extends Id<string>>(value: string): IdType {
   // Safe: the brand exists only at type level and the value was just validated.
   return value as IdType;
 }
+export type EventSessionId = Id<"EventSession">;

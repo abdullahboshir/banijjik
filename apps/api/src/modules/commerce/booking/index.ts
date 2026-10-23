@@ -89,3 +89,5 @@ export function registerBookingScheduledJobs(input: {
     }),
   );
 }
+
+export { buildEventSessionRouter } from "./build-event-session-router.js";

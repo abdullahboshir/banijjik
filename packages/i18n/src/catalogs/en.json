@@ -1,4 +1,11 @@
 {
+  "permission.booking.eventSession.read": "View event sessions",
+  "permission.booking.eventSession.create": "Create event sessions",
+  "permission.booking.eventSession.update": "Update event sessions",
+  "permission.booking.eventSession.cancel": "Cancel event sessions",
+  "errors.event_session_invalid_dates": "The session end must follow its start.",
+  "errors.event_session_capacity_below_sold": "Capacity cannot be below sold seats.",
+  "errors.event_session_time_locked": "Session times cannot change after seats are sold.",
   "nav.home": "Home",
   "nav.more": "More",
   "nav.quickCreate": "Create new",

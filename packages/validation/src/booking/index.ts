@@ -29,3 +29,13 @@ export {
   type ResourceTimeOffCreateBody,
   type ResourceUpdateBody,
 } from "./booking-schemas.js";
+export {
+  eventSessionCreateSchema,
+  eventSessionUpdateSchema,
+  eventSessionVersionSchema,
+  eventSessionParamsSchema,
+  eventSessionListSchema,
+  type EventSessionCreateBody,
+  type EventSessionUpdateBody,
+  type EventSessionListQuery,
+} from "./event-session-schemas.js";

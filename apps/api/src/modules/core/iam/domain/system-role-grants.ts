@@ -288,5 +288,11 @@ export function grantedKeysOf(
     const moduleKeys = catalogKeys.filter((key) => permissionModuleKey(key) === moduleKey);
     for (const key of keysOfSpec(grants[roleKey], moduleKeys)) granted.add(key);
   }
+  if (
+    (roleKey === SYSTEM_ROLE_KEY.STAFF || roleKey === SYSTEM_ROLE_KEY.VIEWER) &&
+    catalogKeys.includes(PERMISSION_KEY.BOOKING_EVENT_SESSION_READ)
+  ) {
+    granted.add(PERMISSION_KEY.BOOKING_EVENT_SESSION_READ);
+  }
   return granted;
 }

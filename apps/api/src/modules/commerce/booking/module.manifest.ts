@@ -56,12 +56,17 @@ export const bookingManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.BOOKING_RESOURCE_CREATE),
     permissionDefinition(PERMISSION_KEY.BOOKING_RESOURCE_UPDATE),
     permissionDefinition(PERMISSION_KEY.BOOKING_RESOURCE_ARCHIVE),
+    permissionDefinition(PERMISSION_KEY.BOOKING_EVENT_SESSION_READ),
+    permissionDefinition(PERMISSION_KEY.BOOKING_EVENT_SESSION_CREATE),
+    permissionDefinition(PERMISSION_KEY.BOOKING_EVENT_SESSION_UPDATE),
+    permissionDefinition(PERMISSION_KEY.BOOKING_EVENT_SESSION_CANCEL),
   ],
   routes: {
     admin: [
       "/orgs/:organizationId/bookings",
       "/orgs/:organizationId/resources",
       "/orgs/:organizationId/availability",
+      "/orgs/:organizationId/event-sessions",
     ],
   },
   menu: [

@@ -41,3 +41,4 @@ export type {
   CommissionPayoutId,
   UserId,
 } from "./branded-ids.js";
+export type { EventSessionId } from "./branded-ids.js";
