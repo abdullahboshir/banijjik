@@ -1,6 +1,12 @@
 import { OFFERING_KIND } from "@banijjik/contracts";
 import type { StockComponent } from "@banijjik/contracts/catalog";
-import type { ApprovalRequired, ManualDiscount, QuoteResponse } from "@banijjik/contracts/pricing";
+import type {
+  ApprovalRequired,
+  ManualDiscount,
+  Money,
+  QuoteLineResult,
+  QuoteResponse,
+} from "@banijjik/contracts/pricing";
 import type { OrderTotals } from "@banijjik/contracts/sales";
 import { newId } from "@banijjik/ids";
 import { kindNeedsBooking, recordNotFound } from "../domain/errors.js";
@@ -34,6 +40,12 @@ export interface PreparedLines {
   }[];
   /** Non-empty when a manual discount needs an approval token (ADR-121). */
   readonly approvalsRequired: readonly ApprovalRequired[];
+  /**
+   * What the quote actually granted by hand: the line manual discounts plus the order discount's
+   * granted share (`lineDiscount - promotionDiscount` per line, 11 §3). This is the amount an
+   * approval token must cover (ADR-121); it is never taken from the client.
+   */
+  readonly manualDiscountTotal: Money;
 }
 
 function toTotals(quote: QuoteResponse): OrderTotals {
@@ -46,6 +58,48 @@ function toTotals(quote: QuoteResponse): OrderTotals {
     deliveryCharge: { amount: 0, currency: totals.grandTotal.currency },
     grandTotal: totals.grandTotal,
     roundingAdjustment: totals.roundingAdjustment,
+  };
+}
+
+/**
+ * What the quote granted by hand, summed over the lines (ADR-121). It reads the granted
+ * `lineDiscount`, not the client's request, so a discount the rules refused is never covered.
+ */
+function manualDiscountTotalOf(quote: QuoteResponse): Money {
+  return {
+    amount: quote.lines.reduce(
+      (sum, line) => sum + line.lineDiscount.amount - line.promotionDiscount.amount,
+      0,
+    ),
+    currency: quote.totals.grandTotal.currency,
+  };
+}
+
+/** The frozen line: quote money plus the catalog facts that must not change under the order. */
+function orderLineOf(
+  catalog: SalesCatalogLine,
+  quoted: QuoteLineResult,
+  manualDiscount: ManualDiscount | undefined,
+): OrderLineProps {
+  return {
+    orderLineId: newId(),
+    offeringId: catalog.offeringId,
+    variantId: catalog.variantId,
+    kind: catalog.kind,
+    nameSnapshot: catalog.nameSnapshot,
+    quantity: quoted.quantity,
+    unitPrice: quoted.unitPrice,
+    lineGross: quoted.lineGross,
+    lineDiscount: quoted.lineDiscount,
+    lineTax: quoted.lineTax,
+    lineNetTotal: quoted.lineNetTotal,
+    unitCostSnapshot: null,
+    modifiers: catalog.modifiers,
+    returnedQuantity: 0,
+    promotionIds: [...quoted.promotionIds],
+    taxClassKey: catalog.taxClassKey,
+    costComponents: catalog.stockComponents,
+    manualDiscount: manualDiscount ?? null,
   };
 }
 
@@ -72,26 +126,7 @@ export function prepareOrderLines(input: {
     if (catalog.kind !== OFFERING_KIND.PRODUCT) {
       throw kindNeedsBooking({ offeringId: catalog.offeringId, kind: catalog.kind });
     }
-    lines.push({
-      orderLineId: newId(),
-      offeringId: catalog.offeringId,
-      variantId: catalog.variantId,
-      kind: catalog.kind,
-      nameSnapshot: catalog.nameSnapshot,
-      quantity: quoted.quantity,
-      unitPrice: quoted.unitPrice,
-      lineGross: quoted.lineGross,
-      lineDiscount: quoted.lineDiscount,
-      lineTax: quoted.lineTax,
-      lineNetTotal: quoted.lineNetTotal,
-      unitCostSnapshot: null,
-      modifiers: catalog.modifiers,
-      returnedQuantity: 0,
-      promotionIds: [...quoted.promotionIds],
-      taxClassKey: catalog.taxClassKey,
-      costComponents: catalog.stockComponents,
-      manualDiscount: lineInput.manualDiscount ?? null,
-    });
+    lines.push(orderLineOf(catalog, quoted, lineInput.manualDiscount));
     costLines.push({
       offeringId: catalog.offeringId,
       variantId: catalog.variantId,
@@ -111,5 +146,6 @@ export function prepareOrderLines(input: {
     trackedLines,
     costLines,
     approvalsRequired: input.quote.approvalsRequired,
+    manualDiscountTotal: manualDiscountTotalOf(input.quote),
   };
 }

@@ -21,6 +21,7 @@ export {
   SALES_ADVANCE_REQUIRED_SETTING_KEY,
   SALES_AUTO_CONFIRM_DEFAULT,
   SALES_AUTO_CONFIRM_SETTING_KEY,
+  SALES_CANCEL_REASON,
   SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_DEFAULT,
   SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_SETTING_KEY,
   SALES_DRAFT_EXPIRY_HOURS_DEFAULT,
@@ -43,6 +44,7 @@ export {
   type OrderTotals,
   type PaymentStatus,
   type SalesAdvanceRequired,
+  type SalesCancelReason,
 } from "./sales-contracts.js";
 export {
   SALES_EVENT_TYPE,

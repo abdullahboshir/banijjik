@@ -33,8 +33,18 @@ export interface OrderListFilter {
   readonly limit: number;
 }
 
+/** One list row as the query projects it (decision 9): the line snapshots are never loaded. */
+export interface OrderListRow {
+  readonly orderId: OrderId;
+  readonly orderNumber: string | null;
+  readonly status: OrderStatus;
+  readonly contactId: ContactId | null;
+  readonly grandTotal: Money;
+  readonly createdAt: Date;
+}
+
 export interface OrderPage {
-  readonly items: readonly Order[];
+  readonly items: readonly OrderListRow[];
   readonly hasNext: boolean;
 }
 

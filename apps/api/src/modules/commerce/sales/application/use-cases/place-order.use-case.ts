@@ -1,7 +1,8 @@
-import { AUDIT_ACTION, LIMIT_KEY, SEQUENCE_KEY } from "@banijjik/contracts";
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, LIMIT_KEY, SEQUENCE_KEY } from "@banijjik/contracts";
 import {
   FULFILLMENT_METHOD,
   ORDER_STATUS,
+  SALES_ADVANCE_REQUIRED,
   SALES_EVENT_TYPE,
   type OrderResponse,
 } from "@banijjik/contracts/sales";
@@ -91,6 +92,7 @@ export class PlaceOrderUseCase {
       instant: false,
       ownerExempt: ctx.ownerExempt,
       approvalToken: ctx.input.body.approvalToken,
+      amount: ctx.prepared.manualDiscountTotal,
       approvals: this.dependencies.approvals,
     });
     const counted =
@@ -131,7 +133,7 @@ export class PlaceOrderUseCase {
     );
     await this.dependencies.audit.record({
       action: AUDIT_ACTION.ORDER_PLACED,
-      entityType: "order",
+      entityType: AUDIT_ENTITY_TYPE.order,
       entityId: persisted.orderId,
       changes: { orderNumber: { to: persisted.orderNumber } },
     });
@@ -154,7 +156,8 @@ export class PlaceOrderUseCase {
     settings: SalesSettings,
     actor: OrderTransitionActor,
   ): Promise<Order> {
-    if (!settings.autoConfirm || settings.advanceRequired !== "NONE") return order;
+    if (!settings.autoConfirm || settings.advanceRequired !== SALES_ADVANCE_REQUIRED.NONE)
+      return order;
     const persisted = await this.dependencies.orders.update(order.confirm(actor), order.version);
     await this.dependencies.events.publish(
       SALES_EVENT_TYPE.ORDER_CONFIRMED,
@@ -163,7 +166,7 @@ export class PlaceOrderUseCase {
     );
     await this.dependencies.audit.record({
       action: AUDIT_ACTION.ORDER_CONFIRMED,
-      entityType: "order",
+      entityType: AUDIT_ENTITY_TYPE.order,
       entityId: persisted.orderId,
       changes: {},
     });

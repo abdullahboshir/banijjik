@@ -100,14 +100,22 @@ export const MAX_ORDER_CANCEL_REASON_LENGTH = 200;
 export const MAX_ORDER_SEARCH_LENGTH = 120;
 export const MAX_ORDER_NOTE_LENGTH = 500;
 
+/**
+ * Cancel reasons the system writes itself; the admin UI shows them through i18n (part B adds the
+ * keys). A reason typed by staff stays free text.
+ */
+export const SALES_CANCEL_REASON = defineEnum(["AUTO_PLACED_TIMEOUT"]);
+export type SalesCancelReason = (typeof SALES_CANCEL_REASON)[keyof typeof SALES_CANCEL_REASON];
+
 /** Approval tokens cover one order: the subject key is `order:<orderId>`. */
 export function orderApprovalSubject(orderId: string): string {
   return `order:${orderId}`;
 }
 
 /**
- * An instant sale is approved before the order exists, so its tokens share this subject. A token
- * is single-use, so one token still approves exactly one sale.
+ * An instant sale is approved before the order exists, so its tokens share this subject. The token
+ * is single-use and binds the approved discount amount (ADR-121), so one token still approves
+ * exactly one sale at the approved size.
  */
 export const INSTANT_ORDER_APPROVAL_SUBJECT = "order:instant";
 

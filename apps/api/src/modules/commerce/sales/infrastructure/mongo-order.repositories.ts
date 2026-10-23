@@ -15,7 +15,13 @@ import type {
   OrderRepository,
 } from "../application/ports/sales-ports.js";
 import { Order } from "../domain/order.entity.js";
-import { orderDocument, orderMutableFields, toOrder } from "./mongo-order.mapper.js";
+import {
+  orderDocument,
+  orderMutableFields,
+  toOrder,
+  toOrderListRow,
+  type OrderListDocument,
+} from "./mongo-order.mapper.js";
 import {
   ORDER_COUNTER_MODEL_NAME,
   ORDER_MODEL_NAME,
@@ -30,6 +36,17 @@ function orderModel(): Model<OrderDocument> {
 function counterModel(): Model<OrderCounterDocument> {
   return models({}).get<OrderCounterDocument>(ORDER_COUNTER_MODEL_NAME);
 }
+
+/** The list projection (decision 9): `_id` excluded, line snapshots never read. */
+const LIST_ROW_PROJECTION = {
+  _id: 0,
+  orderId: 1,
+  orderNumber: 1,
+  status: 1,
+  contactId: 1,
+  createdAt: 1,
+  "totals.grandTotal": 1,
+};
 
 /** A guarded delete needs the stored version to tell a stale write from a missing order. */
 async function throwDeleteConflict(orderId: OrderId, expectedVersion: number): Promise<never> {
@@ -70,13 +87,13 @@ export class MongoOrderRepository implements OrderRepository {
 
   async list(filter: OrderListFilter): Promise<OrderPage> {
     const rows = await orderModel()
-      .find(queryOf(filter))
+      .find(queryOf(filter), LIST_ROW_PROJECTION)
       .sort({ createdAt: -1, orderId: 1 })
       .limit(filter.limit + 1)
       .skip((filter.page - 1) * filter.limit)
-      .lean<OrderDocument[]>();
+      .lean<OrderListDocument[]>();
     return {
-      items: rows.slice(0, filter.limit).map(toOrder),
+      items: rows.slice(0, filter.limit).map(toOrderListRow),
       hasNext: rows.length > filter.limit,
     };
   }

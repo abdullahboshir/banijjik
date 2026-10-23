@@ -1,13 +1,14 @@
-import { AUDIT_ACTION } from "@banijjik/contracts";
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import {
+  FULFILLMENT_METHOD,
   ORDER_STATUS,
   SALES_EVENT_TYPE,
   type OrderApproval,
   type OrderResponse,
 } from "@banijjik/contracts/sales";
 import { asId, type ContactId, type OrderId } from "@banijjik/ids";
-import { recordNotFound } from "../../domain/errors.js";
+import { contactPhoneRequired, orderNeedsLine, recordNotFound } from "../../domain/errors.js";
 import { Order } from "../../domain/order.entity.js";
 import type { OrderContentChanges } from "../../domain/order-types.js";
 import { emptyTotalsOf, lineInputsOf, type OrderWriteInput } from "./create-order.use-case.js";
@@ -70,15 +71,19 @@ export class UpdateOrderUseCase {
       prepared,
       ownerExemptBySetting: settings.discountOwnerWithoutApproval,
     };
-    const approval = await this.approvalOf(args);
+    await this.assertContentOfPlacedOrder(args, contactId);
     const clearedContent = await this.clearedContentOf(args);
-    const edited = existing.applyEdit(
-      this.changesOf(args, { contactId, approval, clearedContent }),
-      { actorUserId: input.actorUserId, now: this.dependencies.clock.now() },
-    );
+    const actor = { actorUserId: input.actorUserId, now: this.dependencies.clock.now() };
     const persisted = await this.dependencies.unitOfWork.run(async () => {
+      // ADR-121: the token is consumed inside the transaction, so a refused version leaves it
+      // usable for the corrected call.
+      const approval = await this.approvalOf(args);
+      const edited = existing.applyEdit(
+        this.changesOf(args, { contactId, approval, clearedContent }),
+        actor,
+      );
       if (existing.status !== ORDER_STATUS.DRAFT && quoteChanged) {
-        await this.restock(existing, prepared, settings.allowNegativeStock);
+        await this.restock(args, settings.allowNegativeStock);
       }
       const saved = await this.dependencies.orders.update(edited, input.body.version);
       await this.dependencies.events.publish(
@@ -88,7 +93,7 @@ export class UpdateOrderUseCase {
       );
       await this.dependencies.audit.record({
         action: AUDIT_ACTION.ORDER_UPDATED,
-        entityType: "order",
+        entityType: AUDIT_ENTITY_TYPE.order,
         entityId: saved.orderId,
         changes: {},
       });
@@ -96,6 +101,26 @@ export class UpdateOrderUseCase {
     });
     // The answer carries the stored version, so the next PATCH can send it back.
     return toOrderResponse(persisted, await this.dependencies.payments.read(persisted.orderId));
+  }
+
+  /**
+   * Past place an edit may not hollow the order out (R1-3): it keeps at least one line, and a
+   * PICKUP order keeps a contact the shop can call — the same rule place enforces. A DRAFT may
+   * still be emptied.
+   */
+  private async assertContentOfPlacedOrder(
+    args: EditArgs,
+    contactId: ContactId | null | undefined,
+  ): Promise<void> {
+    const { existing } = args;
+    if (existing.status === ORDER_STATUS.DRAFT) return;
+    if (args.prepared === undefined && this.quoteChangedOf(args)) throw orderNeedsLine();
+    if (existing.fulfillment.method !== FULFILLMENT_METHOD.PICKUP) return;
+    const nextContactId = contactId === undefined ? existing.contactId : contactId;
+    if (nextContactId === null) throw contactPhoneRequired("");
+    const contact = await this.dependencies.contacts.findActive(nextContactId);
+    if (contact === undefined) throw recordNotFound();
+    if (contact.phoneE164 === null) throw contactPhoneRequired(nextContactId);
   }
 
   private async contactChange(
@@ -137,15 +162,19 @@ export class UpdateOrderUseCase {
       instant: false,
       ownerExempt: ownerExemptBySetting && (await this.dependencies.owner.isOwner()),
       approvalToken: input.body.approvalToken,
+      amount: prepared.manualDiscountTotal,
       approvals: this.dependencies.approvals,
     });
+  }
+
+  private quoteChangedOf(args: EditArgs): boolean {
+    return args.input.body.lines !== undefined || args.input.body.orderDiscount !== undefined;
   }
 
   /** Lines cleared by the edit: the quote ran but returned nothing, so the order must zero out. */
   private async clearedContentOf(args: EditArgs): Promise<ClearedContent | undefined> {
     const { prepared, input } = args;
-    const quoteChanged = input.body.lines !== undefined || input.body.orderDiscount !== undefined;
-    if (!quoteChanged || prepared !== undefined) return undefined;
+    if (!this.quoteChangedOf(args) || prepared !== undefined) return undefined;
     return {
       lines: [],
       totals: emptyTotalsOf(await this.dependencies.currency.read(input.organizationId)),
@@ -183,17 +212,15 @@ export class UpdateOrderUseCase {
   }
 
   /** Release the old reservation and reserve the new lines; both join the edit transaction. */
-  private async restock(
-    existing: Order,
-    prepared: PreparedLines | undefined,
-    allowNegativeStock: boolean,
-  ): Promise<void> {
+  private async restock(args: EditArgs, allowNegativeStock: boolean): Promise<void> {
+    const { existing, prepared } = args;
+    const actorUserId = args.input.actorUserId;
     if (existing.hasStockLines) {
       await this.dependencies.stock.release(
         stockInputOf({
           organizationId: existing.organizationId,
           locationId: existing.locationId,
-          actorUserId: null,
+          actorUserId,
           orderId: existing.orderId,
           lines: [],
           allowNegativeStock,
@@ -205,7 +232,7 @@ export class UpdateOrderUseCase {
         stockInputOf({
           organizationId: existing.organizationId,
           locationId: existing.locationId,
-          actorUserId: null,
+          actorUserId,
           orderId: existing.orderId,
           lines: prepared.trackedLines,
           allowNegativeStock,

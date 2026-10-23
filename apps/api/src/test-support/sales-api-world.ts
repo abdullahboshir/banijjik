@@ -300,7 +300,8 @@ export async function orderMovements(
 
 /**
  * The discount approval of one order: a member with `iam.approval.grant` and a PIN gives the token
- * the place request then consumes.
+ * the place request then consumes. The token binds the approved discount amount (ADR-121), so the
+ * caller passes the same total the request will carry.
  */
 export async function approvalTokenFor(
   requester: ApiActor,
@@ -310,6 +311,7 @@ export async function approvalTokenFor(
     readonly subjectKey: string;
     readonly locationId: string;
     readonly pin: string;
+    readonly amount?: { readonly amount: number; readonly currency: string };
   },
 ): Promise<string> {
   const response = await requester.call("post", `/orgs/${organizationId}/approvals`, {
@@ -318,6 +320,7 @@ export async function approvalTokenFor(
     locationId: input.locationId,
     approverMemberId: input.approverMemberId,
     pin: input.pin,
+    ...(input.amount === undefined ? {} : { amount: input.amount }),
   });
   expect(response.status).toBe(HTTP_OK);
   return response.body.data.approvalToken as string;

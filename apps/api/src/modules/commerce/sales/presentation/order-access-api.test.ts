@@ -5,8 +5,10 @@ import {
   startCatalogApi,
   worldFor,
 } from "../../../../test-support/catalog-world.js";
+import { loginViaApi } from "../../../../test-support/auth-api-scenarios.js";
 import { registerIamApiModels } from "../../../../test-support/iam-api-harness.js";
 import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
+import type { MutableClock } from "../../../../test-support/mutable-clock.js";
 import { addMemberWithAssignments, findSystemRoleId } from "../../../../test-support/rbac-world.js";
 import {
   addCustomer,
@@ -18,7 +20,7 @@ import {
   shopOf,
 } from "../../../../test-support/sales-api-world.js";
 import type { SalesShop } from "../../../../test-support/sales-api-world.js";
-import type { TwoOrganizations } from "../../../../test-support/two-organizations.js";
+import { ApiActor, type TwoOrganizations } from "../../../../test-support/two-organizations.js";
 import { PACKAGE_CATALOG_REFRESH_MILLISECONDS } from "../../../platform/entitlement/index.js";
 
 registerIamApiModels();
@@ -31,6 +33,9 @@ const RAHIM_PHONE = "+8801700000001";
 /** Tightened on the BUNDLE package below, so one placed order fills the month. */
 const ORDERS_PER_MONTH = 1;
 const MILLISECONDS_PER_SECOND = 1000;
+const HOURS_IN_SECONDS = 3_600;
+/** Bangladesh stays on a fixed +06 all year, so the month flip is an exact UTC instant. */
+const DHAKA_UTC_OFFSET_HOURS = 6;
 
 let harness: IamApiHarness;
 
@@ -88,6 +93,26 @@ function placeCall(shop: SalesShop, draft: Draft) {
   return shop.actor.call("post", ordersPath(shop.organizationId, `/${draft.orderId}/place`), {
     version: draft.version,
   });
+}
+
+/** Moves the clock `hours` away from the next Dhaka month flip: negative is the old month. */
+function moveClockToDhakaMonthFlip(clock: MutableClock, hours: number): void {
+  const now = clock.now();
+  const flip =
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1) -
+    DHAKA_UTC_OFFSET_HOURS * HOURS_IN_SECONDS * MILLISECONDS_PER_SECOND;
+  clock.advanceSeconds(
+    Math.round(
+      (flip + hours * HOURS_IN_SECONDS * MILLISECONDS_PER_SECOND - now.getTime()) /
+        MILLISECONDS_PER_SECOND,
+    ),
+  );
+}
+
+/** A fresh sign-in for the owner: the clock jump ages the session cookie the API issued. */
+async function relogin(world: TwoOrganizations): Promise<ApiActor> {
+  const session = await loginViaApi(harness.app, world.alice.person);
+  return new ApiActor(harness.app, { ...world.alice.person, session });
 }
 
 describe("who may reach the orders API", () => {
@@ -182,5 +207,32 @@ describe("the monthly order limit", () => {
     const placed = await Promise.all(drafts.map((draft) => placeCall(shop, draft)));
 
     expect(placed.map((response) => response.status).sort()).toEqual([200, 422]);
+  });
+
+  it("starts the monthly count again when the organization's month turns in Dhaka", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const shop = shopOf(world);
+    const pack = await shelfOf(shop);
+    const contactId = await addCustomer(shop, "Rahim", RAHIM_PHONE);
+
+    // 18:00 on the month's last Dhaka day; the jump ages the issued session, so sign in again.
+    moveClockToDhakaMonthFlip(harness.clock, -DHAKA_UTC_OFFSET_HOURS);
+    const october = { ...shop, actor: await relogin(world) };
+    const lastDay = await draftOnePack(october, pack, contactId);
+    expect((await placeCall(october, lastDay)).status).toBe(200);
+
+    // 01:00 on the 1st, inside the 00:00–06:00 stretch the month counter must not lose.
+    moveClockToDhakaMonthFlip(harness.clock, 1);
+    const november = { ...shop, actor: await relogin(world) };
+    const firstDay = await draftOnePack(november, pack, contactId);
+    expect((await placeCall(november, firstDay)).status).toBe(200);
+
+    const over = await draftOnePack(november, pack, contactId);
+    const refused = await placeCall(november, over);
+    expect(refused.status).toBe(422);
+    expect(refused.body.error).toMatchObject({
+      code: "LIMIT_REACHED",
+      details: { limitKey: "ordersPerMonth", limit: ORDERS_PER_MONTH },
+    });
   });
 });

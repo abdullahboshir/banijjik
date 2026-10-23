@@ -253,6 +253,7 @@ describe("the money an order keeps", () => {
       subjectKey: orderApprovalSubject(first.orderId),
       locationId: shop.locationId,
       pin: APPROVAL_PIN,
+      amount: money(BIG_DISCOUNT_BP),
     });
     const approved = await placeOrder(shop, {
       orderId: first.orderId,
@@ -272,6 +273,59 @@ describe("the money an order keeps", () => {
       approvalToken: token,
     });
     expect(reused.status).toBe(403);
+    expect(await levelOf(shop, pack.riceItemId)).toEqual({
+      onHand: 10 * PACK_GRAMS,
+      reserved: PACK_GRAMS,
+    });
+  });
+
+  it("refuses a token granted for a smaller discount than the order carries", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const shop = shopOf(world);
+    const approverMemberId = await approverOf(world);
+    await setSetting(shop, "sales.discountOwnerWithoutApproval", false);
+    const pack = await packOf(shop, "small token");
+    const contactId = await addCustomer(shop, "Rahim", RAHIM_PHONE);
+    const draft = await draftOrder(shop, {
+      locationId: shop.locationId,
+      contactId,
+      lines: discountedLines(pack),
+    });
+    const subject = orderApprovalSubject(draft.orderId);
+
+    const shortToken = await approvalTokenFor(world.alice, shop.organizationId, {
+      approverMemberId,
+      subjectKey: subject,
+      locationId: shop.locationId,
+      pin: APPROVAL_PIN,
+      amount: money(TEN_PERCENT_BP),
+    });
+    const short = await placeOrder(shop, {
+      orderId: draft.orderId,
+      version: draft.version,
+      approvalToken: shortToken,
+    });
+    expect(short.status).toBe(403);
+    expect(await levelOf(shop, pack.riceItemId)).toEqual({
+      onHand: 10 * PACK_GRAMS,
+      reserved: 0,
+    });
+
+    // The refused token was never spent, so a full-size grant completes the same order.
+    const fullToken = await approvalTokenFor(world.alice, shop.organizationId, {
+      approverMemberId,
+      subjectKey: subject,
+      locationId: shop.locationId,
+      pin: APPROVAL_PIN,
+      amount: money(BIG_DISCOUNT_BP),
+    });
+    const approved = await placeOrder(shop, {
+      orderId: draft.orderId,
+      version: draft.version,
+      approvalToken: fullToken,
+    });
+    expect(approved.status).toBe(200);
+    expect(approved.order.totals.discountTotal).toEqual(money(BIG_DISCOUNT_BP));
     expect(await levelOf(shop, pack.riceItemId)).toEqual({
       onHand: 10 * PACK_GRAMS,
       reserved: PACK_GRAMS,

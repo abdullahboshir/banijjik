@@ -1,5 +1,5 @@
-import { AUDIT_ACTION, MODULE_KEY } from "@banijjik/contracts";
-import { SALES_EVENT_TYPE } from "@banijjik/contracts/sales";
+import { AUDIT_ACTION, ERROR_CODE, MODULE_KEY } from "@banijjik/contracts";
+import { SALES_CANCEL_REASON, SALES_EVENT_TYPE } from "@banijjik/contracts/sales";
 import { asId, type OrganizationId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
@@ -7,6 +7,7 @@ import { registerIamApiModels } from "../../../../test-support/iam-api-harness.j
 import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
 import { countAuditRows } from "../../../../test-support/organization-tenant-world.js";
 import { runInOrganizationContext } from "../../../../kernel/tenancy/index.js";
+import { AppError } from "../../../../kernel/http/index.js";
 import type { ScheduledJob } from "../../../../kernel/jobs/index.js";
 import { buildModuleRegistry } from "../../../../routes/module-registry.js";
 import { buildSalesJobPortsForWorker } from "../../../../routes/sales-tenant-router.js";
@@ -28,6 +29,7 @@ import type { SalesShop } from "../../../../test-support/sales-api-world.js";
 import { buildAutoCancelPlacedJob } from "../application/jobs/auto-cancel-placed.job.js";
 import { buildExpireDraftsJob } from "../application/jobs/expire-drafts.job.js";
 import { buildSalesJobDependencies } from "../sales-wiring.js";
+import type { Order } from "../domain/order.entity.js";
 
 registerIamApiModels();
 
@@ -36,6 +38,8 @@ const PACK_GRAMS = 1_000;
 const PACK_PRICE = 10_000;
 const RICE_COST_PER_GRAM = 60;
 const RAHIM_PHONE = "+8801700000001";
+/** A contact dedupes on the phone inside one organization, so the second placed order needs one. */
+const KARIM_PHONE = "+8801700000002";
 const PACKS_ON_SHELF = 4;
 const HOURS_PER_DAY = 24;
 /** `sales.draftExpiryHours` defaults to 48, so this age is past the window and a fresh draft is not. */
@@ -116,8 +120,8 @@ async function shelfOf(shop: SalesShop): Promise<Pack> {
 }
 
 /** A placed order of one pack: a candidate for the auto-cancel pass, with a reservation held. */
-async function placedOrderOf(shop: SalesShop, pack: Pack) {
-  const contactId = await addCustomer(shop, "Rahim", RAHIM_PHONE);
+async function placedOrderOf(shop: SalesShop, pack: Pack, phone = RAHIM_PHONE) {
+  const contactId = await addCustomer(shop, "Rahim", phone);
   const draft = await draftOrder(shop, {
     locationId: shop.locationId,
     contactId,
@@ -134,6 +138,27 @@ async function orderRow(shop: SalesShop, orderId: string): Promise<Record<string
   const response = await shop.actor.call("get", ordersPath(shop.organizationId, `/${orderId}`));
   expect(response.status).toBe(200);
   return response.body.data as Record<string, unknown>;
+}
+
+/** A CONFLICT shaped the way a raced version check answers (kernel/db versioned-update). */
+function rowRacedError(): AppError {
+  return new AppError({ code: ERROR_CODE.CONFLICT, details: { currentVersion: 99 } });
+}
+
+/**
+ * The job's bag with one row's write failing, the way a writer racing the pass would leave it.
+ * The pass must skip that row and still reach the orders behind it (R1-4).
+ */
+function jobWhoseRowFails(orderId: string, error: unknown) {
+  const dependencies = jobDependenciesOf();
+  const storedUpdate = dependencies.orders.update.bind(dependencies.orders);
+  Object.assign(dependencies.orders, {
+    update: async (order: Order, expectedVersion: number) => {
+      if (order.orderId === orderId) throw error;
+      return storedUpdate(order, expectedVersion);
+    },
+  });
+  return dependencies;
 }
 
 describe("the hourly sales passes", () => {
@@ -211,7 +236,7 @@ describe("the hourly sales passes", () => {
       entityId: placed.order.orderId,
     });
     const changes = auditRow?.["changes"] as Record<string, { to?: string }> | undefined;
-    expect(changes?.cancelReason?.to).toContain("Auto-cancelled");
+    expect(changes?.cancelReason?.to).toBe(SALES_CANCEL_REASON.AUTO_PLACED_TIMEOUT);
     expect(
       await harness.connections.platform.collection("outbox_events").countDocuments({
         organizationId: shop.organizationId,
@@ -219,5 +244,46 @@ describe("the hourly sales passes", () => {
         "payload.orderId": placed.order.orderId,
       }),
     ).toBe(1);
+  });
+
+  it("skips a row another writer raced and still cancels the order behind it", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const shop = shopOf(world);
+    await setSetting(shop, "sales.placedAutoCancelHours", AUTO_CANCEL_AFTER_HOURS);
+    const pack = await shelfOf(shop);
+    const raced = await placedOrderOf(shop, pack);
+    const behind = await placedOrderOf(shop, pack, KARIM_PHONE);
+    await ageOrder(shop, raced.order.orderId, AGE_PAST_DRAFT_WINDOW_HOURS);
+    await ageOrder(shop, behind.order.orderId, AGE_PAST_DRAFT_WINDOW_HOURS);
+
+    const job = buildAutoCancelPlacedJob(jobWhoseRowFails(raced.order.orderId, rowRacedError()));
+    await runPass(job, world.organizationA);
+
+    expect((await orderRow(shop, raced.order.orderId)).status).toBe("PLACED");
+    expect((await orderRow(shop, behind.order.orderId)).status).toBe("CANCELLED");
+    // The raced order keeps its reservation; the cancelled one behind it gave its stock back.
+    expect(await levelOf(shop, pack.riceItemId)).toEqual({
+      onHand: PACKS_ON_SHELF * PACK_GRAMS,
+      reserved: PACK_GRAMS,
+    });
+  });
+
+  it("logs a row that fails for another reason and still cancels the order behind it", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const shop = shopOf(world);
+    await setSetting(shop, "sales.placedAutoCancelHours", AUTO_CANCEL_AFTER_HOURS);
+    const pack = await shelfOf(shop);
+    const broken = await placedOrderOf(shop, pack);
+    const behind = await placedOrderOf(shop, pack, KARIM_PHONE);
+    await ageOrder(shop, broken.order.orderId, AGE_PAST_DRAFT_WINDOW_HOURS);
+    await ageOrder(shop, behind.order.orderId, AGE_PAST_DRAFT_WINDOW_HOURS);
+
+    const job = buildAutoCancelPlacedJob(
+      jobWhoseRowFails(broken.order.orderId, new Error("the ledger refused the write")),
+    );
+    await runPass(job, world.organizationA);
+
+    expect((await orderRow(shop, broken.order.orderId)).status).toBe("PLACED");
+    expect((await orderRow(shop, behind.order.orderId)).status).toBe("CANCELLED");
   });
 });

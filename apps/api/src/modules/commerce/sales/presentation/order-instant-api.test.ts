@@ -182,6 +182,7 @@ describe("the instant counter sale", () => {
       subjectKey: INSTANT_ORDER_APPROVAL_SUBJECT,
       locationId: shop.locationId,
       pin: APPROVAL_PIN,
+      amount: money(BIG_DISCOUNT_BP),
     });
     const sold = await instantOrder(shop, {
       locationId: shop.locationId,
@@ -194,5 +195,47 @@ describe("the instant counter sale", () => {
     expect(sold.order.approval).toMatchObject({ approverMemberId });
     expect(sold.order.totals.discountTotal).toEqual(money(2_000));
     expect(await levelOf(shop, pack.riceItemId)).toEqual({ onHand: 0, reserved: 0 });
+  });
+
+  it("spends the instant token on one sale only", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const shop = shopOf(world);
+    const approverMemberId = await approverOf(world);
+    await setSetting(shop, "sales.discountOwnerWithoutApproval", false);
+    const pack = await shelfOf(shop, 2);
+    const lines = [
+      { ...linesOf(pack, 1)[0], manualDiscount: { type: "PERCENT", value: BIG_DISCOUNT_BP } },
+    ];
+    const token = await approvalTokenFor(world.alice, shop.organizationId, {
+      approverMemberId,
+      subjectKey: INSTANT_ORDER_APPROVAL_SUBJECT,
+      locationId: shop.locationId,
+      pin: APPROVAL_PIN,
+      amount: money(BIG_DISCOUNT_BP),
+    });
+
+    const first = await instantOrder(shop, {
+      locationId: shop.locationId,
+      lines,
+      approvalToken: token,
+    });
+    expect(first.status).toBe(201);
+
+    // The shelf still holds a pack, so the second sale is refused for the spent token alone.
+    const second = await instantOrder(shop, {
+      locationId: shop.locationId,
+      lines,
+      approvalToken: token,
+    });
+    expect(second.status).toBe(403);
+    expect(second.order).toBeUndefined();
+    expect(await tracesOf(shop)).toEqual({
+      ...NO_TRACE,
+      orders: 1,
+      saleMovements: 1,
+      events: 2,
+      audit: 2,
+    });
+    expect(await levelOf(shop, pack.riceItemId)).toEqual({ onHand: PACK_GRAMS, reserved: 0 });
   });
 });

@@ -3,6 +3,7 @@ import { asId, type OrganizationId } from "@banijjik/ids";
 import type { ScheduledJob } from "../../../../../kernel/jobs/index.js";
 import type { SalesJobDependencies } from "../sales-dependencies.js";
 import { DeleteDraftUseCase } from "../use-cases/delete-draft.use-case.js";
+import { runJobRow } from "./run-job-row.js";
 
 /** One hourly pass reads at most this many candidates; the rest wait for the next pass. */
 const JOB_PAGE_LIMIT = 100;
@@ -20,11 +21,13 @@ export function buildExpireDraftsJob(dependencies: SalesJobDependencies): Schedu
       const cutoff = new Date(now.getTime() - settings.draftExpiryHours * 60 * 60 * 1000);
       const drafts = await dependencies.orders.findDraftsCreatedBefore(cutoff, JOB_PAGE_LIMIT);
       for (const draft of drafts) {
-        await deleteDraft.execute({
-          orderId: draft.orderId,
-          version: draft.version,
-          allowedLocationIds: "ALL",
-        });
+        await runJobRow(draft.orderId, () =>
+          deleteDraft.execute({
+            orderId: draft.orderId,
+            version: draft.version,
+            allowedLocationIds: "ALL",
+          }),
+        );
       }
     },
   };

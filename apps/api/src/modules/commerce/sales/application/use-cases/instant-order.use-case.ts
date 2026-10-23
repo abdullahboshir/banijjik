@@ -1,4 +1,4 @@
-import { AUDIT_ACTION, LIMIT_KEY, SEQUENCE_KEY } from "@banijjik/contracts";
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, LIMIT_KEY, SEQUENCE_KEY } from "@banijjik/contracts";
 import type { Money } from "@banijjik/contracts/pricing";
 import {
   FULFILLMENT_METHOD,
@@ -114,6 +114,7 @@ export class InstantOrderUseCase {
       instant: true,
       ownerExempt: ctx.ownerExempt,
       approvalToken: ctx.body.approvalToken,
+      amount: ctx.prepared.manualDiscountTotal,
       approvals: this.dependencies.approvals,
     });
     const counted =
@@ -219,7 +220,7 @@ export class InstantOrderUseCase {
     );
     await this.dependencies.audit.record({
       action: AUDIT_ACTION.ORDER_PLACED,
-      entityType: "order",
+      entityType: AUDIT_ENTITY_TYPE.order,
       entityId: order.orderId,
       changes: { orderNumber: { to: order.orderNumber } },
     });
@@ -230,7 +231,7 @@ export class InstantOrderUseCase {
     );
     await this.dependencies.audit.record({
       action: AUDIT_ACTION.ORDER_COMPLETED,
-      entityType: "order",
+      entityType: AUDIT_ENTITY_TYPE.order,
       entityId: order.orderId,
       changes: { invoiceNumber: { to: order.invoiceNumber } },
     });

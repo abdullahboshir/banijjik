@@ -17,6 +17,7 @@ import type { StockComponent } from "@banijjik/contracts/catalog";
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import { Order } from "../domain/order.entity.js";
 import type { OrderLineProps, OrderProps } from "../domain/order-types.js";
+import type { OrderListRow } from "../application/ports/sales-ports.js";
 import type {
   ApprovalDocument,
   ManualDiscountDocument,
@@ -185,4 +186,21 @@ export function orderDocument(order: Order): OrderDocument {
 /** The `$set` payload of an update: identity fields and `version` are never rewritten. */
 export function orderMutableFields(order: Order): MutableOrderFields {
   return mutableFieldsOf(order.toProps());
+}
+
+/** What the list query projects: the seven row fields, never the line snapshots (decision 9). */
+export type OrderListDocument = Pick<
+  OrderDocument,
+  "orderId" | "orderNumber" | "status" | "contactId" | "createdAt" | "totals"
+>;
+
+export function toOrderListRow(row: OrderListDocument): OrderListRow {
+  return {
+    orderId: asId<OrderId>(row.orderId),
+    orderNumber: row.orderNumber,
+    status: row.status,
+    contactId: row.contactId === null ? null : asId<ContactId>(row.contactId),
+    grandTotal: moneyOf(row.totals.grandTotal),
+    createdAt: row.createdAt,
+  };
 }

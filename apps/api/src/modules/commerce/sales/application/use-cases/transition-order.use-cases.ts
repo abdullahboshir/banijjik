@@ -1,5 +1,10 @@
-import { AUDIT_ACTION, SEQUENCE_KEY } from "@banijjik/contracts";
-import { ORDER_STATUS, SALES_EVENT_TYPE, type OrderResponse } from "@banijjik/contracts/sales";
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, SEQUENCE_KEY } from "@banijjik/contracts";
+import {
+  ORDER_STATUS,
+  SALES_ADVANCE_REQUIRED,
+  SALES_EVENT_TYPE,
+  type OrderResponse,
+} from "@banijjik/contracts/sales";
 import type { OrderId, UserId } from "@banijjik/ids";
 import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import {
@@ -46,7 +51,7 @@ export class ConfirmOrderUseCase {
     const order = await loadTransitionOrder(this.dependencies, input);
     if (order.status !== ORDER_STATUS.PLACED) throw invalidTransition(order.status);
     const settings = await this.dependencies.settings.read(input.organizationId);
-    if (settings.advanceRequired !== "NONE") throw advanceNeedsPayments();
+    if (settings.advanceRequired !== SALES_ADVANCE_REQUIRED.NONE) throw advanceNeedsPayments();
     const now = this.dependencies.clock.now();
     const confirmed = await this.dependencies.unitOfWork.run(async () => {
       const persisted = await this.dependencies.orders.update(
@@ -60,7 +65,7 @@ export class ConfirmOrderUseCase {
       );
       await this.dependencies.audit.record({
         action: AUDIT_ACTION.ORDER_CONFIRMED,
-        entityType: "order",
+        entityType: AUDIT_ENTITY_TYPE.order,
         entityId: persisted.orderId,
         changes: {},
       });
@@ -94,7 +99,7 @@ export class PackOrderUseCase {
       );
       await this.dependencies.audit.record({
         action: AUDIT_ACTION.ORDER_PACKED,
-        entityType: "order",
+        entityType: AUDIT_ENTITY_TYPE.order,
         entityId: persisted.orderId,
         changes: {},
       });
@@ -177,7 +182,7 @@ export class CompleteOrderUseCase {
     );
     await this.dependencies.audit.record({
       action: AUDIT_ACTION.ORDER_COMPLETED,
-      entityType: "order",
+      entityType: AUDIT_ENTITY_TYPE.order,
       entityId: persisted.orderId,
       changes: { invoiceNumber: { to: persisted.invoiceNumber } },
     });
@@ -223,7 +228,7 @@ export class CancelOrderUseCase {
       );
       await this.dependencies.audit.record({
         action: AUDIT_ACTION.ORDER_CANCELLED,
-        entityType: "order",
+        entityType: AUDIT_ENTITY_TYPE.order,
         entityId: persisted.orderId,
         changes: { cancelReason: { to: input.reason } },
       });

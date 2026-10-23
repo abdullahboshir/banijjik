@@ -2,6 +2,7 @@ import type { OrderListItem, OrderResponse } from "@banijjik/contracts/sales";
 import type { Order } from "../domain/order.entity.js";
 import { derivePaymentStatus, type PaymentTotals } from "../domain/payment-status.js";
 import type { OrderLineProps, OrderProps } from "../domain/order-types.js";
+import type { OrderListRow } from "./ports/sales-ports.js";
 
 function toLineSnapshot(line: OrderLineProps): OrderResponse["lines"][number] {
   return {
@@ -50,18 +51,18 @@ export function toOrderResponse(order: Order, paymentTotals: PaymentTotals): Ord
 }
 
 export function toOrderListItem(input: {
-  readonly order: Order;
+  readonly row: OrderListRow;
   readonly contactName: string | null;
   readonly paymentTotals: PaymentTotals;
 }): OrderListItem {
-  const props = input.order.toProps();
+  const { row } = input;
   return {
-    orderId: props.orderId,
-    orderNumber: props.orderNumber,
-    status: props.status,
+    orderId: row.orderId,
+    orderNumber: row.orderNumber,
+    status: row.status,
     contactName: input.contactName,
-    grandTotal: props.totals.grandTotal,
-    paymentStatus: derivePaymentStatus(props.totals.grandTotal, input.paymentTotals),
-    createdAt: props.createdAt.toISOString(),
+    grandTotal: row.grandTotal,
+    paymentStatus: derivePaymentStatus(row.grandTotal, input.paymentTotals),
+    createdAt: row.createdAt.toISOString(),
   };
 }

@@ -1,4 +1,4 @@
-import { AUDIT_ACTION } from "@banijjik/contracts";
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import type { CurrencyCode } from "@banijjik/contracts";
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import {
@@ -146,7 +146,7 @@ export class CreateOrderUseCase {
       );
       await this.dependencies.audit.record({
         action: AUDIT_ACTION.ORDER_DRAFTED,
-        entityType: "order",
+        entityType: AUDIT_ENTITY_TYPE.order,
         entityId: order.orderId,
         changes: {},
       });

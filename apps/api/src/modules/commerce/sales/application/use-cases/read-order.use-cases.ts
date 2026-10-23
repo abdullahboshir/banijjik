@@ -52,18 +52,16 @@ export class ListOrdersUseCase {
       await this.filterOf(input.allowedLocationIds, input.query),
     );
     const contactIds = [
-      ...new Set(
-        page.items.flatMap((order) => (order.contactId === null ? [] : [order.contactId])),
-      ),
+      ...new Set(page.items.flatMap((row) => (row.contactId === null ? [] : [row.contactId]))),
     ];
     const names = await this.dependencies.contacts.findNames(contactIds);
     return {
       items: await Promise.all(
-        page.items.map(async (order) =>
+        page.items.map(async (row) =>
           toOrderListItem({
-            order,
-            contactName: order.contactId === null ? null : (names.get(order.contactId) ?? null),
-            paymentTotals: await this.dependencies.payments.read(order.orderId),
+            row,
+            contactName: row.contactId === null ? null : (names.get(row.contactId) ?? null),
+            paymentTotals: await this.dependencies.payments.read(row.orderId),
           }),
         ),
       ),
