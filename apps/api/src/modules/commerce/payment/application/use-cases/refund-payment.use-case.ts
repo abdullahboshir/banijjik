@@ -56,6 +56,11 @@ export interface RefundPaymentInput {
   readonly actorUserId: UserId | null;
   readonly hasRefundWithoutApprovalPermission: boolean;
   readonly approvalToken?: string | undefined;
+  /**
+   * Internal only (plan 3.5b amendment 1): a REFUND approval the caller already verified and consumed
+   * for its own subject (a sales return). Never set from an HTTP body; the validation schema refuses it.
+   */
+  readonly approvalSnapshot?: PaymentApprovalSnapshot | undefined;
   readonly note?: string | null;
 }
 
@@ -164,7 +169,9 @@ async function prepareRefundContext(deps: RefundPaymentDependencies, input: Refu
     input.hasRefundWithoutApprovalPermission,
     input.organizationId,
   );
-  if (needsApproval && !input.approvalToken) throw paymentApprovalRequiredError();
+  if (needsApproval && !input.approvalToken && !input.approvalSnapshot) {
+    throw paymentApprovalRequiredError();
+  }
   const enrichedAllocations = await validateRefundRequests(
     deps.requestReaders,
     deps.summaries,

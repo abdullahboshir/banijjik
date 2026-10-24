@@ -168,6 +168,7 @@ export async function resolveRefundApproval(
   needsApproval: boolean,
   input: RefundPaymentInput,
 ): Promise<PaymentApprovalSnapshot | null> {
+  if (input.approvalSnapshot) return input.approvalSnapshot;
   if (!needsApproval || !input.approvalToken) return null;
   const consumed = await approvals.consume(input.approvalToken, {
     action: APPROVAL_ACTION.REFUND,
