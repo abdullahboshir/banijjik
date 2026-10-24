@@ -631,6 +631,7 @@
     },
     "directory": {
       "listingNumberPrefix": "BIO",
+      "homeStatsFieldKey": "gender",
       "sections": [
         { "sectionKey": "general", "label": { "bn": "সাধারণ", "en": "General" } },
         { "sectionKey": "address", "label": { "bn": "ঠিকানা", "en": "Address" } },

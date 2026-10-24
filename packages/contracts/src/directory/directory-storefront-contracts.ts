@@ -1,5 +1,7 @@
-import type { EffectiveCustomField } from "../custom-field/custom-field-contracts.js";
+import type { CustomFieldValidationBounds } from "../custom-field/custom-field-contracts.js";
+import type { CustomFieldType } from "../custom-field/custom-field-type.js";
 import type { LocalizedText } from "../platform/industry-template.js";
+import type { ListingFieldTier } from "./listing-field-tier.js";
 import type { DirectoryPhotoPolicy } from "./directory-settings.js";
 import type { DirectoryConfigResponse } from "./directory-contracts.js";
 
@@ -7,21 +9,20 @@ import type { DirectoryConfigResponse } from "./directory-contracts.js";
  * A listing field as the public search and the listing page need it (M.6a decision 3).
  * Definitions are not personal data, so no value, rejection or report reason is included.
  */
-export type StorefrontListingField = Pick<
-  EffectiveCustomField,
-  | "fieldKey"
-  | "label"
-  | "fieldType"
-  | "isRequired"
-  | "options"
-  | "optionLabels"
-  | "validation"
-  | "listingTier"
-  | "isFilterable"
-  | "sectionKey"
-  | "minAgeYears"
-  | "sortOrder"
->;
+export interface StorefrontListingField {
+  readonly fieldKey: string;
+  readonly label: LocalizedText;
+  readonly fieldType: CustomFieldType;
+  readonly isRequired: boolean;
+  readonly options?: readonly string[] | undefined;
+  readonly optionLabels?: Readonly<Record<string, LocalizedText>> | undefined;
+  readonly validation?: CustomFieldValidationBounds | undefined;
+  readonly listingTier?: ListingFieldTier | undefined;
+  readonly isFilterable?: boolean | undefined;
+  readonly sectionKey?: string | undefined;
+  readonly minAgeYears?: number | undefined;
+  readonly sortOrder: number;
+}
 
 /** Public read of the form definition of a business's directory. */
 export interface StorefrontDirectoryFormResponse {

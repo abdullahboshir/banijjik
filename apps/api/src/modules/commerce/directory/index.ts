@@ -73,6 +73,12 @@ import { MongoListingRepository } from "./infrastructure/mongo-listing.repositor
 import { MongoListingReportRepository } from "./infrastructure/mongo-listing-report.repository.js";
 import { MongoListingBlockRepository } from "./infrastructure/mongo-listing-block.repository.js";
 import { buildDirectoryStorefrontRouter } from "./presentation/directory-storefront.router.js";
+import {
+  GetStorefrontDirectoryFormUseCase,
+  GetStorefrontDirectoryStatsUseCase,
+} from "./application/use-cases/storefront-directory-reads.use-cases.js";
+import { MongoListingStatsRepository } from "./infrastructure/mongo-listing-stats.repository.js";
+import { buildListingStatsHandler } from "./application/handlers/listing-stats.handler.js";
 import { buildDirectoryTenantRouter } from "./presentation/directory-tenant.router.js";
 
 export { directoryManifest } from "./module.manifest.js";
@@ -142,6 +148,8 @@ export interface DirectoryTenantDependencies {
 }
 
 export interface DirectoryStorefrontDependencies {
+  /** Gates the form and stats reads: they answer 404 while the directory module is off (M.6a). */
+  readonly requireDirectoryModule: RequestHandler;
   readonly clock: Clock;
   readonly audit: AuditRecorder;
   readonly limiter: RateLimiter;
@@ -220,6 +228,13 @@ export function buildDirectoryStorefrontRouterFor(input: DirectoryStorefrontDepe
     overrides: input.fileOverrides,
   });
   return buildDirectoryStorefrontRouter({
+    requireDirectoryModule: input.requireDirectoryModule,
+    getForm: new GetStorefrontDirectoryFormUseCase(deps),
+    getStats: new GetStorefrontDirectoryStatsUseCase({
+      stats: new MongoListingStatsRepository(),
+      template: deps.template,
+      fields: deps.fields,
+    }),
     getMyListing: new GetMyListingUseCase(deps),
     upsertMyListing: new UpsertMyListingUseCase(deps),
     submitMyListing: new SubmitMyListingUseCase(deps),
@@ -246,6 +261,16 @@ export {
   listingFieldsFromEffectiveReader,
   directoryTemplateFromIndustryReader,
 } from "./directory-adapters.js";
+
+/**
+ * Registers the home statistics handler (M.6a decision 4). The worker passes the platform template
+ * reader, so the directory module never imports the industry module.
+ */
+export function registerDirectoryStatsHandler(template: DirectoryTemplateReader): void {
+  registerEventHandler(
+    buildListingStatsHandler({ stats: new MongoListingStatsRepository(), template }),
+  );
+}
 
 /**
  * Registers the directory event handlers. The worker calls it before it starts (ADR-090); the

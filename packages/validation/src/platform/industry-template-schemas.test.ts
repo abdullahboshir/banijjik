@@ -134,7 +134,60 @@ describe("industryTemplateConfigurationSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  // Card M.6a decision 4: the home statistics field must be a PUBLIC SELECT listing field.
+  it("accepts a home statistics field that is a PUBLIC SELECT listing field", () => {
+    const result = industryTemplateConfigurationSchema.safeParse(
+      withListingField(listingField({}), { homeStatsFieldKey: "gender" }),
+    );
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each([
+    ["a TEXT field", listingField({ fieldType: "TEXT", options: undefined })],
+    ["a MEMBERS tier field", listingField({ listingTier: "MEMBERS" })],
+  ])("refuses a home statistics field that is %s", (_label, field) => {
+    const result = industryTemplateConfigurationSchema.safeParse(
+      withListingField(field, { homeStatsFieldKey: "gender" }),
+    );
+
+    expect(result.success).toBe(false);
+  });
+
+  it("refuses a home statistics field key that names no listing field", () => {
+    const result = industryTemplateConfigurationSchema.safeParse(
+      withListingField(listingField({}), { homeStatsFieldKey: "missing_key" }),
+    );
+
+    expect(result.success).toBe(false);
+  });
 });
+
+/** A SELECT listing field, PUBLIC unless the override says otherwise. */
+function listingField(override: object): object {
+  return {
+    entityType: "listing",
+    fieldKey: "gender",
+    fieldType: "SELECT",
+    options: ["MALE", "FEMALE"],
+    isRequired: false,
+    botAsk: false,
+    visibility: { admin: true, storefront: true, bot: false },
+    isSearchable: false,
+    isSensitive: false,
+    listingTier: "PUBLIC",
+    ...override,
+  };
+}
+
+function withListingField(field: object, directoryOverride: object) {
+  return {
+    ...aConfiguration(),
+    customFields: [...(aConfiguration().customFields as object[]), field],
+    directory: aDirectoryBlock(directoryOverride),
+  };
+}
 
 function aDirectoryBlock(override: object): object {
   return {

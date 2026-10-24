@@ -35,6 +35,10 @@ import type {
 } from "../application/use-cases/search-listings.use-case.js";
 import type { UploadListingPhotoUseCase } from "../application/use-cases/upload-listing-photo.use-case.js";
 import { asId, type OrganizationId } from "@banijjik/ids";
+import {
+  mountDirectoryReads,
+  type DirectoryReadsDependencies,
+} from "./directory-storefront-reads.js";
 
 const SEARCH_IP_BUCKET = "directory.search.ip";
 const SEARCH_ACCOUNT_BUCKET = "directory.search.account";
@@ -42,7 +46,7 @@ const DETAIL_IP_BUCKET = "directory.detail.ip";
 const DETAIL_ACCOUNT_BUCKET = "directory.detail.account";
 const HTTP_CREATED = 201;
 
-export interface DirectoryStorefrontRouterDependencies {
+export interface DirectoryStorefrontRouterDependencies extends DirectoryReadsDependencies {
   readonly getMyListing: GetMyListingUseCase;
   readonly upsertMyListing: UpsertMyListingUseCase;
   readonly submitMyListing: SubmitMyListingUseCase;
@@ -310,5 +314,6 @@ export function buildDirectoryStorefrontRouter(
   mountBlocks(router, input);
   mountMyListingReadWrite(router, input);
   mountMyListingLifecycle(router, input);
+  mountDirectoryReads(router, input);
   return router;
 }

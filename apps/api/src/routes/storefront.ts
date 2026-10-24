@@ -232,6 +232,7 @@ function buildStorefrontRouters(
   });
 
   const directoryRouter = buildDirectoryStorefrontRouterFor({
+    requireDirectoryModule: moduleSwitch(input, MODULE_KEY.DIRECTORY),
     clock,
     audit,
     limiter: rateLimiter,

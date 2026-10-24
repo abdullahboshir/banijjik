@@ -16,7 +16,11 @@ import { startScheduledJobs } from "./kernel/jobs/index.js";
 import { registerAccountingAndExpenseHandlers } from "./routes/accounting-event-handlers.js";
 import { registerCommissionHandlers } from "./routes/commission-adapters.js";
 import { registerContactHandlers } from "./routes/contact-event-handlers.js";
-import { registerDirectoryEventHandlers } from "./modules/commerce/directory/index.js";
+import {
+  registerDirectoryEventHandlers,
+  registerDirectoryStatsHandler,
+} from "./modules/commerce/directory/index.js";
+import { buildDirectoryBlockReader } from "./modules/platform/industry/index.js";
 import { buildEventModuleEffectiveness } from "./routes/module-effectiveness.js";
 import { buildModuleRegistry } from "./routes/module-registry.js";
 import { systemClock } from "./kernel/time/index.js";
@@ -44,6 +48,7 @@ export function startWorker(
   registerContactHandlers(config);
   registerAccountingAndExpenseHandlers();
   registerDirectoryEventHandlers({ clock: systemClock, audit: buildAuditRecorder(systemClock) });
+  registerDirectoryStatsHandler(buildDirectoryBlockReader());
   const registry: ModuleRegistry = buildModuleRegistry();
   const orgConfig = buildOrgConfigService({
     registry,
