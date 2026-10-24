@@ -1,12 +1,18 @@
-import { CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
-import { customerOtpSendRequestSchema, customerOtpVerifyRequestSchema } from "@banijjik/validation";
+import { CUSTOMER_DATA_EXPORT_RULES, CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
+import {
+  customerAccountEraseRequestSchema,
+  customerOtpSendRequestSchema,
+  customerOtpVerifyRequestSchema,
+} from "@banijjik/validation";
 import { Router, type RequestHandler } from "express";
+import { requireCurrentCustomerAccountId } from "../../../../kernel/auth/index.js";
 import { validate } from "../../../../kernel/http/index.js";
 import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
 import type { CustomerAuthController } from "./customer-auth.controller.js";
 
 export const OTP_SEND_IP_BUCKET = "customer.otp.send.ip";
 export const OTP_VERIFY_IP_BUCKET = "customer.otp.verify.ip";
+export const DATA_EXPORT_ACCOUNT_BUCKET = "contact.data_export.account";
 
 export interface ContactStorefrontRouterDependencies {
   readonly auth: CustomerAuthController;
@@ -40,5 +46,30 @@ export function buildContactStorefrontRouter(input: ContactStorefrontRouterDepen
   router.post("/auth/refresh", auth.refresh);
   router.post("/auth/logout", auth.logout);
   router.get("/me", authenticateCustomer, auth.me);
+  router.post(
+    "/my/account/erase/otp",
+    authenticateCustomer,
+    rateLimit({ limiter, bucket: OTP_SEND_IP_BUCKET, ...CUSTOMER_OTP_RULES.sendsPerIp }),
+    auth.sendEraseOtp,
+  );
+  router.post(
+    "/my/account/erase",
+    authenticateCustomer,
+    rateLimit({ limiter, bucket: OTP_VERIFY_IP_BUCKET, ...CUSTOMER_OTP_RULES.verifiesPerIp }),
+    validate({ body: customerAccountEraseRequestSchema }),
+    auth.eraseAccount,
+  );
+  router.get(
+    "/my/data-export",
+    authenticateCustomer,
+    rateLimit({
+      limiter,
+      bucket: DATA_EXPORT_ACCOUNT_BUCKET,
+      limit: CUSTOMER_DATA_EXPORT_RULES.maxExportsPerDay,
+      windowSeconds: CUSTOMER_DATA_EXPORT_RULES.windowSeconds,
+      keyOf: () => requireCurrentCustomerAccountId(),
+    }),
+    auth.dataExport,
+  );
   return router;
 }

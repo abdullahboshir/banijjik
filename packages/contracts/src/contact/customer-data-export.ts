@@ -66,8 +66,9 @@ export interface DirectoryActivityExportSection {
 
 export interface CreditEntryExportItem {
   readonly creditEntryId: string;
-  readonly delta: number;
-  readonly reason: string;
+  readonly type: string;
+  readonly credits: number;
+  readonly reason: string | null;
   readonly createdAt: string;
 }
 

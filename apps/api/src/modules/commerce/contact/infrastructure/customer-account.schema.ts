@@ -106,6 +106,7 @@ export interface OtpChallengeDocument {
   attempts: number;
   expiresAt: Date;
   consumedAt?: Date;
+  purpose: string;
   createdAt: Date;
   updatedAt: Date;
   createdByUserId: string | null;
@@ -122,6 +123,7 @@ export const otpChallengeSchema = new Schema<OtpChallengeDocument>(
     attempts: { type: Number, required: true, default: 0 },
     expiresAt: { type: Date, required: true },
     consumedAt: { type: Date },
+    purpose: { type: String, required: true, default: "SIGN_IN" },
     ...auditFields,
   },
   SCHEMA_OPTIONS,

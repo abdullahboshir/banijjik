@@ -1,6 +1,10 @@
 import { asId, type OrganizationId } from "@banijjik/ids";
 import { STOREFRONT_REFRESH_COOKIE_NAME } from "@banijjik/contracts/contact";
-import type { CustomerOtpSendBody, CustomerOtpVerifyBody } from "@banijjik/validation";
+import type {
+  CustomerAccountEraseBody,
+  CustomerOtpSendBody,
+  CustomerOtpVerifyBody,
+} from "@banijjik/validation";
 import type { Request, RequestHandler } from "express";
 import { requireCurrentCustomerAccountId } from "../../../../kernel/auth/index.js";
 import { readCookie, sendData } from "../../../../kernel/http/index.js";
@@ -10,6 +14,9 @@ import type {
   LogoutCustomerUseCase,
   RefreshCustomerSessionUseCase,
 } from "../application/use-cases/customer-session.use-cases.js";
+import type { EraseOwnCustomerAccountUseCase } from "../application/use-cases/erase-own-customer-account.use-case.js";
+import type { ExportCustomerDataUseCase } from "../application/use-cases/export-customer-data.use-case.js";
+import type { SendCustomerEraseOtpUseCase } from "../application/use-cases/send-customer-erase-otp.use-case.js";
 import type { SendCustomerOtpUseCase } from "../application/use-cases/send-customer-otp.use-case.js";
 import type { VerifyCustomerOtpUseCase } from "../application/use-cases/verify-customer-otp.use-case.js";
 import type { CustomerCookies } from "./customer-cookies.js";
@@ -23,6 +30,9 @@ export interface CustomerAuthControllerDependencies {
   readonly refresh: RefreshCustomerSessionUseCase;
   readonly logout: LogoutCustomerUseCase;
   readonly me: GetStorefrontMeUseCase;
+  readonly sendEraseOtp: SendCustomerEraseOtpUseCase;
+  readonly eraseAccount: EraseOwnCustomerAccountUseCase;
+  readonly dataExport: ExportCustomerDataUseCase;
   readonly cookies: CustomerCookies;
   readonly clock: Clock;
 }
@@ -74,5 +84,33 @@ export class CustomerAuthController {
 
   readonly me: RequestHandler = async (_request, response) => {
     sendData(response, await this.dependencies.me.execute(requireCurrentCustomerAccountId()));
+  };
+
+  readonly sendEraseOtp: RequestHandler = async (request, response) => {
+    const result = await this.dependencies.sendEraseOtp.execute({
+      organizationId: readOrganizationId(request),
+      customerAccountId: requireCurrentCustomerAccountId(),
+    });
+    sendData(response, result, { status: 200 });
+  };
+
+  readonly eraseAccount: RequestHandler = async (request, response) => {
+    const body: CustomerAccountEraseBody = request.body;
+    const result = await this.dependencies.eraseAccount.execute({
+      organizationId: readOrganizationId(request),
+      customerAccountId: requireCurrentCustomerAccountId(),
+      challengeId: body.challengeId,
+      code: body.code,
+    });
+    this.dependencies.cookies.clear(response);
+    sendData(response, result, { status: 200 });
+  };
+
+  readonly dataExport: RequestHandler = async (request, response) => {
+    const result = await this.dependencies.dataExport.execute({
+      organizationId: readOrganizationId(request),
+      customerAccountId: requireCurrentCustomerAccountId(),
+    });
+    sendData(response, result, { status: 200 });
   };
 }

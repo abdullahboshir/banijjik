@@ -34,7 +34,7 @@ export function buildSendCustomerOtpSmsHandler(
       const challenge = await challenges.findById(envelope.payload.otpChallengeId);
       if (challenge?.codeCiphertext === undefined) return;
       const code = openOtpCode(otpSecret, challenge.codeCiphertext);
-      const text = await composer.compose(code);
+      const text = await composer.compose(code, challenge.purpose);
       await sender.send({ phoneE164: challenge.phoneE164, text });
       await challenges.clearCode(challenge.otpChallengeId);
     },

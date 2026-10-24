@@ -73,15 +73,18 @@ export function buildCreditExportParticipant(
         balance: balanceRecord?.balance ?? 0,
         entries: slicedEntries.map((e) => ({
           creditEntryId: e.creditEntryId,
-          delta: e.delta,
+          type: e.type,
+          credits: e.credits,
           reason: e.reason,
-          createdAt: e.createdAt.toISOString(),
+          createdAt:
+            typeof e.createdAt === "string" ? e.createdAt : (e.createdAt as Date).toISOString(),
         })),
         entriesTruncated,
         unlocks: slicedUnlocks.map((u) => ({
           listingUnlockId: u.listingUnlockId,
           listingId: u.listingId,
-          unlockedAt: u.unlockedAt.toISOString(),
+          unlockedAt:
+            typeof u.unlockedAt === "string" ? u.unlockedAt : (u.unlockedAt as Date).toISOString(),
         })),
         unlocksTruncated,
         purchases: slicedPurchases.map((p) => ({

@@ -151,6 +151,7 @@ export interface EventPayloadMap {
   readonly [CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_BLOCKED]: CustomerAccountEventPayload;
   readonly [CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_UNBLOCKED]: CustomerAccountEventPayload;
   readonly [CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_ENDED]: CustomerAccountEventPayload;
+  readonly [CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_ERASED]: CustomerAccountEventPayload;
   readonly [CATALOG_EVENT_TYPE.OFFERING_CREATED]: OfferingEventPayload;
   readonly [CATALOG_EVENT_TYPE.OFFERING_UPDATED]: OfferingEventPayload;
   readonly [CATALOG_EVENT_TYPE.OFFERING_PUBLISHED]: OfferingEventPayload;

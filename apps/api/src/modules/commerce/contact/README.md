@@ -7,8 +7,8 @@ protection and the contact-link field (ADR-110, ADR-073).
 - **Class:** `CORE` (10-MODULE-CATALOG section 1).
 - **Entities:** `Contact` (tenant DB, versioned, soft-archived, custom fields of entity `contact`); `CustomerAccount`, `CustomerSession` and `OtpChallenge` for the customer's phone-code login to the public site (ADR-119).
 - **Public API (`index.ts`):** `contactManifest`, `registerContactModels()`, `buildContactRouter()`, `buildContactStorefrontRouterFor()`, `buildCustomerAccountStatusReader()`, `registerContactEventHandlers()`.
-- **Endpoints:** `/orgs/{organizationId}/contacts` (14-API.md section 5.2), `/contacts/{contactId}/customer-account[/block|/unblock]` for staff, and `/storefront/orgs/{organizationId}/auth/*` and `/me` for customers (mounted by `routes/storefront.ts`).
-- **Events:** emits `contact.contact.{created,updated,archived,anonymized}`, `contact.customerOtp.requested` (challenge id only) and `contact.customerAccount.{blocked,unblocked}`; consumes none. The handler `contact.sendCustomerOtp` sends the code by SMS through the `SmsSender` port.
+- **Endpoints:** `/orgs/{organizationId}/contacts` (14-API.md section 5.2), `/contacts/{contactId}/customer-account[/block|/unblock]` for staff, and `/storefront/orgs/{organizationId}/auth/*`, `/me`, `/my/account/erase*`, `/my/data-export` for customers.
+- **Events:** emits `contact.contact.{created,updated,archived,anonymized}`, `contact.customerOtp.requested` (challenge id only) and `contact.customerAccount.{blocked,unblocked,erased}`; consumes none. The handler `contact.sendCustomerOtp` sends the code by SMS through the `SmsSender` port.
 - **Permissions:** `contact.contact.{read,create,update,archive,anonymize,readSensitive}`, `contact.customerAccount.{read,block}`.
 - **Settings:** `contact.dedupeOn` (`PHONE` or `PHONE_OR_EMAIL`); `contact.customerLogin` (off by default).
 - **Customer sign-in rules:** the same answer for every phone on send; five guesses per code; a code is never logged, sent in an event or kept readable; a block deletes the sessions; archiving or anonymizing a contact deletes its login.

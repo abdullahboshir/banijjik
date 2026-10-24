@@ -1,4 +1,4 @@
-import { CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
+import { CUSTOMER_OTP_RULES, type CustomerOtpPurpose } from "@banijjik/contracts/contact";
 import type { OtpChallengeId } from "@banijjik/ids";
 
 /** One code sent to one phone. Only hashes and a sealed copy of the code are ever stored (ADR-119). */
@@ -11,6 +11,7 @@ export interface OtpChallenge {
   readonly attempts: number;
   readonly expiresAt: Date;
   readonly consumedAt: Date | undefined;
+  readonly purpose: CustomerOtpPurpose;
 }
 
 /** A challenge accepts a guess while it is unused, unexpired and has attempts left. */
