@@ -8,6 +8,7 @@ import { holdsPermission } from "../shell/permissions";
 import { loadBookingLookups, loadEventOfferings } from "./booking-lookups";
 import type { EventSessionView } from "./event-session-api";
 import { EventSessionSheetButton } from "./event-session-buttons";
+import { EVENT_SESSION_TEXT_KEYS, pickScreenTexts } from "./screen-text-keys";
 import { EventSessionList } from "./event-session-list";
 import type { EventSessionSheetProps } from "./event-session-sheet";
 
@@ -15,7 +16,10 @@ const SESSION_PAGE_SIZE = 100;
 
 type SheetBase = Omit<EventSessionSheetProps, "onClose" | "existing">;
 
-async function loadSessionsScreen(access: OrgAccess): Promise<{
+async function loadSessionsScreen(
+  access: OrgAccess,
+  texts: Record<string, string>,
+): Promise<{
   sessions: EventSessionView[];
   names: Map<string, string>;
   sheetBase: SheetBase;
@@ -41,6 +45,7 @@ async function loadSessionsScreen(access: OrgAccess): Promise<{
       })),
       locations: lookups.locations.map((l) => ({ locationId: l.locationId, name: l.name })),
       defaultLocationId: lookups.locations[0]?.locationId ?? "",
+      texts,
     },
   };
 }
@@ -54,7 +59,8 @@ export async function EventSessionsPage(props: { orgSlug: string }): Promise<Rea
   const permissions = access.config.permissions;
   if (!holdsPermission(permissions, PERMISSION_KEY.BOOKING_EVENT_SESSION_READ))
     return <EmptyState kind="noPermission" message={t("state.permissionDenied")} />;
-  const screen = await loadSessionsScreen(access);
+  const texts = pickScreenTexts(t, EVENT_SESSION_TEXT_KEYS);
+  const screen = await loadSessionsScreen(access, texts);
   const mayDo = (key: PermissionKey): boolean =>
     access.canWrite && holdsPermission(permissions, key);
   const dateFormat = new Intl.DateTimeFormat(locale, {
@@ -97,6 +103,7 @@ export async function EventSessionsPage(props: { orgSlug: string }): Promise<Rea
           canUpdate={mayDo(PERMISSION_KEY.BOOKING_EVENT_SESSION_UPDATE)}
           canCancel={mayDo(PERMISSION_KEY.BOOKING_EVENT_SESSION_CANCEL)}
           sheetBase={screen.sheetBase}
+          texts={texts}
         />
       )}
     </PageLayout>

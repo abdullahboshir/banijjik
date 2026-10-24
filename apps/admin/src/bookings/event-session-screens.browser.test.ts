@@ -26,7 +26,7 @@ import {
   type SeededPerson,
 } from "../test-support/browser-stack";
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
-import salonFixture from "../test-support/salon-industry-fixture.json" with { type: "json" };
+import coachingFixture from "../test-support/coaching-industry-fixture.json" with { type: "json" };
 
 let stack: BrowserStack;
 let owner: SeededPerson;
@@ -41,10 +41,10 @@ const SEATS = 2;
 
 beforeAll(async () => {
   stack = await startBrowserStack();
-  // The SALON seed template is a DRAFT; this stack has no platform admin to publish it.
-  await publishTemplate(stack, "SALON");
+  // The COACHING seed template (it sells EVENT) is a DRAFT; this stack has no platform admin to publish it.
+  await publishTemplate(stack, "COACHING");
   owner = await seedPerson("রহিম");
-  await seedOrganizationWithBody(owner, { name: "ইভেন্ট হাউস", slug: SLUG, ...salonFixture });
+  await seedOrganizationWithBody(owner, { name: "ইভেন্ট হাউস", slug: SLUG, ...coachingFixture });
   await seedLocation(owner, SLUG, "মূল শাখা");
   event = await seedBookableEvent(owner, SLUG, { name: EVENT_NAME });
 }, 180_000);

@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { useTranslator } from "@banijjik/web-client/client";
 import { BookingCalendarDesktop } from "./booking-calendar-desktop";
 import { BookingCalendarMobile } from "./booking-calendar-mobile";
+import { ScreenTextProvider, type ScreenTexts } from "./screen-text";
 import { BookingCalendarSessions } from "./booking-calendar-sessions";
 import type { EventSessionView } from "./event-session-api";
 import { BookingCalendarToolbar } from "./booking-calendar-toolbar";
@@ -35,9 +36,10 @@ export interface BookingCalendarClientProps {
     minutesSuffix: string;
     sheet: NewBookingSheetLabels;
   };
+  texts: ScreenTexts;
 }
 
-export function BookingCalendarClient(props: BookingCalendarClientProps): ReactElement {
+function BookingCalendarBody(props: BookingCalendarClientProps): ReactElement {
   const calendar = useBookingCalendarState(props);
   // A client calendar reads its own translations: a server page may not pass a function through props.
   const { t } = useTranslator();
@@ -96,5 +98,13 @@ export function BookingCalendarClient(props: BookingCalendarClientProps): ReactE
         offeringNames={new Map(props.offerings.map((o) => [o.offeringId, o.name]))}
       />
     </div>
+  );
+}
+
+export function BookingCalendarClient(props: BookingCalendarClientProps): ReactElement {
+  return (
+    <ScreenTextProvider texts={props.texts}>
+      <BookingCalendarBody {...props} />
+    </ScreenTextProvider>
   );
 }

@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import type { EventSessionView } from "./event-session-api";
 import { EventSessionCancelButton, EventSessionSheetButton } from "./event-session-buttons";
+import type { ScreenTexts } from "./screen-text";
 import type { EventSessionSheetProps } from "./event-session-sheet";
 
 export interface EventSessionListProps {
@@ -16,6 +17,7 @@ export interface EventSessionListProps {
   cancelLabel: string;
   canUpdate: boolean;
   canCancel: boolean;
+  texts: ScreenTexts;
   sheetBase: Omit<EventSessionSheetProps, "onClose" | "existing">;
 }
 
@@ -51,7 +53,11 @@ export function EventSessionList(props: EventSessionListProps): ReactElement {
                 {props.canCancel ? (
                   <EventSessionCancelButton
                     label={props.cancelLabel}
-                    dialogProps={{ organizationId: props.organizationId, session: row.session }}
+                    dialogProps={{
+                      organizationId: props.organizationId,
+                      session: row.session,
+                      texts: props.texts,
+                    }}
                   />
                 ) : null}
               </div>

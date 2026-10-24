@@ -2,6 +2,7 @@
 
 import { Button, FormField, Sheet, SheetContent, TextInput } from "@banijjik/ui";
 import { useTranslator } from "@banijjik/web-client/client";
+import { ScreenTextProvider, useScreenText, type ScreenTexts } from "./screen-text";
 import { useState, type FormEvent, type ReactElement } from "react";
 import type { FieldErrors } from "../auth/field-errors";
 import { SheetFeedback } from "../settings/sheet-feedback";
@@ -28,6 +29,7 @@ export interface EventSessionSheetProps {
   locations: readonly { locationId: string; name: string }[];
   defaultLocationId: string;
   existing?: EventSessionView;
+  texts: ScreenTexts;
   onClose: () => void;
 }
 
@@ -94,7 +96,7 @@ function SessionSelectFields(props: {
   sheet: EventSessionSheetProps;
   errors: FieldErrors;
 }): ReactElement {
-  const { t } = useTranslator();
+  const t = useScreenText();
   const errorOf = useErrorText(props.errors);
   const { form, setForm, sheet } = props;
   const variants = sheet.offerings.find((o) => o.offeringId === form.offeringId)?.variants ?? [];
@@ -158,7 +160,7 @@ function SessionTimingFields(props: {
   isTimeLocked: boolean;
   errors: FieldErrors;
 }): ReactElement {
-  const { t } = useTranslator();
+  const t = useScreenText();
   const errorOf = useErrorText(props.errors);
   const { form, setForm } = props;
   return (
@@ -200,8 +202,8 @@ function SessionTimingFields(props: {
 }
 
 /** Creates a session or edits one: capacity may grow but never below the seats sold, and the time locks with the first seat. */
-export function EventSessionSheet(props: EventSessionSheetProps): ReactElement {
-  const { t } = useTranslator();
+function EventSessionSheetInner(props: EventSessionSheetProps): ReactElement {
+  const t = useScreenText();
   const [form, setForm] = useState<EventSessionFormState>(() =>
     props.existing === undefined
       ? emptyEventSessionForm(props.defaultLocationId)
@@ -255,5 +257,13 @@ export function EventSessionSheet(props: EventSessionSheetProps): ReactElement {
         </form>
       </SheetContent>
     </Sheet>
+  );
+}
+
+export function EventSessionSheet(props: EventSessionSheetProps): ReactElement {
+  return (
+    <ScreenTextProvider texts={props.texts}>
+      <EventSessionSheetInner {...props} />
+    </ScreenTextProvider>
   );
 }

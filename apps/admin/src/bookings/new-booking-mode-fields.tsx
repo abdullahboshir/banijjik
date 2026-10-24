@@ -2,9 +2,9 @@
 
 import type { ResourceResponse } from "@banijjik/contracts/booking";
 import type { Money, RentalDetails } from "@banijjik/contracts/catalog";
-import type { Translator } from "@banijjik/i18n";
 import { formatMoney, FormField, TextInput } from "@banijjik/ui";
 import { useTranslator } from "@banijjik/web-client/client";
+import { useScreenText, type ScreenText } from "./screen-text";
 import type { ReactElement } from "react";
 import {
   isoToLocalInputValue,
@@ -16,7 +16,8 @@ import { seatsLeftOf, type NewBookingMode } from "./new-booking-mode";
 import { rentalEndPreview } from "./rental-end-preview";
 
 function QuotePrice(props: { total: Money | null; isLoading: boolean }): ReactElement | null {
-  const { t, locale } = useTranslator();
+  const { locale } = useTranslator();
+  const t = useScreenText();
   if (props.isLoading) {
     return <p className="text-small text-secondary">{t("bookings.sheet.priceLoading")}</p>;
   }
@@ -62,7 +63,7 @@ export interface NewBookingRentalStepProps {
   onResourceChange: (resourceId: string) => void;
 }
 
-function rentalUnitsHint(rental: RentalDetails, t: Translator["t"]): string {
+function rentalUnitsHint(rental: RentalDetails, t: ScreenText): string {
   const unit = t(`catalog.details.rateUnit.${rental.rateUnit}`);
   return rental.maxUnits === undefined
     ? t("bookings.sheet.unitsMin", { min: rental.minUnits, unit })
@@ -71,7 +72,7 @@ function rentalUnitsHint(rental: RentalDetails, t: Translator["t"]): string {
 
 /** A rental is a start plus a number of rate units; the end and the price are shown, not typed. */
 export function NewBookingRentalStep(props: NewBookingRentalStepProps): ReactElement {
-  const { t } = useTranslator();
+  const t = useScreenText();
   const preview = rentalEndPreview({
     startsAt: props.startsAt,
     quantity: Number(props.quantity),
@@ -145,7 +146,7 @@ export interface NewBookingEventStepProps {
 
 /** An event booking picks a session and a number of seats; the seats left come from the session itself. */
 export function NewBookingEventStep(props: NewBookingEventStepProps): ReactElement {
-  const { t } = useTranslator();
+  const t = useScreenText();
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-small text-secondary">{t("bookings.sheet.sessionLegend")}</legend>
@@ -210,7 +211,8 @@ export interface NewBookingModeSummaryProps {
 
 /** The extra confirm rows: units and end for a rental, seats for an event, and the quoted price. */
 export function NewBookingModeSummary(props: NewBookingModeSummaryProps): ReactElement | null {
-  const { t, locale } = useTranslator();
+  const { locale } = useTranslator();
+  const t = useScreenText();
   if (props.mode === "SLOT") return null;
   const preview =
     props.rental === undefined

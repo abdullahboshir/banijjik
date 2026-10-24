@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslator } from "@banijjik/web-client/client";
+import { useScreenText } from "./screen-text";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { sessionsOnDate } from "./booking-calendar-layout";
@@ -16,7 +16,7 @@ export function BookingCalendarSessions(props: {
   sessions: readonly EventSessionView[];
   offeringNames: ReadonlyMap<string, string>;
 }): ReactElement | null {
-  const { t } = useTranslator();
+  const t = useScreenText();
   const today = sessionsOnDate(props.sessions, props.businessDate, props.timeZone);
   if (today.length === 0) return null;
   return (

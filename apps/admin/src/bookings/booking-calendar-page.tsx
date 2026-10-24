@@ -7,6 +7,7 @@ import { requireOrgAccess } from "../shell/org-access";
 import { holdsPermission } from "../shell/permissions";
 import { BookingLocationDateFilter } from "./booking-location-date-filter";
 import { loadBookingCalendarData } from "./booking-calendar-load";
+import { BOOKING_MODE_TEXT_KEYS, pickScreenTexts } from "./screen-text-keys";
 import { LazyBookingCalendar } from "./lazy-booking-calendar";
 import type { NewBookingSheetLabels } from "./new-booking-sheet";
 
@@ -29,6 +30,20 @@ function sheetLabelsOf(t: (key: string) => string): NewBookingSheetLabels {
     notSet: t("profile.notSet"),
     conflict: t("bookings.form.conflict"),
     reload: t("bookings.form.reload"),
+  };
+}
+
+function calendarLabelsOf(
+  t: (key: string, values?: Record<string, string>) => string,
+  bookingTerm: string,
+) {
+  return {
+    loading: t("bookings.calendar.loading"),
+    addBooking: t("bookings.calendar.add", { term: bookingTerm }),
+    addSlot: t("bookings.calendar.addSlot"),
+    unnumbered: t("bookings.unnumbered"),
+    minutesSuffix: t("bookings.calendar.minutesUnit"),
+    sheet: sheetLabelsOf(t),
   };
 }
 
@@ -57,14 +72,7 @@ export async function BookingCalendarPage(props: {
     fallback: t("term.booking.singular"),
   });
   const basePath = `/${props.orgSlug}/bookings`;
-  const labels = {
-    loading: t("bookings.calendar.loading"),
-    addBooking: t("bookings.calendar.add", { term: bookingTerm }),
-    addSlot: t("bookings.calendar.addSlot"),
-    unnumbered: t("bookings.unnumbered"),
-    minutesSuffix: t("bookings.calendar.minutesUnit"),
-    sheet: sheetLabelsOf(t),
-  };
+  const labels = calendarLabelsOf(t, bookingTerm);
   return (
     <PageLayout title={t("menu.booking.calendar")} subtitle={t("bookings.calendar.subtitle")}>
       <BookingLocationDateFilter
@@ -88,6 +96,7 @@ export async function BookingCalendarPage(props: {
         eventSessions={loaded.eventSessions}
         canCreate={loaded.canCreate}
         labels={labels}
+        texts={pickScreenTexts(t, BOOKING_MODE_TEXT_KEYS)}
       />
     </PageLayout>
   );
