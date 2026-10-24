@@ -20,6 +20,16 @@ export const eventSessionSchema = new Schema<EventSessionProps>(
     capacity: { type: Number, required: true },
     seatsSold: { type: Number, required: true, default: 0 },
     resourceIds: { type: [String], default: [] },
+    resourceHolds: {
+      type: [
+        {
+          resourceId: { type: String, required: true },
+          units: { type: Number, required: true, min: 1 },
+          _id: false,
+        },
+      ],
+      default: [],
+    },
     status: { type: String, required: true, enum: Object.values(EVENT_SESSION_STATUS) },
     bookingsSettledAt: { type: Date, default: null },
     ...versionField,

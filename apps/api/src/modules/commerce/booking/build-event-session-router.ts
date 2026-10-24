@@ -8,6 +8,8 @@ import type { Clock } from "../../../kernel/time/index.js";
 import { EventSessionUseCases } from "./application/use-cases/event-session.use-cases.js";
 import { buildBookingOfferingReader } from "./infrastructure/booking-catalog-adapter.js";
 import { MongoEventSessionRepository } from "./infrastructure/mongo-event-session.repository.js";
+import { MongoResourceSlotUsageRepository } from "./infrastructure/mongo-slot-usage.repository.js";
+import { MongoResourceTimeOffRepository } from "./infrastructure/mongo-resource-timeoff.repository.js";
 import { buildEventSessionRoutes } from "./presentation/event-session.router.js";
 
 export function buildEventSessionRouter(input: {
@@ -20,6 +22,8 @@ export function buildEventSessionRouter(input: {
     useCases: new EventSessionUseCases({
       sessions: new MongoEventSessionRepository(),
       resources: new MongoResourceRepository(),
+      slots: new MongoResourceSlotUsageRepository(),
+      timeOff: new MongoResourceTimeOffRepository(),
       offerings: buildBookingOfferingReader(),
       unitOfWork: new MongoUnitOfWork(),
       events: kernelEventPublisher,

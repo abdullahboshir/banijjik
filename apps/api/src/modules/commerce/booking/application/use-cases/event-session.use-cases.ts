@@ -18,6 +18,15 @@ import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { EventSession } from "../../domain/event-session.entity.js";
 import { bookingRuleError, recordNotFound } from "../../domain/errors.js";
+import {
+  takeSessionResourceHolds,
+  releaseSessionResourceHolds,
+} from "../event-session-resource-holds.js";
+import type {
+  ResourceSlotUsagePort,
+  ResourceTimeOffRepository,
+} from "../ports/booking-repositories.js";
+import { runWithTxnRetry } from "../run-with-txn-retry.js";
 import { assertLocationAllowed } from "../resource-location-guard.js";
 import type { BookingOfferingReader } from "../ports/booking-context-ports.js";
 import type { EventSessionRepository } from "../ports/event-session-repository.js";
@@ -52,6 +61,8 @@ export class EventSessionUseCases {
     private readonly dependencies: {
       sessions: EventSessionRepository;
       resources: Pick<ResourceRepository, "findById">;
+      slots: Pick<ResourceSlotUsagePort, "takeWholeResource" | "releaseWholeResource">;
+      timeOff: Pick<ResourceTimeOffRepository, "listOverlapping">;
       offerings: BookingOfferingReader;
       unitOfWork: BookingUnitOfWork;
       events: BookingEventPublisher;
@@ -70,25 +81,34 @@ export class EventSessionUseCases {
       locationId,
       variantId: body.variantId,
     });
-    for (const resourceId of body.resourceIds) {
-      const resource = await this.dependencies.resources.findById(asId<ResourceId>(resourceId));
-      if (resource === undefined || resource.locationId !== locationId) {
-        throw bookingRuleError(BOOKING_RULE_KEY.RESOURCE_WRONG_LOCATION);
-      }
-    }
-    const session = EventSession.create({
-      organizationId: input.organizationId,
-      offeringId,
-      locationId,
-      variantId: body.variantId,
-      startsAt: new Date(body.startsAt),
-      endsAt: new Date(body.endsAt),
-      capacity: body.capacity,
-      resourceIds: body.resourceIds.map((value) => asId<ResourceId>(value)),
-      now: this.dependencies.clock.now(),
-      actorUserId: input.actorUserId,
+    let session!: EventSession;
+    await runWithTxnRetry(this.dependencies.unitOfWork, async () => {
+      const startsAt = new Date(body.startsAt);
+      const endsAt = new Date(body.endsAt);
+      const resourceIds = body.resourceIds.map((value) => asId<ResourceId>(value));
+      const holds = await takeSessionResourceHolds({
+        ...this.dependencies,
+        organizationId: input.organizationId,
+        locationId,
+        resourceIds,
+        startsAt,
+        endsAt,
+      });
+      session = EventSession.create({
+        organizationId: input.organizationId,
+        offeringId,
+        locationId,
+        variantId: body.variantId,
+        startsAt,
+        endsAt,
+        capacity: body.capacity,
+        resourceIds,
+        resourceHolds: holds,
+        now: this.dependencies.clock.now(),
+        actorUserId: input.actorUserId,
+      });
+      await this.dependencies.sessions.insert(session);
     });
-    await this.dependencies.sessions.insert(session);
     return session;
   }
   async get(
@@ -111,14 +131,44 @@ export class EventSessionUseCases {
     input: Caller & { eventSessionId: EventSessionId; body: EventSessionUpdateBody },
   ): Promise<EventSession> {
     const existing = await this.get(input.eventSessionId, input.allowedLocationIds);
-    const updated = existing.update({
-      ...(input.body.startsAt === undefined ? {} : { startsAt: new Date(input.body.startsAt) }),
-      ...(input.body.endsAt === undefined ? {} : { endsAt: new Date(input.body.endsAt) }),
-      ...(input.body.capacity === undefined ? {} : { capacity: input.body.capacity }),
-      now: this.dependencies.clock.now(),
-      actorUserId: input.actorUserId,
+    const timeChanged = input.body.startsAt !== undefined || input.body.endsAt !== undefined;
+    let updated: EventSession = existing;
+    await runWithTxnRetry(this.dependencies.unitOfWork, async () => {
+      const startsAt =
+        input.body.startsAt === undefined
+          ? existing.toProps().startsAt
+          : new Date(input.body.startsAt);
+      const endsAt =
+        input.body.endsAt === undefined ? existing.toProps().endsAt : new Date(input.body.endsAt);
+      if (timeChanged)
+        await releaseSessionResourceHolds({
+          slots: this.dependencies.slots,
+          organizationId: existing.toProps().organizationId,
+          holds: existing.toProps().resourceHolds,
+          startsAt: existing.toProps().startsAt,
+          endsAt: existing.toProps().endsAt,
+        });
+      const holds = timeChanged
+        ? await takeSessionResourceHolds({
+            ...this.dependencies,
+            organizationId: input.organizationId,
+            locationId: existing.toProps().locationId,
+            resourceIds: existing.toProps().resourceIds,
+            startsAt,
+            endsAt,
+          })
+        : existing.toProps().resourceHolds;
+      updated = existing.update({
+        ...(input.body.startsAt === undefined ? {} : { startsAt: new Date(input.body.startsAt) }),
+        ...(input.body.endsAt === undefined ? {} : { endsAt: new Date(input.body.endsAt) }),
+        ...(input.body.capacity === undefined ? {} : { capacity: input.body.capacity }),
+        now: this.dependencies.clock.now(),
+        actorUserId: input.actorUserId,
+        resourceHolds: holds,
+      });
+      updated = await this.dependencies.sessions.update(updated, input.body.version, existing);
     });
-    return this.dependencies.sessions.update(updated, input.body.version, existing);
+    return updated;
   }
   async cancel(
     input: Caller & { eventSessionId: EventSessionId; version: number },
@@ -128,6 +178,13 @@ export class EventSessionUseCases {
     let persisted = cancelled;
     await this.dependencies.unitOfWork.run(async () => {
       persisted = await this.dependencies.sessions.update(cancelled, input.version, existing);
+      await releaseSessionResourceHolds({
+        slots: this.dependencies.slots,
+        organizationId: input.organizationId,
+        holds: existing.toProps().resourceHolds,
+        startsAt: existing.toProps().startsAt,
+        endsAt: existing.toProps().endsAt,
+      });
       await this.dependencies.events.publish(
         BOOKING_EVENT_TYPE.EVENT_SESSION_CANCELLED,
         { eventSessionId: input.eventSessionId },

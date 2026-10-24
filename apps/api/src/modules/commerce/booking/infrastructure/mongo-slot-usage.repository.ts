@@ -1,8 +1,12 @@
 import { newId, type OrganizationId, type ResourceId } from "@banijjik/ids";
 import type { Model } from "mongoose";
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
+import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
+function requireTransaction(): void {
+  if (getActiveSession() === undefined) throw new DomainRuleError({ code: ERROR_CODE.INTERNAL });
+}
 import { bucketStartsCovering } from "../domain/buckets.js";
-import { slotUnavailableError } from "../domain/errors.js";
+import { eventSessionResourceBusyError, slotUnavailableError } from "../domain/errors.js";
 import {
   RESOURCE_SLOT_USAGE_MODEL_NAME,
   type ResourceSlotUsageDocument,
@@ -14,6 +18,30 @@ function slotModel(): Model<ResourceSlotUsageDocument> {
 
 function isDuplicateKey(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: number }).code === 11000;
+}
+async function wholeBucket(input: {
+  organizationId: OrganizationId;
+  resourceId: ResourceId;
+  units: number;
+  bucketStart: Date;
+}): Promise<void> {
+  try {
+    const updated = await slotModel().findOneAndUpdate(
+      {
+        organizationId: input.organizationId,
+        resourceId: input.resourceId,
+        bucketStart: input.bucketStart,
+        used: 0,
+      },
+      { $inc: { used: input.units }, $setOnInsert: { resourceSlotUsageId: newId() } },
+      { upsert: true, returnDocument: "after", ...sessionOption(getActiveSession()) },
+    );
+    if (updated === null || updated.used !== input.units)
+      throw eventSessionResourceBusyError(input.resourceId);
+  } catch (error) {
+    if (isDuplicateKey(error)) throw eventSessionResourceBusyError(input.resourceId);
+    throw error;
+  }
 }
 
 /**
@@ -52,6 +80,37 @@ async function takeOneBucket(input: {
 }
 
 export class MongoResourceSlotUsageRepository {
+  async takeWholeResource(input: {
+    organizationId: OrganizationId;
+    resourceId: ResourceId;
+    units: number;
+    startsAt: Date;
+    blockedEndsAt: Date;
+  }): Promise<void> {
+    requireTransaction();
+    for (const bucketStart of bucketStartsCovering(input.startsAt, input.blockedEndsAt))
+      await wholeBucket({ ...input, bucketStart });
+  }
+  async releaseWholeResource(input: {
+    organizationId: OrganizationId;
+    resourceId: ResourceId;
+    units: number;
+    startsAt: Date;
+    blockedEndsAt: Date;
+  }): Promise<void> {
+    requireTransaction();
+    for (const bucketStart of bucketStartsCovering(input.startsAt, input.blockedEndsAt))
+      await slotModel().updateOne(
+        {
+          organizationId: input.organizationId,
+          resourceId: input.resourceId,
+          bucketStart,
+          used: { $gte: input.units },
+        },
+        { $inc: { used: -input.units } },
+        sessionOption(getActiveSession()),
+      );
+  }
   async takeCapacity(input: {
     readonly organizationId: OrganizationId;
     readonly resourceId: ResourceId;

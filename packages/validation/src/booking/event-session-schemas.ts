@@ -1,4 +1,4 @@
-import { EVENT_SESSION_STATUS } from "@banijjik/contracts/booking";
+import { EVENT_SESSION_STATUS, MAX_EVENT_SESSION_RESOURCES } from "@banijjik/contracts/booking";
 import { z } from "zod";
 import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
@@ -11,7 +11,11 @@ export const eventSessionCreateSchema = z
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime(),
     capacity: z.number().int().positive(),
-    resourceIds: z.array(uuidV7Schema).default([]),
+    resourceIds: z
+      .array(uuidV7Schema)
+      .max(MAX_EVENT_SESSION_RESOURCES)
+      .refine((ids) => new Set(ids).size === ids.length)
+      .default([]),
   })
   .refine((body) => Date.parse(body.startsAt) < Date.parse(body.endsAt), { path: ["endsAt"] });
 export const eventSessionUpdateSchema = z.strictObject({

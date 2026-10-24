@@ -14,6 +14,12 @@ import {
   type ResourceId,
   type UserId,
 } from "@banijjik/ids";
+import { MAX_RENTAL_DAYS } from "./rental-time.js";
+export interface EventSessionResourceHold {
+  readonly resourceId: ResourceId;
+  readonly units: number;
+}
+export const MAX_EVENT_SESSION_RESOURCE_DAYS = MAX_RENTAL_DAYS;
 
 export interface EventSessionProps {
   readonly eventSessionId: EventSessionId;
@@ -26,6 +32,7 @@ export interface EventSessionProps {
   readonly capacity: number;
   readonly seatsSold: number;
   readonly resourceIds: readonly ResourceId[];
+  readonly resourceHolds: readonly EventSessionResourceHold[];
   readonly status: EventSessionStatus;
   /** When a cancel pass has settled every booking of the session; null until then. */
   readonly bookingsSettledAt: Date | null;
@@ -47,24 +54,53 @@ function checkDates(startsAt: Date, endsAt: Date): void {
     refuse(EVENT_SESSION_RULE_KEY.INVALID_DATES);
   }
 }
+function checkResourceHolds(input: {
+  resourceIds: readonly ResourceId[];
+  holds: readonly EventSessionResourceHold[];
+  startsAt: Date;
+  endsAt: Date;
+}): void {
+  const { resourceIds, holds, startsAt, endsAt } = input;
+  if (
+    resourceIds.length > 0 &&
+    endsAt.getTime() - startsAt.getTime() > MAX_EVENT_SESSION_RESOURCE_DAYS * 86400000
+  )
+    refuse(EVENT_SESSION_RULE_KEY.RESOURCE_SPAN_TOO_LONG);
+  if (
+    holds.length !== resourceIds.length ||
+    holds.some((hold) => !resourceIds.includes(hold.resourceId) || hold.units < 1) ||
+    new Set(holds.map((hold) => hold.resourceId)).size !== holds.length
+  )
+    refuse("INTERNAL");
+}
 export class EventSession {
   private constructor(private readonly props: EventSessionProps) {}
 
   static create(
-    input: Omit<
+    input: Pick<
       EventSessionProps,
-      | "eventSessionId"
-      | "status"
-      | "seatsSold"
-      | "bookingsSettledAt"
-      | "version"
-      | "createdAt"
-      | "updatedAt"
-      | "createdByUserId"
-      | "updatedByUserId"
-    > & { now: Date; actorUserId: UserId | null },
+      | "organizationId"
+      | "offeringId"
+      | "variantId"
+      | "locationId"
+      | "startsAt"
+      | "endsAt"
+      | "capacity"
+      | "resourceIds"
+    > & {
+      now: Date;
+      actorUserId: UserId | null;
+      resourceHolds?: readonly EventSessionResourceHold[];
+    },
   ): EventSession {
     checkDates(input.startsAt, input.endsAt);
+    const resourceHolds = input.resourceHolds ?? [];
+    checkResourceHolds({
+      resourceIds: input.resourceIds,
+      holds: resourceHolds,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+    });
     return new EventSession({
       eventSessionId: asId<EventSessionId>(newId()),
       organizationId: input.organizationId,
@@ -75,6 +111,7 @@ export class EventSession {
       endsAt: input.endsAt,
       capacity: input.capacity,
       resourceIds: input.resourceIds,
+      resourceHolds,
       seatsSold: 0,
       bookingsSettledAt: null,
       version: 1,
@@ -96,6 +133,7 @@ export class EventSession {
     startsAt?: Date;
     endsAt?: Date;
     capacity?: number;
+    resourceHolds?: readonly EventSessionResourceHold[];
     now: Date;
     actorUserId: UserId | null;
   }): EventSession {
@@ -103,6 +141,13 @@ export class EventSession {
     const startsAt = input.startsAt ?? this.props.startsAt;
     const endsAt = input.endsAt ?? this.props.endsAt;
     checkDates(startsAt, endsAt);
+    const resourceHolds = input.resourceHolds ?? this.props.resourceHolds;
+    checkResourceHolds({
+      resourceIds: this.props.resourceIds,
+      holds: resourceHolds,
+      startsAt,
+      endsAt,
+    });
     const timeChanged =
       startsAt.getTime() !== this.props.startsAt.getTime() ||
       endsAt.getTime() !== this.props.endsAt.getTime();
@@ -114,6 +159,7 @@ export class EventSession {
       startsAt,
       endsAt,
       capacity,
+      resourceHolds,
       updatedAt: input.now,
       updatedByUserId: input.actorUserId,
     });
@@ -125,6 +171,7 @@ export class EventSession {
       status: EVENT_SESSION_STATUS.CANCELLED,
       updatedAt: now,
       updatedByUserId: actorUserId,
+      resourceHolds: [],
     });
   }
   /** A past session leaves SCHEDULED so availability and the cancel job stop looking at it. */

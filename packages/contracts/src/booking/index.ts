@@ -78,5 +78,6 @@ export { BOOKING_MESSAGE_KEYS, BOOKING_RULE_KEY, type BookingRuleKey } from "./b
 export {
   EVENT_SESSION_STATUS,
   EVENT_SESSION_RULE_KEY,
+  MAX_EVENT_SESSION_RESOURCES,
   type EventSessionStatus,
 } from "./event-session-contracts.js";

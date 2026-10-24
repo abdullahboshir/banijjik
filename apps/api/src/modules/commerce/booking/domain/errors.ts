@@ -1,5 +1,6 @@
 import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
-import { BOOKING_RULE_KEY } from "@banijjik/contracts/booking";
+import { BOOKING_RULE_KEY, EVENT_SESSION_RULE_KEY } from "@banijjik/contracts/booking";
+import type { ResourceId } from "@banijjik/ids";
 
 export { DomainRuleError };
 
@@ -23,6 +24,15 @@ export function slotUnavailableError(): DomainRuleError {
   return new DomainRuleError({
     code: ERROR_CODE.SLOT_UNAVAILABLE,
     details: { ruleKey: BOOKING_RULE_KEY.SLOT_UNAVAILABLE },
+  });
+}
+export function eventSessionResourceBusyError(resourceId?: ResourceId): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.SLOT_UNAVAILABLE,
+    details: {
+      ruleKey: EVENT_SESSION_RULE_KEY.RESOURCE_BUSY,
+      ...(resourceId === undefined ? {} : { resourceId }),
+    },
   });
 }
 

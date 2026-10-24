@@ -88,6 +88,20 @@ export interface BookingRepository {
 }
 
 export interface ResourceSlotUsagePort {
+  takeWholeResource(input: {
+    organizationId: OrganizationId;
+    resourceId: ResourceId;
+    units: number;
+    startsAt: Date;
+    blockedEndsAt: Date;
+  }): Promise<void>;
+  releaseWholeResource(input: {
+    organizationId: OrganizationId;
+    resourceId: ResourceId;
+    units: number;
+    startsAt: Date;
+    blockedEndsAt: Date;
+  }): Promise<void>;
   takeCapacity(input: {
     readonly organizationId: OrganizationId;
     readonly resourceId: ResourceId;

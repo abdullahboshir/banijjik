@@ -75,6 +75,7 @@ export class MongoEventSessionRepository implements EventSessionRepository {
             startsAt: props.startsAt,
             endsAt: props.endsAt,
             capacity: props.capacity,
+            resourceHolds: props.resourceHolds,
             status: props.status,
             updatedAt: props.updatedAt,
             updatedByUserId: props.updatedByUserId,
