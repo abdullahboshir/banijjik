@@ -7,7 +7,7 @@ template custom fields, per-field visibility tiers, staff moderation and public 
 ## Surface
 
 - Storefront (`/api/v1/storefront/orgs/{organizationId}`): my listing CRUD/submit, public
-  search and detail, photo upload (`LISTING_PHOTO`), report reasons and filing a report.
+  search and detail, photo upload (`LISTING_PHOTO`), reports, listing blocks (M.7).
 - Tenant (`/orgs/{organizationId}/directory/…`): config, review queue, all listings, detail,
   approve/reject/hide/unhide (ADR-129), report queue and resolve (ADR-134).
 

@@ -37,6 +37,7 @@ export const directoryManifest = defineModule({
     storefront: [
       "/storefront/orgs/:organizationId/listings",
       "/storefront/orgs/:organizationId/my/listing",
+      "/storefront/orgs/:organizationId/my/listing-blocks",
       "/storefront/orgs/:organizationId/listing-report-reasons",
     ],
   },

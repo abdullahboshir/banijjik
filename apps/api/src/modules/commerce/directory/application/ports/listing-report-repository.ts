@@ -48,4 +48,11 @@ export interface ListingReportRepository {
   queueOpenGroups(page: number, limit: number): Promise<ListingReportPage<ListingReportQueueGroup>>;
   /** Conditional update on `status: OPEN`; returns how many reports actually closed. */
   markResolved(update: ResolvedReportUpdate): Promise<number>;
+  /** Deletes OPEN reports filed by the account during self-erasure (M.7 decision 14). */
+  deleteOpenByReporter(reporterCustomerAccountId: CustomerAccountId): Promise<number>;
+  /** Reports filed by this customer account up to limit (for data export, M.7 decision 15). */
+  listByReporter(
+    reporterCustomerAccountId: CustomerAccountId,
+    limit: number,
+  ): Promise<readonly ListingReport[]>;
 }

@@ -1,10 +1,11 @@
 import {
+  DIRECTORY_SAFETY_RULES,
   LISTING_VIEWER,
   type ListingListItem,
   type ListingResponse,
   type ListingViewer,
 } from "@banijjik/contracts/directory";
-import type { OrganizationId } from "@banijjik/ids";
+import { asId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
 import { listingNotFound } from "../../domain/errors.js";
 import type { DirectoryDependencies } from "../directory-dependencies.js";
 import { listingFiltersFromQuery } from "../listing-filters.js";
@@ -68,9 +69,17 @@ export class SearchListingsUseCase {
     ]);
     const rules = asListingFieldRules(effective);
     const filters = listingFiltersFromQuery(input.rawQuery, rules, this.dependencies.clock.now());
+    const blockedListingIds =
+      input.customerAccountId === undefined
+        ? []
+        : await this.dependencies.blocks.findBlockedListingIds(
+            asId<CustomerAccountId>(input.customerAccountId),
+            DIRECTORY_SAFETY_RULES.blocksPerAccountMax,
+          );
     const page = await this.dependencies.listings.searchApproved({
       ...(input.listingNumber === undefined ? {} : { listingNumber: input.listingNumber }),
       filters,
+      ...(blockedListingIds.length === 0 ? {} : { excludeListingIds: blockedListingIds }),
       page: input.page,
       limit: input.limit,
     });

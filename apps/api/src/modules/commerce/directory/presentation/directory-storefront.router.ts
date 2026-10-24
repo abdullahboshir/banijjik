@@ -1,5 +1,7 @@
 import { DIRECTORY_SEARCH_RULES, LISTING_VIEWER } from "@banijjik/contracts/directory";
+import { paginationQuerySchema } from "@banijjik/validation";
 import {
+  listingBlockCreateRequestSchema,
   listingNumberParamsSchema,
   listingReportFileRequestSchema,
   listingSearchQuerySchema,
@@ -12,6 +14,11 @@ import { requireCurrentCustomerAccountId } from "../../../../kernel/auth/index.j
 import { sendData, validate } from "../../../../kernel/http/index.js";
 import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
 import { readUpload, type ReadUploadOptions } from "../../../core/file/index.js";
+import type {
+  BlockListingUseCase,
+  ListMyListingBlocksUseCase,
+  UnblockListingUseCase,
+} from "../application/use-cases/listing-block.use-cases.js";
 import type {
   FileListingReportUseCase,
   GetListingReportReasonsUseCase,
@@ -45,6 +52,9 @@ export interface DirectoryStorefrontRouterDependencies {
   readonly getPublicListing: GetPublicListingUseCase;
   readonly fileReport: FileListingReportUseCase;
   readonly reportReasons: GetListingReportReasonsUseCase;
+  readonly blockListing: BlockListingUseCase;
+  readonly unblockListing: UnblockListingUseCase;
+  readonly listMyListingBlocks: ListMyListingBlocksUseCase;
   readonly limiter: RateLimiter;
   readonly authenticateCustomer: RequestHandler;
   readonly authenticateCustomerOptional: RequestHandler;
@@ -243,12 +253,61 @@ function mountReports(router: Router, input: DirectoryStorefrontRouterDependenci
   );
 }
 
+function mountBlocks(router: Router, input: DirectoryStorefrontRouterDependencies): void {
+  router.get(
+    "/my/listing-blocks",
+    input.authenticateCustomer,
+    validate({ query: paginationQuerySchema }),
+    async (_request, response) => {
+      const query = response.locals["validated"].query as { page: number; limit: number };
+      const result = await input.listMyListingBlocks.execute({
+        organizationId: organizationIdOf(),
+        customerAccountId: requireCurrentCustomerAccountId(),
+        page: query.page,
+        limit: query.limit,
+      });
+      sendData(response, result);
+    },
+  );
+
+  router.post(
+    "/my/listing-blocks",
+    input.authenticateCustomer,
+    validate({ body: listingBlockCreateRequestSchema }),
+    async (_request, response) => {
+      const body = response.locals["validated"].body as { listingNumber: string };
+      const result = await input.blockListing.execute({
+        organizationId: organizationIdOf(),
+        customerAccountId: requireCurrentCustomerAccountId(),
+        listingNumber: body.listingNumber,
+      });
+      sendData(response, result.block, { status: 200 });
+    },
+  );
+
+  router.delete(
+    "/my/listing-blocks/:listingNumber",
+    input.authenticateCustomer,
+    validate({ params: listingNumberParamsSchema }),
+    async (_request, response) => {
+      const params = response.locals["validated"].params as { listingNumber: string };
+      await input.unblockListing.execute({
+        organizationId: organizationIdOf(),
+        customerAccountId: requireCurrentCustomerAccountId(),
+        listingNumber: params.listingNumber,
+      });
+      response.status(204).end();
+    },
+  );
+}
+
 export function buildDirectoryStorefrontRouter(
   input: DirectoryStorefrontRouterDependencies,
 ): Router {
   const router = Router({ mergeParams: true });
   mountPublicRoutes(router, input);
   mountReports(router, input);
+  mountBlocks(router, input);
   mountMyListingReadWrite(router, input);
   mountMyListingLifecycle(router, input);
   return router;

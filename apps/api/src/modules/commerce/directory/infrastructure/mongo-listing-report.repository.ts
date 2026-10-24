@@ -165,6 +165,27 @@ export class MongoListingReportRepository implements ListingReportRepository {
     return result.modifiedCount;
   }
 
+  async deleteOpenByReporter(reporterCustomerAccountId: CustomerAccountId): Promise<number> {
+    const result = await this.model().deleteMany(
+      { reporterCustomerAccountId, status: LISTING_REPORT_STATUS.OPEN },
+      sessionOption(getActiveSession()),
+    );
+    return result.deletedCount;
+  }
+
+  async listByReporter(
+    reporterCustomerAccountId: CustomerAccountId,
+    limit: number,
+  ): Promise<readonly ListingReport[]> {
+    const rows = await this.model()
+      .find({ reporterCustomerAccountId }, null, sessionOption(getActiveSession()))
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean<ListingReportDocument[]>()
+      .exec();
+    return rows.map(toListingReport);
+  }
+
   private model() {
     return models({}).get<ListingReportDocument>(LISTING_REPORT_MODEL_NAME);
   }

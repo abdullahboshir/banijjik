@@ -13,6 +13,7 @@ export interface ListingSearchFilter {
 export interface ListingSearchRequest {
   readonly listingNumber?: string;
   readonly filters: readonly ListingSearchFilter[];
+  readonly excludeListingIds?: readonly ListingId[];
   readonly page: number;
   readonly limit: number;
 }
