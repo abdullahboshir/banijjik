@@ -85,14 +85,7 @@ export class UpdateOrderUseCase {
       if (existing.status !== ORDER_STATUS.DRAFT && quoteChanged) {
         await this.restock(args, settings.allowNegativeStock);
       }
-      if (existing.status !== ORDER_STATUS.DRAFT) {
-        await this.dependencies.payments.updateTotal({
-          organizationId: input.organizationId,
-          orderId: edited.orderId,
-          total: edited.totals.grandTotal,
-          now: actor.now,
-        });
-      }
+      await this.updatePaymentSummary(existing, edited, actor.now);
       const saved = await this.dependencies.orders.update(edited, input.body.version);
       await this.dependencies.events.publish(
         SALES_EVENT_TYPE.ORDER_UPDATED,
@@ -112,6 +105,15 @@ export class UpdateOrderUseCase {
       persisted,
       await this.dependencies.payments.readTotals(persisted.orderId),
     );
+  }
+
+  private async updatePaymentSummary(existing: Order, edited: Order, now: Date): Promise<void> {
+    if (existing.status === ORDER_STATUS.DRAFT) return;
+    const input = { organizationId: edited.organizationId, orderId: edited.orderId, now };
+    if (edited.contactId !== existing.contactId) {
+      await this.dependencies.payments.updateContact({ ...input, contactId: edited.contactId });
+    }
+    await this.dependencies.payments.updateTotal({ ...input, total: edited.totals.grandTotal });
   }
 
   /**

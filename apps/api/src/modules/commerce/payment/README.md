@@ -23,3 +23,4 @@ Core module for recording, refunding and reversing tenant payments, tracking req
   existing deposit-policy wrapper. Orders cancel with no retained fee.
 - Order summaries initialize at place/instant sale, or lazily on the first legacy-order payment.
   Page reads use one organization/request-type/request-ID-indexed batch query.
+- Unpaid order contact edits move the summary contact transactionally; net paid locks the contact.

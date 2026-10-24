@@ -44,6 +44,21 @@ class OrderPaymentAdapter implements OrderPaymentPort {
     });
   }
 
+  async updateContact(input: Parameters<OrderPaymentPort["updateContact"]>[0]): Promise<void> {
+    const paid = await this.readNetPaid(input);
+    if (paid.amount > 0) {
+      throw ruleError(
+        SALES_RULE_KEY.ORDER_CONTACT_LOCKED_BY_PAYMENT,
+        "errors.order_contact_locked_by_payment",
+      );
+    }
+    await this.summaries.setContact({
+      ...input,
+      requestType: PAYMENT_REQUEST_TYPE.ORDER,
+      requestId: input.orderId,
+    });
+  }
+
   async updateTotal(input: Parameters<OrderPaymentPort["updateTotal"]>[0]): Promise<void> {
     const paid = await this.readNetPaid(input);
     if (paid.currency !== input.total.currency || input.total.amount < paid.amount) {

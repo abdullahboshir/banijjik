@@ -122,7 +122,16 @@ export interface SetSummaryTotalInput {
   readonly now: Date;
 }
 
+export interface SetSummaryContactInput {
+  readonly organizationId: OrganizationId;
+  readonly requestType: PaymentRequestType;
+  readonly requestId: string;
+  readonly contactId: string | null;
+  readonly now: Date;
+}
+
 export interface PaymentSummaryRepository {
+  setContact(input: SetSummaryContactInput): Promise<void>;
   findByRequests(
     organizationId: OrganizationId,
     requestType: PaymentRequestType,

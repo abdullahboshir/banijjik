@@ -1,5 +1,6 @@
 /** Business-rule keys of the sales module (422 `details.ruleKey`). */
 export const SALES_RULE_KEY = {
+  ORDER_CONTACT_LOCKED_BY_PAYMENT: "ORDER_CONTACT_LOCKED_BY_PAYMENT",
   ORDER_TOTAL_BELOW_PAID: "ORDER_TOTAL_BELOW_PAID",
   ORDER_CANCEL_NEEDS_CONTACT: "ORDER_CANCEL_NEEDS_CONTACT",
   KIND_NEEDS_BOOKING: "KIND_NEEDS_BOOKING",
@@ -16,6 +17,7 @@ export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
 
 /** Message keys the sales module sends, besides the kernel codes. Both catalogs need each. */
 export const SALES_MESSAGE_KEYS: readonly string[] = [
+  "errors.order_contact_locked_by_payment",
   "errors.order_total_below_paid",
   "errors.order_cancel_needs_contact",
   "errors.kind_needs_booking",
