@@ -1,5 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { type EventEnvelope, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { EVENT_TYPE, type EventEnvelope, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import {
+  JOURNAL_SOURCE_TYPE,
+  REVENUE_STATE,
+  SYSTEM_ACCOUNT_CODE,
+  type PostingKey,
+  POSTING_KEY,
+} from "@banijjik/contracts/accounting";
 import {
   ENROLLMENT_EVENT_TYPE,
   ENROLLMENT_JOB,
@@ -13,8 +20,24 @@ import {
   PAYMENT_REQUEST_TYPE,
   PAYMENT_REVERSAL_CLOSED_REQUEST_SETTING_KEY,
 } from "@banijjik/contracts/payment";
-import { newId } from "@banijjik/ids";
+import { asId, newId, type OrganizationId } from "@banijjik/ids";
 import { businessDateOf } from "../../booking/index.js";
+import {
+  buildPostEnrollmentsHandler,
+  buildPostPaymentsHandler,
+  MongoAccountRepository,
+  MongoJournalRepository,
+  seedSystemAccounts,
+} from "../../accounting/index.js";
+import {
+  buildPaymentPostingSourceAdapter,
+  buildRequestAdvanceReader,
+  MongoPaymentSummaryRepository,
+} from "../../payment/index.js";
+import { buildPaymentRequestReaders } from "../../../../routes/payment-request-readers.js";
+import { kernelEventPublisher } from "../../../../kernel/events/index.js";
+import { getActiveSession, models, MongoUnitOfWork } from "../../../../kernel/db/index.js";
+
 import {
   memberWithRole,
   money,
@@ -41,7 +64,14 @@ import {
 } from "../../../../routes/enrollment-worker-jobs.js";
 import { buildOrgConfigService } from "../../../platform/entitlement/index.js";
 import { buildIndustryTemplateReader } from "../../../platform/industry/index.js";
-import { buildSyncEnrollmentPaymentsHandler } from "../index.js";
+import {
+  buildEnrollmentPeriodPostingSource,
+  buildSyncEnrollmentPaymentsHandler,
+  MongoEnrollmentRepository,
+} from "../index.js";
+
+/** The stored name of the period model (kernel models accessor), kept as a literal here. */
+const ENROLLMENT_PERIOD_MODEL = "EnrollmentPeriod";
 import { addDays } from "../domain/period-dates.js";
 import type { Enrollment, EnrollmentPeriod } from "../domain/enrollment.entity.js";
 
@@ -726,3 +756,589 @@ describe("an enrollment payment reversed after the enrollment was cancelled", ()
     expect((await summaryRow(world, periodId))?.["total"]).toEqual(money(0));
   });
 });
+
+type JournalQuery = Parameters<MongoJournalRepository["findBySource"]>[0];
+type JournalLine = { accountCode: string; debit: { amount: number }; credit: { amount: number } };
+type PeriodEventRow = { eventId: string; type: string; payload: Record<string, unknown> };
+
+const PERIOD_REVENUE_EVENT_TYPES = [
+  ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_RECOGNIZED,
+  ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_CLOSED,
+];
+
+function postingDependencies() {
+  return {
+    accounts: new MongoAccountRepository(),
+    journals: new MongoJournalRepository(),
+    events: kernelEventPublisher,
+    audit: { record: async () => undefined },
+    clock: harness.clock,
+  };
+}
+
+async function seedAccountsFor(world: TwoOrganizations): Promise<void> {
+  await withOrganizationContext(world.organizationA, () =>
+    seedSystemAccounts(
+      { accounts: new MongoAccountRepository(), clock: harness.clock },
+      { organizationId: asId<OrganizationId>(world.organizationA), actorUserId: null },
+    ),
+  );
+}
+
+/** Period-revenue outbox rows of one period, oldest first. */
+async function periodEventRows(
+  world: TwoOrganizations,
+  enrollmentPeriodId: string,
+): Promise<PeriodEventRow[]> {
+  const rows = await harness.connections.platform
+    .collection("outbox_events")
+    .find({
+      organizationId: world.organizationA,
+      type: { $in: [...PERIOD_REVENUE_EVENT_TYPES] },
+      "payload.enrollmentPeriodId": enrollmentPeriodId,
+    })
+    .sort({ _id: 1 })
+    .toArray();
+  return rows as unknown as PeriodEventRow[];
+}
+
+/** Runs the real enrollment-posting handler for every period event of the organization, in order. */
+async function postEnrollmentEvents(world: TwoOrganizations): Promise<void> {
+  const handler = buildPostEnrollmentsHandler({
+    enrollments: buildEnrollmentPeriodPostingSource(buildRequestAdvanceReader()),
+    posting: postingDependencies(),
+  });
+  const rows = await harness.connections.platform
+    .collection("outbox_events")
+    .find({ organizationId: world.organizationA, type: { $in: [...PERIOD_REVENUE_EVENT_TYPES] } })
+    .sort({ _id: 1 })
+    .toArray();
+  for (const row of rows) {
+    await withOrganizationContext(world.organizationA, () =>
+      new MongoUnitOfWork().run(() =>
+        handler.handle({
+          eventId: row.eventId as string,
+          type: row.type as string,
+          version: 1,
+          occurredAt: harness.clock.now().toISOString(),
+          organizationId: world.organizationA,
+          actorUserId: null,
+          payload: row.payload,
+        } as unknown as EventEnvelope<never>),
+      ),
+    );
+  }
+}
+
+/** Runs the real payment-posting handler for one payment event (received or reversed). */
+async function postPaymentEvent(world: TwoOrganizations, type: string, paymentId: string) {
+  const handler = buildPostPaymentsHandler({
+    payments: buildPaymentPostingSourceAdapter(buildPaymentRequestReaders()),
+    posting: postingDependencies(),
+  });
+  await withOrganizationContext(world.organizationA, () =>
+    new MongoUnitOfWork().run(() =>
+      handler.handle({
+        eventId: newId(),
+        type,
+        version: 1,
+        occurredAt: harness.clock.now().toISOString(),
+        organizationId: world.organizationA,
+        actorUserId: null,
+        payload: { paymentId },
+      } as unknown as EventEnvelope<never>),
+    ),
+  );
+}
+
+async function journalOf(world: TwoOrganizations, query: JournalQuery) {
+  return withOrganizationContext(world.organizationA, () =>
+    new MongoJournalRepository().findBySource(query),
+  );
+}
+
+function periodJournal(
+  world: TwoOrganizations,
+  enrollmentPeriodId: string,
+  postingKey: PostingKey,
+) {
+  return journalOf(world, {
+    sourceType: JOURNAL_SOURCE_TYPE.ENROLLMENT,
+    sourceId: enrollmentPeriodId,
+    postingKey,
+  });
+}
+
+function lineAmount(
+  journal: { readonly lines: readonly JournalLine[] } | undefined,
+  accountCode: string,
+  side: "debit" | "credit",
+): number {
+  return journal?.lines.find((line) => line.accountCode === accountCode)?.[side].amount ?? 0;
+}
+
+/** Net debit minus credit of one account across the journals of the organization. */
+async function netBalance(world: TwoOrganizations, accountCode: string): Promise<number> {
+  const page = await withOrganizationContext(world.organizationA, () =>
+    new MongoJournalRepository().list({ page: 1, limit: 100 }),
+  );
+  let net = 0;
+  for (const entry of page.items) {
+    for (const line of entry.lines as readonly JournalLine[]) {
+      if (line.accountCode === accountCode) net += line.debit.amount - line.credit.amount;
+    }
+  }
+  return net;
+}
+
+async function periodAt(world: TwoOrganizations, enrollmentId: string, index: number) {
+  const detail = await getEnrollment(world, enrollmentId);
+  const period = detail.periods[index];
+  if (period === undefined) throw new Error(`Missing period ${index}`);
+  return period;
+}
+
+/** Pauses the first payment right before its summary write, so a recognition can run in between. */
+function pauseFirstAllocation() {
+  const original = MongoPaymentSummaryRepository.prototype.applyAllocation;
+  let release!: () => void;
+  const mayWrite = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let signalPaused!: () => void;
+  const paused = new Promise<void>((resolve) => {
+    signalPaused = resolve;
+  });
+  let gated = false;
+  const spy = vi
+    .spyOn(MongoPaymentSummaryRepository.prototype, "applyAllocation")
+    .mockImplementation(async function (
+      this: MongoPaymentSummaryRepository,
+      input: Parameters<MongoPaymentSummaryRepository["applyAllocation"]>[0],
+    ) {
+      if (!gated) {
+        gated = true;
+        signalPaused();
+        await mayWrite;
+      }
+      return original.call(this, input);
+    });
+  return { paused, release, restore: () => spy.mockRestore() };
+}
+
+describe("enrollment period revenue (card 3.31)", () => {
+  it("activating an enrollment recognises its started period on the activation date", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    const payment = await pay(world, period.enrollmentPeriodId, 10001);
+    expect(payment.status, JSON.stringify(payment.body)).toBe(201);
+    expect((await action(world, enrollment, "activate")).status).toBe("ACTIVE");
+    await postPaymentEvent(world, EVENT_TYPE.PAYMENT_RECEIVED, payment.body.data.paymentId);
+    await postEnrollmentEvents(world);
+    const revenue = await periodJournal(
+      world,
+      period.enrollmentPeriodId,
+      POSTING_KEY.enrollment_period_revenue,
+    );
+    expect(revenue?.businessDate).toBe(today());
+    expect(lineAmount(revenue, SYSTEM_ACCOUNT_CODE.REVENUE_PLAN, "credit")).toBe(10001);
+    const settle = await periodJournal(
+      world,
+      period.enrollmentPeriodId,
+      POSTING_KEY.enrollment_period_advance_settle,
+    );
+    expect(lineAmount(settle, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES, "debit")).toBe(10001);
+    expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES)).toBe(0);
+    expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE)).toBe(0);
+  });
+
+  it("a PENDING enrollment past its start date has no revenue", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    await runJobAt(world.organizationA, addDays(today(), 2), ENROLLMENT_JOB.RENEW);
+    expect((await getEnrollment(world, enrollment.enrollmentId)).status).toBe("PENDING");
+    expect(await periodEventRows(world, period.enrollmentPeriodId)).toEqual([]);
+  });
+
+  it("renewal recognises the new period on its start date, not the run date", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: true });
+    const first = await periodAt(world, enrollment.enrollmentId, 0);
+    const runDate = addDays(first.periodEndsOn, 3);
+    await runJobAt(world.organizationA, runDate, ENROLLMENT_JOB.RENEW);
+    const second = await periodAt(world, enrollment.enrollmentId, 1);
+    const rows = await periodEventRows(world, second.enrollmentPeriodId);
+    expect(rows.map((row) => row.type)).toEqual([ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_RECOGNIZED]);
+    await postEnrollmentEvents(world);
+    const revenue = await periodJournal(
+      world,
+      second.enrollmentPeriodId,
+      POSTING_KEY.enrollment_period_revenue,
+    );
+    expect(revenue?.businessDate).toBe(addDays(first.periodEndsOn, 1));
+    expect(revenue?.businessDate).not.toBe(runDate);
+  });
+
+  it("an advance period paid early is recognised only when it becomes current", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const first = await periodAt(world, enrollment.enrollmentId, 0);
+    const renewed = await action(world, enrollment, "renew");
+    const advance = await periodAt(world, renewed.enrollmentId, 1);
+    expect(await periodEventRows(world, advance.enrollmentPeriodId)).toEqual([]);
+    expect((await pay(world, advance.enrollmentPeriodId, 10001)).status).toBe(201);
+    expect(await periodEventRows(world, advance.enrollmentPeriodId)).toEqual([]);
+    await runJobAt(world.organizationA, addDays(first.periodEndsOn, 1), ENROLLMENT_JOB.RENEW);
+    const rows = await periodEventRows(world, advance.enrollmentPeriodId);
+    expect(rows.map((row) => row.type)).toEqual([ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_RECOGNIZED]);
+  });
+
+  it("a payment after recognition is AFTER_REVENUE and goes to the receivable", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    const payment = await pay(world, period.enrollmentPeriodId, 500);
+    expect(payment.status, JSON.stringify(payment.body)).toBe(201);
+    expect(payment.body.data.allocations[0]?.revenueState).toBe(REVENUE_STATE.AFTER_REVENUE);
+    const paymentId = payment.body.data.paymentId as string;
+    await postPaymentEvent(world, EVENT_TYPE.PAYMENT_RECEIVED, paymentId);
+    const received = await journalOf(world, {
+      sourceType: JOURNAL_SOURCE_TYPE.PAYMENT,
+      sourceId: paymentId,
+      postingKey: POSTING_KEY.payment_in_after_revenue,
+    });
+    expect(lineAmount(received, SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE, "credit")).toBe(500);
+    expect(lineAmount(received, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES, "credit")).toBe(0);
+  });
+});
+
+describe("enrollment period revenue: cancel, races and replays (card 3.31)", () => {
+  it("a payment paused after reading BEFORE_REVENUE conflicts with recognition; its advance is in the settle", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    const gate = pauseFirstAllocation();
+    try {
+      const paymentRequest = pay(world, period.enrollmentPeriodId, 300);
+      await Promise.race([gate.paused, failIfPaymentFinishedFirst(paymentRequest)]);
+      await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+      expect((await action(world, enrollment, "activate")).status).toBe("ACTIVE");
+      gate.release();
+      const payment = await paymentRequest;
+      expect(payment.status, JSON.stringify(payment.body)).toBe(201);
+      const paymentId = payment.body.data.paymentId as string;
+      expect(payment.body.data.allocations[0]?.revenueState).toBe(REVENUE_STATE.BEFORE_REVENUE);
+      await postPaymentEvent(world, EVENT_TYPE.PAYMENT_RECEIVED, paymentId);
+      await postEnrollmentEvents(world);
+      const settle = await periodJournal(
+        world,
+        period.enrollmentPeriodId,
+        POSTING_KEY.enrollment_period_advance_settle,
+      );
+      expect(lineAmount(settle, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES, "debit")).toBe(300);
+      const advance = await journalOf(world, {
+        sourceType: JOURNAL_SOURCE_TYPE.PAYMENT,
+        sourceId: paymentId,
+        postingKey: POSTING_KEY.payment_in_advance,
+      });
+      expect(lineAmount(advance, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES, "credit")).toBe(300);
+      expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES)).toBe(0);
+    } finally {
+      gate.release();
+      gate.restore();
+    }
+  });
+
+  it("cancel after recognition posts the reversal for the unpaid part, and dues and books agree", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await seedAccountsFor(world);
+    const { periodId, paymentId } = await cancelledEnrollmentWithPartPaid(world);
+    await postPaymentEvent(world, EVENT_TYPE.PAYMENT_RECEIVED, paymentId);
+    await postEnrollmentEvents(world);
+    const reversal = await periodJournal(
+      world,
+      periodId,
+      POSTING_KEY.enrollment_period_revenue_cancel,
+    );
+    expect(lineAmount(reversal, SYSTEM_ACCOUNT_CODE.REVENUE_PLAN, "debit")).toBe(9501);
+    expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE)).toBe(0);
+    expect(await dues(world)).toEqual([]);
+  });
+
+  it("cancel before the start keeps the paid advance as a cancellation fee", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, {
+      ...plan,
+      startsOn: addDays(today(), 5),
+      autoRenew: false,
+    });
+    expect(enrollment.status).toBe("PENDING");
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    const payment = await pay(world, period.enrollmentPeriodId, 500);
+    expect(payment.status, JSON.stringify(payment.body)).toBe(201);
+    expect((await action(world, enrollment, "cancel")).status).toBe("CANCELLED");
+    await postPaymentEvent(world, EVENT_TYPE.PAYMENT_RECEIVED, payment.body.data.paymentId);
+    await postEnrollmentEvents(world);
+    const fee = await periodJournal(
+      world,
+      period.enrollmentPeriodId,
+      POSTING_KEY.enrollment_period_cancellation_fee,
+    );
+    expect(lineAmount(fee, SYSTEM_ACCOUNT_CODE.CANCELLATION_FEE_INCOME, "credit")).toBe(500);
+    expect(
+      await periodJournal(world, period.enrollmentPeriodId, POSTING_KEY.enrollment_period_revenue),
+    ).toBeUndefined();
+    expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES)).toBe(0);
+    expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE)).toBe(0);
+  });
+
+  it("recognising twice posts once", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    const rows = await periodEventRows(world, period.enrollmentPeriodId);
+    expect(rows.map((row) => row.type)).toEqual([ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_RECOGNIZED]);
+    await postEnrollmentEvents(world);
+    await postEnrollmentEvents(world);
+    expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE)).toBe(10001);
+    expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.REVENUE_PLAN)).toBe(-10001);
+  });
+
+  it("a stale period version returns 409 and posts nothing", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    expect((await pay(world, period.enrollmentPeriodId, 10001)).status).toBe(201);
+    const original = MongoEnrollmentRepository.prototype.savePeriod;
+    // A concurrent writer bumps the period version right before the recognition write.
+    const spy = vi
+      .spyOn(MongoEnrollmentRepository.prototype, "savePeriod")
+      .mockImplementation(async function (
+        this: MongoEnrollmentRepository,
+        toSave: EnrollmentPeriod,
+        changeEnd: boolean,
+      ) {
+        if (toSave.revenueRecognizedOn !== undefined) {
+          await withOrganizationContext(world.organizationA, () =>
+            models({})
+              .get(ENROLLMENT_PERIOD_MODEL)
+              .updateOne(
+                {
+                  organizationId: world.organizationA,
+                  enrollmentPeriodId: toSave.enrollmentPeriodId,
+                },
+                { $inc: { version: 1 } },
+                bumpSessionOptions(),
+              ),
+          );
+        }
+        return original.call(this, toSave, changeEnd);
+      });
+    try {
+      const response = await world.alice.call(
+        "post",
+        `/orgs/${world.organizationA}/enrollments/${enrollment.enrollmentId}/activate`,
+        { version: enrollment.version },
+      );
+      expect(response.status, JSON.stringify(response.body)).toBe(409);
+    } finally {
+      spy.mockRestore();
+    }
+    expect((await getEnrollment(world, enrollment.enrollmentId)).status).toBe("PENDING");
+    expect(await periodEventRows(world, period.enrollmentPeriodId)).toEqual([]);
+    expect(
+      await periodJournal(world, period.enrollmentPeriodId, POSTING_KEY.enrollment_period_revenue),
+    ).toBeUndefined();
+  });
+
+  it("writing off a reversed payment on a cancelled enrollment period posts bad debt for the kept income", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await seedAccountsFor(world);
+    await setting(
+      world,
+      PAYMENT_REVERSAL_CLOSED_REQUEST_SETTING_KEY,
+      CLOSED_REQUEST_REVERSAL_POLICY.WRITE_OFF,
+    );
+    const { paymentId } = await cancelledEnrollmentWithPartPaid(world);
+    await postPaymentEvent(world, EVENT_TYPE.PAYMENT_RECEIVED, paymentId);
+    const reversed = await reversePayment(world, paymentId, 500);
+    expect(reversed.status, JSON.stringify(reversed.body)).toBe(201);
+    const reversalId = reversed.body.data.paymentId as string;
+    await postPaymentEvent(world, EVENT_TYPE.PAYMENT_REVERSED, reversalId);
+    const badDebt = await journalOf(world, {
+      sourceType: JOURNAL_SOURCE_TYPE.PAYMENT,
+      sourceId: reversalId,
+      postingKey: POSTING_KEY.bad_debt_written_off,
+    });
+    expect(lineAmount(badDebt, SYSTEM_ACCOUNT_CODE.BAD_DEBT_EXPENSE, "debit")).toBe(500);
+    expect(lineAmount(badDebt, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES, "credit")).toBe(500);
+  });
+
+  it("with accounting off, recognition still writes the period event and the ordered handler skips", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    const [row] = await periodEventRows(world, period.enrollmentPeriodId);
+    if (row === undefined) throw new Error("the recognition event was not written");
+    const handler = buildPostEnrollmentsHandler({
+      enrollments: buildEnrollmentPeriodPostingSource(buildRequestAdvanceReader()),
+      posting: postingDependencies(),
+    });
+    const registry = new EventHandlerRegistry();
+    registry.register(handler);
+    const job = {
+      eventId: row.eventId,
+      handlerKey: handler.handlerKey,
+      type: row.type,
+      organizationId: world.organizationA,
+    };
+    const effectiveness = (isOn: boolean) => ({ isEffective: async () => isOn });
+    expect(await runEventHandler(job, registry, effectiveness(false))).toBe("SKIPPED_MODULE_OFF");
+    expect(
+      await periodJournal(world, period.enrollmentPeriodId, POSTING_KEY.enrollment_period_revenue),
+    ).toBeUndefined();
+    // ORDERED handlers advance their position even when skipped (ADR-115), so the event is not replayed.
+    expect(await runEventHandler(job, registry, effectiveness(true))).toBe("ALREADY_PROCESSED");
+    expect(
+      await periodJournal(world, period.enrollmentPeriodId, POSTING_KEY.enrollment_period_revenue),
+    ).toBeUndefined();
+  });
+
+  it("the close event tells a period recognised at its start from one recognised at cancel even when the kept amount equals the fee", async () => {
+    const started = await worldFor(harness, RETAIL, GYM);
+    await setting(started, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    await seedAccountsFor(started);
+    const startedPlan = await publishPlan(started);
+    const startedEnrollment = await enroll(started, {
+      ...startedPlan,
+      startsOn: today(),
+      autoRenew: false,
+    });
+    const startedPeriod = await periodAt(started, startedEnrollment.enrollmentId, 0);
+    expect((await pay(started, startedPeriod.enrollmentPeriodId, 10001)).status).toBe(201);
+    expect((await action(started, startedEnrollment, "cancel")).status).toBe("CANCELLED");
+    await postEnrollmentEvents(started);
+    const startedClosed = await closedRowOf(started, startedPeriod.enrollmentPeriodId);
+    expect(startedClosed.payload.recognizedBeforeCancel).toBe(true);
+    expect(
+      await periodJournal(
+        started,
+        startedPeriod.enrollmentPeriodId,
+        POSTING_KEY.enrollment_period_cancellation_fee,
+      ),
+    ).toBeUndefined();
+
+    const cancelled = await worldFor(harness, RETAIL, GYM);
+    await seedAccountsFor(cancelled);
+    const cancelledPlan = await publishPlan(cancelled);
+    const cancelledEnrollment = await enroll(cancelled, {
+      ...cancelledPlan,
+      startsOn: today(),
+      autoRenew: false,
+    });
+    const cancelledPeriod = await periodAt(cancelled, cancelledEnrollment.enrollmentId, 0);
+    expect((await pay(cancelled, cancelledPeriod.enrollmentPeriodId, 10001)).status).toBe(201);
+    expect((await action(cancelled, cancelledEnrollment, "cancel")).status).toBe("CANCELLED");
+    await postEnrollmentEvents(cancelled);
+    const cancelledClosed = await closedRowOf(cancelled, cancelledPeriod.enrollmentPeriodId);
+    expect(cancelledClosed.payload.recognizedBeforeCancel).toBe(false);
+    expect(
+      await periodJournal(
+        cancelled,
+        cancelledPeriod.enrollmentPeriodId,
+        POSTING_KEY.enrollment_period_cancellation_fee,
+      ),
+    ).toBeDefined();
+  });
+
+  it("cancel keeps the dues total at the kept amount after the revenue touch", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    expect((await pay(world, period.enrollmentPeriodId, 500)).status).toBe(201);
+    expect((await action(world, enrollment, "cancel")).status).toBe("CANCELLED");
+    expect((await summaryRow(world, period.enrollmentPeriodId))?.["total"]).toEqual(money(500));
+    expect(await dues(world)).toEqual([]);
+  });
+
+  it("creating an enrollment that starts active recognises its first period on the creation date", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    expect(enrollment.status).toBe("ACTIVE");
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    const rows = await periodEventRows(world, period.enrollmentPeriodId);
+    expect(rows.map((row) => row.type)).toEqual([ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_RECOGNIZED]);
+    await postEnrollmentEvents(world);
+    const revenue = await periodJournal(
+      world,
+      period.enrollmentPeriodId,
+      POSTING_KEY.enrollment_period_revenue,
+    );
+    expect(revenue?.businessDate).toBe(today());
+  });
+
+  it("a business date at 02:00 Dhaka is the local date", async () => {
+    harness.clock.setNow(new Date("2026-10-23T20:00:00Z"));
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+    await seedAccountsFor(world);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    expect(today()).toBe("2026-10-24");
+    const period = await periodAt(world, enrollment.enrollmentId, 0);
+    await postEnrollmentEvents(world);
+    const revenue = await periodJournal(
+      world,
+      period.enrollmentPeriodId,
+      POSTING_KEY.enrollment_period_revenue,
+    );
+    expect(revenue?.businessDate).toBe("2026-10-24");
+  });
+});
+
+async function closedRowOf(world: TwoOrganizations, enrollmentPeriodId: string) {
+  const rows = await periodEventRows(world, enrollmentPeriodId);
+  const closed = rows.find((row) => row.type === ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_CLOSED);
+  if (closed === undefined) throw new Error("the close event was not written");
+  return closed;
+}
+
+/** The stale-version bump joins the open transaction, so it waits for nothing and rolls back with it. */
+function bumpSessionOptions() {
+  const session = getActiveSession();
+  return session === undefined ? undefined : { session };
+}
+
+async function failIfPaymentFinishedFirst(request: Promise<unknown>): Promise<never> {
+  await request;
+  throw new Error("payment finished before it reached the summary write");
+}
