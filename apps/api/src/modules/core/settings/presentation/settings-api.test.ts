@@ -192,6 +192,7 @@ describe("GET /settings", () => {
       "sales.discountOwnerWithoutApproval",
       "sales.draftExpiryHours",
       "sales.placedAutoCancelHours",
+      "sales.returnWindowDays",
       "sales.usePacking",
     ]);
     expect(settingsOf(response)["organization.digitScript"]).toEqual({
@@ -202,7 +203,7 @@ describe("GET /settings", () => {
       value: false,
       source: SETTING_VALUE_SOURCE.SYSTEM,
     });
-    expect(settingsOf(response)).not.toHaveProperty("sales.returnWindowDays");
+    expect(settingsOf(response)).not.toHaveProperty("sales.notRegisteredExample");
   });
 
   it("returns only the requested keys, in sorted order", async () => {
@@ -228,12 +229,12 @@ describe("GET /settings", () => {
 
     const response = await world.alice.call(
       "get",
-      settingsPath(world.organizationA, "?keys=sales.returnWindowDays"),
+      settingsPath(world.organizationA, "?keys=sales.notRegisteredExample"),
     );
 
     expect(response.status).toBe(404);
     expect(response.body.error.messageKey).toBe("errors.setting_not_available");
-    expect(response.body.error.details.settingKey).toBe("sales.returnWindowDays");
+    expect(response.body.error.details.settingKey).toBe("sales.notRegisteredExample");
   });
 
   it("answers 404 to another organization's owner", async () => {
@@ -381,7 +382,7 @@ describe("PATCH /settings", () => {
     const path = settingsPath(world.organizationA);
 
     const unknown = await world.alice.call("patch", path, {
-      items: [{ settingKey: "sales.returnWindowDays", value: 3 }],
+      items: [{ settingKey: "sales.notRegisteredExample", value: 3 }],
     });
     const versionOnCreate = await world.alice.call("patch", path, {
       items: [{ settingKey: "organization.digitScript", value: "BENGALI", version: 1 }],

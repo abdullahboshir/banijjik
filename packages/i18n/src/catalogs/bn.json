@@ -446,6 +446,8 @@
   "errors.commission_payout_total_changed": "যাচাই করার পর কমিশনের মোট অঙ্ক বদলেছে। নতুন মোট দেখে আবার চেষ্টা করুন।",
   "package.ADDON_COMMISSION.name": "কমিশন অ্যাড-অন",
   "permission.sales.order.read": "অর্ডার দেখা",
+  "permission.sales.return.read": "ফেরত দেখা",
+  "permission.sales.return.create": "ফেরত তৈরি করা",
   "permission.sales.order.create": "অর্ডার তৈরি করা",
   "permission.sales.order.update": "অর্ডার সম্পাদনা করা",
   "permission.sales.order.confirm": "অর্ডার কনফার্ম করা",

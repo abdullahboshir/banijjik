@@ -448,6 +448,8 @@
   "permission.sales.order.read": "View orders",
   "permission.sales.order.create": "Create orders",
   "permission.sales.order.update": "Edit orders",
+  "permission.sales.return.read": "View returns",
+  "permission.sales.return.create": "Create returns",
   "permission.sales.order.confirm": "Confirm orders",
   "permission.sales.order.cancel": "Cancel orders",
   "errors.kind_needs_booking": "That offering needs a booking, not an order.",

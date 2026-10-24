@@ -59,6 +59,7 @@ describe("audit vocabulary", () => {
       "commissionRule",
       "commissionPayout",
       "order",
+      "salesReturn",
       "enrollment",
       "checkIn",
       "listingReport",

@@ -657,7 +657,7 @@ describe("setting defaults against the registry", () => {
           ...created.configuration,
           settingsDefaults: {
             ...created.configuration.settingsDefaults,
-            "sales.returnWindowDays": 14,
+            "sales.notRegisteredExample": 14,
           },
         },
       },
@@ -668,7 +668,7 @@ describe("setting defaults against the registry", () => {
     expect(invalid.body.error.details.ruleKey).toBe("INDUSTRY_TEMPLATE_SETTING_INVALID");
     expect(invalid.body.error.details.settingKeys).toEqual(["organization.digitScript"]);
     expect(accepted.status).toBe(200);
-    expect(detailOf(accepted).pendingSettingKeys).toContain("sales.returnWindowDays");
+    expect(detailOf(accepted).pendingSettingKeys).toContain("sales.notRegisteredExample");
   });
 });
 
