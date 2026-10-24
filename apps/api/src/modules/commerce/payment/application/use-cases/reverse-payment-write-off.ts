@@ -9,6 +9,7 @@ import {
 import type { OrganizationId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
+import { paymentReversalHasRefundError } from "../../domain/errors.js";
 import type { PaymentSummaryRepository } from "../ports/payment-repositories.js";
 
 export interface RestoreAllocationsDependencies {
@@ -63,6 +64,24 @@ async function writeOffClosedRequest(input: {
 }
 
 /**
+ * The eligibility check before the transaction reads the summaries without it. A refund committed in
+ * between would make the net paid negative and the write-off larger than what the closure kept, so
+ * the rule is read again inside the transaction (§11 item 2).
+ */
+async function refuseRefundedRequest(
+  summaries: PaymentSummaryRepository,
+  organizationId: OrganizationId,
+  allocation: PaymentAllocation,
+): Promise<void> {
+  const summary = await summaries.findByRequest(
+    organizationId,
+    allocation.requestType,
+    allocation.requestId,
+  );
+  if (summary !== undefined && summary.refunded.amount > 0) throw paymentReversalHasRefundError();
+}
+
+/**
  * Takes the reversed payment's allocations back off the summaries. With the WRITE_OFF policy a
  * closed request also drops what the closure kept; an open request always reopens its due.
  * Runs inside the reversal transaction.
@@ -77,6 +96,7 @@ export async function restoreAllocationsForReversal(input: {
   const policy = await readClosedRequestPolicy(deps.orgConfig, organizationId);
   const writeOffs: PaymentWriteOff[] = [];
   for (const allocation of allocations) {
+    await refuseRefundedRequest(deps.summaries, organizationId, allocation);
     await deps.summaries.restoreAllocation({
       organizationId,
       requestType: allocation.requestType,

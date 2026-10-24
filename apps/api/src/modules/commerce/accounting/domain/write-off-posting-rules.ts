@@ -5,6 +5,7 @@ import {
   type Money,
 } from "@banijjik/contracts/accounting";
 import { PAYMENT_REQUEST_TYPE, type PaymentRequestType } from "@banijjik/contracts/payment";
+import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 import {
   assertBalanced,
   credit,
@@ -38,6 +39,9 @@ export function draftBadDebtWriteOff(
   );
   const first = rows[0];
   if (first === undefined) return undefined;
+  // One payment has one currency; a mixed list is a programming error, never summed (§11 item 3).
+  if (rows.some((writeOff) => writeOff.amount.currency !== first.amount.currency))
+    throw new DomainRuleError({ code: ERROR_CODE.INTERNAL });
   const total: Money = {
     amount: rows.reduce((sum, writeOff) => sum + writeOff.amount.amount, 0),
     currency: first.amount.currency,

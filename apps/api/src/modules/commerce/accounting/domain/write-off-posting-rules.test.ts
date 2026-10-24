@@ -50,6 +50,20 @@ describe("bad debt for a written-off closed request (ADR-140)", () => {
     expect(draft?.lines[1]?.credit.amount).toBe(500);
   });
 
+  it("refuses to sum write-offs in two currencies", () => {
+    const snapshot = reversalSnapshot([
+      { requestType: PAYMENT_REQUEST_TYPE.BOOKING, requestId: "b1", amount: money(300) },
+      {
+        requestType: PAYMENT_REQUEST_TYPE.BOOKING,
+        requestId: "b2",
+        // CurrencyCode has one value today, so a second currency can only be forced in a test.
+        amount: { amount: 200, currency: "USD" as unknown as "BDT" },
+      },
+    ]);
+
+    expect(() => draftBadDebtWriteOff(snapshot)).toThrow();
+  });
+
   it("posts nothing for an enrollment write-off, because its advances already return to zero", () => {
     const draft = draftBadDebtWriteOff(
       reversalSnapshot([
