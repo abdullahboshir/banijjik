@@ -332,9 +332,18 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
     const requested = await withTransaction(() =>
       replayDeadLetter({ eventDeadLetterId: letter.eventDeadLetterId, operatorId: newId() }),
     );
-    await waitFor("both events to be handled in order", async () =>
-      ledger.handled.length === 2 ? true : undefined,
-    );
+    // The follower waits with a doubling delay capped at 60 s (ADR-115), and a replay does not wake it.
+    // So once the replayed event is handled, the test promotes the follower's delayed job instead of
+    // relying on a wake-up time the design does not promise.
+    const followerJobId = buildEventJobId(second.eventId, HANDLER_KEY);
+    await waitFor("both events to be handled in order", async () => {
+      if (ledger.handled.length === 2) return true;
+      if (ledger.handled.length === 1) {
+        const followerJob = await queue?.getJob(followerJobId);
+        if (await followerJob?.isDelayed()) await followerJob.promote();
+      }
+      return undefined;
+    });
 
     expect(ledger.handled).toEqual([1, 2]);
     const row = await models({})
