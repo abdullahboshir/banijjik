@@ -318,8 +318,7 @@ describe("tenant module switches", () => {
     expect(fixed.status).toBe(422);
     expect(fixed.body.error.messageKey).toBe("errors.module_not_tenant_disablable");
     expect(required.status).toBe(422);
-    // The real website module is not tenant-disablable (M.6a), so the switch is refused before the dependency check.
-    expect(required.body.error.messageKey).toBe("errors.module_not_tenant_disablable");
+    expect(required.body.error.details.requiredBy).toEqual(["workflow"]);
     expect(staffWrite.status).toBe(403);
     expect(managerWrite.status).toBe(403);
     expect(foreign.status).toBe(404);

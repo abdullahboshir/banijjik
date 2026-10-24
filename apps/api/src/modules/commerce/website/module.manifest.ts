@@ -19,7 +19,7 @@ export const websiteManifest = defineModule({
   dependsOn: [],
   providesKinds: [],
   requiresAnyKind: [],
-  tenantCanDisable: false,
+  tenantCanDisable: true,
   permissions: [
     permissionDefinition(PERMISSION_KEY.WEBSITE_PAGE_READ),
     permissionDefinition(PERMISSION_KEY.WEBSITE_PAGE_UPDATE),
