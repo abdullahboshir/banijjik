@@ -38,10 +38,7 @@ async function publishTemplate(industryTemplateKey: string): Promise<void> {
   // $inc on version busts the cached reader (ADR-101). Signup only accepts a PUBLISHED template.
   await harness.connections.platform
     .collection("industry_templates")
-    .updateOne(
-      { industryTemplateKey },
-      { $set: { status: "PUBLISHED" }, $inc: { version: 1 } },
-    );
+    .updateOne({ industryTemplateKey }, { $set: { status: "PUBLISHED" }, $inc: { version: 1 } });
 }
 
 async function aMatrimonyWorld(industryTemplateKey: string): Promise<TwoOrganizations> {
@@ -289,12 +286,11 @@ describe("matrimony templates on the directory API", () => {
 
   it("the review queue's rejection reasons are the seeded ones", async () => {
     const world = await aMatrimonyWorld(ISLAMIC);
-    const config = await world.alice.call(
-      "get",
-      `/orgs/${world.organizationA}/directory/config`,
-    );
+    const config = await world.alice.call("get", `/orgs/${world.organizationA}/directory/config`);
     expect(config.status).toBe(200);
-    expect(config.body.data.rejectionReasons.map((r: { reasonKey: string }) => r.reasonKey)).toEqual([
+    expect(
+      config.body.data.rejectionReasons.map((r: { reasonKey: string }) => r.reasonKey),
+    ).toEqual([
       "guardian_consent_missing",
       "own_number_in_guardian_field",
       "unclear_answers",
@@ -302,7 +298,9 @@ describe("matrimony templates on the directory API", () => {
       "incomplete",
     ]);
     expect(
-      config.body.data.rejectionReasons.find((r: { reasonKey: string }) => r.reasonKey === "false_information").isFinal,
+      config.body.data.rejectionReasons.find(
+        (r: { reasonKey: string }) => r.reasonKey === "false_information",
+      ).isFinal,
     ).toBe(true);
     expect(config.body.data.sections.map((s: { sectionKey: string }) => s.sectionKey)).toContain(
       "religious",
@@ -333,13 +331,10 @@ describe("matrimony templates on the directory API", () => {
     expect(fields.profession).toBe("DOCTOR");
     expect(fields).not.toHaveProperty("grew_up_in");
 
-    const config = await world.alice.call(
-      "get",
-      `/orgs/${world.organizationA}/directory/config`,
-    );
-    expect(config.body.data.sections.map((s: { sectionKey: string }) => s.sectionKey)).not.toContain(
-      "religious",
-    );
+    const config = await world.alice.call("get", `/orgs/${world.organizationA}/directory/config`);
+    expect(
+      config.body.data.sections.map((s: { sectionKey: string }) => s.sectionKey),
+    ).not.toContain("religious");
     expect(
       config.body.data.consents.map((c: { consentKey: string }) => c.consentKey),
     ).not.toContain("islamic_eligibility");
