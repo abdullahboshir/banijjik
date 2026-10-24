@@ -321,3 +321,37 @@ describe("requiredGroupMissing", () => {
     expect(requiredGroupMissing([group], ["modifier-1"])).toBe(false);
   });
 });
+
+const PERFORMER_MEMBER_ID = "0190f0a0-0000-7000-8000-000000000001";
+
+describe("the performer of a line on its way to the API", () => {
+  it("sends the chosen performer with the line", () => {
+    const draft = {
+      ...emptyOrderLine("line-1"),
+      offering: offeringWith(null),
+      variantId: "variant-1",
+      quantity: "1",
+      performedByMemberId: PERFORMER_MEMBER_ID,
+    };
+
+    const parsed = parseLineDraft(draft);
+
+    expect(parsed.kind === "ok" ? parsed.input.performedByMemberId : undefined).toBe(
+      PERFORMER_MEMBER_ID,
+    );
+  });
+
+  it("sends no performer field when nobody is chosen", () => {
+    const draft = {
+      ...emptyOrderLine("line-1"),
+      offering: offeringWith(null),
+      variantId: "variant-1",
+      quantity: "1",
+    };
+
+    const inputs = lineInputsOfDrafts([draft]);
+
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]).not.toHaveProperty("performedByMemberId");
+  });
+});
