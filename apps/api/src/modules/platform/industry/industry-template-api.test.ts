@@ -234,7 +234,7 @@ describe("GET /platform/industry-templates", () => {
     ).toEqual(["FCOMMERCE", "RETAIL"]);
     expect(listed.body.meta).toMatchObject({ page: 1, hasNext: false });
     expect(drafts.status).toBe(200);
-    expect(drafts.body.data).toHaveLength(6);
+    expect(drafts.body.data).toHaveLength(8);
     expect(detail.status).toBe(200);
     expect(detail.body.data.configuration.contactRoleKeys).toEqual(
       expect.arrayContaining(["CUSTOMER"]),
