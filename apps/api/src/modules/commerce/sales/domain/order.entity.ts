@@ -52,6 +52,7 @@ export class Order implements OrderProps {
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly hasStockLines: boolean;
   readonly returnStatus: OrderProps["returnStatus"];
+  readonly completedAt: OrderProps["completedAt"];
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -78,6 +79,7 @@ export class Order implements OrderProps {
     this.customFields = props.customFields;
     this.hasStockLines = props.hasStockLines;
     this.returnStatus = props.returnStatus;
+    this.completedAt = props.completedAt;
     this.version = props.version;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -107,6 +109,7 @@ export class Order implements OrderProps {
       customFields: input.customFields,
       hasStockLines: input.hasStockLines,
       returnStatus: ORDER_RETURN_STATUS.NONE,
+      completedAt: null,
       version: INITIAL_VERSION,
       createdAt: input.now,
       updatedAt: input.now,
@@ -140,6 +143,7 @@ export class Order implements OrderProps {
       customFields: this.customFields,
       hasStockLines: this.hasStockLines,
       returnStatus: this.returnStatus,
+      completedAt: this.completedAt,
       version: this.version,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
@@ -243,6 +247,7 @@ export class Order implements OrderProps {
     return new Order({
       ...this,
       invoiceNumber: input.invoiceNumber,
+      completedAt: input.actor.now,
       lines: this.lines.map((line) => ({
         ...line,
         unitCostSnapshot: input.unitCosts.get(lineKey(line)) ?? null,
@@ -265,6 +270,25 @@ export class Order implements OrderProps {
     });
   }
 
+  /**
+   * A return on a COMPLETED order: the caller has checked the quantities and computed the lines'
+   * new returned quantities. Only the lines and the return status change; money lives in the
+   * return and the payment summary (plan 3.5b decision 7).
+   */
+  recordReturn(input: {
+    readonly lines: readonly OrderLineProps[];
+    readonly actor: OrderTransitionActor;
+  }): Order {
+    assertStatus(this.status, [ORDER_STATUS.COMPLETED]);
+    return new Order({
+      ...this,
+      lines: input.lines,
+      returnStatus: returnStatusOfLines(input.lines),
+      updatedAt: input.actor.now,
+      updatedByUserId: input.actor.actorUserId,
+    });
+  }
+
   private moved(status: OrderStatus, actor: OrderTransitionActor): Order {
     return new Order({
       ...this,
@@ -273,6 +297,14 @@ export class Order implements OrderProps {
       updatedByUserId: actor.actorUserId,
     });
   }
+}
+
+/** NONE before any return, FULL once every unit of every line came back, PARTIAL otherwise. */
+export function returnStatusOfLines(lines: readonly OrderLineProps[]): OrderProps["returnStatus"] {
+  const returned = lines.reduce((total, line) => total + line.returnedQuantity, 0);
+  if (returned === 0) return ORDER_RETURN_STATUS.NONE;
+  const everyLineFull = lines.every((line) => line.returnedQuantity >= line.quantity);
+  return everyLineFull ? ORDER_RETURN_STATUS.FULL : ORDER_RETURN_STATUS.PARTIAL;
 }
 
 export function lineKey(line: { readonly offeringId: string; readonly variantId: string }): string {

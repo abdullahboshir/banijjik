@@ -1,6 +1,8 @@
 import { INVENTORY_ALLOW_NEGATIVE_STOCK_SETTING_KEY } from "@banijjik/contracts/inventory";
 import type { ModuleManifest } from "@banijjik/contracts";
 import {
+  SALES_RETURN_WINDOW_DAYS_DEFAULT,
+  SALES_RETURN_WINDOW_DAYS_SETTING_KEY,
   SALES_ADVANCE_VALUE_SETTING_KEY,
   SALES_ADVANCE_VALUE_DEFAULT,
   SALES_ADVANCE_REQUIRED,
@@ -41,6 +43,51 @@ function advanceOf(value: unknown): SalesAdvanceRequired {
   return SALES_ADVANCE_REQUIRED_DEFAULT;
 }
 
+/** Maps the resolved `sales.*` values to the settings the order rules read; a bad value falls back to its default. */
+function salesSettingsOf(
+  resolved: ReadonlyMap<string, { readonly value: unknown }>,
+): SalesSettings {
+  const settings: SalesSettings = {
+    autoConfirm: booleanOf(
+      resolved.get(SALES_AUTO_CONFIRM_SETTING_KEY)?.value,
+      SALES_AUTO_CONFIRM_DEFAULT,
+    ),
+    draftExpiryHours: integerOf(
+      resolved.get(SALES_DRAFT_EXPIRY_HOURS_SETTING_KEY)?.value,
+      SALES_DRAFT_EXPIRY_HOURS_DEFAULT,
+    ),
+    placedAutoCancelHours: integerOf(
+      resolved.get(SALES_PLACED_AUTO_CANCEL_HOURS_SETTING_KEY)?.value,
+      SALES_PLACED_AUTO_CANCEL_HOURS_DEFAULT,
+    ),
+    usePacking: booleanOf(
+      resolved.get(SALES_USE_PACKING_SETTING_KEY)?.value,
+      SALES_USE_PACKING_DEFAULT,
+    ),
+    discountOwnerWithoutApproval: booleanOf(
+      resolved.get(SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_SETTING_KEY)?.value,
+      SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_DEFAULT,
+    ),
+    advanceValue: Math.max(
+      0,
+      integerOf(resolved.get(SALES_ADVANCE_VALUE_SETTING_KEY)?.value, SALES_ADVANCE_VALUE_DEFAULT),
+    ),
+    advanceRequired: advanceOf(resolved.get(SALES_ADVANCE_REQUIRED_SETTING_KEY)?.value),
+    allowNegativeStock: booleanOf(
+      resolved.get(INVENTORY_ALLOW_NEGATIVE_STOCK_SETTING_KEY)?.value,
+      false,
+    ),
+    returnWindowDays: Math.max(
+      0,
+      integerOf(
+        resolved.get(SALES_RETURN_WINDOW_DAYS_SETTING_KEY)?.value,
+        SALES_RETURN_WINDOW_DAYS_DEFAULT,
+      ),
+    ),
+  };
+  return settings;
+}
+
 /** Reads `sales.*` and the inventory negative-stock switch before an order transaction opens. */
 export function buildSalesSettingsReader(input: {
   readonly orgConfig: OrgConfigService;
@@ -62,43 +109,10 @@ export function buildSalesSettingsReader(input: {
           SALES_ADVANCE_REQUIRED_SETTING_KEY,
           SALES_ADVANCE_VALUE_SETTING_KEY,
           INVENTORY_ALLOW_NEGATIVE_STOCK_SETTING_KEY,
+          SALES_RETURN_WINDOW_DAYS_SETTING_KEY,
         ],
       });
-      const settings: SalesSettings = {
-        autoConfirm: booleanOf(
-          resolved.get(SALES_AUTO_CONFIRM_SETTING_KEY)?.value,
-          SALES_AUTO_CONFIRM_DEFAULT,
-        ),
-        draftExpiryHours: integerOf(
-          resolved.get(SALES_DRAFT_EXPIRY_HOURS_SETTING_KEY)?.value,
-          SALES_DRAFT_EXPIRY_HOURS_DEFAULT,
-        ),
-        placedAutoCancelHours: integerOf(
-          resolved.get(SALES_PLACED_AUTO_CANCEL_HOURS_SETTING_KEY)?.value,
-          SALES_PLACED_AUTO_CANCEL_HOURS_DEFAULT,
-        ),
-        usePacking: booleanOf(
-          resolved.get(SALES_USE_PACKING_SETTING_KEY)?.value,
-          SALES_USE_PACKING_DEFAULT,
-        ),
-        discountOwnerWithoutApproval: booleanOf(
-          resolved.get(SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_SETTING_KEY)?.value,
-          SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_DEFAULT,
-        ),
-        advanceValue: Math.max(
-          0,
-          integerOf(
-            resolved.get(SALES_ADVANCE_VALUE_SETTING_KEY)?.value,
-            SALES_ADVANCE_VALUE_DEFAULT,
-          ),
-        ),
-        advanceRequired: advanceOf(resolved.get(SALES_ADVANCE_REQUIRED_SETTING_KEY)?.value),
-        allowNegativeStock: booleanOf(
-          resolved.get(INVENTORY_ALLOW_NEGATIVE_STOCK_SETTING_KEY)?.value,
-          false,
-        ),
-      };
-      return settings;
+      return salesSettingsOf(resolved);
     },
   };
 }

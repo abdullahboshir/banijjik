@@ -1,6 +1,11 @@
 import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { registerModel } from "../../../../kernel/db/index.js";
 import {
+  SALES_RETURN_COLLECTION_NAME,
+  SALES_RETURN_MODEL_NAME,
+  salesReturnSchema,
+} from "./sales-return.schema.js";
+import {
   ORDER_COLLECTION_NAME,
   ORDER_COUNTER_COLLECTION_NAME,
   ORDER_COUNTER_MODEL_NAME,
@@ -16,6 +21,13 @@ export function registerSalesModels(): void {
     modelName: ORDER_MODEL_NAME,
     collectionName: ORDER_COLLECTION_NAME,
     schema: orderSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
+  });
+  registerModel({
+    ...tenant,
+    modelName: SALES_RETURN_MODEL_NAME,
+    collectionName: SALES_RETURN_COLLECTION_NAME,
+    schema: salesReturnSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
   });
   registerModel({

@@ -1,4 +1,5 @@
 import type { CurrencyCode, OfferingKind } from "@banijjik/contracts";
+import type { PaymentApprovalSnapshot, PaymentMethod } from "@banijjik/contracts/payment";
 import type { StockComponent } from "@banijjik/contracts/catalog";
 import type {
   OrderLineModifierSnapshot,
@@ -21,7 +22,10 @@ import type { Order } from "../../domain/order.entity.js";
 import type { PaymentTotals } from "../../domain/payment-status.js";
 
 export type SalesQuoter = Pick<PriceQuoter, "quote">;
-export type SalesStockLedger = Pick<StockLedger, "reserve" | "release" | "commitSale">;
+export type SalesStockLedger = Pick<
+  StockLedger,
+  "reserve" | "release" | "commitSale" | "returnStock"
+>;
 export type SalesApprovalVerifier = Pick<ApprovalVerifier, "consume">;
 /** The stock-ledger input shape, taken from the port so sales never imports inventory internals. */
 export type StockLedgerReserveInput = Parameters<StockLedger["reserve"]>[0];
@@ -84,6 +88,8 @@ export interface SalesSettings {
   readonly advanceValue: number;
   /** Read from the inventory module's setting before the order transaction opens (decision 5). */
   readonly allowNegativeStock: boolean;
+  /** Days after completion during which goods may come back (plan 3.5b decision 2). */
+  readonly returnWindowDays: number;
 }
 
 export interface SalesSettingsReader {
@@ -192,6 +198,16 @@ export interface OrderPaymentPort {
   readTotals(orderId: OrderId): Promise<PaymentTotals>;
   readTotalsMany(orderIds: readonly OrderId[]): Promise<ReadonlyMap<OrderId, PaymentTotals>>;
   readNetPaid(input: { organizationId: OrganizationId; orderId: OrderId }): Promise<Money>;
+  /** The payment summary of the order: the total the customer owes and the net paid so far. */
+  readSettlementBase(input: {
+    organizationId: OrganizationId;
+    orderId: OrderId;
+  }): Promise<{ readonly totalMinor: number; readonly netPaidMinor: number }>;
+  /**
+   * Writes the order total after a return and, when money is due back, the refund (plan 3.5b
+   * decision 5). Runs inside the caller's transaction.
+   */
+  settleReturn(input: SettleReturnInput): Promise<ReturnSettlementResult>;
   settleCancellation(input: {
     organizationId: OrganizationId;
     orderId: OrderId;
@@ -200,6 +216,32 @@ export interface OrderPaymentPort {
     actorUserId: UserId | null;
     now: Date;
   }): Promise<void>;
+}
+
+export interface SettleReturnInput {
+  readonly organizationId: OrganizationId;
+  readonly orderId: OrderId;
+  readonly locationId: LocationId;
+  readonly actorUserId: UserId | null;
+  readonly receivedByMemberId: string;
+  readonly currency: CurrencyCode;
+  readonly newTotalMinor: number;
+  readonly refund: {
+    readonly method: PaymentMethod;
+    readonly amountMinor: number;
+    readonly contactId: ContactId | null;
+    readonly externalReference: string | null;
+    /** Already verified by the return against its own REFUND subject (plan amendment 1). */
+    readonly approval: PaymentApprovalSnapshot | null;
+    readonly hasRefundWithoutApprovalPermission: boolean;
+    readonly note: string | null;
+  } | null;
+  readonly now: Date;
+}
+
+export interface ReturnSettlementResult {
+  readonly paymentId: string | null;
+  readonly storeCreditEntryId: string | null;
 }
 
 export interface SalesUnitOfWork {

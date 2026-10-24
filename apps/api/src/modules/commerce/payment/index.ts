@@ -202,3 +202,34 @@ export function buildPaymentPostingSourceAdapter(
 }
 
 export { settleRequestTermination } from "./application/use-cases/settle-request-termination.js";
+
+export { isApprovalRequired } from "./application/use-cases/refund-payment-helpers.js";
+export { findStoreCreditEntryIdOfPayment } from "./infrastructure/store-credit-entry-of-payment.js";
+
+/**
+ * The refund use case for a caller that already holds a transaction (a sales return, plan 3.5b
+ * decision 5). It joins the caller's session, so the refund and the caller's writes commit together.
+ */
+export function buildRefundPaymentUseCase(input: {
+  readonly requestReaders: RequestReaderRegistry;
+  readonly approvals: Pick<ApprovalVerifier, "consume">;
+  readonly orgConfig: OrgConfigService;
+  readonly audit: AuditRecorder;
+  readonly clock: Clock;
+  readonly timeZone: import("./application/ports/payment-repositories.js").TimezoneReader;
+}): RefundPaymentUseCase {
+  return new RefundPaymentUseCase({
+    payments: new MongoPaymentRepository(),
+    storeCredit: new MongoStoreCreditRepository(),
+    summaries: new MongoPaymentSummaryRepository(),
+    contactStoreCredit: new MongoContactStoreCreditAdapter(),
+    requestReaders: input.requestReaders,
+    unitOfWork: new MongoUnitOfWork(),
+    approvals: input.approvals,
+    events: kernelEventPublisher,
+    audit: input.audit,
+    clock: input.clock,
+    timeZone: input.timeZone,
+    orgConfig: input.orgConfig,
+  });
+}

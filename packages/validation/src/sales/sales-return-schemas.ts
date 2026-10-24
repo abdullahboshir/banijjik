@@ -1,8 +1,8 @@
+import { PAYMENT_METHOD } from "@banijjik/contracts/payment";
 import {
   MAX_ORDER_LINES,
   MAX_SALES_RETURN_NOTE_LENGTH,
   SALES_RETURN_REASON,
-  SALES_RETURN_REFUND_METHOD,
   RETURN_DISPOSITION,
 } from "@banijjik/contracts/sales";
 import { z } from "zod";
@@ -29,7 +29,10 @@ const returnLineSchema = z.strictObject({
 export const salesReturnRequestSchema = z.strictObject({
   lines: z.array(returnLineSchema).min(1).max(MAX_ORDER_LINES),
   returnDeliveryCharge: z.boolean().optional(),
-  refundMethod: z.enum(SALES_RETURN_REFUND_METHOD).nullable().optional(),
+  /** Any payment method: GATEWAY is refused by the use case with PAYMENT_METHOD_NOT_AVAILABLE (decision 5). */
+  refundMethod: z.enum(PAYMENT_METHOD).nullable().optional(),
+  /** Reference of a mobile-money refund (bKash, Nagad), which the payment module requires. */
+  refundExternalReference: z.string().trim().min(1).max(100).optional(),
   reasonKey: z.enum(SALES_RETURN_REASON),
   note: z.string().trim().max(MAX_SALES_RETURN_NOTE_LENGTH).nullable().optional(),
   approvalTokens: z

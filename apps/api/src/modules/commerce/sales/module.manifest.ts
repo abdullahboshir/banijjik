@@ -23,12 +23,16 @@ import {
   SALES_EVENT_TYPE,
   SALES_PLACED_AUTO_CANCEL_HOURS_DEFAULT,
   SALES_PLACED_AUTO_CANCEL_HOURS_SETTING_KEY,
+  SALES_RETURN_WINDOW_DAYS_DEFAULT,
+  SALES_RETURN_WINDOW_DAYS_SETTING_KEY,
   SALES_USE_PACKING_DEFAULT,
   SALES_USE_PACKING_SETTING_KEY,
 } from "@banijjik/contracts/sales";
 import { defineModule } from "../../../kernel/modules/index.js";
 
 const MAX_HOURS_SETTING = 24 * 365;
+/** Ten years; a return window longer than that is a configuration mistake. */
+const MAX_RETURN_WINDOW_DAYS = 3650;
 
 export const salesManifest = defineModule({
   key: MODULE_KEY.SALES,
@@ -44,6 +48,8 @@ export const salesManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.SALES_ORDER_UPDATE),
     permissionDefinition(PERMISSION_KEY.SALES_ORDER_CONFIRM),
     permissionDefinition(PERMISSION_KEY.SALES_ORDER_CANCEL),
+    permissionDefinition(PERMISSION_KEY.SALES_RETURN_READ),
+    permissionDefinition(PERMISSION_KEY.SALES_RETURN_CREATE),
   ],
   routes: {
     admin: ["/orgs/:organizationId/orders", "/orgs/:organizationId/sales"],
@@ -110,6 +116,13 @@ export const salesManifest = defineModule({
       allowsLocationOverride: false,
       isClientVisible: true,
     },
+    {
+      settingKey: SALES_RETURN_WINDOW_DAYS_SETTING_KEY,
+      value: { kind: "INTEGER", min: 0, max: MAX_RETURN_WINDOW_DAYS },
+      systemDefault: SALES_RETURN_WINDOW_DAYS_DEFAULT,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
   ],
   customFieldEntities: ["order"],
   botTools: [],
@@ -119,5 +132,5 @@ export const salesManifest = defineModule({
     consumes: [],
   },
   limitKeys: [LIMIT_KEY.ORDERS_PER_MONTH],
-  sequenceKeys: [SEQUENCE_KEY.ORDER, SEQUENCE_KEY.INVOICE],
+  sequenceKeys: [SEQUENCE_KEY.ORDER, SEQUENCE_KEY.INVOICE, SEQUENCE_KEY.RETURN],
 });

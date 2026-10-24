@@ -1,4 +1,8 @@
 import { buildOrderPaymentAdapter } from "./order-payment-adapter.js";
+import { asSystemPort } from "../kernel/context/index.js";
+import { SYSTEM_REASON } from "@banijjik/contracts";
+import { isApprovalRequired } from "../modules/commerce/payment/index.js";
+import { buildMembershipDirectory } from "../modules/core/organization/index.js";
 import {
   ERROR_CODE,
   PERMISSION_KEY,
@@ -22,6 +26,7 @@ import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/acce
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { AppError } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
+import { forbidden } from "../kernel/http/index.js";
 import { buildDefaultCatalogQuoteReader } from "../modules/commerce/catalog/index.js";
 import { buildInventoryCostReader, buildStockLedger } from "../modules/commerce/inventory/index.js";
 import {
@@ -199,8 +204,41 @@ export function buildSalesTenantPorts(input: SalesRouterInput): SalesTenantPorts
       },
     },
     unitCosts: unitCostReaderOf(),
-    payments: buildOrderPaymentAdapter(),
+    payments: buildOrderPaymentAdapter({
+      orgConfig: input.orgConfig,
+      audit: input.audit,
+      clock: input.clock,
+    }),
     performers: buildMemberPerformerReader(),
+    ...returnPortsOf(input),
+  };
+}
+
+/** Returns reuse payment's refund rules and iam's membership: the refund stays in payment (plan 3.5b). */
+function returnPortsOf(
+  input: SalesRouterInput,
+): Pick<SalesTenantPorts, "refundApproval" | "refundPermission" | "members"> {
+  const directory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
+  return {
+    refundApproval: {
+      approvalRequired: (organizationId, hasRefundWithoutApprovalPermission) =>
+        isApprovalRequired(input.orgConfig, hasRefundWithoutApprovalPermission, organizationId),
+    },
+    refundPermission: {
+      hasRefundWithoutApproval: async (_userId, locationId) => {
+        const locations = await input.permissions.locationsWith(
+          PERMISSION_KEY.PAYMENT_PAYMENT_REFUND_WITHOUT_APPROVAL,
+        );
+        return locations === "ALL" || locations.includes(locationId);
+      },
+    },
+    members: {
+      memberIdOf: async (userId, organizationId) => {
+        const membership = await directory.findActiveMembership(userId, organizationId);
+        if (!membership) throw forbidden();
+        return membership.memberId;
+      },
+    },
   };
 }
 
@@ -232,6 +270,10 @@ export function buildSalesJobPortsForWorker(input: {
       permission: unusedPermissionGuard,
       idempotency: unusedGuard,
     }),
-    payments: buildOrderPaymentAdapter(),
+    payments: buildOrderPaymentAdapter({
+      orgConfig: input.orgConfig,
+      audit: input.audit,
+      clock: input.clock,
+    }),
   };
 }

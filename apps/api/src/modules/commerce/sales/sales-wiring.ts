@@ -44,6 +44,20 @@ import {
   MongoOrderRepository,
 } from "./infrastructure/mongo-order.repositories.js";
 import { OrderController } from "./presentation/order.controller.js";
+import type { SalesReturnDependencies } from "./application/sales-return-dependencies.js";
+import type {
+  SalesRefundApprovalRule,
+  SalesRefundPermissionReader,
+  SalesReturnMemberReader,
+} from "./application/ports/sales-return-ports.js";
+import {
+  CreateSalesReturnUseCase,
+  GetSalesReturnUseCase,
+  ListSalesReturnsUseCase,
+  PreviewSalesReturnUseCase,
+} from "./application/use-cases/sales-return.use-cases.js";
+import { SalesReturnController } from "./presentation/sales-return.controller.js";
+import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
 
 /**
  * The ports this module cannot build itself: pricing's quoter, inventory's ledger, iam's
@@ -63,6 +77,10 @@ export interface SalesTenantPorts {
   readonly unitCosts: SalesUnitCostReader;
   readonly payments: OrderPaymentPort;
   readonly performers: SalesPerformerReader;
+  /** Returns (plan 3.5b): the refund exemption, the approval rule and the member lookup come from routes. */
+  readonly refundApproval: SalesRefundApprovalRule;
+  readonly refundPermission: SalesRefundPermissionReader;
+  readonly members: SalesReturnMemberReader;
 }
 
 /** The composition root of the module: repositories and ports, never wired anywhere else. */
@@ -91,6 +109,36 @@ export function buildSalesDependencies(ports: SalesTenantPorts): SalesDependenci
     unitCosts: ports.unitCosts,
     performers: ports.performers,
   };
+}
+
+/** The returns of one order (plan 3.5b A1): the same ports as the orders, plus the refund rules. */
+export function buildSalesReturnDependencies(ports: SalesTenantPorts): SalesReturnDependencies {
+  return {
+    orders: new MongoOrderRepository(),
+    returns: new MongoSalesReturnRepository(),
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+    audit: ports.audit,
+    clock: ports.clock,
+    timeZone: buildSalesTimeZoneReader(),
+    settings: buildSalesSettingsReader({ orgConfig: ports.orgConfig, manifests: ports.manifests }),
+    stock: ports.stock,
+    approvals: ports.approvals,
+    payments: ports.payments,
+    refundApproval: ports.refundApproval,
+    refundPermission: ports.refundPermission,
+    members: ports.members,
+  };
+}
+
+export function buildSalesReturnController(ports: SalesTenantPorts): SalesReturnController {
+  const dependencies = buildSalesReturnDependencies(ports);
+  return new SalesReturnController({
+    preview: new PreviewSalesReturnUseCase(dependencies),
+    create: new CreateSalesReturnUseCase(dependencies),
+    list: new ListSalesReturnsUseCase(dependencies),
+    get: new GetSalesReturnUseCase(dependencies),
+  });
 }
 
 export function buildSalesController(dependencies: SalesDependencies): OrderController {

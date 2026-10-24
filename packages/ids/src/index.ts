@@ -7,6 +7,7 @@ export type {
   CategoryId,
   ContactId,
   OrderId,
+  SalesReturnId,
   CustomerAccountId,
   CustomerSessionId,
   ExpenseCategoryId,

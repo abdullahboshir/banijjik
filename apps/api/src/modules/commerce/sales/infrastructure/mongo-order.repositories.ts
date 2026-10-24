@@ -62,7 +62,9 @@ export class MongoOrderRepository implements OrderRepository {
   }
 
   async findById(orderId: OrderId): Promise<Order | undefined> {
-    const row = await orderModel().findOne({ orderId }).lean<OrderDocument>();
+    const row = await orderModel()
+      .findOne({ orderId }, undefined, sessionOption(getActiveSession()))
+      .lean<OrderDocument>();
     return row === null ? undefined : toOrder(row);
   }
 

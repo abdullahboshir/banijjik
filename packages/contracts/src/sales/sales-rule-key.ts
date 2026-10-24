@@ -47,4 +47,5 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.sales_return_refund_method_required",
   "errors.payment_method_not_available",
   "errors.sales_return_other_reason_needs_note",
+  "errors.sales_return_duplicate_line",
 ];

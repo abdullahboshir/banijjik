@@ -169,6 +169,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "commissionRule",
   "commissionPayout",
   "order",
+  "salesReturn",
   "enrollment",
   "checkIn",
   "listingReport",

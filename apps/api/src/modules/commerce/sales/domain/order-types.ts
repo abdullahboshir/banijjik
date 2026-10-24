@@ -66,6 +66,8 @@ export interface OrderProps {
   readonly hasStockLines: boolean;
   /** NONE until a return; moved by the return use cases with one versioned order write (plan 3.5b decision 7). */
   readonly returnStatus: OrderReturnStatus;
+  /** When the order reached COMPLETED; the return window counts from it (plan 3.5b decision 2). */
+  readonly completedAt: Date | null;
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;

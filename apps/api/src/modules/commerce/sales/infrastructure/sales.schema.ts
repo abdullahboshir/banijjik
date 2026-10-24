@@ -103,6 +103,7 @@ export interface OrderDocument {
   /** Whether the order holds a stock reservation; the stock port cannot answer this. */
   hasStockLines: boolean;
   returnStatus: OrderReturnStatus;
+  completedAt: Date | null;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -219,6 +220,7 @@ export const orderSchema = new Schema<OrderDocument>(
     cancelReason: { type: String, default: null },
     customFields: { type: Schema.Types.Mixed, default: {} },
     hasStockLines: { type: Boolean, required: true, default: false },
+    completedAt: { type: Date, default: null },
     returnStatus: {
       type: String,
       required: true,

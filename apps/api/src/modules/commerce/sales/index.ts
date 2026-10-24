@@ -12,6 +12,7 @@ import {
   buildSalesController,
   buildSalesDependencies,
   buildSalesJobDependencies,
+  buildSalesReturnController,
 } from "./sales-wiring.js";
 import type {
   SalesJobPorts,
@@ -21,6 +22,7 @@ import type {
 import { buildExpireDraftsJob } from "./application/jobs/expire-drafts.job.js";
 import { buildAutoCancelPlacedJob } from "./application/jobs/auto-cancel-placed.job.js";
 import { buildSalesTenantRouter } from "./presentation/order-tenant.router.js";
+import { buildSalesReturnTenantRouter } from "./presentation/sales-return-tenant.router.js";
 
 export { salesManifest } from "./module.manifest.js";
 export { registerSalesModels } from "./infrastructure/register-sales-models.js";
@@ -28,11 +30,19 @@ export { buildSalesController, buildSalesDependencies };
 export type { SalesJobPorts, SalesTenantPorts, SalesTenantRouterDependencies };
 
 export function buildSalesRouter(dependencies: SalesTenantRouterDependencies): Router {
-  return buildSalesTenantRouter({
+  const router = buildSalesTenantRouter({
     controller: buildSalesController(buildSalesDependencies(dependencies)),
     permission: dependencies.permission,
     idempotency: dependencies.idempotency,
   });
+  router.use(
+    buildSalesReturnTenantRouter({
+      controller: buildSalesReturnController(dependencies),
+      permission: dependencies.permission,
+      idempotency: dependencies.idempotency,
+    }),
+  );
+  return router;
 }
 
 /** Both hourly jobs run the module's own use cases, so their rules stay in one place. */
@@ -42,7 +52,12 @@ export function registerSalesScheduledJobs(ports: SalesJobPorts): void {
   registerScheduledJob(buildAutoCancelPlacedJob(sales));
 }
 
-export type { OrderPaymentPort, OrderRepository } from "./application/ports/sales-ports.js";
+export type {
+  OrderPaymentPort,
+  OrderRepository,
+  ReturnSettlementResult,
+  SettleReturnInput,
+} from "./application/ports/sales-ports.js";
 export type { PaymentTotals } from "./domain/payment-status.js";
 
 /** The composition root passes the order store to adapters that live outside this module. */
