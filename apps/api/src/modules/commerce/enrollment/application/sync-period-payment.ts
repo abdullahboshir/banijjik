@@ -40,7 +40,8 @@ export async function syncPeriodPaymentStatus(
     updatedByUserId: actorUserId,
   };
   await dependencies.repository.savePeriod(next, false);
-  return next;
+  // savePeriod increments the stored version; a caller that saves this period again needs the new one.
+  return { ...next, version: period.version + 1 };
 }
 
 function derivedStatus(period: EnrollmentPeriod, netPaidMinor: number): EnrollmentPeriodStatus {
