@@ -62,7 +62,7 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 ## 4. Next actions, in order
 1. Verify every §2 row (git, CI, `*.last.md`). Sonnet rows run as subagents of the 19:10 chat; if it is closed, relaunch them; relaunch Codex rows that stop early with an exact note; answer `STATUS: QUESTION` rows (ask the owner only for product decisions).
 2. As rows finish: merge checks for 3.6b B, 3.5a B, 3.11 B; strict T1 review of 3.33 and 3.34. Merge one by one through `s/merge-<card>` branches (cherry-pick only the non-merge commits).
-3. **Lead now:** plan 3.31 and 3.32 (3.24 merged).
+3. **Planned, waiting:** 3.31 (T1, `docs/plans/3.31.md`, ADR-142) starts after 3.34 merges; 3.32 (T1 A + T2 B, ADR-143) after 3.31. Lead next: plan M.6.
 4. **Plan M.6** (storefront app): ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open: host → organization, customer cookies across hosts. M.6a T1, M.6b T2. The M.7 A2 erase and export endpoints need M.6 pages.
 5. After 3.5a B: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10 and the phase 3 review.
 6. Follow-ups:
