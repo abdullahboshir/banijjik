@@ -25,7 +25,7 @@ Last updated: 2026-10-24 (19:50 Dhaka) by Opus 5.5 · `main` = `origin/main` = t
 ## 2. Open branches (checked 2026-10-24 18:15)
 Prompts and new logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/` (`rules.md` shared rules; `<card>.md` task; `*-continue*.md` restart notes; `<card>*.log`, `<card>.last.md`). Older logs: the a941678b scratchpad `orchestra/` folder. Every final message starts with `STATUS: DONE | QUESTION | BLOCKED`.
 
-**Sonnet session limit hit at about 17:50; it resets 20:40 Dhaka.** The Sonnet rows below were subagents of the 2026-10-24 18:15 lead chat (session a295e696). That chat resumes them with `SendMessage` after 20:40 if it is still open. A new session cannot resume them: relaunch fresh (Codex or a new Sonnet subagent) with the task + continue note + `rules.md`, telling it to read the uncommitted work first.
+**The Sonnet rows are subagents of the lead chat a295e696 (resumed 19:10 after a session limit).** If that chat is closed they stop. A new session cannot resume them: relaunch fresh (Codex or a new Sonnet subagent) with the task + continue note + `rules.md`, telling it to read the uncommitted work first.
 
 | Card / part | Branch | Folder | Tier | Who | State → next step |
 |---|---|---|---|---|---|
