@@ -184,6 +184,53 @@ describe("the money and the stock an edited order keeps", () => {
     });
   });
 
+  it("the order read returns the manual and order discount rules", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const shop = shopOf(world);
+    const pack = await shelfOf(shop);
+    const contactId = await addCustomer(shop, "Rahim", RAHIM_PHONE);
+    const lineRule = { type: "PERCENT", value: TEN_PERCENT_BP };
+    const orderRule = { type: "AMOUNT", value: 500 };
+    const draft = await draftOrder(shop, {
+      locationId: shop.locationId,
+      contactId,
+      lines: [lineOf(pack, 2, lineRule)],
+      orderDiscount: orderRule,
+    });
+
+    const read = await getOrder(shop, draft.orderId);
+    expect(read.lines[0]?.manualDiscount).toEqual(lineRule);
+    expect(read.orderDiscount).toEqual(orderRule);
+
+    // The placed order keeps the rules too, so an edit can replay them from the read.
+    const placed = await placeOrder(shop, { orderId: draft.orderId, version: draft.version });
+    expect(placed.status).toBe(200);
+    expect(placed.order.lines[0]?.manualDiscount).toEqual(lineRule);
+    expect(placed.order.orderDiscount).toEqual(orderRule);
+  });
+
+  it("a line edit that resends the manual discount keeps it", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const shop = shopOf(world);
+    const pack = await shelfOf(shop);
+    const contactId = await addCustomer(shop, "Rahim", RAHIM_PHONE);
+    const rule = { type: "PERCENT", value: TEN_PERCENT_BP };
+    const draft = await draftOrder(shop, {
+      locationId: shop.locationId,
+      contactId,
+      lines: [lineOf(pack, 2, rule)],
+    });
+    const placed = await placeOrder(shop, { orderId: draft.orderId, version: draft.version });
+    expect(placed.status).toBe(200);
+
+    const edited = await editOrder(shop, placed.order, { lines: [lineOf(pack, 3, rule)] });
+
+    expect(edited.lines[0]?.quantity).toBe(3);
+    expect(edited.lines[0]?.manualDiscount).toEqual(rule);
+    expect(edited.lines[0]?.lineDiscount.amount).toBeGreaterThan(0);
+    expect(edited.totals.discountTotal.amount).toBeGreaterThan(0);
+  });
+
   it("keeps the price snapshot and the discount when a confirmed order is amended", async () => {
     const world = await worldFor(harness, RETAIL);
     const shop = shopOf(world);

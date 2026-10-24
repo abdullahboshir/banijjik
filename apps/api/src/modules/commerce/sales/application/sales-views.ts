@@ -22,6 +22,7 @@ function toLineSnapshot(line: OrderLineProps): OrderResponse["lines"][number] {
     returnedQuantity: line.returnedQuantity,
     promotionIds: [...line.promotionIds],
     taxClassKey: line.taxClassKey,
+    manualDiscount: line.manualDiscount ?? null,
   };
 }
 
@@ -43,6 +44,7 @@ export function toOrderResponse(order: Order, paymentTotals: PaymentTotals): Ord
     source: props.source,
     approval: props.approval,
     note: props.note,
+    orderDiscount: props.orderDiscount ?? null,
     customFields: props.customFields,
     version: props.version,
     createdAt: props.createdAt.toISOString(),

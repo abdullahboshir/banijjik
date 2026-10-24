@@ -1,6 +1,6 @@
 import { defineEnum } from "../define-enum.js";
 import type { OfferingKind } from "../modules/offering-kind.js";
-import type { ApprovalAction, Money } from "../pricing/pricing-contracts.js";
+import type { ApprovalAction, ManualDiscount, Money } from "../pricing/pricing-contracts.js";
 
 /**
  * The full lifecycle of 09-DOMAIN-MODEL section 5.5. Card 3.5a implements the six statuses in
@@ -146,6 +146,8 @@ export interface OrderLineSnapshot {
   readonly returnedQuantity: number;
   readonly promotionIds: readonly string[];
   readonly taxClassKey: string | null;
+  /** What the seller entered for this line; an edit re-quotes from it (ADR-131). */
+  readonly manualDiscount: ManualDiscount | null;
 }
 
 export interface OrderTotals {
@@ -185,6 +187,8 @@ export interface OrderResponse {
   readonly source: OrderSource;
   readonly approval: OrderApproval | null;
   readonly note: string | null;
+  /** What the seller entered for the whole order; an edit re-quotes from it (ADR-131). */
+  readonly orderDiscount: ManualDiscount | null;
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly version: number;
   readonly createdAt: string;

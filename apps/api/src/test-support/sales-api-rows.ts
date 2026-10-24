@@ -13,6 +13,7 @@ export interface OrderLineRow {
   readonly unitCostSnapshot: { amount: number; currency: string } | null;
   readonly taxClassKey: string | null;
   readonly promotionIds: readonly string[];
+  readonly manualDiscount: { type: string; value: number } | null;
 }
 
 export interface MoneyRow {
@@ -43,6 +44,7 @@ export interface OrderRow {
   readonly paymentStatus: string;
   readonly businessDate: string;
   readonly note: string | null;
+  readonly orderDiscount: { type: string; value: number } | null;
   readonly approval: { readonly approverMemberId: string; readonly action: string } | null;
   readonly version: number;
 }
