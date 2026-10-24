@@ -167,6 +167,11 @@ readonly homeStatsFieldKey?: string | undefined;
 - Stats aggregation cost grows with approved listings; one aggregation per listing event is fine at pilot scale. If one business passes about 50,000 listings, move to counter updates: write it in the module README.
 - The first new Next.js app since admin and platform: copy their config, budgets script and browser stack, do not invent a new structure.
 
+## Amendment 1 (2026-10-25, lead, after the M.6b session's report)
+1. **The proxy forwards the customer's address.** Without it the API sees every customer as the storefront server, so the per-address limits (OTP sends and verifies, search, detail) are shared by all customers and one abuser locks everyone out. The proxy sends `X-Forwarded-For` built from the incoming request as Next.js receives it (its own `x-forwarded-for`, which already ends with the peer address), and never adds a value of its own. The API already honours `TRUSTED_PROXY_HOPS` (`app.set("trust proxy", …)`): the deployment counts the storefront as one more hop. Write this in the handoff and in `docs/ops` (or the deployment notes the repo has) as a required setting. Unit test: `forwards the client address chain the storefront received`.
+2. **Session refresh in the browser** (handoff deviation "SessionRenewer") is accepted: the refresh cookie's path is the API path, so a server component never sees it. Pages treat an expired access token as signed out until the renewer refreshes and reloads.
+3. **Lint scope lines** in `eslint.config.mjs` and `eslint/restrictions.mjs` are accepted (add-only).
+
 ## Refresh M.6c (2026-10-25, lead, based on `main d633f44`)
 **Start after M.6b merges** (it builds the storefront app, its proxy, layout, sign-in and the browser stack). Branch `s/M.6c-ui-storefront-account`, T2 (merge check). Decisions 15–17 stand; this section adds what the M.6a/M.6b work showed.
 
