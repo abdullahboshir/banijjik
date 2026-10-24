@@ -18,6 +18,7 @@ import { buildPostBookingsHandler } from "./application/handlers/post-bookings.h
 import { buildPostPaymentsHandler } from "./application/handlers/post-payments.handler.js";
 import { buildPostOrdersHandler } from "./application/handlers/post-orders.handler.js";
 import { buildPostStockHandler } from "./application/handlers/post-stock.handler.js";
+import { buildPostEnrollmentsHandler } from "./application/handlers/post-enrollments.handler.js";
 import { registerAccountingEventHandlers } from "./application/register-handlers.js";
 import { catchUpSystemAccounts, seedSystemAccounts } from "./application/seed-system-accounts.js";
 import { GetTrialBalanceUseCase } from "./application/use-cases/get-trial-balance.use-case.js";
@@ -76,6 +77,7 @@ export {
   buildPostPaymentsHandler,
   buildPostOrdersHandler,
   buildPostStockHandler,
+  buildPostEnrollmentsHandler,
 };
 export { Account } from "./domain/account.entity.js";
 export { JournalEntry } from "./domain/journal-entry.entity.js";

@@ -12,6 +12,7 @@ import type { Enrollment, EnrollmentPeriod } from "../domain/enrollment.entity.j
 import { addBillingPeriod, addDays, addMoney } from "../domain/period-dates.js";
 import { transitionRefused } from "../domain/transitions.js";
 import type { EnrollmentCaller } from "./ports.js";
+import { recognizePeriodRevenue } from "./period-revenue.js";
 import {
   assertLocation,
   auditFields,
@@ -55,7 +56,38 @@ export async function createEnrollment(
       now: dependencies.clock.now(),
     });
     await recordEnrollment(dependencies, enrollment, ENROLLMENT_EVENT_TYPE.ENROLLMENT_CREATED);
+    await recognizeFirstPeriodIfActive(dependencies, {
+      enrollment,
+      period,
+      actorUserId: caller.actorUserId,
+    });
     return enrollment;
+  });
+}
+
+/**
+ * An enrollment created ACTIVE starts its first period at once, so that period is recognised on
+ * the creation date (card 3.31, amendment 2). A PENDING create recognises nothing.
+ */
+async function recognizeFirstPeriodIfActive(
+  dependencies: EnrollmentDependencies,
+  created: {
+    readonly enrollment: Enrollment;
+    readonly period: EnrollmentPeriod;
+    readonly actorUserId: string | null;
+  },
+): Promise<void> {
+  const { enrollment, period, actorUserId } = created;
+  if (enrollment.status !== ENROLLMENT_STATUS.ACTIVE) return;
+  const now = dependencies.clock.now();
+  const today = await dependencies.context.today(enrollment.organizationId, now);
+  await recognizePeriodRevenue(dependencies, {
+    enrollment,
+    period,
+    businessDate: today,
+    actorUserId,
+    summaryTotal: period.fee,
+    announce: true,
   });
 }
 async function prepareEnrollment(
