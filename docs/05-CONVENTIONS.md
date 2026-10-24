@@ -140,6 +140,7 @@ New enum, permission key, module key, error code or event name: add it to contra
 - Unit tests for domain entities and use cases (Vitest).
 - An API test for every endpoint: happy path, validation error, permission denied, **cross-org access denied**.
 - Ported manoxen logic must keep its original test cases.
+- **Time-dependent tests (card 3.26):** inject a clock and move it explicitly at the behaviour boundary. When persisted documents have TTL indexes, keep their expiry dates ahead of the database's real clock unless expiry is the behaviour under test. Await a signal from the operation being coordinated instead of sleeping for a guessed duration. Give each counter test an isolated bucket and subject, and clean its persisted counters before the scenario.
 
 ## Git
 - One session = one branch `s/<card-id>-<slug>` (e.g. `s/1.2-org-location`) = one PR into `main`.
