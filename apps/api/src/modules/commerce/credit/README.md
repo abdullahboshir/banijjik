@@ -16,5 +16,6 @@ Purchases (ADR-132) record bKash/Nagad transfers with pack snapshot and partial 
 
 Settings: `credit.unlockCost`, `credit.unlocksPerDay`, `credit.showUnlockersToOwner`, `credit.payment.methods`, `credit.purchase.maxPending`, `credit.purchase.pendingDays`, `credit.purchase.approvalAbove`.
 Credit entries and purchases record local business dates resolved via the organization's timezone reader without UTC fallback (card 3.25).
+Expiry: the hourly job `credit.expireCredits` (card 3.28) expires unused remainders of purchases whose expiry day passed, one 100-row keyset page at a time; a failing row is logged and skipped, and a rerun writes nothing twice.
 Storefront routes hide when module is off. Active packs cap at 100 rows. Registry guards prevent ledger mutation. Keyset scans use 100-row batches with additive indexes (ADR-094).
 `db:sync-indexes`: `credit_purchases` gains unique `{organizationId, creditPurchaseId}` and `{organizationId, purchaseNumber}`.

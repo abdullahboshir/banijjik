@@ -28,6 +28,7 @@ import {
   RejectCreditPurchaseUseCase,
   CancelExpiredPurchasesUseCase,
   buildCancelExpiredPurchasesJob,
+  buildExpireCreditsJob,
   type CancelExpiredPurchasesDependencies,
   type CreditDependencies,
 } from "./application/index.js";
@@ -37,6 +38,7 @@ import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { buildCreditEventPublisher } from "./infrastructure/credit-event-publisher.js";
+import { buildRequiredTimeZoneReader } from "./infrastructure/required-time-zone-reader.js";
 
 export { creditManifest } from "./module.manifest.js";
 
@@ -53,6 +55,17 @@ export function registerCreditScheduledJobs(input: {
   registerScheduledJob(
     buildCancelExpiredPurchasesJob({
       cancelExpiredPurchases: new CancelExpiredPurchasesUseCase(dependencies),
+    }),
+  );
+  registerScheduledJob(
+    buildExpireCreditsJob({
+      expireCredits: new ExpireCreditsUseCase({
+        credit: new MongoCreditRepository(),
+        unitOfWork: new MongoUnitOfWork(),
+        events: buildCreditEventPublisher(),
+        clock: input.clock,
+        timeZone: buildRequiredTimeZoneReader(),
+      }),
     }),
   );
 }
@@ -85,7 +98,9 @@ export {
   RejectCreditPurchaseUseCase,
   CancelExpiredPurchasesUseCase,
   buildCancelExpiredPurchasesJob,
+  buildExpireCreditsJob,
   buildCreditEventPublisher,
+  buildRequiredTimeZoneReader,
   CreditListingUnlockReader,
   type CancelExpiredPurchasesDependencies,
   type CreditDependencies,

@@ -8,7 +8,10 @@ export {
   ArchiveCreditPackUseCase,
 } from "./use-cases/credit-pack.use-cases.js";
 export { AdjustCreditsUseCase } from "./use-cases/adjust-credits.use-case.js";
-export { ExpireCreditsUseCase } from "./use-cases/expire-credits.use-case.js";
+export {
+  ExpireCreditsUseCase,
+  type ExpireCreditsDependencies,
+} from "./use-cases/expire-credits.use-case.js";
 export { GetCreditPaymentInfoUseCase } from "./use-cases/get-credit-payment-info.use-case.js";
 export { SubmitCreditPurchaseUseCase } from "./use-cases/submit-credit-purchase.use-case.js";
 export { ListMyCreditPurchasesUseCase } from "./use-cases/list-my-credit-purchases.use-case.js";
@@ -23,5 +26,6 @@ export {
   CancelExpiredPurchasesUseCase,
   type CancelExpiredPurchasesDependencies,
 } from "./use-cases/cancel-expired-purchases.use-case.js";
+export { buildExpireCreditsJob } from "./jobs/expire-credits.job.js";
 export { buildCancelExpiredPurchasesJob } from "./jobs/cancel-expired-purchases.job.js";
 export type { CreditDependencies } from "./ports/credit-dependencies.js";

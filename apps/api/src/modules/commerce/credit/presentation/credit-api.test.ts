@@ -51,7 +51,8 @@ import {
 import { withOrganizationContext } from "../../../../test-support/organization-context.js";
 import { models, MongoUnitOfWork } from "../../../../kernel/db/index.js";
 
-import { MongoCreditRepository } from "../index.js";
+import { MongoCreditRepository, buildRequiredTimeZoneReader } from "../index.js";
+import { buildExpireCreditsJob } from "../application/jobs/expire-credits.job.js";
 import { ExpireCreditsUseCase } from "../application/use-cases/expire-credits.use-case.js";
 import type { CreditDependencies } from "../application/ports/credit-dependencies.js";
 
@@ -135,6 +136,61 @@ async function addListingFields(world: TwoOrganizations, organizationId: string)
 }
 
 /** Directory and credit on, customer sign-in on, and the listing fields both businesses use. */
+/** The production job wiring with a fixed clock (08:00 UTC on 2026-10-21) and a no-op outbox. */
+function buildRealExpireCreditsJob() {
+  return buildExpireCreditsJob({
+    expireCredits: new ExpireCreditsUseCase({
+      credit: new MongoCreditRepository(),
+      unitOfWork: new MongoUnitOfWork(),
+      events: { publish: async () => undefined },
+      clock: { now: () => new Date("2026-10-21T08:00:00Z") },
+      timeZone: buildRequiredTimeZoneReader(),
+    }),
+  });
+}
+
+async function seedExpiredPurchase(
+  organizationId: string,
+  customerAccountId: CustomerAccountId,
+): Promise<void> {
+  await withOrganizationContext(organizationId, async () => {
+    const credit = new MongoCreditRepository();
+    await new MongoUnitOfWork().run(async () => {
+      await credit.applyDelta({ customerAccountId, delta: 10 });
+      await credit.insertEntry({
+        creditEntryId: newId(),
+        customerAccountId,
+        type: CREDIT_ENTRY_TYPE.PURCHASE,
+        credits: 10,
+        expiresOn: "2026-10-02T00:00:00Z",
+        source: { sourceType: "PAYMENT", sourceId: newId() },
+        fromPurchaseEntryId: null,
+        reason: null,
+        createdByUserId: null,
+        occurredAt: "2026-10-01T00:00:00Z",
+        createdAt: "2026-10-01T00:00:00Z",
+        businessDate: "2026-10-01",
+      });
+    });
+  });
+}
+
+async function expiryEntriesOf(organizationId: string, customerAccountId: CustomerAccountId) {
+  return withOrganizationContext(organizationId, async () => {
+    const entries = await new MongoCreditRepository().listEntries(customerAccountId, {
+      limit: 100,
+      offset: 0,
+    });
+    return entries.filter((entry) => entry.type === CREDIT_ENTRY_TYPE.EXPIRE);
+  });
+}
+
+async function balanceOf(organizationId: string, customerAccountId: CustomerAccountId) {
+  return withOrganizationContext(organizationId, async () => {
+    return (await new MongoCreditRepository().getBalance(customerAccountId))?.balance;
+  });
+}
+
 async function aCreditWorld(): Promise<TwoOrganizations> {
   const world = await createTwoOrganizations(harness.app, harness.connections, {
     industryTemplateKey: "RETAIL",
@@ -905,7 +961,19 @@ describe("adjustments and isolation", () => {
       const purchases = await repository.listPurchases(customerAccountId);
       expect(purchases).toHaveLength(1001);
       expect(new Set(purchases.map((entry) => entry.creditEntryId)).size).toBe(1001);
-      expect(await repository.listExpiringPurchases("2026-10-21")).toHaveLength(1001);
+      const seen = new Set<string>();
+      let after: CreditEntry | undefined;
+      for (;;) {
+        const page = await repository.listExpiringPurchasesPage({
+          today: "2026-10-21",
+          after,
+          limit: 100,
+        });
+        for (const entry of page) seen.add(entry.creditEntryId);
+        if (page.length < 100) break;
+        after = page[page.length - 1];
+      }
+      expect(seen.size).toBe(1001);
     });
   });
 
@@ -972,6 +1040,47 @@ describe("adjustments and isolation", () => {
       expect(sumCredits(entries)).toBe(10);
     });
   });
+  it("the expire job expires an unused purchase remainder for its organization only", async () => {
+    const world = await aCreditWorld();
+    const buyerA = asId<CustomerAccountId>(
+      customerAccountIdOf(await signInCustomer(harness, world.organizationA)),
+    );
+    const buyerB = asId<CustomerAccountId>(
+      customerAccountIdOf(await signInCustomer(harness, world.organizationB)),
+    );
+    await seedExpiredPurchase(world.organizationA, buyerA);
+    await seedExpiredPurchase(world.organizationB, buyerB);
+    const job = buildRealExpireCreditsJob();
+
+    // The job runner opens the organization context; the test does the same.
+    await withOrganizationContext(world.organizationA, () =>
+      job.run(world.organizationA, new Date()),
+    );
+
+    expect(await expiryEntriesOf(world.organizationA, buyerA)).toHaveLength(1);
+    expect(await balanceOf(world.organizationA, buyerA)).toBe(0);
+    expect(await expiryEntriesOf(world.organizationB, buyerB)).toHaveLength(0);
+    expect(await balanceOf(world.organizationB, buyerB)).toBe(10);
+  });
+
+  it("a second run writes no second EXPIRE entry", async () => {
+    const world = await aCreditWorld();
+    const buyer = asId<CustomerAccountId>(
+      customerAccountIdOf(await signInCustomer(harness, world.organizationA)),
+    );
+    await seedExpiredPurchase(world.organizationA, buyer);
+    const job = buildRealExpireCreditsJob();
+
+    for (let run = 0; run < 2; run += 1) {
+      await withOrganizationContext(world.organizationA, () =>
+        job.run(world.organizationA, new Date()),
+      );
+    }
+
+    expect(await expiryEntriesOf(world.organizationA, buyer)).toHaveLength(1);
+    expect(await balanceOf(world.organizationA, buyer)).toBe(0);
+  });
+
   it("refuses mutations of compiled credit ledger models", async () => {
     const world = await aCreditWorld();
     await withOrganizationContext(world.organizationA, async () => {
