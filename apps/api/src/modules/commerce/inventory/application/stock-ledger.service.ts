@@ -22,6 +22,7 @@ export interface ApplyMovementInput {
   readonly locationId: string;
   readonly inventoryItem: InventoryItem;
   readonly currency: string;
+  readonly timeZone: string;
   readonly quantityDelta: number;
   readonly reason: StockMovementReason;
   readonly sourceType: string;
@@ -79,6 +80,7 @@ export class StockLedgerService {
       allowNegativeStock: input.allowNegativeStock,
       existing,
       now,
+      timeZone: input.timeZone,
     });
     await this.persistMovement(input, computed);
     return {

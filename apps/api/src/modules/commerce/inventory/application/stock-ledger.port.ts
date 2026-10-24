@@ -112,7 +112,7 @@ export class StockLedger {
   }
 
   async commitSale(input: StockLedgerCommitInput): Promise<void> {
-    const { stockLedger, settings, currency, reservations } = this.dependencies;
+    const { stockLedger, settings, currency, timeZone, reservations } = this.dependencies;
     const reservation = await reservations.findBySource({
       organizationId: input.organizationId,
       sourceType: input.sourceType,
@@ -122,6 +122,7 @@ export class StockLedger {
       throw recordNotFound();
     }
     const orgCurrency = await currency.read(input.organizationId);
+    const orgTimeZone = await timeZone.read(input.organizationId);
     // The reservation is freed before the SALE movements: the on-hand guard reads
     // `onHand - reserved`, so a sale would otherwise be blocked by its own reservation.
     // Both writes are in the caller's transaction, so the pair stays atomic.
@@ -140,6 +141,7 @@ export class StockLedger {
         locationId: input.locationId,
         inventoryItem: item,
         currency: orgCurrency,
+        timeZone: orgTimeZone,
         quantityDelta: -line.quantity,
         reason: STOCK_MOVEMENT_REASON.SALE,
         sourceType: input.sourceType,
@@ -153,9 +155,10 @@ export class StockLedger {
   async returnStock(
     input: StockLedgerCommitInput & { readonly disposition: StockReturnDisposition },
   ): Promise<void> {
-    const { stockLedger, settings, currency, levels } = this.dependencies;
+    const { stockLedger, settings, currency, timeZone, levels } = this.dependencies;
     const expanded = await this.expandLines(input.organizationId, input.lines);
     const orgCurrency = await currency.read(input.organizationId);
+    const orgTimeZone = await timeZone.read(input.organizationId);
     const reason =
       input.disposition === "RETURN_DAMAGED"
         ? STOCK_MOVEMENT_REASON.RETURN_DAMAGED
@@ -177,6 +180,7 @@ export class StockLedger {
         locationId: input.locationId,
         inventoryItem: item,
         currency: orgCurrency,
+        timeZone: orgTimeZone,
         quantityDelta: line.quantity,
         reason,
         sourceType: input.sourceType,

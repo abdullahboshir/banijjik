@@ -71,6 +71,7 @@ export class TransferStockUseCase {
       });
     }
     const currency = await deps.currency.read(input.organizationId);
+    const timeZone = await deps.timeZone.read(input.organizationId);
     const allowNegativeStock = await deps.settings.allowNegativeStock(input.organizationId);
     const transferNumber = await deps.sequences.nextTransferNumber(input.organizationId);
     const prepared = await Promise.all(
@@ -91,6 +92,7 @@ export class TransferStockUseCase {
         input,
         prepared,
         currency,
+        timeZone,
         allowNegativeStock,
         transferNumber,
         sourceId,
@@ -110,6 +112,7 @@ async function commitTransfer(input: {
   };
   readonly prepared: readonly PreparedTransferLine[];
   readonly currency: string;
+  readonly timeZone: string;
   readonly allowNegativeStock: boolean;
   readonly transferNumber: string;
   readonly sourceId: string;
@@ -120,6 +123,7 @@ async function commitTransfer(input: {
       input: input.input,
       row,
       currency: input.currency,
+      timeZone: input.timeZone,
       allowNegativeStock: input.allowNegativeStock,
       transferNumber: input.transferNumber,
       sourceId: input.sourceId,
@@ -162,6 +166,7 @@ async function applyTransferLine(input: {
   };
   readonly row: PreparedTransferLine;
   readonly currency: string;
+  readonly timeZone: string;
   readonly allowNegativeStock: boolean;
   readonly transferNumber: string;
   readonly sourceId: string;
@@ -171,6 +176,7 @@ async function applyTransferLine(input: {
     actorUserId: input.input.actorUserId,
     inventoryItem: input.row.item,
     currency: input.currency,
+    timeZone: input.timeZone,
     sourceType: SOURCE_TRANSFER,
     sourceId: input.sourceId,
     note: input.transferNumber,

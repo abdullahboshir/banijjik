@@ -74,6 +74,7 @@ export class AdjustStockUseCase {
       approvalToken: input.approvalToken,
     });
     const currency = await deps.currency.read(input.organizationId);
+    const timeZone = await deps.timeZone.read(input.organizationId);
     const allowNegativeStock = await deps.settings.allowNegativeStock(input.organizationId);
     const prepared = await Promise.all(
       input.lines.map(async (line) => ({
@@ -94,19 +95,11 @@ export class AdjustStockUseCase {
         input,
         prepared,
         currency,
+        timeZone,
         allowNegativeStock,
         sourceId,
       });
-      await deps.events.publish(INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED, {
-        sourceType: SOURCE_ADJUSTMENT,
-        sourceId,
-      });
-      await deps.audit.record({
-        action: AUDIT_ACTION.STOCK_ADJUSTED,
-        entityType: AUDIT_ENTITY_TYPE.stockMovement,
-        entityId: sourceId,
-        changes: { locationId: { to: input.locationId } },
-      });
+      await recordAdjustment(deps, sourceId, input.locationId);
       return { sourceId };
     });
   }
@@ -129,6 +122,7 @@ async function applyStockAdjustments(input: {
     readonly threshold: number;
   }[];
   readonly currency: string;
+  readonly timeZone: string;
   readonly allowNegativeStock: boolean;
   readonly sourceId: string;
 }): Promise<void> {
@@ -143,6 +137,7 @@ async function applyStockAdjustments(input: {
       locationId: input.input.locationId,
       inventoryItem: row.item,
       currency: input.currency,
+      timeZone: input.timeZone,
       quantityDelta: row.line.quantityDelta,
       reason,
       sourceType: SOURCE_ADJUSTMENT,
@@ -152,4 +147,21 @@ async function applyStockAdjustments(input: {
       allowNegativeStock: input.allowNegativeStock,
     });
   }
+}
+
+async function recordAdjustment(
+  deps: InventoryDependencies,
+  sourceId: string,
+  locationId: string,
+): Promise<void> {
+  await deps.events.publish(INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED, {
+    sourceType: SOURCE_ADJUSTMENT,
+    sourceId,
+  });
+  await deps.audit.record({
+    action: AUDIT_ACTION.STOCK_ADJUSTED,
+    entityType: AUDIT_ENTITY_TYPE.stockMovement,
+    entityId: sourceId,
+    changes: { locationId: { to: locationId } },
+  });
 }

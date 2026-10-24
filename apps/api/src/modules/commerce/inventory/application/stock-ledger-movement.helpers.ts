@@ -59,7 +59,8 @@ export function assertStockAvailable(input: {
   }
 }
 
-function businessDateOf(date: Date, timeZone = "Asia/Dhaka"): string {
+/** A movement belongs to the organization's local calendar day, not the server's. */
+function businessDateOf(date: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -84,6 +85,7 @@ export function buildStockMovementDocument(input: {
   readonly variantId?: string;
   readonly note?: string;
   readonly now: Date;
+  readonly timeZone: string;
   readonly outgoingUnitCost: Money | undefined;
   readonly unitCostMicros?: number;
   readonly paidVia?: StockReceiptPaidVia;
@@ -111,7 +113,7 @@ export function buildStockMovementDocument(input: {
     ...(input.note === undefined ? {} : { note: input.note }),
     ...(input.paidVia === undefined ? {} : { paidVia: input.paidVia }),
     occurredAt: input.now,
-    businessDate: businessDateOf(input.now),
+    businessDate: businessDateOf(input.now, input.timeZone),
     createdAt: input.now,
     updatedAt: input.now,
     createdByUserId: input.actorUserId,
@@ -179,6 +181,7 @@ export function computeMovementOutcome(input: {
   readonly allowNegativeStock: boolean;
   readonly existing: InventoryLevelRecord;
   readonly now: Date;
+  readonly timeZone: string;
 }): MovementComputation {
   const quantities = movementQuantities(input);
   const movement = buildMovementRecord(input);
@@ -263,6 +266,7 @@ function buildMovementRecord(input: {
   readonly unitCostMicros?: number;
   readonly existing: InventoryLevelRecord;
   readonly now: Date;
+  readonly timeZone: string;
 }): StockMovementRecord {
   const { onHandDelta } = movementDeltas(input.reason, input.quantityDelta);
   const outgoingUnitCost = outgoingUnitCostForMovement({
@@ -292,6 +296,7 @@ function buildMovementRecord(input: {
     ...(input.variantId === undefined ? {} : { variantId: input.variantId }),
     ...(input.note === undefined ? {} : { note: input.note }),
     now: input.now,
+    timeZone: input.timeZone,
     outgoingUnitCost,
     ...(unitCostMicros === undefined ? {} : { unitCostMicros }),
     ...(input.paidVia === undefined ? {} : { paidVia: input.paidVia }),

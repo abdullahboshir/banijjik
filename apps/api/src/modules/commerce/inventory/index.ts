@@ -17,6 +17,7 @@ import { ERROR_CODE } from "@banijjik/contracts";
 import { AppError } from "../../../kernel/http/index.js";
 import {
   buildOrganizationCurrencyReader,
+  buildOrganizationTimezoneReader,
   buildLocationLookup,
   type OrganizationCurrencyReader,
 } from "../../core/organization/index.js";
@@ -81,6 +82,17 @@ function inventoryEventPublisher(): InventoryEventPublisher {
   };
 }
 
+/** A missing currency or time zone means the tenant context is broken: fail closed. */
+function requireOrganizationValue(value: string | undefined): string {
+  if (value === undefined) {
+    throw new AppError({
+      code: ERROR_CODE.INTERNAL,
+      messageKey: "errors.missing_tenant_context",
+    });
+  }
+  return value;
+}
+
 function writeDependencies(input: InventoryTenantDependencies): InventoryDependencies {
   const settingsReader = buildInventorySettingsReader({
     orgConfig: input.orgConfig,
@@ -106,16 +118,12 @@ function writeDependencies(input: InventoryTenantDependencies): InventoryDepende
     clock: input.clock,
     settings: settingsReader,
     currency: {
-      read: async (organizationId) => {
-        const value = await buildOrganizationCurrencyReader().read(organizationId);
-        if (value === undefined) {
-          throw new AppError({
-            code: ERROR_CODE.INTERNAL,
-            messageKey: "errors.missing_tenant_context",
-          });
-        }
-        return value;
-      },
+      read: async (organizationId) =>
+        requireOrganizationValue(await buildOrganizationCurrencyReader().read(organizationId)),
+    },
+    timeZone: {
+      read: async (organizationId) =>
+        requireOrganizationValue(await buildOrganizationTimezoneReader().read(organizationId)),
     },
     locations: buildLocationLookup(),
     sequences: {

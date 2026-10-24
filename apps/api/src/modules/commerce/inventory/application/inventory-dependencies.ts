@@ -7,6 +7,7 @@ import type {
   InventoryCurrencyReader,
   InventoryEventPublisher,
   InventoryLocationLookup,
+  InventoryTimeZoneReader,
   InventorySettingsReader,
   TransferNumberSequence,
   UnitOfWork,
@@ -29,6 +30,7 @@ export interface InventoryDependencies {
   readonly clock: Clock;
   readonly settings: InventorySettingsReader;
   readonly currency: InventoryCurrencyReader;
+  readonly timeZone: InventoryTimeZoneReader;
   readonly locations: InventoryLocationLookup;
   readonly sequences: TransferNumberSequence;
   readonly offerings: CatalogOfferingReader;

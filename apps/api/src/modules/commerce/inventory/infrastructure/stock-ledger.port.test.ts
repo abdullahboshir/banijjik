@@ -73,6 +73,7 @@ function buildPort(allowNegative = false): {
       ) => itemThreshold ?? 0,
     },
     currency: { read: async () => "BDT" },
+    timeZone: { read: async () => "Asia/Dhaka" },
     locations: { isActiveLocation: async () => true },
     sequences: { nextTransferNumber: async () => "T-1" },
     offerings: new MongoCatalogOfferingReader(),
