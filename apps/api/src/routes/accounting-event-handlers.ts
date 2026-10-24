@@ -1,6 +1,7 @@
 import { buildAuditRecorder } from "../modules/core/audit/index.js";
 import { registerAccountingHandlers } from "../modules/commerce/accounting/index.js";
 import { buildBookingPostingSourceAdapter } from "../modules/commerce/booking/index.js";
+import { buildCommissionPostingSourceAdapter } from "../modules/commerce/commission/index.js";
 import {
   buildExpensePostingSourceAdapter,
   registerExpenseEventHandlers,
@@ -27,5 +28,6 @@ export function registerAccountingAndExpenseHandlers(): void {
     expenses: buildExpensePostingSourceAdapter(),
     bookings: buildBookingPostingSourceAdapter(),
     payments: buildPaymentPostingSourceAdapter(requestReaders),
+    commissions: buildCommissionPostingSourceAdapter(),
   });
 }

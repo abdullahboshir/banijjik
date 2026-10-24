@@ -1,5 +1,8 @@
-import { asId, type CommissionRuleId } from "@banijjik/ids";
+import { asId, type CommissionPayoutId, type CommissionRuleId } from "@banijjik/ids";
 import type {
+  CommissionPayoutCreateBody,
+  CommissionPayoutListQuery,
+  CommissionPayoutPreviewQuery,
   CommissionEntryListQuery,
   CommissionMyEntriesQuery,
   CommissionRuleArchiveBody,
@@ -18,6 +21,12 @@ import type {
   ListMyCommissionEntriesUseCase,
 } from "../application/use-cases/entry.use-cases.js";
 import type {
+  CreateCommissionPayoutUseCase,
+  GetCommissionPayoutUseCase,
+  ListCommissionPayoutsUseCase,
+  PreviewCommissionPayoutUseCase,
+} from "../application/use-cases/payout.use-cases.js";
+import type {
   ArchiveCommissionRuleUseCase,
   CreateCommissionRuleUseCase,
   ListCommissionRulesUseCase,
@@ -34,10 +43,18 @@ export interface CommissionControllerDependencies {
   readonly listEntries: ListCommissionEntriesUseCase;
   readonly listMyEntries: ListMyCommissionEntriesUseCase;
   readonly summary: GetCommissionSummaryUseCase;
+  readonly previewPayout: PreviewCommissionPayoutUseCase;
+  readonly createPayout: CreateCommissionPayoutUseCase;
+  readonly listPayouts: ListCommissionPayoutsUseCase;
+  readonly getPayout: GetCommissionPayoutUseCase;
 }
 
 function readRuleId(request: Request): CommissionRuleId {
   return asId<CommissionRuleId>(String(request.params["commissionRuleId"]));
+}
+
+function readPayoutId(request: Request): CommissionPayoutId {
+  return asId<CommissionPayoutId>(String(request.params["commissionPayoutId"]));
 }
 
 /** The member of the signed-in session; a session without one cannot own commission. */
@@ -127,5 +144,39 @@ export class CommissionController {
     sendData(response, result.items, {
       meta: { page: query.page, limit: query.limit, hasNext: result.hasNext },
     });
+  };
+
+  readonly previewPayout: RequestHandler = async (_request, response) => {
+    const query: CommissionPayoutPreviewQuery = response.locals["validated"].query;
+    const { organizationId, allowedLocationIds } = readTenantCaller();
+    sendData(
+      response,
+      await this.dependencies.previewPayout.execute({ organizationId, query, allowedLocationIds }),
+    );
+  };
+
+  readonly createPayout: RequestHandler = async (request, response) => {
+    const body: CommissionPayoutCreateBody = request.body;
+    const { organizationId, actorUserId, allowedLocationIds } = readTenantCaller();
+    const created = await this.dependencies.createPayout.execute({
+      organizationId,
+      actorUserId,
+      allowedLocationIds,
+      body,
+    });
+    sendData(response, created, { status: HTTP_CREATED });
+  };
+
+  readonly listPayouts: RequestHandler = async (_request, response) => {
+    const query: CommissionPayoutListQuery = response.locals["validated"].query;
+    const { allowedLocationIds } = readTenantCaller();
+    const result = await this.dependencies.listPayouts.execute({ query, allowedLocationIds });
+    sendData(response, result.items, {
+      meta: { page: query.page, limit: query.limit, hasNext: result.hasNext },
+    });
+  };
+
+  readonly getPayout: RequestHandler = async (request, response) => {
+    sendData(response, await this.dependencies.getPayout.execute(readPayoutId(request)));
   };
 }

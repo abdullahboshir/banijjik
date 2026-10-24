@@ -34,6 +34,7 @@ import type { DatabaseConnections } from "../../../kernel/db/index.js";
 import { CommissionRule } from "./domain/commission-rule.entity.js";
 import { MongoCommissionEntryRepository } from "./infrastructure/mongo-commission-entry.repository.js";
 import { MongoCommissionRuleRepository } from "./infrastructure/mongo-commission-rule.repository.js";
+import { MongoCommissionSourceMarkRepository } from "./infrastructure/mongo-commission-source-mark.repository.js";
 import { registerCommissionModels } from "./infrastructure/register-commission-models.js";
 import {
   accrueCompletedBooking,
@@ -96,6 +97,7 @@ function newScene(): Scene {
   const dependencies: AccrualDependencies = {
     rules: new MongoCommissionRuleRepository(),
     entries: new MongoCommissionEntryRepository(),
+    marks: new MongoCommissionSourceMarkRepository(),
     bookings: { readBooking: async (bookingId) => bookings.get(bookingId) },
     payments: {
       readAllocations: async (paymentId) => allocations.get(paymentId) ?? [],
@@ -410,6 +412,52 @@ describe("commission reconcile after a refund", () => {
         handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REVERSED, refund)),
       ),
     ]);
+
+    const entries = await entriesOf(scene, bookingId);
+    expect(entries.map((entry) => entry.sequence)).toEqual([1, 2]);
+    expect(entries.reduce((total, entry) => total + entry.amount.amount, 0)).toBe(5000);
+  });
+
+  it("reconciles a refund that committed while the completion had already read the summary", async () => {
+    const scene = newScene();
+    const bookingId = addBooking(scene);
+    await runAs(scene, () => addMemberRule(scene));
+    const refund = refundOf(scene, bookingId, 0);
+    let releaseCompletion: () => void = () => undefined;
+    const completionMayContinue = new Promise<void>((resolve) => {
+      releaseCompletion = resolve;
+    });
+    let completionHasReadSummary: () => void = () => undefined;
+    const summaryRead = new Promise<void>((resolve) => {
+      completionHasReadSummary = resolve;
+    });
+    const pausedCompletion = buildAccrueCommissionHandler({
+      ...scene.dependencies,
+      payments: {
+        ...scene.dependencies.payments,
+        // Reads the summary as it is now, then waits: the refund commits after this read.
+        readRefunded: async (_requestType, requestId) => {
+          const staleSummary = scene.refunded.get(requestId);
+          completionHasReadSummary();
+          await completionMayContinue;
+          return staleSummary;
+        },
+      },
+    });
+    const refundHandler = buildAccrueCommissionHandler(scene.dependencies);
+
+    const completion = runAs(scene, () =>
+      pausedCompletion.handle(completedEnvelope(scene, bookingId)),
+    );
+    await summaryRead;
+    scene.refunded.set(bookingId, bdt(GROSS / 2));
+    const refundRun = runAs(scene, () =>
+      refundHandler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, refund)),
+    );
+    // The refund's transaction collides with the completion on the source marker and retries; the completion then commits.
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    releaseCompletion();
+    await Promise.all([completion, refundRun]);
 
     const entries = await entriesOf(scene, bookingId);
     expect(entries.map((entry) => entry.sequence)).toEqual([1, 2]);

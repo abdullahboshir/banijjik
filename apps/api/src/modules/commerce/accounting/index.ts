@@ -7,6 +7,7 @@ import type { Clock } from "../../../kernel/time/index.js";
 import type { OrganizationCurrencyPort } from "./application/organization-currency.js";
 import { buildExpenseAccountWriter } from "./application/ensure-expense-account.js";
 import type { BookingPostingSource } from "./application/ports/booking-posting-source.js";
+import type { CommissionPostingSource } from "./application/ports/commission-posting-source.js";
 import type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 import type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
 import type { PaymentPostingSource } from "./application/ports/payment-posting-source.js";
@@ -28,6 +29,7 @@ export type { OrganizationCurrencyPort } from "./application/organization-curren
 export type { PaymentPostingSource } from "./application/ports/payment-posting-source.js";
 export type { BookingPostingSource } from "./application/ports/booking-posting-source.js";
 export type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
+export type { CommissionPostingSource } from "./application/ports/commission-posting-source.js";
 export type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 export type {
   PaymentAllocationForPosting,
@@ -92,6 +94,7 @@ export interface AccountingEventHandlerInput {
   readonly expenses: ExpensePostingSource;
   readonly payments?: PaymentPostingSource | undefined;
   readonly bookings?: BookingPostingSource | undefined;
+  readonly commissions?: CommissionPostingSource | undefined;
 }
 
 /** Registers accounting handlers. Payment/booking adapters are optional (lead clarification). */
@@ -105,6 +108,7 @@ export function registerAccountingHandlers(input: AccountingEventHandlerInput): 
     expenses: input.expenses,
     ...(input.payments === undefined ? {} : { payments: input.payments }),
     ...(input.bookings === undefined ? {} : { bookings: input.bookings }),
+    ...(input.commissions === undefined ? {} : { commissions: input.commissions }),
   });
 }
 
@@ -123,3 +127,11 @@ export { BalanceSheetUseCase } from "./application/use-cases/balance-sheet.use-c
 export { ListAccountsUseCase, ListJournalUseCase, GetTrialBalanceUseCase };
 
 export { ListBookkeepingAccountsUseCase } from "./application/use-cases/list-bookkeeping-accounts.use-case.js";
+export type {
+  CommissionEntryPostingSnapshot,
+  CommissionPayoutPostingSnapshot,
+} from "./domain/commission-posting-rules.js";
+export {
+  draftCommissionEntryRecorded,
+  draftCommissionPaid,
+} from "./domain/commission-posting-rules.js";

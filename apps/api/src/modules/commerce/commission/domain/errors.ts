@@ -1,3 +1,4 @@
+import type { Money } from "@banijjik/contracts/accounting";
 import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 import { COMMISSION_API_MESSAGE_KEYS } from "@banijjik/contracts/commission";
 
@@ -43,4 +44,21 @@ export function kindNotEnabled(): DomainRuleError {
 /** A rule that is already archived cannot be edited or archived again. */
 export function ruleArchived(): DomainRuleError {
   return new DomainRuleError({ code: ERROR_CODE.INVALID_TRANSITION });
+}
+
+/** Nothing to pay: no open entries, or the open entries net to zero or less (negatives net into the next payout). */
+export function payoutNothingToPay(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: COMMISSION_API_MESSAGE_KEYS.payoutNothingToPay,
+  });
+}
+
+/** An entry arrived or a refund changed the total after the preview; `details` carries the new total. */
+export function payoutTotalChanged(newTotal: Money): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.CONFLICT,
+    messageKey: COMMISSION_API_MESSAGE_KEYS.payoutTotalChanged,
+    details: { total: newTotal },
+  });
 }

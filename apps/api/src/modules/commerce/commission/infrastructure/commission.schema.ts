@@ -2,12 +2,14 @@ import type { CurrencyCode, OfferingKind } from "@banijjik/contracts";
 import {
   COMMISSION_CALCULATION,
   COMMISSION_ENTRY_KIND,
+  COMMISSION_PAYOUT_METHOD,
   COMMISSION_RULE_STATUS,
   COMMISSION_SOURCE_TYPE,
   COMMISSION_SUBJECT_TYPE,
   COMMISSION_TARGET_TYPE,
   type CommissionCalculation,
   type CommissionEntryKind,
+  type CommissionPayoutMethod,
   type CommissionRuleStatus,
   type CommissionSourceType,
   type CommissionSubjectType,
@@ -26,6 +28,10 @@ export const COMMISSION_RULE_MODEL_NAME = "CommissionRule";
 export const COMMISSION_RULE_COLLECTION_NAME = "commission_rules";
 export const COMMISSION_ENTRY_MODEL_NAME = "CommissionEntry";
 export const COMMISSION_ENTRY_COLLECTION_NAME = "commission_entries";
+export const COMMISSION_PAYOUT_MODEL_NAME = "CommissionPayout";
+export const COMMISSION_PAYOUT_COLLECTION_NAME = "commission_payouts";
+export const COMMISSION_SOURCE_MARK_MODEL_NAME = "CommissionSourceMark";
+export const COMMISSION_SOURCE_MARK_COLLECTION_NAME = "commission_source_marks";
 
 export interface MoneyDocument {
   amount: number;
@@ -88,6 +94,33 @@ export interface CommissionEntryDocument {
   updatedAt: Date;
   createdByUserId: string | null;
   updatedByUserId: string | null;
+}
+
+export interface CommissionPayoutDocument {
+  commissionPayoutId: string;
+  organizationId: string;
+  payoutNumber: string;
+  memberId: string;
+  locationId: string;
+  upToBusinessDate: string;
+  entryCount: number;
+  total: MoneyDocument;
+  method: CommissionPayoutMethod;
+  externalReference: string | null;
+  note: string | null;
+  businessDate: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdByUserId: string | null;
+  updatedByUserId: string | null;
+}
+
+/** One document per source, touched by every transaction that accrues or reconciles it (plan 3.11 Amendment 2). */
+export interface CommissionSourceMarkDocument {
+  organizationId: string;
+  sourceType: CommissionSourceType;
+  sourceId: string;
+  touches: number;
 }
 
 const moneySchema = new Schema(
@@ -181,3 +214,47 @@ commissionEntrySchema.index({
   payoutId: 1,
   businessDate: 1,
 });
+
+export const commissionPayoutSchema = new Schema<CommissionPayoutDocument>(
+  {
+    ...domainIdField("commissionPayoutId"),
+    organizationId: { type: String, required: true, immutable: true },
+    payoutNumber: { type: String, required: true },
+    memberId: { type: String, required: true, immutable: true },
+    locationId: { type: String, required: true, immutable: true },
+    upToBusinessDate: { type: String, required: true },
+    entryCount: { type: Number, required: true },
+    total: { type: moneySchema, required: true },
+    method: { type: String, required: true, enum: Object.values(COMMISSION_PAYOUT_METHOD) },
+    externalReference: { type: String, default: null },
+    note: { type: String, default: null },
+    businessDate: { type: String, required: true },
+    ...auditFields,
+  },
+  SCHEMA_OPTIONS,
+);
+
+commissionPayoutSchema.index({ organizationId: 1, commissionPayoutId: 1 }, { unique: true });
+commissionPayoutSchema.index({ organizationId: 1, payoutNumber: 1 }, { unique: true });
+commissionPayoutSchema.index({
+  organizationId: 1,
+  locationId: 1,
+  memberId: 1,
+  businessDate: -1,
+  commissionPayoutId: -1,
+});
+
+export const commissionSourceMarkSchema = new Schema<CommissionSourceMarkDocument>(
+  {
+    organizationId: { type: String, required: true, immutable: true },
+    sourceType: { type: String, required: true, enum: Object.values(COMMISSION_SOURCE_TYPE) },
+    sourceId: { type: String, required: true },
+    touches: { type: Number, required: true, default: 0 },
+  },
+  SCHEMA_OPTIONS,
+);
+
+commissionSourceMarkSchema.index(
+  { organizationId: 1, sourceType: 1, sourceId: 1 },
+  { unique: true },
+);

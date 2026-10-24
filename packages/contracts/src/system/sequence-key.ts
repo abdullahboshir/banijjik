@@ -16,6 +16,7 @@ export const SEQUENCE_KEY = defineEnum([
   "RETURN",
   "CUSTOM_ACCOUNT",
   "CREDIT_PURCHASE",
+  "COMMISSION_PAYOUT",
 ]);
 
 export type SequenceKey = (typeof SEQUENCE_KEY)[keyof typeof SEQUENCE_KEY];

@@ -158,4 +158,14 @@ export const SYSTEM_ACCOUNT_SEEDS: readonly SystemAccountSeed[] = Object.freeze(
     accountType: ACCOUNT_TYPE.EQUITY,
     name: { bn: "প্রারম্ভিক জের", en: "Opening balance" },
   },
+  {
+    accountCode: SYSTEM_ACCOUNT_CODE.COMMISSION_EXPENSE,
+    accountType: ACCOUNT_TYPE.EXPENSE,
+    name: { bn: "কমিশন ব্যয়", en: "Commission expense" },
+  },
+  {
+    accountCode: SYSTEM_ACCOUNT_CODE.COMMISSION_PAYABLE,
+    accountType: ACCOUNT_TYPE.LIABILITY,
+    name: { bn: "কমিশন পরিশোধ্য", en: "Commission payable" },
+  },
 ]);

@@ -110,6 +110,8 @@ export const PERMISSION_KEY = {
   COMMISSION_RULE_UPDATE: "commission.rule.update",
   COMMISSION_ENTRY_READ: "commission.entry.read",
   COMMISSION_ENTRY_READ_OWN: "commission.entry.readOwn",
+  COMMISSION_PAYOUT_READ: "commission.payout.read",
+  COMMISSION_PAYOUT_CREATE: "commission.payout.create",
   SALES_ORDER_READ: "sales.order.read",
   SALES_ORDER_CREATE: "sales.order.create",
   SALES_ORDER_UPDATE: "sales.order.update",

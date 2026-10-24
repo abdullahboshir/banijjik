@@ -35,6 +35,7 @@ import type {
   CommissionOfferingReader,
   CommissionPaymentReader,
   CommissionRuleRepository,
+  CommissionSourceMarkRepository,
   CommissionSourceReader,
   CommissionTimezoneReader,
   CommissionUnitOfWork,
@@ -43,6 +44,7 @@ import type {
 export interface AccrualDependencies {
   readonly rules: Pick<CommissionRuleRepository, "listActiveForSubjects">;
   readonly entries: Pick<CommissionEntryRepository, "insertIfAbsent" | "listBySource">;
+  readonly marks: Pick<CommissionSourceMarkRepository, "touch">;
   readonly bookings: Pick<CommissionSourceReader, "readBooking">;
   readonly payments: CommissionPaymentReader;
   readonly offerings: CommissionOfferingReader;
@@ -279,6 +281,8 @@ export async function accrueCompletedBooking(
   input: { readonly bookingId: string; readonly context: CommissionEventContext },
 ): Promise<AccrualResult> {
   return dependencies.unitOfWork.run(async () => {
+    // Touched first: a refund reconcile of the same booking then conflicts with this transaction instead of missing it.
+    await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.BOOKING, input.bookingId);
     const booking = await dependencies.bookings.readBooking(input.bookingId);
     if (booking === undefined || booking.status !== BOOKING_STATUS.COMPLETED) return NOTHING_DONE;
     if (booking.providerMemberId === null) return NOTHING_DONE;
@@ -314,6 +318,7 @@ export async function reconcilePaymentBookings(
     );
     let result = NOTHING_DONE;
     for (const bookingId of bookingIds) {
+      await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.BOOKING, bookingId);
       result = addResults(result, await reconcileBooking(dependencies, bookingId, input.context));
     }
     return result;

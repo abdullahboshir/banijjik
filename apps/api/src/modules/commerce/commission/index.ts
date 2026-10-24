@@ -1,4 +1,5 @@
-import type { Router } from "express";
+import type { CommissionPostingSource } from "../accounting/index.js";
+import type { RequestHandler, Router } from "express";
 import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
@@ -6,6 +7,7 @@ import { kernelEventPublisher, registerEventHandler } from "../../../kernel/even
 import { getLogger } from "../../../kernel/logger/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import type { AccrualDependencies } from "./application/accrue-commission.js";
+import { buildCommissionPostingSource } from "./application/commission-posting-source.js";
 import { buildAccrueCommissionHandler } from "./application/handlers/accrue-commission.handler.js";
 import type {
   CommissionMemberNameReader,
@@ -16,6 +18,12 @@ import type {
   CommissionSourceReader,
   CommissionTimezoneReader,
 } from "./application/ports/commission-ports.js";
+import {
+  CreateCommissionPayoutUseCase,
+  GetCommissionPayoutUseCase,
+  ListCommissionPayoutsUseCase,
+  PreviewCommissionPayoutUseCase,
+} from "./application/use-cases/payout.use-cases.js";
 import {
   GetCommissionSummaryUseCase,
   ListCommissionEntriesUseCase,
@@ -28,7 +36,9 @@ import {
   UpdateCommissionRuleUseCase,
 } from "./application/use-cases/rule.use-cases.js";
 import { MongoCommissionEntryRepository } from "./infrastructure/mongo-commission-entry.repository.js";
+import { MongoCommissionPayoutRepository } from "./infrastructure/mongo-commission-payout.repository.js";
 import { MongoCommissionRuleRepository } from "./infrastructure/mongo-commission-rule.repository.js";
+import { MongoCommissionSourceMarkRepository } from "./infrastructure/mongo-commission-source-mark.repository.js";
 import { CommissionController } from "./presentation/commission.controller.js";
 import { buildCommissionTenantRouter } from "./presentation/commission-tenant.router.js";
 
@@ -61,11 +71,13 @@ export interface CommissionTenantDependencies {
   readonly audit: AuditRecorder;
   readonly permission: PermissionMiddlewareFactory;
   readonly readers: CommissionReaders;
+  readonly idempotency: RequestHandler;
 }
 
 export function buildCommissionRouter(dependencies: CommissionTenantDependencies): Router {
   const rules = new MongoCommissionRuleRepository();
   const entries = new MongoCommissionEntryRepository();
+  const payouts = new MongoCommissionPayoutRepository();
   const unitOfWork = new MongoUnitOfWork();
   const { readers } = dependencies;
   const ruleWrite = {
@@ -88,8 +100,25 @@ export function buildCommissionRouter(dependencies: CommissionTenantDependencies
     listEntries: new ListCommissionEntriesUseCase(entryRead),
     listMyEntries: new ListMyCommissionEntriesUseCase(entryRead),
     summary: new GetCommissionSummaryUseCase(entryRead),
+    previewPayout: new PreviewCommissionPayoutUseCase({ entries, references: readers.references }),
+    createPayout: new CreateCommissionPayoutUseCase({
+      entries,
+      payouts,
+      references: readers.references,
+      timezones: readers.timezones,
+      events: kernelEventPublisher,
+      unitOfWork,
+      audit: dependencies.audit,
+      clock: dependencies.clock,
+    }),
+    listPayouts: new ListCommissionPayoutsUseCase(payouts),
+    getPayout: new GetCommissionPayoutUseCase(payouts),
   });
-  return buildCommissionTenantRouter({ controller, permission: dependencies.permission });
+  return buildCommissionTenantRouter({
+    controller,
+    permission: dependencies.permission,
+    idempotency: dependencies.idempotency,
+  });
 }
 
 export function buildAccrualDependencies(input: {
@@ -100,6 +129,7 @@ export function buildAccrualDependencies(input: {
   return {
     rules: new MongoCommissionRuleRepository(),
     entries: new MongoCommissionEntryRepository(),
+    marks: new MongoCommissionSourceMarkRepository(),
     bookings: readers.bookings,
     payments: readers.payments,
     offerings: readers.offerings,
@@ -118,4 +148,12 @@ export function registerCommissionEventHandlers(input: {
   readonly readers: CommissionReaders;
 }): void {
   registerEventHandler(buildAccrueCommissionHandler(buildAccrualDependencies(input)));
+}
+
+/** The adapter accounting posts commission journals from (plan 3.11 decision 8). */
+export function buildCommissionPostingSourceAdapter(): CommissionPostingSource {
+  return buildCommissionPostingSource({
+    entries: new MongoCommissionEntryRepository(),
+    payouts: new MongoCommissionPayoutRepository(),
+  });
 }

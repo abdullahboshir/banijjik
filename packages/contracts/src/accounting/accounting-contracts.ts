@@ -28,6 +28,7 @@ export const JOURNAL_SOURCE_TYPE = defineEnum([
   "RETURN",
   "COURIER",
   "MANUAL",
+  "COMMISSION",
 ]);
 export type JournalSourceType = (typeof JOURNAL_SOURCE_TYPE)[keyof typeof JOURNAL_SOURCE_TYPE];
 
@@ -54,6 +55,9 @@ export const POSTING_KEY = defineEnum([
   "expense_posted",
   "expense_voided",
   "rounding",
+  "commission_accrued",
+  "commission_adjusted",
+  "commission_paid",
 ]);
 export type PostingKey =
   (typeof POSTING_KEY)[keyof typeof POSTING_KEY] | `manual:${string}` | `reversal:${string}`;

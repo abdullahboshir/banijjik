@@ -1263,6 +1263,7 @@
   "bookkeeping.sourceRETURN": "Return",
   "bookkeeping.sourceCOURIER": "Courier",
   "bookkeeping.sourceMANUAL": "Manual",
+  "bookkeeping.sourceCOMMISSION": "Staff commission",
   "bookkeeping.moreAccounts": "Load more accounts",
   "setting.bookkeeping.manualEntryOwnerWithoutApproval": "Owner can post manual journals without a PIN approval",
   "menu.credit.purchases": "Credit purchases",

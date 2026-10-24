@@ -76,6 +76,7 @@ export const BOOKKEEPING_LABEL_KEYS = [
   "sourceRETURN",
   "sourceCOURIER",
   "sourceMANUAL",
+  "sourceCOMMISSION",
 ] as const;
 export type BookkeepingLabels = Record<(typeof BOOKKEEPING_LABEL_KEYS)[number], string>;
 export function bookkeepingLabels(t: (key: string) => string): BookkeepingLabels {
@@ -101,4 +102,5 @@ export const JOURNAL_SOURCE_LABEL: Record<JournalSourceType, keyof BookkeepingLa
   RETURN: "sourceRETURN",
   COURIER: "sourceCOURIER",
   MANUAL: "sourceMANUAL",
+  COMMISSION: "sourceCOMMISSION",
 };

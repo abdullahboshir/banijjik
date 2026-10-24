@@ -35,6 +35,7 @@ describe("system enums", () => {
       "RETURN",
       "CUSTOM_ACCOUNT",
       "CREDIT_PURCHASE",
+      "COMMISSION_PAYOUT",
     ]);
   });
 

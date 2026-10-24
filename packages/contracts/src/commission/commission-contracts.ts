@@ -37,6 +37,8 @@ export const COMMISSION_API_MESSAGE_KEYS = {
   ruleDuplicate: "errors.commission_rule_duplicate",
   currencyMismatch: "errors.commission_currency_mismatch",
   kindNotEnabled: "errors.commission_kind_not_enabled",
+  payoutNothingToPay: "errors.commission_payout_nothing_to_pay",
+  payoutTotalChanged: "errors.commission_payout_total_changed",
 } as const;
 
 export const COMMISSION_API_MESSAGE_KEY_LIST: readonly string[] = Object.values(
@@ -95,4 +97,35 @@ export interface CommissionMemberSummaryResponse {
   readonly memberName: string;
   readonly open: Money;
   readonly paidTotal: Money;
+}
+
+/** The ways a payout can leave the business; each maps to a system asset account (`METHOD_ACCOUNT_CODE`). */
+export const COMMISSION_PAYOUT_METHOD = defineEnum(["CASH", "BKASH", "NAGAD", "BANK"]);
+export type CommissionPayoutMethod =
+  (typeof COMMISSION_PAYOUT_METHOD)[keyof typeof COMMISSION_PAYOUT_METHOD];
+
+/** A mobile wallet payout needs the transaction reference the staff member can check. */
+export const COMMISSION_PAYOUT_REFERENCE_METHODS: readonly CommissionPayoutMethod[] = [
+  COMMISSION_PAYOUT_METHOD.BKASH,
+  COMMISSION_PAYOUT_METHOD.NAGAD,
+];
+
+export interface CommissionPayoutPreviewResponse {
+  readonly entryCount: number;
+  readonly total: Money;
+}
+
+export interface CommissionPayoutResponse {
+  readonly commissionPayoutId: string;
+  readonly payoutNumber: string;
+  readonly memberId: string;
+  readonly locationId: string;
+  readonly upToBusinessDate: string;
+  readonly entryCount: number;
+  readonly total: Money;
+  readonly method: CommissionPayoutMethod;
+  readonly externalReference: string | null;
+  readonly note: string | null;
+  readonly businessDate: string;
+  readonly createdAt: string;
 }

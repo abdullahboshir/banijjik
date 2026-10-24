@@ -38,6 +38,7 @@ import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
 import {
   COMMISSION_EVENT_TYPE,
   type CommissionEntryRecordedPayload,
+  type CommissionPayoutPaidPayload,
 } from "../commission/commission-event-type.js";
 import type {
   CreditEntryCreatedPayload,
@@ -196,6 +197,7 @@ export interface EventPayloadMap {
   readonly [CREDIT_EVENT_TYPE.PURCHASE_REJECTED]: CreditPurchaseEventPayload;
   readonly [CREDIT_EVENT_TYPE.PURCHASE_CANCELLED]: CreditPurchaseEventPayload;
   readonly [COMMISSION_EVENT_TYPE.ENTRY_RECORDED]: CommissionEntryRecordedPayload;
+  readonly [COMMISSION_EVENT_TYPE.PAYOUT_PAID]: CommissionPayoutPaidPayload;
   readonly [SALES_EVENT_TYPE.ORDER_DRAFTED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_PLACED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_CONFIRMED]: OrderEventPayload;

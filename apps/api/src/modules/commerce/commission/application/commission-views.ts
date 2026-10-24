@@ -1,8 +1,10 @@
 import type {
   CommissionEntryResponse,
+  CommissionPayoutResponse,
   CommissionRuleResponse,
 } from "@banijjik/contracts/commission";
 import type { CommissionEntry } from "../domain/commission-entry.entity.js";
+import type { CommissionPayout } from "../domain/commission-payout.entity.js";
 import type { CommissionRule } from "../domain/commission-rule.entity.js";
 
 export function toRuleResponse(rule: CommissionRule): CommissionRuleResponse {
@@ -47,5 +49,22 @@ export function toEntryResponse(
     businessDate: entry.businessDate,
     payoutId: entry.payoutId,
     createdAt: entry.createdAt.toISOString(),
+  };
+}
+
+export function toPayoutResponse(payout: CommissionPayout): CommissionPayoutResponse {
+  return {
+    commissionPayoutId: payout.commissionPayoutId,
+    payoutNumber: payout.payoutNumber,
+    memberId: payout.memberId,
+    locationId: payout.locationId,
+    upToBusinessDate: payout.upToBusinessDate,
+    entryCount: payout.entryCount,
+    total: payout.total,
+    method: payout.method,
+    externalReference: payout.externalReference,
+    note: payout.note,
+    businessDate: payout.businessDate,
+    createdAt: payout.createdAt.toISOString(),
   };
 }

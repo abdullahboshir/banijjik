@@ -13,6 +13,7 @@ import {
   ACCOUNTING_FISCAL_YEAR_START_DEFAULT,
   ACCOUNTING_FISCAL_YEAR_START_SETTING_KEY,
 } from "@banijjik/contracts/accounting";
+import { COMMISSION_EVENT_TYPE } from "@banijjik/contracts/commission";
 import { defineModule } from "../../../kernel/modules/index.js";
 
 /** The accounting manifest in the shape of 10-MODULE-CATALOG section 2 (SYSTEM; trial-balance check only). */
@@ -70,6 +71,8 @@ export const accountingManifest = defineModule({
       EVENT_TYPE.BOOKING_CANCELLED,
       EVENT_TYPE.EXPENSE_POSTED,
       EVENT_TYPE.EXPENSE_VOIDED,
+      COMMISSION_EVENT_TYPE.ENTRY_RECORDED,
+      COMMISSION_EVENT_TYPE.PAYOUT_PAID,
     ],
   },
   limitKeys: [],

@@ -3,6 +3,7 @@ import {
   MODULE_CLASS,
   MODULE_KEY,
   PERMISSION_KEY,
+  SEQUENCE_KEY,
   permissionDefinition,
 } from "@banijjik/contracts";
 import { COMMISSION_EVENT_TYPE } from "@banijjik/contracts/commission";
@@ -25,6 +26,8 @@ export const commissionManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.COMMISSION_RULE_UPDATE),
     permissionDefinition(PERMISSION_KEY.COMMISSION_ENTRY_READ),
     permissionDefinition(PERMISSION_KEY.COMMISSION_ENTRY_READ_OWN),
+    permissionDefinition(PERMISSION_KEY.COMMISSION_PAYOUT_READ),
+    permissionDefinition(PERMISSION_KEY.COMMISSION_PAYOUT_CREATE),
   ],
   routes: {
     admin: ["/orgs/:organizationId/commission"],
@@ -35,7 +38,7 @@ export const commissionManifest = defineModule({
   botTools: [],
   storefrontSections: [],
   events: {
-    emits: [COMMISSION_EVENT_TYPE.ENTRY_RECORDED],
+    emits: [COMMISSION_EVENT_TYPE.ENTRY_RECORDED, COMMISSION_EVENT_TYPE.PAYOUT_PAID],
     consumes: [
       EVENT_TYPE.BOOKING_COMPLETED,
       EVENT_TYPE.PAYMENT_REFUNDED,
@@ -43,5 +46,5 @@ export const commissionManifest = defineModule({
     ],
   },
   limitKeys: [],
-  sequenceKeys: [],
+  sequenceKeys: [SEQUENCE_KEY.COMMISSION_PAYOUT],
 });

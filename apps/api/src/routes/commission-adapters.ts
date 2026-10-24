@@ -8,7 +8,7 @@ import {
   type PaymentId,
   type RoleId,
 } from "@banijjik/ids";
-import type { Router } from "express";
+import type { RequestHandler, Router } from "express";
 import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { getRequestContext } from "../kernel/context/index.js";
@@ -163,6 +163,7 @@ export interface CommissionRouterInput {
   readonly audit: AuditRecorder;
   readonly permission: PermissionMiddlewareFactory;
   readonly orgConfig: OrgConfigService;
+  readonly idempotency: RequestHandler;
 }
 
 /** Commission rules and ledger API, mounted on the tenant pipeline (card 3.11). */
@@ -171,6 +172,7 @@ export function buildCommissionTenantRouter(input: CommissionRouterInput): Route
     clock: input.clock,
     audit: input.audit,
     permission: input.permission,
+    idempotency: input.idempotency,
     readers: buildCommissionReaders(input.orgConfig),
   });
 }

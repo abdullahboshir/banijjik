@@ -17,6 +17,8 @@ import type {
   CommissionEntryRepository,
   CommissionMemberTotals,
   Page,
+  OpenEntriesFilter,
+  OpenEntriesTotal,
 } from "../application/ports/commission-ports.js";
 import type { CommissionEntry } from "../domain/commission-entry.entity.js";
 import {
@@ -110,6 +112,34 @@ function listQueryOf(filter: CommissionEntryListFilter): QueryFilter<CommissionE
   return query;
 }
 
+function openQueryOf(input: OpenEntriesFilter): QueryFilter<CommissionEntryDocument> {
+  return {
+    memberId: input.memberId,
+    locationId: input.locationId,
+    payoutId: null,
+    businessDate: { $lte: input.upToBusinessDate },
+    "amount.currency": input.currency,
+  };
+}
+
+async function sumOf(
+  match: QueryFilter<CommissionEntryDocument>,
+  currency: CurrencyCode,
+): Promise<OpenEntriesTotal> {
+  const rows = await entryModel().aggregate<{
+    readonly entryCount: number;
+    readonly amount: number;
+  }>(
+    [
+      { $match: { ...match, "amount.currency": currency } },
+      { $group: { _id: null, entryCount: { $sum: 1 }, amount: { $sum: "$amount.amount" } } },
+    ],
+    sessionOption(getActiveSession()),
+  );
+  const row = rows[0];
+  return { entryCount: row?.entryCount ?? 0, amount: row?.amount ?? 0 };
+}
+
 interface TotalsRow {
   readonly _id: string;
   readonly open: number;
@@ -135,6 +165,13 @@ export class MongoCommissionEntryRepository implements CommissionEntryRepository
     return result.upsertedCount > 0 ? "inserted" : "exists";
   }
 
+  async findById(commissionEntryId: CommissionEntryId): Promise<CommissionEntry | undefined> {
+    const row = await entryModel()
+      .findOne({ commissionEntryId }, null, sessionOption(getActiveSession()))
+      .lean<CommissionEntryDocument>();
+    return row === null ? undefined : toEntry(row);
+  }
+
   async listBySource(
     sourceType: CommissionSourceType,
     sourceId: string,
@@ -154,6 +191,31 @@ export class MongoCommissionEntryRepository implements CommissionEntryRepository
       .limit(filter.limit + 1)
       .lean<CommissionEntryDocument[]>();
     return { items: rows.slice(0, filter.limit).map(toEntry), hasNext: rows.length > filter.limit };
+  }
+
+  async summarizeOpen(input: OpenEntriesFilter): Promise<OpenEntriesTotal> {
+    return sumOf(openQueryOf(input), input.currency);
+  }
+
+  async claimOpen(
+    input: OpenEntriesFilter & { readonly payoutId: CommissionPayoutId },
+  ): Promise<void> {
+    // `payoutId: null` is in the filter, so an entry another payout took is never claimed twice.
+    await entryModel().updateMany(
+      openQueryOf(input),
+      { $set: { payoutId: input.payoutId } },
+      { timestamps: false, ...sessionOption(getActiveSession()) },
+    );
+  }
+
+  async summarizeClaimed(input: {
+    readonly memberId: string;
+    readonly locationId: string;
+    readonly payoutId: CommissionPayoutId;
+    readonly currency: CurrencyCode;
+  }): Promise<OpenEntriesTotal> {
+    const { memberId, locationId, payoutId, currency } = input;
+    return sumOf({ memberId, locationId, payoutId }, currency);
   }
 
   async summarizeByMember(input: {

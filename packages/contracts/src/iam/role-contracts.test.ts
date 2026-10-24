@@ -61,6 +61,8 @@ describe("PERMISSION_KEY", () => {
         "commission.rule.update",
         "commission.entry.read",
         "commission.entry.readOwn",
+        "commission.payout.read",
+        "commission.payout.create",
         "enrollment.enrollment.read",
         "enrollment.enrollment.create",
         "enrollment.enrollment.update",
