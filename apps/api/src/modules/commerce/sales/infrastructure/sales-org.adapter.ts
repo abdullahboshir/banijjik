@@ -2,10 +2,10 @@ import type { OrganizationId } from "@banijjik/ids";
 import type { Model } from "mongoose";
 import { getRequestContext } from "../../../../kernel/context/index.js";
 import { models } from "../../../../kernel/db/index.js";
+import { recordNotFound } from "../domain/errors.js";
 import type { SalesOwnerReader, SalesTimeZoneReader } from "../application/ports/sales-ports.js";
 
 const ORGANIZATION_MODEL_NAME = "Organization";
-const DEFAULT_TIME_ZONE = "Asia/Dhaka";
 
 interface OrganizationRow {
   timezone: string;
@@ -23,7 +23,9 @@ export function buildSalesTimeZoneReader(): SalesTimeZoneReader {
       const row = await organizationModel()
         .findOne({ organizationId }, { timezone: 1 })
         .lean<Pick<OrganizationRow, "timezone"> | null>();
-      return row?.timezone ?? DEFAULT_TIME_ZONE;
+      // Every organization gets a time zone at creation, so a missing one is broken data: fail closed.
+      if (row === null || !row.timezone) throw recordNotFound();
+      return row.timezone;
     },
   };
 }
