@@ -78,6 +78,19 @@ export interface EnrollmentPaymentPort {
     enrollmentPeriodId: string;
     now: Date;
   }): Promise<void>;
+  /**
+   * Revenue recognition touches the period's payment summary in the same transaction (ADR-138 R3),
+   * so a payment that read BEFORE_REVENUE conflicts and retries. `total` is what the summary holds
+   * afterwards: the fee on activate and renew, the capped kept amount on cancel (amendment 1).
+   */
+  touchForRevenue(input: {
+    organizationId: string;
+    enrollmentPeriodId: string;
+    locationId: string;
+    contactId: string;
+    total: Money;
+    now: Date;
+  }): Promise<void>;
   /** The ENROLLMENT period ids a payment allocates to (payment event handler). */
   listPeriodIdsOfPayment(paymentId: string): Promise<readonly string[]>;
 }

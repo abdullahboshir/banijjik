@@ -115,6 +115,9 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
         $set: {
           sessionsUsed: period.sessionsUsed,
           status: period.status,
+          ...(period.revenueRecognizedOn === undefined
+            ? {}
+            : { revenueRecognizedOn: period.revenueRecognizedOn }),
           updatedByUserId: period.updatedByUserId,
           ...(period.originalEndsOn === undefined ? {} : { originalEndsOn: period.originalEndsOn }),
           ...(changeEnd ? { periodEndsOn: period.periodEndsOn } : {}),

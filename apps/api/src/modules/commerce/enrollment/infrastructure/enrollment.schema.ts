@@ -84,6 +84,7 @@ const period = new Schema<EnrollmentPeriod>(
     sessionsAllowed: Number,
     sessionsUsed: { type: Number, required: true },
     status: { type: String, enum: Object.values(ENROLLMENT_PERIOD_STATUS), required: true },
+    revenueRecognizedOn: String,
   },
   SCHEMA_OPTIONS,
 );

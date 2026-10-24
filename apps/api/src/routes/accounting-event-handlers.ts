@@ -20,6 +20,7 @@ import {
   buildOrderRepository,
 } from "../modules/commerce/sales/index.js";
 import { systemClock } from "../kernel/time/index.js";
+import { buildEnrollmentPeriodPostingSource } from "../modules/commerce/enrollment/index.js";
 import { buildPaymentRequestReaders } from "./payment-request-readers.js";
 
 /** Registers accounting, expense, booking and payment event handlers for the worker role. */
@@ -43,5 +44,6 @@ export function registerAccountingAndExpenseHandlers(): void {
       inventory: buildInventoryPostingSourceAdapter(),
     }),
     stocks: buildStockPostingSourceAdapter({ currencies }),
+    enrollments: buildEnrollmentPeriodPostingSource(buildRequestAdvanceReader()),
   });
 }

@@ -20,11 +20,12 @@ import { addBillingPeriod, addDays } from "../domain/period-dates.js";
 import { refundableAmount } from "../domain/refunds.js";
 import type { TransitionInput } from "./ports.js";
 import { syncPeriodPaymentStatus } from "./sync-period-payment.js";
+import { closeCancelledPeriods, settleRevenueAfterTransition } from "./period-revenue.js";
+import { recordTransition } from "./record-transition.js";
 import {
   auditFields,
   checkVersion,
   readEnrollment,
-  recordEnrollment,
   releaseEnrollment,
   type EnrollmentDependencies,
 } from "./dependencies.js";
@@ -85,29 +86,16 @@ export async function transitionEnrollment(
       enrollment.version,
     );
     const event = eventForTransition(input.action, next.status);
-    if (input.action === "renew" && automated && advancePeriod !== undefined) {
-      await dependencies.audit.record({
-        action: event,
-        entityType: "enrollment",
-        entityId: saved.enrollmentId,
-      });
-    } else {
-      const renewed =
-        input.action === "renew"
-          ? await dependencies.repository.nextPeriod(saved, period)
-          : undefined;
-      await recordEnrollment(
-        dependencies,
-        {
-          ...saved,
-          currentEnrollmentPeriodId: renewed?.enrollmentPeriodId ?? saved.currentEnrollmentPeriodId,
-        },
-        event,
-      );
-    }
+    await recordTransition(dependencies, { input, automated, event, saved, period, advancePeriod });
+    await settleRevenueAfterTransition({
+      dependencies,
+      input,
+      previous: enrollment,
+      enrollment: saved,
+      today,
+    });
     if (input.action !== "cancel") return { enrollment: saved };
-    await capPeriodSummaries(dependencies, saved);
-    return cancellationResult(dependencies, saved, today);
+    return settleCancellation(dependencies, { input, enrollment: saved, today });
   });
 }
 /** Completion can arrive through several actions; it always emits the completed event. */
@@ -117,6 +105,16 @@ function eventForTransition(
 ): (typeof events)[EnrollmentAction] {
   if (status === ENROLLMENT_STATUS.COMPLETED) return ENROLLMENT_EVENT_TYPE.ENROLLMENT_COMPLETED;
   return events[action];
+}
+/** Cap the summaries first, then close the periods at what was kept (decision 6). */
+async function settleCancellation(
+  dependencies: EnrollmentDependencies,
+  settlement: { input: TransitionInput; enrollment: Enrollment; today: string },
+): Promise<TransitionResult> {
+  const { input, enrollment, today } = settlement;
+  await capPeriodSummaries(dependencies, enrollment);
+  await closeCancelledPeriods({ dependencies, enrollment, cancelDate: today, input });
+  return cancellationResult(dependencies, enrollment, today);
 }
 /** A cancelled enrollment owes nothing more: every non-waived period's summary total drops to its net paid (decision 4). */
 async function capPeriodSummaries(

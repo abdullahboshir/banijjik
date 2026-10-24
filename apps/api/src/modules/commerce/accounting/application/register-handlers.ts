@@ -6,6 +6,7 @@ import type { CommissionPostingSource } from "./ports/commission-posting-source.
 import type { ExpensePostingSource } from "./ports/expense-posting-source.js";
 import type { PaymentPostingSource } from "./ports/payment-posting-source.js";
 import type { OrderPostingSource } from "./ports/order-posting-source.js";
+import type { EnrollmentPeriodPostingSource } from "./ports/enrollment-posting-source.js";
 import type { StockPostingSource } from "./ports/stock-posting-source.js";
 import type { AccountRepository } from "./ports/account-repository.js";
 import type { JournalRepository } from "./ports/journal-repository.js";
@@ -15,6 +16,7 @@ import { buildPostCommissionHandler } from "./handlers/post-commission.handler.j
 import { buildPostExpensesHandler } from "./handlers/post-expenses.handler.js";
 import { buildPostPaymentsHandler } from "./handlers/post-payments.handler.js";
 import { buildPostOrdersHandler } from "./handlers/post-orders.handler.js";
+import { buildPostEnrollmentsHandler } from "./handlers/post-enrollments.handler.js";
 import { buildPostStockHandler } from "./handlers/post-stock.handler.js";
 import { buildSeedOnOrganizationCreatedHandler } from "./handlers/seed-on-organization-created.handler.js";
 
@@ -33,6 +35,8 @@ export interface AccountingHandlerDependencies {
   readonly orders?: OrderPostingSource | undefined;
   readonly stocks?: StockPostingSource | undefined;
   readonly expenses: ExpensePostingSource;
+  /** Required: enrollment periods post revenue whenever the enrollment module emits them (card 3.31). */
+  readonly enrollments: EnrollmentPeriodPostingSource;
 }
 
 function postingOf(dependencies: AccountingHandlerDependencies): PostJournalDependencies {
@@ -94,6 +98,12 @@ export function registerAccountingEventHandlers(dependencies: AccountingHandlerD
       }),
     );
   }
+  registerEventHandler(
+    buildPostEnrollmentsHandler({
+      enrollments: dependencies.enrollments,
+      posting: postingOf(dependencies),
+    }),
+  );
   if (dependencies.stocks !== undefined) {
     registerEventHandler(
       buildPostStockHandler({

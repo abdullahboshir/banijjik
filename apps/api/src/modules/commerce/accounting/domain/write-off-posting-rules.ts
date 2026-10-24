@@ -17,13 +17,13 @@ import type { PaymentPostingSnapshot } from "./posting-rules.js";
 
 /**
  * Whether the closure of a request had recognised income, so that a write-off must also post bad
- * debt. A booking recognises its retained fee. An enrollment keeps its money in customer advances
- * until card 3.31, so its reversal already brings advances back to zero. An order closure refunds
- * everything, so a reversal never reaches it.
+ * debt. A booking recognises its retained fee. An enrollment recognises the kept amount of a
+ * cancelled period as income (plan revenue or a cancellation fee, card 3.31). An order closure
+ * refunds everything, so a reversal never reaches it.
  */
 const CLOSURE_RECOGNISED_INCOME: Readonly<Record<PaymentRequestType, boolean>> = {
   [PAYMENT_REQUEST_TYPE.BOOKING]: true,
-  [PAYMENT_REQUEST_TYPE.ENROLLMENT]: false,
+  [PAYMENT_REQUEST_TYPE.ENROLLMENT]: true,
   [PAYMENT_REQUEST_TYPE.ORDER]: false,
 };
 

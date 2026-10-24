@@ -1,4 +1,4 @@
-import { POSTING_KEY, SYSTEM_ACCOUNT_CODE } from "@banijjik/contracts/accounting";
+import { POSTING_KEY, SYSTEM_ACCOUNT_CODE, type Money } from "@banijjik/contracts/accounting";
 import { describe, expect, it } from "vitest";
 import {
   draftPeriodClosed,
@@ -6,7 +6,10 @@ import {
   type EnrollmentPeriodClosureSnapshot,
 } from "./enrollment-posting-rules.js";
 
-const money = (amount: number, currency = "BDT") => ({ amount, currency });
+const money = (amount: number): Money => ({ amount, currency: "BDT" });
+
+// Test-only: a second currency the contracts do not yet type, to prove the mismatch guard.
+const otherCurrency = (amount: number): Money => ({ amount, currency: "USD" }) as unknown as Money;
 
 function periodSnapshot(overrides: Partial<EnrollmentPeriodClosureSnapshot> = {}) {
   return {
@@ -105,6 +108,6 @@ describe("enrollment period revenue posting rules", () => {
   });
 
   it("throws on a currency mismatch between fee and kept amount", () => {
-    expect(() => draftPeriodClosed(periodSnapshot({ keptAmount: money(1000, "USD") }))).toThrow();
+    expect(() => draftPeriodClosed(periodSnapshot({ keptAmount: otherCurrency(1000) }))).toThrow();
   });
 });
