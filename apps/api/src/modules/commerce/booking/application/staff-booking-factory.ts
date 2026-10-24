@@ -1,5 +1,7 @@
 import { BOOKING_STATUS, type BookingKind } from "@banijjik/contracts/booking";
 import type {
+  ContactId,
+  EventSessionId,
   LocationId,
   MemberId,
   OfferingId,
@@ -13,7 +15,7 @@ import { Booking } from "../domain/booking.entity.js";
 export function createStaffBookingFromParts(input: {
   organizationId: OrganizationId;
   locationId: LocationId;
-  contactId: import("@banijjik/ids").ContactId;
+  contactId: ContactId;
   offeringId: OfferingId;
   variantId: string;
   kind?: BookingKind;
@@ -22,8 +24,9 @@ export function createStaffBookingFromParts(input: {
   startsAt: Date;
   endsAt: Date;
   blockedEndsAt: Date;
-  resourceId: ResourceId;
-  memberId: MemberId | null;
+  resourceIds: readonly ResourceId[];
+  providerMemberId: MemberId | null;
+  eventSessionId?: EventSessionId | undefined;
   price: Booking["price"];
   status: typeof BOOKING_STATUS.REQUESTED | typeof BOOKING_STATUS.CONFIRMED;
   bookingNumber: string | null;
@@ -43,12 +46,13 @@ export function createStaffBookingFromParts(input: {
     startsAt: input.startsAt,
     endsAt: input.endsAt,
     blockedEndsAt: input.blockedEndsAt,
-    resourceIds: [input.resourceId],
-    providerMemberId: input.memberId,
+    resourceIds: input.resourceIds,
+    providerMemberId: input.providerMemberId,
     price: input.price,
     status: input.status,
     bookingNumber: input.bookingNumber,
     note: input.note,
+    ...(input.eventSessionId === undefined ? {} : { eventSessionId: input.eventSessionId }),
     now: input.now,
     actorUserId: input.actorUserId,
   });

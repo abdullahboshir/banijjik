@@ -48,6 +48,7 @@ export {
   isWeekday,
   BOOKING_COMPLETE_GRACE_MINUTES_DEFAULT,
   BOOKING_COMPLETE_GRACE_MINUTES_SETTING_KEY,
+  BOOKING_EVENT_SESSION_CANCEL_NOTE_KEY,
   isRentalBookingKind,
   type AvailabilitySlot,
   type BookingHistoryEntry,

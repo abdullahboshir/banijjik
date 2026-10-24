@@ -21,6 +21,7 @@ export const eventSessionSchema = new Schema<EventSessionProps>(
     seatsSold: { type: Number, required: true, default: 0 },
     resourceIds: { type: [String], default: [] },
     status: { type: String, required: true, enum: Object.values(EVENT_SESSION_STATUS) },
+    bookingsSettledAt: { type: Date, default: null },
     ...versionField,
     ...auditFields,
   },
@@ -28,3 +29,7 @@ export const eventSessionSchema = new Schema<EventSessionProps>(
 );
 eventSessionSchema.index({ organizationId: 1, locationId: 1, startsAt: 1 });
 eventSessionSchema.index({ organizationId: 1, offeringId: 1, startsAt: 1 });
+// booking.cancelEventSession job: cancelled sessions whose bookings are not settled yet.
+eventSessionSchema.index({ organizationId: 1, status: 1, bookingsSettledAt: 1, eventSessionId: 1 });
+// booking.autoComplete job: scheduled sessions that have ended.
+eventSessionSchema.index({ organizationId: 1, status: 1, endsAt: 1, eventSessionId: 1 });

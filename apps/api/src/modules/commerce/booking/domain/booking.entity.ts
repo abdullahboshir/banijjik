@@ -14,6 +14,7 @@ import {
   newId,
   type BookingId,
   type ContactId,
+  type EventSessionId,
   type LocationId,
   type MemberId,
   type OfferingId,
@@ -21,7 +22,10 @@ import {
   type ResourceId,
   type UserId,
 } from "@banijjik/ids";
-import { transitionBookingProps } from "./booking-transition-apply.js";
+import {
+  transitionBookingProps,
+  type BookingRescheduleTarget,
+} from "./booking-transition-apply.js";
 import { type BookingTransitionAction } from "./transitions.js";
 
 export interface BookingProps {
@@ -46,6 +50,8 @@ export interface BookingProps {
   readonly note: string | null;
   readonly holdExpiresAt: Date | null;
   readonly cancellationFeeRetained?: Money | null;
+  /** The session whose seats an EVENT booking holds; null for every other kind. */
+  readonly eventSessionId?: EventSessionId | null;
   readonly history: readonly BookingHistoryEntry[];
   readonly version: number;
   readonly createdAt: Date;
@@ -75,6 +81,7 @@ export class Booking {
     readonly status: BookingStatus;
     readonly bookingNumber: string | null;
     readonly note: string | null;
+    readonly eventSessionId?: EventSessionId | undefined;
     readonly now: Date;
     readonly actorUserId: UserId | null;
   }): Booking {
@@ -99,6 +106,7 @@ export class Booking {
       source: BOOKING_SOURCE.STAFF,
       note: input.note,
       holdExpiresAt: null,
+      eventSessionId: input.eventSessionId ?? null,
       history: [],
       version: 1,
       createdAt: input.now,
@@ -126,6 +134,7 @@ export class Booking {
     readonly holdExpiresAt: Date;
     readonly note: string | null;
     readonly source: BookingSource;
+    readonly eventSessionId?: EventSessionId | undefined;
     readonly now: Date;
     readonly actorUserId: UserId | null;
   }): Booking {
@@ -150,6 +159,7 @@ export class Booking {
       source: input.source,
       note: input.note,
       holdExpiresAt: input.holdExpiresAt,
+      eventSessionId: input.eventSessionId ?? null,
       history: [],
       version: 1,
       createdAt: input.now,
@@ -243,6 +253,10 @@ export class Booking {
     return this.props.holdExpiresAt;
   }
 
+  get eventSessionId(): EventSessionId | null {
+    return this.props.eventSessionId ?? null;
+  }
+
   get cancellationFeeRetained(): Money | null {
     return this.props.cancellationFeeRetained ?? null;
   }
@@ -279,13 +293,7 @@ export class Booking {
       readonly bookingNumber?: string | null;
       readonly note?: string;
       readonly cancellationFeeRetained?: Money | null;
-      readonly reschedule?: {
-        readonly startsAt: Date;
-        readonly endsAt: Date;
-        readonly blockedEndsAt: Date;
-        readonly resourceIds: readonly ResourceId[];
-        readonly providerMemberId: MemberId | null;
-      };
+      readonly reschedule?: BookingRescheduleTarget;
     },
   ): Booking {
     return new Booking(transitionBookingProps(this.props, action, input));

@@ -36,6 +36,52 @@ export async function publishBookableService(
   return published.body.data as typeof offering;
 }
 
+export interface EventPublishInput {
+  readonly name?: string;
+  readonly unitPriceAmount?: number;
+  readonly salesCloseMinutesBefore?: number;
+  /** More than one variant lets a test show a booking that names the wrong one. */
+  readonly variantCount?: number;
+}
+
+export async function publishBookableEvent(
+  actor: ApiActor,
+  organizationId: string,
+  input?: EventPublishInput,
+): Promise<{
+  offeringId: string;
+  version: number;
+  variants: { variantId: string }[];
+}> {
+  const variantCount = input?.variantCount ?? 1;
+  const created = await actor.call("post", offeringsPath(organizationId), {
+    kind: "EVENT",
+    name: input?.name ?? "Workshop",
+    kindDetails: {
+      salesCloseMinutesBefore: input?.salesCloseMinutesBefore ?? 0,
+      allowWaitlist: false,
+    },
+    variants: Array.from({ length: variantCount }, (_unused, index) => ({
+      name: variantCount === 1 ? "Default" : `Seat class ${index + 1}`,
+      price: money(input?.unitPriceAmount ?? 100000),
+      unitKey: "PIECE",
+    })),
+  });
+  expect(created.status).toBe(201);
+  const offering = created.body.data as {
+    offeringId: string;
+    version: number;
+    variants: { variantId: string }[];
+  };
+  const published = await actor.call(
+    "post",
+    offeringsPath(organizationId, `/${offering.offeringId}/publish`),
+    { version: offering.version },
+  );
+  expect(published.status).toBe(200);
+  return published.body.data as typeof offering;
+}
+
 export async function createStylistResource(
   actor: ApiActor,
   organizationId: string,

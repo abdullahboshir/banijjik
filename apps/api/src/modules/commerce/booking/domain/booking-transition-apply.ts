@@ -5,12 +5,22 @@ import {
   type BookingStatus,
   type Money,
 } from "@banijjik/contracts/booking";
-import type { MemberId, ResourceId, UserId } from "@banijjik/ids";
+import type { EventSessionId, MemberId, ResourceId, UserId } from "@banijjik/ids";
 import type { BookingProps } from "./booking.entity.js";
 import type { BookingTransitionAction } from "./transitions.js";
 import { assertTransitionAllowed, targetStatusFor } from "./transitions.js";
 
 export type { BookingHistoryEntry };
+
+/** Where a rescheduled booking lands: new times, new capacity holder, and for events a new session. */
+export interface BookingRescheduleTarget {
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+  readonly blockedEndsAt: Date;
+  readonly resourceIds: readonly ResourceId[];
+  readonly providerMemberId: MemberId | null;
+  readonly eventSessionId?: EventSessionId;
+}
 
 export function nextStatusAfterTransition(input: {
   action: BookingTransitionAction;
@@ -70,16 +80,10 @@ function statusAfterTransition(
 
 function propsAfterReschedule(
   props: BookingProps,
-  reschedule: {
-    readonly startsAt: Date;
-    readonly endsAt: Date;
-    readonly blockedEndsAt: Date;
-    readonly resourceIds: readonly ResourceId[];
-    readonly providerMemberId: MemberId | null;
-  },
+  reschedule: BookingRescheduleTarget,
 ): Pick<
   BookingProps,
-  "startsAt" | "endsAt" | "blockedEndsAt" | "resourceIds" | "providerMemberId"
+  "startsAt" | "endsAt" | "blockedEndsAt" | "resourceIds" | "providerMemberId" | "eventSessionId"
 > {
   return {
     startsAt: reschedule.startsAt,
@@ -87,6 +91,7 @@ function propsAfterReschedule(
     blockedEndsAt: reschedule.blockedEndsAt,
     resourceIds: reschedule.resourceIds,
     providerMemberId: reschedule.providerMemberId,
+    eventSessionId: reschedule.eventSessionId ?? props.eventSessionId ?? null,
   };
 }
 
@@ -99,13 +104,7 @@ export function transitionBookingProps(
     readonly bookingNumber?: string | null;
     readonly note?: string;
     readonly cancellationFeeRetained?: Money | null;
-    readonly reschedule?: {
-      readonly startsAt: Date;
-      readonly endsAt: Date;
-      readonly blockedEndsAt: Date;
-      readonly resourceIds: readonly ResourceId[];
-      readonly providerMemberId: MemberId | null;
-    };
+    readonly reschedule?: BookingRescheduleTarget;
   },
 ): BookingProps {
   assertTransitionAllowed(props.status, action);

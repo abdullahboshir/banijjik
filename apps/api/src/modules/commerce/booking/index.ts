@@ -8,6 +8,8 @@ import { buildBookingController } from "./build-booking-controller.js";
 import { buildExpireHoldsJob } from "./application/jobs/expire-holds.job.js";
 import { buildMarkNoShowsJob } from "./application/jobs/mark-no-shows.job.js";
 import { buildAutoCompleteJob } from "./application/jobs/auto-complete.job.js";
+import { buildCancelEventSessionJob } from "./application/jobs/cancel-event-session-bookings.job.js";
+import { MongoEventSessionRepository } from "./infrastructure/mongo-event-session.repository.js";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { buildAuditRecorder } from "../../core/audit/index.js";
 import { MongoBookingRepository } from "./infrastructure/mongo-booking.repositories.js";
@@ -78,12 +80,14 @@ export function registerBookingScheduledJobs(input: {
 }): void {
   const bookings = new MongoBookingRepository();
   const slots = new MongoResourceSlotUsageRepository();
+  const sessions = new MongoEventSessionRepository();
   const unitOfWork = new MongoUnitOfWork();
   const audit = input.audit ?? buildAuditRecorder(input.clock);
   registerScheduledJob(
     buildExpireHoldsJob({
       bookings,
       slots,
+      sessions,
       unitOfWork,
       events: kernelEventPublisher,
       clock: input.clock,
@@ -103,11 +107,23 @@ export function registerBookingScheduledJobs(input: {
   registerScheduledJob(
     buildAutoCompleteJob({
       bookings,
+      sessions,
       unitOfWork,
       events: kernelEventPublisher,
       audit,
       orgConfig: input.orgConfig,
       manifests: input.manifests,
+    }),
+  );
+  registerScheduledJob(
+    buildCancelEventSessionJob({
+      sessions,
+      bookings,
+      slots,
+      unitOfWork,
+      events: kernelEventPublisher,
+      audit,
+      depositCheck: input.depositCheck,
     }),
   );
 }

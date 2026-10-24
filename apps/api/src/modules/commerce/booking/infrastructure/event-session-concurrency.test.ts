@@ -76,6 +76,19 @@ describe("event session atomic writes", () => {
       });
     },
   );
+  it("refuses a seat release the counter cannot cover and leaves the row alone", async () => {
+    const { world, repository, session } = await fixture();
+    const eventSessionId = session.toProps().eventSessionId;
+    await withOrganizationContext(world.organizationA, async () => {
+      expect(await repository.reserveSeats({ eventSessionId, seats: 4 })).toBe(true);
+
+      await expect(repository.releaseSeats({ eventSessionId, seats: 5 })).rejects.toThrow();
+
+      const stored = await repository.findById(eventSessionId);
+      expect(stored?.toProps()).toMatchObject({ seatsSold: 4, version: 1 });
+    });
+  });
+
   it("filters a list by caller locations even when the repository context permits all locations", async () => {
     const { world, repository } = await fixture();
     await withOrganizationContext(world.organizationA, async () => {

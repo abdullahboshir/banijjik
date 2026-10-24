@@ -8,6 +8,7 @@ import {
   BOOKING_EVENT_TYPE,
   type BookingEventPayload,
   type BookingReminderPayload,
+  type EventSessionEventPayload,
   type ResourceEventPayload,
 } from "../booking/booking-event-type.js";
 import type { OfferingEventPayload } from "../catalog/catalog-contracts.js";
@@ -170,6 +171,7 @@ export interface EventPayloadMap {
   readonly [BOOKING_EVENT_TYPE.RESOURCE_CREATED]: ResourceEventPayload;
   readonly [BOOKING_EVENT_TYPE.RESOURCE_UPDATED]: ResourceEventPayload;
   readonly [BOOKING_EVENT_TYPE.RESOURCE_DEACTIVATED]: ResourceEventPayload;
+  readonly [BOOKING_EVENT_TYPE.EVENT_SESSION_CANCELLED]: EventSessionEventPayload;
   readonly [PRICING_EVENT_TYPE.PROMOTION_CHANGED]: PromotionEventPayload;
   readonly [INVENTORY_EVENT_TYPE.STOCK_CHANGED]: InventoryStockChangedPayload;
   readonly [INVENTORY_EVENT_TYPE.STOCK_LOW]: InventoryStockLowPayload;

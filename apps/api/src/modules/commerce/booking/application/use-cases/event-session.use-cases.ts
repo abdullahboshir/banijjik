@@ -7,32 +7,55 @@ import {
   type ResourceId,
   type UserId,
 } from "@banijjik/ids";
-import { BOOKING_RULE_KEY } from "@banijjik/contracts/booking";
+import { BOOKING_EVENT_TYPE, BOOKING_RULE_KEY } from "@banijjik/contracts/booking";
+import { AUDIT_ACTION, OFFERING_KIND } from "@banijjik/contracts";
 import type {
   EventSessionCreateBody,
   EventSessionListQuery,
   EventSessionUpdateBody,
 } from "@banijjik/validation/booking";
+import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { EventSession } from "../../domain/event-session.entity.js";
 import { bookingRuleError, recordNotFound } from "../../domain/errors.js";
 import { assertLocationAllowed } from "../resource-location-guard.js";
-import type { EventSessionOfferingReader } from "../ports/event-session-offering-reader.js";
+import type { BookingOfferingReader } from "../ports/booking-context-ports.js";
 import type { EventSessionRepository } from "../ports/event-session-repository.js";
 
-import type { ResourceRepository } from "../ports/booking-repositories.js";
+import type { BookingUnitOfWork, ResourceRepository } from "../ports/booking-repositories.js";
+import type { BookingEventPublisher } from "./create-booking.use-case.js";
 
 type Caller = {
   organizationId: OrganizationId;
   actorUserId: UserId;
   allowedLocationIds: readonly string[] | "ALL";
 };
+
+/** A session can only hold seats for an active EVENT offering that sells at its location. */
+async function loadBookableEventOffering(
+  offerings: BookingOfferingReader,
+  input: {
+    organizationId: OrganizationId;
+    offeringId: OfferingId;
+    variantId: string;
+    locationId: LocationId;
+  },
+): Promise<void> {
+  const offering = await offerings.readOffering(input);
+  if (offering === undefined || offering.kind !== OFFERING_KIND.EVENT || !offering.isActive) {
+    throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
+  }
+}
+
 export class EventSessionUseCases {
   constructor(
     private readonly dependencies: {
       sessions: EventSessionRepository;
       resources: Pick<ResourceRepository, "findById">;
-      offerings: EventSessionOfferingReader;
+      offerings: BookingOfferingReader;
+      unitOfWork: BookingUnitOfWork;
+      events: BookingEventPublisher;
+      audit: AuditRecorder;
       clock: Clock;
     },
   ) {}
@@ -41,13 +64,12 @@ export class EventSessionUseCases {
     assertLocationAllowed(body.locationId, input.allowedLocationIds);
     const locationId = asId<LocationId>(body.locationId);
     const offeringId = asId<OfferingId>(body.offeringId);
-    const offering = await this.dependencies.offerings.readEventOffering({
+    await loadBookableEventOffering(this.dependencies.offerings, {
       organizationId: input.organizationId,
       offeringId,
       locationId,
       variantId: body.variantId,
     });
-    if (offering === undefined) throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
     for (const resourceId of body.resourceIds) {
       const resource = await this.dependencies.resources.findById(asId<ResourceId>(resourceId));
       if (resource === undefined || resource.locationId !== locationId) {
@@ -103,6 +125,21 @@ export class EventSessionUseCases {
   ): Promise<EventSession> {
     const existing = await this.get(input.eventSessionId, input.allowedLocationIds);
     const cancelled = existing.cancel(this.dependencies.clock.now(), input.actorUserId);
-    return this.dependencies.sessions.update(cancelled, input.version, existing);
+    let persisted = cancelled;
+    await this.dependencies.unitOfWork.run(async () => {
+      persisted = await this.dependencies.sessions.update(cancelled, input.version, existing);
+      await this.dependencies.events.publish(
+        BOOKING_EVENT_TYPE.EVENT_SESSION_CANCELLED,
+        { eventSessionId: input.eventSessionId },
+        { orderingKey: `eventSession:${input.eventSessionId}` },
+      );
+      await this.dependencies.audit.record({
+        action: AUDIT_ACTION.EVENT_SESSION_CANCELLED,
+        entityType: "eventSession",
+        entityId: input.eventSessionId,
+        changes: { status: { from: existing.toProps().status, to: cancelled.toProps().status } },
+      });
+    });
+    return persisted;
   }
 }

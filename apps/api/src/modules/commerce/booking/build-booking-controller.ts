@@ -40,6 +40,7 @@ import {
 } from "./infrastructure/mongo-booking.repositories.js";
 import { MongoResourceTimeOffRepository } from "./infrastructure/mongo-resource-timeoff.repository.js";
 import { MongoResourceSlotUsageRepository } from "./infrastructure/mongo-slot-usage.repository.js";
+import { MongoEventSessionRepository } from "./infrastructure/mongo-event-session.repository.js";
 import { BookingController } from "./presentation/booking.controller.js";
 
 import type { DepositCheckPort, PaymentStatusReader } from "./application/ports/payment-ports.js";
@@ -60,6 +61,7 @@ type BookingRepos = {
   resources: MongoResourceRepository;
   timeOff: MongoResourceTimeOffRepository;
   slots: MongoResourceSlotUsageRepository;
+  sessions: MongoEventSessionRepository;
   unitOfWork: MongoUnitOfWork;
 };
 
@@ -84,6 +86,7 @@ function bookingRepositories(): BookingRepos {
     resources: new MongoResourceRepository(),
     timeOff: new MongoResourceTimeOffRepository(),
     slots: new MongoResourceSlotUsageRepository(),
+    sessions: new MongoEventSessionRepository(),
     unitOfWork: new MongoUnitOfWork(),
   };
 }
@@ -93,6 +96,7 @@ function bookingShared(wiring: AppointmentWiring) {
     bookings: wiring.repos.bookings,
     resources: wiring.repos.resources,
     slots: wiring.repos.slots,
+    sessions: wiring.repos.sessions,
     unitOfWork: wiring.repos.unitOfWork,
     events: kernelEventPublisher,
     audit: wiring.input.audit,

@@ -2,11 +2,14 @@ import { OFFERING_KIND } from "@banijjik/contracts";
 import type { ContactId, LocationId, OfferingId, OrganizationId, UserId } from "@banijjik/ids";
 import type { BookingCreateBody } from "@banijjik/validation/booking";
 import type { BookingKind, Money } from "@banijjik/contracts/booking";
-import { BOOKING_KIND, BOOKING_STATUS } from "@banijjik/contracts/booking";
+import { BOOKING_KIND, BOOKING_RULE_KEY, BOOKING_STATUS } from "@banijjik/contracts/booking";
 import { asId } from "@banijjik/ids";
 import { slotBounds } from "../domain/availability.js";
+import { bookingRuleError } from "../domain/errors.js";
 import { computeRentalTime } from "../domain/rental-time.js";
 import { resolveBookingContactId } from "./booking-slot-selection.js";
+import type { EventBookingTarget } from "./event-booking-parts.js";
+import { eventBookingBounds } from "./event-booking-parts.js";
 import type { CreateBookingDependencies } from "./use-cases/create-booking.use-case.js";
 import {
   loadActiveOffering,
@@ -55,7 +58,14 @@ async function resolveStaffBookingBounds(input: {
   readonly requestedQuantity: number | undefined;
   readonly timeZoneReader: { read(organizationId: OrganizationId): Promise<string> };
   readonly organizationId: OrganizationId;
+  readonly eventTarget?: EventBookingTarget | undefined;
 }) {
+  if (input.offering.kind === OFFERING_KIND.EVENT) {
+    if (input.eventTarget === undefined) {
+      throw bookingRuleError(BOOKING_RULE_KEY.BOOKING_EVENT_SESSION_REQUIRED);
+    }
+    return eventBookingBounds(input.eventTarget);
+  }
   if (input.offering.kind === OFFERING_KIND.RENTAL) {
     const timeZone = await input.timeZoneReader.read(input.organizationId);
     const rentalTime = computeRentalTime({
@@ -86,27 +96,31 @@ async function resolveStaffBookingBounds(input: {
   };
 }
 
+/** Everything the booking factory needs after the offering, contact, price and bounds are known. */
+export interface PreparedStaffBooking {
+  readonly locationId: LocationId;
+  readonly offeringId: OfferingId;
+  readonly contactId: ContactId;
+  readonly kind: BookingKind;
+  readonly quantity: number;
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+  readonly blockedEndsAt: Date;
+  readonly depositRequired: Money;
+  readonly status: typeof BOOKING_STATUS.REQUESTED | typeof BOOKING_STATUS.CONFIRMED;
+  readonly bookingNumber: string | null;
+  readonly line: NonNullable<Awaited<ReturnType<PriceQuoterPort["quote"]>>["lines"][0]>;
+  readonly now: Date;
+}
+
 export async function prepareStaffBooking(input: {
   dependencies: CreateBookingDependencies;
   organizationId: OrganizationId;
   actorUserId: UserId | null;
   allowedLocationIds: readonly string[] | "ALL";
   body: BookingCreateBody;
-}): Promise<{
-  locationId: LocationId;
-  offeringId: OfferingId;
-  contactId: ContactId;
-  kind: BookingKind;
-  quantity: number;
-  startsAt: Date;
-  endsAt: Date;
-  blockedEndsAt: Date;
-  depositRequired: Money;
-  status: typeof BOOKING_STATUS.REQUESTED | typeof BOOKING_STATUS.CONFIRMED;
-  bookingNumber: string | null;
-  line: NonNullable<Awaited<ReturnType<PriceQuoterPort["quote"]>>["lines"][0]>;
-  now: Date;
-}> {
+  eventTarget?: EventBookingTarget | undefined;
+}): Promise<PreparedStaffBooking> {
   const locationId = asId<LocationId>(input.body.locationId);
   const offeringId = asId<OfferingId>(input.body.offeringId);
   const requestedStartsAt = new Date(input.body.startsAt);
@@ -126,6 +140,7 @@ export async function prepareStaffBooking(input: {
     requestedQuantity: input.body.quantity,
     timeZoneReader: input.dependencies.timeZone,
     organizationId: input.organizationId,
+    ...(input.eventTarget === undefined ? {} : { eventTarget: input.eventTarget }),
   });
 
   const settings = await input.dependencies.settings.read(input.organizationId);

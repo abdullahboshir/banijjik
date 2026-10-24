@@ -12,6 +12,11 @@ export const BOOKING_RULE_KEY = {
   BOOKING_NOT_SERVICE: "BOOKING_NOT_SERVICE",
   BOOKING_RENTAL_UNITS_OUT_OF_RANGE: "BOOKING_RENTAL_UNITS_OUT_OF_RANGE",
   BOOKING_RENTAL_DURATION_EXCEEDED: "BOOKING_RENTAL_DURATION_EXCEEDED",
+  BOOKING_EVENT_SESSION_REQUIRED: "BOOKING_EVENT_SESSION_REQUIRED",
+  BOOKING_EVENT_SESSION_NOT_OPEN: "BOOKING_EVENT_SESSION_NOT_OPEN",
+  BOOKING_EVENT_SALES_CLOSED: "BOOKING_EVENT_SALES_CLOSED",
+  BOOKING_EVENT_SAME_SESSION: "BOOKING_EVENT_SAME_SESSION",
+  BOOKING_EVENT_SOLD_OUT: "BOOKING_EVENT_SOLD_OUT",
 } as const;
 
 export type BookingRuleKey = (typeof BOOKING_RULE_KEY)[keyof typeof BOOKING_RULE_KEY];
@@ -31,4 +36,9 @@ export const BOOKING_MESSAGE_KEYS: readonly string[] = [
   "errors.capacity_full",
   "errors.booking_rental_units_out_of_range",
   "errors.booking_rental_duration_exceeded",
+  "errors.booking_event_session_required",
+  "errors.booking_event_session_not_open",
+  "errors.booking_event_sales_closed",
+  "errors.booking_event_same_session",
+  "errors.booking_event_sold_out",
 ];

@@ -1,7 +1,7 @@
 import { SYSTEM_ROLE_KEY } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { publishBookableService } from "../../../../test-support/booking-api-world.js";
+import { publishBookableEvent } from "../../../../test-support/booking-api-world.js";
 import {
   memberWithRole,
   startCatalogApi,
@@ -23,18 +23,17 @@ afterAll(async () => {
 });
 const RETAIL = { industryTemplateKey: "RETAIL" };
 const SALON = { industryTemplateKey: "SALON" };
+/** COACHING is the seeded template that sells EVENT offerings, so an event offering publishes. */
+const COACHING = { industryTemplateKey: "COACHING" };
 async function setup() {
-  const world = await worldFor(harness, RETAIL, SALON);
+  const world = await worldFor(harness, RETAIL, COACHING);
   await harness.connections.platform
     .collection("organizations")
     .updateOne(
       { organizationId: world.organizationB },
       { $set: SALON, $inc: { configVersion: 1 } },
     );
-  const offering = await publishBookableService(world.alice, world.organizationA);
-  await harness.connections.tenantShared
-    .collection("offerings")
-    .updateOne({ offeringId: offering.offeringId }, { $set: { kind: "EVENT" } });
+  const offering = await publishBookableEvent(world.alice, world.organizationA);
   return {
     world,
     offering,

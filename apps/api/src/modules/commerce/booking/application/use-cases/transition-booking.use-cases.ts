@@ -10,8 +10,10 @@ import type { BookingId, OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { recordNotFound } from "../../domain/errors.js";
+import type { Booking } from "../../domain/booking.entity.js";
 import { assertLocationAllowed, bookingOrderingKey } from "../booking-transition-shared.js";
 import { toBookingResponse } from "../booking-views.js";
+import { releaseCapacityForMissedBooking } from "../event-booking-parts.js";
 import type { BookingSettingsReader } from "../ports/booking-context-ports.js";
 import type {
   BookingRepository,
@@ -38,7 +40,7 @@ function resolveFeePercent(settings: Awaited<ReturnType<BookingSettingsReader["r
 async function settleNoShowDeposit(input: {
   readonly depositCheck: DepositCheckPort;
   readonly organizationId: OrganizationId;
-  readonly existing: import("../../domain/booking.entity.js").Booking;
+  readonly existing: Booking;
   readonly settings: Awaited<ReturnType<BookingSettingsReader["read"]>>;
   readonly actorUserId: UserId | null;
   readonly now: Date;
@@ -92,15 +94,10 @@ export class NoShowBookingUseCase {
     const settings = await this.dependencies.settings.read(input.organizationId);
     let persisted = existing.transition("noShow", { now, actorUserId: input.actorUserId });
     await this.dependencies.unitOfWork.run(async () => {
-      const resourceId = existing.resourceIds[0];
-      if (resourceId !== undefined) {
-        await this.dependencies.slots.releaseCapacity({
-          organizationId: input.organizationId,
-          resourceId,
-          startsAt: existing.startsAt,
-          blockedEndsAt: existing.blockedEndsAt,
-        });
-      }
+      await releaseCapacityForMissedBooking({
+        booking: existing,
+        slots: this.dependencies.slots,
+      });
       const settlement = await settleNoShowDeposit({
         depositCheck: this.dependencies.depositCheck,
         organizationId: input.organizationId,

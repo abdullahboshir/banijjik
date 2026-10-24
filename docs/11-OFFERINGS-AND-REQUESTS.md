@@ -165,6 +165,8 @@ Deposits are payments allocated to the booking. They are a liability until compl
 ### 5.5 Events (EVENT kind)
 Seats per `EventSession.capacity`. A booking of an EVENT references `eventSessionId` (added to Booking in `09`). Sales close `salesCloseMinutesBefore` start. A cancelled session cancels its bookings, with a full deposit refund/credit and a notification. Waitlist is out of scope at launch (`allowWaitlist` reserved).
 
+**Implemented (3.6b A2/A3).** Sessions are location-scoped `EventSession` records with a `version`; an EVENT booking copies the session times and holds seats on its `seatsSold` counter instead of taking `resource_slot_usages` capacity. A no-show keeps the seat; expiry, hold cancel and booking cancel release it, each in the same transaction as the booking's versioned status write, so a seat is never handed back twice. A reschedule moves the booking to another session of the same offering, seat class and location. `POST /event-sessions/:id/cancel` only marks the session CANCELLED; the `booking.cancelEventSession` job then cancels its bookings (full refund, `CANCEL_FEE_MODE.NONE`) and sets `bookingsSettledAt` once none is open. Notifications are not part of this card. Known gap: a session does not block its resources' slots, so the same hall can still be rented.
+
 ## 6. Returns & exchanges (module `sales`, owner decision: launch)
 
 New aggregate **SalesReturn** (sales, location scope, append-only):

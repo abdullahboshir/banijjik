@@ -18,6 +18,7 @@ import type {
   PriceQuoterPort,
 } from "../ports/booking-context-ports.js";
 import type { DepositCheckPort } from "../ports/payment-ports.js";
+import type { EventSessionRepository } from "../ports/event-session-repository.js";
 import { BOOKING_EVENT_TYPE } from "@banijjik/contracts/booking";
 
 export interface BookingEventPublisher {
@@ -26,7 +27,8 @@ export interface BookingEventPublisher {
     payload:
       | { readonly bookingId: string }
       | { readonly resourceId: string }
-      | { readonly bookingId: string; readonly reminderAt: string },
+      | { readonly bookingId: string; readonly reminderAt: string }
+      | { readonly eventSessionId: string },
     options: { readonly orderingKey: string },
   ): Promise<void>;
 }
@@ -35,6 +37,7 @@ export interface CreateBookingDependencies {
   readonly bookings: BookingRepository;
   readonly resources: ResourceRepository;
   readonly slots: ResourceSlotUsagePort;
+  readonly sessions: EventSessionRepository;
   readonly unitOfWork: BookingUnitOfWork;
   readonly events: BookingEventPublisher;
   readonly audit: AuditRecorder;

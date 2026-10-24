@@ -1,7 +1,7 @@
 import { AUDIT_ACTION } from "@banijjik/contracts";
 import { BOOKING_EVENT_TYPE, BOOKING_STATUS } from "@banijjik/contracts/booking";
 import type { BookingResponse } from "@banijjik/contracts/booking";
-import type { BookingId, OrganizationId, ResourceId } from "@banijjik/ids";
+import type { BookingId, OrganizationId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../kernel/audit/index.js";
 import { Booking } from "../domain/booking.entity.js";
 import { toBookingResponse } from "./booking-views.js";
@@ -27,19 +27,13 @@ export async function persistCreatedBooking(input: {
     readonly depositCheck: DepositCheckPort;
   };
   organizationId: OrganizationId;
-  resourceId: ResourceId;
-  resourceCapacity: number;
+  /** Takes the capacity the booking was priced for; runs inside the booking transaction. */
+  reserveCapacity: () => Promise<void>;
   booking: Booking;
   status: typeof BOOKING_STATUS.REQUESTED | typeof BOOKING_STATUS.CONFIRMED;
 }): Promise<BookingResponse> {
   await input.dependencies.unitOfWork.run(async () => {
-    await input.dependencies.slots.takeCapacity({
-      organizationId: input.organizationId,
-      resourceId: input.resourceId,
-      capacity: input.resourceCapacity,
-      startsAt: input.booking.startsAt,
-      blockedEndsAt: input.booking.blockedEndsAt,
-    });
+    await input.reserveCapacity();
     await input.dependencies.bookings.insert(input.booking);
     await input.dependencies.depositCheck.initializeSummary({
       organizationId: input.organizationId,

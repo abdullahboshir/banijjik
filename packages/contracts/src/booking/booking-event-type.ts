@@ -17,6 +17,7 @@ export const BOOKING_EVENT_TYPE = Object.freeze({
   RESOURCE_CREATED: "booking.resource.created",
   RESOURCE_UPDATED: "booking.resource.updated",
   RESOURCE_DEACTIVATED: "booking.resource.deactivated",
+  EVENT_SESSION_CANCELLED: "booking.eventSession.cancelled",
 } as const);
 
 export type BookingEventType = (typeof BOOKING_EVENT_TYPE)[keyof typeof BOOKING_EVENT_TYPE];
@@ -32,4 +33,8 @@ export interface BookingReminderPayload {
 
 export interface ResourceEventPayload {
   readonly resourceId: string;
+}
+
+export interface EventSessionEventPayload {
+  readonly eventSessionId: string;
 }

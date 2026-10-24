@@ -1,5 +1,11 @@
-import { BOOKING_KIND } from "@banijjik/contracts/booking";
-import { type BookingId, type LocationId, type OfferingId, type ResourceId } from "@banijjik/ids";
+import { BOOKING_KIND, BOOKING_STATUS } from "@banijjik/contracts/booking";
+import {
+  type BookingId,
+  type EventSessionId,
+  type LocationId,
+  type OfferingId,
+  type ResourceId,
+} from "@banijjik/ids";
 import type { Model, QueryFilter } from "mongoose";
 import {
   getActiveSession,
@@ -24,6 +30,14 @@ import {
 import { bookingDocument, toBooking, toResource } from "./mongo-booking.mapper.js";
 
 const SCHEDULED_BOOKING_BATCH_LIMIT = 100;
+
+/** Bookings that still occupy a seat, so a cancelled session must settle them first. */
+const OPEN_BOOKING_STATUSES = [
+  BOOKING_STATUS.HELD,
+  BOOKING_STATUS.REQUESTED,
+  BOOKING_STATUS.CONFIRMED,
+  BOOKING_STATUS.CHECKED_IN,
+];
 
 function resourceModel(): Model<ResourceDocument> {
   return models({}).get<ResourceDocument>(RESOURCE_MODEL_NAME);
@@ -153,6 +167,7 @@ export class MongoBookingRepository implements BookingRepository {
           resourceIds: props.resourceIds,
           providerMemberId: props.providerMemberId,
           holdExpiresAt: props.holdExpiresAt,
+          eventSessionId: props.eventSessionId ?? null,
           cancellationFeeRetained: props.cancellationFeeRetained ?? null,
           history: props.history,
           note: props.note,
@@ -222,11 +237,22 @@ export class MongoBookingRepository implements BookingRepository {
     const cutoff = new Date(input.now.getTime() - input.graceMinutes * 60_000);
     const rows = await bookingModel()
       .find({
-        kind: BOOKING_KIND.RENTAL,
-        status: "CHECKED_IN",
-        endsAt: { $lte: cutoff },
+        $or: [
+          { kind: BOOKING_KIND.RENTAL, status: "CHECKED_IN", endsAt: { $lte: cutoff } },
+          // An event ends when its session time passes, so a checked-in event needs no grace.
+          { kind: BOOKING_KIND.EVENT, status: "CHECKED_IN", endsAt: { $lte: input.now } },
+        ],
       })
       .sort({ endsAt: 1, bookingId: 1 })
+      .limit(SCHEDULED_BOOKING_BATCH_LIMIT)
+      .lean<BookingDocument[]>();
+    return rows.map(toBooking);
+  }
+
+  async listOpenForEventSession(eventSessionId: EventSessionId): Promise<readonly Booking[]> {
+    const rows = await bookingModel()
+      .find({ eventSessionId, status: { $in: OPEN_BOOKING_STATUSES } })
+      .sort({ startsAt: 1, bookingId: 1 })
       .limit(SCHEDULED_BOOKING_BATCH_LIMIT)
       .lean<BookingDocument[]>();
     return rows.map(toBooking);

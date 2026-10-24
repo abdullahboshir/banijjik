@@ -60,6 +60,7 @@ export function toBookingResponse(
     source: props.source,
     note: props.note,
     holdExpiresAt: props.holdExpiresAt?.toISOString() ?? null,
+    ...(props.eventSessionId ? { eventSessionId: props.eventSessionId } : {}),
     history: props.history,
     version: props.version,
     createdAt: props.createdAt.toISOString(),

@@ -1,5 +1,5 @@
 import { OFFERING_KIND } from "@banijjik/contracts";
-import type { RentalDetails, ServiceDetails } from "@banijjik/contracts/catalog";
+import type { EventDetails, RentalDetails, ServiceDetails } from "@banijjik/contracts/catalog";
 import type { QuoteResponse } from "@banijjik/contracts/pricing";
 import type { ContactId, LocationId, OfferingId, OrganizationId } from "@banijjik/ids";
 
@@ -22,7 +22,16 @@ export interface RentalOfferingView {
   readonly isActive: boolean;
 }
 
-export type OfferingBookingView = ServiceOfferingView | RentalOfferingView;
+export interface EventOfferingView {
+  readonly kind: typeof OFFERING_KIND.EVENT;
+  readonly offeringId: OfferingId;
+  readonly variantId: string;
+  readonly name: string;
+  readonly event: EventDetails;
+  readonly isActive: boolean;
+}
+
+export type OfferingBookingView = ServiceOfferingView | RentalOfferingView | EventOfferingView;
 
 export interface BookingOfferingReader {
   readServiceOffering(input: {

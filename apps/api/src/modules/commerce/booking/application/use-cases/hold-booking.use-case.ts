@@ -19,12 +19,14 @@ import type {
   ContactCreator,
   PriceQuoterPort,
 } from "../ports/booking-context-ports.js";
+import type { EventSessionRepository } from "../ports/event-session-repository.js";
 import type { BookingEventPublisher } from "./create-booking.use-case.js";
 
 export interface HoldBookingDependencies {
   readonly bookings: BookingRepository;
   readonly resources: ResourceRepository;
   readonly slots: ResourceSlotUsagePort;
+  readonly sessions: EventSessionRepository;
   readonly unitOfWork: BookingUnitOfWork;
   readonly events: BookingEventPublisher;
   readonly audit: AuditRecorder;
@@ -67,10 +69,7 @@ export class HoldBookingUseCase {
         dependencies: this.dependencies,
         organizationId: input.organizationId,
         booking: assembled.booking,
-        resourceId: assembled.resourceId,
-        resourceCapacity: assembled.resourceCapacity,
-        startsAt: assembled.startsAt,
-        blockedEndsAt: assembled.blockedEndsAt,
+        reserveCapacity: assembled.capacity.reserve,
       });
     });
   }

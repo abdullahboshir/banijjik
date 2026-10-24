@@ -43,7 +43,7 @@ export const bookingManifest = defineModule({
   path: "commerce/booking",
   moduleClass: MODULE_CLASS.CORE,
   dependsOn: [MODULE_KEY.CATALOG, MODULE_KEY.CONTACT, MODULE_KEY.PRICING],
-  providesKinds: [OFFERING_KIND.SERVICE, OFFERING_KIND.RENTAL],
+  providesKinds: [OFFERING_KIND.SERVICE, OFFERING_KIND.RENTAL, OFFERING_KIND.EVENT],
   requiresAnyKind: [],
   tenantCanDisable: false,
   permissions: [

@@ -3,7 +3,6 @@ import { BOOKING_STATUS, type BookingResponse } from "@banijjik/contracts/bookin
 import {
   asId,
   type LocationId,
-  type MemberId,
   type OfferingId,
   type OrganizationId,
   type ResourceId,
@@ -13,11 +12,23 @@ import type { BookingCreateBody } from "@banijjik/validation/booking";
 import { BOOKING_RULE_KEY } from "@banijjik/contracts/booking";
 import { slotBounds } from "../domain/availability.js";
 import { computeRentalTime } from "../domain/rental-time.js";
-import { bookingRuleError } from "../domain/errors.js";
-import { buildStaffBookingForSlot } from "./create-booking-context.js";
+import { bookingRuleError, eventSoldOutError } from "../domain/errors.js";
+import { buildStaffBooking } from "./create-booking-context.js";
 import { runWithTxnRetry } from "./run-with-txn-retry.js";
 import { persistCreatedBooking } from "./create-booking-persist.js";
 import { reserveResourceForSlot } from "./booking-slot-selection.js";
+import type {
+  EventOfferingView,
+  RentalOfferingView,
+  ServiceOfferingView,
+} from "./ports/booking-context-ports.js";
+import {
+  eventSeatCount,
+  requireEventSessionId,
+  rejectEventSessionOn,
+  resolveEventBookingTarget,
+  reserveEventSeats,
+} from "./event-booking-parts.js";
 import type { CreateBookingDependencies } from "./use-cases/create-booking.use-case.js";
 
 export async function createBookingWithRetries(input: {
@@ -29,43 +40,28 @@ export async function createBookingWithRetries(input: {
 }): Promise<BookingResponse> {
   const locationId = asId<LocationId>(input.body.locationId);
   const offeringId = asId<OfferingId>(input.body.offeringId);
-  const requestedStartsAt = new Date(input.body.startsAt);
-  const slotOffering = await input.dependencies.offerings.readOffering({
+  const offering = await input.dependencies.offerings.readOffering({
     organizationId: input.organizationId,
     offeringId,
     variantId: input.body.variantId,
     locationId,
   });
-  if (slotOffering === undefined || !slotOffering.isActive) {
+  if (offering === undefined || !offering.isActive) {
     throw bookingRuleError(BOOKING_RULE_KEY.OFFERING_NOT_BOOKABLE);
   }
-  const timeZone = await input.dependencies.timeZone.read(input.organizationId);
-
-  let startsAt = requestedStartsAt;
-  let blockedEndsAt: Date;
-  let resourceTypeKeys: readonly string[] | undefined;
-  let isRental = false;
-
-  if (slotOffering.kind === OFFERING_KIND.RENTAL) {
-    isRental = true;
-    resourceTypeKeys = slotOffering.rental.resourceTypeKeys;
-    const rentalTime = computeRentalTime({
-      startsAt: requestedStartsAt,
-      quantity: input.body.quantity,
-      rental: slotOffering.rental,
-      timeZone,
-    });
-    startsAt = rentalTime.startsAt;
-    blockedEndsAt = rentalTime.blockedEndsAt;
-  } else {
-    resourceTypeKeys = slotOffering.service.resourceTypeKeys;
-    const bounds = slotBounds(
-      startsAt,
-      slotOffering.durationMinutes,
-      slotOffering.service.bufferAfterMinutes,
-    );
-    blockedEndsAt = bounds.blockedEndsAt;
+  if (offering.kind === OFFERING_KIND.EVENT) {
+    return createEventBookingWithRetries({ ...input, locationId, offeringId, offering });
   }
+  rejectEventSessionOn(input.body.eventSessionId);
+
+  const requestedStartsAt = new Date(input.body.startsAt);
+  const timeZone = await input.dependencies.timeZone.read(input.organizationId);
+  const bounds = await slotBookingBounds({
+    offering,
+    requestedStartsAt,
+    quantity: input.body.quantity,
+    timeZone,
+  });
 
   const preferred =
     input.body.resourceId === undefined ? undefined : asId<ResourceId>(input.body.resourceId);
@@ -75,13 +71,103 @@ export async function createBookingWithRetries(input: {
       ...input,
       locationId,
       offeringId,
-      startsAt,
-      blockedEndsAt,
-      timeZone,
-      resourceTypeKeys,
-      isRental,
       preferred,
+      ...bounds,
+      timeZone,
     }),
+  );
+}
+
+/** The slot path (service and rental): the rate model sets the times, the kind sets the resources. */
+async function slotBookingBounds(input: {
+  readonly offering: ServiceOfferingView | RentalOfferingView;
+  readonly requestedStartsAt: Date;
+  readonly quantity: number | undefined;
+  readonly timeZone: string;
+}): Promise<{
+  startsAt: Date;
+  blockedEndsAt: Date;
+  resourceTypeKeys: readonly string[];
+  isRental: boolean;
+}> {
+  if (input.offering.kind === OFFERING_KIND.RENTAL) {
+    const rentalTime = computeRentalTime({
+      startsAt: input.requestedStartsAt,
+      quantity: input.quantity,
+      rental: input.offering.rental,
+      timeZone: input.timeZone,
+    });
+    return {
+      startsAt: rentalTime.startsAt,
+      blockedEndsAt: rentalTime.blockedEndsAt,
+      resourceTypeKeys: input.offering.rental.resourceTypeKeys,
+      isRental: true,
+    };
+  }
+  const bounds = slotBounds(
+    input.requestedStartsAt,
+    input.offering.durationMinutes,
+    input.offering.service.bufferAfterMinutes,
+  );
+  return {
+    startsAt: input.requestedStartsAt,
+    blockedEndsAt: bounds.blockedEndsAt,
+    resourceTypeKeys: input.offering.service.resourceTypeKeys,
+    isRental: false,
+  };
+}
+
+/** Seats, not slots: the session owns the times and the counter owns the capacity. */
+async function createEventBookingWithRetries(input: {
+  dependencies: CreateBookingDependencies;
+  organizationId: OrganizationId;
+  actorUserId: UserId | null;
+  allowedLocationIds: readonly string[] | "ALL";
+  body: BookingCreateBody;
+  locationId: LocationId;
+  offeringId: OfferingId;
+  offering: EventOfferingView;
+}): Promise<BookingResponse> {
+  const target = await resolveEventBookingTarget({
+    sessions: input.dependencies.sessions,
+    offering: input.offering,
+    eventSessionId: requireEventSessionId(input.body.eventSessionId),
+    offeringId: input.offeringId,
+    variantId: input.body.variantId,
+    locationId: input.locationId,
+    seats: eventSeatCount(input.body.quantity),
+    now: input.dependencies.clock.now(),
+  });
+  return runWithTxnRetry(
+    input.dependencies.unitOfWork,
+    async () => {
+      const built = await buildStaffBooking({
+        dependencies: input.dependencies,
+        organizationId: input.organizationId,
+        actorUserId: input.actorUserId,
+        allowedLocationIds: input.allowedLocationIds,
+        body: input.body,
+        holders: {
+          resourceIds: target.resourceIds,
+          providerMemberId: null,
+          eventSessionId: target.eventSessionId,
+        },
+        eventTarget: target,
+      });
+      return persistCreatedBooking({
+        dependencies: input.dependencies,
+        organizationId: input.organizationId,
+        reserveCapacity: () =>
+          reserveEventSeats({
+            sessions: input.dependencies.sessions,
+            eventSessionId: target.eventSessionId,
+            seats: target.seats,
+          }),
+        booking: built.booking,
+        status: built.status,
+      });
+    },
+    eventSoldOutError,
   );
 }
 
@@ -114,23 +200,28 @@ async function tryCreateBookingOnce(input: {
     timeZone: input.timeZone,
     timeOff: input.dependencies.timeOff,
   });
-  const built = await buildStaffBookingForSlot({
+  const built = await buildStaffBooking({
     dependencies: input.dependencies,
     organizationId: input.organizationId,
     actorUserId: input.actorUserId,
     allowedLocationIds: input.allowedLocationIds,
     body: input.body,
-    resource: {
-      resourceId: resource.resourceId,
-      memberId: resource.memberId as MemberId | null,
-      capacity: resource.capacity,
+    holders: {
+      resourceIds: [resource.resourceId],
+      providerMemberId: resource.memberId,
     },
   });
   return await persistCreatedBooking({
     dependencies: input.dependencies,
     organizationId: input.organizationId,
-    resourceId: built.resourceId,
-    resourceCapacity: built.resourceCapacity,
+    reserveCapacity: () =>
+      input.dependencies.slots.takeCapacity({
+        organizationId: input.organizationId,
+        resourceId: resource.resourceId,
+        capacity: resource.capacity,
+        startsAt: input.startsAt,
+        blockedEndsAt: input.blockedEndsAt,
+      }),
     booking: built.booking,
     status: built.status as typeof BOOKING_STATUS.REQUESTED | typeof BOOKING_STATUS.CONFIRMED,
   });

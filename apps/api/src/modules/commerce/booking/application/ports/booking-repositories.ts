@@ -1,5 +1,12 @@
 import type { ResourceStatus } from "@banijjik/contracts/booking";
-import type { BookingId, LocationId, OfferingId, OrganizationId, ResourceId } from "@banijjik/ids";
+import type {
+  BookingId,
+  EventSessionId,
+  LocationId,
+  OfferingId,
+  OrganizationId,
+  ResourceId,
+} from "@banijjik/ids";
 import type { Booking } from "../../domain/booking.entity.js";
 import type { Resource } from "../../domain/resource.entity.js";
 
@@ -76,6 +83,8 @@ export interface BookingRepository {
     readonly now: Date;
     readonly graceMinutes: number;
   }): Promise<readonly Booking[]>;
+  /** The bookings of one event session that still hold a seat or owe a deposit. */
+  listOpenForEventSession(eventSessionId: EventSessionId): Promise<readonly Booking[]>;
 }
 
 export interface ResourceSlotUsagePort {

@@ -7,8 +7,9 @@ import {
 } from "@banijjik/contracts/booking";
 import type { ScheduledJob } from "../../../../../kernel/jobs/index.js";
 import { getLogger } from "../../../../../kernel/logger/index.js";
-import { asId, type OrganizationId, type ResourceId } from "@banijjik/ids";
+import { asId, type OrganizationId } from "@banijjik/ids";
 import { buildBookingSettingsReader } from "../booking-settings-reader.js";
+import { releaseCapacityForMissedBooking } from "../event-booking-parts.js";
 import type { BookingSettings } from "../ports/booking-context-ports.js";
 import type { Booking } from "../../domain/booking.entity.js";
 import type {
@@ -36,16 +37,10 @@ async function settleCandidateNoShow(opts: {
   readonly row: Booking;
   readonly orgSettings: BookingSettings;
   readonly now: Date;
-  readonly resourceId: ResourceId;
 }): Promise<void> {
-  const { input, row, orgSettings, now, resourceId } = opts;
+  const { input, row, orgSettings, now } = opts;
   await input.unitOfWork.run(async () => {
-    await input.slots.releaseCapacity({
-      organizationId: row.organizationId,
-      resourceId,
-      startsAt: row.startsAt,
-      blockedEndsAt: row.blockedEndsAt,
-    });
+    await releaseCapacityForMissedBooking({ booking: row, slots: input.slots });
     const freeCancelHours = orgSettings.freeCancelHours ?? BOOKING_FREE_CANCEL_HOURS_DEFAULT;
     const feeMode = orgSettings.noShowFee ?? BOOKING_NO_SHOW_FEE_DEFAULT;
     const feePercent = orgSettings.feePercent ?? orgSettings.depositValue;
@@ -94,10 +89,8 @@ export function buildMarkNoShowsJob(input: MarkNoShowsDependencies): ScheduledJo
         graceMinutes: orgSettings.noShowAfterMinutes,
       });
       for (const row of candidates) {
-        const resourceId = row.resourceIds[0];
-        if (resourceId === undefined) continue;
         try {
-          await settleCandidateNoShow({ input, row, orgSettings, now, resourceId });
+          await settleCandidateNoShow({ input, row, orgSettings, now });
         } catch (error) {
           // One failing booking (or a 409 from a staff edit meanwhile) must not stop the others.
           getLogger().error(

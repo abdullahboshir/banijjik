@@ -11,9 +11,12 @@ import type { BookingId, OrganizationId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { recordNotFound } from "../../domain/errors.js";
+import type { Booking } from "../../domain/booking.entity.js";
 import { assertLocationAllowed } from "../booking-transition-shared.js";
 import { toBookingResponse } from "../booking-views.js";
+import { releaseBookingCapacity } from "../event-booking-parts.js";
 import type { BookingSettingsReader } from "../ports/booking-context-ports.js";
+import type { EventSessionRepository } from "../ports/event-session-repository.js";
 import type {
   BookingRepository,
   BookingUnitOfWork,
@@ -31,19 +34,11 @@ const CAPACITY_HOLDING_STATUSES = new Set<string>([
 ]);
 
 async function releaseCancelCapacity(
-  slots: ResourceSlotUsagePort,
-  organizationId: OrganizationId,
-  existing: import("../../domain/booking.entity.js").Booking,
+  capacity: { slots: ResourceSlotUsagePort; sessions: EventSessionRepository },
+  existing: Booking,
 ): Promise<void> {
   if (!CAPACITY_HOLDING_STATUSES.has(existing.status)) return;
-  const resourceId = existing.resourceIds[0];
-  if (resourceId === undefined) return;
-  await slots.releaseCapacity({
-    organizationId,
-    resourceId,
-    startsAt: existing.startsAt,
-    blockedEndsAt: existing.blockedEndsAt,
-  });
+  await releaseBookingCapacity({ booking: existing, ...capacity });
 }
 
 function resolveFeePercent(settings: Awaited<ReturnType<BookingSettingsReader["read"]>>): number {
@@ -53,7 +48,7 @@ function resolveFeePercent(settings: Awaited<ReturnType<BookingSettingsReader["r
 async function settleCancelDeposit(input: {
   readonly depositCheck: DepositCheckPort;
   readonly organizationId: OrganizationId;
-  readonly existing: import("../../domain/booking.entity.js").Booking;
+  readonly existing: Booking;
   readonly settings: Awaited<ReturnType<BookingSettingsReader["read"]>>;
   readonly actorUserId: UserId | null;
   readonly now: Date;
@@ -85,6 +80,7 @@ export class CancelBookingUseCase {
       readonly bookings: BookingRepository;
       readonly resources: ResourceRepository;
       readonly slots: ResourceSlotUsagePort;
+      readonly sessions: EventSessionRepository;
       readonly unitOfWork: BookingUnitOfWork;
       readonly events: BookingEventPublisher;
       readonly audit: AuditRecorder;
@@ -113,7 +109,10 @@ export class CancelBookingUseCase {
       note: input.reason,
     });
     await this.dependencies.unitOfWork.run(async () => {
-      await releaseCancelCapacity(this.dependencies.slots, input.organizationId, existing);
+      await releaseCancelCapacity(
+        { slots: this.dependencies.slots, sessions: this.dependencies.sessions },
+        existing,
+      );
       const settlement = await settleCancelDeposit({
         depositCheck: this.dependencies.depositCheck,
         organizationId: input.organizationId,

@@ -59,6 +59,9 @@ export type BookingTerminationMode =
 /** Fixed bucket size for capacity counters (ADR-122). Independent of slotStepMinutes. */
 export const BOOKING_BUCKET_MINUTES = 5;
 
+/** Message key the session-cancel job writes as the note on every booking it settles. */
+export const BOOKING_EVENT_SESSION_CANCEL_NOTE_KEY = "booking.note.event_session_cancelled";
+
 export const BOOKING_SLOT_STEP_MINUTES_SETTING_KEY = "booking.slotStepMinutes";
 export const BOOKING_MIN_NOTICE_MINUTES_SETTING_KEY = "booking.minNoticeMinutes";
 export const BOOKING_REMINDER_LEAD_MINUTES_SETTING_KEY = "booking.reminderLeadMinutes";
@@ -180,6 +183,8 @@ export interface BookingResponse {
   readonly resourceNames?: readonly string[];
   readonly paymentStatus?: string;
   readonly cancellationFeeRetained?: Money | null;
+  /** Set only for an EVENT booking: the session whose seats it holds. */
+  readonly eventSessionId?: string;
 }
 
 /** Narrow kind check: card 3.6 only creates SERVICE bookings. */

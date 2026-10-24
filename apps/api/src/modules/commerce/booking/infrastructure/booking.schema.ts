@@ -122,6 +122,7 @@ export interface BookingDocument {
   source: BookingSource;
   note: string | null;
   holdExpiresAt: Date | null;
+  eventSessionId?: string | null;
   cancellationFeeRetained?: { amount: number; currency: string } | null;
   history: {
     at: string;
@@ -199,7 +200,7 @@ export const bookingSchema = new Schema<BookingDocument>(
     startsAt: { type: Date, required: true },
     endsAt: { type: Date, required: true },
     blockedEndsAt: { type: Date, required: true },
-    resourceIds: { type: [String], required: true },
+    resourceIds: { type: [String], default: [] },
     providerMemberId: { type: String, default: null },
     quantity: { type: Number, required: true },
     price: { type: priceSnapshotSchema, required: true },
@@ -207,6 +208,7 @@ export const bookingSchema = new Schema<BookingDocument>(
     source: { type: String, required: true, enum: Object.values(BOOKING_SOURCE) },
     note: { type: String, default: null },
     holdExpiresAt: { type: Date, default: null },
+    eventSessionId: { type: String, default: null },
     cancellationFeeRetained: { type: moneySchema, default: null },
     history: { type: [historySchema], default: [] },
     ...versionField,
@@ -225,6 +227,8 @@ bookingSchema.index({ organizationId: 1, contactId: 1, createdAt: -1 });
 bookingSchema.index({ organizationId: 1, status: 1, holdExpiresAt: 1, bookingId: 1 });
 bookingSchema.index({ organizationId: 1, status: 1, startsAt: 1, bookingId: 1 });
 bookingSchema.index({ organizationId: 1, resourceIds: 1, startsAt: 1 });
+// booking.cancelEventSession job: the open bookings of one cancelled session.
+bookingSchema.index({ organizationId: 1, eventSessionId: 1, status: 1 });
 
 export const resourceSlotUsageSchema = new Schema<ResourceSlotUsageDocument>(
   {

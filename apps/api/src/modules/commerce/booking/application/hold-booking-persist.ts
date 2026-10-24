@@ -1,7 +1,7 @@
 import { AUDIT_ACTION } from "@banijjik/contracts";
 import { BOOKING_EVENT_TYPE } from "@banijjik/contracts/booking";
 import type { BookingResponse } from "@banijjik/contracts/booking";
-import type { OrganizationId, ResourceId } from "@banijjik/ids";
+import type { OrganizationId } from "@banijjik/ids";
 import { Booking } from "../domain/booking.entity.js";
 import { toBookingResponse } from "./booking-views.js";
 import type { HoldBookingDependencies } from "./use-cases/hold-booking.use-case.js";
@@ -14,19 +14,11 @@ export async function persistHoldBooking(input: {
   dependencies: HoldBookingDependencies;
   organizationId: OrganizationId;
   booking: Booking;
-  resourceId: ResourceId;
-  resourceCapacity: number;
-  startsAt: Date;
-  blockedEndsAt: Date;
+  /** Takes the capacity the hold was priced for; runs inside the hold transaction. */
+  reserveCapacity: () => Promise<void>;
 }): Promise<BookingResponse> {
   await input.dependencies.unitOfWork.run(async () => {
-    await input.dependencies.slots.takeCapacity({
-      organizationId: input.organizationId,
-      resourceId: input.resourceId,
-      capacity: input.resourceCapacity,
-      startsAt: input.startsAt,
-      blockedEndsAt: input.blockedEndsAt,
-    });
+    await input.reserveCapacity();
     await input.dependencies.bookings.insert(input.booking);
     await input.dependencies.events.publish(
       BOOKING_EVENT_TYPE.BOOKING_HELD,

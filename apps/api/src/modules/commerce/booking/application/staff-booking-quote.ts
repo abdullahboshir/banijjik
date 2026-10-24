@@ -105,21 +105,17 @@ export async function quoteDepositForBooking(input: {
     if (input.offering.rental.depositAmount !== undefined) {
       return { line, depositRequired: input.offering.rental.depositAmount };
     }
-    const settings = await input.dependencies.settings.read(input.organizationId);
-    const depositRequired = computeDepositRequired({
-      orgMode: settings.depositRequired,
-      orgValue: settings.depositValue,
-      offeringRule: undefined,
-      lineTotal: line.lineNetTotal,
-    });
-    return { line, depositRequired };
   }
 
   const settings = await input.dependencies.settings.read(input.organizationId);
   const depositRequired = computeDepositRequired({
     orgMode: settings.depositRequired,
     orgValue: settings.depositValue,
-    offeringRule: input.offering.service.depositRule,
+    // Only a service carries its own deposit rule; a rental or an event follows the org rule.
+    offeringRule:
+      input.offering.kind === OFFERING_KIND.SERVICE
+        ? input.offering.service.depositRule
+        : undefined,
     lineTotal: line.lineNetTotal,
   });
   return { line, depositRequired };

@@ -113,6 +113,7 @@ export const bookingCreateRequestSchema = z
     startsAt: z.string().datetime(),
     quantity: z.number().int().positive().optional(),
     resourceId: uuidV7Schema.optional(),
+    eventSessionId: uuidV7Schema.optional(),
     note: z.string().trim().min(1).max(MAX_BOOKING_NOTE_LENGTH).optional(),
     contactId: uuidV7Schema.optional(),
     contact: contactLinkCreateSchema.optional(),
@@ -145,11 +146,18 @@ export const bookingVersionRequestSchema = z.strictObject({
   version: z.number().int().positive(),
 });
 
-export const bookingRescheduleRequestSchema = z.strictObject({
-  version: z.number().int().positive(),
-  startsAt: z.string().datetime(),
-  resourceId: uuidV7Schema.optional(),
-});
+/** An EVENT booking moves between sessions; every other kind moves to a new start time. */
+export const bookingRescheduleRequestSchema = z
+  .strictObject({
+    version: z.number().int().positive(),
+    startsAt: z.string().datetime().optional(),
+    eventSessionId: uuidV7Schema.optional(),
+    resourceId: uuidV7Schema.optional(),
+  })
+  .refine((body) => (body.startsAt === undefined) !== (body.eventSessionId === undefined), {
+    message: "start_or_session_required",
+    path: ["startsAt"],
+  });
 
 export const bookingCancelRequestSchema = z.strictObject({
   version: z.number().int().positive(),

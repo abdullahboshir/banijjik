@@ -1,19 +1,14 @@
 import { AUDIT_ACTION } from "@banijjik/contracts";
 import { BOOKING_EVENT_TYPE } from "@banijjik/contracts/booking";
-import type { BookingId, OrganizationId, ResourceId } from "@banijjik/ids";
+import type { BookingId, OrganizationId } from "@banijjik/ids";
 import { Booking } from "../domain/booking.entity.js";
-import type {
-  BookingRepository,
-  BookingUnitOfWork,
-  ResourceSlotUsagePort,
-} from "./ports/booking-repositories.js";
+import type { BookingRepository, BookingUnitOfWork } from "./ports/booking-repositories.js";
 import type { BookingEventPublisher } from "./use-cases/create-booking.use-case.js";
 import type { AuditRecorder } from "../../../../kernel/audit/index.js";
 
 export async function persistRescheduleInTxn(input: {
   dependencies: {
     bookings: BookingRepository;
-    slots: ResourceSlotUsagePort;
     unitOfWork: BookingUnitOfWork;
     events: BookingEventPublisher;
     audit: AuditRecorder;
@@ -23,28 +18,12 @@ export async function persistRescheduleInTxn(input: {
   version: number;
   existing: Booking;
   updated: Booking;
-  resource: { resourceId: ResourceId; capacity: number };
-  startsAt: Date;
-  blockedEndsAt: Date;
+  /** Moves what the booking holds: seats into the new session, or slot buckets onto the new resource. */
+  moveCapacity: () => Promise<void>;
 }): Promise<Booking> {
   let persisted = input.updated;
   await input.dependencies.unitOfWork.run(async () => {
-    const oldResourceId = input.existing.resourceIds[0];
-    if (oldResourceId !== undefined) {
-      await input.dependencies.slots.releaseCapacity({
-        organizationId: input.organizationId,
-        resourceId: oldResourceId,
-        startsAt: input.existing.startsAt,
-        blockedEndsAt: input.existing.blockedEndsAt,
-      });
-    }
-    await input.dependencies.slots.takeCapacity({
-      organizationId: input.organizationId,
-      resourceId: input.resource.resourceId,
-      capacity: input.resource.capacity,
-      startsAt: input.startsAt,
-      blockedEndsAt: input.blockedEndsAt,
-    });
+    await input.moveCapacity();
     persisted = await input.dependencies.bookings.update(input.updated, input.version);
     await input.dependencies.events.publish(
       BOOKING_EVENT_TYPE.BOOKING_RESCHEDULED,
@@ -58,7 +37,7 @@ export async function persistRescheduleInTxn(input: {
       changes: {
         startsAt: {
           from: input.existing.startsAt.toISOString(),
-          to: input.startsAt.toISOString(),
+          to: input.updated.startsAt.toISOString(),
         },
       },
     });

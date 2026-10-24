@@ -92,7 +92,7 @@ export function buildTenantRouters(input: TenantRoutersInput): readonly Router[]
     inventoryRouter,
     directoryRouter,
     expenseRouter,
-    buildEventSessionRouter({ clock, permission }),
+    buildEventSessionRouter({ clock, permission, audit }),
     bookingRouter,
     creditRouter,
     paymentRouter,

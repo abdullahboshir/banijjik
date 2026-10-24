@@ -33,6 +33,14 @@ export function capacityFullError(): DomainRuleError {
   });
 }
 
+/** A full session answers like a full slot: 409, with the sold-out rule. */
+export function eventSoldOutError(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.SLOT_UNAVAILABLE,
+    details: { ruleKey: BOOKING_RULE_KEY.BOOKING_EVENT_SOLD_OUT },
+  });
+}
+
 export function depositRequiredError(): DomainRuleError {
   return new DomainRuleError({
     code: ERROR_CODE.BUSINESS_RULE,

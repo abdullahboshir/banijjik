@@ -2,6 +2,7 @@ import {
   asId,
   type BookingId,
   type ContactId,
+  type EventSessionId,
   type LocationId,
   type MemberId,
   type OfferingId,
@@ -64,6 +65,10 @@ export function toBooking(row: BookingDocument): Booking {
     source: row.source,
     note: row.note,
     holdExpiresAt: row.holdExpiresAt,
+    eventSessionId:
+      row.eventSessionId === null || row.eventSessionId === undefined
+        ? null
+        : asId<EventSessionId>(row.eventSessionId),
     cancellationFeeRetained: row.cancellationFeeRetained
       ? {
           amount: row.cancellationFeeRetained.amount,
@@ -102,6 +107,7 @@ export function bookingDocument(booking: Booking): BookingDocument {
     source: props.source,
     note: props.note,
     holdExpiresAt: props.holdExpiresAt,
+    eventSessionId: props.eventSessionId ?? null,
     cancellationFeeRetained: props.cancellationFeeRetained ?? null,
     history: [...props.history],
     version: props.version,

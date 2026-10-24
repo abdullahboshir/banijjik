@@ -12,6 +12,7 @@ const MAX_TXN_ATTEMPTS = 8;
 export async function runWithTxnRetry<Result>(
   unitOfWork: BookingUnitOfWork,
   work: () => Promise<Result>,
+  onRetryExhausted: () => Error = slotUnavailableError,
 ): Promise<Result> {
   for (let attempt = 1; ; attempt++) {
     try {
@@ -19,7 +20,7 @@ export async function runWithTxnRetry<Result>(
     } catch (error) {
       const isRetryLater = error instanceof AppError && error.code === ERROR_CODE.RETRY_LATER;
       if (isRetryLater && attempt < MAX_TXN_ATTEMPTS) continue;
-      if (isRetryLater) throw slotUnavailableError();
+      if (isRetryLater) throw onRetryExhausted();
       throw error;
     }
   }

@@ -21,6 +21,7 @@ import { Booking } from "../domain/booking.entity.js";
 import { Resource } from "../domain/resource.entity.js";
 import { MongoBookingRepository, MongoResourceRepository } from "./mongo-booking.repositories.js";
 import { MongoResourceSlotUsageRepository } from "./mongo-slot-usage.repository.js";
+import { MongoEventSessionRepository } from "./mongo-event-session.repository.js";
 import { buildExpireHoldsJob } from "../application/jobs/expire-holds.job.js";
 import { buildMarkNoShowsJob } from "../application/jobs/mark-no-shows.job.js";
 import { buildAutoCompleteJob } from "../application/jobs/auto-complete.job.js";
@@ -114,6 +115,7 @@ describe("booking scheduled jobs", () => {
       const job = buildExpireHoldsJob({
         bookings,
         slots,
+        sessions: new MongoEventSessionRepository(),
         unitOfWork: new MongoUnitOfWork(),
         events: noopEvents(),
         clock: systemClock,
@@ -262,6 +264,7 @@ describe("booking scheduled jobs", () => {
 
       const job = buildAutoCompleteJob({
         bookings,
+        sessions: new MongoEventSessionRepository(),
         unitOfWork: new MongoUnitOfWork(),
         events: noopEvents(),
         audit: noopAudit,

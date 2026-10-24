@@ -27,6 +27,8 @@ export interface EventSessionProps {
   readonly seatsSold: number;
   readonly resourceIds: readonly ResourceId[];
   readonly status: EventSessionStatus;
+  /** When a cancel pass has settled every booking of the session; null until then. */
+  readonly bookingsSettledAt: Date | null;
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -54,6 +56,7 @@ export class EventSession {
       | "eventSessionId"
       | "status"
       | "seatsSold"
+      | "bookingsSettledAt"
       | "version"
       | "createdAt"
       | "updatedAt"
@@ -73,6 +76,7 @@ export class EventSession {
       capacity: input.capacity,
       resourceIds: input.resourceIds,
       seatsSold: 0,
+      bookingsSettledAt: null,
       version: 1,
       status: EVENT_SESSION_STATUS.SCHEDULED,
       createdAt: input.now,
@@ -119,6 +123,16 @@ export class EventSession {
     return new EventSession({
       ...this.props,
       status: EVENT_SESSION_STATUS.CANCELLED,
+      updatedAt: now,
+      updatedByUserId: actorUserId,
+    });
+  }
+  /** A past session leaves SCHEDULED so availability and the cancel job stop looking at it. */
+  complete(now: Date, actorUserId: UserId | null): EventSession {
+    this.assertScheduled();
+    return new EventSession({
+      ...this.props,
+      status: EVENT_SESSION_STATUS.COMPLETED,
       updatedAt: now,
       updatedByUserId: actorUserId,
     });

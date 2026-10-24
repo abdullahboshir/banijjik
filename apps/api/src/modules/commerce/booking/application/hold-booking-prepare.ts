@@ -6,7 +6,7 @@ import type { HoldBookingDependencies } from "./use-cases/hold-booking.use-case.
 import { quoteDepositForBooking } from "./staff-booking-quote.js";
 import type { PriceQuoterPort } from "./ports/booking-context-ports.js";
 import { loadActiveOffering } from "./staff-booking-quote.js";
-import { reserveHoldSlot } from "./hold-booking-reserve.js";
+import { reserveHoldSlot, type HoldCapacity } from "./hold-booking-reserve.js";
 
 function computeHoldExpiry(now: Date, holdMinutes: number): Date {
   return new Date(now.getTime() + holdMinutes * 60_000);
@@ -30,9 +30,7 @@ export async function prepareHoldBooking(input: {
   depositRequired: Money;
   holdExpiresAt: Date;
   line: NonNullable<Awaited<ReturnType<PriceQuoterPort["quote"]>>["lines"][0]>;
-  resourceId: import("@banijjik/ids").ResourceId;
-  resourceCapacity: number;
-  memberId: import("@banijjik/ids").MemberId | null;
+  capacity: HoldCapacity;
   now: Date;
 }> {
   const slot = await reserveHoldSlot(input);
@@ -51,12 +49,15 @@ export async function prepareHoldBooking(input: {
     locationId: input.body.locationId,
     offeringId: input.body.offeringId,
     variantId: input.body.variantId,
-    quantity: slot.quantity,
+    quantity: slot.bounds.quantity,
     offering,
   });
   const now = input.dependencies.clock.now();
   return {
-    ...slot,
+    locationId: slot.locationId,
+    offeringId: slot.offeringId,
+    ...slot.bounds,
+    capacity: slot.capacity,
     contactId,
     depositRequired,
     holdExpiresAt: computeHoldExpiry(now, settings.holdMinutes),

@@ -1,9 +1,10 @@
 import { BOOKING_SOURCE } from "@banijjik/contracts/booking";
-import type { OrganizationId, ResourceId, UserId } from "@banijjik/ids";
+import type { OrganizationId, UserId } from "@banijjik/ids";
 import type { BookingHoldBody } from "@banijjik/validation/booking";
 import { Booking } from "../domain/booking.entity.js";
 import type { HoldBookingDependencies } from "./use-cases/hold-booking.use-case.js";
 import { prepareHoldBooking } from "./hold-booking-prepare.js";
+import type { HoldCapacity } from "./hold-booking-reserve.js";
 
 export async function assembleHoldBooking(input: {
   dependencies: HoldBookingDependencies;
@@ -14,10 +15,7 @@ export async function assembleHoldBooking(input: {
   source: typeof BOOKING_SOURCE.STOREFRONT;
 }): Promise<{
   booking: Booking;
-  resourceId: ResourceId;
-  resourceCapacity: number;
-  startsAt: Date;
-  blockedEndsAt: Date;
+  capacity: HoldCapacity;
 }> {
   const prepared = await prepareHoldBooking(input);
   const booking = Booking.createHold({
@@ -32,8 +30,9 @@ export async function assembleHoldBooking(input: {
     startsAt: prepared.startsAt,
     endsAt: prepared.endsAt,
     blockedEndsAt: prepared.blockedEndsAt,
-    resourceIds: [prepared.resourceId],
-    providerMemberId: prepared.memberId,
+    resourceIds: prepared.capacity.resourceIds,
+    providerMemberId: prepared.capacity.memberId,
+    eventSessionId: prepared.capacity.eventSessionId,
     price: {
       unitPrice: prepared.line.unitPrice,
       total: prepared.line.lineNetTotal,
@@ -46,11 +45,5 @@ export async function assembleHoldBooking(input: {
     now: prepared.now,
     actorUserId: input.actorUserId,
   });
-  return {
-    booking,
-    resourceId: prepared.resourceId,
-    resourceCapacity: prepared.resourceCapacity,
-    startsAt: prepared.startsAt,
-    blockedEndsAt: prepared.blockedEndsAt,
-  };
+  return { booking, capacity: prepared.capacity };
 }

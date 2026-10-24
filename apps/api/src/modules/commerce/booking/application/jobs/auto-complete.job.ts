@@ -8,13 +8,19 @@ import { getLogger } from "../../../../../kernel/logger/index.js";
 import { asId, type OrganizationId } from "@banijjik/ids";
 import { buildBookingSettingsReader } from "../booking-settings-reader.js";
 import type { Booking } from "../../domain/booking.entity.js";
+import type { EventSession } from "../../domain/event-session.entity.js";
 import type { BookingRepository, BookingUnitOfWork } from "../ports/booking-repositories.js";
+import type { EventSessionRepository } from "../ports/event-session-repository.js";
 import type { BookingEventPublisher } from "../use-cases/create-booking.use-case.js";
 import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 
+/** A past session has no work left: it leaves SCHEDULED so availability stops offering it. */
+const ENDED_SESSION_BATCH = 100;
+
 export interface AutoCompleteJobDependencies {
   readonly bookings: BookingRepository;
+  readonly sessions: EventSessionRepository;
   readonly unitOfWork: BookingUnitOfWork;
   readonly events: BookingEventPublisher;
   readonly audit: AuditRecorder;
@@ -48,6 +54,18 @@ async function completeOneCandidate(opts: {
   });
 }
 
+async function completeOneSession(opts: {
+  readonly input: AutoCompleteJobDependencies;
+  readonly session: EventSession;
+  readonly now: Date;
+}): Promise<void> {
+  const { input, session, now } = opts;
+  const props = session.toProps();
+  await input.unitOfWork.run(async () => {
+    await input.sessions.update(session.complete(now, null), props.version, session);
+  });
+}
+
 export function buildAutoCompleteJob(input: AutoCompleteJobDependencies): ScheduledJob {
   const settings = buildBookingSettingsReader({
     orgConfig: input.orgConfig,
@@ -77,6 +95,26 @@ export function buildAutoCompleteJob(input: AutoCompleteJobDependencies): Schedu
               err: error,
             },
             "auto-completing one booking failed",
+          );
+        }
+      }
+      const endedSessions = await input.sessions.listEndedSessions({
+        now,
+        limit: ENDED_SESSION_BATCH,
+      });
+      for (const session of endedSessions) {
+        try {
+          await completeOneSession({ input, session, now });
+        } catch (error) {
+          // A session whose booking was just rescheduled loses the version race; next run retries.
+          getLogger().error(
+            {
+              event: "booking.complete_event_session_failed",
+              organizationId,
+              eventSessionId: session.toProps().eventSessionId,
+              err: error,
+            },
+            "completing one ended event session failed",
           );
         }
       }
