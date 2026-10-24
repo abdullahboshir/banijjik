@@ -237,7 +237,7 @@ Core fields (name, phone, address, price, variants, times…) are **not** listed
 - **Bot:** persona `RESPECTFUL_MANAGER`. Shares seat availability and rent, collects intake. Extra handoff topic: deposit refund.
 
 ### 3.7 MATRIMONY_ISLAMIC ও MATRIMONY: বিবাহ ব্যুরো / Marriage bureau
-`status: DRAFT` for both — **data only** (ADR-034). Every biodata field, section, filter, consent, rejection reason and rule (min age 18, guardian phone ≠ own phone, one listing per account, photo policy `NONE`) is seeded JSON; no code knows about marriage. The full spec and the field table are in `docs/16-MATRIMONY-TRACK.md §3.1` and `§4`. Card M.8a ships `seeds/matrimony-islamic.json` (adds a religious-practice section and the `islamic_eligibility` consent) and `seeds/matrimony.json` (general, without them). These are the first templates to enable the `directory` module.
+`status: DRAFT` for both — **data only** (ADR-034). Every biodata field, section, filter, consent, rejection reason, trust-and-safety report reason (`fake_profile`, `already_married`, `inappropriate_content`, `contact_misuse`, `other`) and rule (min age 18, guardian phone ≠ own phone, one listing per account, photo policy `NONE`) is seeded JSON; no code knows about marriage. The full spec and the field table are in `docs/16-MATRIMONY-TRACK.md §3.1` and `§4`. Card M.8a ships `seeds/matrimony-islamic.json` (adds a religious-practice section and the `islamic_eligibility` consent) and `seeds/matrimony.json` (general, without them). These are the first templates to enable the `directory` module.
 
 ## 4. Proof: no industry code needed
 
@@ -269,7 +269,7 @@ Lint guarantee: feature code never reads `industryTemplateKey` (ADR-033). Everyt
 
 **Listing fields and directory block (ADR-127, card M.2):**
 - Entity `listing` fields may carry `listingTier` (`PUBLIC|MEMBERS|UNLOCKED|PRIVATE`), `isFilterable`, `sectionKey`, `minAgeYears` (DATE), `mustDifferFromAccountPhone` (PHONE). Filterable fields must be PUBLIC or MEMBERS.
-- Template `configuration.directory`: `sections`, `consents`, `rejectionReasons`, `listingNumberPrefix`. The two matrimony templates (M.8a) are the first to enable `directory`. Trust-and-safety `reportReasons` is not part of this block and arrives with M.7.
+- Template `configuration.directory`: `sections`, `consents`, `rejectionReasons`, `listingNumberPrefix`. The two matrimony templates (M.8a) are the first to enable `directory`. They also carry the five trust-and-safety `reportReasons` that M.7 A1 defines (`fake_profile`, `already_married`, `inappropriate_content`, `contact_misuse`, `other`).
 - New field type `GEO_BD` validated against the BBS geography registry in contracts.
 
 **Resource on enrollment + security deposit (ADR-074, enrollment):**
