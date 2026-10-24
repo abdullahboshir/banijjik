@@ -3,7 +3,7 @@
 - **Branch:** `s/M.7-api-erasure`, rebased on `origin/main` `247f4d4c`. Code commits: `d613864f`..`4b7d8cb3` (first session, another tool) and the review/fix commit on top (second session, this one).
 - **Model:** Claude Sonnet 5.5 (Claude Code) for the second session.
 - **Plan:** `docs/plans/M.7.md` Part A2 decisions 9–11 and "Refresh A2" (decisions 13–17), which overrides older text.
-- **CI:** CI_LINK_PLACEHOLDER
+- **CI:** [run 40088929901](https://github.com/abdullahboshir/banijjik/actions/runs/40088929901) green (verify, browser, secrets) on the code head. The first run, 40088077867, failed only at the directory README line limit (32 > 30), fixed in the next commit.
 
 ## Done
 - **Contracts / validation / ids / i18n:** `CUSTOMER_OTP_PURPOSE` (`SIGN_IN | ERASE_ACCOUNT`), `CUSTOMER_DATA_EXPORT_SECTION_KEY`, `CUSTOMER_DATA_EXPORT_MAX_ROWS` (1000) and `CUSTOMER_DATA_EXPORT_RULES` (3 per day), the export section/response types, `CustomerEraseResponse`, `CustomerEraseOtpSendResponse`, audit `CUSTOMER_ACCOUNT_ERASED`, event `contact.customerAccount.erased`, `DIRECTORY_SAFETY_RULES.blocksPerAccountMax` (500), `ListingBlockResponse`, two block error keys; `customerAccountEraseRequestSchema`, `listingBlockCreateRequestSchema`; `ListingBlockId`; BN/EN texts (`sms.customerOtpErase`, block errors).
