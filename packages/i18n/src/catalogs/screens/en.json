@@ -1353,6 +1353,7 @@
   "bookkeeping.sourceMANUAL": "Manual",
   "bookkeeping.sourceCOMMISSION": "Staff commission",
   "bookkeeping.sourceENROLLMENT": "Enrollment",
+  "bookkeeping.sourceSALES_RETURN": "Sales return",
   "bookkeeping.moreAccounts": "Load more accounts",
   "setting.bookkeeping.manualEntryOwnerWithoutApproval": "Owner can post manual journals without a PIN approval",
   "menu.credit.purchases": "Credit purchases",

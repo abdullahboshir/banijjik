@@ -1353,6 +1353,7 @@
   "bookkeeping.sourceMANUAL": "ম্যানুয়াল",
   "bookkeeping.sourceCOMMISSION": "স্টাফ কমিশন",
   "bookkeeping.sourceENROLLMENT": "ভর্তি",
+  "bookkeeping.sourceSALES_RETURN": "বিক্রয় ফেরত",
   "bookkeeping.moreAccounts": "আরও হিসাব দেখুন",
   "setting.bookkeeping.manualEntryOwnerWithoutApproval": "মালিক পিনের অনুমোদন ছাড়া ম্যানুয়াল জার্নাল পোস্ট করতে পারবেন",
   "menu.credit.purchases": "ক্রেডিট ক্রয়",

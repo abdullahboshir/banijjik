@@ -78,6 +78,7 @@ function orderWith(status: OrderStatus): OrderResponse {
     },
     fulfillment: { method: "PICKUP" },
     paymentStatus: "UNPAID",
+    returnStatus: "NONE",
     businessDate: "2026-10-24",
     source: "ADMIN",
     approval: null,
