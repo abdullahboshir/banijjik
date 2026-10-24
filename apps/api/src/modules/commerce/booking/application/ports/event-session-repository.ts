@@ -24,7 +24,11 @@ export interface EventSessionRepository {
   /** Give seats back. Throws when the counter cannot cover it, because that is data drift. */
   releaseSeats(change: EventSessionSeatChange): Promise<void>;
   /** Cancelled sessions whose bookings have not been settled yet, oldest session first. */
-  listUnsettledCancellations(limit: number): Promise<readonly EventSession[]>;
+  /** Pages in `eventSessionId` order (the index order); the cursor is the last id of the previous page. */
+  listUnsettledCancellations(input: {
+    readonly afterEventSessionId: EventSessionId | null;
+    readonly limit: number;
+  }): Promise<readonly EventSession[]>;
   /** Mark a cancelled session settled without touching its version. */
   markBookingsSettled(input: {
     readonly eventSessionId: EventSessionId;

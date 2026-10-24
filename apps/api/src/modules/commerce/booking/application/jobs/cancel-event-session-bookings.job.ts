@@ -6,6 +6,7 @@ import {
   BOOKING_TERMINATION_MODE,
   CANCEL_FEE_MODE,
 } from "@banijjik/contracts/booking";
+import type { EventSessionId } from "@banijjik/ids";
 import { getLogger } from "../../../../../kernel/logger/index.js";
 import type { ScheduledJob } from "../../../../../kernel/jobs/index.js";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
@@ -21,7 +22,7 @@ import type { DepositCheckPort } from "../ports/payment-ports.js";
 import { releaseBookingCapacity } from "../event-booking-parts.js";
 import type { BookingEventPublisher } from "../use-cases/create-booking.use-case.js";
 
-/** One run settles a few sessions, each with a page of its bookings; the rest wait for the next tick. */
+/** Sessions read per page; each one settles a page of its bookings per run, the rest wait for the next tick. */
 const CANCELLED_SESSION_BATCH = 10;
 
 interface CancelEventSessionDependencies {
@@ -32,6 +33,8 @@ interface CancelEventSessionDependencies {
   readonly events: BookingEventPublisher;
   readonly audit: AuditRecorder;
   readonly depositCheck: DepositCheckPort;
+  /** Test hook for the page size of the cancelled-session read. */
+  readonly sessionPageSize?: number;
 }
 
 /**
@@ -123,38 +126,51 @@ async function settleOneSession(input: {
   return false;
 }
 
+/** A session that fails is logged and left unsettled; it must not stop the sessions behind it. */
+async function settleSessionSafely(input: {
+  readonly deps: CancelEventSessionDependencies;
+  readonly session: EventSession;
+  readonly organizationId: string;
+  readonly now: Date;
+}): Promise<void> {
+  const { deps, session, organizationId, now } = input;
+  const eventSessionId = session.toProps().eventSessionId;
+  try {
+    const settled = await settleOneSession({ deps, session, organizationId, now });
+    if (settled) return;
+    getLogger().warn(
+      { event: "booking.cancel_event_session_incomplete", organizationId, eventSessionId },
+      "a cancelled event session still has open bookings, another run is needed",
+    );
+  } catch (error) {
+    getLogger().error(
+      { event: "booking.cancel_event_session_failed", organizationId, eventSessionId, err: error },
+      "settling one cancelled event session failed",
+    );
+  }
+}
+
 export function buildCancelEventSessionJob(input: CancelEventSessionDependencies): ScheduledJob {
+  const pageSize = input.sessionPageSize ?? CANCELLED_SESSION_BATCH;
   return {
     jobKey: "booking.cancelEventSession",
     everyMinutes: 1,
     moduleKey: MODULE_KEY.BOOKING,
     run: async (organizationId, now) => {
-      const sessions = await input.sessions.listUnsettledCancellations(CANCELLED_SESSION_BATCH);
-      for (const session of sessions) {
-        const eventSessionId = session.toProps().eventSessionId;
-        try {
-          const settled = await settleOneSession({ deps: input, session, organizationId, now });
-          if (!settled) {
-            getLogger().warn(
-              {
-                event: "booking.cancel_event_session_incomplete",
-                organizationId,
-                eventSessionId,
-              },
-              "a cancelled event session still has open bookings, another run is needed",
-            );
-          }
-        } catch (error) {
-          getLogger().error(
-            {
-              event: "booking.cancel_event_session_failed",
-              organizationId,
-              eventSessionId,
-              err: error,
-            },
-            "settling one cancelled event session failed",
-          );
+      // The cursor moves past every session of a page, so sessions that fail on every run
+      // cannot sit in front of the later ones and starve them.
+      let afterEventSessionId: EventSessionId | null = null;
+      for (;;) {
+        const sessions = await input.sessions.listUnsettledCancellations({
+          afterEventSessionId,
+          limit: pageSize,
+        });
+        for (const session of sessions) {
+          await settleSessionSafely({ deps: input, session, organizationId, now });
         }
+        const lastSession = sessions.at(-1);
+        if (lastSession === undefined || sessions.length < pageSize) return;
+        afterEventSessionId = lastSession.toProps().eventSessionId;
       }
     },
   };

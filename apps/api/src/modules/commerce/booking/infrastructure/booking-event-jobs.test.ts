@@ -502,4 +502,102 @@ describe("event booking scheduled jobs", () => {
       expect(await seatsSoldOf(eventSessionId)).toBe(1);
     });
   });
+
+  it("lists unsettled cancellations in eventSessionId order after the cursor", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const organizationId = asId<OrganizationId>(world.organizationA);
+    const locationId = asId<LocationId>(world.locationA1);
+    const now = new Date("2026-10-26T00:00:00Z");
+
+    await runInOrganizationContext(world.organizationA, async () => {
+      const sessions = new MongoEventSessionRepository();
+      const createdIds: EventSessionId[] = [];
+      for (let index = 0; index < 4; index += 1) {
+        // Later sessions start earlier, so a startsAt sort would give the opposite order.
+        const session = await createSession({
+          organizationId,
+          locationId,
+          capacity: 1,
+          startsAt: new Date(Date.UTC(2026, 10, 20 - index, 4)),
+          endsAt: new Date(Date.UTC(2026, 10, 20 - index, 5)),
+        });
+        await sessions.update(session.cancel(now, null), session.toProps().version, session);
+        createdIds.push(session.toProps().eventSessionId);
+      }
+
+      const firstPage = await sessions.listUnsettledCancellations({
+        afterEventSessionId: null,
+        limit: 2,
+      });
+      const secondPage = await sessions.listUnsettledCancellations({
+        afterEventSessionId: firstPage[1]?.toProps().eventSessionId ?? null,
+        limit: 2,
+      });
+
+      const listed = [...firstPage, ...secondPage].map((row) => row.toProps().eventSessionId);
+      expect(listed).toEqual([...createdIds].sort());
+    });
+  });
+
+  it("the session-cancel job settles a later session even when ten earlier sessions keep failing", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const organizationId = asId<OrganizationId>(world.organizationA);
+    const locationId = asId<LocationId>(world.locationA1);
+    const startsAt = new Date("2026-11-01T04:00:00Z");
+    const endsAt = new Date("2026-11-01T05:00:00Z");
+    const now = new Date("2026-10-26T00:00:00Z");
+
+    await runInOrganizationContext(world.organizationA, async () => {
+      const sessions = new MongoEventSessionRepository();
+      const bookings = new MongoBookingRepository();
+      // The counter holds no seats, so releasing the booking is drift and the session never settles.
+      for (let index = 0; index < 10; index += 1) {
+        const failing = await createSession({
+          organizationId,
+          locationId,
+          capacity: 5,
+          startsAt,
+          endsAt,
+        });
+        const failingId = failing.toProps().eventSessionId;
+        await bookings.insert(
+          seatBooking({
+            organizationId,
+            locationId,
+            eventSessionId: failingId,
+            quantity: 1,
+            status: BOOKING_STATUS.CONFIRMED,
+            startsAt,
+            endsAt,
+            now: startsAt,
+          }),
+        );
+        await sessions.update(failing.cancel(now, null), failing.toProps().version, failing);
+      }
+      const later = await createSession({
+        organizationId,
+        locationId,
+        capacity: 5,
+        startsAt,
+        endsAt,
+      });
+      const laterId = later.toProps().eventSessionId;
+      await sessions.update(later.cancel(now, null), later.toProps().version, later);
+
+      const job = buildCancelEventSessionJob({
+        sessions,
+        bookings,
+        slots: new MongoResourceSlotUsageRepository(),
+        unitOfWork: new MongoUnitOfWork(),
+        events: noopEvents(),
+        audit: noopAudit(),
+        depositCheck: creditOnRequest(),
+        sessionPageSize: 5,
+      });
+      await job.run(organizationId, now);
+
+      const stored = await sessions.findById(laterId);
+      expect(stored?.toProps().bookingsSettledAt).toEqual(now);
+    });
+  });
 });
