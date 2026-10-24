@@ -6,11 +6,13 @@ import {
   buildEnrollmentRouter,
 } from "../modules/commerce/enrollment/index.js";
 import { buildRequestQuoter, type BookingRouterInput } from "./booking-tenant-router.js";
+import { buildEnrollmentPaymentAdapter } from "./enrollment-payment-adapter.js";
 
 export function buildEnrollmentRuntime(input: BookingRouterInput): EnrollmentDependencies {
   const quoter = buildRequestQuoter(input);
   return buildEnrollmentDependencies({
     ...input,
+    payments: buildEnrollmentPaymentAdapter(),
     fee: async (organizationId, body) => {
       const quote = await quoter.quote({
         organizationId: asId<OrganizationId>(organizationId),

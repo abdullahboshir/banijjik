@@ -479,6 +479,7 @@
   "enrollment.errors.already_renewed": "The next period has already been renewed.",
   "enrollment.errors.advance_period": "Freeze is unavailable while a renewed period is waiting to start.",
   "enrollment.errors.not_due": "The current period has not ended.",
+  "enrollment.errors.currency_mismatch": "The paid currency does not match the period fee currency.",
   "permission.enrollment.enrollment.read": "View enrollments",
   "permission.enrollment.enrollment.create": "Create enrollments",
   "permission.enrollment.enrollment.update": "Update enrollments",

@@ -108,7 +108,7 @@ describe("enrollment business rules", () => {
 
   it("refuses every transition outside the lifecycle table", () => {
     const allowed: Record<string, readonly string[]> = {
-      activate: ["PENDING"],
+      activate: ["PENDING", "OVERDUE"],
       freeze: ["ACTIVE"],
       unfreeze: ["FROZEN"],
       cancel: ["PENDING", "ACTIVE", "FROZEN", "OVERDUE"],

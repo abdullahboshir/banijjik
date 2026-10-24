@@ -46,6 +46,14 @@ export async function createEnrollment(
       actorUserId: caller.actorUserId,
     });
     await dependencies.repository.insert(enrollment, period);
+    await dependencies.payments.initializeSummary({
+      organizationId: enrollment.organizationId,
+      enrollmentPeriodId: period.enrollmentPeriodId,
+      contactId: enrollment.billToContactId,
+      locationId: enrollment.locationId,
+      fee: period.fee,
+      now: dependencies.clock.now(),
+    });
     await recordEnrollment(dependencies, enrollment, ENROLLMENT_EVENT_TYPE.ENROLLMENT_CREATED);
     return enrollment;
   });

@@ -7,7 +7,7 @@ Core module for recording, refunding and reversing tenant payments, tracking req
 - Records customer payments across cash, mobile money (bKash, Nagad), bank, card, and store credit.
 - Enforces bKash/Nagad reference uniqueness per organization and method.
 - Append-only payments sequence `PAYMENT`.
-- Pluggable request reader registry for allocating payments to bookings and orders (enrollments follow).
+- Pluggable request reader registry for allocating payments to bookings, orders and enrollment periods.
 - Automatic overpayment to store credit (when contactId provided) or cash change.
 - Reversals mirror allocations and require `PAYMENT_REVERSAL` approval token.
 - Refunds validate against net paid amounts and require approval (unless manager and setting allows).

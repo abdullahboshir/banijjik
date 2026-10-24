@@ -39,6 +39,15 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
       .lean<Enrollment>();
     return row ?? undefined;
   }
+  async findPeriod(
+    organizationId: string,
+    enrollmentPeriodId: string,
+  ): Promise<EnrollmentPeriod | undefined> {
+    const row = await periods()
+      .findOne({ organizationId, enrollmentPeriodId }, projection, options())
+      .lean<EnrollmentPeriod>();
+    return row ?? undefined;
+  }
   async nextPeriod(
     enrollment: Enrollment,
     period: EnrollmentPeriod,

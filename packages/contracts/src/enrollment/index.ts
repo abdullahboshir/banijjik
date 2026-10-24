@@ -69,6 +69,7 @@ export const ENROLLMENT_RULE_KEY = {
   ALREADY_RENEWED: "enrollment.errors.already_renewed",
   ADVANCE_PERIOD: "enrollment.errors.advance_period",
   NOT_DUE: "enrollment.errors.not_due",
+  CURRENCY_MISMATCH: "enrollment.errors.currency_mismatch",
 } as const;
 export const ENROLLMENT_MESSAGE_KEYS = Object.values(ENROLLMENT_RULE_KEY);
 export const ENROLLMENT_JOB = {

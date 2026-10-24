@@ -199,7 +199,7 @@ describe("R1 enrollment lifecycle and catch-up", () => {
 
 import { newId } from "@banijjik/ids";
 import type { Enrollment, EnrollmentPeriod } from "../domain/enrollment.entity.js";
-import type { EnrollmentRepository, EnrollmentSettings } from "./ports.js";
+import type { EnrollmentPaymentPort, EnrollmentRepository, EnrollmentSettings } from "./ports.js";
 import type { EnrollmentDependencies } from "./dependencies.js";
 import { businessDateOf } from "../../booking/index.js";
 
@@ -221,6 +221,7 @@ function reviewFixture() {
       periods.set(period.enrollmentPeriodId, period);
     },
     find: async (key) => rows.get(key),
+    findPeriod: async (_organizationId, key) => periods.get(key),
     currentPeriod: async (row) => {
       const period = periods.get(row.currentEnrollmentPeriodId);
       if (period === undefined) throw new Error("Missing current period");
@@ -267,8 +268,22 @@ function reviewFixture() {
       return true;
     },
   };
+  const payments: EnrollmentPaymentPort = {
+    initializeSummary: vi.fn(),
+    // The stored period status is the truth in this fixture: PAID periods report their fee, the rest nothing.
+    readNetPaid: async ({ enrollmentPeriodId }) => {
+      const period = periods.get(enrollmentPeriodId);
+      return {
+        amount: period?.status === "PAID" ? (period.fee.amount ?? 0) : 0,
+        currency: "BDT" as const,
+      };
+    },
+    capTotalAtNetPaid: vi.fn(),
+    listPeriodIdsOfPayment: async () => [],
+  };
   const dependencies: EnrollmentDependencies = {
     repository,
+    payments,
     context: {
       today: async (_organizationId, date) => businessDateOf(date, "Asia/Dhaka"),
       canRenew: vi.fn(async () => true),
