@@ -1,4 +1,4 @@
-import { CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
+import { CUSTOMER_OTP_PURPOSE, CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
 import type { CustomerAccountId, OrganizationId } from "@banijjik/ids";
 import { ContactPhoneTakenError, customerAccountBlocked, otpInvalid } from "../../domain/errors.js";
 import type { CustomerAuthDependencies } from "../customer-auth-dependencies.js";
@@ -35,6 +35,7 @@ export class VerifyCustomerOtpUseCase {
       maxAttempts: CUSTOMER_OTP_RULES.maxWrongAttempts,
     });
     if (challenge === undefined) throw otpInvalid();
+    if (challenge.purpose !== CUSTOMER_OTP_PURPOSE.SIGN_IN) throw otpInvalid();
     const expectedHash = hashOtpCode(otpSecret, input.phoneE164, input.code);
     if (!sameHash(challenge.codeHash, expectedHash)) throw otpInvalid();
     return this.signIn(input, challenge.otpChallengeId);

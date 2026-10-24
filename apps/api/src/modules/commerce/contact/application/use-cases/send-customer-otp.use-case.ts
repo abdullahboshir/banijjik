@@ -1,4 +1,8 @@
-import { CUSTOMER_OTP_RULES, CONTACT_EVENT_TYPE } from "@banijjik/contracts/contact";
+import {
+  CUSTOMER_OTP_RULES,
+  CUSTOMER_OTP_PURPOSE,
+  CONTACT_EVENT_TYPE,
+} from "@banijjik/contracts/contact";
 import type { CustomerOtpSendResponse } from "@banijjik/contracts/contact";
 import { newId, type OrganizationId } from "@banijjik/ids";
 import { tooManyCodes } from "../../domain/errors.js";
@@ -47,6 +51,7 @@ export class SendCustomerOtpUseCase {
         clock.now().getTime() + answer.expiresInSeconds * MILLISECONDS_PER_SECOND,
       ),
       consumedAt: undefined,
+      purpose: CUSTOMER_OTP_PURPOSE.SIGN_IN,
     };
     await unitOfWork.run(async () => {
       await challenges.replaceForPhone(challenge);

@@ -1,5 +1,5 @@
 import { PREFERRED_LOCALE } from "@banijjik/contracts";
-import { CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
+import { CUSTOMER_OTP_PURPOSE, CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
 import { createTranslator } from "@banijjik/i18n";
 import type { AppConfig } from "../config/index.js";
 import { getRequestContext } from "../kernel/context/index.js";
@@ -18,7 +18,7 @@ const SECONDS_PER_MINUTE = 60;
 export function buildOtpMessageComposer(): OtpMessageComposer {
   const organizations = buildStorefrontOrganizationReader();
   return {
-    async compose(code) {
+    async compose(code, purpose) {
       const { organizationId } = getRequestContext();
       const organization =
         organizationId === undefined
@@ -29,7 +29,9 @@ export function buildOtpMessageComposer(): OtpMessageComposer {
         locale: organization?.defaultLocale ?? PREFERRED_LOCALE.bn,
         brandName: businessName,
       });
-      return translator.t("sms.customerOtp", {
+      const key =
+        purpose === CUSTOMER_OTP_PURPOSE.ERASE_ACCOUNT ? "sms.customerOtpErase" : "sms.customerOtp";
+      return translator.t(key, {
         businessName,
         code,
         minutes: CUSTOMER_OTP_RULES.expiresInSeconds / SECONDS_PER_MINUTE,

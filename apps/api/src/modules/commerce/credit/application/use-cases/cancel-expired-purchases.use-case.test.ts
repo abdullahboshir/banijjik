@@ -96,6 +96,7 @@ function buildHarness(input: {
       findByReference: vi.fn(),
       listByAccount: vi.fn(),
       countPendingByAccount: vi.fn(),
+      listPendingByAccount: vi.fn(),
       listForStaff: vi.fn(),
       listExpiredPendingBatch: listBatch,
     },

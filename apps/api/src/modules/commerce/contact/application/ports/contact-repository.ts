@@ -47,7 +47,7 @@ export interface ContactRepository {
   findActiveByEmail(email: string): Promise<Contact | undefined>;
   list(request: ContactListRequest): Promise<Page<ContactListRow>>;
   /** Throws `ContactPhoneTakenError` like `insert`, and a 409 CONFLICT for a stale version. */
-  update(contact: Contact, expectedVersion: number, actorUserId: UserId): Promise<Contact>;
+  update(contact: Contact, expectedVersion: number, actorUserId: UserId | null): Promise<Contact>;
   /** One batched read: the name of each contact that exists (null when anonymized). */
   findNames(contactIds: readonly ContactId[]): Promise<ReadonlyMap<string, string | null>>;
 }

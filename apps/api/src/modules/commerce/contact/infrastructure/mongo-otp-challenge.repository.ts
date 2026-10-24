@@ -1,3 +1,4 @@
+import { CUSTOMER_OTP_PURPOSE, type CustomerOtpPurpose } from "@banijjik/contracts/contact";
 import { asId, type OtpChallengeId } from "@banijjik/ids";
 import {
   getActiveSession,
@@ -19,6 +20,7 @@ function toChallenge(document: OtpChallengeDocument): OtpChallenge {
     attempts: stored.attempts,
     expiresAt: stored.expiresAt,
     consumedAt: stored.consumedAt,
+    purpose: (stored.purpose as CustomerOtpPurpose) ?? CUSTOMER_OTP_PURPOSE.SIGN_IN,
   };
 }
 
@@ -37,6 +39,7 @@ export class MongoOtpChallengeRepository implements OtpChallengeRepository {
             : { codeCiphertext: challenge.codeCiphertext }),
           attempts: challenge.attempts,
           expiresAt: challenge.expiresAt,
+          purpose: challenge.purpose ?? CUSTOMER_OTP_PURPOSE.SIGN_IN,
         },
       ],
       session,
@@ -53,6 +56,30 @@ export class MongoOtpChallengeRepository implements OtpChallengeRepository {
       .findOneAndUpdate(
         {
           phoneE164: input.phoneE164,
+          consumedAt: { $exists: false },
+          expiresAt: { $gt: input.now },
+          attempts: { $lt: input.maxAttempts },
+        },
+        { $inc: { attempts: 1 } },
+        { returnDocument: "after", ...sessionOption(getActiveSession()) },
+      )
+      .lean<OtpChallengeDocument>();
+    return document === null ? undefined : toChallenge(document);
+  }
+
+  async reserveGuessById(input: {
+    readonly otpChallengeId: string;
+    readonly phoneE164: string;
+    readonly purpose: CustomerOtpPurpose;
+    readonly now: Date;
+    readonly maxAttempts: number;
+  }): Promise<OtpChallenge | undefined> {
+    const document = await this.model()
+      .findOneAndUpdate(
+        {
+          otpChallengeId: input.otpChallengeId,
+          phoneE164: input.phoneE164,
+          purpose: input.purpose,
           consumedAt: { $exists: false },
           expiresAt: { $gt: input.now },
           attempts: { $lt: input.maxAttempts },

@@ -1,4 +1,8 @@
-import { CONTACT_STATUS } from "@banijjik/contracts/contact";
+import {
+  CONTACT_STATUS,
+  type CustomerDataExportParticipant,
+  type CustomerErasureParticipant,
+} from "@banijjik/contracts/contact";
 import { asId, type ContactId, type CustomerAccountId } from "@banijjik/ids";
 import { Router, type RequestHandler } from "express";
 import type { StorefrontConfig } from "../../../config/index.js";
@@ -26,7 +30,6 @@ import type {
   HomeLocationLookup,
 } from "./application/ports/settings-and-locations.js";
 import { buildSendCustomerOtpSmsHandler } from "./application/send-customer-otp-sms.handler.js";
-import { CreateContactUseCase } from "./application/use-cases/create-contact.use-case.js";
 import {
   BlockCustomerAccountUseCase,
   GetCustomerAccountUseCase,
@@ -41,12 +44,16 @@ import {
   AnonymizeContactUseCase,
   ArchiveContactUseCase,
 } from "./application/use-cases/end-contact.use-cases.js";
-import { GetContactUseCase } from "./application/use-cases/get-contact.use-case.js";
 import {
   findOrCreateInlineContact,
   type InlineContactCreate,
 } from "./application/inline-contact-creator.js";
+import { CreateContactUseCase } from "./application/use-cases/create-contact.use-case.js";
+import { GetContactUseCase } from "./application/use-cases/get-contact.use-case.js";
 import { ListContactsUseCase } from "./application/use-cases/list-contacts.use-case.js";
+import { SendCustomerEraseOtpUseCase } from "./application/use-cases/send-customer-erase-otp.use-case.js";
+import { EraseOwnCustomerAccountUseCase } from "./application/use-cases/erase-own-customer-account.use-case.js";
+import { ExportCustomerDataUseCase } from "./application/use-cases/export-customer-data.use-case.js";
 import { SendCustomerOtpUseCase } from "./application/use-cases/send-customer-otp.use-case.js";
 import { UpdateContactUseCase } from "./application/use-cases/update-contact.use-case.js";
 import { VerifyCustomerOtpUseCase } from "./application/use-cases/verify-customer-otp.use-case.js";
@@ -72,10 +79,10 @@ export type {
   ContactCustomFieldReader,
   ContactRoleCatalog,
   CustomerAccessTokenIssuer,
-  OtpMessageComposer,
-  SensitiveValueAccess,
   DedupeModeReader,
   HomeLocationLookup,
+  OtpMessageComposer,
+  SensitiveValueAccess,
 };
 
 export interface ContactTenantDependencies {
@@ -166,6 +173,8 @@ export interface ContactStorefrontDependencies {
   /** 404 `storefront_not_available` unless the business switched customer sign-in on. Built by routes. */
   readonly requireCustomerLogin: RequestHandler;
   readonly authenticateCustomer: RequestHandler;
+  readonly erasureParticipants: readonly CustomerErasureParticipant[];
+  readonly exportParticipants: readonly CustomerDataExportParticipant[];
 }
 
 /** The customer sign-in routes (card M.1). routes/storefront.ts mounts them behind the business pipeline. */
@@ -187,6 +196,8 @@ export function buildContactStorefrontRouterFor(
     limiter: dependencies.limiter,
     tokens: dependencies.tokens,
     otpSecret: dependencies.storefront.otpSecret,
+    erasureParticipants: dependencies.erasureParticipants,
+    exportParticipants: dependencies.exportParticipants,
   };
   const controller = new CustomerAuthController({
     sendOtp: new SendCustomerOtpUseCase(auth),
@@ -194,6 +205,9 @@ export function buildContactStorefrontRouterFor(
     refresh: new RefreshCustomerSessionUseCase(auth),
     logout: new LogoutCustomerUseCase(auth),
     me: new GetStorefrontMeUseCase(auth),
+    sendEraseOtp: new SendCustomerEraseOtpUseCase(auth),
+    eraseAccount: new EraseOwnCustomerAccountUseCase(auth),
+    dataExport: new ExportCustomerDataUseCase(auth),
     cookies: new CustomerCookies({
       isSecure: dependencies.isSecureCookies,
       accessTokenTtlSeconds: dependencies.accessTokenSeconds,
@@ -219,21 +233,7 @@ export function buildCustomerAccountStatusReader(): CustomerAccountStatusReader 
   };
 }
 
-/** Account phone for directory submission rules (guardian phone must differ). */
-export function buildCustomerPhoneReader(): {
-  phoneOf(customerAccountId: CustomerAccountId): Promise<string | undefined>;
-} {
-  const accounts = new MongoCustomerAccountRepository();
-  const contacts = new MongoContactRepository();
-  return {
-    async phoneOf(customerAccountId) {
-      const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
-      if (account === undefined) return undefined;
-      const contact = await contacts.findById(account.contactId);
-      return contact?.phoneE164;
-    },
-  };
-}
+export { buildCustomerPhoneReader } from "./customer-phone-reader.js";
 
 /**
  * The inline `{ create: { name, phone } }` creator for another module's request body (card 3.6's

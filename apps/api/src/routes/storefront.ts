@@ -23,9 +23,15 @@ import {
   buildContactStorefrontRouterFor,
   buildCustomerAccountStatusReader,
 } from "../modules/commerce/contact/index.js";
-import { buildDirectoryStorefrontRouterFor } from "../modules/commerce/directory/index.js";
+import {
+  buildDirectoryStorefrontRouterFor,
+  buildDirectoryErasureParticipantFor,
+  buildDirectoryExportParticipantsFor,
+} from "../modules/commerce/directory/index.js";
 import {
   buildCreditStorefrontRouter,
+  buildCreditErasureParticipant,
+  buildCreditExportParticipant,
   CancelCreditPurchaseUseCase,
   GetCreditPaymentInfoUseCase,
   GetMyCreditsUseCase,
@@ -151,6 +157,30 @@ function creditModuleSwitch(input: StorefrontRouterInput): RequestHandler {
   };
 }
 
+function buildStorefrontCreditRouter(
+  input: StorefrontRouterInput,
+  creditDeps: ReturnType<typeof buildCreditModuleDeps>,
+  auth: {
+    customerAuth: ReturnType<typeof authenticateCustomer>;
+    customerAuthOptional: ReturnType<typeof authenticateCustomerOptional>;
+  },
+) {
+  return buildCreditStorefrontRouter({
+    requireCreditModule: creditModuleSwitch(input),
+    unlockListing: new UnlockListingUseCase(creditDeps),
+    getMyCredits: new GetMyCreditsUseCase(creditDeps),
+    getMyUnlocks: new GetMyUnlocksUseCase(creditDeps),
+    listPacks: new ListActiveCreditPacksUseCase(creditDeps),
+    getPaymentInfo: new GetCreditPaymentInfoUseCase(creditDeps),
+    submitPurchase: new SubmitCreditPurchaseUseCase(creditDeps),
+    listMyPurchases: new ListMyCreditPurchasesUseCase(creditDeps),
+    cancelPurchase: new CancelCreditPurchaseUseCase(creditDeps),
+    limiter: input.rateLimiter,
+    authenticateCustomer: auth.customerAuth,
+    authenticateCustomerOptional: auth.customerAuthOptional,
+  });
+}
+
 function buildStorefrontRouters(
   input: StorefrontRouterInput,
   rateLimiter: RateLimiter,
@@ -162,36 +192,24 @@ function buildStorefrontRouters(
 ) {
   const { config, clock, audit } = input;
   const creditDeps = buildCreditModuleDeps(input);
+  const directoryAdapters = buildDirectoryAdapters({
+    orgConfig: input.orgConfig,
+    manifests: input.manifests,
+    clock,
+  });
 
   const directoryRouter = buildDirectoryStorefrontRouterFor({
     clock,
     audit,
     limiter: rateLimiter,
-    adapters: buildDirectoryAdapters({
-      orgConfig: input.orgConfig,
-      manifests: input.manifests,
-      clock,
-    }),
+    adapters: directoryAdapters,
     authenticateCustomer: auth.customerAuth,
     authenticateCustomerOptional: auth.customerAuthOptional,
     storage: config.storage,
     ...(input.fileOverrides === undefined ? {} : { fileOverrides: input.fileOverrides }),
   });
 
-  const creditRouter = buildCreditStorefrontRouter({
-    requireCreditModule: creditModuleSwitch(input),
-    unlockListing: new UnlockListingUseCase(creditDeps),
-    getMyCredits: new GetMyCreditsUseCase(creditDeps),
-    getMyUnlocks: new GetMyUnlocksUseCase(creditDeps),
-    listPacks: new ListActiveCreditPacksUseCase(creditDeps),
-    getPaymentInfo: new GetCreditPaymentInfoUseCase(creditDeps),
-    submitPurchase: new SubmitCreditPurchaseUseCase(creditDeps),
-    listMyPurchases: new ListMyCreditPurchasesUseCase(creditDeps),
-    cancelPurchase: new CancelCreditPurchaseUseCase(creditDeps),
-    limiter: rateLimiter,
-    authenticateCustomer: auth.customerAuth,
-    authenticateCustomerOptional: auth.customerAuthOptional,
-  });
+  const creditRouter = buildStorefrontCreditRouter(input, creditDeps, auth);
 
   const contactRouter = buildContactStorefrontRouterFor({
     clock,
@@ -207,6 +225,14 @@ function buildStorefrontRouters(
     accessTokenSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
     requireCustomerLogin: customerLoginSwitch(input),
     authenticateCustomer: auth.customerAuth,
+    erasureParticipants: [
+      buildDirectoryErasureParticipantFor({ clock, audit, adapters: directoryAdapters }),
+      buildCreditErasureParticipant(creditDeps),
+    ],
+    exportParticipants: [
+      ...buildDirectoryExportParticipantsFor({ clock, audit, adapters: directoryAdapters }),
+      buildCreditExportParticipant(creditDeps),
+    ],
   });
 
   return { directoryRouter, creditRouter, contactRouter };

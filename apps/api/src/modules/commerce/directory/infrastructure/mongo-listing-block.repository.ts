@@ -52,6 +52,9 @@ export class MongoListingBlockRepository implements ListingBlockRepository {
         [toListingBlockDocument(block)],
         sessionOption(getActiveSession()),
       );
+      if (saved === undefined) {
+        throw new Error("Failed to insert listing block");
+      }
       return toListingBlock(saved.toObject());
     } catch (error) {
       if (

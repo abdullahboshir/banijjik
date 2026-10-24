@@ -121,7 +121,11 @@ export class MongoContactRepository implements ContactRepository {
     return { items: documents.slice(0, limit).map(toListRow), hasNext: documents.length > limit };
   }
 
-  async update(contact: Contact, expectedVersion: number, actorUserId: UserId): Promise<Contact> {
+  async update(
+    contact: Contact,
+    expectedVersion: number,
+    actorUserId: UserId | null,
+  ): Promise<Contact> {
     try {
       const optional = optionalFieldUpdate(contact);
       const saved = await updateVersioned<ContactDocument>({

@@ -1,3 +1,4 @@
+import type { CustomerOtpPurpose } from "@banijjik/contracts/contact";
 import type { ContactId, CustomerAccountId, CustomerSessionId, UserId } from "@banijjik/ids";
 import type { CustomerAccount } from "../../domain/customer-account.entity.js";
 import type { CustomerSession } from "../../domain/customer-session.js";
@@ -48,6 +49,13 @@ export interface OtpChallengeRepository {
     readonly now: Date;
     readonly maxAttempts: number;
   }): Promise<OtpChallenge | undefined>;
+  reserveGuessById(input: {
+    readonly otpChallengeId: string;
+    readonly phoneE164: string;
+    readonly purpose: CustomerOtpPurpose;
+    readonly now: Date;
+    readonly maxAttempts: number;
+  }): Promise<OtpChallenge | undefined>;
   /** Marks the challenge used; false when it was already used. */
   consume(otpChallengeId: string, now: Date): Promise<boolean>;
   findById(otpChallengeId: string): Promise<OtpChallenge | undefined>;
@@ -62,7 +70,7 @@ export interface SmsSender {
 
 /** Builds the SMS text in the business's language, with the business name and the code. */
 export interface OtpMessageComposer {
-  compose(code: string): Promise<string>;
+  compose(code: string, purpose?: CustomerOtpPurpose): Promise<string>;
 }
 
 /** Signs the short-lived access token of a customer for one business. */

@@ -1,3 +1,7 @@
+import type {
+  CustomerDataExportParticipant,
+  CustomerErasureParticipant,
+} from "@banijjik/contracts/contact";
 import type { AuditRecorder } from "../../../../kernel/audit/index.js";
 import type { RateLimiter } from "../../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
@@ -25,4 +29,6 @@ export interface CustomerAuthDependencies {
   readonly tokens: CustomerAccessTokenIssuer;
   /** Seals and hashes one-time codes (`OTP_SECRET`). Never logged. */
   readonly otpSecret: string;
+  readonly erasureParticipants: readonly CustomerErasureParticipant[];
+  readonly exportParticipants: readonly CustomerDataExportParticipant[];
 }
