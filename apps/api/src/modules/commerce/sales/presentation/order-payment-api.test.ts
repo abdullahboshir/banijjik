@@ -83,6 +83,28 @@ function cancel(shop: SalesShop, order: OrderRow) {
 }
 
 describe("orders as payment requests", () => {
+  it("refuses an approval snapshot in the body of POST /refunds (plan 3.5b amendment 1)", async () => {
+    const shop = shopOf(await worldFor(harness, RETAIL));
+    const { order } = await placed(shop);
+    const response = await shop.actor.callWith({
+      method: "post",
+      path: `/orgs/${shop.organizationId}/refunds`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: shop.locationId,
+        method: "CASH",
+        amount: money(100),
+        approvalSnapshot: {
+          approvalId: newId(),
+          approverUserId: newId(),
+          approvedAt: new Date().toISOString(),
+        },
+        allocations: [{ requestType: "ORDER", requestId: order.orderId, amount: money(100) }],
+      },
+    });
+    expect(response.status).toBe(400);
+  });
+
   it("pays an order through PARTIAL and PAID and a refund shows PARTIALLY_REFUNDED", async () => {
     const shop = shopOf(await worldFor(harness, RETAIL));
     const { order } = await placed(shop);
