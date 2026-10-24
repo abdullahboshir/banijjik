@@ -491,5 +491,6 @@
   "permission.enrollment.checkIn.create": "উপস্থিতি নথিভুক্ত করুন",
   "errors.order_total_below_paid": "অর্ডারের মোট মূল্য পরিশোধিত নিট অর্থের চেয়ে কম হতে পারে না।",
   "errors.order_cancel_needs_contact": "যোগাযোগ ছাড়া অর্ডার বাতিল করার আগে পরিশোধিত অর্থ ফেরত দিন।",
-  "errors.order_contact_locked_by_payment": "এই অর্ডারের যোগাযোগ পরিবর্তন করার আগে পরিশোধিত অর্থ ফেরত দিন।"
+  "errors.order_contact_locked_by_payment": "এই অর্ডারের যোগাযোগ পরিবর্তন করার আগে পরিশোধিত অর্থ ফেরত দিন।",
+  "account.commission": "আমার কমিশন"
 }

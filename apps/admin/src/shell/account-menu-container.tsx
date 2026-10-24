@@ -16,6 +16,7 @@ import { ApiError } from "../lib/api/api-error";
 import { seedMyOrganizations } from "../lib/api/me-api";
 import { setLocaleAction } from "../lib/i18n/set-locale.action";
 import { LazyApprovalPinSection } from "./lazy-approval-pin-section";
+import { LazyCommissionMenuLink } from "./lazy-commission-menu-link";
 import { initialsOf } from "./initials";
 import { LazyAccountMenu } from "./lazy-account-menu";
 
@@ -25,6 +26,8 @@ export interface AccountMenuContainerProps {
   currentOrganizationSlug?: string;
   /** Loaded by the server layout; also seeds the TanStack Query cache so the menu needs no request. */
   organizations: MyOrganizationSummary[];
+  /** Present when the business has the commission module and the person may read their own entries. */
+  commissionHref?: string | undefined;
 }
 
 function toMenuOrganizations(
@@ -100,7 +103,12 @@ export function AccountMenuContainer(props: AccountMenuContainerProps): ReactEle
         onSignOut={handleSignOut}
         approvalPinSection={
           currentOrganization === undefined ? undefined : (
-            <LazyApprovalPinSection organizationId={currentOrganization.organizationId} />
+            <>
+              {props.commissionHref === undefined ? null : (
+                <LazyCommissionMenuLink href={props.commissionHref} />
+              )}
+              <LazyApprovalPinSection organizationId={currentOrganization.organizationId} />
+            </>
           )
         }
       />

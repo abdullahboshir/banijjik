@@ -4,6 +4,8 @@ import {
   MODULE_KEY,
   PERMISSION_KEY,
   SEQUENCE_KEY,
+  SETTINGS_TOPIC,
+  SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
 import { COMMISSION_EVENT_TYPE } from "@banijjik/contracts/commission";
@@ -11,7 +13,7 @@ import { defineModule } from "../../../kernel/modules/index.js";
 
 /**
  * The commission manifest (card 3.11, ADR-135). OPTIONAL: it is sold as the `ADDON_COMMISSION`
- * package. It has no menu entries yet; the screens arrive with Part B.
+ * package.
  */
 export const commissionManifest = defineModule({
   key: MODULE_KEY.COMMISSION,
@@ -32,7 +34,39 @@ export const commissionManifest = defineModule({
   routes: {
     admin: ["/orgs/:organizationId/commission"],
   },
-  menu: [],
+  menu: [
+    {
+      menuKey: "commission.entries",
+      groupKey: "money",
+      path: "commission/entries",
+      permissionKey: PERMISSION_KEY.COMMISSION_ENTRY_READ,
+      surface: SURFACE.ADMIN,
+      labelTermKey: "menu.commission.entries",
+      iconKey: "wallet",
+      order: 70,
+    },
+    {
+      menuKey: "commission.payouts",
+      groupKey: "money",
+      path: "commission/payouts",
+      permissionKey: PERMISSION_KEY.COMMISSION_PAYOUT_READ,
+      surface: SURFACE.ADMIN,
+      labelTermKey: "menu.commission.payouts",
+      iconKey: "banknote",
+      order: 80,
+    },
+    {
+      menuKey: "commission.rules",
+      groupKey: "settings",
+      path: "commission/rules",
+      permissionKey: PERMISSION_KEY.COMMISSION_RULE_READ,
+      surface: SURFACE.ADMIN,
+      labelTermKey: "menu.commission.rules",
+      iconKey: "sliders",
+      order: 70,
+      settingsTopicKey: SETTINGS_TOPIC.TEAM,
+    },
+  ],
   settings: [],
   customFieldEntities: [],
   botTools: [],

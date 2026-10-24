@@ -1,5 +1,7 @@
 import {
+  MODULE_KEY,
   ORGANIZATION_STATUS,
+  PERMISSION_KEY,
   type MeResponse,
   type MyOrganizationSummary,
   type ResolvedOrgConfigResponse,
@@ -15,6 +17,7 @@ import { BrandLogo } from "./brand-logo";
 import { BusinessLogo } from "./business-logo";
 import { directoryQueueBadgeCount, withQueueBadge } from "./directory-queue-badge";
 import { buildMenuGroups, settingsHomeHref } from "./menu-groups";
+import { holdsPermission } from "./permissions";
 import { ShellNavigation } from "./shell-navigation";
 import { ShellSidebar } from "./shell-sidebar";
 import { SubscriptionBanners } from "./subscription-banners";
@@ -51,9 +54,10 @@ function topBarOf(input: {
   me: MeResponse;
   organizations: MyOrganizationSummary[];
   orgSlug: string;
+  commissionHref: string | undefined;
   t: Translator["t"];
 }): ReactElement {
-  const { current, me, organizations, orgSlug, t } = input;
+  const { current, me, organizations, orgSlug, commissionHref, t } = input;
   return (
     <TopBar
       logo={
@@ -72,10 +76,22 @@ function topBarOf(input: {
           userName={me.name}
           currentOrganizationSlug={orgSlug}
           organizations={organizations}
+          commissionHref={commissionHref}
         />
       }
     />
   );
+}
+
+/** "My commission" is not a menu entry: staff without the full read permission must still reach their own. */
+function commissionHrefOf(
+  config: ResolvedOrgConfigResponse | undefined,
+  orgSlug: string,
+): string | undefined {
+  if (config === undefined || !config.modules.includes(MODULE_KEY.COMMISSION)) return undefined;
+  if (!holdsPermission(config.permissions, PERMISSION_KEY.COMMISSION_ENTRY_READ_OWN))
+    return undefined;
+  return `/${orgSlug}/commission/mine`;
 }
 
 export interface OrganizationShellProps {
@@ -102,7 +118,14 @@ export async function OrganizationShell(props: OrganizationShellProps): Promise<
   const { t, locale } = await getTranslator();
   const current = organizations.find((organization) => organization.slug === orgSlug);
   if (!current) notFound();
-  const topBar = topBarOf({ current, me, organizations, orgSlug, t });
+  const topBar = topBarOf({
+    current,
+    me,
+    organizations,
+    orgSlug,
+    commissionHref: commissionHrefOf(config, orgSlug),
+    t,
+  });
   if (current.status === ORGANIZATION_STATUS.SUSPENDED) {
     return (
       <AppShell hasSidebar={false} topBar={topBar} sidebar={null} bottomNav={null}>
