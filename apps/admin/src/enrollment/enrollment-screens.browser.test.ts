@@ -101,6 +101,18 @@ async function enrollMember(page: Page): Promise<string> {
   }, pattern.source)) as string;
 }
 
+/** Like `waitForBadge`, but a timeout says what the page shows, so a CI failure names its cause. */
+async function waitForBadgeOrExplain(page: Page, label: string): Promise<void> {
+  try {
+    await waitForBadge(page, label);
+  } catch (error) {
+    const shown = await page.$eval("main", (main) => main.textContent ?? "");
+    throw new Error(`badge "${label}" never appeared; the page shows: ${shown.slice(0, 600)}`, {
+      cause: error,
+    });
+  }
+}
+
 async function tapCheckIn(page: Page, expectedRows: number): Promise<void> {
   await clickButton(page, "main ul li button", (text) => text.includes(MEMBER_NAME));
   await clickButton(page, "main form button[type=submit]", () => true);
@@ -129,9 +141,13 @@ describe("GYM enrollment flow", () => {
     await page.waitForFunction(() => document.querySelector("[role=dialog]") === null);
     await waitForText(page, message("enrollment.detail.updating"));
 
+    // Load the page again instead of clicking while the refresh the payment started is still
+    // running: a click on a button that is re-rendering can be lost (card 3.36).
+    await gotoWhenHydrated(page, detailPath, "main");
+    await waitForBadge(page, message("enrollment.status.PENDING"));
     // The worker is not running here: Activate syncs the paid period itself (3.27 decision 6).
     await clickByName(page, message("enrollment.action.activate"));
-    await waitForBadge(page, message("enrollment.status.ACTIVE"));
+    await waitForBadgeOrExplain(page, message("enrollment.status.ACTIVE"));
 
     await gotoWhenHydrated(page, `${GYM_PATH}/check-ins`, "main");
     await page.type("#check-in-contact", MEMBER_NAME);
