@@ -42,6 +42,7 @@ const RETAIL_MODULES = [
   "pricing",
   "sales",
   "settings",
+  "website",
 ];
 const SALON_MODULES = [
   "accounting",
@@ -60,6 +61,7 @@ const SALON_MODULES = [
   "pricing",
   "sales",
   "settings",
+  "website",
 ];
 
 let harness: IamApiHarness;

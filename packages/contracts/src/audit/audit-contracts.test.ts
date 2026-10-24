@@ -62,6 +62,7 @@ describe("audit vocabulary", () => {
       "enrollment",
       "checkIn",
       "listingReport",
+      "sitePage",
     ]);
   });
 });

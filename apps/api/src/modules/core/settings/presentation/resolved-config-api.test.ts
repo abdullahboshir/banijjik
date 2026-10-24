@@ -44,17 +44,6 @@ const FIELD_PROBE = defineModule({
   customFieldEntities: ["contact"],
 });
 
-const WEBSITE_PROBE = defineModule({
-  ...EMPTY,
-  key: MODULE_KEY.WEBSITE,
-  path: "capability/website",
-  moduleClass: MODULE_CLASS.OPTIONAL,
-  tenantCanDisable: true,
-  routes: { admin: ["/orgs/:organizationId/site"] },
-  settings: [],
-  customFieldEntities: [],
-});
-
 const WORKFLOW_PROBE = defineModule({
   ...EMPTY,
   key: MODULE_KEY.WORKFLOW,
@@ -70,7 +59,6 @@ const WORKFLOW_PROBE = defineModule({
 function probeRouter(): Router {
   const router = Router({ mergeParams: true });
   router.get("/flows", (_request, response) => sendData(response, { module: "workflow" }));
-  router.get("/site", (_request, response) => sendData(response, { module: "website" }));
   return router;
 }
 
@@ -81,7 +69,7 @@ let harness: IamApiHarness;
 beforeAll(async () => {
   harness = await startIamApi({
     tenantRouters: [probeRouter()],
-    extraManifests: [FIELD_PROBE, WEBSITE_PROBE, WORKFLOW_PROBE],
+    extraManifests: [FIELD_PROBE, WORKFLOW_PROBE],
   });
 });
 
@@ -330,7 +318,8 @@ describe("tenant module switches", () => {
     expect(fixed.status).toBe(422);
     expect(fixed.body.error.messageKey).toBe("errors.module_not_tenant_disablable");
     expect(required.status).toBe(422);
-    expect(required.body.error.details.requiredBy).toEqual(["workflow"]);
+    // The real website module is not tenant-disablable (M.6a), so the switch is refused before the dependency check.
+    expect(required.body.error.messageKey).toBe("errors.module_not_tenant_disablable");
     expect(staffWrite.status).toBe(403);
     expect(managerWrite.status).toBe(403);
     expect(foreign.status).toBe(404);

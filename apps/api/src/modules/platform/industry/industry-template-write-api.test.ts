@@ -35,6 +35,7 @@ const RETAIL_MODULES = [
   "pricing",
   "sales",
   "settings",
+  "website",
 ];
 const WITH_BOOKING = [
   "accounting",
@@ -53,6 +54,7 @@ const WITH_BOOKING = [
   "pricing",
   "sales",
   "settings",
+  "website",
 ];
 
 interface TemplateDetail {
