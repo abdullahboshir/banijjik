@@ -15,6 +15,7 @@ export interface OrderLineRow {
   readonly taxClassKey: string | null;
   readonly promotionIds: readonly string[];
   readonly manualDiscount: { type: string; value: number } | null;
+  readonly performedByMemberId: string | null;
 }
 
 export interface MoneyRow {
@@ -102,6 +103,7 @@ export interface OrderLinesInput {
   readonly quantity: number;
   readonly modifierOptionIds?: readonly string[];
   readonly manualDiscount?: { type: string; value: number };
+  readonly performedByMemberId?: string | null;
 }
 
 export interface StockReceiptInput {

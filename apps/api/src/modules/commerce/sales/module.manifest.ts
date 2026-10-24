@@ -46,7 +46,7 @@ export const salesManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.SALES_ORDER_CANCEL),
   ],
   routes: {
-    admin: ["/orgs/:organizationId/orders"],
+    admin: ["/orgs/:organizationId/orders", "/orgs/:organizationId/sales"],
   },
   menu: [
     {

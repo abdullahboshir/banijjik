@@ -9,7 +9,7 @@ import type {
   SalesPerformersQuery,
 } from "@banijjik/validation/sales";
 import { asId, type OrderId, type UserId } from "@banijjik/ids";
-import type { RequestHandler } from "express";
+import type { RequestHandler, Response } from "express";
 import { readTenantCaller } from "../../../../kernel/access/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
 import type {
@@ -37,6 +37,11 @@ import type {
 
 const HTTP_CREATED = 201;
 const HTTP_NO_CONTENT = 204;
+
+/** The query `validate` parsed for the performers lookup (response.locals, not the read-only request.query). */
+function readPerformersQuery(response: Response): SalesPerformersQuery {
+  return response.locals["validated"].query as SalesPerformersQuery;
+}
 
 function orderIdOf(request: Parameters<RequestHandler>[0]): OrderId {
   return asId<OrderId>(String(request.params.orderId));
@@ -179,7 +184,7 @@ export class OrderController {
 
   readonly performers: RequestHandler = async (request, response) => {
     const { allowedLocationIds } = readTenantCaller();
-    const query = request.query as unknown as SalesPerformersQuery;
+    const query = readPerformersQuery(response);
     sendData(response, await this.useCases.listPerformers.execute({ allowedLocationIds, query }));
   };
 }
