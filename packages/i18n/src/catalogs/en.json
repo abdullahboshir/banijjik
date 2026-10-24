@@ -464,6 +464,7 @@
   "errors.payment_method_not_available": "This payment method is not available yet.",
   "errors.sales_return_other_reason_needs_note": "Add a note when the reason is Other.",
   "errors.sales_return_duplicate_line": "A return line is listed twice.",
+  "errors.sales_return_store_credit_needs_contact": "A store-credit refund needs a contact on this order.",
   "errors.payment_reference_taken": "This payment reference has already been used.",
   "errors.deposit_required": "Advance deposit is required to confirm booking.",
   "errors.payment_allocations_invalid": "Payment allocation is invalid.",

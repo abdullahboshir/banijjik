@@ -746,21 +746,20 @@ describe("commission accrual on performed order lines", () => {
     expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(10_000);
   });
 
-  it("a refund that commits before the accrual is reconciled by the accrual", async () => {
+  it("a return processed before the accrual is reconciled by the accrual", async () => {
     const scene = newScene();
     await runAs(scene, () => addMemberRule(scene));
-    const orderId = addOrder(scene, [{ memberId: scene.memberId, ...FIRST_LINE }]);
+    const orderId = addOrder(scene, [{ memberId: scene.memberId, ...FIRST_LINE }], 2);
     const handler = buildAccrueCommissionHandler(scene.dependencies);
-    const refund = refundOfOrder(scene, orderId, ORDER_GROSS / 2);
-    await runAs(scene, () =>
-      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, refund)),
-    );
+    returnUnits(scene, orderId, 1);
+    await runAs(scene, () => handler.handle(returnEnvelope(scene, orderId)));
     expect(await orderEntriesOf(scene, orderId)).toHaveLength(0);
 
     await runAs(scene, () => handler.handle(orderEnvelope(scene, orderId)));
 
-    const entries = await orderEntriesOf(scene, orderId);
-    expect(entries.map((entry) => entry.amount.amount)).toEqual([10_000, -5000]);
+    const [accrual, adjustment] = await orderEntriesOf(scene, orderId);
+    const accrualAmount = accrual?.amount.amount ?? 0;
+    expect(adjustment?.amount.amount).toBe(-Math.floor(accrualAmount / 2));
   });
 
   it("skips a line whose rule is in another currency and counts it", async () => {

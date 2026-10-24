@@ -464,6 +464,7 @@
   "errors.payment_method_not_available": "এই পেমেন্ট পদ্ধতি এখনো চালু হয়নি।",
   "errors.sales_return_other_reason_needs_note": "কারণ 'অন্যান্য' হলে একটি নোট যোগ করুন।",
   "errors.sales_return_duplicate_line": "একটি ফেরত লাইন দুইবার দেওয়া হয়েছে।",
+  "errors.sales_return_store_credit_needs_contact": "স্টোর ক্রেডিটে ফেরতের জন্য এই অর্ডারে একজন যোগাযোগ থাকতে হবে।",
   "errors.payment_reference_taken": "এই পেমেন্ট রেফারেন্সটি আগেই ব্যবহার করা হয়েছে।",
   "errors.deposit_required": "বুকিং নিশ্চিত করতে অগ্রিম ডিপোজিট প্রয়োজন।",
   "errors.payment_allocations_invalid": "পেমেন্ট বরাদ্দ সঠিক নয়।",

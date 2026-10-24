@@ -183,7 +183,7 @@ function refundMethodOf(
   if (method === null) throw refundMethodRequired();
   if (!isAcceptedRefundMethod(method)) throw paymentMethodNotAvailable(method);
   if (method === PAYMENT_METHOD.STORE_CREDIT && contactId === null) {
-    throw salesRuleError(SALES_RULE_KEY.ORDER_CANCEL_NEEDS_CONTACT);
+    throw salesRuleError(SALES_RULE_KEY.SALES_RETURN_STORE_CREDIT_NEEDS_CONTACT);
   }
   return method;
 }

@@ -25,6 +25,8 @@ export const SALES_RULE_KEY = {
   PAYMENT_METHOD_NOT_AVAILABLE: "PAYMENT_METHOD_NOT_AVAILABLE",
   /** A reason OTHER on a return needs a note. */
   SALES_RETURN_OTHER_REASON_NEEDS_NOTE: "SALES_RETURN_OTHER_REASON_NEEDS_NOTE",
+  /** A store-credit refund of a return needs a contact on the order (plan 3.5b amendment 2). */
+  SALES_RETURN_STORE_CREDIT_NEEDS_CONTACT: "SALES_RETURN_STORE_CREDIT_NEEDS_CONTACT",
 } as const;
 
 export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
@@ -48,4 +50,5 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.payment_method_not_available",
   "errors.sales_return_other_reason_needs_note",
   "errors.sales_return_duplicate_line",
+  "errors.sales_return_store_credit_needs_contact",
 ];

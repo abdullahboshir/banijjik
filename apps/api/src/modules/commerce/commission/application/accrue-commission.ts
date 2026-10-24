@@ -216,7 +216,10 @@ export async function accrueCompletedOrder(
     await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.ORDER_LINE, input.orderId);
     const order = await dependencies.orders.readOrder(input.orderId);
     if (order === undefined || order.status !== ORDER_STATUS.COMPLETED) return NOTHING_DONE;
-    return accrueOrderLines(dependencies, order, input.context);
+    const accrued = await accrueOrderLines(dependencies, order, input.context);
+    // A return that committed before this accrual is applied to it now (plan 3.5b amendment 2).
+    const reconciled = await reconcileOrderLinesByReturn(dependencies, order, input.context);
+    return addResults(accrued, reconciled);
   });
 }
 
