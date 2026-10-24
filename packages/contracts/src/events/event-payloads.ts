@@ -2,6 +2,8 @@ import {
   ENROLLMENT_EVENT_TYPE,
   type EnrollmentEventPayload,
   type CheckInEventPayload,
+  type PeriodRevenueRecognizedPayload,
+  type PeriodRevenueClosedPayload,
 } from "../enrollment/index.js";
 import { ACCOUNTING_EVENT_TYPE, EXPENSE_EVENT_TYPE } from "../accounting/accounting-event-type.js";
 import {
@@ -122,6 +124,8 @@ export interface EventPayloadMap {
   readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_OVERDUE]: EnrollmentEventPayload;
   readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_RENEWAL_DUE]: EnrollmentEventPayload;
   readonly [ENROLLMENT_EVENT_TYPE.ENROLLMENT_CHECK_IN_RECORDED]: CheckInEventPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_RECOGNIZED]: PeriodRevenueRecognizedPayload;
+  readonly [ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_CLOSED]: PeriodRevenueClosedPayload;
   readonly [IAM_EVENT_TYPE.USER_REGISTERED]: UserRegisteredPayload;
   readonly [IAM_EVENT_TYPE.ROLE_CREATED]: RolePayload;
   readonly [IAM_EVENT_TYPE.ROLE_PERMISSIONS_CHANGED]: RolePayload;
