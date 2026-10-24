@@ -1,69 +1,53 @@
 import type {
   CheckInResponse,
-  EnrollmentDetailResponse,
   EnrollmentResponse,
+  EnrollmentTransitionResponse,
 } from "@banijjik/contracts/enrollment";
 import type { EnrollmentCreateBody } from "@banijjik/validation/enrollment";
 import { apiFetch } from "../lib/api/api-client";
-import { newId } from "@banijjik/ids";
 
-const base = (organizationId: string) => `/orgs/${organizationId}`;
-export async function listEnrollments(
-  organizationId: string,
-  query = "limit=100",
-): Promise<EnrollmentResponse[]> {
-  return (await apiFetch<EnrollmentResponse[]>(`${base(organizationId)}/enrollments?${query}`))
-    .data;
+function enrollmentsPath(organizationId: string, suffix = ""): string {
+  return `/orgs/${organizationId}/enrollments${suffix}`;
 }
-export async function getEnrollment(
-  organizationId: string,
-  enrollmentId: string,
-): Promise<EnrollmentDetailResponse> {
-  return (
-    await apiFetch<EnrollmentDetailResponse>(`${base(organizationId)}/enrollments/${enrollmentId}`)
-  ).data;
-}
+
+/** `POST …/enrollments`; the same key on a retry gives the same enrollment. */
 export async function createEnrollment(
   organizationId: string,
   body: EnrollmentCreateBody,
+  idempotencyKey: string,
 ): Promise<EnrollmentResponse> {
-  return (
-    await apiFetch<EnrollmentResponse>(`${base(organizationId)}/enrollments`, {
-      method: "POST",
-      body,
-      idempotencyKey: newId(),
-    })
-  ).data;
+  const result = await apiFetch<EnrollmentResponse>(enrollmentsPath(organizationId), {
+    method: "POST",
+    body,
+    idempotencyKey,
+  });
+  return result.data;
 }
-export async function transitionEnrollment(request: {
+
+/** `POST …/enrollments/{id}/{action}` with the version read; a stale version answers 409. */
+export async function transitionEnrollment(input: {
   organizationId: string;
   enrollmentId: string;
   action: string;
   version: number;
-}): Promise<EnrollmentResponse> {
-  const { organizationId, enrollmentId, action, version } = request;
-  return (
-    await apiFetch<{ enrollment: EnrollmentResponse }>(
-      `${base(organizationId)}/enrollments/${enrollmentId}/${action}`,
-      { method: "POST", body: { version }, idempotencyKey: newId() },
-    )
-  ).data.enrollment;
+  idempotencyKey: string;
+}): Promise<EnrollmentTransitionResponse> {
+  const result = await apiFetch<EnrollmentTransitionResponse>(
+    enrollmentsPath(input.organizationId, `/${input.enrollmentId}/${input.action}`),
+    { method: "POST", body: { version: input.version }, idempotencyKey: input.idempotencyKey },
+  );
+  return result.data;
 }
-export async function listCheckIns(
-  organizationId: string,
-  date: string,
-): Promise<CheckInResponse[]> {
-  return (
-    await apiFetch<CheckInResponse[]>(
-      `${base(organizationId)}/check-ins?checkedInOn=${date}&limit=100`,
-    )
-  ).data;
-}
+
 export async function recordCheckIn(
   organizationId: string,
-  body: { locationId: string; contactId: string; enrollmentId?: string },
+  body: { locationId: string; contactId: string },
+  idempotencyKey: string,
 ): Promise<CheckInResponse> {
-  return (
-    await apiFetch<CheckInResponse>(`${base(organizationId)}/check-ins`, { method: "POST", body })
-  ).data;
+  const result = await apiFetch<CheckInResponse>(`/orgs/${organizationId}/check-ins`, {
+    method: "POST",
+    body,
+    idempotencyKey,
+  });
+  return result.data;
 }

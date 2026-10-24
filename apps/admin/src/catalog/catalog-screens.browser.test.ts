@@ -27,6 +27,7 @@ import {
   type SeededPerson,
 } from "../test-support/browser-stack";
 import { publishTemplate } from "../test-support/browser-seed";
+import gymFixture from "../test-support/gym-industry-fixture.json" with { type: "json" };
 import salonFixture from "../test-support/salon-industry-fixture.json" with { type: "json" };
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
 
@@ -316,5 +317,50 @@ describe("the SALON catalog", () => {
     expect(requiresResource).toBe(true);
     expect(servicePath).toMatch(/^\/salon\/catalog\/[0-9a-f-]{36}$/u);
     expect(choices).toContain(SERVICE_NAME);
+  });
+});
+
+describe("the GYM catalog", () => {
+  const PLAN_NAME = "মাসিক মেম্বারশিপ";
+  const ENROLLMENT_TERM = "মেম্বারশিপ";
+
+  it("lets the owner add a one-month plan, which the enrollment sheet then offers", async () => {
+    // The GYM seed template is a DRAFT; this stack has no platform admin to publish it.
+    await publishTemplate(stack, "GYM");
+    const gymOwner = await seedPerson("ফারুক");
+    await seedOrganizationWithBody(gymOwner, {
+      name: "ফিট জিম",
+      slug: "gym",
+      ...gymFixture,
+    });
+    const page = await openPage(stack.browser, PHONE_VIEWPORT);
+    await signInWithCookies(page, gymOwner);
+
+    await gotoWhenHydrated(page, "/gym/catalog/new?kind=PLAN", "#offering-name");
+    await typeInto(page, "#offering-name", PLAN_NAME);
+    await typeInto(page, "#offering-price", "1000");
+    const billingCount = await page.$eval(
+      "#detail-billingCount",
+      (input) => (input as HTMLInputElement).value,
+    );
+    const billingUnit = await page.$eval(
+      "#detail-billing-unit",
+      (select) => (select as HTMLSelectElement).value,
+    );
+    await clickByName(page, message("catalog.editor.saveAndPublish"));
+    await waitForDetailPath(page, "gym");
+    await waitForBadge(page, message("catalog.status.ACTIVE"));
+
+    await gotoWhenHydrated(page, "/gym/enrollments", "main");
+    await clickByName(page, message("enrollment.list.add").replace("{term}", ENROLLMENT_TERM));
+    await page.waitForSelector("#new-enrollment-plan");
+    const choices = await page.$$eval("#new-enrollment-plan option", (options) =>
+      options.map((option) => option.textContent ?? ""),
+    );
+    await closePage(page);
+
+    expect(billingCount).toBe("1");
+    expect(billingUnit).toBe("MONTH");
+    expect(choices).toContain(PLAN_NAME);
   });
 });

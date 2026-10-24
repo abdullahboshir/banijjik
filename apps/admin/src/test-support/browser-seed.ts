@@ -59,3 +59,61 @@ export async function publishTemplate(stack: BrowserStack, templateKey: string):
     await client.close();
   }
 }
+
+/** Creates and publishes a one-month PLAN through the real API, so an enrollment test starts from a known plan. */
+export async function seedMonthlyPlan(
+  person: SeededPerson,
+  slug: string,
+  input: { readonly name: string; readonly priceMinor: number },
+): Promise<{ offeringId: string; variantId: string }> {
+  const organizationId = await organizationIdOf(person, slug);
+  const created = await callApi(`/orgs/${organizationId}/offerings`, {
+    cookies: person.cookies,
+    body: {
+      kind: "PLAN",
+      name: input.name,
+      kindDetails: { billingPeriod: { unit: "MONTH", count: 1 }, freezeAllowed: true },
+      variants: [
+        {
+          name: "Monthly",
+          price: { amount: input.priceMinor, currency: "BDT" },
+          unitKey: "SESSION",
+        },
+      ],
+    },
+  });
+  // Safe: the API answers with the { data: OfferingResponse } envelope (14 section 4).
+  const offering = (await created.json()) as {
+    data: { offeringId: string; version: number; variants: { variantId: string }[] };
+  };
+  await callApi(`/orgs/${organizationId}/offerings/${offering.data.offeringId}/publish`, {
+    cookies: person.cookies,
+    body: { version: offering.data.version },
+  });
+  return {
+    offeringId: offering.data.offeringId,
+    variantId: offering.data.variants[0]?.variantId as string,
+  };
+}
+
+/**
+ * Adds a member contact through the real API. The GYM template requires an emergency phone on every
+ * customer, so an inline contact from a sheet is refused there and the test picks a saved one.
+ */
+export async function seedMember(
+  person: SeededPerson,
+  slug: string,
+  input: { readonly name: string; readonly phone: string; readonly emergencyPhone: string },
+): Promise<void> {
+  const organizationId = await organizationIdOf(person, slug);
+  await callApi(`/orgs/${organizationId}/contacts`, {
+    cookies: person.cookies,
+    body: {
+      contactType: "PERSON",
+      name: input.name,
+      phoneE164: input.phone,
+      contactRoles: ["CUSTOMER"],
+      customFields: { emergency_contact: input.emergencyPhone },
+    },
+  });
+}
