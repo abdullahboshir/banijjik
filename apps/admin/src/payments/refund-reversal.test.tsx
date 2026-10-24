@@ -53,6 +53,7 @@ const MOCK_PAYMENT: PaymentResponse = {
       revenueState: "BEFORE_REVENUE",
     },
   ],
+  writeOffs: [],
   contactId: "0192e2b0-8a71-7000-8000-000000000004",
   receivedByMemberId: "mem-1",
   businessDate: "2026-10-23",
