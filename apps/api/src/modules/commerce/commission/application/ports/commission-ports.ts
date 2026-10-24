@@ -11,6 +11,7 @@ import type {
   CommissionSubjectType,
 } from "@banijjik/contracts/commission";
 import type { PaymentRequestType } from "@banijjik/contracts/payment";
+import type { OrderStatus } from "@banijjik/contracts/sales";
 import type { Money } from "@banijjik/contracts/accounting";
 import type {
   CommissionEntryId,
@@ -134,6 +135,30 @@ export interface BookingCommissionFacts {
 
 export interface CommissionSourceReader {
   readBooking(bookingId: string): Promise<BookingCommissionFacts | undefined>;
+}
+
+/** One line of a sales order, as commission needs it: the performer, the offering and the net money (plan 3.11 Refresh C). */
+export interface OrderCommissionLine {
+  readonly orderLineId: string;
+  readonly offeringId: string;
+  readonly quantity: number;
+  readonly lineNetTotal: Money;
+  readonly lineTax: Money;
+  readonly performedByMemberId: string | null;
+}
+
+export interface OrderCommissionFacts {
+  readonly orderId: string;
+  readonly orderNumber: string | null;
+  readonly locationId: string;
+  readonly status: OrderStatus;
+  readonly grandTotal: Money;
+  readonly lines: readonly OrderCommissionLine[];
+}
+
+export interface CommissionOrderReader {
+  /** Undefined when the order does not exist in this organization. */
+  readOrder(orderId: string): Promise<OrderCommissionFacts | undefined>;
 }
 
 export interface CommissionPaymentReader {

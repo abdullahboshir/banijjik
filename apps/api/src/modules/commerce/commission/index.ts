@@ -13,6 +13,7 @@ import type {
   CommissionMemberNameReader,
   CommissionMemberRoleReader,
   CommissionOfferingReader,
+  CommissionOrderReader,
   CommissionPaymentReader,
   CommissionReferenceReader,
   CommissionSourceReader,
@@ -49,6 +50,7 @@ export type {
   CommissionMemberNameReader,
   CommissionMemberRoleReader,
   CommissionOfferingReader,
+  CommissionOrderReader,
   CommissionPaymentReader,
   CommissionReferenceReader,
   CommissionSourceReader,
@@ -58,6 +60,7 @@ export type {
 /** What the module cannot read itself: other modules' data, adapted in routes/commission-adapters.ts. */
 export interface CommissionReaders {
   readonly bookings: CommissionSourceReader;
+  readonly orders: CommissionOrderReader;
   readonly payments: CommissionPaymentReader;
   readonly offerings: CommissionOfferingReader;
   readonly memberRoles: CommissionMemberRoleReader;
@@ -131,6 +134,7 @@ export function buildAccrualDependencies(input: {
     entries: new MongoCommissionEntryRepository(),
     marks: new MongoCommissionSourceMarkRepository(),
     bookings: readers.bookings,
+    orders: readers.orders,
     payments: readers.payments,
     offerings: readers.offerings,
     memberRoles: readers.memberRoles,

@@ -3,7 +3,8 @@ import { asId, type OrganizationId, type UserId } from "@banijjik/ids";
 import type { EventHandler } from "../../../../../kernel/events/index.js";
 import {
   accrueCompletedBooking,
-  reconcilePaymentBookings,
+  accrueCompletedOrder,
+  reconcilePaymentSources,
   type AccrualDependencies,
   type CommissionEventContext,
 } from "../accrue-commission.js";
@@ -29,7 +30,7 @@ function contextOf(envelope: EventEnvelope<unknown>): CommissionEventContext {
 }
 
 /**
- * Accrues commission when a booking is completed and reconciles it when a payment is refunded or
+ * Accrues commission when a booking or an order is completed and reconciles it when a payment is refunded or
  * reversed. UNORDERED on purpose (plan 3.11, Amendment 1): an ORDERED handler that listens to only
  * some types of a stream waits forever, and the reconcile from the payment summary already gives
  * the same ledger whatever order the events arrive in.
@@ -41,10 +42,21 @@ export function buildAccrueCommissionHandler(
     handlerKey: "commission.accrue",
     moduleKey: MODULE_KEY.COMMISSION,
     eventType: EVENT_TYPE.BOOKING_COMPLETED,
-    alsoHandles: [EVENT_TYPE.PAYMENT_REFUNDED, EVENT_TYPE.PAYMENT_REVERSED],
+    alsoHandles: [
+      EVENT_TYPE.ORDER_COMPLETED,
+      EVENT_TYPE.PAYMENT_REFUNDED,
+      EVENT_TYPE.PAYMENT_REVERSED,
+    ],
     ordering: "UNORDERED",
     async handle(envelope) {
       const context = contextOf(envelope);
+      if (envelope.type === EVENT_TYPE.ORDER_COMPLETED) {
+        await accrueCompletedOrder(dependencies, {
+          orderId: readStringField(envelope.payload, "orderId"),
+          context,
+        });
+        return;
+      }
       if (envelope.type === EVENT_TYPE.BOOKING_COMPLETED) {
         await accrueCompletedBooking(dependencies, {
           bookingId: readStringField(envelope.payload, "bookingId"),
@@ -52,7 +64,7 @@ export function buildAccrueCommissionHandler(
         });
         return;
       }
-      await reconcilePaymentBookings(dependencies, {
+      await reconcilePaymentSources(dependencies, {
         paymentId: readStringField(envelope.payload, "paymentId"),
         context,
       });

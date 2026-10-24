@@ -4,6 +4,7 @@ import {
   type BookingId,
   type CategoryId,
   type OfferingId,
+  type OrderId,
   type OrganizationId,
   type PaymentId,
   type RoleId,
@@ -24,6 +25,7 @@ import {
   registerCommissionEventHandlers,
   type CommissionReaders,
 } from "../modules/commerce/commission/index.js";
+import { buildOrderRepository } from "../modules/commerce/sales/index.js";
 import {
   MongoPaymentRepository,
   MongoPaymentSummaryRepository,
@@ -60,6 +62,31 @@ function buildSourceReader(): CommissionReaders["bookings"] {
         quantity: booking.quantity,
         status: booking.status,
         price: booking.price,
+      };
+    },
+  };
+}
+
+function buildOrderSourceReader(): CommissionReaders["orders"] {
+  const orders = buildOrderRepository();
+  return {
+    async readOrder(orderId) {
+      const order = await orders.findById(asId<OrderId>(orderId));
+      if (order === undefined) return undefined;
+      return {
+        orderId: order.orderId,
+        orderNumber: order.orderNumber,
+        locationId: order.locationId,
+        status: order.status,
+        grandTotal: order.totals.grandTotal,
+        lines: order.lines.map((line) => ({
+          orderLineId: line.orderLineId,
+          offeringId: line.offeringId,
+          quantity: line.quantity,
+          lineNetTotal: line.lineNetTotal,
+          lineTax: line.lineTax,
+          performedByMemberId: line.performedByMemberId,
+        })),
       };
     },
   };
@@ -149,6 +176,7 @@ function buildReferenceReader(orgConfig: OrgConfigService): CommissionReaders["r
 export function buildCommissionReaders(orgConfig: OrgConfigService): CommissionReaders {
   return {
     bookings: buildSourceReader(),
+    orders: buildOrderSourceReader(),
     payments: buildPaymentReader(),
     offerings: buildOfferingReader(),
     memberRoles: buildMemberRoleReader(),

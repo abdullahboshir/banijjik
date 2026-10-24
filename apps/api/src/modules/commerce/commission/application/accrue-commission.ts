@@ -1,176 +1,126 @@
 import type { Money } from "@banijjik/contracts/accounting";
 import { BOOKING_STATUS } from "@banijjik/contracts/booking";
-import {
-  COMMISSION_EVENT_TYPE,
-  COMMISSION_SOURCE_TYPE,
-  type CommissionRuleSnapshot,
-} from "@banijjik/contracts/commission";
-import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
-import {
-  asId,
-  type LocationId,
-  type MemberId,
-  type OrganizationId,
-  type UserId,
-} from "@banijjik/ids";
-import type { Logger } from "../../../../kernel/logger/index.js";
-import type { Clock } from "../../../../kernel/time/index.js";
+import { COMMISSION_SOURCE_TYPE, type CommissionSourceType } from "@banijjik/contracts/commission";
+import { ORDER_STATUS } from "@banijjik/contracts/sales";
+import { asId, type LocationId, type MemberId } from "@banijjik/ids";
 import { businessDateOf } from "../domain/business-date.js";
-import {
-  newAccrualEntry,
-  newRefundAdjustmentEntry,
-  type CommissionEntry,
-} from "../domain/commission-entry.entity.js";
-import { refundAdjustmentDelta } from "../domain/reconcile-commission.js";
+import { newAccrualEntry } from "../domain/commission-entry.entity.js";
 import {
   resolveCommissionRule,
   type CommissionResolution,
-  type CommissionRuleCandidate,
 } from "../domain/resolve-commission-rule.js";
 import type {
   BookingCommissionFacts,
-  CommissionEntryRepository,
-  CommissionEventPublisher,
-  CommissionMemberRoleReader,
-  CommissionOfferingReader,
-  CommissionPaymentReader,
-  CommissionRuleRepository,
-  CommissionSourceMarkRepository,
-  CommissionSourceReader,
-  CommissionTimezoneReader,
-  CommissionUnitOfWork,
+  OrderCommissionFacts,
+  OrderCommissionLine,
 } from "./ports/commission-ports.js";
+import {
+  NOTHING_DONE,
+  addResults,
+  publishRecorded,
+  snapshotOf,
+  type AccrualDependencies,
+  type AccrualResult,
+  type CommissionEventContext,
+} from "./accrual-shared.js";
+import { reconcileSource } from "./reconcile-sources.js";
 
-export interface AccrualDependencies {
-  readonly rules: Pick<CommissionRuleRepository, "listActiveForSubjects">;
-  readonly entries: Pick<CommissionEntryRepository, "insertIfAbsent" | "listBySource">;
-  readonly marks: Pick<CommissionSourceMarkRepository, "touch">;
-  readonly bookings: Pick<CommissionSourceReader, "readBooking">;
-  readonly payments: CommissionPaymentReader;
-  readonly offerings: CommissionOfferingReader;
-  readonly memberRoles: CommissionMemberRoleReader;
-  readonly timezones: CommissionTimezoneReader;
-  readonly events: CommissionEventPublisher;
-  readonly unitOfWork: CommissionUnitOfWork;
-  readonly clock: Clock;
-  readonly logger: Pick<Logger, "debug" | "warn">;
+export type {
+  AccrualDependencies,
+  AccrualResult,
+  CommissionEventContext,
+} from "./accrual-shared.js";
+export { reconcilePaymentSources } from "./reconcile-sources.js";
+
+/** One thing that earns commission: a booking, or one performed line of an order. */
+interface AccrualSource {
+  readonly sourceType: CommissionSourceType;
+  readonly sourceId: string;
+  readonly sourceLineId: string | null;
+  readonly sourceNumber: string | null;
+  readonly memberId: string;
+  readonly locationId: string;
+  readonly offeringId: string;
+  readonly quantity: number;
+  /** The price after discount, without tax (owner decision). */
+  readonly base: Money;
+  /** What a refund is measured against: the booking's total, or the order's grand total. */
+  readonly sourceGrossTotal: Money;
+  /** The ids a log line names, so an operator can find the source. */
+  readonly logFields: Readonly<Record<string, string>>;
 }
 
-export interface CommissionEventContext {
-  readonly organizationId: OrganizationId;
-  readonly actorUserId: UserId | null;
-  readonly occurredAt: Date;
-}
-
-/** What a run did, so a test or a log line can tell a replay from a first run. */
-export interface AccrualResult {
-  readonly accruals: number;
-  readonly adjustments: number;
-  readonly skippedCurrency: number;
-}
-
-const NOTHING_DONE: AccrualResult = { accruals: 0, adjustments: 0, skippedCurrency: 0 };
-
-function orderingKeyOf(memberId: string): string {
-  return `commission:${memberId}`;
-}
-
-function snapshotOf(rule: CommissionRuleCandidate): CommissionRuleSnapshot {
-  return {
-    commissionRuleId: rule.commissionRuleId,
-    subjectType: rule.subjectType,
-    targetType: rule.targetType,
-    calculation: rule.calculation,
-    percentBasisPoints: rule.percentBasisPoints,
-    fixedAmount: rule.fixedAmount,
-  };
-}
-
-function sumOf(entries: readonly CommissionEntry[], currency: Money["currency"]): Money {
-  return { amount: entries.reduce((total, entry) => total + entry.amount.amount, 0), currency };
-}
-
-async function publishRecorded(
+async function resolveSourceRule(
   dependencies: AccrualDependencies,
-  entry: CommissionEntry,
-): Promise<void> {
-  await dependencies.events.publish(
-    COMMISSION_EVENT_TYPE.ENTRY_RECORDED,
-    { commissionEntryId: entry.commissionEntryId },
-    { orderingKey: orderingKeyOf(entry.memberId) },
-  );
-}
-
-type ProvidedBooking = BookingCommissionFacts & { readonly providerMemberId: string };
-
-/** The price after discount, without tax: the base the commission is taken from (owner decision). */
-function baseOf(booking: ProvidedBooking): Money {
-  return {
-    amount: booking.price.total.amount - booking.price.tax.amount,
-    currency: booking.price.currency,
-  };
-}
-
-async function resolveBookingRule(
-  dependencies: AccrualDependencies,
-  booking: ProvidedBooking,
+  source: AccrualSource,
 ): Promise<CommissionResolution | undefined> {
-  const offering = await dependencies.offerings.readOffering(booking.offeringId);
+  const offering = await dependencies.offerings.readOffering(source.offeringId);
   if (offering === undefined) return undefined;
-  const roleIds = await dependencies.memberRoles.roleIdsAt(
-    booking.providerMemberId,
-    booking.locationId,
-  );
+  const roleIds = await dependencies.memberRoles.roleIdsAt(source.memberId, source.locationId);
   const rules = await dependencies.rules.listActiveForSubjects({
-    memberId: booking.providerMemberId,
+    memberId: source.memberId,
     roleIds,
   });
   return resolveCommissionRule(
     {
-      memberId: booking.providerMemberId,
+      memberId: source.memberId,
       roleIds,
-      offeringId: booking.offeringId,
+      offeringId: source.offeringId,
       offeringKind: offering.kind,
       categoryIds: offering.categoryIds,
-      base: baseOf(booking),
-      quantity: booking.quantity,
+      base: source.base,
+      quantity: source.quantity,
     },
     rules,
   );
 }
 
-/**
- * Writes the ACCRUAL of a completed booking that has a provider and a matching rule. A replay finds
- * the accrual already there and writes nothing. Runs inside the caller's transaction.
- */
-async function accrueBooking(
+function logUnresolvedRule(
   dependencies: AccrualDependencies,
-  booking: ProvidedBooking,
-  context: CommissionEventContext,
-): Promise<AccrualResult> {
-  const resolution = await resolveBookingRule(dependencies, booking);
-  if (resolution === undefined) return NOTHING_DONE;
+  source: AccrualSource,
+  resolution: CommissionResolution,
+): AccrualResult | undefined {
   if (resolution.outcome === "NO_RULE") {
-    dependencies.logger.debug({ bookingId: booking.bookingId }, "commission.no_rule");
+    dependencies.logger.debug(source.logFields, "commission.no_rule");
     return NOTHING_DONE;
   }
   if (resolution.outcome === "CURRENCY_MISMATCH") {
     dependencies.logger.warn(
-      { bookingId: booking.bookingId, commissionRuleId: resolution.commissionRuleId },
+      { ...source.logFields, commissionRuleId: resolution.commissionRuleId },
       "commission.accrual_skipped_currency",
     );
     return { ...NOTHING_DONE, skippedCurrency: 1 };
   }
+  return undefined;
+}
+
+/**
+ * Writes the ACCRUAL of one source when a rule matches. A replay finds the accrual already there
+ * (the unique sequence 1 per source and member) and writes nothing. Runs inside the caller's
+ * transaction.
+ */
+async function accrueSource(
+  dependencies: AccrualDependencies,
+  source: AccrualSource,
+  context: CommissionEventContext,
+): Promise<AccrualResult> {
+  const resolution = await resolveSourceRule(dependencies, source);
+  if (resolution === undefined) return NOTHING_DONE;
+  const skipped = logUnresolvedRule(dependencies, source, resolution);
+  if (skipped !== undefined) return skipped;
+  if (resolution.outcome !== "MATCHED") return NOTHING_DONE;
   const timeZone = await dependencies.timezones.read(context.organizationId);
   const entry = newAccrualEntry({
     organizationId: context.organizationId,
-    memberId: asId<MemberId>(booking.providerMemberId),
-    locationId: asId<LocationId>(booking.locationId),
-    sourceId: booking.bookingId,
-    sourceNumber: booking.bookingNumber,
+    memberId: asId<MemberId>(source.memberId),
+    locationId: asId<LocationId>(source.locationId),
+    sourceType: source.sourceType,
+    sourceId: source.sourceId,
+    sourceLineId: source.sourceLineId,
+    sourceNumber: source.sourceNumber,
     amount: resolution.amount,
-    base: baseOf(booking),
-    sourceGrossTotal: booking.price.total,
+    base: source.base,
+    sourceGrossTotal: source.sourceGrossTotal,
     ruleSnapshot: snapshotOf(resolution.rule),
     businessDate: businessDateOf(context.occurredAt, timeZone),
     now: dependencies.clock.now(),
@@ -182,97 +132,49 @@ async function accrueBooking(
   return { ...NOTHING_DONE, accruals: 1 };
 }
 
-/**
- * Brings the net of one member's entries for one source in line with the source's cumulative
- * refund (ADR-135). Only the delta is written, so a replay, a late refund event and a refund
- * that arrived before the completion all end with the same ledger.
- */
-async function reconcileMember(
-  dependencies: AccrualDependencies,
-  memberEntries: readonly CommissionEntry[],
-  context: CommissionEventContext,
-): Promise<AccrualResult> {
-  const accrual = memberEntries.find((entry) => entry.sequence === 1);
-  if (accrual === undefined) return NOTHING_DONE;
-  const refundedRead = await dependencies.payments.readRefunded(
-    PAYMENT_REQUEST_TYPE.BOOKING,
-    accrual.sourceId,
-  );
-  const currency = accrual.sourceGrossTotal.currency;
-  if (refundedRead !== undefined && refundedRead.currency !== currency) {
-    dependencies.logger.warn(
-      { sourceId: accrual.sourceId, memberId: accrual.memberId },
-      "commission.reconcile_skipped_currency",
-    );
-    return { ...NOTHING_DONE, skippedCurrency: 1 };
-  }
-  const refunded: Money = {
-    amount: Math.min(refundedRead?.amount ?? 0, accrual.sourceGrossTotal.amount),
-    currency,
-  };
-  const delta = refundAdjustmentDelta({
-    accrual: accrual.amount,
-    sourceGrossTotal: accrual.sourceGrossTotal,
-    refunded,
-    currentNet: sumOf(memberEntries, currency),
-  });
-  if (delta === 0) return NOTHING_DONE;
-  const timeZone = await dependencies.timezones.read(context.organizationId);
-  const adjustment = newRefundAdjustmentEntry({
-    organizationId: context.organizationId,
-    memberId: accrual.memberId,
-    locationId: accrual.locationId,
-    sourceId: accrual.sourceId,
-    sourceNumber: accrual.sourceNumber,
-    sequence: Math.max(...memberEntries.map((entry) => entry.sequence)) + 1,
-    amount: { amount: delta, currency },
-    base: accrual.base,
-    sourceGrossTotal: accrual.sourceGrossTotal,
-    refundedTotalSeen: refunded,
-    ruleSnapshot: accrual.ruleSnapshot,
-    businessDate: businessDateOf(context.occurredAt, timeZone),
-    now: dependencies.clock.now(),
-    actorUserId: context.actorUserId,
-  });
-  const outcome = await dependencies.entries.insertIfAbsent(adjustment);
-  // A parallel reconcile took this sequence. Failing makes the event run again with a fresh read, which then finds delta 0.
-  if (outcome === "exists") throw new Error("commission sequence taken by a parallel reconcile");
-  await publishRecorded(dependencies, adjustment);
-  return { ...NOTHING_DONE, adjustments: 1 };
-}
+type ProvidedBooking = BookingCommissionFacts & { readonly providerMemberId: string };
 
-function groupByMember(entries: readonly CommissionEntry[]): CommissionEntry[][] {
-  const groups = new Map<string, CommissionEntry[]>();
-  for (const entry of entries) {
-    const group = groups.get(entry.memberId) ?? [];
-    group.push(entry);
-    groups.set(entry.memberId, group);
-  }
-  return [...groups.values()];
-}
-
-function addResults(left: AccrualResult, right: AccrualResult): AccrualResult {
+function accrualSourceOfBooking(booking: ProvidedBooking): AccrualSource {
   return {
-    accruals: left.accruals + right.accruals,
-    adjustments: left.adjustments + right.adjustments,
-    skippedCurrency: left.skippedCurrency + right.skippedCurrency,
+    sourceType: COMMISSION_SOURCE_TYPE.BOOKING,
+    sourceId: booking.bookingId,
+    sourceLineId: null,
+    sourceNumber: booking.bookingNumber,
+    memberId: booking.providerMemberId,
+    locationId: booking.locationId,
+    offeringId: booking.offeringId,
+    quantity: booking.quantity,
+    base: {
+      amount: booking.price.total.amount - booking.price.tax.amount,
+      currency: booking.price.currency,
+    },
+    sourceGrossTotal: booking.price.total,
+    logFields: { bookingId: booking.bookingId },
   };
 }
 
-async function reconcileBooking(
-  dependencies: AccrualDependencies,
-  bookingId: string,
-  context: CommissionEventContext,
-): Promise<AccrualResult> {
-  const entries = await dependencies.entries.listBySource(
-    COMMISSION_SOURCE_TYPE.BOOKING,
-    bookingId,
-  );
-  let result = NOTHING_DONE;
-  for (const memberEntries of groupByMember(entries)) {
-    result = addResults(result, await reconcileMember(dependencies, memberEntries, context));
-  }
-  return result;
+/** A performed line earns on its net amount without tax; the refund ratio uses the whole order (ADR-135). */
+function accrualSourceOfLine(
+  order: OrderCommissionFacts,
+  line: OrderCommissionLine,
+  memberId: string,
+): AccrualSource {
+  return {
+    sourceType: COMMISSION_SOURCE_TYPE.ORDER_LINE,
+    sourceId: order.orderId,
+    sourceLineId: line.orderLineId,
+    sourceNumber: order.orderNumber,
+    memberId,
+    locationId: order.locationId,
+    offeringId: line.offeringId,
+    quantity: line.quantity,
+    base: {
+      amount: line.lineNetTotal.amount - line.lineTax.amount,
+      currency: line.lineNetTotal.currency,
+    },
+    sourceGrossTotal: order.grandTotal,
+    logFields: { orderId: order.orderId, orderLineId: line.orderLineId },
+  };
 }
 
 /** `booking.booking.completed`: accrue (once), then reconcile against any refund that came first. */
@@ -286,41 +188,53 @@ export async function accrueCompletedBooking(
     const booking = await dependencies.bookings.readBooking(input.bookingId);
     if (booking === undefined || booking.status !== BOOKING_STATUS.COMPLETED) return NOTHING_DONE;
     if (booking.providerMemberId === null) return NOTHING_DONE;
-    const existing = await dependencies.entries.listBySource(
-      COMMISSION_SOURCE_TYPE.BOOKING,
-      input.bookingId,
+    // A replay finds the accrual already written and goes straight to reconcile.
+    const accrued = await accrueSource(
+      dependencies,
+      accrualSourceOfBooking({ ...booking, providerMemberId: booking.providerMemberId }),
+      input.context,
     );
-    // A replay of the completion finds the accrual and goes straight to reconcile.
-    const accrued =
-      existing.length > 0
-        ? NOTHING_DONE
-        : await accrueBooking(
-            dependencies,
-            { ...booking, providerMemberId: booking.providerMemberId },
-            input.context,
-          );
-    const reconciled = await reconcileBooking(dependencies, input.bookingId, input.context);
+    const reconciled = await reconcileSource(
+      dependencies,
+      { sourceType: COMMISSION_SOURCE_TYPE.BOOKING, sourceId: input.bookingId },
+      input.context,
+    );
     return addResults(accrued, reconciled);
   });
 }
 
-/** `payment.payment.refunded` / `reversed`: reconcile every booking the payment touched that already has an accrual. */
-export async function reconcilePaymentBookings(
+/**
+ * `sales.order.completed`: one accrual per performed line (plan 3.11 Refresh C). Each line has its
+ * own unique sequence 1, so a replay writes nothing. A line without a performer earns nothing.
+ */
+export async function accrueCompletedOrder(
   dependencies: AccrualDependencies,
-  input: { readonly paymentId: string; readonly context: CommissionEventContext },
+  input: { readonly orderId: string; readonly context: CommissionEventContext },
 ): Promise<AccrualResult> {
   return dependencies.unitOfWork.run(async () => {
-    const allocations = await dependencies.payments.readAllocations(input.paymentId);
-    const bookingIds = new Set(
-      allocations
-        .filter((allocation) => allocation.requestType === PAYMENT_REQUEST_TYPE.BOOKING)
-        .map((allocation) => allocation.requestId),
+    await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.ORDER_LINE, input.orderId);
+    const order = await dependencies.orders.readOrder(input.orderId);
+    if (order === undefined || order.status !== ORDER_STATUS.COMPLETED) return NOTHING_DONE;
+    const accrued = await accrueOrderLines(dependencies, order, input.context);
+    const reconciled = await reconcileSource(
+      dependencies,
+      { sourceType: COMMISSION_SOURCE_TYPE.ORDER_LINE, sourceId: input.orderId },
+      input.context,
     );
-    let result = NOTHING_DONE;
-    for (const bookingId of bookingIds) {
-      await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.BOOKING, bookingId);
-      result = addResults(result, await reconcileBooking(dependencies, bookingId, input.context));
-    }
-    return result;
+    return addResults(accrued, reconciled);
   });
+}
+
+async function accrueOrderLines(
+  dependencies: AccrualDependencies,
+  order: OrderCommissionFacts,
+  context: CommissionEventContext,
+): Promise<AccrualResult> {
+  let result = NOTHING_DONE;
+  for (const line of order.lines) {
+    if (line.performedByMemberId === null) continue;
+    const source = accrualSourceOfLine(order, line, line.performedByMemberId);
+    result = addResults(result, await accrueSource(dependencies, source, context));
+  }
+  return result;
 }

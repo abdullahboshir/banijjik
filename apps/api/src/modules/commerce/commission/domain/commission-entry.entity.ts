@@ -53,7 +53,11 @@ export interface NewCommissionEntryInput {
   readonly organizationId: OrganizationId;
   readonly memberId: MemberId;
   readonly locationId: LocationId;
+  /** BOOKING unless the entry comes from an order line (plan 3.11 Refresh C). */
+  readonly sourceType?: CommissionSourceType | undefined;
   readonly sourceId: string;
+  /** Set for an ORDER_LINE entry: the line the commission was earned on. */
+  readonly sourceLineId?: string | null | undefined;
   readonly sourceNumber: string | null;
   readonly sequence: number;
   readonly amount: Money;
@@ -67,12 +71,12 @@ export interface NewCommissionEntryInput {
 }
 
 function newEntry(input: NewCommissionEntryInput, entryKind: CommissionEntryKind): CommissionEntry {
-  const { now, actorUserId, ...fields } = input;
+  const { now, actorUserId, sourceType, sourceLineId, ...fields } = input;
   return {
     ...fields,
     commissionEntryId: asId<CommissionEntryId>(newId()),
-    sourceType: COMMISSION_SOURCE_TYPE.BOOKING,
-    sourceLineId: null,
+    sourceType: sourceType ?? COMMISSION_SOURCE_TYPE.BOOKING,
+    sourceLineId: sourceLineId ?? null,
     entryKind,
     payoutId: null,
     createdAt: now,
