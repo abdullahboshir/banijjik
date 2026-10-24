@@ -106,6 +106,7 @@ function startWorker(mongoUri: string): ChildProcess {
       DB_PLATFORM_URL: withDatabaseName(mongoUri, "browser_platform"),
       DB_TENANT_SHARED_URL: withDatabaseName(mongoUri, "browser_tenant"),
       REDIS_URL,
+      CORS_ALLOWED_ORIGINS: ADMIN_ORIGIN,
       AUTH_ACCESS_TOKEN_SECRET: TEST_ACCESS_TOKEN_SECRET,
     },
   });
@@ -128,9 +129,9 @@ export async function startBrowserStack(): Promise<BrowserStack> {
     replSet: { count: 1, storageEngine: "wiredTiger" },
   });
   const api = startApi(replicaSet.getUri());
+  await waitForUrl(`${API_ORIGIN}/health`, "the API");
   const worker = startWorker(replicaSet.getUri());
   const admin = startAdmin();
-  await waitForUrl(`${API_ORIGIN}/health`, "the API");
   await waitForUrl(`${ADMIN_ORIGIN}/sign-in`, "the admin app");
   const browser = await puppeteer.launch({ executablePath: chromePath(), headless: true });
   return {

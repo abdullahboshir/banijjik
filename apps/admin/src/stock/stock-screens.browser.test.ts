@@ -95,14 +95,19 @@ describe("stock at two branches", () => {
     try {
       const tenant = client.db("browser_tenant");
       const deadline = Date.now() + 15_000;
+      let posted = false;
       while (Date.now() < deadline) {
-        const entry = await tenant.collection("journals").findOne({
+        const entry = await tenant.collection("journal_entries").findOne({
           sourceType: "STOCK",
           postingKey: "stock_receipt",
         });
-        if (entry !== null) break;
+        if (entry !== null) {
+          posted = true;
+          break;
+        }
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
+      expect(posted).toBe(true);
     } finally {
       await client.close();
     }
