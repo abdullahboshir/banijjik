@@ -13,6 +13,7 @@ import type { Enrollment, EnrollmentPeriod } from "../domain/enrollment.entity.j
 import type { EnrollmentSettings } from "./ports.js";
 import { addDays, daysBetween } from "../domain/period-dates.js";
 import { transitionEnrollment } from "./transition-enrollment.js";
+import { syncPeriodPaymentStatus } from "./sync-period-payment.js";
 import { recordEnrollment, type EnrollmentDependencies } from "./dependencies.js";
 
 type JobState = {
@@ -58,9 +59,14 @@ async function runEnrollmentJob(
     if (input.jobKey === ENROLLMENT_JOB.RENEW)
       enrollment = await prepareRenewal(dependencies, enrollment, input.now);
     if (enrollment.status === ENROLLMENT_STATUS.FROZEN) return;
+    // Sync inside the transaction, before the status is read: a just-paid period is never marked overdue (decision 6).
+    const period = await syncPeriodPaymentStatus(
+      dependencies,
+      await dependencies.repository.currentPeriod(enrollment),
+    );
     const state: JobState = {
       enrollment,
-      period: await dependencies.repository.currentPeriod(enrollment),
+      period,
       today: await dependencies.context.today(enrollment.organizationId, input.now),
       settings: await dependencies.context.settings(enrollment.organizationId),
     };
@@ -153,15 +159,26 @@ async function prepareRenewal(
     ).enrollment;
   }
   if (enrollment.status === ENROLLMENT_STATUS.PENDING && today >= enrollment.startsOn) {
-    const settings = await dependencies.context.settings(enrollment.organizationId);
-    if (!settings.requirePayment)
-      return (
-        await transitionEnrollment(
-          dependencies,
-          { ...callerOf(enrollment), action: "activate" },
-          true,
-        )
-      ).enrollment;
+    const activated = await activateDuePending(dependencies, enrollment);
+    if (activated !== undefined) return activated;
   }
   return enrollment;
+}
+/** A future start activates on its date once the first period is paid (decision 7). */
+async function activateDuePending(
+  dependencies: EnrollmentDependencies,
+  enrollment: Enrollment,
+): Promise<Enrollment | undefined> {
+  const settings = await dependencies.context.settings(enrollment.organizationId);
+  const period = await syncPeriodPaymentStatus(
+    dependencies,
+    await dependencies.repository.currentPeriod(enrollment),
+  );
+  const paid =
+    period.status === ENROLLMENT_PERIOD_STATUS.PAID ||
+    period.status === ENROLLMENT_PERIOD_STATUS.WAIVED;
+  if (settings.requirePayment && !paid) return undefined;
+  return (
+    await transitionEnrollment(dependencies, { ...callerOf(enrollment), action: "activate" }, true)
+  ).enrollment;
 }

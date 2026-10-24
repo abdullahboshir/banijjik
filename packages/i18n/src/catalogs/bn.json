@@ -479,6 +479,7 @@
   "enrollment.errors.already_renewed": "পরবর্তী মেয়াদ ইতিমধ্যে নবায়ন করা হয়েছে।",
   "enrollment.errors.advance_period": "নবায়িত মেয়াদ শুরুর অপেক্ষায় থাকলে স্থগিত রাখা যাবে না।",
   "enrollment.errors.not_due": "বর্তমান মেয়াদ শেষ হয়নি।",
+  "enrollment.errors.currency_mismatch": "পরিশোধিত মুদ্রা মেয়াদের ফি-এর মুদ্রার সাথে মিলছে না।",
   "permission.enrollment.enrollment.read": "ভর্তি দেখুন",
   "permission.enrollment.enrollment.create": "ভর্তি তৈরি করুন",
   "permission.enrollment.enrollment.update": "ভর্তি হালনাগাদ করুন",

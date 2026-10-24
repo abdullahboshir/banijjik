@@ -27,6 +27,10 @@ export interface CheckIn {
 export interface EnrollmentRepository {
   insert(enrollment: Enrollment, period: EnrollmentPeriod): Promise<void>;
   find(enrollmentId: string): Promise<Enrollment | undefined>;
+  findPeriod(
+    organizationId: string,
+    enrollmentPeriodId: string,
+  ): Promise<EnrollmentPeriod | undefined>;
   nextPeriod(
     enrollment: Enrollment,
     period: EnrollmentPeriod,
@@ -55,6 +59,27 @@ export interface EnrollmentSettings {
   readonly blockOverdue: boolean;
   readonly lockPrice: boolean;
   readonly refundPolicy: string;
+}
+export interface EnrollmentPaymentPort {
+  /** Inside the create / renew transaction. Idempotent (payment's ensureSummary). */
+  initializeSummary(input: {
+    organizationId: string;
+    enrollmentPeriodId: string;
+    contactId: string;
+    locationId: string;
+    fee: Money;
+    now: Date;
+  }): Promise<void>;
+  /** Net paid (allocated − refunded) in minor units, read with the active session. Zero when no summary exists. */
+  readNetPaid(input: { organizationId: string; enrollmentPeriodId: string }): Promise<Money>;
+  /** Lowers the summary total to the net paid amount (cancel). Never raises it. */
+  capTotalAtNetPaid(input: {
+    organizationId: string;
+    enrollmentPeriodId: string;
+    now: Date;
+  }): Promise<void>;
+  /** The ENROLLMENT period ids a payment allocates to (payment event handler). */
+  listPeriodIdsOfPayment(paymentId: string): Promise<readonly string[]>;
 }
 export interface EnrollmentContext {
   canRenew(

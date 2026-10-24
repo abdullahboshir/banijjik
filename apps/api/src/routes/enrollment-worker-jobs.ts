@@ -1,6 +1,11 @@
 import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 import { ENROLLMENT_RULE_KEY } from "@banijjik/contracts/enrollment";
-import { buildEnrollmentJobs } from "../modules/commerce/enrollment/index.js";
+import {
+  buildEnrollmentJobs,
+  buildSyncEnrollmentPaymentsHandler,
+  type EnrollmentDependencies,
+} from "../modules/commerce/enrollment/index.js";
+import { registerEventHandler } from "../kernel/events/index.js";
 import { registerScheduledJob, type ScheduledJob } from "../kernel/jobs/index.js";
 import { getRequestContext, runWithRequestContext } from "../kernel/context/index.js";
 import { createIdempotencyMiddleware } from "../kernel/idempotency/index.js";
@@ -16,8 +21,10 @@ import type { ModuleRegistry } from "../kernel/modules/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 
 type WorkerInput = { clock: Clock; registry: ModuleRegistry; orgConfig: OrgConfigService };
-/** Jobs already run in a validated organization context; they reach that organization's active locations. */
-export function buildEnrollmentWorkerJobs(input: WorkerInput): readonly ScheduledJob[] {
+export type { WorkerInput };
+
+/** The worker's enrollment dependencies: full access parts plus the active-location fee guard. */
+export function buildEnrollmentWorkerRuntime(input: WorkerInput): EnrollmentDependencies {
   const access = buildAccessParts({
     clock: input.clock,
     registry: input.registry,
@@ -41,7 +48,12 @@ export function buildEnrollmentWorkerJobs(input: WorkerInput): readonly Schedule
       });
     return fee(organizationId, body);
   };
-  return buildEnrollmentJobs(runtime).map(withConfigVersion);
+  return runtime;
+}
+
+/** Jobs already run in a validated organization context; they reach that organization's active locations. */
+export function buildEnrollmentWorkerJobs(input: WorkerInput): readonly ScheduledJob[] {
+  return buildEnrollmentJobs(buildEnrollmentWorkerRuntime(input)).map(withConfigVersion);
 }
 function withConfigVersion(job: ScheduledJob): ScheduledJob {
   const organizations = buildOrganizationConfigSource();
@@ -59,4 +71,5 @@ function withConfigVersion(job: ScheduledJob): ScheduledJob {
 }
 export function registerEnrollmentWorkerJobs(input: WorkerInput): void {
   for (const job of buildEnrollmentWorkerJobs(input)) registerScheduledJob(job);
+  registerEventHandler(buildSyncEnrollmentPaymentsHandler(buildEnrollmentWorkerRuntime(input)));
 }

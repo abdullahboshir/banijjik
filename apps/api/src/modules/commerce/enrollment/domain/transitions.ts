@@ -13,7 +13,8 @@ export function transitionRefused(messageKey: string = ENROLLMENT_RULE_KEY.TRANS
 export function assertTransition(enrollment: Enrollment, action: EnrollmentAction): void {
   const states = ENROLLMENT_STATUS;
   const allowed = {
-    activate: [states.PENDING],
+    // A paid current period lifts an OVERDUE enrollment back to ACTIVE (card 3.27, ADR-139).
+    activate: [states.PENDING, states.OVERDUE],
     freeze: [states.ACTIVE],
     unfreeze: [states.FROZEN],
     cancel: [states.PENDING, states.ACTIVE, states.FROZEN, states.OVERDUE],

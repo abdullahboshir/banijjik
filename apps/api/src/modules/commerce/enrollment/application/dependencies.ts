@@ -10,11 +10,17 @@ import type { Clock } from "../../../../kernel/time/index.js";
 import type { ResourceExclusiveHoldPort } from "../../booking/index.js";
 import type { ApprovalVerifier } from "../../../core/iam/index.js";
 import type { Enrollment, EnrollmentPeriod } from "../domain/enrollment.entity.js";
-import type { EnrollmentRepository, EnrollmentContext, EnrollmentCaller } from "./ports.js";
+import type {
+  EnrollmentRepository,
+  EnrollmentContext,
+  EnrollmentCaller,
+  EnrollmentPaymentPort,
+} from "./ports.js";
 
 export interface EnrollmentDependencies {
   readonly repository: EnrollmentRepository;
   readonly context: EnrollmentContext;
+  readonly payments: EnrollmentPaymentPort;
   readonly holds: ResourceExclusiveHoldPort;
   readonly unitOfWork: { run<Result>(work: () => Promise<Result>): Promise<Result> };
   readonly audit: AuditRecorder;

@@ -5,6 +5,7 @@ import {
   ENROLLMENT_RULE_KEY,
   ENROLLMENT_REFUND_POLICY,
   type EnrollmentAction,
+  type EnrollmentStatus,
 } from "@banijjik/contracts/enrollment";
 import type { Money } from "@banijjik/contracts/catalog";
 import { newId } from "@banijjik/ids";
@@ -18,6 +19,7 @@ import {
 import { addBillingPeriod, addDays } from "../domain/period-dates.js";
 import { refundableAmount } from "../domain/refunds.js";
 import type { TransitionInput } from "./ports.js";
+import { syncPeriodPaymentStatus } from "./sync-period-payment.js";
 import {
   auditFields,
   checkVersion,
@@ -82,10 +84,7 @@ export async function transitionEnrollment(
       },
       enrollment.version,
     );
-    const event =
-      next.status === ENROLLMENT_STATUS.COMPLETED
-        ? ENROLLMENT_EVENT_TYPE.ENROLLMENT_COMPLETED
-        : events[input.action];
+    const event = eventForTransition(input.action, next.status);
     if (input.action === "renew" && automated && advancePeriod !== undefined) {
       await dependencies.audit.record({
         action: event,
@@ -107,8 +106,32 @@ export async function transitionEnrollment(
       );
     }
     if (input.action !== "cancel") return { enrollment: saved };
+    await capPeriodSummaries(dependencies, saved);
     return cancellationResult(dependencies, saved, today);
   });
+}
+/** Completion can arrive through several actions; it always emits the completed event. */
+function eventForTransition(
+  action: EnrollmentAction,
+  status: EnrollmentStatus,
+): (typeof events)[EnrollmentAction] {
+  if (status === ENROLLMENT_STATUS.COMPLETED) return ENROLLMENT_EVENT_TYPE.ENROLLMENT_COMPLETED;
+  return events[action];
+}
+/** A cancelled enrollment owes nothing more: every non-waived period's summary total drops to its net paid (decision 4). */
+async function capPeriodSummaries(
+  dependencies: EnrollmentDependencies,
+  enrollment: Enrollment,
+): Promise<void> {
+  const now = dependencies.clock.now();
+  for (const period of await dependencies.repository.periods(enrollment.enrollmentId)) {
+    if (period.status === ENROLLMENT_PERIOD_STATUS.WAIVED) continue;
+    await dependencies.payments.capTotalAtNetPaid({
+      organizationId: enrollment.organizationId,
+      enrollmentPeriodId: period.enrollmentPeriodId,
+      now,
+    });
+  }
 }
 async function cancellationResult(
   dependencies: EnrollmentDependencies,
@@ -179,10 +202,15 @@ async function activateEnrollment(
 ): Promise<Enrollment> {
   const settings = await dependencies.context.settings(state.input.organizationId);
   if (state.today < state.enrollment.startsOn) transitionRefused(ENROLLMENT_RULE_KEY.START_DATE);
+  // Staff activating right after a payment must not wait for the worker (decision 6).
+  const period = await syncPeriodPaymentStatus(dependencies, state.period, state.input.actorUserId);
   const paid =
-    state.period.status === ENROLLMENT_PERIOD_STATUS.PAID ||
-    state.period.status === ENROLLMENT_PERIOD_STATUS.WAIVED;
-  if (settings.requirePayment && !paid) transitionRefused(ENROLLMENT_RULE_KEY.PAYMENT_REQUIRED);
+    period.status === ENROLLMENT_PERIOD_STATUS.PAID ||
+    period.status === ENROLLMENT_PERIOD_STATUS.WAIVED;
+  // Being overdue means unpaid: recovery needs the current period paid even when activation
+  // generally does not require payment (decision 7).
+  const mustPay = settings.requirePayment || state.enrollment.status === ENROLLMENT_STATUS.OVERDUE;
+  if (mustPay && !paid) transitionRefused(ENROLLMENT_RULE_KEY.PAYMENT_REQUIRED);
   return { ...state.enrollment, status: ENROLLMENT_STATUS.ACTIVE };
 }
 function validateRenewalTiming(state: TransitionState): void {
@@ -231,8 +259,9 @@ async function appendRenewalPeriod(
     : await dependencies.context.fee(input.organizationId, enrollment);
   const startsOn = addDays(period.periodEndsOn, 1);
   const enrollmentPeriodId = newId();
+  const now = dependencies.clock.now();
   await dependencies.repository.insertPeriod({
-    ...auditFields(input, enrollment.locationId, dependencies.clock.now()),
+    ...auditFields(input, enrollment.locationId, now),
     enrollmentPeriodId,
     enrollmentId: enrollment.enrollmentId,
     periodNumber: period.periodNumber + 1,
@@ -245,6 +274,14 @@ async function appendRenewalPeriod(
     sessionsUsed: 0,
     status: ENROLLMENT_PERIOD_STATUS.OPEN,
     version: 1,
+  });
+  await dependencies.payments.initializeSummary({
+    organizationId: enrollment.organizationId,
+    enrollmentPeriodId,
+    contactId: enrollment.billToContactId,
+    locationId: enrollment.locationId,
+    fee,
+    now,
   });
   return automated ? { ...enrollment, currentEnrollmentPeriodId: enrollmentPeriodId } : enrollment;
 }
