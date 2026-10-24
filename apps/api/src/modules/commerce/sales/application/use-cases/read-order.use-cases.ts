@@ -28,7 +28,7 @@ export class GetOrderUseCase {
     const order = await this.dependencies.orders.findById(input.orderId);
     if (order === undefined) throw recordNotFound();
     assertLocationAllowed(order.locationId, input.allowedLocationIds);
-    const paymentStatus = await this.dependencies.payments.read(order.orderId);
+    const paymentStatus = await this.dependencies.payments.readTotals(order.orderId);
     return {
       ...toOrderResponse(order, paymentStatus),
       contactName: await this.contactNameOf(order),
@@ -55,13 +55,16 @@ export class ListOrdersUseCase {
       ...new Set(page.items.flatMap((row) => (row.contactId === null ? [] : [row.contactId]))),
     ];
     const names = await this.dependencies.contacts.findNames(contactIds);
+    const totals = await this.dependencies.payments.readTotalsMany(
+      page.items.map((row) => row.orderId),
+    );
     return {
       items: await Promise.all(
         page.items.map(async (row) =>
           toOrderListItem({
             row,
             contactName: row.contactId === null ? null : (names.get(row.contactId) ?? null),
-            paymentTotals: await this.dependencies.payments.read(row.orderId),
+            paymentTotals: totals.get(row.orderId) ?? { paidMinor: 0, refundedMinor: 0 },
           }),
         ),
       ),

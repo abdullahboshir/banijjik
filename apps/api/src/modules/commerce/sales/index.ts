@@ -1,3 +1,6 @@
+import type { OrderRepository } from "./application/ports/sales-ports.js";
+import type { OrderId } from "@banijjik/ids";
+import { MongoOrderRepository } from "./infrastructure/mongo-order.repositories.js";
 import type { Router } from "express";
 import { registerScheduledJob } from "../../../kernel/jobs/index.js";
 import {
@@ -32,4 +35,11 @@ export function registerSalesScheduledJobs(ports: SalesJobPorts): void {
   const sales = buildSalesJobDependencies(ports);
   registerScheduledJob(buildExpireDraftsJob(sales));
   registerScheduledJob(buildAutoCancelPlacedJob(sales));
+}
+
+export type { OrderPaymentPort, OrderRepository } from "./application/ports/sales-ports.js";
+export type { PaymentTotals } from "./domain/payment-status.js";
+export function buildOrderSnapshotReader(): { read: OrderRepository["findById"] } {
+  const orders = new MongoOrderRepository();
+  return { read: (orderId: OrderId) => orders.findById(orderId) };
 }

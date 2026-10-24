@@ -200,3 +200,5 @@ export function buildPaymentPostingSourceAdapter(
 ): import("../accounting/index.js").PaymentPostingSource {
   return buildPaymentPostingSource({ requestReaders });
 }
+
+export { settleRequestTermination } from "./application/use-cases/settle-request-termination.js";

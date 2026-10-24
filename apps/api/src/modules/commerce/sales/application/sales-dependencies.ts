@@ -5,7 +5,7 @@ import type {
   OrderCounter,
   OrderEventPublisher,
   OrderRepository,
-  PaymentSummaryReader,
+  OrderPaymentPort,
   SalesApprovalVerifier,
   SalesCatalogReader,
   SalesContactReader,
@@ -35,7 +35,7 @@ export interface SalesDependencies {
   readonly settings: SalesSettingsReader;
   readonly stock: SalesStockLedger;
   readonly approvals: SalesApprovalVerifier;
-  readonly payments: PaymentSummaryReader;
+  readonly payments: OrderPaymentPort;
   readonly limits: LimitGuard;
   readonly owner: SalesOwnerReader;
   readonly unitCosts: SalesUnitCostReader;

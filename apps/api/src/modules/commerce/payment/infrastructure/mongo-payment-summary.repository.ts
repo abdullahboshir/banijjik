@@ -54,6 +54,21 @@ function toDomain(doc: PaymentSummaryDocument): PaymentSummary {
 }
 
 export class MongoPaymentSummaryRepository implements PaymentSummaryRepository {
+  async findByRequests(
+    organizationId: OrganizationId,
+    requestType: PaymentRequestType,
+    requestIds: readonly string[],
+  ): Promise<readonly PaymentSummary[]> {
+    const rows = await getPaymentSummaryModel()
+      .find(
+        { organizationId, requestType, requestId: { $in: requestIds } },
+        { _id: 0 },
+        sessionOption(getActiveSession()),
+      )
+      .lean<PaymentSummaryDocument[]>();
+    return rows.map(toDomain);
+  }
+
   async findByRequest(
     organizationId: OrganizationId,
     requestType: PaymentRequestType,

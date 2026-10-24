@@ -9,6 +9,8 @@ import {
   permissionDefinition,
 } from "@banijjik/contracts";
 import {
+  SALES_ADVANCE_VALUE_SETTING_KEY,
+  SALES_ADVANCE_VALUE_DEFAULT,
   SALES_ADVANCE_REQUIRED,
   SALES_ADVANCE_REQUIRED_DEFAULT,
   SALES_ADVANCE_REQUIRED_SETTING_KEY,
@@ -59,6 +61,13 @@ export const salesManifest = defineModule({
     },
   ],
   settings: [
+    {
+      settingKey: SALES_ADVANCE_VALUE_SETTING_KEY,
+      value: { kind: "INTEGER", min: 0, max: Number.MAX_SAFE_INTEGER },
+      systemDefault: SALES_ADVANCE_VALUE_DEFAULT,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
     {
       settingKey: SALES_AUTO_CONFIRM_SETTING_KEY,
       value: { kind: "BOOLEAN" },

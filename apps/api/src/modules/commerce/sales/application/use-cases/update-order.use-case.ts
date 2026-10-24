@@ -85,6 +85,14 @@ export class UpdateOrderUseCase {
       if (existing.status !== ORDER_STATUS.DRAFT && quoteChanged) {
         await this.restock(args, settings.allowNegativeStock);
       }
+      if (existing.status !== ORDER_STATUS.DRAFT) {
+        await this.dependencies.payments.updateTotal({
+          organizationId: input.organizationId,
+          orderId: edited.orderId,
+          total: edited.totals.grandTotal,
+          now: actor.now,
+        });
+      }
       const saved = await this.dependencies.orders.update(edited, input.body.version);
       await this.dependencies.events.publish(
         SALES_EVENT_TYPE.ORDER_UPDATED,
@@ -100,7 +108,10 @@ export class UpdateOrderUseCase {
       return saved;
     });
     // The answer carries the stored version, so the next PATCH can send it back.
-    return toOrderResponse(persisted, await this.dependencies.payments.read(persisted.orderId));
+    return toOrderResponse(
+      persisted,
+      await this.dependencies.payments.readTotals(persisted.orderId),
+    );
   }
 
   /**

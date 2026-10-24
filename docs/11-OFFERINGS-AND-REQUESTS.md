@@ -117,10 +117,12 @@ CANCELLED: from DRAFT, PLACED, CONFIRMED, PACKED.
 ### 4.3 Payment status (derived, never set by hand)
 `UNPAID` → `PARTIAL` → `PAID` from Σ allocations vs `grandTotal`; `REFUNDED` / `PARTIALLY_REFUNDED` when refunds exist. A request is **closed** when its status is terminal and its payment status is `PAID`, `REFUNDED` or zero-total. Dues reports list unclosed requests with a due.
 
-### 4.4 COD advance (owner decision: setting, default off)
-- Settings: `sales.advance.required` (`NONE` default \| `DELIVERY_CHARGE` \| `FIXED` \| `PERCENT`), `sales.advance.value`.
-- When required, PLACED → CONFIRMED needs allocated payments ≥ the required advance. The bot asks for it (bKash/Nagad number from `payment.methods`, the customer sends the transaction ID). The seller or gateway verifies it, a Payment is recorded, then auto-confirm runs if enabled.
-- The advance is a liability (customer advance) until the order ships. See the journal matrix (§10).
+### 4.4 Order advance (owner decision: setting, default off)
+- `sales.advance.required`: `NONE` (default) | `FIXED` | `PERCENT` | `FULL`. `DELIVERY_CHARGE` waits for Phase 5 delivery charges.
+- `sales.advance.value`: integer ≥ 0, default 0. FIXED is minor units in the organization currency, capped at `grandTotal`; PERCENT is clamped to 0–100 and rounded up in minor units; FULL requires `grandTotal`; NONE requires zero.
+- PLACED → CONFIRMED checks net allocated payments (allocated minus refunded) against the required advance inside the confirm transaction. Zero required confirms without payment.
+- Auto-confirm at place applies only to NONE. Auto-confirm after a payment, and the bot/storefront advance prompt, are follow-ups.
+- The advance is a liability until completion (shipping recognition follows in Phase 5); see the journal matrix (§10).
 
 ## 5. Booking (module `booking`)
 

@@ -123,6 +123,11 @@ export interface SetSummaryTotalInput {
 }
 
 export interface PaymentSummaryRepository {
+  findByRequests(
+    organizationId: OrganizationId,
+    requestType: PaymentRequestType,
+    requestIds: readonly string[],
+  ): Promise<readonly PaymentSummary[]>;
   findByRequest(
     organizationId: OrganizationId,
     requestType: PaymentRequestType,

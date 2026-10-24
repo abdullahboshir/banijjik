@@ -1,3 +1,4 @@
+import { buildOrderPaymentAdapter } from "./order-payment-adapter.js";
 import {
   ERROR_CODE,
   PERMISSION_KEY,
@@ -170,14 +171,6 @@ function unitCostReaderOf(): SalesTenantPorts["unitCosts"] {
   };
 }
 
-/**
- * Card 3.8 replaces this with the payment `PaymentSummary` projection. Until then an order can
- * have no payment, so every total is zero (decision 8).
- */
-function paymentReaderOf(): SalesTenantPorts["payments"] {
-  return { read: async () => ({ paidMinor: 0, refundedMinor: 0 }) };
-}
-
 /** Everything sales cannot build itself, plus the two guards the router mounts per route. */
 export function buildSalesTenantPorts(input: SalesRouterInput): SalesTenantPorts {
   const currencies = buildOrganizationCurrencyReader();
@@ -203,7 +196,7 @@ export function buildSalesTenantPorts(input: SalesRouterInput): SalesTenantPorts
       },
     },
     unitCosts: unitCostReaderOf(),
-    payments: paymentReaderOf(),
+    payments: buildOrderPaymentAdapter(),
   };
 }
 
@@ -235,6 +228,6 @@ export function buildSalesJobPortsForWorker(input: {
       permission: unusedPermissionGuard,
       idempotency: unusedGuard,
     }),
-    payments: paymentReaderOf(),
+    payments: buildOrderPaymentAdapter(),
   };
 }

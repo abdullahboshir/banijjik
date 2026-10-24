@@ -1,6 +1,6 @@
 import { AUDIT_ACTION, ERROR_CODE, MODULE_KEY } from "@banijjik/contracts";
 import { SALES_CANCEL_REASON, SALES_EVENT_TYPE } from "@banijjik/contracts/sales";
-import { asId, type OrganizationId } from "@banijjik/ids";
+import { asId, newId, type OrganizationId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
 import { registerIamApiModels } from "../../../../test-support/iam-api-harness.js";
@@ -285,5 +285,62 @@ describe("the hourly sales passes", () => {
 
     expect((await orderRow(shop, broken.order.orderId)).status).toBe("PLACED");
     expect((await orderRow(shop, behind.order.orderId)).status).toBe("CANCELLED");
+  });
+  it("auto-cancels a paid order once on catch-up and credits 500 at a fixed early-Dhaka clock", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const shop = shopOf(world);
+    await setSetting(shop, "sales.placedAutoCancelHours", AUTO_CANCEL_AFTER_HOURS);
+    const pack = await shelfOf(shop);
+    const placed = await placedOrderOf(shop, pack);
+    const orderId = placed.order.orderId;
+    const paid = await shop.actor.callWith({
+      method: "post",
+      path: `/orgs/${shop.organizationId}/payments`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: shop.locationId,
+        method: "CASH",
+        amount: { amount: 500, currency: placed.order.totals.grandTotal.currency },
+        allocations: [
+          {
+            requestType: "ORDER",
+            requestId: orderId,
+            amount: { amount: 500, currency: placed.order.totals.grandTotal.currency },
+          },
+        ],
+      },
+    });
+    expect(paid.status).toBe(201);
+    const now = new Date("2026-11-01T20:30:00.000Z");
+    await harness.connections.tenantShared.collection("orders").updateOne(
+      { organizationId: shop.organizationId, orderId },
+      {
+        $set: {
+          createdAt: new Date(now.getTime() - AGE_PAST_DRAFT_WINDOW_HOURS * MILLISECONDS_PER_HOUR),
+        },
+      },
+    );
+    const dependencies = { ...jobDependenciesOf(), clock: { now: () => now } };
+    const job = buildAutoCancelPlacedJob(dependencies);
+    for (const pass of [now, new Date(now.getTime() + MILLISECONDS_PER_HOUR)]) {
+      await runInOrganizationContext(shop.organizationId, () =>
+        job.run(asId<OrganizationId>(shop.organizationId), pass),
+      );
+    }
+    expect((await orderRow(shop, orderId)).status).toBe("CANCELLED");
+    const credits = await harness.connections.tenantShared
+      .collection("store_credit_entries")
+      .find({ organizationId: shop.organizationId, kind: "CANCELLATION" })
+      .toArray();
+    expect(credits).toHaveLength(1);
+    expect(credits[0]?.["amount"].amount).toBe(500);
+    const refund = await harness.connections.tenantShared
+      .collection("payments")
+      .findOne({ organizationId: shop.organizationId, direction: "REFUND" });
+    expect(refund?.["businessDate"]).toBe("2026-11-02");
+    expect(await levelOf(shop, pack.riceItemId)).toEqual({
+      onHand: PACKS_ON_SHELF * PACK_GRAMS,
+      reserved: 0,
+    });
   });
 });

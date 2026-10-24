@@ -95,7 +95,7 @@ export class CreateOrderUseCase {
     await assertActiveContact(this.dependencies, contactId);
     const order = await this.draftOf(input, contactId);
     await this.persistDraft(order);
-    return toOrderResponse(order, await this.dependencies.payments.read(order.orderId));
+    return toOrderResponse(order, await this.dependencies.payments.readTotals(order.orderId));
   }
 
   private async draftOf(input: CreateOrderInput, contactId: ContactId | null): Promise<Order> {

@@ -1,10 +1,5 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, SEQUENCE_KEY } from "@banijjik/contracts";
-import {
-  ORDER_STATUS,
-  SALES_ADVANCE_REQUIRED,
-  SALES_EVENT_TYPE,
-  type OrderResponse,
-} from "@banijjik/contracts/sales";
+import { ORDER_STATUS, SALES_EVENT_TYPE, type OrderResponse } from "@banijjik/contracts/sales";
 import type { OrderId, UserId } from "@banijjik/ids";
 import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import {
@@ -13,6 +8,7 @@ import {
   packingDisabled,
   recordNotFound,
 } from "../../domain/errors.js";
+import { requiredAdvance } from "../../domain/required-advance.js";
 import { Order } from "../../domain/order.entity.js";
 import type { SalesSettings } from "../ports/sales-ports.js";
 import type { SalesDependencies, SalesJobDependencies } from "../sales-dependencies.js";
@@ -41,7 +37,7 @@ async function loadTransitionOrder(
   return order;
 }
 
-/** PLACED becomes CONFIRMED; an advance rule that card 3.8 will enforce blocks the confirm. */
+/** PLACED becomes CONFIRMED once its configured advance is paid. */
 export class ConfirmOrderUseCase {
   constructor(private readonly dependencies: SalesDependencies) {}
 
@@ -51,9 +47,19 @@ export class ConfirmOrderUseCase {
     const order = await loadTransitionOrder(this.dependencies, input);
     if (order.status !== ORDER_STATUS.PLACED) throw invalidTransition(order.status);
     const settings = await this.dependencies.settings.read(input.organizationId);
-    if (settings.advanceRequired !== SALES_ADVANCE_REQUIRED.NONE) throw advanceNeedsPayments();
     const now = this.dependencies.clock.now();
     const confirmed = await this.dependencies.unitOfWork.run(async () => {
+      const paid = await this.dependencies.payments.readNetPaid({
+        organizationId: input.organizationId,
+        orderId: order.orderId,
+      });
+      const required = requiredAdvance(
+        order.totals.grandTotal,
+        settings.advanceRequired,
+        settings.advanceValue,
+      );
+      if (paid.currency !== required.currency || paid.amount < required.amount)
+        throw advanceNeedsPayments();
       const persisted = await this.dependencies.orders.update(
         order.confirm({ actorUserId: input.actorUserId, now }),
         input.body.version,
@@ -71,7 +77,10 @@ export class ConfirmOrderUseCase {
       });
       return persisted;
     });
-    return toOrderResponse(confirmed, await this.dependencies.payments.read(confirmed.orderId));
+    return toOrderResponse(
+      confirmed,
+      await this.dependencies.payments.readTotals(confirmed.orderId),
+    );
   }
 }
 
@@ -105,7 +114,7 @@ export class PackOrderUseCase {
       });
       return persisted;
     });
-    return toOrderResponse(packed, await this.dependencies.payments.read(packed.orderId));
+    return toOrderResponse(packed, await this.dependencies.payments.readTotals(packed.orderId));
   }
 }
 
@@ -129,7 +138,10 @@ export class CompleteOrderUseCase {
     const completed = await this.dependencies.unitOfWork.run(() =>
       this.completeInTransaction({ order, input, settings, now }),
     );
-    return toOrderResponse(completed, await this.dependencies.payments.read(completed.orderId));
+    return toOrderResponse(
+      completed,
+      await this.dependencies.payments.readTotals(completed.orderId),
+    );
   }
 
   private async completeInTransaction(args: {
@@ -217,6 +229,14 @@ export class CancelOrderUseCase {
           }),
         );
       }
+      await this.dependencies.payments.settleCancellation({
+        organizationId: input.organizationId,
+        orderId: order.orderId,
+        contactId: order.contactId,
+        locationId: order.locationId,
+        actorUserId: input.actorUserId,
+        now,
+      });
       const persisted = await this.dependencies.orders.update(
         order.cancel({ reason: input.reason, actor: { actorUserId: input.actorUserId, now } }),
         input.body.version,
@@ -234,6 +254,9 @@ export class CancelOrderUseCase {
       });
       return persisted;
     });
-    return toOrderResponse(cancelled, await this.dependencies.payments.read(cancelled.orderId));
+    return toOrderResponse(
+      cancelled,
+      await this.dependencies.payments.readTotals(cancelled.orderId),
+    );
   }
 }

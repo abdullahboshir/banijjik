@@ -69,7 +69,7 @@ export class InstantOrderUseCase {
   ): Promise<OrderResponse> {
     const ctx = await this.buildContext(input);
     const order = await this.dependencies.unitOfWork.run(() => this.inTransaction(ctx));
-    return toOrderResponse(order, await this.dependencies.payments.read(order.orderId));
+    return toOrderResponse(order, await this.dependencies.payments.readTotals(order.orderId));
   }
 
   private async buildContext(
@@ -140,6 +140,14 @@ export class InstantOrderUseCase {
       actor: { actorUserId: ctx.actorUserId, now: ctx.now },
     });
     await this.dependencies.orders.insert(completed);
+    await this.dependencies.payments.initializeSummary({
+      organizationId: ctx.organizationId,
+      orderId: completed.orderId,
+      contactId: completed.contactId,
+      locationId: completed.locationId,
+      total: completed.totals.grandTotal,
+      now: ctx.now,
+    });
     await this.publishAndAudit(ctx, completed);
     return completed;
   }

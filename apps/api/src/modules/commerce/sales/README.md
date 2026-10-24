@@ -1,28 +1,27 @@
 # Sales (orders)
 
-The product sale of `11 §4`: draft, place, confirm, pack, complete and cancel. Totals come only
-from the pricing quoter; stock effects only from the inventory `StockLedger`.
+The product sale of `11 §4`: draft, place, confirm, pack, complete and cancel.
+Totals come from the pricing quoter; stock effects from the inventory `StockLedger`.
 
 ## Layers
 
-- `domain/`: the `Order` aggregate and its transitions, the payment-status rule, business dates.
-- `application/`: use cases (create, update, delete, place, confirm, pack, complete, cancel,
-  instant, get, list), the line preparation that reads catalog facts plus a quote, the discount
-  approval gate, settings and the two scheduled jobs.
-- `infrastructure/`: Mongo schema, mapper, order and monthly-counter repositories, model
-  registration, and the catalog/contact/timezone adapters.
+- `domain/`: Order aggregate, transitions, payment-status and advance rules, business dates.
+- `application/`: use cases, line preparation, discount approval, settings and hourly jobs.
+- `infrastructure/`: Mongo persistence and catalog/contact/timezone adapters.
 - `presentation/`: controller and tenant routes.
 
 ## Rules worth knowing
 
-- Lines are PRODUCT offerings only; totals come from `PriceQuoter.quote`, never from the client.
-- The order number comes from the `ORDER` sequence at place; the invoice number from `INVOICE`
-  at completion. A draft has neither.
-- A reservation is keyed `(ORDER, orderId)` and lives inside the order's transaction.
-- The monthly order counter counts placed and instant orders; cancelling gives nothing back.
-- `paymentStatus` is derived; card 3.8 replaces the zero `PaymentSummaryReader` stub.
-- Card 3.5a serves INSTANT and PICKUP only; COURIER, OWN_RIDER and the shipping statuses are
-  declared and refused until Phase 5.
-- `sales.expireDrafts` and `sales.autoCancelPlaced` are hourly `kernel/jobs` passes, each run
-  idempotently per organization. A job cannot resolve tenant settings through `OrgConfigReader.current()`
-  yet — that request-less read is a foundation gap recorded in `docs/STATUS.md` (ADR-131).
+- Lines are PRODUCT offerings only; prices never come from the client.
+- ORDER number is assigned at place; INVOICE number at completion; drafts have neither.
+- Stock reservations are keyed `(ORDER, orderId)` inside the transaction.
+- Monthly limits count placed and instant orders; cancellation gives nothing back.
+- Payment status uses real allocations and refunds; list pages batch summaries once.
+- Place and instant sale initialize summaries. A legacy order's first payment initializes a
+  missing summary with grandTotal (3.23 Amendment 1); no migration is needed.
+- Edits cannot reduce totals below net paid. Confirm checks `sales.advance.required` and
+  `sales.advance.value` against net paid in its transaction.
+- Cancel credits net paid once. A paid order without a contact needs a refund or contact first.
+- INSTANT and PICKUP are served now; shipping methods and statuses wait for Phase 5.
+- Hourly `sales.expireDrafts` and `sales.autoCancelPlaced` are idempotent per organization;
+  request-less settings resolution is supported by card 3.19.

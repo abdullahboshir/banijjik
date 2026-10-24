@@ -6,21 +6,16 @@ import {
   buildExpensePostingSourceAdapter,
   registerExpenseEventHandlers,
 } from "../modules/commerce/expense/index.js";
-import {
-  buildPaymentPostingSourceAdapter,
-  RequestReaderRegistry,
-} from "../modules/commerce/payment/index.js";
-import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
+import { buildPaymentPostingSourceAdapter } from "../modules/commerce/payment/index.js";
 import { systemClock } from "../kernel/time/index.js";
-import { buildBookingRequestReader } from "./booking-request-reader.js";
+import { buildPaymentRequestReaders } from "./payment-request-readers.js";
 
 /** Registers accounting, expense, booking and payment event handlers for the worker role. */
 export function registerAccountingAndExpenseHandlers(): void {
   const audit = buildAuditRecorder(systemClock);
   registerExpenseEventHandlers(systemClock);
 
-  const requestReaders = new RequestReaderRegistry();
-  requestReaders.register(PAYMENT_REQUEST_TYPE.BOOKING, buildBookingRequestReader());
+  const requestReaders = buildPaymentRequestReaders();
 
   registerAccountingHandlers({
     clock: systemClock,
