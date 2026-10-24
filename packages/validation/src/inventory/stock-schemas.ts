@@ -16,7 +16,13 @@ const receiptLineSchema = z.object({
 
 export const stockReceiptRequestSchema = z.object({
   locationId: uuidV7Schema,
-  paidVia: z.enum(Object.values(STOCK_RECEIPT_PAID_VIA) as [string, ...string[]]),
+  paidVia: z.enum([
+    STOCK_RECEIPT_PAID_VIA.CASH,
+    STOCK_RECEIPT_PAID_VIA.BKASH,
+    STOCK_RECEIPT_PAID_VIA.NAGAD,
+    STOCK_RECEIPT_PAID_VIA.BANK,
+    STOCK_RECEIPT_PAID_VIA.ON_CREDIT,
+  ]),
   supplierNote: z.string().trim().max(500).optional(),
   lines: z.array(receiptLineSchema).min(1).max(100),
 });
@@ -27,7 +33,7 @@ const adjustmentLineSchema = z.object({
     .number()
     .int()
     .refine((value) => value !== 0, { message: "validation.invalid_value" }),
-  reason: z.enum(Object.values(STOCK_ADJUSTMENT_REASON) as [string, ...string[]]),
+  reason: z.enum([STOCK_ADJUSTMENT_REASON.ADJUSTMENT, STOCK_ADJUSTMENT_REASON.DAMAGE_WRITE_OFF]),
   note: z.string().trim().max(500).optional(),
 });
 

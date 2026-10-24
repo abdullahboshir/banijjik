@@ -1,6 +1,7 @@
 import type { OrderRepository } from "./application/ports/sales-ports.js";
 import { asId, type OrderId } from "@banijjik/ids";
 import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
+import { STOCK_MOVEMENT_REASON } from "@banijjik/contracts/inventory";
 import type { RequestAdvanceReader } from "../payment/index.js";
 import { movementValue, type InventoryPostingSource } from "../inventory/index.js";
 import type { OrderPostingSnapshot, OrderPostingSource } from "../accounting/index.js";
@@ -43,22 +44,27 @@ export function registerSalesScheduledJobs(ports: SalesJobPorts): void {
 
 export type { OrderPaymentPort, OrderRepository } from "./application/ports/sales-ports.js";
 export type { PaymentTotals } from "./domain/payment-status.js";
+
+/** The composition root passes the order store to adapters that live outside this module. */
+export function buildOrderRepository(): OrderRepository {
+  return new MongoOrderRepository();
+}
+
 export function buildOrderSnapshotReader(): { read: OrderRepository["findById"] } {
-  const orders = new MongoOrderRepository();
+  const orders = buildOrderRepository();
   return { read: (orderId: OrderId) => orders.findById(orderId) };
 }
 
 export interface OrderPostingSourcePorts {
-  readonly orders?: OrderRepository | undefined;
+  readonly orders: OrderRepository;
   readonly advances: RequestAdvanceReader;
   readonly inventory: InventoryPostingSource;
 }
 
 export function buildOrderPostingSourceAdapter(ports: OrderPostingSourcePorts): OrderPostingSource {
-  const orders = ports.orders ?? new MongoOrderRepository();
   return {
     async readOrder(orderId: string): Promise<OrderPostingSnapshot | undefined> {
-      const order = await orders.findById(asId<OrderId>(orderId));
+      const order = await ports.orders.findById(asId<OrderId>(orderId));
       if (order === undefined) return undefined;
 
       const currency = order.totals.grandTotal.currency;
@@ -74,7 +80,7 @@ export function buildOrderPostingSourceAdapter(ports: OrderPostingSourcePorts): 
         sourceId: order.orderId,
       });
 
-      const saleMovements = movements.filter((m) => m.reason === "SALE");
+      const saleMovements = movements.filter((m) => m.reason === STOCK_MOVEMENT_REASON.SALE);
       const cogsAmount = saleMovements.reduce((sum, m) => sum + movementValue(m), 0);
 
       return {

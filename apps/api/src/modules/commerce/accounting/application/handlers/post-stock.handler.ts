@@ -2,13 +2,14 @@ import { MODULE_KEY, type EventEnvelope } from "@banijjik/contracts";
 import { SYSTEM_ACCOUNT_CODE } from "@banijjik/contracts/accounting";
 import {
   INVENTORY_EVENT_TYPE,
+  STOCK_RECEIPT_PAID_VIA,
   type InventoryStockSourceRecordedPayload,
 } from "@banijjik/contracts/inventory";
 import { asId, type OrganizationId, type UserId } from "@banijjik/ids";
 import type { EventHandler } from "../../../../../kernel/events/index.js";
 import { postingSourceMissing } from "../../domain/errors.js";
 import { draftStockSource } from "../../domain/stock-posting-rules.js";
-import { ensureSystemAccount } from "../ensure-payable-account.js";
+import { ensureSystemAccount } from "../ensure-system-account.js";
 import type { StockPostingSource } from "../ports/stock-posting-source.js";
 import { postJournalEntry, type PostJournalDependencies } from "../post-journal.js";
 
@@ -51,7 +52,7 @@ async function handleStockSourceRecorded(
   }
 
   // Ensure ACCOUNTS_PAYABLE exists on the organization if any movement was bought on credit
-  if (snapshot.movements.some((m) => m.paidVia === "ON_CREDIT")) {
+  if (snapshot.movements.some((m) => m.paidVia === STOCK_RECEIPT_PAID_VIA.ON_CREDIT)) {
     await ensureSystemAccount(
       { accounts: input.posting.accounts, clock: input.posting.clock },
       { organizationId, accountCode: SYSTEM_ACCOUNT_CODE.ACCOUNTS_PAYABLE },

@@ -4,7 +4,14 @@ import {
   SYSTEM_ACCOUNT_CODE,
   type Money,
 } from "@banijjik/contracts/accounting";
-import { INVENTORY_EVENT_TYPE, type StockReceiptPaidVia } from "@banijjik/contracts/inventory";
+import {
+  INVENTORY_EVENT_TYPE,
+  STOCK_MOVEMENT_REASON,
+  STOCK_RECEIPT_PAID_VIA,
+  STOCK_SOURCE_TYPE,
+  STOCK_STATE,
+  type StockReceiptPaidVia,
+} from "@banijjik/contracts/inventory";
 import { asId, newId, type OrganizationId } from "@banijjik/ids";
 import { stockReceiptRequestSchema } from "@banijjik/validation/inventory";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -22,7 +29,7 @@ import type { StockPostingSource } from "./application/ports/stock-posting-sourc
 import type { PostJournalDependencies } from "./application/post-journal.js";
 import { seedSystemAccounts } from "./application/seed-system-accounts.js";
 import { GetTrialBalanceUseCase } from "./application/use-cases/get-trial-balance.use-case.js";
-import type { StockPostingSnapshot } from "./domain/stock-posting-rules.js";
+import { draftStockSource, type StockPostingSnapshot } from "./domain/stock-posting-rules.js";
 import { MongoAccountRepository } from "./infrastructure/mongo-account.repository.js";
 import { MongoJournalRepository } from "./infrastructure/mongo-journal.repository.js";
 import { registerAccountingModels } from "./infrastructure/register-accounting-models.js";
@@ -119,18 +126,18 @@ describe("accounting postStock handler", () => {
     const scene = await newScene();
 
     const methods: readonly [StockReceiptPaidVia, string][] = [
-      ["CASH", SYSTEM_ACCOUNT_CODE.CASH],
-      ["BKASH", SYSTEM_ACCOUNT_CODE.BKASH],
-      ["NAGAD", SYSTEM_ACCOUNT_CODE.NAGAD],
-      ["BANK", SYSTEM_ACCOUNT_CODE.BANK],
-      ["ON_CREDIT", SYSTEM_ACCOUNT_CODE.ACCOUNTS_PAYABLE],
+      [STOCK_RECEIPT_PAID_VIA.CASH, SYSTEM_ACCOUNT_CODE.CASH],
+      [STOCK_RECEIPT_PAID_VIA.BKASH, SYSTEM_ACCOUNT_CODE.BKASH],
+      [STOCK_RECEIPT_PAID_VIA.NAGAD, SYSTEM_ACCOUNT_CODE.NAGAD],
+      [STOCK_RECEIPT_PAID_VIA.BANK, SYSTEM_ACCOUNT_CODE.BANK],
+      [STOCK_RECEIPT_PAID_VIA.ON_CREDIT, SYSTEM_ACCOUNT_CODE.ACCOUNTS_PAYABLE],
     ];
 
     for (const [paidVia, expectedAccount] of methods) {
       const sourceId = newId();
-      scene.stocks.set(`STOCK_RECEIPT:${sourceId}`, {
+      scene.stocks.set(`${STOCK_SOURCE_TYPE.STOCK_RECEIPT}:${sourceId}`, {
         organizationId: scene.organizationId,
-        sourceType: "STOCK_RECEIPT",
+        sourceType: STOCK_SOURCE_TYPE.STOCK_RECEIPT,
         sourceId,
         businessDate: BUSINESS_DATE,
         locationId: scene.locationId,
@@ -140,15 +147,15 @@ describe("accounting postStock handler", () => {
             stockMovementId: newId(),
             inventoryItemId: newId(),
             quantityDelta: 10,
-            stockState: "SELLABLE",
-            reason: "PURCHASE",
+            stockState: STOCK_STATE.SELLABLE,
+            reason: STOCK_MOVEMENT_REASON.PURCHASE,
             paidVia,
             value: bdt(500),
           },
         ],
       });
 
-      await handleEvent(scene, "STOCK_RECEIPT", sourceId);
+      await handleEvent(scene, STOCK_SOURCE_TYPE.STOCK_RECEIPT, sourceId);
 
       const entry = await withOrganizationContext(scene.organizationId, () =>
         scene.journals.findBySource({
@@ -183,6 +190,53 @@ describe("accounting postStock handler", () => {
     expect(parsed.success).toBe(false);
   });
 
+  it("throws when paidVia is missing or unknown on receipt snapshot (no silent fallback)", () => {
+    // Missing paidVia throws
+    expect(() =>
+      draftStockSource({
+        organizationId: newId(),
+        sourceType: STOCK_SOURCE_TYPE.STOCK_RECEIPT,
+        sourceId: newId(),
+        businessDate: BUSINESS_DATE,
+        locationId: newId(),
+        currency: "BDT",
+        movements: [
+          {
+            stockMovementId: newId(),
+            inventoryItemId: newId(),
+            quantityDelta: 10,
+            stockState: STOCK_STATE.SELLABLE,
+            reason: STOCK_MOVEMENT_REASON.PURCHASE,
+            value: bdt(500),
+          },
+        ],
+      }),
+    ).toThrow();
+
+    // Unknown paidVia throws
+    expect(() =>
+      draftStockSource({
+        organizationId: newId(),
+        sourceType: STOCK_SOURCE_TYPE.STOCK_RECEIPT,
+        sourceId: newId(),
+        businessDate: BUSINESS_DATE,
+        locationId: newId(),
+        currency: "BDT",
+        movements: [
+          {
+            stockMovementId: newId(),
+            inventoryItemId: newId(),
+            quantityDelta: 10,
+            stockState: STOCK_STATE.SELLABLE,
+            reason: STOCK_MOVEMENT_REASON.PURCHASE,
+            paidVia: "BITCOIN" as unknown as StockReceiptPaidVia,
+            value: bdt(500),
+          },
+        ],
+      }),
+    ).toThrow();
+  });
+
   it("an old organization without ACCOUNTS_PAYABLE gets it on first use", async () => {
     // Simulate an old organization by seeding accounts, then removing ACCOUNTS_PAYABLE
     const scene = await newScene();
@@ -212,9 +266,9 @@ describe("accounting postStock handler", () => {
 
     // Now receive on credit -> postStock handler should call ensureSystemAccount and post cleanly
     const sourceId = newId();
-    scene.stocks.set(`STOCK_RECEIPT:${sourceId}`, {
+    scene.stocks.set(`${STOCK_SOURCE_TYPE.STOCK_RECEIPT}:${sourceId}`, {
       organizationId: scene.organizationId,
-      sourceType: "STOCK_RECEIPT",
+      sourceType: STOCK_SOURCE_TYPE.STOCK_RECEIPT,
       sourceId,
       businessDate: BUSINESS_DATE,
       locationId: scene.locationId,
@@ -224,15 +278,15 @@ describe("accounting postStock handler", () => {
           stockMovementId: newId(),
           inventoryItemId: newId(),
           quantityDelta: 20,
-          stockState: "SELLABLE",
-          reason: "PURCHASE",
-          paidVia: "ON_CREDIT",
+          stockState: STOCK_STATE.SELLABLE,
+          reason: STOCK_MOVEMENT_REASON.PURCHASE,
+          paidVia: STOCK_RECEIPT_PAID_VIA.ON_CREDIT,
           value: bdt(1000),
         },
       ],
     });
 
-    await handleEvent(scene, "STOCK_RECEIPT", sourceId);
+    await handleEvent(scene, STOCK_SOURCE_TYPE.STOCK_RECEIPT, sourceId);
 
     // ACCOUNTS_PAYABLE now exists
     const restored = await withOrganizationContext(scene.organizationId, () =>
@@ -258,9 +312,9 @@ describe("accounting postStock handler", () => {
 
     // 1. Opening stock: Dr INVENTORY / Cr OPENING_BALANCE
     const openingSourceId = newId();
-    scene.stocks.set(`STOCK_OPENING:${openingSourceId}`, {
+    scene.stocks.set(`${STOCK_SOURCE_TYPE.STOCK_OPENING}:${openingSourceId}`, {
       organizationId: scene.organizationId,
-      sourceType: "STOCK_OPENING",
+      sourceType: STOCK_SOURCE_TYPE.STOCK_OPENING,
       sourceId: openingSourceId,
       businessDate: BUSINESS_DATE,
       locationId: scene.locationId,
@@ -270,14 +324,14 @@ describe("accounting postStock handler", () => {
           stockMovementId: newId(),
           inventoryItemId: newId(),
           quantityDelta: 50,
-          stockState: "SELLABLE",
-          reason: "OPENING",
+          stockState: STOCK_STATE.SELLABLE,
+          reason: STOCK_MOVEMENT_REASON.OPENING,
           value: bdt(2500),
         },
       ],
     });
 
-    await handleEvent(scene, "STOCK_OPENING", openingSourceId);
+    await handleEvent(scene, STOCK_SOURCE_TYPE.STOCK_OPENING, openingSourceId);
 
     const openingEntry = await withOrganizationContext(scene.organizationId, () =>
       scene.journals.findBySource({
@@ -301,9 +355,9 @@ describe("accounting postStock handler", () => {
 
     // 2. Adjustment up and adjustment down
     const adjSourceId = newId();
-    scene.stocks.set(`STOCK_ADJUSTMENT:${adjSourceId}`, {
+    scene.stocks.set(`${STOCK_SOURCE_TYPE.STOCK_ADJUSTMENT}:${adjSourceId}`, {
       organizationId: scene.organizationId,
-      sourceType: "STOCK_ADJUSTMENT",
+      sourceType: STOCK_SOURCE_TYPE.STOCK_ADJUSTMENT,
       sourceId: adjSourceId,
       businessDate: BUSINESS_DATE,
       locationId: scene.locationId,
@@ -313,22 +367,22 @@ describe("accounting postStock handler", () => {
           stockMovementId: newId(),
           inventoryItemId: newId(),
           quantityDelta: 5,
-          stockState: "SELLABLE",
-          reason: "ADJUSTMENT",
+          stockState: STOCK_STATE.SELLABLE,
+          reason: STOCK_MOVEMENT_REASON.ADJUSTMENT,
           value: bdt(250),
         },
         {
           stockMovementId: newId(),
           inventoryItemId: newId(),
           quantityDelta: -2,
-          stockState: "SELLABLE",
-          reason: "ADJUSTMENT",
+          stockState: STOCK_STATE.SELLABLE,
+          reason: STOCK_MOVEMENT_REASON.ADJUSTMENT,
           value: bdt(100),
         },
       ],
     });
 
-    await handleEvent(scene, "STOCK_ADJUSTMENT", adjSourceId);
+    await handleEvent(scene, STOCK_SOURCE_TYPE.STOCK_ADJUSTMENT, adjSourceId);
 
     const adjEntry = await withOrganizationContext(scene.organizationId, () =>
       scene.journals.findBySource({
@@ -347,9 +401,9 @@ describe("accounting postStock handler", () => {
 
     // 3. Damage write-off: sellable vs damaged stockState
     const writeOffSourceId = newId();
-    scene.stocks.set(`STOCK_ADJUSTMENT:${writeOffSourceId}`, {
+    scene.stocks.set(`${STOCK_SOURCE_TYPE.STOCK_ADJUSTMENT}:${writeOffSourceId}`, {
       organizationId: scene.organizationId,
-      sourceType: "STOCK_ADJUSTMENT",
+      sourceType: STOCK_SOURCE_TYPE.STOCK_ADJUSTMENT,
       sourceId: writeOffSourceId,
       businessDate: BUSINESS_DATE,
       locationId: scene.locationId,
@@ -359,22 +413,22 @@ describe("accounting postStock handler", () => {
           stockMovementId: newId(),
           inventoryItemId: newId(),
           quantityDelta: -1,
-          stockState: "DAMAGED",
-          reason: "DAMAGE_WRITE_OFF",
+          stockState: STOCK_STATE.DAMAGED,
+          reason: STOCK_MOVEMENT_REASON.DAMAGE_WRITE_OFF,
           value: bdt(60),
         },
         {
           stockMovementId: newId(),
           inventoryItemId: newId(),
           quantityDelta: -1,
-          stockState: "SELLABLE",
-          reason: "DAMAGE_WRITE_OFF",
+          stockState: STOCK_STATE.SELLABLE,
+          reason: STOCK_MOVEMENT_REASON.DAMAGE_WRITE_OFF,
           value: bdt(40),
         },
       ],
     });
 
-    await handleEvent(scene, "STOCK_ADJUSTMENT", writeOffSourceId);
+    await handleEvent(scene, STOCK_SOURCE_TYPE.STOCK_ADJUSTMENT, writeOffSourceId);
 
     const writeOffEntry = await withOrganizationContext(scene.organizationId, () =>
       scene.journals.findBySource({

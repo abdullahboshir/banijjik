@@ -1,6 +1,5 @@
 import type { CurrencyCode } from "@banijjik/contracts";
 import type { Money } from "@banijjik/contracts/catalog";
-import type { StockAdjustmentReason, StockReceiptPaidVia } from "@banijjik/contracts/inventory";
 import { asId, type InventoryItemId, type OfferingId } from "@banijjik/ids";
 import type {
   InventoryLevelsRebuildBody,
@@ -58,7 +57,7 @@ export class StockController {
       actorUserId,
       allowedLocationIds,
       locationId: body.locationId,
-      paidVia: body.paidVia as StockReceiptPaidVia,
+      paidVia: body.paidVia,
       ...(body.supplierNote === undefined ? {} : { supplierNote: body.supplierNote }),
       lines: body.lines.map((line) => ({
         inventoryItemId: asId<InventoryItemId>(line.inventoryItemId),
@@ -81,7 +80,7 @@ export class StockController {
       lines: body.lines.map((line) => ({
         inventoryItemId: asId<InventoryItemId>(line.inventoryItemId),
         quantityDelta: line.quantityDelta,
-        reason: line.reason as StockAdjustmentReason,
+        reason: line.reason,
         ...(line.note === undefined ? {} : { note: line.note }),
       })),
     });

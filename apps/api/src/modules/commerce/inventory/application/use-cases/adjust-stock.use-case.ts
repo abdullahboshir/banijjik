@@ -2,6 +2,7 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, ERROR_CODE } from "@banijjik/contracts
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
 import {
   INVENTORY_EVENT_TYPE,
+  STOCK_ADJUSTMENT_REASON,
   STOCK_MOVEMENT_REASON,
   type StockAdjustmentReason,
 } from "@banijjik/contracts/inventory";
@@ -133,7 +134,7 @@ async function applyStockAdjustments(input: {
 }): Promise<void> {
   for (const row of input.prepared) {
     const reason =
-      row.line.reason === "DAMAGE_WRITE_OFF"
+      row.line.reason === STOCK_ADJUSTMENT_REASON.DAMAGE_WRITE_OFF
         ? STOCK_MOVEMENT_REASON.DAMAGE_WRITE_OFF
         : STOCK_MOVEMENT_REASON.ADJUSTMENT;
     await input.deps.stockLedger.applyMovement({
