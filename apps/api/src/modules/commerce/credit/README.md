@@ -4,7 +4,7 @@ OPTIONAL module: prepaid **credit packs**, paid **listing unlocks**, and manual 
 
 ## Surface
 
-- Storefront (`/api/v1/storefront/orgs/{organizationId}`): `/my/credits`, `/my/unlocks`, `/credit-packs`, `/credit/payment-info`, `/credit-purchases`, `/my/credit-purchases`, `/credit-purchases/{creditPurchaseId}/cancel`, and listing unlock.
+- Storefront (`/api/v1/storefront/orgs/{organizationId}`): `/my/credits`, `/my/unlocks`, `/credit-packs`, `/credit/payment-info`, `/credit-purchases`, `/my/credit-purchases`, `/credit-purchases/{creditPurchaseId}/cancel`, listing unlock, erasure/export participants (M.7).
 - Tenant (`/orgs/{organizationId}/credit/…`): packs, customer accounts, adjustments, and purchase verification (`credit.purchase.read`, `credit.purchase.verify`).
 
 ## Ledger & Purchases

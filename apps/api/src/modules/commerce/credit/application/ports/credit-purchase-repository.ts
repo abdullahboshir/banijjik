@@ -24,6 +24,7 @@ export interface CreditPurchaseRepository {
     limit: number,
   ): Promise<{ readonly items: readonly CreditPurchase[]; readonly total: number }>;
   countPendingByAccount(customerAccountId: CustomerAccountId): Promise<number>;
+  listPendingByAccount(customerAccountId: CustomerAccountId): Promise<readonly CreditPurchase[]>;
   listForStaff(
     filter: ListCreditPurchasesStaffFilter,
   ): Promise<{ readonly items: readonly CreditPurchase[]; readonly total: number }>;
