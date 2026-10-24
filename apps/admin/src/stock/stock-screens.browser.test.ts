@@ -1,3 +1,4 @@
+import { MongoClient } from "mongodb";
 import type { Page } from "puppeteer-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bodyText, gotoWhenHydrated, message, waitForText } from "../test-support/browser-helpers";
@@ -88,6 +89,23 @@ describe("stock at two branches", () => {
     let text = await bodyText(page);
     expect(text).toContain("1000");
     expect(text).toMatch(/50|৳/u);
+
+    // Wait for the worker to process the stockSource.recorded event into the journal
+    const client = await MongoClient.connect(stack.mongoUri);
+    try {
+      const tenant = client.db("browser_tenant");
+      const deadline = Date.now() + 15_000;
+      while (Date.now() < deadline) {
+        const entry = await tenant.collection("journals").findOne({
+          sourceType: "STOCK",
+          postingKey: "stock_receipt",
+        });
+        if (entry !== null) break;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    } finally {
+      await client.close();
+    }
 
     // Verify trial balance shows ACCOUNTS_PAYABLE (code 2010 or localized name)
     await gotoWhenHydrated(page, `/${ORG_SLUG}/settings/trial-balance`, "#trial-balance-as-of");
