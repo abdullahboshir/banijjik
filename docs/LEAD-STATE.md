@@ -8,7 +8,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-24 (afternoon, Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `8e729ae` (M.8a, 3.27 and the screen-plan refreshes merged) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
+Last updated: 2026-10-24 (late afternoon, Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `8eaadea` (plan 3.33) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
 
 ## 1. Where the project stands
 - Phase 3: 42 numbered cards. **32 fully merged**: 3.0–3.4b, 3.6, 3.8 (all parts), 3.8a/b/c, 3.12–3.23, 3.25–3.30. Partly done (API merged, screens left): 3.5a (B), 3.6b (B), 3.7 (B), 3.11 (B, C). Running: 3.24. Not started: 3.5b, 3.9, 3.10, 3.31, 3.32, 3.33. Track M: M.0–M.5, M.7 A1 and **M.8a** merged; M.6, M.7 A2/B, M.8b, M.9 left. Details: `docs/STATUS.md`.
@@ -25,7 +25,7 @@ Last updated: 2026-10-24 (afternoon, Dhaka) by Opus 5.5 · `main` = `origin/main
 ## 2. Open branches (checked 2026-10-24 afternoon)
 | Card / part | Branch | Folder | Tier | State and next step |
 |---|---|---|---|---|
-| 3.24 order and stock posting | `s/3.24-api-order-stock-posting` | `banijjik-3.5a` | T1 | Plan `3.24.md` Refresh 1. Work uncommitted in the folder (admin stock form + accounting), nothing pushed. **Next: T1 review on done.** |
+| 3.24 order and stock posting | `s/3.24-api-order-stock-posting` | `banijjik-3.5a` | T1 | Plan `3.24.md` Refresh 1. 3 commits pushed (head `109e951`), CI runs 40077217105 and 40079140097 **failed**; more work uncommitted in the folder (session still fixing). **Next: T1 review on done.** |
 | 3.5a B order screens | `s/3.5a-ui-orders` | `banijjik-m2` | T2 | Plan Refresh 2 (payments through the shared sheet, `ADVANCE_NEEDS_PAYMENTS`, 180 KiB). Merge check on done. |
 | 3.6b B rental and event screens | `s/3.6b-ui-rental-event` | `banijjik-1.7b` | T2 | Plan Refresh 3 (one add-only manifest menu entry "Event sessions"). Merge check on done. |
 | 3.7 B enrollment screens | `s/3.7-ui-enrollment` | `banijjik-lead` | T2 | Plan Refresh 2 (pay periods; activate syncs the period itself). Merge check on done. |
@@ -33,7 +33,7 @@ Last updated: 2026-10-24 (afternoon, Dhaka) by Opus 5.5 · `main` = `origin/main
 | M.7 A2 blocks, erasure, export | `s/M.7-api-erasure` | `banijjik-3.6b-a3` | T1 | Plan `M.7.md` Refresh A2 (OTP purpose `ERASE_ACCOUNT`, erasure and export participant ports, files, tests). **T1 review on done.** |
 | M.7 B report screens | `s/M.7-ui-reports` | `banijjik` | T2 | Plan Refresh B. Merge check on done. |
 
-The lead gave the prompts for the six new rows on 2026-10-24 afternoon. Check `origin/<branch>` to see whether a session really started.
+The lead gave the prompts for the six new rows on 2026-10-24 afternoon. Checked late afternoon: 3.11 B and M.7 A2 have uncommitted work in their folders (nothing pushed); 3.5a B and 3.7 B branches exist with no commits; **3.6b B and M.7 B have not started** (`banijjik-1.7b` is still on `s/3.30-refund-amount-label`, `banijjik` on `s/3.11-api-payouts`). Check `origin/<branch>` to see whether a session really started.
 
 Merged and safe to delete (local and `origin`): `s/M.8a-matrimony-templates`, `s/3.27-api-enrollment-payments`, `s/merge-M.8a`, `s/merge-3.27`, `s/docs-refresh-screens`, `s/3.28-credit-expiry-job`, `s/3.29-booking-sales-leftovers`, `s/3.30-refund-amount-label`, and every older card, `s/merge-*` and `s/docs-*` branch. **`s/merge-3.29` (on origin) is broken** (conflict markers): never merge it, delete it. PR #2 (3.8) can be closed as merged.
 
@@ -53,11 +53,10 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 ## 4. Next actions, in order
 1. Verify reality (`git fetch`, folders, `origin/<branch>`, `gh run list`).
 2. Reviews as sessions report done: T1 for 3.24 and M.7 A2; merge checks for 3.5a B, 3.6b B, 3.7 B, 3.11 B and M.7 B. Merge one by one. Cherry-pick each later branch onto a fresh `s/merge-<card>` from main (i18n and manifest menu conflicts are add-only: keep both sides).
-3. **Ready plans not yet released:** 3.35 (T3, flaky replay test; any free folder or a lead Sonnet subagent) and 3.34 (T1, reversal after a closed request; owner decision 2026-10-24: industry standard `REOPEN_DUE` by default plus a `WRITE_OFF` option; release after 3.24 merges).
-4. **Plan 3.33 "event sessions occupy their resources"** (T1; 3.6b A3 left it out: a hall used by a session can still be rented).
-5. **Plan M.6** (storefront app): read ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open questions: host → organization resolution, customer cookies across the app and API hosts. M.6a T1; M.6b T2. The M.7 A2 erase and export endpoints need M.6 pages.
-6. After 3.24 merges: plan 3.31 (enrollment revenue posting and advance settle) and 3.32 (enrollment cancel refunds). After 3.5a B and 3.24: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10, `docs/handoffs/phase-3-review.md`.
-7. Follow-ups:
+3. **Ready plans not yet released:** 3.33 (T1, `docs/plans/3.33.md`, planned 2026-10-24: sessions take whole-resource slot buckets, stored `resourceHolds`, ADR-141; next free folder, prompt not given yet), 3.35 (T3, flaky replay test; any free folder or a lead Sonnet subagent) and 3.34 (T1, reversal after a closed request; owner decision 2026-10-24: industry standard `REOPEN_DUE` by default plus a `WRITE_OFF` option; release after 3.24 merges). No folder with `node_modules` is free now: `banijjik-1.7b` and `banijjik` wait for 3.6b B and M.7 B.
+4. **Plan M.6** (storefront app): read ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open questions: host → organization resolution, customer cookies across the app and API hosts. M.6a T1; M.6b T2. The M.7 A2 erase and export endpoints need M.6 pages.
+5. After 3.24 merges: plan 3.31 (enrollment revenue posting and advance settle) and 3.32 (enrollment cancel refunds). After 3.5a B and 3.24: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10, `docs/handoffs/phase-3-review.md`.
+6. Follow-ups:
    - Refund dialog has no client-side maximum (3.30 test uses amount 0); a small T3 card if wanted.
    - The session-cancel job makes one pass over all unsettled sessions per run (3.29 handoff); fine at current volume.
    - Replayer safety across more than one worker process (STATUS 3.16 note).
@@ -81,8 +80,8 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-24 late afternoon** (Opus): verified the seven sessions (none done; 3.24 CI red, still working; 3.6b B and M.7 B not started). Planned 3.33 event sessions occupy their resources (T1, ADR-141, `8eaadea`).
 - **2026-10-24 afternoon** (Opus): merge check of M.8a passed and merged (`d06e36a`); T1 review R1 of 3.27 passed, the lead fixed the stale period version after a sync, merged (`5ebe469`). Refreshed and released the screen parts 3.5a B, 3.6b B, 3.7 B, 3.11 B, plus M.7 A2 (T1) and M.7 B; new ready board (`8e729ae`). Owner decided the reversal-after-close question (standard plus option): planned 3.34 (ADR-140) and 3.35 (flaky replay test).
 - **2026-10-24 midday** (Opus): T1 review and merge of 3.23 and merge check of 3.26 (`cecb5a0`); another lead chat was turned off by the owner. Planned 3.27 (enrollment payments, ADR-139), refreshed 3.24, planned and ran 3.28–3.30 with Sonnet subagents (owner request), merged all three (`67848d6`). Checked M.8a content; gave 3.24, 3.27 and M.8a prompts.
 - **2026-10-24 morning 2** (Opus): landed 3.11 A2 (`e103af6`, via `s/merge-3.11-a2`: force-push of the card branch is blocked by the auto-mode classifier, so rebase by cherry-pick onto a merge branch). Merge check of 3.26 A+B passed (conventions note added). T1 review of 3.23 passed (lead renamed `hoursOf` → `integerOf`; review R1 file). Both merged at `cecb5a0`, CI 40059020558 green.
 - **2026-10-24 morning** (Opus): T1 reviews passed and merged 3.6b A3 (`86230ea`) and M.7 A1 (`dad5b4a`, rebased by the lead after the session finished its own rebase); 3.11 A2 review passed, rebased, count-test fix. Plan 3.23 Amendment 2 (summary contact moves only while unpaid).
-- **2026-10-24 early morning** (Opus): verified all sessions. T1 review and merge of 3.22 (`53dbb41`). 3.25 T1 review: the lead fixed four leftovers (including the unlock limit that counted the UTC day) and merged (`a84e076`). Lockfile patch for new advisories (`cf245e3`). 3.7 Part A R1 re-review passed and merged (`62883d7`).
