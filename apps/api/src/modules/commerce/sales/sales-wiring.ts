@@ -10,7 +10,7 @@ import { buildSalesContactReader } from "../contact/index.js";
 import { buildSalesSettingsReader } from "./application/sales-settings-reader.js";
 import type { SalesDependencies, SalesJobDependencies } from "./application/sales-dependencies.js";
 import type {
-  PaymentSummaryReader,
+  OrderPaymentPort,
   SalesApprovalVerifier,
   SalesCurrencyReader,
   SalesQuoter,
@@ -59,7 +59,7 @@ export interface SalesTenantPorts {
   readonly limits: LimitGuard;
   readonly currency: SalesCurrencyReader;
   readonly unitCosts: SalesUnitCostReader;
-  readonly payments: PaymentSummaryReader;
+  readonly payments: OrderPaymentPort;
 }
 
 /** The composition root of the module: repositories and ports, never wired anywhere else. */
@@ -111,8 +111,8 @@ export interface SalesTenantRouterDependencies extends SalesTenantPorts {
 }
 
 /**
- * What the worker needs for the two hourly jobs: the ledger to release stock, the payment stub for
- * the cancelled order's view, and the settings of the module. Jobs never quote or approve.
+ * What the worker needs for the two hourly jobs: the ledger to release stock, the payment port for
+ * cancellation settlement and the order's view, and the settings of the module. Jobs never quote or approve.
  */
 export interface SalesJobPorts {
   readonly clock: Clock;
@@ -120,7 +120,7 @@ export interface SalesJobPorts {
   readonly orgConfig: OrgConfigService;
   readonly manifests: readonly ModuleManifest[];
   readonly stock: SalesStockLedger;
-  readonly payments: PaymentSummaryReader;
+  readonly payments: OrderPaymentPort;
 }
 
 export function buildSalesJobDependencies(ports: SalesJobPorts): SalesJobDependencies {

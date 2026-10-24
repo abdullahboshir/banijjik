@@ -64,7 +64,7 @@ export const FULFILLMENT_METHODS_THIS_CARD: readonly FulfillmentMethod[] = [
   FULFILLMENT_METHOD.PICKUP,
 ];
 
-/** Derived from the payment allocations (decision 8); this card always reports UNPAID. */
+/** Derived from payment allocations and refunds. */
 export const PAYMENT_STATUS = defineEnum([
   "UNPAID",
   "PARTIAL",
@@ -90,7 +90,7 @@ export const SALES_USE_PACKING_DEFAULT = false;
 export const SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_DEFAULT = true;
 export const SALES_ADVANCE_REQUIRED_DEFAULT = "NONE";
 
-/** The advance rule is declared now; card 3.8 enforces the non-NONE values. */
+/** The advance required before confirming an order. */
 export const SALES_ADVANCE_REQUIRED = defineEnum(["NONE", "FIXED", "PERCENT", "FULL"]);
 export type SalesAdvanceRequired =
   (typeof SALES_ADVANCE_REQUIRED)[keyof typeof SALES_ADVANCE_REQUIRED];
@@ -201,3 +201,6 @@ export interface OrderListItem {
   readonly paymentStatus: PaymentStatus;
   readonly createdAt: string;
 }
+
+export const SALES_ADVANCE_VALUE_SETTING_KEY = "sales.advance.value";
+export const SALES_ADVANCE_VALUE_DEFAULT = 0;

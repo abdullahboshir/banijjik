@@ -1,6 +1,8 @@
 import { INVENTORY_ALLOW_NEGATIVE_STOCK_SETTING_KEY } from "@banijjik/contracts/inventory";
 import type { ModuleManifest } from "@banijjik/contracts";
 import {
+  SALES_ADVANCE_VALUE_SETTING_KEY,
+  SALES_ADVANCE_VALUE_DEFAULT,
   SALES_ADVANCE_REQUIRED,
   SALES_ADVANCE_REQUIRED_DEFAULT,
   SALES_ADVANCE_REQUIRED_SETTING_KEY,
@@ -58,6 +60,7 @@ export function buildSalesSettingsReader(input: {
           SALES_USE_PACKING_SETTING_KEY,
           SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_SETTING_KEY,
           SALES_ADVANCE_REQUIRED_SETTING_KEY,
+          SALES_ADVANCE_VALUE_SETTING_KEY,
           INVENTORY_ALLOW_NEGATIVE_STOCK_SETTING_KEY,
         ],
       });
@@ -81,6 +84,13 @@ export function buildSalesSettingsReader(input: {
         discountOwnerWithoutApproval: booleanOf(
           resolved.get(SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_SETTING_KEY)?.value,
           SALES_DISCOUNT_OWNER_WITHOUT_APPROVAL_DEFAULT,
+        ),
+        advanceValue: Math.max(
+          0,
+          hoursOf(
+            resolved.get(SALES_ADVANCE_VALUE_SETTING_KEY)?.value,
+            SALES_ADVANCE_VALUE_DEFAULT,
+          ),
         ),
         advanceRequired: advanceOf(resolved.get(SALES_ADVANCE_REQUIRED_SETTING_KEY)?.value),
         allowNegativeStock: booleanOf(

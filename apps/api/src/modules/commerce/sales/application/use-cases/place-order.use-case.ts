@@ -59,7 +59,7 @@ export class PlaceOrderUseCase {
   async execute(input: PlaceInput): Promise<OrderResponse> {
     const ctx = await this.buildContext(input);
     const placed = await this.dependencies.unitOfWork.run(() => this.inTransaction(ctx));
-    return toOrderResponse(placed, await this.dependencies.payments.read(placed.orderId));
+    return toOrderResponse(placed, await this.dependencies.payments.readTotals(placed.orderId));
   }
 
   private async buildContext(input: PlaceInput): Promise<PlaceContext> {
@@ -126,6 +126,7 @@ export class PlaceOrderUseCase {
       actor: { actorUserId: ctx.input.actorUserId, now: ctx.now },
     });
     const persisted = await this.dependencies.orders.update(transitioned, ctx.input.body.version);
+    await this.initializeSummary(ctx, persisted);
     await this.dependencies.events.publish(
       SALES_EVENT_TYPE.ORDER_PLACED,
       { orderId: persisted.orderId },
@@ -143,6 +144,17 @@ export class PlaceOrderUseCase {
     });
   }
 
+  private async initializeSummary(ctx: PlaceContext, persisted: Order): Promise<void> {
+    await this.dependencies.payments.initializeSummary({
+      organizationId: ctx.input.organizationId,
+      orderId: persisted.orderId,
+      contactId: persisted.contactId,
+      locationId: persisted.locationId,
+      total: persisted.totals.grandTotal,
+      now: ctx.now,
+    });
+  }
+
   private async assertContactWithPhone(contactId: ContactId | null): Promise<void> {
     if (contactId === null) throw contactPhoneRequired("");
     const contact = await this.dependencies.contacts.findActive(contactId);
@@ -150,7 +162,7 @@ export class PlaceOrderUseCase {
     if (contact.phoneE164 === null) throw contactPhoneRequired(contactId);
   }
 
-  /** Auto-confirm needs the advance rule to allow it; card 3.8 enforces the non-NONE values. */
+  /** Auto-confirm at place is available only when no advance rule is configured. */
   private async maybeAutoConfirm(
     order: Order,
     settings: SalesSettings,

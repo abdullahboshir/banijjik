@@ -6,7 +6,14 @@ import type {
   SalesAdvanceRequired,
 } from "@banijjik/contracts/sales";
 import type { Money } from "@banijjik/contracts/pricing";
-import type { ContactId, OfferingId, OrderId, OrganizationId } from "@banijjik/ids";
+import type {
+  ContactId,
+  OfferingId,
+  OrderId,
+  OrganizationId,
+  LocationId,
+  UserId,
+} from "@banijjik/ids";
 import type { PriceQuoter } from "../../../pricing/index.js";
 import type { StockLedger } from "../../../inventory/index.js";
 import type { ApprovalVerifier } from "../../../../core/iam/index.js";
@@ -74,6 +81,7 @@ export interface SalesSettings {
   readonly usePacking: boolean;
   readonly discountOwnerWithoutApproval: boolean;
   readonly advanceRequired: SalesAdvanceRequired;
+  readonly advanceValue: number;
   /** Read from the inventory module's setting before the order transaction opens (decision 5). */
   readonly allowNegativeStock: boolean;
 }
@@ -147,12 +155,32 @@ export interface SalesOwnerReader {
   isOwner(): Promise<boolean>;
 }
 
-/**
- * Card 3.8 replaces the zero stub with the real `PaymentSummary` projection (decision 8).
- * Until then no payment exists, so the reader always returns zero.
- */
-export interface PaymentSummaryReader {
-  read(orderId: OrderId): Promise<PaymentTotals>;
+export interface OrderPaymentPort {
+  initializeSummary(input: {
+    organizationId: OrganizationId;
+    orderId: OrderId;
+    contactId: ContactId | null;
+    locationId: LocationId;
+    total: Money;
+    now: Date;
+  }): Promise<void>;
+  updateTotal(input: {
+    organizationId: OrganizationId;
+    orderId: OrderId;
+    total: Money;
+    now: Date;
+  }): Promise<void>;
+  readTotals(orderId: OrderId): Promise<PaymentTotals>;
+  readTotalsMany(orderIds: readonly OrderId[]): Promise<ReadonlyMap<OrderId, PaymentTotals>>;
+  readNetPaid(input: { organizationId: OrganizationId; orderId: OrderId }): Promise<Money>;
+  settleCancellation(input: {
+    organizationId: OrganizationId;
+    orderId: OrderId;
+    contactId: ContactId | null;
+    locationId: LocationId;
+    actorUserId: UserId | null;
+    now: Date;
+  }): Promise<void>;
 }
 
 export interface SalesUnitOfWork {

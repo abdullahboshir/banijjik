@@ -4,7 +4,6 @@ import {
   SYSTEM_REASON,
   type ModuleManifest,
 } from "@banijjik/contracts";
-import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import { type OrganizationId, type UserId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
@@ -16,14 +15,13 @@ import type { OrgConfigService } from "../modules/platform/entitlement/index.js"
 import {
   buildPaymentController,
   buildPaymentTenantRouter,
-  RequestReaderRegistry,
 } from "../modules/commerce/payment/index.js";
 import { buildApprovalVerifier } from "../modules/core/iam/index.js";
 import {
   buildMembershipDirectory,
   buildOrganizationTimezoneReader,
 } from "../modules/core/organization/index.js";
-import { buildBookingRequestReader } from "./booking-request-reader.js";
+import { buildPaymentRequestReaders } from "./payment-request-readers.js";
 
 export interface PaymentRouterInput {
   readonly clock: Clock;
@@ -36,8 +34,7 @@ export interface PaymentRouterInput {
 }
 
 export function buildPaymentTenantRouterFor(input: PaymentRouterInput): Router {
-  const requestReaders = new RequestReaderRegistry();
-  requestReaders.register(PAYMENT_REQUEST_TYPE.BOOKING, buildBookingRequestReader());
+  const requestReaders = buildPaymentRequestReaders();
 
   const directory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
   const timezones = buildOrganizationTimezoneReader();
