@@ -171,6 +171,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "enrollment",
   "checkIn",
   "listingReport",
+  "sitePage",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 
