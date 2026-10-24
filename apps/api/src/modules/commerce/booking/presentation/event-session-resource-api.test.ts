@@ -281,7 +281,6 @@ describe("event sessions occupy resources", () => {
       startsAt: new Date(SESSION_STARTS_AT),
       endsAt: new Date(SESSION_ENDS_AT),
       resourceIds: [hall.resourceId],
-      resourceHolds: [],
       capacity: 10,
       seatsSold: 0,
       status: "SCHEDULED",

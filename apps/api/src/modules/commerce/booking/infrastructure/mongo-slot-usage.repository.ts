@@ -2,15 +2,17 @@ import { newId, type OrganizationId, type ResourceId } from "@banijjik/ids";
 import type { Model } from "mongoose";
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
 import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
-function requireTransaction(): void {
-  if (getActiveSession() === undefined) throw new DomainRuleError({ code: ERROR_CODE.INTERNAL });
-}
 import { bucketStartsCovering } from "../domain/buckets.js";
 import { eventSessionResourceBusyError, slotUnavailableError } from "../domain/errors.js";
 import {
   RESOURCE_SLOT_USAGE_MODEL_NAME,
   type ResourceSlotUsageDocument,
 } from "./booking.schema.js";
+
+/** Whole-resource holds move many buckets; outside a transaction a failure would leave half of them. */
+function requireTransaction(): void {
+  if (getActiveSession() === undefined) throw new DomainRuleError({ code: ERROR_CODE.INTERNAL });
+}
 
 function slotModel(): Model<ResourceSlotUsageDocument> {
   return models({}).get<ResourceSlotUsageDocument>(RESOURCE_SLOT_USAGE_MODEL_NAME);

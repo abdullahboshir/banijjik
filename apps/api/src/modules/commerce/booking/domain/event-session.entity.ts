@@ -20,6 +20,7 @@ export interface EventSessionResourceHold {
   readonly units: number;
 }
 export const MAX_EVENT_SESSION_RESOURCE_DAYS = MAX_RENTAL_DAYS;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface EventSessionProps {
   readonly eventSessionId: EventSessionId;
@@ -57,7 +58,7 @@ function checkDates(startsAt: Date, endsAt: Date): void {
 function checkResourceSpan(resourceIds: readonly ResourceId[], startsAt: Date, endsAt: Date) {
   if (
     resourceIds.length > 0 &&
-    endsAt.getTime() - startsAt.getTime() > MAX_EVENT_SESSION_RESOURCE_DAYS * 86400000
+    endsAt.getTime() - startsAt.getTime() > MAX_EVENT_SESSION_RESOURCE_DAYS * MILLISECONDS_PER_DAY
   )
     refuse(EVENT_SESSION_RULE_KEY.RESOURCE_SPAN_TOO_LONG);
 }

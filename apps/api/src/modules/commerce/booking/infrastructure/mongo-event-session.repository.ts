@@ -13,8 +13,16 @@ import type {
 import { EventSession, type EventSessionProps } from "../domain/event-session.entity.js";
 import { EVENT_SESSION_MODEL_NAME } from "./event-session.schema.js";
 
+/** A row written before card 3.33 has no `resourceHolds` field, and `lean()` applies no schema default. */
+type StoredSessionRow = Omit<EventSessionProps, "resourceHolds"> &
+  Partial<Pick<EventSessionProps, "resourceHolds">>;
+
 function sessionModel(): Model<EventSessionProps> {
   return models({}).get<EventSessionProps>(EVENT_SESSION_MODEL_NAME);
+}
+function toSession(row: StoredSessionRow): EventSession {
+  // ADR-141: a legacy session holds nothing, so it must release nothing.
+  return EventSession.rehydrate({ ...row, resourceHolds: row.resourceHolds ?? [] });
 }
 export class MongoEventSessionRepository implements EventSessionRepository {
   async insert(session: EventSession): Promise<void> {
@@ -24,8 +32,8 @@ export class MongoEventSessionRepository implements EventSessionRepository {
     const row = await sessionModel()
       .findOne({ eventSessionId })
       .select("-_id -__v")
-      .lean<EventSessionProps>();
-    return row === null ? undefined : EventSession.rehydrate(row);
+      .lean<StoredSessionRow>();
+    return row === null ? undefined : toSession(row);
   }
   async list(
     query: EventSessionListQuery,
@@ -46,9 +54,9 @@ export class MongoEventSessionRepository implements EventSessionRepository {
       .sort({ startsAt: 1, eventSessionId: 1 })
       .skip((query.page - 1) * query.limit)
       .limit(query.limit + 1)
-      .lean<EventSessionProps[]>();
+      .lean<StoredSessionRow[]>();
     return {
-      items: rows.slice(0, query.limit).map(EventSession.rehydrate),
+      items: rows.slice(0, query.limit).map(toSession),
       hasNext: rows.length > query.limit,
     };
   }
@@ -85,8 +93,8 @@ export class MongoEventSessionRepository implements EventSessionRepository {
         { returnDocument: "after", runValidators: true, ...sessionOption(getActiveSession()) },
       )
       .select("-_id -__v")
-      .lean<EventSessionProps>();
-    if (updated !== null) return EventSession.rehydrate(updated);
+      .lean<StoredSessionRow>();
+    if (updated !== null) return toSession(updated);
     return this.rejectUpdate(props, expectedVersion, timeChanged);
   }
   async reserveSeats(change: EventSessionSeatChange): Promise<boolean> {
@@ -139,8 +147,8 @@ export class MongoEventSessionRepository implements EventSessionRepository {
       .select("-_id -__v")
       .sort({ eventSessionId: 1 })
       .limit(input.limit)
-      .lean<EventSessionProps[]>();
-    return rows.map(EventSession.rehydrate);
+      .lean<StoredSessionRow[]>();
+    return rows.map(toSession);
   }
 
   async markBookingsSettled(input: {
@@ -170,8 +178,8 @@ export class MongoEventSessionRepository implements EventSessionRepository {
       .select("-_id -__v")
       .sort({ endsAt: 1, eventSessionId: 1 })
       .limit(input.limit)
-      .lean<EventSessionProps[]>();
-    return rows.map(EventSession.rehydrate);
+      .lean<StoredSessionRow[]>();
+    return rows.map(toSession);
   }
 
   private async rejectUpdate(
