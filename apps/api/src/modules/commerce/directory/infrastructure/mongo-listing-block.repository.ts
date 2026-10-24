@@ -8,6 +8,7 @@ import {
 } from "@banijjik/ids";
 import {
   getActiveSession,
+  isDuplicateKeyError,
   models,
   sessionOption,
   stripMongoInternals,
@@ -57,12 +58,7 @@ export class MongoListingBlockRepository implements ListingBlockRepository {
       }
       return toListingBlock(saved.toObject());
     } catch (error) {
-      if (
-        error !== null &&
-        typeof error === "object" &&
-        "code" in error &&
-        (error as { code?: number }).code === 11000
-      ) {
+      if (isDuplicateKeyError(error)) {
         const existing = await this.findByAccountAndListing(
           block.customerAccountId,
           block.listingId,
@@ -109,7 +105,8 @@ export class MongoListingBlockRepository implements ListingBlockRepository {
     const [docs, total] = await Promise.all([
       this.model()
         .find({ customerAccountId }, null, sessionOption(getActiveSession()))
-        .sort({ createdAt: -1 })
+        // listingBlockId breaks ties so a page boundary never repeats or skips a row.
+        .sort({ createdAt: -1, listingBlockId: -1 })
         .skip(skip)
         .limit(options.limit)
         .lean<ListingBlockDocument[]>()

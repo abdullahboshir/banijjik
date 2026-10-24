@@ -70,7 +70,7 @@ export interface SmsSender {
 
 /** Builds the SMS text in the business's language, with the business name and the code. */
 export interface OtpMessageComposer {
-  compose(code: string, purpose?: CustomerOtpPurpose): Promise<string>;
+  compose(code: string, purpose: CustomerOtpPurpose): Promise<string>;
 }
 
 /** Signs the short-lived access token of a customer for one business. */

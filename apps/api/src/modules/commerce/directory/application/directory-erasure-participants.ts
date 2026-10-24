@@ -1,12 +1,14 @@
 import { AUDIT_ACTION } from "@banijjik/contracts";
+import {
+  CUSTOMER_DATA_EXPORT_SECTION_KEY,
+  type DirectoryActivityExportSection,
+  type ListingExportSection,
+} from "@banijjik/contracts/contact";
+import { DIRECTORY_EVENT_TYPE, LISTING_VIEWER } from "@banijjik/contracts/directory";
 import type {
   CustomerDataExportParticipant,
   CustomerErasureParticipant,
-  DirectoryActivityExportSection,
-  ListingExportSection,
-} from "@banijjik/contracts/contact";
-import { DIRECTORY_EVENT_TYPE, LISTING_VIEWER } from "@banijjik/contracts/directory";
-import { asId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
+} from "../../contact/index.js";
 import type { DirectoryDependencies } from "./directory-dependencies.js";
 import { recordListingChange } from "./listing-records.js";
 import { toListingResponse } from "./listing-view.js";
@@ -18,7 +20,7 @@ export function buildDirectoryErasureParticipant(
   return {
     async eraseForAccount(input) {
       const { listings, reports, blocks } = dependencies;
-      const accountId = asId<CustomerAccountId>(input.customerAccountId);
+      const accountId = input.customerAccountId;
       const existing = await listings.findActiveByOwner(accountId);
       if (existing !== undefined) {
         const archived = existing.archive(input.now);
@@ -32,6 +34,7 @@ export function buildDirectoryErasureParticipant(
       }
       await blocks.deleteByAccount(accountId);
       await reports.deleteOpenByReporter(accountId);
+      return { forfeitedCredits: 0 };
     },
   };
 }
@@ -40,14 +43,17 @@ function buildListingExportParticipant(
   dependencies: DirectoryDependencies,
 ): CustomerDataExportParticipant {
   return {
-    sectionKey: "LISTING",
+    sectionKey: CUSTOMER_DATA_EXPORT_SECTION_KEY.LISTING,
     async exportForAccount(input): Promise<ListingExportSection> {
       const { listings, fields, settings } = dependencies;
-      const accountId = asId<CustomerAccountId>(input.customerAccountId);
-      const organizationId = asId<OrganizationId>(input.organizationId);
-      const listing = await listings.findActiveByOwner(accountId);
+      const { organizationId } = input;
+      const listing = await listings.findActiveByOwner(input.customerAccountId);
       if (listing === undefined) {
-        return { sectionKey: "LISTING", listing: null, truncated: false };
+        return {
+          sectionKey: CUSTOMER_DATA_EXPORT_SECTION_KEY.LISTING,
+          listing: null,
+          truncated: false,
+        };
       }
       const [rawFields, photoPolicy] = await Promise.all([
         fields.forOrganization(organizationId),
@@ -60,8 +66,8 @@ function buildListingExportParticipant(
         photoPolicy,
       });
       return {
-        sectionKey: "LISTING",
-        listing: response as unknown as Record<string, unknown>,
+        sectionKey: CUSTOMER_DATA_EXPORT_SECTION_KEY.LISTING,
+        listing: response,
         truncated: false,
       };
     },
@@ -72,10 +78,10 @@ function buildActivityExportParticipant(
   dependencies: DirectoryDependencies,
 ): CustomerDataExportParticipant {
   return {
-    sectionKey: "DIRECTORY_ACTIVITY",
+    sectionKey: CUSTOMER_DATA_EXPORT_SECTION_KEY.DIRECTORY_ACTIVITY,
     async exportForAccount(input): Promise<DirectoryActivityExportSection> {
       const { blocks, reports, listings } = dependencies;
-      const accountId = asId<CustomerAccountId>(input.customerAccountId);
+      const accountId = input.customerAccountId;
       const fetchLimit = input.maxRows + 1;
       const [pagedBlocks, rawReports] = await Promise.all([
         blocks.listByAccount(accountId, { page: 1, limit: fetchLimit }),
@@ -91,7 +97,7 @@ function buildActivityExportParticipant(
       const blockListings = await listings.findByIds(listingIds);
       const listingMap = new Map(blockListings.map((l) => [l.listingId, l.listingNumber]));
       return {
-        sectionKey: "DIRECTORY_ACTIVITY",
+        sectionKey: CUSTOMER_DATA_EXPORT_SECTION_KEY.DIRECTORY_ACTIVITY,
         blocks: slicedBlocks.map((b) => ({
           listingBlockId: b.listingBlockId,
           listingId: b.listingId,

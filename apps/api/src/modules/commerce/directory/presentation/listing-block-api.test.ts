@@ -208,6 +208,45 @@ describe("Listing Block API (M.7 A2)", () => {
     expect(listAfter.body.data.items).toHaveLength(0);
   });
 
+  it("lists blocks newest first, one page at a time", async () => {
+    const world = await aDirectoryWorld();
+    const first = await approvedListing(world, world.organizationA);
+    const second = await approvedListing(world, world.organizationA);
+    const viewer = await signInCustomer(harness, world.organizationA);
+    const viewerCookies = asCustomerCookies(viewer.session);
+    for (const listing of [first, second]) {
+      await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/listing-blocks",
+        cookies: viewerCookies,
+        body: { listingNumber: listing.listingNumber },
+      });
+      harness.clock.advanceSeconds(1);
+    }
+
+    const pageOne = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/my/listing-blocks?page=1&limit=1",
+      cookies: viewerCookies,
+    });
+    const pageTwo = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/my/listing-blocks?page=2&limit=1",
+      cookies: viewerCookies,
+    });
+
+    expect(pageOne.body.data.total).toBe(2);
+    expect(
+      pageOne.body.data.items.map((item: { listingNumber: string }) => item.listingNumber),
+    ).toEqual([second.listingNumber]);
+    expect(
+      pageTwo.body.data.items.map((item: { listingNumber: string }) => item.listingNumber),
+    ).toEqual([first.listingNumber]);
+  });
+
   it("signed-in search excludes blocked listing, detail still opens, public search unaffected", async () => {
     const world = await aDirectoryWorld();
     const l1 = await approvedListing(world, world.organizationA);

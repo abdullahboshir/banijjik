@@ -11,6 +11,7 @@ protection and the contact-link field (ADR-110, ADR-073).
 - **Events:** emits `contact.contact.{created,updated,archived,anonymized}`, `contact.customerOtp.requested` (challenge id only) and `contact.customerAccount.{blocked,unblocked,erased}`; consumes none. The handler `contact.sendCustomerOtp` sends the code by SMS through the `SmsSender` port.
 - **Permissions:** `contact.contact.{read,create,update,archive,anonymize,readSensitive}`, `contact.customerAccount.{read,block}`.
 - **Settings:** `contact.dedupeOn` (`PHONE` or `PHONE_OR_EMAIL`); `contact.customerLogin` (off by default).
+- **Erasure and export (M.7):** `EraseOwnCustomerAccountUseCase` needs a fresh `ERASE_ACCOUNT` code (sign-in codes never work for it and the reverse). Other modules take part through the required `CustomerErasureParticipant` and `CustomerDataExportParticipant` ports, wired in `routes/storefront.ts`; they run whatever the module switch says. Everything happens in one transaction.
 - **Customer sign-in rules:** the same answer for every phone on send; five guesses per code; a code is never logged, sent in an event or kept readable; a block deletes the sessions; archiving or anonymizing a contact deletes its login.
 - **Rules:** one ACTIVE contact per phone (409 with the existing id); an archived contact is
   read-only and frees its phone; audit entries never hold a name, phone, email or address.

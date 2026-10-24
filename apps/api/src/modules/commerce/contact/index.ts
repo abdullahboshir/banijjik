@@ -1,8 +1,4 @@
-import {
-  CONTACT_STATUS,
-  type CustomerDataExportParticipant,
-  type CustomerErasureParticipant,
-} from "@banijjik/contracts/contact";
+import { CONTACT_STATUS } from "@banijjik/contracts/contact";
 import { asId, type ContactId, type CustomerAccountId } from "@banijjik/ids";
 import { Router, type RequestHandler } from "express";
 import type { StorefrontConfig } from "../../../config/index.js";
@@ -19,6 +15,11 @@ import type {
   ContactCustomFieldReader,
   SensitiveValueAccess,
 } from "./application/ports/custom-field-ports.js";
+import type {
+  CustomerDataExportParticipant,
+  CustomerErasureParticipant,
+  CustomerErasureResult,
+} from "./application/ports/customer-participants.js";
 import type {
   CustomerAccessTokenIssuer,
   OtpMessageComposer,
@@ -79,6 +80,9 @@ export type {
   ContactCustomFieldReader,
   ContactRoleCatalog,
   CustomerAccessTokenIssuer,
+  CustomerDataExportParticipant,
+  CustomerErasureParticipant,
+  CustomerErasureResult,
   DedupeModeReader,
   HomeLocationLookup,
   OtpMessageComposer,

@@ -4,8 +4,18 @@ import {
   MODULE_KEY,
   MODULE_OVERRIDE_EFFECT,
 } from "@banijjik/contracts";
-import { CUSTOMER_DATA_EXPORT_RULES } from "@banijjik/contracts/contact";
-import { CREDIT_PURCHASE_METHOD, CREDIT_PURCHASE_STATUS } from "@banijjik/contracts/credit";
+import {
+  CUSTOMER_DATA_EXPORT_RULES,
+  CONTACT_EVENT_TYPE,
+  CUSTOMER_DATA_EXPORT_MAX_ROWS,
+  CUSTOMER_OTP_PURPOSE,
+} from "@banijjik/contracts/contact";
+import {
+  CREDIT_ENTRY_TYPE,
+  CREDIT_PURCHASE_METHOD,
+  CREDIT_PURCHASE_STATUS,
+  CREDIT_SOURCE_TYPE,
+} from "@banijjik/contracts/credit";
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { enableCreditForWorld, grantCredits } from "../../../../test-support/credit-world.js";
@@ -20,9 +30,13 @@ import {
   callStorefront,
   deliverPendingOtpSms,
   enableCustomerLogin,
+  freshPhone,
   latestCode,
+  readChallenge,
+  readInbox,
   signInCustomer,
   TEST_OTP_SECRET,
+  type SignedInCustomer,
 } from "../../../../test-support/storefront-world.js";
 import {
   createTwoOrganizations,
@@ -171,6 +185,15 @@ async function createCustomerWithListing(
   };
 }
 
+function fullCustomerOf(customer: SignedInCustomer): FullCustomer {
+  return {
+    customerAccountId: customer.verifyResponse.body.data.customerAccountId as string,
+    phone: customer.phone,
+    phoneE164: `+88${customer.phone}`,
+    cookies: asCustomerCookies(customer.session),
+  };
+}
+
 async function requestEraseOtp(
   organizationId: string,
   customer: FullCustomer,
@@ -192,13 +215,12 @@ async function requestEraseOtp(
 
 describe("Customer Erasure & Data Export API (M.7 A2)", () => {
   describe("Erase Code & Challenge Validation", () => {
-    it("refuses sign-in code for erase and erase code for sign-in", async () => {
+    it("refuses a sign-in code for erase and an erase code for sign-in", async () => {
       const world = await aWorld();
       const customer = await signInCustomer(harness, world.organizationA);
-      const cookies = asCustomerCookies(customer.session);
-      const phoneE164 = `+88${customer.phone}`;
+      const full = fullCustomerOf(customer);
+      const { cookies, phoneE164 } = full;
 
-      // 1. Request sign-in code
       await callStorefront(harness.app, {
         method: "post",
         organizationId: world.organizationA,
@@ -207,99 +229,158 @@ describe("Customer Erasure & Data Export API (M.7 A2)", () => {
       });
       await deliverPendingOtpSms(harness.connections, world.organizationA, TEST_OTP_SECRET);
       const signInCode = await latestCode(world.organizationA, phoneE164);
+      const signInChallenge = await readChallenge(world.organizationA, phoneE164);
+      expect(signInChallenge?.purpose).toBe(CUSTOMER_OTP_PURPOSE.SIGN_IN);
 
-      // Sign-in code is refused for erasure
       const eraseWithSignInCode = await callStorefront(harness.app, {
         method: "post",
         organizationId: world.organizationA,
         suffix: "/my/account/erase",
         cookies,
-        body: { challengeId: newId(), code: signInCode },
+        body: { challengeId: signInChallenge?.otpChallengeId, code: signInCode },
       });
       expect(eraseWithSignInCode.status).toBe(400);
 
-      // 2. Request erase code
-      await callStorefront(harness.app, {
+      const stillSignIn = await callStorefront(harness.app, {
         method: "post",
         organizationId: world.organizationA,
-        suffix: "/my/account/erase/otp",
-        cookies,
+        suffix: "/auth/otp/verify",
+        body: { phone: customer.phone, code: signInCode },
       });
-      await deliverPendingOtpSms(harness.connections, world.organizationA, TEST_OTP_SECRET);
-      const eraseCode = await latestCode(world.organizationA, phoneE164);
+      expect(stillSignIn.status).toBe(200);
 
-      // Erase code is refused for sign-in
+      const { challengeId, code } = await requestEraseOtp(world.organizationA, full);
       const signInWithEraseCode = await callStorefront(harness.app, {
         method: "post",
         organizationId: world.organizationA,
         suffix: "/auth/otp/verify",
-        body: { phone: customer.phone, code: eraseCode },
+        body: { phone: customer.phone, code },
       });
       expect(signInWithEraseCode.status).toBe(400);
+      const untouched = await readChallenge(world.organizationA, phoneE164);
+      expect(untouched?.otpChallengeId).toBe(challengeId);
+      expect(untouched?.attempts).toBe(0);
+
+      const erased = await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/account/erase",
+        cookies,
+        body: { challengeId, code },
+      });
+      expect(erased.status).toBe(200);
     });
 
-    it("increments attempts on wrong erase code and rejects expired challenge", async () => {
+    it("counts a wrong erase code as an attempt and keeps the right code usable", async () => {
       const world = await aWorld();
-      const customer = await signInCustomer(harness, world.organizationA);
-      const cookies = asCustomerCookies(customer.session);
+      const full = fullCustomerOf(await signInCustomer(harness, world.organizationA));
+      const { challengeId, code } = await requestEraseOtp(world.organizationA, full);
 
-      const otpRes = await callStorefront(harness.app, {
+      const wrong = await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/account/erase",
+        cookies: full.cookies,
+        body: { challengeId, code: code === "000000" ? "111111" : "000000" },
+      });
+      expect(wrong.status).toBe(400);
+      const afterWrong = await readChallenge(world.organizationA, full.phoneE164);
+      expect(afterWrong?.attempts).toBe(1);
+      expect(afterWrong?.consumedAt).toBeUndefined();
+
+      const right = await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/account/erase",
+        cookies: full.cookies,
+        body: { challengeId, code },
+      });
+      expect(right.status).toBe(200);
+    });
+
+    it("refuses an expired erase challenge and a used one", async () => {
+      const world = await aWorld();
+      const full = fullCustomerOf(await signInCustomer(harness, world.organizationA));
+      const challenges = harness.connections.tenantShared.collection("otp_challenges");
+
+      const expired = await requestEraseOtp(world.organizationA, full);
+      await challenges.updateOne(
+        { otpChallengeId: expired.challengeId },
+        { $set: { expiresAt: new Date(harness.clock.now().getTime() - 1000) } },
+      );
+      const expiredResponse = await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/account/erase",
+        cookies: full.cookies,
+        body: expired,
+      });
+      expect(expiredResponse.status).toBe(400);
+
+      const used = await requestEraseOtp(world.organizationA, full);
+      await challenges.updateOne(
+        { otpChallengeId: used.challengeId },
+        { $set: { consumedAt: new Date() } },
+      );
+      const usedResponse = await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/account/erase",
+        cookies: full.cookies,
+        body: used,
+      });
+      expect(usedResponse.status).toBe(400);
+      const account = await harness.connections.tenantShared
+        .collection("customer_accounts")
+        .findOne({ customerAccountId: full.customerAccountId });
+      expect(account).not.toBeNull();
+    });
+
+    it("sends the erase code only to the account's own phone and ignores a body", async () => {
+      const world = await aWorld();
+      const full = fullCustomerOf(await signInCustomer(harness, world.organizationA));
+      const otherPhone = freshPhone();
+
+      const sent = await callStorefront(harness.app, {
         method: "post",
         organizationId: world.organizationA,
         suffix: "/my/account/erase/otp",
-        cookies,
+        cookies: full.cookies,
+        body: { phone: otherPhone },
       });
-      const challengeId = otpRes.body.data.challengeId as string;
+      expect(sent.status).toBe(200);
+      await deliverPendingOtpSms(harness.connections, world.organizationA, TEST_OTP_SECRET);
 
-      // Wrong code
-      const wrong1 = await callStorefront(harness.app, {
-        method: "post",
-        organizationId: world.organizationA,
-        suffix: "/my/account/erase",
-        cookies,
-        body: { challengeId, code: "999999" },
-      });
-      expect(wrong1.status).toBe(400);
-
-      // Expire the challenge in DB without invalidating auth cookie
-      await harness.connections.tenantShared
-        .collection("otp_challenges")
-        .updateOne(
-          { otpChallengeId: challengeId },
-          { $set: { expiresAt: new Date(Date.now() - 1000) } },
-        );
-
-      const expiredRes = await callStorefront(harness.app, {
-        method: "post",
-        organizationId: world.organizationA,
-        suffix: "/my/account/erase",
-        cookies,
-        body: { challengeId, code: "123456" },
-      });
-      expect(expiredRes.status).toBe(400);
+      const challenge = await readChallenge(world.organizationA, full.phoneE164);
+      expect(challenge?.otpChallengeId).toBe(sent.body.data.challengeId);
+      expect(challenge?.purpose).toBe(CUSTOMER_OTP_PURPOSE.ERASE_ACCOUNT);
+      const otherInbox = await readInbox(world.organizationA, `+88${otherPhone}`);
+      expect(otherInbox).toHaveLength(0);
+      const ownInbox = await readInbox(world.organizationA, full.phoneE164);
+      expect(ownInbox.at(-1)?.text).toContain("মুছে");
     });
   });
 
   describe("Erase Execution Happy Path", () => {
-    it("erases account, cleans listing, cancels pending purchases, deletes blocks & open reports, and logs audit", async () => {
-      const world = await aWorld();
-      const c1 = await createCustomerWithListing(world, world.organizationA);
-      const c2 = await createCustomerWithListing(world, world.organizationA);
+    interface ErasedWorld {
+      readonly world: TwoOrganizations;
+      readonly erased: FullCustomer;
+      readonly other: FullCustomer;
+      readonly contactId: string;
+      readonly response: { status: number; body: { data: Record<string, unknown> } };
+      readonly afterEraseMe: { status: number };
+    }
+    let scenario: ErasedWorld;
 
-      // Grant credits to c1
-      await grantCredits({
-        world,
-        organizationId: world.organizationA,
-        customerAccountId: c1.customerAccountId,
-        credits: 50,
-      });
-
-      // Create a pending purchase for c1
+    async function seedPendingPurchase(
+      organizationId: string,
+      customer: FullCustomer,
+    ): Promise<void> {
       await harness.connections.tenantShared.collection("credit_purchases").insertOne({
         creditPurchaseId: newId(),
-        organizationId: world.organizationA,
+        organizationId,
         purchaseNumber: "PUR-1001",
-        customerAccountId: c1.customerAccountId,
+        customerAccountId: customer.customerAccountId,
         creditPackId: newId(),
         snapshot: {
           name: { bn: "১০ ক্রেডিট", en: "10 Credits" },
@@ -308,7 +389,7 @@ describe("Customer Erasure & Data Export API (M.7 A2)", () => {
           validityDays: 30,
         },
         method: CREDIT_PURCHASE_METHOD.BKASH,
-        senderPhoneE164: c1.phoneE164,
+        senderPhoneE164: customer.phoneE164,
         transactionReference: "TRX12345678",
         status: CREDIT_PURCHASE_STATUS.PENDING,
         submittedAt: new Date(),
@@ -319,132 +400,171 @@ describe("Customer Erasure & Data Export API (M.7 A2)", () => {
         createdByUserId: null,
         updatedByUserId: null,
       });
+    }
 
-      // c1 blocks c2's listing
-      expect(c2.listingNumber).toBeDefined();
+    async function postStorefront(
+      organizationId: string,
+      customer: FullCustomer,
+      suffix: string,
+      body: Record<string, unknown>,
+    ): Promise<void> {
       await callStorefront(harness.app, {
         method: "post",
-        organizationId: world.organizationA,
-        suffix: "/my/listing-blocks",
-        cookies: c1.cookies,
-        body: { listingNumber: c2.listingNumber ?? "" },
+        organizationId,
+        suffix,
+        cookies: customer.cookies,
+        body,
       });
+    }
 
-      // c1 files an open report against c2's listing
-      await callStorefront(harness.app, {
-        method: "post",
-        organizationId: world.organizationA,
-        suffix: `/listings/${c2.listingNumber}/reports`,
-        cookies: c1.cookies,
-        body: { reasonKey: "false_info", note: "Filed by c1" },
+    beforeAll(async () => {
+      const world = await aWorld();
+      const organizationId = world.organizationA;
+      const erased = await createCustomerWithListing(world, organizationId);
+      const other = await createCustomerWithListing(world, organizationId);
+      await grantCredits({
+        world,
+        organizationId,
+        customerAccountId: erased.customerAccountId,
+        credits: 50,
       });
-
-      // c2 files a report against c1's listing (this report MUST remain!)
-      await callStorefront(harness.app, {
-        method: "post",
-        organizationId: world.organizationA,
-        suffix: `/listings/${c1.listingNumber}/reports`,
-        cookies: c2.cookies,
-        body: { reasonKey: "false_info", note: "Report against c1" },
+      await seedPendingPurchase(organizationId, erased);
+      await postStorefront(organizationId, erased, "/my/listing-blocks", {
+        listingNumber: other.listingNumber ?? "",
       });
+      await postStorefront(organizationId, erased, `/listings/${other.listingNumber}/reports`, {
+        reasonKey: "false_info",
+        note: "Filed by the erased account",
+      });
+      await postStorefront(organizationId, other, `/listings/${erased.listingNumber}/reports`, {
+        reasonKey: "false_info",
+        note: "Report against the erased listing",
+      });
+      const contact = await harness.connections.tenantShared
+        .collection("contacts")
+        .findOne({ phoneE164: erased.phoneE164 });
 
-      // Request erase OTP and execute erase
-      const { challengeId, code } = await requestEraseOtp(world.organizationA, c1);
-      const eraseRes = await callStorefront(harness.app, {
+      const { challengeId, code } = await requestEraseOtp(organizationId, erased);
+      const response = await callStorefront(harness.app, {
         method: "post",
-        organizationId: world.organizationA,
+        organizationId,
         suffix: "/my/account/erase",
-        cookies: c1.cookies,
+        cookies: erased.cookies,
         body: { challengeId, code },
       });
-
-      expect(eraseRes.status).toBe(200);
-      expect(eraseRes.body.data.erased).toBe(true);
-      expect(eraseRes.body.data.forfeitedCredits).toBe(50);
-
-      // Advance clock past the account status cache window (60s)
+      // The customer-status cache lasts 60 seconds; the old cookie must be refused after that.
       harness.clock.advanceSeconds(65);
-
-      // Auth cookie returns 401 now
-      const postEraseMe = await callStorefront(harness.app, {
+      const afterEraseMe = await callStorefront(harness.app, {
         method: "get",
-        organizationId: world.organizationA,
+        organizationId,
         suffix: "/me",
-        cookies: c1.cookies,
+        cookies: erased.cookies,
       });
-      expect(postEraseMe.status).toBe(401);
+      scenario = {
+        world,
+        erased,
+        other,
+        contactId: String(contact?.["contactId"]),
+        response,
+        afterEraseMe,
+      };
+    });
 
-      // Verify DB state:
+    it("answers 200 with the forfeited balance and refuses the old cookie afterwards", () => {
+      expect(scenario.response.status).toBe(200);
+      expect(scenario.response.body.data["erased"]).toBe(true);
+      expect(scenario.response.body.data["forfeitedCredits"]).toBe(50);
+      expect(scenario.afterEraseMe.status).toBe(401);
+    });
+
+    it("deletes the account and its sessions and anonymizes the contact", async () => {
       const tenantDb = harness.connections.tenantShared;
+      const accountId = scenario.erased.customerAccountId;
+      expect(
+        await tenantDb.collection("customer_accounts").findOne({ customerAccountId: accountId }),
+      ).toBeNull();
+      expect(
+        await tenantDb
+          .collection("customer_sessions")
+          .find({ customerAccountId: accountId })
+          .toArray(),
+      ).toHaveLength(0);
 
-      // 1. Customer account document is deleted
-      const accountDoc = await tenantDb
-        .collection("customer_accounts")
-        .findOne({ customerAccountId: c1.customerAccountId });
-      expect(accountDoc).toBeNull();
+      const contact = await tenantDb
+        .collection("contacts")
+        .findOne({ contactId: scenario.contactId });
+      expect(contact?.["anonymizedAt"]).toBeInstanceOf(Date);
+      expect(contact?.["name"]).toBeUndefined();
+      expect(contact?.["phoneE164"]).toBeUndefined();
+      expect(contact?.["email"]).toBeUndefined();
+    });
 
-      // 2. Customer sessions deleted
-      const sessions = await tenantDb
-        .collection("customer_sessions")
-        .find({ customerAccountId: c1.customerAccountId })
-        .toArray();
-      expect(sessions).toHaveLength(0);
-
-      // 3. Contact is anonymized
-      const contactDoc = await tenantDb.collection("contacts").findOne({ phoneE164: c1.phoneE164 });
-      expect(contactDoc).toBeNull(); // Phone freed/cleared
-
-      // 4. Listing is ARCHIVED with personal fields cleared
-      const listingDoc = await tenantDb
+    it("archives the listing with its personal data cleared", async () => {
+      const listing = await harness.connections.tenantShared
         .collection("directory_listings")
-        .findOne({ listingId: c1.listingId });
-      expect(listingDoc).not.toBeNull();
-      expect(listingDoc?.status).toBe("ARCHIVED");
-      expect(listingDoc?.customFields).toEqual({});
-      expect(listingDoc?.customFieldSearch).toEqual([]);
-      expect(listingDoc?.photoFileIds).toEqual([]);
-      expect(listingDoc?.consentsAccepted).toEqual([]);
+        .findOne({ listingId: scenario.erased.listingId });
+      expect(listing?.["status"]).toBe("ARCHIVED");
+      expect(listing?.["customFields"]).toEqual({});
+      expect(listing?.["customFieldSearch"]).toEqual([]);
+      expect(listing?.["photoFileIds"]).toEqual([]);
+      expect(listing?.["consentsAccepted"]).toEqual([]);
+    });
 
-      // 5. Filed block by c1 is deleted
-      const blockDoc = await tenantDb
-        .collection("listing_blocks")
-        .findOne({ customerAccountId: c1.customerAccountId });
-      expect(blockDoc).toBeNull();
+    it("deletes the blocks and open reports it filed and keeps the reports against its listing", async () => {
+      const tenantDb = harness.connections.tenantShared;
+      const accountId = scenario.erased.customerAccountId;
+      expect(
+        await tenantDb.collection("listing_blocks").findOne({ customerAccountId: accountId }),
+      ).toBeNull();
+      expect(
+        await tenantDb
+          .collection("listing_reports")
+          .findOne({ reporterCustomerAccountId: accountId }),
+      ).toBeNull();
+      expect(
+        await tenantDb
+          .collection("listing_reports")
+          .findOne({ listingId: scenario.erased.listingId }),
+      ).not.toBeNull();
+    });
 
-      // 6. Open report filed by c1 is deleted
-      const c1Report = await tenantDb
-        .collection("listing_reports")
-        .findOne({ reporterCustomerAccountId: c1.customerAccountId });
-      expect(c1Report).toBeNull();
-
-      // 7. Report against c1's listing remains intact
-      const reportAgainstC1 = await tenantDb
-        .collection("listing_reports")
-        .findOne({ listingId: c1.listingId });
-      expect(reportAgainstC1).not.toBeNull();
-
-      // 8. Pending purchase is CANCELLED
+    it("cancels the pending purchase and keeps the credit entries", async () => {
+      const tenantDb = harness.connections.tenantShared;
+      const accountId = scenario.erased.customerAccountId;
       const purchases = await tenantDb
         .collection("credit_purchases")
-        .find({ customerAccountId: c1.customerAccountId })
+        .find({ customerAccountId: accountId })
         .toArray();
       expect(purchases).toHaveLength(1);
-      expect(purchases[0]?.status).toBe(CREDIT_PURCHASE_STATUS.CANCELLED);
-
-      // 9. Credit entries remain
-      const creditEntries = await tenantDb
+      expect(purchases[0]?.["status"]).toBe(CREDIT_PURCHASE_STATUS.CANCELLED);
+      const entries = await tenantDb
         .collection("credit_entries")
-        .find({ customerAccountId: c1.customerAccountId })
+        .find({ customerAccountId: accountId })
         .toArray();
-      expect(creditEntries.length).toBeGreaterThanOrEqual(1);
+      expect(entries.length).toBeGreaterThanOrEqual(1);
+    });
 
-      // 10. Audit log contains CUSTOMER_ACCOUNT_ERASED with no PII
-      const audits = await tenantDb
+    it("writes one audit row and one event with ids only, no phone or name", async () => {
+      const accountId = scenario.erased.customerAccountId;
+      const audits = await harness.connections.tenantShared
         .collection("audit_logs")
-        .find({ action: AUDIT_ACTION.CUSTOMER_ACCOUNT_ERASED, entityId: c1.customerAccountId })
+        .find({ action: AUDIT_ACTION.CUSTOMER_ACCOUNT_ERASED, entityId: accountId })
         .toArray();
       expect(audits).toHaveLength(1);
-      expect(JSON.stringify(audits[0] ?? {})).not.toContain(c1.phone);
+      const events = await harness.connections.platform
+        .collection("outbox_events")
+        .find({
+          organizationId: scenario.world.organizationA,
+          type: CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_ERASED,
+        })
+        .toArray();
+      expect(events).toHaveLength(1);
+      expect(JSON.stringify(events[0]?.["payload"])).toContain(accountId);
+      for (const row of [audits[0], events[0]]) {
+        const json = JSON.stringify(row ?? {});
+        expect(json).not.toContain(scenario.erased.phone);
+        expect(json).not.toContain("Test User");
+      }
     });
   });
 
@@ -492,6 +612,116 @@ describe("Customer Erasure & Data Export API (M.7 A2)", () => {
       // Verify no Mongo _id in response
       const rawJson = JSON.stringify(data);
       expect(rawJson).not.toContain('"_id"');
+      expect(rawJson).not.toContain("codeHash");
+      expect(rawJson).not.toContain("passwordHash");
+    });
+
+    it("cuts a list at the row cap and flags it truncated", async () => {
+      const world = await aWorld();
+      const customer = fullCustomerOf(await signInCustomer(harness, world.organizationA));
+      const now = new Date();
+      const blocks = Array.from({ length: CUSTOMER_DATA_EXPORT_MAX_ROWS + 1 }, () => ({
+        organizationId: world.organizationA,
+        listingBlockId: newId(),
+        customerAccountId: customer.customerAccountId,
+        listingId: newId(),
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        createdByUserId: null,
+        updatedByUserId: null,
+      }));
+      await harness.connections.tenantShared.collection("listing_blocks").insertMany(blocks);
+
+      const exportRes = await callStorefront(harness.app, {
+        method: "get",
+        organizationId: world.organizationA,
+        suffix: "/my/data-export",
+        cookies: customer.cookies,
+      });
+
+      expect(exportRes.status).toBe(200);
+      const activity = exportRes.body.data.sections.DIRECTORY_ACTIVITY;
+      expect(activity.blocks).toHaveLength(CUSTOMER_DATA_EXPORT_MAX_ROWS);
+      expect(activity.blocksTruncated).toBe(true);
+      expect(activity.reportsTruncated).toBe(false);
+      expect(activity.truncated).toBe(true);
+      expect(exportRes.body.data.sections.LISTING.truncated).toBe(false);
+    });
+
+    it("cuts the credit entries at the row cap and flags the section truncated", async () => {
+      const world = await aWorld();
+      const customer = fullCustomerOf(await signInCustomer(harness, world.organizationA));
+      const now = new Date();
+      const entries = Array.from(
+        { length: CUSTOMER_DATA_EXPORT_MAX_ROWS + 1 },
+        (_unused, index) => ({
+          creditEntryId: newId(),
+          organizationId: world.organizationA,
+          customerAccountId: customer.customerAccountId,
+          type: CREDIT_ENTRY_TYPE.ADJUST,
+          credits: 1,
+          expiresOn: null,
+          source: { sourceType: CREDIT_SOURCE_TYPE.ADJUSTMENT, sourceId: newId() },
+          fromPurchaseEntryId: null,
+          reason: null,
+          createdByUserId: null,
+          occurredAt: new Date(now.getTime() - index),
+          businessDate: "2026-10-24",
+          createdAt: now,
+        }),
+      );
+      await harness.connections.tenantShared.collection("credit_entries").insertMany(entries);
+
+      const exportRes = await callStorefront(harness.app, {
+        method: "get",
+        organizationId: world.organizationA,
+        suffix: "/my/data-export",
+        cookies: customer.cookies,
+      });
+
+      expect(exportRes.status).toBe(200);
+      const credit = exportRes.body.data.sections.CREDIT;
+      expect(credit.entries).toHaveLength(CUSTOMER_DATA_EXPORT_MAX_ROWS);
+      expect(credit.entriesTruncated).toBe(true);
+      expect(credit.truncated).toBe(true);
+      expect(credit.unlocksTruncated).toBe(false);
+    });
+
+    it("never shows another account's blocks, reports or phone", async () => {
+      const world = await aWorld();
+      const owner = await createCustomerWithListing(world, world.organizationA);
+      const other = await createCustomerWithListing(world, world.organizationA);
+      await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/listing-blocks",
+        cookies: other.cookies,
+        body: { listingNumber: owner.listingNumber ?? "" },
+      });
+      await callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: `/listings/${owner.listingNumber}/reports`,
+        cookies: other.cookies,
+        body: { reasonKey: "false_info", note: "Filed by the other account" },
+      });
+
+      const exportRes = await callStorefront(harness.app, {
+        method: "get",
+        organizationId: world.organizationA,
+        suffix: "/my/data-export",
+        cookies: owner.cookies,
+      });
+
+      expect(exportRes.status).toBe(200);
+      const activity = exportRes.body.data.sections.DIRECTORY_ACTIVITY;
+      expect(activity.blocks).toHaveLength(0);
+      expect(activity.reports).toHaveLength(0);
+      const rawJson = JSON.stringify(exportRes.body.data);
+      expect(rawJson).not.toContain(other.customerAccountId);
+      expect(rawJson).not.toContain(other.phoneE164);
+      expect(rawJson).not.toContain("Filed by the other account");
     });
 
     it("enforces maxExportsPerDay rate limit (4th export returns 429)", async () => {

@@ -20,6 +20,7 @@ import {
 } from "../../../test-support/storefront-world.js";
 import { createTwoOrganizations } from "../../../test-support/two-organizations.js";
 import { withOrganizationContext } from "../../../test-support/organization-context.js";
+import type { CustomerErasureResult } from "./application/ports/customer-participants.js";
 import { EraseOwnCustomerAccountUseCase } from "./application/use-cases/erase-own-customer-account.use-case.js";
 import { MongoCustomerAccountRepository } from "./infrastructure/mongo-customer-account.repository.js";
 import { MongoCustomerSessionRepository } from "./infrastructure/mongo-customer-session.repository.js";
@@ -70,12 +71,12 @@ describe("Erase Transaction Rollback", () => {
     const audit = buildAuditRecorder(harness.clock);
 
     const failingParticipant = {
-      async eraseForAccount() {
+      async eraseForAccount(): Promise<CustomerErasureResult> {
         throw new Error("Simulated participant failure");
       },
     };
 
-    const failingUseCase = new EraseOwnCustomerAccountUseCase({
+    const dependencies = {
       accounts,
       contacts,
       challenges,
@@ -83,12 +84,12 @@ describe("Erase Transaction Rollback", () => {
       audit,
       events: kernelEventPublisher,
       clock: harness.clock,
-      erasureParticipants: [failingParticipant],
-      exportParticipants: [],
       otpSecret: TEST_OTP_SECRET,
       unitOfWork: new MongoUnitOfWork(),
-      limiter: { isRateLimited: async () => false } as never,
-      tokens: { issueAccessToken: () => "", verifyAccessToken: () => null } as never,
+    };
+    const failingUseCase = new EraseOwnCustomerAccountUseCase({
+      ...dependencies,
+      erasureParticipants: [failingParticipant],
     });
 
     // Execute use case and expect failure
@@ -114,5 +115,20 @@ describe("Erase Transaction Rollback", () => {
       expect(challenge).toBeDefined();
       expect(challenge?.consumedAt).toBeUndefined();
     });
+
+    // The same code still works once the participants succeed: a failed erase wastes no code.
+    const workingUseCase = new EraseOwnCustomerAccountUseCase({
+      ...dependencies,
+      erasureParticipants: [{ eraseForAccount: async () => ({ forfeitedCredits: 0 }) }],
+    });
+    const result = await withOrganizationContext(world.organizationA, () =>
+      workingUseCase.execute({
+        organizationId: asId<OrganizationId>(world.organizationA),
+        customerAccountId: asId<CustomerAccountId>(customerAccountId),
+        challengeId,
+        code,
+      }),
+    );
+    expect(result.erased).toBe(true);
   });
 });

@@ -1,4 +1,5 @@
 import { defineEnum } from "../define-enum.js";
+import type { ListingResponse } from "../directory/directory-contracts.js";
 import type { ContactAddress } from "./contact-contracts.js";
 
 export const CUSTOMER_DATA_EXPORT_SECTION_KEY = defineEnum([
@@ -17,27 +18,9 @@ export const CUSTOMER_DATA_EXPORT_RULES = {
   windowSeconds: 86400,
 } as const;
 
-export interface CustomerErasureParticipant {
-  /** Inside the erase transaction. Idempotent: a second call finds nothing to do. */
-  eraseForAccount(input: {
-    organizationId: string;
-    customerAccountId: string;
-    now: Date;
-  }): Promise<{ forfeitedCredits?: number } | void>;
-}
-
-export interface CustomerDataExportParticipant {
-  readonly sectionKey: CustomerDataExportSectionKey;
-  exportForAccount(input: {
-    organizationId: string;
-    customerAccountId: string;
-    maxRows: number;
-  }): Promise<CustomerDataExportSection>;
-}
-
 export interface ListingExportSection {
   readonly sectionKey: "LISTING";
-  readonly listing: Record<string, unknown> | null;
+  readonly listing: ListingResponse | null;
   readonly truncated: boolean;
 }
 
@@ -119,12 +102,15 @@ export interface CustomerContactExportData {
   readonly updatedAt: string;
 }
 
+export interface CustomerDataExportSections {
+  readonly LISTING: ListingExportSection;
+  readonly DIRECTORY_ACTIVITY: DirectoryActivityExportSection;
+  readonly CREDIT: CreditExportSection;
+}
+
 export interface CustomerDataExportResponse {
   readonly exportedAt: string;
   readonly account: CustomerAccountExportData;
   readonly contact: CustomerContactExportData | null;
-  readonly listing: ListingExportSection;
-  readonly directoryActivity: DirectoryActivityExportSection;
-  readonly credit: CreditExportSection;
-  readonly sections: Record<CustomerDataExportSectionKey, CustomerDataExportSection>;
+  readonly sections: CustomerDataExportSections;
 }
