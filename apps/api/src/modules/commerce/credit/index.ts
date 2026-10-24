@@ -40,6 +40,10 @@ import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { buildCreditEventPublisher } from "./infrastructure/credit-event-publisher.js";
 import { buildRequiredTimeZoneReader } from "./infrastructure/required-time-zone-reader.js";
 
+export {
+  buildCreditErasureParticipant,
+  buildCreditExportParticipant,
+} from "./application/credit-erasure-participants.js";
 export { creditManifest } from "./module.manifest.js";
 
 export function registerCreditScheduledJobs(input: {

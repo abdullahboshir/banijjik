@@ -147,6 +147,26 @@ export class MongoCreditPurchaseRepository implements CreditPurchaseRepository {
     }).session(getActiveSession() ?? null);
   }
 
+  async listPendingByAccount(
+    customerAccountId: CustomerAccountId,
+  ): Promise<readonly CreditPurchase[]> {
+    const organizationId = this.getOrganizationId();
+    const Model = models({ organizationId }).get<CreditPurchaseDocument>(
+      CREDIT_PURCHASE_MODEL_NAME,
+    );
+    const docs = await Model.find(
+      {
+        organizationId,
+        customerAccountId,
+        status: CREDIT_PURCHASE_STATUS.PENDING,
+      },
+      { _id: 0 },
+    )
+      .session(getActiveSession() ?? null)
+      .lean<CreditPurchaseDocument[]>();
+    return docs.map((d) => this.fromDocument(d));
+  }
+
   async listForStaff(
     filter: ListCreditPurchasesStaffFilter,
   ): Promise<{ readonly items: readonly CreditPurchase[]; readonly total: number }> {
