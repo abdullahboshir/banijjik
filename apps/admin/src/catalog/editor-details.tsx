@@ -5,6 +5,7 @@ import {
   BILLING_PERIOD_UNIT,
   BOOKING_MODE,
   PLAN_START_RULE,
+  RENTAL_RATE_UNIT,
   type BillingPeriodUnit,
   type BookingMode,
   type PlanStartRule,
@@ -191,13 +192,77 @@ function PlanDetails(props: PartProps): ReactElement {
   );
 }
 
+function RentalDetails(props: PartProps): ReactElement {
+  const { form, labels, isReadOnly, change } = props;
+  return (
+    <>
+      <ChoiceField
+        id="detail-rate-unit"
+        label={labels["details.rateUnit"]}
+        value={form.details.rateUnit}
+        disabled={isReadOnly}
+        options={optionsOf(labels, "details.rateUnit", Object.values(RENTAL_RATE_UNIT))}
+        onChange={(value) => change({ rateUnit: value as never })}
+      />
+      <NumberField {...props} field="minUnits" labelKey="details.minUnits" />
+      <NumberField {...props} field="maxUnits" labelKey="details.maxUnits" />
+      {form.details.rateUnit === "NIGHT" ? (
+        <>
+          <TextField
+            id="detail-check-in"
+            label={labels["details.checkInTime"]}
+            value={form.details.checkInTime}
+            disabled={isReadOnly}
+            onChange={(checkInTime) => change({ checkInTime })}
+          />
+          <TextField
+            id="detail-check-out"
+            label={labels["details.checkOutTime"]}
+            value={form.details.checkOutTime}
+            disabled={isReadOnly}
+            onChange={(checkOutTime) => change({ checkOutTime })}
+          />
+        </>
+      ) : null}
+      <TextField
+        id="detail-deposit-amount"
+        label={labels["details.depositAmount"]}
+        value={form.details.depositAmount}
+        inputMode="decimal"
+        disabled={isReadOnly}
+        onChange={(depositAmount) => change({ depositAmount })}
+      />
+    </>
+  );
+}
+
+function EventDetails(props: PartProps): ReactElement {
+  const { form, labels, isReadOnly, change } = props;
+  return (
+    <>
+      <NumberField
+        {...props}
+        field="salesCloseMinutesBefore"
+        labelKey="details.salesCloseMinutesBefore"
+      />
+      <ToggleField
+        label={labels["details.allowWaitlist"]}
+        checked={form.details.allowWaitlist}
+        disabled={isReadOnly}
+        onChange={(allowWaitlist) => change({ allowWaitlist })}
+      />
+    </>
+  );
+}
+
 const PARTS: Partial<Record<OfferingKind, (props: PartProps) => ReactElement>> = {
   [OFFERING_KIND.PRODUCT]: ProductDetails,
   [OFFERING_KIND.SERVICE]: ServiceDetails,
   [OFFERING_KIND.PLAN]: PlanDetails,
+  [OFFERING_KIND.RENTAL]: RentalDetails,
+  [OFFERING_KIND.EVENT]: EventDetails,
 };
 
-/** Rental and event details have no fields yet (their cards come later), so they get no section. */
 export function hasKindDetails(kind: OfferingKind): boolean {
   return PARTS[kind] !== undefined;
 }

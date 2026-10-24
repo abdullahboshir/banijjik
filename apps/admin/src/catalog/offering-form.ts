@@ -3,12 +3,14 @@ import {
   BILLING_PERIOD_UNIT,
   BOOKING_MODE,
   PLAN_START_RULE,
+  RENTAL_RATE_UNIT,
   VARIANT_STATUS,
   type BillingPeriodUnit,
   type BookingMode,
   type Money,
   type OfferingResponse,
   type PlanStartRule,
+  type RentalRateUnit,
   type StockComponent,
   type UnitKey,
   type VariantResponse,
@@ -39,6 +41,14 @@ export interface DetailsState {
   sessionLimitPerPeriod: string;
   startRule: PlanStartRule;
   startDates: string;
+  rateUnit: RentalRateUnit;
+  minUnits: string;
+  maxUnits: string;
+  checkInTime: string;
+  checkOutTime: string;
+  depositAmount: string;
+  salesCloseMinutesBefore: string;
+  allowWaitlist: boolean;
 }
 
 export interface StockComponentDraft {
@@ -119,6 +129,14 @@ function emptyDetails(): DetailsState {
     sessionLimitPerPeriod: "",
     startRule: PLAN_START_RULE.ANY_DATE,
     startDates: "",
+    rateUnit: RENTAL_RATE_UNIT.DAY,
+    minUnits: "1",
+    maxUnits: "",
+    checkInTime: "",
+    checkOutTime: "",
+    depositAmount: "",
+    salesCloseMinutesBefore: "0",
+    allowWaitlist: false,
   };
 }
 
@@ -209,7 +227,24 @@ function detailsOfOffering(offering: OfferingResponse): DetailsState {
       bookingMode: stored["bookingMode"] as BookingMode,
     };
   }
-  return offering.kind === OFFERING_KIND.PLAN ? planDetailsOf(details, stored) : details;
+  if (offering.kind === OFFERING_KIND.PLAN) return planDetailsOf(details, stored);
+  if (offering.kind === OFFERING_KIND.RENTAL)
+    return {
+      ...details,
+      rateUnit: stored.rateUnit as RentalRateUnit,
+      minUnits: text("minUnits"),
+      maxUnits: text("maxUnits"),
+      checkInTime: text("checkInTime"),
+      checkOutTime: text("checkOutTime"),
+      depositAmount: moneyText(stored.depositAmount as Money | undefined),
+    };
+  if (offering.kind === OFFERING_KIND.EVENT)
+    return {
+      ...details,
+      salesCloseMinutesBefore: text("salesCloseMinutesBefore") || "0",
+      allowWaitlist: stored.allowWaitlist === true,
+    };
+  return details;
 }
 
 function planDetailsOf(details: DetailsState, stored: Record<string, unknown>): DetailsState {

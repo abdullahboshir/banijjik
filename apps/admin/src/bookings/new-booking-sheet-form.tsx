@@ -97,6 +97,7 @@ function NewBookingSheetFormInner(props: NewBookingSheetFormProps): ReactElement
         contactLink: props.contactLink,
         contactError: props.contactError,
         ...handlers,
+        onQuantityChange: (quantity) => props.setForm((current) => ({ ...current, quantity })),
       })}
       <SheetFeedback state={props.state} conflict={labels.conflict} reload={labels.reload} />
       <StepNav

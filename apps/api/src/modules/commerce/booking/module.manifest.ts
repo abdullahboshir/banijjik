@@ -90,6 +90,16 @@ export const bookingManifest = defineModule({
       permissionKey: PERMISSION_KEY.BOOKING_RESOURCE_READ,
       order: 20,
     },
+    {
+      menuKey: "booking.eventSessions",
+      surface: SURFACE.ADMIN,
+      groupKey: "bookings",
+      labelTermKey: "menu.booking.eventSessions",
+      path: "event-sessions",
+      iconKey: "calendar",
+      permissionKey: PERMISSION_KEY.BOOKING_EVENT_SESSION_READ,
+      order: 30,
+    },
   ],
   settings: [
     {

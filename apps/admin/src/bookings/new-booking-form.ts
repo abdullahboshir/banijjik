@@ -13,6 +13,8 @@ export interface NewBookingFormState {
   resourceId: string;
   contact: ContactLinkValue | null;
   note: string;
+  quantity: string;
+  eventSessionId: string;
 }
 
 export interface NewBookingSeed {
@@ -30,6 +32,8 @@ export function emptyNewBookingForm(seed: NewBookingSeed): NewBookingFormState {
     resourceId: seed.resourceId ?? "",
     contact: null,
     note: "",
+    quantity: "1",
+    eventSessionId: "",
   };
 }
 
@@ -44,7 +48,7 @@ export function canAdvanceFrom(step: NewBookingStep, form: NewBookingFormState):
     case "variant":
       return form.variantId !== "";
     case "slot":
-      return form.startsAt !== "";
+      return form.startsAt !== "" || form.eventSessionId !== "";
     case "contact":
       return form.contact !== null;
     case "confirm":
@@ -58,24 +62,34 @@ export function buildBookingCreate(
   form: NewBookingFormState,
   locationId: string,
 ): { ok: true; body: BookingCreateBody } | { ok: false; errors: FieldErrors } {
-  const errors: FieldErrors = {};
-  if (form.offeringId === "") errors.offeringId = "required";
-  if (form.variantId === "") errors.variantId = "required";
-  if (form.startsAt === "") errors.startsAt = "required";
+  const errors = bookingErrorsOf(form);
   const contact = form.contact;
   if (contact === null) errors.contact = "required";
   if (Object.keys(errors).length > 0 || contact === null) return { ok: false, errors };
+  const quantity = Number(form.quantity);
 
-  const body: BookingCreateBody = {
+  const body = {
     offeringId: form.offeringId,
     variantId: form.variantId,
     locationId,
-    startsAt: form.startsAt,
+    ...(form.startsAt === "" ? {} : { startsAt: form.startsAt }),
+    quantity,
+    ...(form.eventSessionId === "" ? {} : { eventSessionId: form.eventSessionId }),
     ...(form.resourceId === "" ? {} : { resourceId: form.resourceId }),
     ...(form.note.trim() === "" ? {} : { note: form.note.trim() }),
     ...(typeof contact === "string"
       ? { contactId: contact }
       : { contact: { create: contact.create } }),
-  };
+  } as BookingCreateBody;
   return { ok: true, body };
+}
+
+function bookingErrorsOf(form: NewBookingFormState): FieldErrors {
+  const errors: FieldErrors = {};
+  if (form.offeringId === "") errors.offeringId = "required";
+  if (form.variantId === "") errors.variantId = "required";
+  if (form.startsAt === "" && form.eventSessionId === "") errors.startsAt = "required";
+  const quantity = Number(form.quantity);
+  if (!Number.isInteger(quantity) || quantity < 1) errors.quantity = "positive";
+  return errors;
 }

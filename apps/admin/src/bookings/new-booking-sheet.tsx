@@ -24,6 +24,7 @@ export interface NewBookingSheetLabels {
   notSet: string;
   conflict: string;
   reload: string;
+  quantity: string;
 }
 
 export interface NewBookingSheetProps {

@@ -151,7 +151,46 @@ function kindDetailsOf(
   if (state.kind === OFFERING_KIND.PRODUCT) return productDetails(state.details, errors);
   if (state.kind === OFFERING_KIND.SERVICE) return serviceDetails(state.details, errors);
   if (state.kind === OFFERING_KIND.PLAN) return planDetails(state.details, currency, errors);
+  if (state.kind === OFFERING_KIND.RENTAL) return rentalDetails(state.details, currency, errors);
+  if (state.kind === OFFERING_KIND.EVENT) return eventDetails(state.details, errors);
   return {};
+}
+
+function rentalDetails(
+  details: OfferingFormState["details"],
+  currency: Money["currency"],
+  errors: FieldErrors,
+): Record<string, unknown> {
+  const minUnits = requiredPositive(details.minUnits, "minUnits", errors);
+  const maxUnits = optionalPositive(details.maxUnits, "maxUnits", errors);
+  const depositAmount = optionalMoney(details.depositAmount, "depositAmount", { currency, errors });
+  return {
+    rateUnit: details.rateUnit,
+    minUnits,
+    ...(maxUnits === undefined ? {} : { maxUnits }),
+    resourceTypeKeys: [...details.resourceTypeKeys],
+    ...(details.rateUnit === "NIGHT" && details.checkInTime !== ""
+      ? { checkInTime: details.checkInTime }
+      : {}),
+    ...(details.rateUnit === "NIGHT" && details.checkOutTime !== ""
+      ? { checkOutTime: details.checkOutTime }
+      : {}),
+    ...(depositAmount ? { depositAmount } : {}),
+  };
+}
+
+function eventDetails(
+  details: OfferingFormState["details"],
+  errors: FieldErrors,
+): Record<string, unknown> {
+  return {
+    salesCloseMinutesBefore: requiredPositive(
+      details.salesCloseMinutesBefore,
+      "salesCloseMinutesBefore",
+      errors,
+    ),
+    allowWaitlist: details.allowWaitlist,
+  };
 }
 
 function overridesOf(

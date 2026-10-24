@@ -30,6 +30,7 @@ export type NewBookingStepFieldInput = {
   onPickSlot: (slot: AvailabilitySlot) => void;
   onContactChange: React.ComponentProps<typeof NewBookingContactStep>["onContactChange"];
   onNoteChange: (note: string) => void;
+  onQuantityChange: (quantity: string) => void;
 };
 
 const stepRenderers: Record<NewBookingStep, (input: NewBookingStepFieldInput) => ReactElement> = {
@@ -58,6 +59,11 @@ const stepRenderers: Record<NewBookingStep, (input: NewBookingStepFieldInput) =>
       slotsLoading={input.slotsLoading}
       startsAt={input.form.startsAt}
       onPickSlot={input.onPickSlot}
+      quantity={input.form.quantity}
+      onQuantityChange={input.onQuantityChange}
+      isQuantityBooking={
+        input.selectedOffering?.kind === "RENTAL" || input.selectedOffering?.kind === "EVENT"
+      }
     />
   ),
   contact: (input) => (

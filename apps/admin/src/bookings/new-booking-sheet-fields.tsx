@@ -2,7 +2,13 @@
 
 import type { AvailabilitySlot } from "@banijjik/contracts/booking";
 import type { OfferingResponse } from "@banijjik/contracts/catalog";
-import { ContactLinkInput, FormField, Textarea, type ContactLinkInputProps } from "@banijjik/ui";
+import {
+  ContactLinkInput,
+  FormField,
+  Textarea,
+  TextInput,
+  type ContactLinkInputProps,
+} from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { formatLocalTimeRange } from "./booking-local-time";
 import type { NewBookingFormState } from "./new-booking-form";
@@ -68,10 +74,23 @@ export function NewBookingSlotStep(props: {
   slotsLoading: boolean;
   startsAt: string;
   onPickSlot: (slot: AvailabilitySlot) => void;
+  quantity: string;
+  onQuantityChange: (quantity: string) => void;
+  isQuantityBooking: boolean;
 }): ReactElement {
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="text-small text-secondary">{props.labels.slot}</legend>
+      {props.isQuantityBooking ? (
+        <FormField label={props.labels.quantity} htmlFor="new-booking-quantity">
+          <TextInput
+            id="new-booking-quantity"
+            inputMode="numeric"
+            value={props.quantity}
+            onChange={(event) => props.onQuantityChange(event.target.value)}
+          />
+        </FormField>
+      ) : null}
       {props.slotsLoading ? (
         <p className="text-small text-secondary">{props.labels.loadingSlots}</p>
       ) : null}

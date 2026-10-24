@@ -29,6 +29,7 @@ function sheetLabelsOf(t: (key: string) => string): NewBookingSheetLabels {
     notSet: t("profile.notSet"),
     conflict: t("bookings.form.conflict"),
     reload: t("bookings.form.reload"),
+    quantity: t("bookings.sheet.quantity"),
   };
 }
 
