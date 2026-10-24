@@ -122,16 +122,22 @@ export class MongoEventSessionRepository implements EventSessionRepository {
     }
   }
 
-  async listUnsettledCancellations(limit: number): Promise<readonly EventSession[]> {
+  async listUnsettledCancellations(input: {
+    readonly afterEventSessionId: EventSessionId | null;
+    readonly limit: number;
+  }): Promise<readonly EventSession[]> {
     const filter: QueryFilter<EventSessionProps> = {
       status: EVENT_SESSION_STATUS.CANCELLED,
       bookingsSettledAt: null,
     };
+    if (input.afterEventSessionId !== null) {
+      filter.eventSessionId = { $gt: input.afterEventSessionId };
+    }
     const rows = await sessionModel()
       .find(filter)
       .select("-_id -__v")
-      .sort({ startsAt: 1, eventSessionId: 1 })
-      .limit(limit)
+      .sort({ eventSessionId: 1 })
+      .limit(input.limit)
       .lean<EventSessionProps[]>();
     return rows.map(EventSession.rehydrate);
   }
