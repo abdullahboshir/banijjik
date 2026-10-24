@@ -186,6 +186,7 @@ describe("GET /settings", () => {
       "pricing.rounding",
       "pricing.taxInclusive",
       "sales.advance.required",
+      "sales.advance.value",
       "sales.autoConfirm",
       "sales.discountOwnerWithoutApproval",
       "sales.draftExpiryHours",
