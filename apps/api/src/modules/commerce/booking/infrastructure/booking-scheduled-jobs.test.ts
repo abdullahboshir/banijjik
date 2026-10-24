@@ -6,6 +6,7 @@ import {
   type LocationId,
   type OfferingId,
   type OrganizationId,
+  type ResourceId,
 } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { MongoUnitOfWork } from "../../../../kernel/db/index.js";
@@ -25,7 +26,8 @@ import { MongoEventSessionRepository } from "./mongo-event-session.repository.js
 import { buildExpireHoldsJob } from "../application/jobs/expire-holds.job.js";
 import { buildMarkNoShowsJob } from "../application/jobs/mark-no-shows.job.js";
 import { buildAutoCompleteJob } from "../application/jobs/auto-complete.job.js";
-import { BOOKING_KIND } from "@banijjik/contracts/booking";
+import { BOOKING_KIND, EVENT_SESSION_STATUS } from "@banijjik/contracts/booking";
+import { EventSession } from "../domain/event-session.entity.js";
 import type { BookingEventPublisher } from "../application/use-cases/create-booking.use-case.js";
 import type { DepositCheckPort } from "../application/ports/payment-ports.js";
 
@@ -221,7 +223,7 @@ describe("booking scheduled jobs", () => {
     });
   });
 
-  it("completing an ended session keeps its hall counters", async () => {
+  it("auto-completes checked-in rental bookings past grace period idempotently", async () => {
     const world = await worldFor(harness, RETAIL, SALON);
     const organizationRef = asId<OrganizationId>(world.organizationA);
     const locationId = asId<LocationId>(world.locationA1);
@@ -284,6 +286,72 @@ describe("booking scheduled jobs", () => {
 
       const completed = await bookings.findById(rental.bookingId);
       expect(completed?.status).toBe(BOOKING_STATUS.COMPLETED);
+    });
+  });
+
+  it("completing an ended session keeps its hall counters", async () => {
+    const world = await worldFor(harness, RETAIL, SALON);
+    const organizationId = asId<OrganizationId>(world.organizationA);
+    const resourceId = asId<ResourceId>(newId());
+    const startsAt = new Date("2026-11-01T04:00:00.000Z");
+    const endsAt = new Date("2026-11-01T05:00:00.000Z");
+    const orgConfig = {
+      current: async () => ({ modules: [MODULE_KEY.BOOKING] }),
+    } as unknown as OrgConfigService;
+    const usageCollection = harness.connections.tenantShared.collection("resource_slot_usages");
+
+    await runInOrganizationContext(world.organizationA, async () => {
+      const sessions = new MongoEventSessionRepository();
+      const unitOfWork = new MongoUnitOfWork();
+      const session = EventSession.create({
+        organizationId,
+        locationId: asId<LocationId>(world.locationA1),
+        offeringId: asId<OfferingId>(newId()),
+        variantId: newId(),
+        resourceIds: [resourceId],
+        resourceHolds: [{ resourceId, units: 2 }],
+        capacity: 5,
+        startsAt,
+        endsAt,
+        now: new Date("2026-10-20T00:00:00.000Z"),
+        actorUserId: null,
+      });
+      await unitOfWork.run(async () => {
+        await new MongoResourceSlotUsageRepository().takeWholeResource({
+          organizationId,
+          resourceId,
+          units: 2,
+          startsAt,
+          blockedEndsAt: endsAt,
+        });
+        await sessions.insert(session);
+      });
+      const countersBefore = await usageCollection
+        .find({ organizationId: world.organizationA, resourceId })
+        .toArray();
+      expect(countersBefore).toHaveLength(12);
+
+      const job = buildAutoCompleteJob({
+        bookings: new MongoBookingRepository(),
+        sessions,
+        unitOfWork,
+        events: noopEvents(),
+        audit: { record: vi.fn(async () => undefined) },
+        orgConfig,
+        manifests: [bookingManifest],
+      });
+      await job.run(organizationId, new Date("2026-11-01T06:00:00.000Z"));
+
+      const stored = await sessions.findById(session.toProps().eventSessionId);
+      expect(stored?.toProps().status).toBe(EVENT_SESSION_STATUS.COMPLETED);
+      expect(stored?.toProps().resourceHolds).toEqual([{ resourceId, units: 2 }]);
+      const countersAfter = await usageCollection
+        .find({ organizationId: world.organizationA, resourceId })
+        .toArray();
+      expect(countersAfter.map((row) => row["used"])).toEqual(
+        countersBefore.map((row) => row["used"]),
+      );
+      expect(countersAfter.every((row) => row["used"] === 2)).toBe(true);
     });
   });
 });

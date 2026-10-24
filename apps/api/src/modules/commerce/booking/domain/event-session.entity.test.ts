@@ -3,7 +3,6 @@ import {
   newId,
   type LocationId,
   type OfferingId,
-  type OfferingVariantId,
   type OrganizationId,
   type ResourceId,
 } from "@banijjik/ids";
@@ -14,7 +13,7 @@ const resourceId = asId<ResourceId>(newId());
 const base = {
   organizationId: asId<OrganizationId>(newId()),
   offeringId: asId<OfferingId>(newId()),
-  variantId: asId<OfferingVariantId>(newId()),
+  variantId: newId(),
   locationId: asId<LocationId>(newId()),
   startsAt: new Date("2026-11-01T09:00:00.000Z"),
   endsAt: new Date("2026-11-01T10:00:00.000Z"),
@@ -63,5 +62,16 @@ describe("EventSession resource holds", () => {
         resourceHolds: [{ resourceId: asId<ResourceId>(newId()), units: 1 }],
       }),
     ).toThrow();
+  });
+
+  it("a capacity edit of a session created before holds existed keeps its empty holds", () => {
+    const legacy = EventSession.rehydrate({
+      ...EventSession.create(base).toProps(),
+      resourceHolds: [],
+    });
+
+    const edited = legacy.update({ capacity: 12, now: base.now, actorUserId: null });
+
+    expect(edited.toProps().resourceHolds).toEqual([]);
   });
 });

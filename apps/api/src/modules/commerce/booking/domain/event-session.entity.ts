@@ -54,24 +54,24 @@ function checkDates(startsAt: Date, endsAt: Date): void {
     refuse(EVENT_SESSION_RULE_KEY.INVALID_DATES);
   }
 }
-function checkResourceHolds(input: {
-  resourceIds: readonly ResourceId[];
-  holds: readonly EventSessionResourceHold[];
-  startsAt: Date;
-  endsAt: Date;
-}): void {
-  const { resourceIds, holds, startsAt, endsAt } = input;
+function checkResourceSpan(resourceIds: readonly ResourceId[], startsAt: Date, endsAt: Date) {
   if (
     resourceIds.length > 0 &&
     endsAt.getTime() - startsAt.getTime() > MAX_EVENT_SESSION_RESOURCE_DAYS * 86400000
   )
     refuse(EVENT_SESSION_RULE_KEY.RESOURCE_SPAN_TOO_LONG);
+}
+/** Holds are a programming input: a mismatch with the resource ids is never a user error. */
+function checkResourceHolds(
+  resourceIds: readonly ResourceId[],
+  holds: readonly EventSessionResourceHold[],
+): void {
   if (
     holds.length !== resourceIds.length ||
     holds.some((hold) => !resourceIds.includes(hold.resourceId) || hold.units < 1) ||
     new Set(holds.map((hold) => hold.resourceId)).size !== holds.length
   )
-    refuse("INTERNAL");
+    throw new DomainRuleError({ code: ERROR_CODE.INTERNAL });
 }
 export class EventSession {
   private constructor(private readonly props: EventSessionProps) {}
@@ -95,12 +95,8 @@ export class EventSession {
   ): EventSession {
     checkDates(input.startsAt, input.endsAt);
     const resourceHolds = input.resourceHolds ?? [];
-    checkResourceHolds({
-      resourceIds: input.resourceIds,
-      holds: resourceHolds,
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
-    });
+    checkResourceSpan(input.resourceIds, input.startsAt, input.endsAt);
+    checkResourceHolds(input.resourceIds, resourceHolds);
     return new EventSession({
       eventSessionId: asId<EventSessionId>(newId()),
       organizationId: input.organizationId,
@@ -141,13 +137,11 @@ export class EventSession {
     const startsAt = input.startsAt ?? this.props.startsAt;
     const endsAt = input.endsAt ?? this.props.endsAt;
     checkDates(startsAt, endsAt);
+    checkResourceSpan(this.props.resourceIds, startsAt, endsAt);
+    // A session made before holds existed keeps its empty holds until its time changes.
+    if (input.resourceHolds !== undefined)
+      checkResourceHolds(this.props.resourceIds, input.resourceHolds);
     const resourceHolds = input.resourceHolds ?? this.props.resourceHolds;
-    checkResourceHolds({
-      resourceIds: this.props.resourceIds,
-      holds: resourceHolds,
-      startsAt,
-      endsAt,
-    });
     const timeChanged =
       startsAt.getTime() !== this.props.startsAt.getTime() ||
       endsAt.getTime() !== this.props.endsAt.getTime();

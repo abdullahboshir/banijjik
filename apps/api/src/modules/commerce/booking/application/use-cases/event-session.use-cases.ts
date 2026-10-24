@@ -30,6 +30,7 @@ import type {
   ResourceSlotUsagePort,
   ResourceTimeOffRepository,
 } from "../ports/booking-repositories.js";
+import { conflict } from "../../../../../kernel/http/index.js";
 import { runWithTxnRetry } from "../run-with-txn-retry.js";
 import { assertLocationAllowed } from "../resource-location-guard.js";
 import type { BookingOfferingReader } from "../ports/booking-context-ports.js";
@@ -86,33 +87,37 @@ export class EventSessionUseCases {
       variantId: body.variantId,
     });
     let session!: EventSession;
-    await runWithTxnRetry(this.dependencies.unitOfWork, async () => {
-      const startsAt = new Date(body.startsAt);
-      const endsAt = new Date(body.endsAt);
-      const resourceIds = body.resourceIds.map((value) => asId<ResourceId>(value));
-      const holds = await takeSessionResourceHolds({
-        ...this.dependencies,
-        organizationId: input.organizationId,
-        locationId,
-        resourceIds,
-        startsAt,
-        endsAt,
-      });
-      session = EventSession.create({
-        organizationId: input.organizationId,
-        offeringId,
-        locationId,
-        variantId: body.variantId,
-        startsAt,
-        endsAt,
-        capacity: body.capacity,
-        resourceIds,
-        resourceHolds: holds,
-        now: this.dependencies.clock.now(),
-        actorUserId: input.actorUserId,
-      });
-      await this.dependencies.sessions.insert(session);
-    });
+    await runWithTxnRetry(
+      this.dependencies.unitOfWork,
+      async () => {
+        const startsAt = new Date(body.startsAt);
+        const endsAt = new Date(body.endsAt);
+        const resourceIds = body.resourceIds.map((value) => asId<ResourceId>(value));
+        const holds = await takeSessionResourceHolds({
+          ...this.dependencies,
+          organizationId: input.organizationId,
+          locationId,
+          resourceIds,
+          startsAt,
+          endsAt,
+        });
+        session = EventSession.create({
+          organizationId: input.organizationId,
+          offeringId,
+          locationId,
+          variantId: body.variantId,
+          startsAt,
+          endsAt,
+          capacity: body.capacity,
+          resourceIds,
+          resourceHolds: holds,
+          now: this.dependencies.clock.now(),
+          actorUserId: input.actorUserId,
+        });
+        await this.dependencies.sessions.insert(session);
+      },
+      eventSessionResourceBusyError,
+    );
     return session;
   }
   async get(
@@ -135,69 +140,60 @@ export class EventSessionUseCases {
     input: Caller & { eventSessionId: EventSessionId; body: EventSessionUpdateBody },
   ): Promise<EventSession> {
     const existing = await this.get(input.eventSessionId, input.allowedLocationIds);
+    // A stale request must fail before any counter moves (the write below checks it again).
+    if (existing.toProps().version !== input.body.version)
+      throw conflict({ currentVersion: existing.toProps().version });
     const timeChanged = input.body.startsAt !== undefined || input.body.endsAt !== undefined;
-    let updated: EventSession = existing;
+    const changed = existing.update({
+      ...(input.body.startsAt === undefined ? {} : { startsAt: new Date(input.body.startsAt) }),
+      ...(input.body.endsAt === undefined ? {} : { endsAt: new Date(input.body.endsAt) }),
+      ...(input.body.capacity === undefined ? {} : { capacity: input.body.capacity }),
+      now: this.dependencies.clock.now(),
+      actorUserId: input.actorUserId,
+    });
+    if (!timeChanged)
+      return this.dependencies.unitOfWork.run(() =>
+        this.dependencies.sessions.update(changed, input.body.version, existing),
+      );
+    let persisted = changed;
     await runWithTxnRetry(
       this.dependencies.unitOfWork,
       async () => {
-        const startsAt =
-          input.body.startsAt === undefined
-            ? existing.toProps().startsAt
-            : new Date(input.body.startsAt);
-        const endsAt =
-          input.body.endsAt === undefined ? existing.toProps().endsAt : new Date(input.body.endsAt);
-        if (!timeChanged) {
-          updated = existing.update({
-            ...(input.body.capacity === undefined ? {} : { capacity: input.body.capacity }),
-            now: this.dependencies.clock.now(),
-            actorUserId: input.actorUserId,
-            resourceHolds: existing.toProps().resourceHolds,
-          });
-          updated = await this.dependencies.sessions.update(updated, input.body.version, existing);
-          return;
-        }
-        const moved = existing.update({
-          ...(input.body.startsAt === undefined ? {} : { startsAt: new Date(input.body.startsAt) }),
-          ...(input.body.endsAt === undefined ? {} : { endsAt: new Date(input.body.endsAt) }),
-          ...(input.body.capacity === undefined ? {} : { capacity: input.body.capacity }),
-          now: this.dependencies.clock.now(),
-          actorUserId: input.actorUserId,
-          resourceHolds: existing.toProps().resourceHolds,
-        });
-        const versionedMove = await this.dependencies.sessions.update(
-          moved,
-          input.body.version,
-          existing,
-        );
-        await releaseSessionResourceHolds({
-          slots: this.dependencies.slots,
-          organizationId: existing.toProps().organizationId,
-          holds: existing.toProps().resourceHolds,
-          startsAt: existing.toProps().startsAt,
-          endsAt: existing.toProps().endsAt,
-        });
-        const holds = await takeSessionResourceHolds({
-          ...this.dependencies,
-          organizationId: input.organizationId,
-          locationId: existing.toProps().locationId,
-          resourceIds: existing.toProps().resourceIds,
-          startsAt,
-          endsAt,
-        });
-        updated = versionedMove.update({
-          resourceHolds: holds,
-          now: this.dependencies.clock.now(),
-          actorUserId: input.actorUserId,
-        });
-        updated = await this.dependencies.sessions.update(
-          updated,
-          versionedMove.toProps().version,
-          versionedMove,
-        );
+        persisted = await this.moveSession(input, existing, changed);
       },
       eventSessionResourceBusyError,
     );
-    return updated;
+    return persisted;
+  }
+  /** Frees the old window, takes the new one and writes the session once, all in the open transaction. */
+  private async moveSession(
+    input: Caller & { body: EventSessionUpdateBody },
+    existing: EventSession,
+    changed: EventSession,
+  ): Promise<EventSession> {
+    const before = existing.toProps();
+    const after = changed.toProps();
+    await releaseSessionResourceHolds({
+      slots: this.dependencies.slots,
+      organizationId: before.organizationId,
+      holds: before.resourceHolds,
+      startsAt: before.startsAt,
+      endsAt: before.endsAt,
+    });
+    const holds = await takeSessionResourceHolds({
+      ...this.dependencies,
+      organizationId: before.organizationId,
+      locationId: before.locationId,
+      resourceIds: before.resourceIds,
+      startsAt: after.startsAt,
+      endsAt: after.endsAt,
+    });
+    const withHolds = changed.update({
+      resourceHolds: holds,
+      now: this.dependencies.clock.now(),
+      actorUserId: input.actorUserId,
+    });
+    return this.dependencies.sessions.update(withHolds, input.body.version, existing);
   }
   async cancel(
     input: Caller & { eventSessionId: EventSessionId; version: number },

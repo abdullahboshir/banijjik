@@ -4,12 +4,27 @@ import {
   registerIamApiModels,
   type IamApiHarness,
 } from "../../../../test-support/iam-api-harness.js";
+import {
+  BUCKETS_PER_HOUR,
+  createRental,
+  createSession,
+  hallWorld,
+  SESSION_STARTS_AT,
+  usedByBucket,
+} from "../../../../test-support/booking-hall-world.js";
 import { startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
 import { withOrganizationContext } from "../../../../test-support/organization-context.js";
 import { EventSession } from "../domain/event-session.entity.js";
 import { MongoEventSessionRepository } from "./mongo-event-session.repository.js";
 
 registerIamApiModels();
+/** Each seeded template sells one offering kind: COACHING events, RESTAURANT rentals, SALON services. */
+const HALL_TEMPLATES = {
+  created: { industryTemplateKey: "RETAIL" },
+  event: { industryTemplateKey: "COACHING" },
+  rental: { industryTemplateKey: "RESTAURANT" },
+  service: { industryTemplateKey: "SALON" },
+};
 let harness: IamApiHarness;
 beforeAll(async () => {
   harness = await startCatalogApi();
@@ -18,6 +33,19 @@ afterAll(async () => {
   await harness.dispose();
 });
 const RETAIL = { industryTemplateKey: "RETAIL" };
+const RACE_ROUNDS = 5;
+/** Two units: a session (all units) and a rental (one unit) cannot both fit, so exactly one wins. */
+const HALL_CAPACITY = 2;
+
+function expectedBuckets(used: number): Record<string, number> {
+  const firstBucket = Date.parse(SESSION_STARTS_AT);
+  return Object.fromEntries(
+    Array.from({ length: BUCKETS_PER_HOUR }, (_unused, index) => [
+      new Date(firstBucket + index * 5 * 60_000).toISOString(),
+      used,
+    ]),
+  );
+}
 async function fixture() {
   const world = await worldFor(harness, RETAIL);
   const repository = new MongoEventSessionRepository();
@@ -105,24 +133,37 @@ describe("event session atomic writes", () => {
   });
 
   it("a session and a rental racing for the same hall never both win", async () => {
-    const { world, repository, session } = await fixture();
-    await withOrganizationContext(world.organizationA, async () => {
-      const results = await Promise.allSettled([
-        repository.reserveSeats({ eventSessionId: session.toProps().eventSessionId, seats: 1 }),
-        repository.reserveSeats({ eventSessionId: session.toProps().eventSessionId, seats: 10 }),
-      ]);
-      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
-    });
+    for (let round = 1; round <= RACE_ROUNDS; round += 1) {
+      const hall = await hallWorld(harness, HALL_CAPACITY, HALL_TEMPLATES);
+
+      const [session, rental] = await Promise.all([createSession(hall), createRental(hall)]);
+
+      const winners = [session, rental].filter((response) => response.status === 201);
+      expect(winners, `round ${round}`).toHaveLength(1);
+      const loser = session.status === 201 ? rental : session;
+      expect(loser.status).toBe(409);
+      expect(loser.body.error.code).toBe("SLOT_UNAVAILABLE");
+      // A session takes the whole hall; a rental takes one unit of it.
+      const expectedUsed = session.status === 201 ? HALL_CAPACITY : 1;
+      expect(await usedByBucket(harness, hall.resourceId)).toEqual(expectedBuckets(expectedUsed));
+    }
   });
 
   it("two sessions racing for the same hall never both win", async () => {
-    const { world, repository, session } = await fixture();
-    await withOrganizationContext(world.organizationA, async () => {
-      const results = await Promise.all([
-        repository.reserveSeats({ eventSessionId: session.toProps().eventSessionId, seats: 10 }),
-        repository.reserveSeats({ eventSessionId: session.toProps().eventSessionId, seats: 10 }),
-      ]);
-      expect(results.filter(Boolean)).toHaveLength(1);
-    });
+    for (let round = 1; round <= RACE_ROUNDS; round += 1) {
+      const hall = await hallWorld(harness, HALL_CAPACITY, HALL_TEMPLATES);
+
+      const responses = await Promise.all([createSession(hall), createSession(hall)]);
+
+      expect(responses.filter((response) => response.status === 201)).toHaveLength(1);
+      const loser = responses.find((response) => response.status !== 201);
+      expect(loser?.status).toBe(409);
+      expect(loser?.body.error.details.ruleKey).toBe("EVENT_SESSION_RESOURCE_BUSY");
+      expect(await usedByBucket(harness, hall.resourceId)).toEqual(expectedBuckets(HALL_CAPACITY));
+      const sessionRows = await harness.connections.tenantShared
+        .collection("event_sessions")
+        .countDocuments({ organizationId: hall.world.organizationA });
+      expect(sessionRows).toBe(1);
+    }
   });
 });
