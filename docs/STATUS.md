@@ -139,7 +139,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.32 enrollment cancel refunds | todo (planned after 3.27) | `UNUSED_PERIODS` / `PRORATED` refunds to store credit or payment, with approval |
 | 3.33 event sessions occupy their resources | planned (2026-10-24, `docs/plans/3.33.md`, Opus; T1; ready now) | sessions take whole-resource buckets in `resource_slot_usages` (stored `resourceHolds`), released on cancel and move; ADR-141. Follow-ups outside the card: bookings and sessions do not see enrollment `ResourceExclusiveHold` rows; time-off creation does not check existing bookings or sessions |
 | 3.34 payment reversed after the request was closed | planned (2026-10-24, `docs/plans/3.34.md`, Opus; T1; starts after 3.24 merges) | owner: industry standard plus an option. Setting `payment.reversal.closedRequest`: `REOPEN_DUE` (default) or `WRITE_OFF` (bad-debt journal for retained booking fees); ADR-140 |
-| 3.35 stable replay-then-follow test | implemented (awaiting review), CI https://github.com/abdullahboshir/banijjik/actions/runs/40088982990 | test promotes the follower after the replay; handoff `docs/handoffs/3.35.md` |
+| 3.35 stable replay-then-follow test | merged (2026-10-24, merge-checked by Opus; CI https://github.com/abdullahboshir/banijjik/actions/runs/40088982990) | test promotes the follower after the replay; handoff `docs/handoffs/3.35.md` |
 | Phase 3 review | todo | |
 
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
