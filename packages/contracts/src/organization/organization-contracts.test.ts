@@ -29,7 +29,7 @@ describe("organization enums", () => {
     expect(Object.keys(MEMBER_STATUS)).toEqual(["INVITED", "ACTIVE", "SUSPENDED", "REMOVED"]);
   });
 
-  it("lists the eight industry templates of 12-INDUSTRY-TEMPLATES", () => {
+  it("lists the ten industry templates of 12-INDUSTRY-TEMPLATES and doc 16 §4", () => {
     expect(Object.keys(SEED_INDUSTRY_TEMPLATE_KEY)).toEqual([
       "FCOMMERCE",
       "RETAIL",
@@ -39,6 +39,8 @@ describe("organization enums", () => {
       "COACHING",
       "RESTAURANT",
       "HOSTEL",
+      "MATRIMONY_ISLAMIC",
+      "MATRIMONY",
     ]);
   });
 
