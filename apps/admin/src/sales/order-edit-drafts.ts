@@ -22,6 +22,7 @@ function draftOf(line: OrderLineSnapshot, offering: OrderLineDraft["offering"]):
     modifierOptionIds: line.modifiers.map((modifier) => modifier.modifierOptionId),
     discountType: discount.type,
     discountText: discount.text,
+    performedByMemberId: line.performedByMemberId,
   };
 }
 

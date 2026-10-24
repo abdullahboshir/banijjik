@@ -59,7 +59,7 @@ export async function CommissionEntriesPage(props: {
       }
     >
       <CommissionSummaryCards rows={summary.data} />
-      <CommissionEntryList entries={list.data} showMember />
+      <CommissionEntryList entries={list.data} showMember orgSlug={props.orgSlug} />
       <CommissionPager
         page={query.page}
         previousHref={

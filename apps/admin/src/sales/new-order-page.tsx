@@ -7,6 +7,7 @@ import { getTranslator } from "../lib/i18n/get-translator";
 import { requireOrgAccess } from "../shell/org-access";
 import { holdsPermission } from "../shell/permissions";
 import { orderLabelsOf, orderUnitLabel } from "./order-labels";
+import { commissionEnabledOf } from "./order-performer-names";
 import { NewOrderWorkspace } from "./new-order-workspace";
 
 /** `/{orgSlug}/orders/new`: the new-order screen for a caller who may create orders. */
@@ -38,6 +39,7 @@ export async function NewOrderPage(props: { readonly orgSlug: string }): Promise
       currency={lookups.currency}
       locale={locale}
       labels={labels}
+      commissionOn={commissionEnabledOf(access.config)}
     />
   );
 }

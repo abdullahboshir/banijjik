@@ -124,6 +124,11 @@ export interface OrderNewLabels {
 
 export interface OrderLineLabels {
   readonly product: string;
+  /** The "Done by" select of a line (plan 3.11 Refresh C). */
+  readonly performer: string;
+  readonly performerNone: string;
+  readonly performerLoadFailed: string;
+  readonly performerUnknown: string;
   readonly searchPlaceholder: string;
   readonly searching: string;
   readonly noResults: string;

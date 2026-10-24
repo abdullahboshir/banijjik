@@ -5,11 +5,19 @@ import type { ModifierGroupResponse } from "@banijjik/contracts/catalog";
 import type { DisplayLocale } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import type { OrderLineLabels } from "./order-labels";
+import type { OrderPerformerLabels } from "./order-performer-select";
 import { OrderLineCard } from "./order-line-card";
 import type { OrderLineDraft } from "./order-lines";
 
+/** Shown only when the commission module is on: the location whose staff can be picked, and the labels. */
+export interface OrderPerformerSlot {
+  readonly locationId: string;
+  readonly labels: OrderPerformerLabels;
+}
+
 export interface OrderLinesEditorProps {
   readonly organizationId: string;
+  readonly performers: OrderPerformerSlot | undefined;
   readonly lines: readonly OrderLineDraft[];
   readonly modifierGroups: readonly ModifierGroupResponse[];
   readonly unitLabels: Readonly<Record<string, string>>;

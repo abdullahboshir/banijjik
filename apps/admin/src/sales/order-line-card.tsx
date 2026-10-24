@@ -3,6 +3,7 @@
 import type { ModifierGroupResponse, VariantResponse } from "@banijjik/contracts/catalog";
 import { Button, FormField, Select, TextInput } from "@banijjik/ui";
 import type { ReactElement } from "react";
+import { LazyOrderPerformerSelect } from "./lazy-order-performer-select";
 import { LazyProductPicker } from "./lazy-product-picker";
 import type { OrderLineLabels } from "./order-labels";
 import { LineTotals, ModifierGroupField, quantityHint, toggleOption } from "./order-line-parts";
@@ -212,6 +213,17 @@ export function OrderLineCard(props: LineCardProps): ReactElement {
           })
         }
       />
+      {editor.performers === undefined ? null : (
+        <LazyOrderPerformerSelect
+          organizationId={editor.organizationId}
+          locationId={editor.performers.locationId}
+          id={`order-performer-${props.index}`}
+          value={line.performedByMemberId}
+          disabled={editor.disabled}
+          labels={editor.performers.labels}
+          onChange={(memberId) => props.onChange({ performedByMemberId: memberId })}
+        />
+      )}
       {variant === undefined ? null : <PickedLineFields {...props} variant={variant} />}
       {editor.lines.length > 1 ? (
         <Button variant="secondary" disabled={editor.disabled} onClick={props.onRemove}>

@@ -80,6 +80,7 @@ function renderEditor(lines: readonly OrderLineDraft[]): void {
   renderInBangla(
     <OrderLinesEditor
       organizationId="org-1"
+      performers={undefined}
       lines={lines}
       modifierGroups={[]}
       unitLabels={{ [UNIT_KEY.KG]: "কেজি", [UNIT_KEY.GRAM]: "গ্রাম" }}
@@ -123,6 +124,7 @@ describe("OrderLinesEditor", () => {
     renderInBangla(
       <OrderLinesEditor
         organizationId="org-1"
+        performers={undefined}
         lines={[line]}
         modifierGroups={[modifierGroup()]}
         unitLabels={{ [UNIT_KEY.KG]: "কেজি" }}
@@ -154,6 +156,7 @@ describe("OrderLinesEditor", () => {
     renderInBangla(
       <OrderLinesEditor
         organizationId="org-1"
+        performers={undefined}
         lines={[line]}
         modifierGroups={[modifierGroup()]}
         unitLabels={{ [UNIT_KEY.KG]: "কেজি" }}
@@ -201,3 +204,11 @@ function modifierGroup(): ModifierGroupResponse {
     updatedAt: TIMESTAMP,
   } as ModifierGroupResponse;
 }
+
+describe("OrderLinesEditor with the commission module off", () => {
+  it("shows no Done by select on a line", () => {
+    renderEditor([emptyOrderLine("line-1")]);
+
+    expect(screen.queryByText(labels.performer)).toBeNull();
+  });
+});

@@ -1,6 +1,10 @@
 import type { OfferingListItem, OfferingResponse } from "@banijjik/contracts/catalog";
 import type { QuoteRequest, QuoteResponse } from "@banijjik/contracts/pricing";
-import type { OrderListItem, OrderResponse } from "@banijjik/contracts/sales";
+import type {
+  OrderListItem,
+  OrderResponse,
+  SalesPerformerResponse,
+} from "@banijjik/contracts/sales";
 import type {
   OrderCancelBody,
   OrderCreateBody,
@@ -34,6 +38,17 @@ export async function listOrders(organizationId: string, query: string): Promise
     limit: result.meta?.limit ?? result.data.length,
     hasNext: result.meta?.hasNext ?? false,
   };
+}
+
+/** The members who may perform a line at a location: names only, for the "Done by" select (plan 3.11 Refresh C). */
+export async function listPerformers(
+  organizationId: string,
+  locationId: string,
+): Promise<readonly SalesPerformerResponse[]> {
+  const result = await apiFetch<SalesPerformerResponse[]>(
+    `/orgs/${organizationId}/sales/performers?${new URLSearchParams({ locationId }).toString()}`,
+  );
+  return result.data;
 }
 
 export async function getOrder(organizationId: string, orderId: string): Promise<OrderResponse> {

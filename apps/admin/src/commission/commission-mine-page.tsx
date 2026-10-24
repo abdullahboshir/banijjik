@@ -42,7 +42,7 @@ export async function CommissionMinePage(props: {
       subtitle={t("commission.mine.subtitle")}
       filters={<CommissionMyFilterForm query={query} t={t} />}
     >
-      <CommissionEntryList entries={list.data} showMember={false} />
+      <CommissionEntryList entries={list.data} showMember={false} orgSlug={props.orgSlug} />
       <CommissionPager
         page={query.page}
         previousHref={

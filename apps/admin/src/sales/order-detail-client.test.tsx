@@ -105,6 +105,7 @@ function renderClient(
 ): void {
   renderInBangla(
     <OrderDetailClient
+      performersEnabled={false}
       orgSlug="acme"
       organizationId="org-1"
       order={orderWith(status)}

@@ -166,6 +166,10 @@ function newOrderLabelsOf(t: T): OrderNewLabels {
 function lineLabelsOf(t: T): OrderLineLabels {
   return {
     product: t("orders.line.product"),
+    performer: t("orders.line.performer"),
+    performerNone: t("orders.line.performerNone"),
+    performerLoadFailed: t("orders.line.performerLoadFailed"),
+    performerUnknown: t("orders.line.performerUnknown"),
     searchPlaceholder: t("orders.line.searchPlaceholder"),
     searching: t("orders.line.searching"),
     noResults: t("orders.line.noResults"),

@@ -39,6 +39,8 @@ export interface OrderDetailClientProps {
   readonly locale: DisplayLocale;
   readonly labels: OrderLabels;
   readonly paymentLabels: PaymentLabels;
+  /** The commission module is on, so the edit sheet offers the "Done by" select. */
+  readonly performersEnabled: boolean;
 }
 
 type DialogKey = "cancel" | "delete" | "edit" | "pay";
@@ -96,6 +98,7 @@ function OrderDetailSheets(
         currency={props.currency}
         locale={props.locale}
         labels={labels}
+        performersEnabled={props.performersEnabled}
         onSaved={() => router.refresh()}
       />
     </>

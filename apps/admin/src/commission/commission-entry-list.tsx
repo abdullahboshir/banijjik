@@ -1,8 +1,12 @@
 "use client";
 
-import type { CommissionEntryResponse } from "@banijjik/contracts/commission";
+import {
+  COMMISSION_SOURCE_TYPE,
+  type CommissionEntryResponse,
+} from "@banijjik/contracts/commission";
 import { DataList, EmptyState, formatMoney, type DataListColumn } from "@banijjik/ui";
 import { useTranslator } from "@banijjik/web-client/client";
+import Link from "next/link";
 import type { ReactElement } from "react";
 import { entryKindLabelOf, entryStatusLabelOf } from "./commission-labels";
 
@@ -10,6 +14,23 @@ export interface CommissionEntryListProps {
   entries: readonly CommissionEntryResponse[];
   /** "My commission" has only the caller's entries, so the member column would always repeat one name. */
   showMember: boolean;
+  /** Set on the business pages: an order-line entry then links to its order. */
+  orgSlug?: string | undefined;
+}
+
+/** An order-line entry names its order by number, and the number links to the order when the page knows the business. */
+function sourceCell(
+  entry: CommissionEntryResponse,
+  orgSlug: string | undefined,
+  t: (key: string) => string,
+): ReactElement | string {
+  const label = entry.sourceNumber ?? t(`commission.source.${entry.sourceType}`);
+  if (entry.sourceType !== COMMISSION_SOURCE_TYPE.ORDER_LINE || orgSlug === undefined) return label;
+  return (
+    <Link href={`/${orgSlug}/orders/${entry.sourceId}`} className="text-primary underline">
+      {label}
+    </Link>
+  );
 }
 
 /** Commission entries: table from md, stacked cards below (the card layout cannot cross the server boundary). */
@@ -42,7 +63,7 @@ export function CommissionEntryList(props: CommissionEntryListProps): ReactEleme
     {
       columnKey: "source",
       header: t("commission.entries.column.source"),
-      cell: (entry) => entry.sourceNumber ?? t("commission.source.BOOKING"),
+      cell: (entry) => sourceCell(entry, props.orgSlug, t),
     },
     {
       columnKey: "kind",

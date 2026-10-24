@@ -66,10 +66,82 @@ export function SummarySection(props: {
   );
 }
 
+/** The member who performed the line, by name; a member no longer at this location shows the neutral label. */
+function LinePerformer(props: {
+  readonly performedByMemberId: string | null;
+  readonly performerNames: Readonly<Record<string, string>>;
+  readonly labels: OrderLabels;
+}): ReactElement | null {
+  const { performedByMemberId, labels } = props;
+  if (performedByMemberId === null) return null;
+  return (
+    <span className="min-w-0 break-words text-small text-secondary">
+      {labels.line.performer}:{" "}
+      {props.performerNames[performedByMemberId] ?? labels.line.performerUnknown}
+    </span>
+  );
+}
+
+/** One line of the order: name and modifiers, quantity, unit price and the line total. */
+function OrderLineRow(props: {
+  readonly line: OrderResponse["lines"][number];
+  readonly labels: OrderLabels;
+  readonly locale: Locale;
+  readonly performerNames: Readonly<Record<string, string>>;
+}): ReactElement {
+  const { line, labels } = props;
+  return (
+    <li className="flex flex-col gap-2 rounded-md border border-default p-3 md:grid md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))] md:items-center">
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="min-w-0 break-words text-body font-semibold text-primary">
+          {line.nameSnapshot}
+        </span>
+        {line.modifiers.length === 0 ? null : (
+          <span className="min-w-0 break-words text-small text-secondary">
+            {labels.detail.modifiers}:{" "}
+            {line.modifiers.map((modifier) => modifier.nameSnapshot).join(", ")}
+          </span>
+        )}
+        <LinePerformer
+          performedByMemberId={line.performedByMemberId}
+          performerNames={props.performerNames}
+          labels={labels}
+        />
+      </div>
+      <div className="flex items-baseline justify-between gap-2 md:flex-col md:items-start">
+        <span className="text-caption text-secondary">{labels.detail.quantity}</span>
+        <span className="font-money text-body text-primary">
+          {formatNumber(line.quantity, { locale: props.locale })}
+        </span>
+      </div>
+      <div className="flex items-baseline justify-between gap-2 md:flex-col md:items-start">
+        <span className="text-caption text-secondary">{labels.detail.unitPrice}</span>
+        <span className="font-money text-body text-primary">
+          <MoneyText money={line.unitPrice} locale={props.locale} />
+        </span>
+      </div>
+      <div className="flex flex-col items-start gap-1">
+        <span className="text-caption text-secondary">{labels.detail.lineTotal}</span>
+        <span className="font-money text-body font-semibold text-primary">
+          <MoneyText money={line.lineNetTotal} locale={props.locale} />
+        </span>
+        {line.lineDiscount.amount > 0 ? (
+          <span className="font-money text-small text-success">
+            {labels.detail.lineDiscount}: -
+            <MoneyText money={line.lineDiscount} locale={props.locale} />
+          </span>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
 export function LinesSection(props: {
   readonly order: OrderResponse;
   readonly labels: OrderLabels;
   readonly locale: Locale;
+  /** Names of the performers of the order's location; empty when the commission module is off. */
+  readonly performerNames: Readonly<Record<string, string>>;
 }): ReactElement {
   const { labels, order } = props;
   return (
@@ -79,46 +151,13 @@ export function LinesSection(props: {
       ) : (
         <ul className="flex flex-col gap-2">
           {order.lines.map((line) => (
-            <li
+            <OrderLineRow
               key={line.orderLineId}
-              className="flex flex-col gap-2 rounded-md border border-default p-3 md:grid md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))] md:items-center"
-            >
-              <div className="flex min-w-0 flex-col gap-1">
-                <span className="min-w-0 break-words text-body font-semibold text-primary">
-                  {line.nameSnapshot}
-                </span>
-                {line.modifiers.length === 0 ? null : (
-                  <span className="min-w-0 break-words text-small text-secondary">
-                    {labels.detail.modifiers}:{" "}
-                    {line.modifiers.map((modifier) => modifier.nameSnapshot).join(", ")}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-baseline justify-between gap-2 md:flex-col md:items-start">
-                <span className="text-caption text-secondary">{labels.detail.quantity}</span>
-                <span className="font-money text-body text-primary">
-                  {formatNumber(line.quantity, { locale: props.locale })}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-2 md:flex-col md:items-start">
-                <span className="text-caption text-secondary">{labels.detail.unitPrice}</span>
-                <span className="font-money text-body text-primary">
-                  <MoneyText money={line.unitPrice} locale={props.locale} />
-                </span>
-              </div>
-              <div className="flex flex-col items-start gap-1">
-                <span className="text-caption text-secondary">{labels.detail.lineTotal}</span>
-                <span className="font-money text-body font-semibold text-primary">
-                  <MoneyText money={line.lineNetTotal} locale={props.locale} />
-                </span>
-                {line.lineDiscount.amount > 0 ? (
-                  <span className="font-money text-small text-success">
-                    {labels.detail.lineDiscount}: -
-                    <MoneyText money={line.lineDiscount} locale={props.locale} />
-                  </span>
-                ) : null}
-              </div>
-            </li>
+              line={line}
+              labels={labels}
+              locale={props.locale}
+              performerNames={props.performerNames}
+            />
           ))}
         </ul>
       )}

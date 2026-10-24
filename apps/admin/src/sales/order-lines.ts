@@ -24,6 +24,8 @@ export interface OrderLineDraft {
   readonly modifierOptionIds: readonly string[];
   readonly discountType: DiscountTypeChoice;
   readonly discountText: string;
+  /** Who performed the line; commission accrues to them (plan 3.11 Refresh C). Null: nobody chosen. */
+  readonly performedByMemberId: string | null;
 }
 
 export type LineParse =
@@ -43,6 +45,7 @@ export function emptyOrderLine(draftId: string): OrderLineDraft {
     modifierOptionIds: [],
     discountType: "NONE",
     discountText: "",
+    performedByMemberId: null,
   };
 }
 
@@ -116,6 +119,9 @@ export function parseLineDraft(draft: OrderLineDraft): LineParse {
       quantity,
       modifierOptionIds: [...draft.modifierOptionIds],
       ...(manualDiscount === undefined ? {} : { manualDiscount }),
+      ...(draft.performedByMemberId === null
+        ? {}
+        : { performedByMemberId: draft.performedByMemberId }),
     },
   };
 }
@@ -154,6 +160,7 @@ export function storedLineInputs(order: OrderResponse): OrderLineInputBody[] {
     quantity: line.quantity,
     modifierOptionIds: line.modifiers.map((modifier) => modifier.modifierOptionId),
     ...(line.manualDiscount === null ? {} : { manualDiscount: line.manualDiscount }),
+    ...(line.performedByMemberId === null ? {} : { performedByMemberId: line.performedByMemberId }),
   }));
 }
 

@@ -55,6 +55,11 @@ function EditLines(props: BodyProps): ReactElement {
           currency={props.currency}
           locale={props.locale}
           labels={labels.line}
+          performers={
+            props.performersEnabled
+              ? { locationId: props.order.locationId, labels: labels.line }
+              : undefined
+          }
           disabled={form.isSaving}
           onChange={form.setLines}
         />

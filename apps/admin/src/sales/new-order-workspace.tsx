@@ -40,6 +40,8 @@ export interface NewOrderWorkspaceProps {
   readonly currency: CurrencyCode;
   readonly locale: DisplayLocale;
   readonly labels: OrderLabels;
+  /** The commission module is on: each line gets a "Done by" select for the chosen location. */
+  readonly commissionOn: boolean;
 }
 
 type SectionProps = NewOrderWorkspaceProps & { readonly form: NewOrderForm };
@@ -121,6 +123,9 @@ function LinesAndDiscount(props: SectionProps): ReactElement {
     >
       <OrderLinesEditor
         organizationId={props.organizationId}
+        performers={
+          props.commissionOn ? { locationId: values.locationId, labels: labels.line } : undefined
+        }
         lines={values.lines}
         modifierGroups={props.modifierGroups}
         unitLabels={props.unitLabels}

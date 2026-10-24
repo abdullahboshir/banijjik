@@ -18,6 +18,7 @@ import {
   SALES_USE_PACKING_DEFAULT,
   SALES_USE_PACKING_SETTING_KEY,
   type OrderResponse,
+  type SalesPerformerResponse,
 } from "@banijjik/contracts/sales";
 import { DetailHeader, EmptyState, MoneyText, StatusBadge, currencySymbolOf } from "@banijjik/ui";
 import type { Locale } from "@banijjik/i18n";
@@ -36,6 +37,7 @@ import { OrderDetailClient, type OrderDetailPermissions } from "./order-detail-c
 import { LinesSection, SummarySection, TotalsSection } from "./order-detail-sections";
 import { OrderHistorySection } from "./order-history";
 import { orderLabelsOf, orderUnitLabel, type OrderLabels } from "./order-labels";
+import { commissionEnabledOf, performerNamesOf } from "./order-performer-names";
 
 const DUES_PAGE_LIMIT = 100;
 const AUDIT_PAGE_LIMIT = 50;
@@ -100,7 +102,8 @@ async function loadOrderDetailReads(access: OrgAccess, order: OrderResponse) {
     access.config.permissions,
     PERMISSION_KEY.AUDIT_LOG_READ,
   );
-  const [lookups, settingsResult, duesResult, auditResult] = await Promise.all([
+  const commissionOn = commissionEnabledOf(access.config);
+  const [lookups, settingsResult, duesResult, auditResult, performersResult] = await Promise.all([
     loadCatalogLookups(access),
     fetchBusinessResourceIfAllowed<SettingsResponse>(
       `/orgs/${organizationId}/settings?keys=${PAYMENT_METHODS_SETTING_KEY},${SALES_USE_PACKING_SETTING_KEY}&location=${order.locationId}`,
@@ -115,8 +118,20 @@ async function loadOrderDetailReads(access: OrgAccess, order: OrderResponse) {
           `/orgs/${organizationId}/audit-logs?entityType=order&entityId=${order.orderId}&limit=${AUDIT_PAGE_LIMIT}`,
         )
       : Promise.resolve(undefined),
+    commissionOn
+      ? fetchBusinessResourceIfAllowed<SalesPerformerResponse[]>(
+          `/orgs/${organizationId}/sales/performers?locationId=${order.locationId}`,
+        )
+      : Promise.resolve(undefined),
   ]);
-  return { lookups, settingsResult, duesResult, auditResult };
+  return {
+    lookups,
+    settingsResult,
+    duesResult,
+    auditResult,
+    performerNames: performerNamesOf(performersResult),
+    commissionOn,
+  };
 }
 
 type Translator = Awaited<ReturnType<typeof getTranslator>>;
@@ -160,6 +175,7 @@ function OrderDetailClientSlot(props: {
       locale={translator.locale}
       labels={orderLabelsOf(translator.t)}
       paymentLabels={paymentLabelsOf(translator.t)}
+      performersEnabled={reads.commissionOn}
     />
   );
 }
@@ -231,7 +247,12 @@ export async function OrderDetailPage(props: {
         timeZone={access.timeZone}
         labels={labels}
       />
-      <LinesSection order={order} labels={labels} locale={locale} />
+      <LinesSection
+        order={order}
+        labels={labels}
+        locale={locale}
+        performerNames={reads.performerNames}
+      />
       <TotalsSection order={order} labels={labels} locale={locale} />
       <OrderHistorySection
         entries={reads.auditResult}

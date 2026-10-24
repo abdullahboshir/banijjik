@@ -21,6 +21,8 @@ export interface OrderEditSheetProps {
   readonly currency: CurrencyCode;
   readonly locale: DisplayLocale;
   readonly labels: OrderLabels;
+  /** The commission module is on: each line gets a "Done by" select for the order's location. */
+  readonly performersEnabled: boolean;
   readonly onSaved: () => void;
 }
 
