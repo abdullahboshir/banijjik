@@ -100,6 +100,7 @@ export const inventoryManifest = defineModule({
       INVENTORY_EVENT_TYPE.STOCK_CHANGED,
       INVENTORY_EVENT_TYPE.STOCK_LOW,
       INVENTORY_EVENT_TYPE.TRANSFER_COMPLETED,
+      INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED,
     ],
     consumes: [],
   },
