@@ -8,11 +8,15 @@ import type { OrganizationCurrencyPort } from "./application/organization-curren
 import { buildExpenseAccountWriter } from "./application/ensure-expense-account.js";
 import type { BookingPostingSource } from "./application/ports/booking-posting-source.js";
 import type { CommissionPostingSource } from "./application/ports/commission-posting-source.js";
+import type { OrderPostingSource } from "./application/ports/order-posting-source.js";
+import type { StockPostingSource } from "./application/ports/stock-posting-source.js";
 import type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 import type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
 import type { PaymentPostingSource } from "./application/ports/payment-posting-source.js";
 import { buildPostBookingsHandler } from "./application/handlers/post-bookings.handler.js";
 import { buildPostPaymentsHandler } from "./application/handlers/post-payments.handler.js";
+import { buildPostOrdersHandler } from "./application/handlers/post-orders.handler.js";
+import { buildPostStockHandler } from "./application/handlers/post-stock.handler.js";
 import { registerAccountingEventHandlers } from "./application/register-handlers.js";
 import { catchUpSystemAccounts, seedSystemAccounts } from "./application/seed-system-accounts.js";
 import { GetTrialBalanceUseCase } from "./application/use-cases/get-trial-balance.use-case.js";
@@ -30,6 +34,8 @@ export type { PaymentPostingSource } from "./application/ports/payment-posting-s
 export type { BookingPostingSource } from "./application/ports/booking-posting-source.js";
 export type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
 export type { CommissionPostingSource } from "./application/ports/commission-posting-source.js";
+export type { OrderPostingSource } from "./application/ports/order-posting-source.js";
+export type { StockPostingSource } from "./application/ports/stock-posting-source.js";
 export type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 export type {
   PaymentAllocationForPosting,
@@ -39,6 +45,11 @@ export type {
   BookingPostingSnapshot,
   ExpensePostingSnapshot,
 } from "./domain/posting-rules.js";
+export type { OrderPostingSnapshot } from "./domain/order-posting-rules.js";
+export type {
+  StockMovementPostingLine,
+  StockPostingSnapshot,
+} from "./domain/stock-posting-rules.js";
 export { seedSystemAccounts, catchUpSystemAccounts };
 export {
   draftPaymentReceived,
@@ -49,9 +60,16 @@ export {
   draftExpensePosted,
   draftExpenseVoided,
 } from "./domain/posting-rules.js";
+export { draftOrderCompleted } from "./domain/order-posting-rules.js";
+export { draftStockSource } from "./domain/stock-posting-rules.js";
 export { assertBalanced, mirrorLines } from "./domain/journal-lines.js";
 export { postJournalEntry, postReversal } from "./application/post-journal.js";
-export { buildPostBookingsHandler, buildPostPaymentsHandler };
+export {
+  buildPostBookingsHandler,
+  buildPostPaymentsHandler,
+  buildPostOrdersHandler,
+  buildPostStockHandler,
+};
 export { Account } from "./domain/account.entity.js";
 export { JournalEntry } from "./domain/journal-entry.entity.js";
 export { MongoAccountRepository } from "./infrastructure/mongo-account.repository.js";
@@ -95,9 +113,11 @@ export interface AccountingEventHandlerInput {
   readonly payments?: PaymentPostingSource | undefined;
   readonly bookings?: BookingPostingSource | undefined;
   readonly commissions?: CommissionPostingSource | undefined;
+  readonly orders?: OrderPostingSource | undefined;
+  readonly stocks?: StockPostingSource | undefined;
 }
 
-/** Registers accounting handlers. Payment/booking adapters are optional (lead clarification). */
+/** Registers accounting handlers. Payment/booking/order/stock adapters are optional (lead clarification). */
 export function registerAccountingHandlers(input: AccountingEventHandlerInput): void {
   registerAccountingEventHandlers({
     accounts: new MongoAccountRepository(),
@@ -109,6 +129,8 @@ export function registerAccountingHandlers(input: AccountingEventHandlerInput): 
     ...(input.payments === undefined ? {} : { payments: input.payments }),
     ...(input.bookings === undefined ? {} : { bookings: input.bookings }),
     ...(input.commissions === undefined ? {} : { commissions: input.commissions }),
+    ...(input.orders === undefined ? {} : { orders: input.orders }),
+    ...(input.stocks === undefined ? {} : { stocks: input.stocks }),
   });
 }
 

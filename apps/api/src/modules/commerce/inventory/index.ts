@@ -1,4 +1,4 @@
-import type { ModuleManifest } from "@banijjik/contracts";
+import type { CurrencyCode, ModuleManifest } from "@banijjik/contracts";
 import { SEQUENCE_KEY } from "@banijjik/contracts";
 import type { RequestHandler, Router } from "express";
 import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
@@ -15,6 +15,7 @@ import {
   buildOrganizationCurrencyReader,
   buildLocationLookup,
 } from "../../core/organization/index.js";
+import type { StockPostingSnapshot, StockPostingSource } from "../accounting/index.js";
 import type { InventoryDependencies } from "./application/inventory-dependencies.js";
 import type { InventoryEventPublisher } from "./application/ports/inventory-context-ports.js";
 import { buildInventorySettingsReader } from "./application/inventory-settings-reader.js";
@@ -43,6 +44,9 @@ import {
   MongoStockMovementRepository,
   MongoStockReservationRepository,
 } from "./infrastructure/mongo-stock.repository.js";
+import type { StockMovementRecord } from "./application/ports/stock-records.js";
+import { movementValue } from "./domain/money-math.js";
+import { asId, type OrganizationId } from "@banijjik/ids";
 import { InventoryItemController } from "./presentation/inventory-item.controller.js";
 import { buildInventoryTenantRouter } from "./presentation/inventory-tenant.router.js";
 import { StockController } from "./presentation/stock.controller.js";
@@ -155,4 +159,66 @@ export function buildInventoryRouter(dependencies: InventoryTenantDependencies):
 /** Builds the StockLedger port for sales modules (card 3.5). */
 export function buildStockLedger(input: InventoryTenantDependencies): StockLedger {
   return new StockLedger(writeDependencies(input));
+}
+
+export { movementValue, lineValueMinor } from "./domain/money-math.js";
+export { RecordOpeningStockUseCase } from "./application/use-cases/record-opening-stock.use-case.js";
+export type { StockMovementRecord } from "./application/ports/stock-records.js";
+
+export interface InventoryPostingSource {
+  readMovements(input: {
+    readonly organizationId: OrganizationId;
+    readonly sourceId: string;
+    readonly sourceType?: string;
+  }): Promise<readonly StockMovementRecord[]>;
+}
+
+export function buildInventoryPostingSourceAdapter(): InventoryPostingSource {
+  const repository = new MongoStockMovementRepository();
+  return {
+    readMovements: (input) => repository.findBySource(input),
+  };
+}
+
+export function buildStockPostingSourceAdapter(): StockPostingSource {
+  const repository = new MongoStockMovementRepository();
+  const currencyReader = buildOrganizationCurrencyReader();
+  return {
+    async readStockSource(source: {
+      readonly organizationId: string;
+      readonly sourceType: string;
+      readonly sourceId: string;
+    }): Promise<StockPostingSnapshot | undefined> {
+      const organizationId = asId<OrganizationId>(source.organizationId);
+      const movements = await repository.findBySource({
+        organizationId,
+        sourceId: source.sourceId,
+      });
+      const first = movements[0];
+      if (first === undefined) return undefined;
+      const currency = (first.unitCostCurrency ??
+        (await currencyReader.read(organizationId)) ??
+        "BDT") as CurrencyCode;
+      return {
+        organizationId: source.organizationId,
+        sourceType: source.sourceType,
+        sourceId: source.sourceId,
+        businessDate: first.businessDate,
+        locationId: first.locationId ?? null,
+        currency,
+        movements: movements.map((m) => ({
+          stockMovementId: m.stockMovementId,
+          inventoryItemId: m.inventoryItemId,
+          quantityDelta: m.quantityDelta,
+          stockState: m.stockState,
+          reason: m.reason,
+          ...(m.paidVia !== undefined ? { paidVia: m.paidVia } : {}),
+          value: {
+            amount: movementValue(m),
+            currency,
+          },
+        })),
+      };
+    },
+  };
 }

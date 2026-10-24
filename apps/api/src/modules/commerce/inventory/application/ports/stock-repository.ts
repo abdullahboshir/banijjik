@@ -23,6 +23,11 @@ export interface StockMovementRepository {
     locationId?: string,
   ): Promise<readonly StockMovementRecord[]>;
   findById(stockMovementId: StockMovementId): Promise<StockMovementRecord | undefined>;
+  findBySource(input: {
+    readonly organizationId: OrganizationId;
+    readonly sourceId: string;
+    readonly sourceType?: string;
+  }): Promise<readonly StockMovementRecord[]>;
 }
 
 export interface InventoryLevelRepository {

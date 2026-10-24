@@ -1,5 +1,9 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
-import { STOCK_MOVEMENT_REASON } from "@banijjik/contracts/inventory";
+import {
+  INVENTORY_EVENT_TYPE,
+  STOCK_MOVEMENT_REASON,
+  type StockReceiptPaidVia,
+} from "@banijjik/contracts/inventory";
 import type { Money } from "@banijjik/contracts/catalog";
 import { newId, type InventoryItemId, type OrganizationId, type UserId } from "@banijjik/ids";
 import type { InventoryDependencies } from "../inventory-dependencies.js";
@@ -18,6 +22,7 @@ export class ReceiveStockUseCase {
     readonly actorUserId: UserId;
     readonly allowedLocationIds: readonly string[] | "ALL";
     readonly locationId: string;
+    readonly paidVia: StockReceiptPaidVia;
     readonly supplierNote?: string;
     readonly lines: readonly {
       readonly inventoryItemId: InventoryItemId;
@@ -49,16 +54,25 @@ export class ReceiveStockUseCase {
           sourceType: SOURCE_RECEIPT,
           sourceId,
           ...(input.supplierNote === undefined ? {} : { note: input.supplierNote }),
+          paidVia: input.paidVia,
           unitCost: row.line.unitCost,
           lowStockThreshold: row.threshold,
           allowNegativeStock,
         });
       }
+      await deps.events.publish(INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED, {
+        sourceType: SOURCE_RECEIPT,
+        sourceId,
+      });
       await deps.audit.record({
         action: AUDIT_ACTION.STOCK_RECEIVED,
         entityType: AUDIT_ENTITY_TYPE.stockMovement,
         entityId: sourceId,
-        changes: { locationId: { to: input.locationId }, lineCount: { to: input.lines.length } },
+        changes: {
+          locationId: { to: input.locationId },
+          lineCount: { to: input.lines.length },
+          paidVia: { to: input.paidVia },
+        },
       });
       return { sourceId };
     });

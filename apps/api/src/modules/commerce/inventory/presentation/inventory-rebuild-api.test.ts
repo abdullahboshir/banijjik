@@ -33,6 +33,7 @@ describe("rebuild levels API", () => {
       path: `/orgs/${world.organizationA}/stock/receipts`,
       body: {
         locationId,
+        paidVia: "CASH",
         lines: [{ inventoryItemId: item.inventoryItemId, quantity: 40, unitCost: money(5) }],
       },
       idempotencyKey: newId(),

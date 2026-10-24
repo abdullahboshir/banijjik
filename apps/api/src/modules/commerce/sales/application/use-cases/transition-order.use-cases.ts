@@ -187,6 +187,7 @@ export class CompleteOrderUseCase {
       }),
       input.body.version,
     );
+    await touchOrderPaymentSummary(this.dependencies.payments, persisted, now);
     await this.dependencies.events.publish(
       SALES_EVENT_TYPE.ORDER_COMPLETED,
       { orderId: persisted.orderId },
@@ -259,4 +260,25 @@ export class CancelOrderUseCase {
       await this.dependencies.payments.readTotals(cancelled.orderId),
     );
   }
+}
+
+async function touchOrderPaymentSummary(
+  payments: SalesDependencies["payments"],
+  order: Order,
+  now: Date,
+): Promise<void> {
+  await payments.initializeSummary({
+    organizationId: order.organizationId,
+    orderId: order.orderId,
+    contactId: order.contactId,
+    locationId: order.locationId,
+    total: order.totals.grandTotal,
+    now,
+  });
+  await payments.updateTotal({
+    organizationId: order.organizationId,
+    orderId: order.orderId,
+    total: order.totals.grandTotal,
+    now,
+  });
 }

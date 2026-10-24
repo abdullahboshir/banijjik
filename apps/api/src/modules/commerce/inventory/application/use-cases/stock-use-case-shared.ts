@@ -9,6 +9,7 @@ import type { InventoryDependencies } from "../inventory-dependencies.js";
 export const SOURCE_RECEIPT = "STOCK_RECEIPT";
 export const SOURCE_ADJUSTMENT = "STOCK_ADJUSTMENT";
 export const SOURCE_TRANSFER = "STOCK_TRANSFER";
+export const SOURCE_OPENING = "STOCK_OPENING";
 
 export function assertLocationReach(
   allowedLocationIds: readonly string[] | "ALL",

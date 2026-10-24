@@ -6,7 +6,15 @@ import {
   buildExpensePostingSourceAdapter,
   registerExpenseEventHandlers,
 } from "../modules/commerce/expense/index.js";
-import { buildPaymentPostingSourceAdapter } from "../modules/commerce/payment/index.js";
+import {
+  buildPaymentPostingSourceAdapter,
+  buildRequestAdvanceReader,
+} from "../modules/commerce/payment/index.js";
+import {
+  buildInventoryPostingSourceAdapter,
+  buildStockPostingSourceAdapter,
+} from "../modules/commerce/inventory/index.js";
+import { buildOrderPostingSourceAdapter } from "../modules/commerce/sales/index.js";
 import { systemClock } from "../kernel/time/index.js";
 import { buildPaymentRequestReaders } from "./payment-request-readers.js";
 
@@ -24,5 +32,10 @@ export function registerAccountingAndExpenseHandlers(): void {
     bookings: buildBookingPostingSourceAdapter(),
     payments: buildPaymentPostingSourceAdapter(requestReaders),
     commissions: buildCommissionPostingSourceAdapter(),
+    orders: buildOrderPostingSourceAdapter({
+      advances: buildRequestAdvanceReader(),
+      inventory: buildInventoryPostingSourceAdapter(),
+    }),
+    stocks: buildStockPostingSourceAdapter(),
   });
 }

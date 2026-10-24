@@ -1,5 +1,6 @@
 import type {
   StockMovementReason,
+  StockReceiptPaidVia,
   StockSourceType,
   StockState,
 } from "@banijjik/contracts/inventory";
@@ -23,6 +24,7 @@ export interface StockMovementRecord {
   readonly offeringId?: string;
   readonly variantId?: string;
   readonly note?: string;
+  readonly paidVia?: StockReceiptPaidVia;
   readonly occurredAt: Date;
   readonly businessDate: string;
   readonly createdAt: Date;

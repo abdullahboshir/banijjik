@@ -89,6 +89,7 @@ export async function receiveStock(
     idempotencyKey: newId(),
     body: {
       locationId: shop.locationId,
+      paidVia: "CASH",
       lines: lines.map((line) => ({
         inventoryItemId: line.inventoryItemId,
         quantity: line.quantity,

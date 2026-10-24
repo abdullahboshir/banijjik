@@ -39,6 +39,7 @@ describe("stock ledger API", () => {
       path: `/orgs/${world.organizationA}/stock/receipts`,
       body: {
         locationId,
+        paidVia: "CASH",
         lines: [{ inventoryItemId: item.inventoryItemId, quantity: 1000, unitCost: money(50) }],
       },
       idempotencyKey: newId(),
@@ -49,6 +50,7 @@ describe("stock ledger API", () => {
       path: `/orgs/${world.organizationA}/stock/receipts`,
       body: {
         locationId,
+        paidVia: "CASH",
         lines: [{ inventoryItemId: item.inventoryItemId, quantity: 500, unitCost: money(80) }],
       },
       idempotencyKey: newId(),
@@ -82,6 +84,7 @@ describe("stock ledger API", () => {
       path: `/orgs/${world.organizationA}/stock/receipts`,
       body: {
         locationId,
+        paidVia: "CASH",
         lines: [{ inventoryItemId: item.inventoryItemId, quantity: 5, unitCost: money(10) }],
       },
       idempotencyKey: newId(),
@@ -115,6 +118,7 @@ describe("stock ledger API", () => {
       path: `/orgs/${world.organizationA}/stock/receipts`,
       body: {
         locationId,
+        paidVia: "CASH",
         lines: [{ inventoryItemId: item.inventoryItemId, quantity: 2500, unitCost: money(1) }],
       },
       idempotencyKey: newId(),

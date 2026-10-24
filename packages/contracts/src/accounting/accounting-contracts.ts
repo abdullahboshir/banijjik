@@ -58,6 +58,13 @@ export const POSTING_KEY = defineEnum([
   "commission_accrued",
   "commission_adjusted",
   "commission_paid",
+  "order_revenue",
+  "order_advance_settle",
+  "order_cost",
+  "stock_receipt",
+  "stock_opening",
+  "stock_adjustment",
+  "stock_write_off",
 ]);
 export type PostingKey =
   (typeof POSTING_KEY)[keyof typeof POSTING_KEY] | `manual:${string}` | `reversal:${string}`;

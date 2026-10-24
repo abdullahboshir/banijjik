@@ -74,4 +74,25 @@ export class MongoStockMovementRepository implements StockMovementRepository {
     const document = await Model.findOne({ stockMovementId }, { _id: 0 }).lean();
     return document === null ? undefined : (document as unknown as StockMovementRecord);
   }
+
+  async findBySource(input: {
+    readonly organizationId: OrganizationId;
+    readonly sourceId: string;
+    readonly sourceType?: string;
+  }): Promise<readonly StockMovementRecord[]> {
+    const filter: Record<string, unknown> = {
+      organizationId: input.organizationId,
+      sourceId: input.sourceId,
+    };
+    if (input.sourceType !== undefined) {
+      filter.sourceType = input.sourceType;
+    }
+    const Model = models({ organizationId: input.organizationId }).get<StockMovementDocument>(
+      STOCK_MOVEMENT_MODEL_NAME,
+    );
+    const items = await Model.find(filter, { _id: 0 })
+      .sort({ occurredAt: 1, stockMovementId: 1 })
+      .lean();
+    return items as unknown as StockMovementRecord[];
+  }
 }

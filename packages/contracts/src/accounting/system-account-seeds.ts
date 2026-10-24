@@ -168,4 +168,9 @@ export const SYSTEM_ACCOUNT_SEEDS: readonly SystemAccountSeed[] = Object.freeze(
     accountType: ACCOUNT_TYPE.LIABILITY,
     name: { bn: "কমিশন পরিশোধ্য", en: "Commission payable" },
   },
+  {
+    accountCode: SYSTEM_ACCOUNT_CODE.ACCOUNTS_PAYABLE,
+    accountType: ACCOUNT_TYPE.LIABILITY,
+    name: { bn: "প্রদেয় হিসাব", en: "Accounts payable" },
+  },
 ]);

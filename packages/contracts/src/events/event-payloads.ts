@@ -19,6 +19,7 @@ import type {
   InventoryStockChangedPayload,
   InventoryStockLowPayload,
   InventoryTransferCompletedPayload,
+  InventoryStockSourceRecordedPayload,
 } from "../inventory/inventory-contracts.js";
 import { INVENTORY_EVENT_TYPE } from "../inventory/inventory-event-type.js";
 import type {
@@ -182,6 +183,7 @@ export interface EventPayloadMap {
   readonly [INVENTORY_EVENT_TYPE.STOCK_CHANGED]: InventoryStockChangedPayload;
   readonly [INVENTORY_EVENT_TYPE.STOCK_LOW]: InventoryStockLowPayload;
   readonly [INVENTORY_EVENT_TYPE.TRANSFER_COMPLETED]: InventoryTransferCompletedPayload;
+  readonly [INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED]: InventoryStockSourceRecordedPayload;
   readonly [DIRECTORY_EVENT_TYPE.LISTING_SUBMITTED]: ListingEventPayload;
   readonly [DIRECTORY_EVENT_TYPE.LISTING_APPROVED]: ListingEventPayload;
   readonly [DIRECTORY_EVENT_TYPE.LISTING_REJECTED]: ListingEventPayload;
