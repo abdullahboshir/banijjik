@@ -17,7 +17,11 @@ import type {
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import { EventSession } from "../../domain/event-session.entity.js";
-import { bookingRuleError, recordNotFound } from "../../domain/errors.js";
+import {
+  bookingRuleError,
+  eventSessionResourceBusyError,
+  recordNotFound,
+} from "../../domain/errors.js";
 import {
   takeSessionResourceHolds,
   releaseSessionResourceHolds,
@@ -133,14 +137,38 @@ export class EventSessionUseCases {
     const existing = await this.get(input.eventSessionId, input.allowedLocationIds);
     const timeChanged = input.body.startsAt !== undefined || input.body.endsAt !== undefined;
     let updated: EventSession = existing;
-    await runWithTxnRetry(this.dependencies.unitOfWork, async () => {
-      const startsAt =
-        input.body.startsAt === undefined
-          ? existing.toProps().startsAt
-          : new Date(input.body.startsAt);
-      const endsAt =
-        input.body.endsAt === undefined ? existing.toProps().endsAt : new Date(input.body.endsAt);
-      if (timeChanged)
+    await runWithTxnRetry(
+      this.dependencies.unitOfWork,
+      async () => {
+        const startsAt =
+          input.body.startsAt === undefined
+            ? existing.toProps().startsAt
+            : new Date(input.body.startsAt);
+        const endsAt =
+          input.body.endsAt === undefined ? existing.toProps().endsAt : new Date(input.body.endsAt);
+        if (!timeChanged) {
+          updated = existing.update({
+            ...(input.body.capacity === undefined ? {} : { capacity: input.body.capacity }),
+            now: this.dependencies.clock.now(),
+            actorUserId: input.actorUserId,
+            resourceHolds: existing.toProps().resourceHolds,
+          });
+          updated = await this.dependencies.sessions.update(updated, input.body.version, existing);
+          return;
+        }
+        const moved = existing.update({
+          ...(input.body.startsAt === undefined ? {} : { startsAt: new Date(input.body.startsAt) }),
+          ...(input.body.endsAt === undefined ? {} : { endsAt: new Date(input.body.endsAt) }),
+          ...(input.body.capacity === undefined ? {} : { capacity: input.body.capacity }),
+          now: this.dependencies.clock.now(),
+          actorUserId: input.actorUserId,
+          resourceHolds: existing.toProps().resourceHolds,
+        });
+        const versionedMove = await this.dependencies.sessions.update(
+          moved,
+          input.body.version,
+          existing,
+        );
         await releaseSessionResourceHolds({
           slots: this.dependencies.slots,
           organizationId: existing.toProps().organizationId,
@@ -148,26 +176,27 @@ export class EventSessionUseCases {
           startsAt: existing.toProps().startsAt,
           endsAt: existing.toProps().endsAt,
         });
-      const holds = timeChanged
-        ? await takeSessionResourceHolds({
-            ...this.dependencies,
-            organizationId: input.organizationId,
-            locationId: existing.toProps().locationId,
-            resourceIds: existing.toProps().resourceIds,
-            startsAt,
-            endsAt,
-          })
-        : existing.toProps().resourceHolds;
-      updated = existing.update({
-        ...(input.body.startsAt === undefined ? {} : { startsAt: new Date(input.body.startsAt) }),
-        ...(input.body.endsAt === undefined ? {} : { endsAt: new Date(input.body.endsAt) }),
-        ...(input.body.capacity === undefined ? {} : { capacity: input.body.capacity }),
-        now: this.dependencies.clock.now(),
-        actorUserId: input.actorUserId,
-        resourceHolds: holds,
-      });
-      updated = await this.dependencies.sessions.update(updated, input.body.version, existing);
-    });
+        const holds = await takeSessionResourceHolds({
+          ...this.dependencies,
+          organizationId: input.organizationId,
+          locationId: existing.toProps().locationId,
+          resourceIds: existing.toProps().resourceIds,
+          startsAt,
+          endsAt,
+        });
+        updated = versionedMove.update({
+          resourceHolds: holds,
+          now: this.dependencies.clock.now(),
+          actorUserId: input.actorUserId,
+        });
+        updated = await this.dependencies.sessions.update(
+          updated,
+          versionedMove.toProps().version,
+          versionedMove,
+        );
+      },
+      eventSessionResourceBusyError,
+    );
     return updated;
   }
   async cancel(
