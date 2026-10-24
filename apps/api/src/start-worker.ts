@@ -60,10 +60,7 @@ export function startWorker(
     depositCheck: buildBookingDepositCheckAdapter(),
     audit: buildAuditRecorder(systemClock),
   });
-  registerCreditScheduledJobs({
-    clock: systemClock,
-    audit: buildAuditRecorder(systemClock),
-  });
+  registerCreditScheduledJobs({ clock: systemClock, audit: buildAuditRecorder(systemClock) });
   registerPaymentScheduledJobs({
     clock: systemClock,
     orgConfig,
