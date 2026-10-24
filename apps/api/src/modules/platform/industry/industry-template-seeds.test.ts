@@ -121,10 +121,16 @@ describe("industry template seed files", () => {
       "contact_misuse",
       "other",
     ];
-    const keys = [SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY_ISLAMIC, SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY];
+    const keys = [
+      SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY_ISLAMIC,
+      SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY,
+    ];
     for (const templateKey of keys) {
       const reasons = templateNamed(templateKey).configuration.directory?.reportReasons ?? [];
-      expect(reasons.map((reason) => reason.reasonKey), templateKey).toEqual(expectedKeys);
+      expect(
+        reasons.map((reason) => reason.reasonKey),
+        templateKey,
+      ).toEqual(expectedKeys);
       for (const reason of reasons) {
         expect(reason.label.bn, `${templateKey} ${reason.reasonKey}`).toEqual(expect.any(String));
         expect(reason.label.en, `${templateKey} ${reason.reasonKey}`).toEqual(expect.any(String));
