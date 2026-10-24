@@ -151,6 +151,10 @@ export const CUSTOMER_ACCOUNT_STATUS = defineEnum(["ACTIVE", "BLOCKED"]);
 export type CustomerAccountStatus =
   (typeof CUSTOMER_ACCOUNT_STATUS)[keyof typeof CUSTOMER_ACCOUNT_STATUS];
 
+/** Purpose of a customer OTP challenge: sign-in or account erasure (card M.7). */
+export const CUSTOMER_OTP_PURPOSE = defineEnum(["SIGN_IN", "ERASE_ACCOUNT"]);
+export type CustomerOtpPurpose = (typeof CUSTOMER_OTP_PURPOSE)[keyof typeof CUSTOMER_OTP_PURPOSE];
+
 /** The customer's own cookies, apart from the admin ones (ADR-048, ADR-119). */
 export const STOREFRONT_ACCESS_COOKIE_NAME = "sf_access";
 export const STOREFRONT_REFRESH_COOKIE_NAME = "sf_refresh";
@@ -212,4 +216,14 @@ export interface CustomerAccountEventPayload {
 /** Payload of every contact event: ids only, never the name or the phone. */
 export interface ContactEventPayload {
   readonly contactId: string;
+}
+
+export interface CustomerEraseResponse {
+  readonly erased: boolean;
+  readonly forfeitedCredits: number;
+}
+
+export interface CustomerEraseOtpSendResponse {
+  readonly challengeId: string;
+  readonly expiresAt: string;
 }

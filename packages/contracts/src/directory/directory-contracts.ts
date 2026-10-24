@@ -23,6 +23,8 @@ export const DIRECTORY_API_MESSAGE_KEYS = {
   reportDailyLimit: "errors.directory_report_daily_limit",
   reportStale: "errors.directory_report_stale",
   reportCannotHide: "errors.directory_report_cannot_hide",
+  blockOwnListing: "errors.directory_block_own_listing",
+  blockAccountLimit: "errors.directory_block_account_limit",
 } as const;
 
 /** Message keys the directory endpoints can send. Both i18n catalogs need each. */

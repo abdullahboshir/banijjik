@@ -50,6 +50,7 @@ export {
   LISTING_REPORT_OUTCOME,
   LISTING_REPORT_STATUS,
   type DirectoryReportReason,
+  type ListingBlockResponse,
   type ListingReportFileRequest,
   type ListingReportOutcome,
   type ListingReportQueueItem,

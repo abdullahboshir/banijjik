@@ -136,3 +136,9 @@ export const geoBdValueSchema = z
     },
     { message: "validation.invalid_value" },
   );
+
+/** Body of `POST /my/listing-blocks`: listing number to hide from own search (card M.7). */
+export const listingBlockCreateRequestSchema = z.strictObject({
+  listingNumber: z.string().trim().min(1).max(40),
+});
+export type ListingBlockCreateBody = z.output<typeof listingBlockCreateRequestSchema>;

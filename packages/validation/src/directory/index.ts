@@ -8,6 +8,7 @@ export {
   directoryQueueQuerySchema,
   directoryReportsQueueQuerySchema,
   geoBdValueSchema,
+  listingBlockCreateRequestSchema,
   listingIdParamsSchema,
   listingNumberParamsSchema,
   listingRejectRequestSchema,

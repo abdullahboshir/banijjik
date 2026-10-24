@@ -29,3 +29,10 @@ export const storefrontOrganizationParamsSchema = z.object({ organizationId: uui
 /** Body of the block and unblock endpoints: the version the staff member read. */
 export const customerAccountBlockRequestSchema = z.strictObject({ version: versionSchema });
 export type CustomerAccountBlockBody = z.output<typeof customerAccountBlockRequestSchema>;
+
+/** Body of `POST …/my/account/erase`: proof of ownership via OTP challenge and code (card M.7). */
+export const customerAccountEraseRequestSchema = z.strictObject({
+  challengeId: uuidV7Schema,
+  code: z.string().regex(OTP_CODE_PATTERN),
+});
+export type CustomerAccountEraseBody = z.output<typeof customerAccountEraseRequestSchema>;

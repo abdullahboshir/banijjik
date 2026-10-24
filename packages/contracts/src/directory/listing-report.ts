@@ -16,13 +16,22 @@ export const LISTING_REPORT_OUTCOME = defineEnum([
 export type ListingReportOutcome =
   (typeof LISTING_REPORT_OUTCOME)[keyof typeof LISTING_REPORT_OUTCOME];
 
-/** Trust-and-safety limits. Constants, not settings: platform policy (M.7 decisions 3 and 8). */
+/** Trust-and-safety limits. Constants, not settings: platform policy (M.7 decisions 3, 8 and 9). */
 export const DIRECTORY_SAFETY_RULES = {
   reportsPerAccountPerDay: 10,
   reportNoteMaxLength: 500,
   resolutionNoteMaxLength: 500,
   maxReportIdsPerResolve: 100,
+  blocksPerAccountMax: 500,
 } as const;
+
+/** Listing block response (M.7 decision 9). */
+export interface ListingBlockResponse {
+  readonly listingBlockId: string;
+  readonly listingId: string;
+  readonly listingNumber: string;
+  readonly createdAt: string;
+}
 
 /** One entry of the template's `reportReasons` (M.7 decision 1). */
 export interface DirectoryReportReason {
