@@ -93,6 +93,11 @@ export interface IndustryTemplateDirectoryBlock {
   /** Absent on templates stored before M.7; the schema defaults it to []. */
   readonly reportReasons?: readonly IndustryTemplateDirectoryReportReason[] | undefined;
   readonly listingNumberPrefix: string;
+  /**
+   * A PUBLIC SELECT listing field whose option counts show on the storefront home (M.6a decision 4).
+   * Absent means no statistics field.
+   */
+  readonly homeStatsFieldKey?: string | undefined;
 }
 
 /** A sample modifier group the tenant can edit (ADR-072). Prices are integer minor units. */

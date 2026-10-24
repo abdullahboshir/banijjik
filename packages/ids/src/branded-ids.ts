@@ -42,6 +42,7 @@ export type CommissionEntryId = Id<"CommissionEntry">;
 export type CommissionPayoutId = Id<"CommissionPayout">;
 export type ListingReportId = Id<"ListingReport">;
 export type ListingBlockId = Id<"ListingBlock">;
+export type SitePageId = Id<"SitePage">;
 
 export class InvalidIdError extends Error {
   constructor() {

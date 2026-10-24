@@ -123,6 +123,8 @@ export const PERMISSION_KEY = {
   ENROLLMENT_ENROLLMENT_RENEW: "enrollment.enrollment.renew",
   ENROLLMENT_ENROLLMENT_CANCEL: "enrollment.enrollment.cancel",
   ENROLLMENT_CHECK_IN_CREATE: "enrollment.checkIn.create",
+  WEBSITE_PAGE_READ: "website.page.read",
+  WEBSITE_PAGE_UPDATE: "website.page.update",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

@@ -103,6 +103,8 @@ const directoryBlockSchema = z.strictObject({
     )
     .default([]),
   listingNumberPrefix: z.string().trim().min(1).max(LISTING_NUMBER_PREFIX_MAX_LENGTH),
+  /** Optional PUBLIC SELECT listing field for the storefront home counts (M.6a decision 4). */
+  homeStatsFieldKey: z.string().regex(FIELD_KEY_PATTERN).optional(),
 });
 
 const modifierOptionSchema = z.strictObject({
@@ -126,6 +128,7 @@ const resourceTypeSchema = z.strictObject({
 });
 
 interface FieldShape {
+  readonly fieldKey?: string | undefined;
   readonly fieldType: string;
   readonly entityType: string;
   readonly offeringKind?: string | undefined;
@@ -204,6 +207,22 @@ function directoryBlockConsistent(value: {
   );
 }
 
+/** The home statistics field must be a SELECT listing field that is PUBLIC (absent tier means PUBLIC). */
+function homeStatsFieldIsPublicSelect(value: {
+  readonly directory?: { readonly homeStatsFieldKey?: string | undefined } | undefined;
+  readonly customFields: readonly FieldShape[];
+}): boolean {
+  const fieldKey = value.directory?.homeStatsFieldKey;
+  if (fieldKey === undefined) return true;
+  return value.customFields.some(
+    (field) =>
+      field.fieldKey === fieldKey &&
+      field.entityType === "listing" &&
+      field.fieldType === CUSTOM_FIELD_TYPE.SELECT &&
+      (field.listingTier ?? LISTING_FIELD_TIER.PUBLIC) === LISTING_FIELD_TIER.PUBLIC,
+  );
+}
+
 /** The contact module creates a linked contact with the role RELATED, so a template with a link must list it (ADR-113). */
 function linksHaveRelatedRole(value: {
   readonly contactRoleKeys: readonly string[];
@@ -257,6 +276,7 @@ export const industryTemplateConfigurationSchema = z
     path: ["customFields"],
   })
   .refine(directoryBlockConsistent, { path: ["directory"] })
+  .refine(homeStatsFieldIsPublicSelect, { path: ["directory"] })
   .refine(linksHaveRelatedRole, { path: ["contactRoleKeys"] })
   .refine(
     (value) =>

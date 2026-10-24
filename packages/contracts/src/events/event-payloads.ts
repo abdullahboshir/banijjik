@@ -62,6 +62,7 @@ import type {
 } from "../settings/settings-contracts.js";
 import type { OrderEventPayload } from "../sales/sales-event-type.js";
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
+import { WEBSITE_EVENT_TYPE, type SitePageUpdatedPayload } from "../website/index.js";
 
 export interface JournalPostedPayload {
   readonly journalEntryId: string;
@@ -208,4 +209,5 @@ export interface EventPayloadMap {
   readonly [SALES_EVENT_TYPE.ORDER_PACKED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_COMPLETED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_CANCELLED]: OrderEventPayload;
+  readonly [WEBSITE_EVENT_TYPE.PAGE_UPDATED]: SitePageUpdatedPayload;
 }
