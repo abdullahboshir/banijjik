@@ -300,10 +300,11 @@ function mountOrganizationSurface(
     }),
     validate({ params: storefrontOrganizationParamsSchema }),
     businessContext(organizations),
+    // Before the contact router, whose customer-login switch guards every path (M.6a: /site must answer).
+    websiteRouter,
     directoryRouter,
     creditRouter,
     contactRouter,
-    websiteRouter,
   );
 }
 

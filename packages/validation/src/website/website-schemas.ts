@@ -19,7 +19,8 @@ const pageBodySchema = z.strictObject({
   en: z.string().max(SITE_PAGE_BODY_MAX_LENGTH),
 });
 
-export const sitePageKeyParamsSchema = z.strictObject({
+/** Path params only: the router also carries `organizationId`, so this is not strict (as the credit params). */
+export const sitePageKeyParamsSchema = z.object({
   pageKey: z.enum(SITE_PAGE_KEY),
 });
 
