@@ -20,6 +20,8 @@ export { buildEnrollmentRouter } from "./presentation/enrollment.router.js";
 export { buildEnrollmentJobs } from "./application/enrollment-jobs.js";
 export { buildSyncEnrollmentPaymentsHandler } from "./application/handlers/sync-enrollment-payments.handler.js";
 export type { EnrollmentPaymentPort } from "./application/ports.js";
+export { buildEnrollmentPeriodPostingSource } from "./infrastructure/enrollment-period-posting-source.js";
+export type { HeldAdvanceReader } from "./infrastructure/enrollment-period-posting-source.js";
 
 export function buildEnrollmentDependencies(
   input: EnrollmentContextInput & {

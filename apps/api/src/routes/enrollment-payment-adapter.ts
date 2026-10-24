@@ -35,6 +35,30 @@ class EnrollmentPaymentAdapter implements EnrollmentPaymentPort {
     });
   }
 
+  /** Inside the revenue transaction: creates the summary if missing, then writes the total (ADR-138 R3). */
+  async touchForRevenue(
+    input: Parameters<EnrollmentPaymentPort["touchForRevenue"]>[0],
+  ): Promise<void> {
+    const organizationId = asId<OrganizationId>(input.organizationId);
+    const requestType = PAYMENT_REQUEST_TYPE.ENROLLMENT;
+    await this.summaries.ensureSummary({
+      organizationId,
+      locationId: asId<LocationId>(input.locationId),
+      requestType,
+      requestId: input.enrollmentPeriodId,
+      contactId: input.contactId,
+      total: input.total,
+      now: input.now,
+    });
+    await this.summaries.setTotal({
+      organizationId,
+      requestType,
+      requestId: input.enrollmentPeriodId,
+      total: input.total,
+      now: input.now,
+    });
+  }
+
   async readNetPaid(input: Parameters<EnrollmentPaymentPort["readNetPaid"]>[0]): Promise<Money> {
     const summary = await this.summaries.findByRequest(
       asId<OrganizationId>(input.organizationId),

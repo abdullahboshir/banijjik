@@ -9,6 +9,7 @@ import { buildExpenseAccountWriter } from "./application/ensure-expense-account.
 import type { BookingPostingSource } from "./application/ports/booking-posting-source.js";
 import type { CommissionPostingSource } from "./application/ports/commission-posting-source.js";
 import type { OrderPostingSource } from "./application/ports/order-posting-source.js";
+import type { EnrollmentPeriodPostingSource } from "./application/ports/enrollment-posting-source.js";
 import type { StockPostingSource } from "./application/ports/stock-posting-source.js";
 import type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 import type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
@@ -35,6 +36,10 @@ export type { BookingPostingSource } from "./application/ports/booking-posting-s
 export type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
 export type { CommissionPostingSource } from "./application/ports/commission-posting-source.js";
 export type { OrderPostingSource } from "./application/ports/order-posting-source.js";
+export type {
+  EnrollmentPeriodPostingSnapshot,
+  EnrollmentPeriodPostingSource,
+} from "./application/ports/enrollment-posting-source.js";
 export type { StockPostingSource } from "./application/ports/stock-posting-source.js";
 export type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 export type {
@@ -117,6 +122,7 @@ export interface AccountingEventHandlerInput {
   readonly commissions?: CommissionPostingSource | undefined;
   readonly orders?: OrderPostingSource | undefined;
   readonly stocks?: StockPostingSource | undefined;
+  readonly enrollments: EnrollmentPeriodPostingSource;
 }
 
 /** Registers accounting handlers. Payment/booking/order/stock adapters are optional (lead clarification). */
@@ -128,6 +134,7 @@ export function registerAccountingHandlers(input: AccountingEventHandlerInput): 
     audit: input.audit,
     clock: input.clock,
     expenses: input.expenses,
+    enrollments: input.enrollments,
     ...(input.payments === undefined ? {} : { payments: input.payments }),
     ...(input.bookings === undefined ? {} : { bookings: input.bookings }),
     ...(input.commissions === undefined ? {} : { commissions: input.commissions }),

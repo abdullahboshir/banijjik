@@ -55,5 +55,7 @@ export interface EnrollmentPeriod extends EnrollmentAuditFields {
   readonly sessionsAllowed?: number;
   readonly sessionsUsed: number;
   readonly status: EnrollmentPeriodStatus;
+  /** Local business date the whole fee became revenue; set once, never changed (card 3.31). */
+  readonly revenueRecognizedOn?: string;
   readonly version: number;
 }

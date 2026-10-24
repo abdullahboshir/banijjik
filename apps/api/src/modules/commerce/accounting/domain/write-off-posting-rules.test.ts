@@ -64,14 +64,17 @@ describe("bad debt for a written-off closed request (ADR-140)", () => {
     expect(() => draftBadDebtWriteOff(snapshot)).toThrow();
   });
 
-  it("posts nothing for an enrollment write-off, because its advances already return to zero", () => {
+  it("posts bad debt for an enrollment write-off once its kept amount is income", () => {
     const draft = draftBadDebtWriteOff(
       reversalSnapshot([
         { requestType: PAYMENT_REQUEST_TYPE.ENROLLMENT, requestId: "e1", amount: money(500) },
       ]),
     );
 
-    expect(draft).toBeUndefined();
+    expect(draft?.lines.map((line) => line.accountCode)).toEqual([
+      SYSTEM_ACCOUNT_CODE.BAD_DEBT_EXPENSE,
+      SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES,
+    ]);
   });
 
   it("posts nothing when no request was written off", () => {

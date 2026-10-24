@@ -7,8 +7,8 @@ import type { RequestReader } from "../modules/commerce/payment/index.js";
 /**
  * An enrollment period is the payment request (decision 2). Missing, foreign, WAIVED and
  * CANCELLED-enrollment periods read as undefined; EXPIRED and COMPLETED unpaid periods stay
- * payable to collect the debt. Revenue state is BEFORE_REVENUE until card 3.31 posts period
- * revenue, so every enrollment payment is held in customer advances (ADR-139).
+ * payable to collect the debt. Revenue state follows the period: AFTER_REVENUE once its revenue is
+ * recognised (card 3.31, ADR-139), so a later payment goes to the receivable, not to advances.
  */
 export function buildEnrollmentRequestReader(
   periods = buildEnrollmentPeriodSnapshotReader(),
@@ -27,7 +27,7 @@ export function buildEnrollmentRequestReader(
         total: period.fee,
         contactId: enrollment.billToContactId,
         locationId: asId<LocationId>(period.locationId),
-        revenueState: "BEFORE_REVENUE",
+        revenueState: period.revenueRecognizedOn === undefined ? "BEFORE_REVENUE" : "AFTER_REVENUE",
       };
     },
   };

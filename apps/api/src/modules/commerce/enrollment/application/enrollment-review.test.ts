@@ -270,6 +270,7 @@ function reviewFixture() {
   };
   const payments: EnrollmentPaymentPort = {
     initializeSummary: vi.fn(),
+    touchForRevenue: vi.fn(),
     // The stored period status is the truth in this fixture: PAID periods report their fee, the rest nothing.
     readNetPaid: async ({ enrollmentPeriodId }) => {
       const period = periods.get(enrollmentPeriodId);
