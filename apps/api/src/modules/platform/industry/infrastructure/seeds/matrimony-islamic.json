@@ -784,6 +784,19 @@
           "label": { "bn": "বায়োডাটা অসম্পূর্ণ", "en": "Incomplete biodata" },
           "isFinal": false
         }
+      ],
+      "reportReasons": [
+        { "reasonKey": "fake_profile", "label": { "bn": "ভুয়া প্রোফাইল", "en": "Fake profile" } },
+        { "reasonKey": "already_married", "label": { "bn": "বিবাহিত", "en": "Already married" } },
+        {
+          "reasonKey": "inappropriate_content",
+          "label": { "bn": "অশালীন বা অনুচিত বিষয়বস্তু", "en": "Inappropriate content" }
+        },
+        {
+          "reasonKey": "contact_misuse",
+          "label": { "bn": "যোগাযোগের অপব্যবহার", "en": "Contact misuse" }
+        },
+        { "reasonKey": "other", "label": { "bn": "অন্যান্য", "en": "Other" } }
       ]
     }
   }

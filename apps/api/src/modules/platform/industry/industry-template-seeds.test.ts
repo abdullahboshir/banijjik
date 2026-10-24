@@ -113,6 +113,25 @@ describe("industry template seed files", () => {
     expect(published).not.toContain(SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY);
   });
 
+  it("gives both matrimony templates the five trust-and-safety report reasons", () => {
+    const expectedKeys = [
+      "fake_profile",
+      "already_married",
+      "inappropriate_content",
+      "contact_misuse",
+      "other",
+    ];
+    const keys = [SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY_ISLAMIC, SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY];
+    for (const templateKey of keys) {
+      const reasons = templateNamed(templateKey).configuration.directory?.reportReasons ?? [];
+      expect(reasons.map((reason) => reason.reasonKey), templateKey).toEqual(expectedKeys);
+      for (const reason of reasons) {
+        expect(reason.label.bn, `${templateKey} ${reason.reasonKey}`).toEqual(expect.any(String));
+        expect(reason.label.en, `${templateKey} ${reason.reasonKey}`).toEqual(expect.any(String));
+      }
+    }
+  });
+
   it("a second seed run leaves an edited matrimony template unchanged (insert-only, ADR-076)", async () => {
     const stored = new Map<string, { readonly name: unknown }>();
     const templatesRepo = {
