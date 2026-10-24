@@ -1,0 +1,713 @@
+{
+  "industryTemplateKey": "MATRIMONY",
+  "status": "DRAFT",
+  "name": {
+    "bn": "বিবাহ ব্যুরো",
+    "en": "Marriage bureau"
+  },
+  "description": {
+    "bn": "অভিভাবকের সম্মতিতে বায়োডাটা যাচাই ও ম্যাচমেকিং সেবা।",
+    "en": "Guardian-consented biodata review and matchmaking service."
+  },
+  "iconKey": "heart",
+  "enabledKinds": ["SERVICE"],
+  "allowedModuleKeys": [
+    "contact",
+    "catalog",
+    "pricing",
+    "directory",
+    "credit",
+    "sms",
+    "website",
+    "report"
+  ],
+  "configuration": {
+    "contactRoleKeys": ["CUSTOMER", "RELATED"],
+    "relationKeys": ["GUARDIAN_OF"],
+    "resourceTypes": [],
+    "terms": {
+      "contact": {
+        "bn": "গ্রাহক",
+        "en": "Client"
+      },
+      "contact.RELATED": {
+        "bn": "অভিভাবক",
+        "en": "Guardian"
+      },
+      "offering": {
+        "bn": "সেবা",
+        "en": "Service"
+      },
+      "offering.SERVICE": {
+        "bn": "ম্যাচমেকিং সেবা",
+        "en": "Matchmaking service"
+      },
+      "order": {
+        "bn": "অর্ডার",
+        "en": "Order"
+      },
+      "booking": {
+        "bn": "বুকিং",
+        "en": "Booking"
+      },
+      "enrollment": {
+        "bn": "ভর্তি",
+        "en": "Enrollment"
+      },
+      "resource": {
+        "bn": "রিসোর্স",
+        "en": "Resource"
+      },
+      "location": {
+        "bn": "শাখা",
+        "en": "Branch"
+      },
+      "listing": {
+        "bn": "বায়োডাটা",
+        "en": "Biodata"
+      }
+    },
+    "customFields": [
+      {
+        "entityType": "listing",
+        "fieldKey": "gender",
+        "fieldType": "SELECT",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": true,
+        "isSensitive": false,
+        "options": ["MALE", "FEMALE"],
+        "label": { "bn": "লিঙ্গ", "en": "Gender" },
+        "optionLabels": {
+          "MALE": { "bn": "পুরুষ", "en": "Male" },
+          "FEMALE": { "bn": "নারী", "en": "Female" }
+        },
+        "listingTier": "PUBLIC",
+        "isFilterable": true,
+        "sectionKey": "general"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "date_of_birth",
+        "fieldType": "DATE",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": true,
+        "isSensitive": false,
+        "label": { "bn": "জন্মতারিখ", "en": "Date of birth" },
+        "listingTier": "PUBLIC",
+        "isFilterable": true,
+        "minAgeYears": 18,
+        "sectionKey": "general"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "marital_status",
+        "fieldType": "SELECT",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": true,
+        "isSensitive": false,
+        "options": ["NEVER_MARRIED", "DIVORCED", "WIDOWED", "MARRIED"],
+        "label": { "bn": "বৈবাহিক অবস্থা", "en": "Marital status" },
+        "optionLabels": {
+          "NEVER_MARRIED": { "bn": "অবিবাহিত", "en": "Never married" },
+          "DIVORCED": { "bn": "তালাকপ্রাপ্ত", "en": "Divorced" },
+          "WIDOWED": { "bn": "বিধবা", "en": "Widowed" },
+          "MARRIED": { "bn": "বিবাহিত", "en": "Married" }
+        },
+        "listingTier": "PUBLIC",
+        "isFilterable": true,
+        "sectionKey": "general"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "height_cm",
+        "fieldType": "NUMBER",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "উচ্চতা (সেমি)", "en": "Height (cm)" },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "general"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "complexion",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["FAIR", "MEDIUM_FAIR", "WHEATISH", "BROWN", "DARK"],
+        "label": { "bn": "গাত্রবর্ণ", "en": "Complexion" },
+        "optionLabels": {
+          "FAIR": { "bn": "উজ্জ্বল", "en": "Fair" },
+          "MEDIUM_FAIR": { "bn": "মধ্যম উজ্জ্বল", "en": "Medium fair" },
+          "WHEATISH": { "bn": "শ্যামল", "en": "Wheatish" },
+          "BROWN": { "bn": "বাদামি", "en": "Brown" },
+          "DARK": { "bn": "কৃষ্ণ", "en": "Dark" }
+        },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "general"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "blood_group",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["A_POS", "A_NEG", "B_POS", "B_NEG", "AB_POS", "AB_NEG", "O_POS", "O_NEG"],
+        "label": { "bn": "রক্তের গ্রুপ", "en": "Blood group" },
+        "optionLabels": {
+          "A_POS": { "bn": "A পজিটিভ", "en": "A+" },
+          "A_NEG": { "bn": "A নেগেটিভ", "en": "A-" },
+          "B_POS": { "bn": "B পজিটিভ", "en": "B+" },
+          "B_NEG": { "bn": "B নেগেটিভ", "en": "B-" },
+          "AB_POS": { "bn": "AB পজিটিভ", "en": "AB+" },
+          "AB_NEG": { "bn": "AB নেগেটিভ", "en": "AB-" },
+          "O_POS": { "bn": "O পজিটিভ", "en": "O+" },
+          "O_NEG": { "bn": "O নেগেটিভ", "en": "O-" }
+        },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "general"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "permanent_address",
+        "fieldType": "GEO_BD",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": true,
+        "isSensitive": false,
+        "label": { "bn": "স্থায়ী ঠিকানা", "en": "Permanent address" },
+        "listingTier": "PUBLIC",
+        "isFilterable": true,
+        "sectionKey": "address"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "present_address",
+        "fieldType": "GEO_BD",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "বর্তমান ঠিকানা", "en": "Present address" },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "address"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "grew_up_in",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "যেখানে বড় হয়েছেন", "en": "Grew up in" },
+        "listingTier": "MEMBERS",
+        "isFilterable": false,
+        "sectionKey": "address"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "education_method",
+        "fieldType": "SELECT",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["GENERAL", "ENGLISH_MEDIUM"],
+        "label": { "bn": "শিক্ষাপদ্ধতি", "en": "Education method" },
+        "optionLabels": {
+          "GENERAL": { "bn": "জেনারেল", "en": "General" },
+          "ENGLISH_MEDIUM": { "bn": "ইংরেজি মাধ্যম", "en": "English medium" }
+        },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "education"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "highest_education",
+        "fieldType": "SELECT",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": true,
+        "isSensitive": false,
+        "options": ["SSC", "HSC", "DIPLOMA", "BACHELORS", "MASTERS", "MPHD", "PHD", "OTHER"],
+        "label": { "bn": "সর্বোচ্চ শিক্ষা", "en": "Highest education" },
+        "optionLabels": {
+          "SSC": { "bn": "এসএসসি", "en": "SSC" },
+          "HSC": { "bn": "এইচএসসি", "en": "HSC" },
+          "DIPLOMA": { "bn": "ডিপ্লোমা", "en": "Diploma" },
+          "BACHELORS": { "bn": "স্নাতক", "en": "Bachelors" },
+          "MASTERS": { "bn": "স্নাতকোত্তর", "en": "Masters" },
+          "MPHD": { "bn": "এমফিল", "en": "MPhil" },
+          "PHD": { "bn": "পিএইচডি", "en": "PhD" },
+          "OTHER": { "bn": "অন্যান্য", "en": "Other" }
+        },
+        "listingTier": "PUBLIC",
+        "isFilterable": true,
+        "sectionKey": "education"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "institution",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "প্রতিষ্ঠান", "en": "Institution" },
+        "listingTier": "MEMBERS",
+        "isFilterable": false,
+        "sectionKey": "education"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "profession",
+        "fieldType": "SELECT",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": true,
+        "isSensitive": false,
+        "options": [
+          "STUDENT",
+          "GOVT_JOB",
+          "PRIVATE_JOB",
+          "BUSINESS",
+          "TEACHER",
+          "DOCTOR",
+          "ENGINEER",
+          "BANK_JOB",
+          "LAWYER",
+          "FREELANCER",
+          "REMITTEE",
+          "OTHER"
+        ],
+        "label": { "bn": "পেশা", "en": "Profession" },
+        "optionLabels": {
+          "STUDENT": { "bn": "শিক্ষার্থী", "en": "Student" },
+          "GOVT_JOB": { "bn": "সরকারি চাকরি", "en": "Government job" },
+          "PRIVATE_JOB": { "bn": "বেসরকারি চাকরি", "en": "Private job" },
+          "BUSINESS": { "bn": "ব্যবসা", "en": "Business" },
+          "TEACHER": { "bn": "শিক্ষক", "en": "Teacher" },
+          "DOCTOR": { "bn": "ডাক্তার", "en": "Doctor" },
+          "ENGINEER": { "bn": "ইঞ্জিনিয়ার", "en": "Engineer" },
+          "BANK_JOB": { "bn": "ব্যাংক চাকরি", "en": "Bank job" },
+          "LAWYER": { "bn": "আইনজীবী", "en": "Lawyer" },
+          "FREELANCER": { "bn": "ফ্রিল্যান্সার", "en": "Freelancer" },
+          "REMITTEE": { "bn": "প্রবাসী", "en": "Overseas" },
+          "OTHER": { "bn": "অন্যান্য", "en": "Other" }
+        },
+        "listingTier": "PUBLIC",
+        "isFilterable": true,
+        "sectionKey": "occupation"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "monthly_income_range",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": [
+          "RANGE_LT_20000",
+          "RANGE_20000_40000",
+          "RANGE_40000_60000",
+          "RANGE_60000_100000",
+          "RANGE_GT_100000"
+        ],
+        "label": { "bn": "মাসিক আয়ের সীমা", "en": "Monthly income range" },
+        "optionLabels": {
+          "RANGE_LT_20000": { "bn": "২০ হাজারের কম", "en": "Below 20k" },
+          "RANGE_20000_40000": { "bn": "২০–৪০ হাজার", "en": "20k to 40k" },
+          "RANGE_40000_60000": { "bn": "৪০–৬০ হাজার", "en": "40k to 60k" },
+          "RANGE_60000_100000": { "bn": "৬০ হাজার থেকে ১ লক্ষ", "en": "60k to 1 lakh" },
+          "RANGE_GT_100000": { "bn": "১ লক্ষের বেশি", "en": "Above 1 lakh" }
+        },
+        "listingTier": "MEMBERS",
+        "isFilterable": false,
+        "sectionKey": "occupation"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "father_occupation",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "পিতার পেশা", "en": "Father's occupation" },
+        "listingTier": "MEMBERS",
+        "isFilterable": false,
+        "sectionKey": "family"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "mother_occupation",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "মাতার পেশা", "en": "Mother's occupation" },
+        "listingTier": "MEMBERS",
+        "isFilterable": false,
+        "sectionKey": "family"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "siblings",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "ভাইবোন", "en": "Siblings" },
+        "listingTier": "MEMBERS",
+        "isFilterable": false,
+        "sectionKey": "family"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "family_economic_status",
+        "fieldType": "SELECT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "options": ["LOWER_MIDDLE", "MIDDLE", "UPPER_MIDDLE", "UPPER"],
+        "label": { "bn": "পারিবারিক আর্থিক অবস্থা", "en": "Family economic status" },
+        "optionLabels": {
+          "LOWER_MIDDLE": { "bn": "নিম্ন-মধ্যবিত্ত", "en": "Lower middle class" },
+          "MIDDLE": { "bn": "মধ্যবিত্ত", "en": "Middle class" },
+          "UPPER_MIDDLE": { "bn": "উচ্চ-মধ্যবিত্ত", "en": "Upper middle class" },
+          "UPPER": { "bn": "উচ্চবিত্ত", "en": "Upper class" }
+        },
+        "listingTier": "MEMBERS",
+        "isFilterable": false,
+        "sectionKey": "family"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "marriage_views",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "বিবাহোত্তর পরিকল্পনা", "en": "Views on marriage" },
+        "listingTier": "MEMBERS",
+        "isFilterable": false,
+        "sectionKey": "marriage"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "partner_age_range",
+        "fieldType": "TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "পাত্র বা পাত্রীর বয়সসীমা", "en": "Partner age range" },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "expected_partner"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "partner_districts",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "পছন্দের জেলা", "en": "Preferred partner districts" },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "expected_partner"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "partner_education",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "পাত্র বা পাত্রীর শিক্ষা", "en": "Partner education" },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "expected_partner"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "partner_qualities",
+        "fieldType": "LONG_TEXT",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": false,
+        "label": { "bn": "প্রত্যাশিত গুণ", "en": "Expected partner qualities" },
+        "listingTier": "PUBLIC",
+        "isFilterable": false,
+        "sectionKey": "expected_partner"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "guardian_name",
+        "fieldType": "TEXT",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": true,
+        "label": { "bn": "অভিভাবকের নাম", "en": "Guardian name" },
+        "listingTier": "UNLOCKED",
+        "isFilterable": false,
+        "sectionKey": "contact"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "guardian_relationship",
+        "fieldType": "SELECT",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": true,
+        "options": ["FATHER", "MOTHER", "BROTHER", "SISTER", "UNCLE", "OTHER"],
+        "label": { "bn": "অভিভাবকের সম্পর্ক", "en": "Guardian relationship" },
+        "optionLabels": {
+          "FATHER": { "bn": "পিতা", "en": "Father" },
+          "MOTHER": { "bn": "মাতা", "en": "Mother" },
+          "BROTHER": { "bn": "ভাই", "en": "Brother" },
+          "SISTER": { "bn": "বোন", "en": "Sister" },
+          "UNCLE": { "bn": "চাচা বা মামা", "en": "Uncle" },
+          "OTHER": { "bn": "অন্যান্য", "en": "Other" }
+        },
+        "listingTier": "UNLOCKED",
+        "isFilterable": false,
+        "sectionKey": "contact"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "guardian_phone",
+        "fieldType": "PHONE",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": true,
+        "label": { "bn": "অভিভাবকের ফোন", "en": "Guardian phone" },
+        "listingTier": "UNLOCKED",
+        "isFilterable": false,
+        "mustDifferFromAccountPhone": true,
+        "sectionKey": "contact"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "contact_email",
+        "fieldType": "EMAIL",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": true,
+        "label": { "bn": "ইমেইল", "en": "Email" },
+        "listingTier": "UNLOCKED",
+        "isFilterable": false,
+        "sectionKey": "contact"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "full_name",
+        "fieldType": "TEXT",
+        "isRequired": true,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": true,
+        "label": { "bn": "নিজের নাম", "en": "Full name" },
+        "listingTier": "PRIVATE",
+        "isFilterable": false,
+        "sectionKey": "identity"
+      },
+      {
+        "entityType": "listing",
+        "fieldKey": "own_phone",
+        "fieldType": "PHONE",
+        "isRequired": false,
+        "botAsk": false,
+        "visibility": { "admin": true, "storefront": true, "bot": false },
+        "isSearchable": false,
+        "isSensitive": true,
+        "label": { "bn": "নিজের ফোন", "en": "Own phone" },
+        "listingTier": "PRIVATE",
+        "isFilterable": false,
+        "sectionKey": "identity"
+      }
+    ],
+    "settingsDefaults": {
+      "contact.customerLogin": true,
+      "directory.photoPolicy": "NONE",
+      "directory.reviewEdits": true,
+      "directory.oneListingPerAccount": true,
+      "credit.unlockCost": 1
+    },
+    "knowledgeSeed": [
+      {
+        "topicKey": "PROCESS",
+        "answer": {
+          "bn": "বায়োডাটা জমা, অভিভাবকের সম্মতি ও যাচাই প্রক্রিয়া",
+          "en": "Biodata submission, guardian consent and the review process"
+        }
+      },
+      {
+        "topicKey": "PRIVACY",
+        "answer": {
+          "bn": "যোগাযোগের বিবরণ কেবল অনুমোদিত কানেকশনে দেখা যায়",
+          "en": "Contact details are shown only in an approved connection"
+        }
+      },
+      {
+        "topicKey": "PAYMENT",
+        "answer": {
+          "bn": "কানেকশনের ক্রেডিট প্যাক ও পেমেন্ট পদ্ধতি",
+          "en": "Connection credit packs and how to pay"
+        }
+      },
+      {
+        "topicKey": "GUIDELINES",
+        "answer": {
+          "bn": "সাইটের ব্যবহারের নিয়ম ও প্রতারণা প্রতিরোধ",
+          "en": "Site rules and how to report a fake profile"
+        }
+      }
+    ],
+    "websiteTemplateKeys": ["matrimony-simple"],
+    "botDefaults": {
+      "personaKey": "RESPECTFUL_MANAGER",
+      "handoffTopics": [
+        "request for a human",
+        "complaint or report",
+        "guardian consent",
+        "anything not grounded"
+      ]
+    },
+    "directory": {
+      "listingNumberPrefix": "BIO",
+      "sections": [
+        { "sectionKey": "general", "label": { "bn": "সাধারণ", "en": "General" } },
+        { "sectionKey": "address", "label": { "bn": "ঠিকানা", "en": "Address" } },
+        { "sectionKey": "education", "label": { "bn": "শিক্ষা", "en": "Education" } },
+        { "sectionKey": "occupation", "label": { "bn": "পেশা", "en": "Occupation" } },
+        { "sectionKey": "family", "label": { "bn": "পরিবার", "en": "Family" } },
+        { "sectionKey": "marriage", "label": { "bn": "বিবাহ", "en": "Marriage" } },
+        {
+          "sectionKey": "expected_partner",
+          "label": { "bn": "পছন্দের পাত্র বা পাত্রী", "en": "Expected partner" }
+        },
+        {
+          "sectionKey": "contact",
+          "label": { "bn": "যোগাযোগ (অভিভাবক)", "en": "Contact (guardian)" }
+        },
+        {
+          "sectionKey": "identity",
+          "label": { "bn": "পরিচয় (গোপন)", "en": "Identity (private)" }
+        }
+      ],
+      "consents": [
+        {
+          "consentKey": "truthful",
+          "text": {
+            "bn": "আমি নিশ্চিত করছি এই বায়োডাটায় দেওয়া তথ্য আমার জানামতে সত্য ও নির্ভুল।",
+            "en": "I confirm the information in this biodata is true and accurate to the best of my knowledge."
+          }
+        },
+        {
+          "consentKey": "guardian_consent",
+          "text": {
+            "bn": "আমার অভিভাবক এই বায়োডাটা সম্পর্কে অবগত এবং এটি প্রকাশে সম্মতি দিয়েছেন।",
+            "en": "My guardian is aware of this biodata and consents to its publication on this site."
+          }
+        },
+        {
+          "consentKey": "adult_age",
+          "text": {
+            "bn": "আমি ১৮ বছর বা তার বেশি বয়সী।",
+            "en": "I am 18 years of age or older."
+          }
+        },
+        {
+          "consentKey": "terms_accepted",
+          "text": {
+            "bn": "আমি এই সাইটের ব্যবহারের শর্তাবলি ও গোপনীয়তা নীতি মেনে নিয়েছি।",
+            "en": "I accept this site's terms of use and privacy policy."
+          }
+        }
+      ],
+      "rejectionReasons": [
+        {
+          "reasonKey": "guardian_consent_missing",
+          "label": { "bn": "অভিভাবকের সম্মতি অনুপস্থিত", "en": "Guardian consent missing" },
+          "isFinal": false
+        },
+        {
+          "reasonKey": "own_number_in_guardian_field",
+          "label": { "bn": "অভিভাবকের ঘরে নিজের নম্বর", "en": "Own number in the guardian field" },
+          "isFinal": false
+        },
+        {
+          "reasonKey": "unclear_answers",
+          "label": { "bn": "তথ্য অস্পষ্ট", "en": "Unclear answers" },
+          "isFinal": false
+        },
+        {
+          "reasonKey": "false_information",
+          "label": { "bn": "মিথ্যা তথ্য", "en": "False information" },
+          "isFinal": true
+        },
+        {
+          "reasonKey": "incomplete",
+          "label": { "bn": "বায়োডাটা অসম্পূর্ণ", "en": "Incomplete biodata" },
+          "isFinal": false
+        }
+      ]
+    }
+  }
+}
