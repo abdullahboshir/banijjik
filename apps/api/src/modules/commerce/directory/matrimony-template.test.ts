@@ -70,6 +70,14 @@ function childDob(): string {
   return isoDate(new Date(minusEighteenYears(harness.clock.now()).getTime() + MS_PER_DAY));
 }
 
+// A birth date `years` before the fixed clock date, so the age is `years` today (comfortably
+// inside the 20–40 search range used below and above the seed's 18-year minimum).
+function dobAged(years: number): string {
+  const born = new Date(harness.clock.now());
+  born.setUTCFullYear(born.getUTCFullYear() - years);
+  return isoDate(born);
+}
+
 const ISLAMIC_CONSENTS = [
   "truthful",
   "guardian_consent",
@@ -223,7 +231,7 @@ describe("matrimony templates on the directory API", () => {
     const world = await aMatrimonyWorld(ISLAMIC);
     const owner = await signInCustomer(harness, world.organizationA);
     await saveListing(world, asCustomerCookies(owner.session), {
-      ...biodataFields({ dob: adultDob(), guardianPhone: "+8801799887766" }),
+      ...biodataFields({ dob: dobAged(28), guardianPhone: "+8801799887766" }),
     });
     await submitListing(world, asCustomerCookies(owner.session), ISLAMIC_CONSENTS);
     await approveOldestSubmitted(world);
@@ -234,6 +242,8 @@ describe("matrimony templates on the directory API", () => {
       suffix: "/listings",
       query: {
         "f.gender": "MALE",
+        // A GEO_BD filter is anchored on the division; the district narrows within it.
+        "f.permanent_address.divisionKey": "dhaka",
         "f.permanent_address.districtKey": "dhaka",
         "f.date_of_birth.ageMin": "20",
         "f.date_of_birth.ageMax": "40",
