@@ -179,6 +179,7 @@ describe("GET /settings", () => {
       "organization.numberGrouping",
       "payment.methods",
       "payment.refund.managerWithoutApproval",
+      "payment.reversal.closedRequest",
       "payment.storeCreditExpiryDays",
       "pricing.approval.discountAmountAbove",
       "pricing.approval.discountPercentAbove",
