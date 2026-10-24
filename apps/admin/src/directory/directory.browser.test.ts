@@ -27,6 +27,7 @@ const SLUG = "dirco";
 const ORG_NAME = "ডিরেক্টরি কো";
 const PRIVATE_VALUE = "গোপন-নাম-পরীক্ষা";
 const LISTING_NUMBER = "BD-1";
+const REPORT_NOTE = "ছবি অন্য কারো";
 const API_ORIGIN = `http://localhost:${API_PORT}`;
 
 let stack: BrowserStack;
@@ -111,6 +112,9 @@ async function seedDirectoryTemplate(organizationId: string): Promise<void> {
                   label: { bn: "অস্পষ্ট উত্তর", en: "Unclear" },
                   isFinal: false,
                 },
+              ],
+              reportReasons: [
+                { reasonKey: "fake", label: { bn: "ভুয়া প্রোফাইল", en: "Fake profile" } },
               ],
               listingNumberPrefix: "BD",
             },
@@ -207,6 +211,43 @@ async function insertSubmittedListing(organizationId: string): Promise<string> {
   return id;
 }
 
+async function insertOpenReport(organizationId: string, listingId: string): Promise<string> {
+  const listingReportId = newId();
+  const now = new Date();
+  const client = await MongoClient.connect(stack.mongoUri);
+  try {
+    await client.db("browser_tenant").collection("listing_reports").insertOne({
+      listingReportId,
+      organizationId,
+      listingId,
+      reporterCustomerAccountId: newId(),
+      reasonKey: "fake",
+      note: REPORT_NOTE,
+      status: "OPEN",
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+      createdByUserId: null,
+      updatedByUserId: null,
+    });
+  } finally {
+    await client.close();
+  }
+  return listingReportId;
+}
+
+async function reportRow(listingReportId: string): Promise<Record<string, unknown> | null> {
+  const client = await MongoClient.connect(stack.mongoUri);
+  try {
+    return await client
+      .db("browser_tenant")
+      .collection("listing_reports")
+      .findOne({ listingReportId });
+  } finally {
+    await client.close();
+  }
+}
+
 async function ownerPage(): Promise<Page> {
   const page = await openPage(stack.browser, PHONE_VIEWPORT);
   await signInWithCookies(page, owner);
@@ -285,12 +326,42 @@ describe("directory moderation screens", () => {
     await closePage(page);
   }, 180_000);
 
+  it("resolves a reported listing with DISMISSED from the report queue", async () => {
+    const listingReportId = await insertOpenReport(organizationId, listingId);
+    const page = await ownerPage();
+    await gotoWhenHydrated(page, `/${SLUG}/directory/reports`, "main");
+    await waitForText(page, LISTING_NUMBER);
+    expect(await bodyText(page)).toContain("ভুয়া প্রোফাইল");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      PHONE_VIEWPORT.width + 1,
+    );
+
+    await gotoWhenHydrated(page, `/${SLUG}/directory/reports/${listingId}`, "main");
+    await waitForText(page, REPORT_NOTE);
+    await waitForText(page, message("directory.reports.resolve.open"));
+    await clickByName(page, message("directory.reports.resolve.open"));
+    await waitForDialogSettled(page);
+    await clickByName(page, message("directory.reports.resolve.submit"));
+    await page.waitForFunction(() => location.pathname.endsWith("/directory/reports"), {
+      timeout: 30_000,
+    });
+
+    await gotoWhenHydrated(page, `/${SLUG}/directory/reports`, "main");
+    expect(await bodyText(page)).not.toContain(LISTING_NUMBER);
+    const row = await reportRow(listingReportId);
+    expect(row?.["status"]).toBe("RESOLVED");
+    expect(row?.["outcome"]).toBe("DISMISSED");
+    await closePage(page);
+  }, 180_000);
+
   it("keeps directory routes within the initial JS budget", async () => {
     const page = await ownerPage();
     for (const path of [
       `/${SLUG}/directory/queue`,
       `/${SLUG}/directory/listings`,
       `/${SLUG}/directory/listings/${listingId}`,
+      `/${SLUG}/directory/reports`,
+      `/${SLUG}/directory/reports/${listingId}`,
     ]) {
       const size = await measureInitialJs(page, path);
       expect(toKiB(size.gzipBytes), path).toBeLessThanOrEqual(INITIAL_JS_BUDGET_KIB);

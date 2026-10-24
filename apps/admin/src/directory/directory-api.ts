@@ -1,6 +1,9 @@
 import type {
   DirectoryConfigResponse,
   ListingRejectRequest,
+  ListingReportQueueItem,
+  ListingReportResolveRequest,
+  ListingReportResponse,
   ListingResponse,
   ListingTransitionRequest,
   StaffListingListItem,
@@ -97,6 +100,31 @@ export async function unhideListing(
 ): Promise<ListingResponse> {
   const result = await apiFetch<ListingResponse>(
     directoryPath(organizationId, `/listings/${listingId}/unhide`),
+    { method: "POST", body },
+  );
+  return result.data;
+}
+
+export async function fetchReportQueue(
+  organizationId: string,
+  query: string,
+): Promise<{ items: ListingReportQueueItem[]; total: number; page: number; limit: number }> {
+  const result = await apiFetch<{
+    items: ListingReportQueueItem[];
+    total: number;
+    page: number;
+    limit: number;
+  }>(directoryPath(organizationId, `/reports?${query}`));
+  return result.data;
+}
+
+export async function resolveListingReports(
+  organizationId: string,
+  listingId: string,
+  body: ListingReportResolveRequest,
+): Promise<ListingReportResponse[]> {
+  const result = await apiFetch<ListingReportResponse[]>(
+    directoryPath(organizationId, `/listings/${listingId}/reports/resolve`),
     { method: "POST", body },
   );
   return result.data;
