@@ -1,5 +1,7 @@
-import { ACCOUNT_TYPE, type SystemAccountCode } from "@banijjik/contracts/accounting";
+import { ERROR_CODE } from "@banijjik/contracts";
+import { SYSTEM_ACCOUNT_SEEDS, type SystemAccountCode } from "@banijjik/contracts/accounting";
 import type { OrganizationId } from "@banijjik/ids";
+import { AppError } from "../../../../kernel/http/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
 import { Account } from "../domain/account.entity.js";
 import type { AccountRepository } from "./ports/account-repository.js";
@@ -25,11 +27,20 @@ export async function ensureSystemAccount(
     return existing;
   }
 
+  const seed = SYSTEM_ACCOUNT_SEEDS.find((s) => s.accountCode === input.accountCode);
+  if (seed === undefined) {
+    throw new AppError({
+      code: ERROR_CODE.INTERNAL,
+      messageKey: "errors.unknown_system_account",
+      details: { accountCode: input.accountCode },
+    });
+  }
+
   const account = Account.create({
     organizationId: input.organizationId,
     accountCode: input.accountCode,
-    name: { bn: "প্রদেয় হিসাব", en: "Accounts payable" },
-    accountType: ACCOUNT_TYPE.LIABILITY,
+    name: seed.name,
+    accountType: seed.accountType,
     isSystem: true,
     now: dependencies.clock.now(),
     actorUserId: null,
@@ -39,6 +50,11 @@ export async function ensureSystemAccount(
   if (result === "duplicate") {
     const raced = await dependencies.accounts.findByCode(input.accountCode);
     if (raced !== undefined) return raced;
+    throw new AppError({
+      code: ERROR_CODE.INTERNAL,
+      messageKey: "errors.concurrent_system_account_creation_failed",
+      details: { accountCode: input.accountCode },
+    });
   }
   return account;
 }

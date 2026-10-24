@@ -1,3 +1,4 @@
+import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,27 +9,34 @@ import { nextMovingAverage } from "./moving-average.js";
 const domainDir = dirname(fileURLToPath(import.meta.url));
 
 describe("moving average in cost micros", () => {
-  it("rounds movement value with decimals and sub-minor unit cost half-up consistently", () => {
-    // 2.5 units @ 5500 micros (0.55 minor units) -> 2.5 * 0.55 = 1.375 minor units.
-    // Half-up rounding on 1.375 minor units:
-    // micros = 2.5 * 5500 = 13750 micros. (13750 + 5000) / 10000 = 18750 / 10000 = 1 minor unit.
-    // Another case: 3.5 units @ 15000 micros (1.5 minor units) -> 3.5 * 1.5 = 5.25 minor units (52500 micros) -> rounds to 5.
-    // Exact half case: 1.5 units @ 10000 micros (1 minor unit) -> 1.5 minor units (15000 micros) -> (15000 + 5000)/10000 = 2 minor units (half-up).
-    expect(lineValueMinor(10_000, 1.5)).toBe(2);
+  it("computes movement value with integer precision and rounds sub-minor unit cost half-up consistently", () => {
+    // 1,500 g @ 5,000 micros/g (0.5 paisa/g) = 7,500,000 micros -> 750 minor units (৳7.50)
+    expect(lineValueMinor(5000, 1500)).toBe(750);
     expect(
       movementValue({
-        quantityDelta: 1.5,
-        unitCostMicros: 10_000,
+        quantityDelta: 1500,
+        unitCostMicros: 5000,
       }),
-    ).toBe(2);
+    ).toBe(750);
 
     // Negative delta (e.g. SALE or DAMAGE) produces positive movement value identical to receipt
     expect(
       movementValue({
-        quantityDelta: -1.5,
-        unitCostMicros: 10_000,
+        quantityDelta: -1500,
+        unitCostMicros: 5000,
       }),
-    ).toBe(2);
+    ).toBe(750);
+
+    // Sub-minor rounding: 3 g @ 5000 micros/g = 15000 micros -> (15000 + 5000)/10000 = 2 minor units (half-up)
+    expect(lineValueMinor(5000, 3)).toBe(2);
+
+    // Rejects fractional quantities (ADR-047)
+    expect(() => lineValueMinor(5000, 1.5)).toThrow(DomainRuleError);
+    try {
+      lineValueMinor(5000, 1.5);
+    } catch (error) {
+      expect((error as DomainRuleError).code).toBe(ERROR_CODE.INTERNAL);
+    }
   });
 
   it("keeps ৳5/kg rice (0.5 paisa/gram) exact after a gram receipt", () => {

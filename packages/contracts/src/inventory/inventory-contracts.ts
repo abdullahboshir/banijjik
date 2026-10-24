@@ -24,7 +24,14 @@ export const STOCK_STATE = defineEnum(["SELLABLE", "DAMAGED"]);
 export type StockState = (typeof STOCK_STATE)[keyof typeof STOCK_STATE];
 
 /** Idempotency key for reservations and ledger side effects from other modules (card 3.5). */
-export const STOCK_SOURCE_TYPE = defineEnum(["TEST", "ORDER"]);
+export const STOCK_SOURCE_TYPE = defineEnum([
+  "TEST",
+  "ORDER",
+  "STOCK_RECEIPT",
+  "STOCK_OPENING",
+  "STOCK_ADJUSTMENT",
+  "STOCK_TRANSFER",
+]);
 export type StockSourceType = (typeof STOCK_SOURCE_TYPE)[keyof typeof STOCK_SOURCE_TYPE];
 
 export const STOCK_ADJUSTMENT_REASON = defineEnum(["ADJUSTMENT", "DAMAGE_WRITE_OFF"]);

@@ -59,6 +59,17 @@ export function assertStockAvailable(input: {
   }
 }
 
+function businessDateOf(date: Date, timeZone = "Asia/Dhaka"): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const val = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${val("year")}-${val("month")}-${val("day")}`;
+}
+
 export function buildStockMovementDocument(input: {
   readonly organizationId: OrganizationId;
   readonly actorUserId: UserId;
@@ -100,7 +111,7 @@ export function buildStockMovementDocument(input: {
     ...(input.note === undefined ? {} : { note: input.note }),
     ...(input.paidVia === undefined ? {} : { paidVia: input.paidVia }),
     occurredAt: input.now,
-    businessDate: input.now.toISOString().slice(0, 10),
+    businessDate: businessDateOf(input.now),
     createdAt: input.now,
     updatedAt: input.now,
     createdByUserId: input.actorUserId,

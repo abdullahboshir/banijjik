@@ -1,15 +1,16 @@
 import { ERROR_CODE } from "@banijjik/contracts";
 import type { Money } from "@banijjik/contracts/catalog";
+import { STOCK_SOURCE_TYPE } from "@banijjik/contracts/inventory";
 import type { InventoryItemId, OrganizationId } from "@banijjik/ids";
 import { AppError } from "../../../../../kernel/http/index.js";
 import { recordNotFound, locationForbidden } from "../../domain/errors.js";
 import type { InventoryItem } from "../../domain/inventory-item.entity.js";
 import type { InventoryDependencies } from "../inventory-dependencies.js";
 
-export const SOURCE_RECEIPT = "STOCK_RECEIPT";
-export const SOURCE_ADJUSTMENT = "STOCK_ADJUSTMENT";
-export const SOURCE_TRANSFER = "STOCK_TRANSFER";
-export const SOURCE_OPENING = "STOCK_OPENING";
+export const SOURCE_RECEIPT = STOCK_SOURCE_TYPE.STOCK_RECEIPT;
+export const SOURCE_ADJUSTMENT = STOCK_SOURCE_TYPE.STOCK_ADJUSTMENT;
+export const SOURCE_TRANSFER = STOCK_SOURCE_TYPE.STOCK_TRANSFER;
+export const SOURCE_OPENING = STOCK_SOURCE_TYPE.STOCK_OPENING;
 
 export function assertLocationReach(
   allowedLocationIds: readonly string[] | "ALL",

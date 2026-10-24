@@ -5,12 +5,18 @@ import {
   POSTING_KEY,
   SYSTEM_ACCOUNT_CODE,
   type Money,
+  type SystemAccountCode,
 } from "@banijjik/contracts/accounting";
-import type {
-  StockMovementReason,
-  StockReceiptPaidVia,
-  StockState,
+import {
+  STOCK_MOVEMENT_REASON,
+  STOCK_RECEIPT_PAID_VIA,
+  STOCK_SOURCE_TYPE,
+  STOCK_STATE,
+  type StockMovementReason,
+  type StockReceiptPaidVia,
+  type StockState,
 } from "@banijjik/contracts/inventory";
+import { postingSourceMissing } from "./errors.js";
 import {
   assertBalanced,
   credit,
@@ -46,17 +52,36 @@ export interface StockPostingSnapshot {
   readonly movements: readonly StockMovementPostingLine[];
 }
 
+function receiptCreditAccount(paidVia: StockReceiptPaidVia): SystemAccountCode | undefined {
+  switch (paidVia) {
+    case STOCK_RECEIPT_PAID_VIA.CASH:
+      return METHOD_ACCOUNT_CODE.CASH;
+    case STOCK_RECEIPT_PAID_VIA.BKASH:
+      return METHOD_ACCOUNT_CODE.BKASH;
+    case STOCK_RECEIPT_PAID_VIA.NAGAD:
+      return METHOD_ACCOUNT_CODE.NAGAD;
+    case STOCK_RECEIPT_PAID_VIA.BANK:
+      return METHOD_ACCOUNT_CODE.BANK;
+    case STOCK_RECEIPT_PAID_VIA.ON_CREDIT:
+      return SYSTEM_ACCOUNT_CODE.ACCOUNTS_PAYABLE;
+    default:
+      return undefined;
+  }
+}
+
 function draftReceipt(snapshot: StockPostingSnapshot): DraftJournalEntry | undefined {
   const { sourceId, businessDate, locationId, currency, movements } = snapshot;
   const totalAmount = movements.reduce((sum, m) => sum + m.value.amount, 0);
   if (totalAmount <= 0) return undefined;
 
-  const paidVia = movements[0]?.paidVia ?? "CASH";
-  const creditAccount =
-    paidVia === "ON_CREDIT"
-      ? SYSTEM_ACCOUNT_CODE.ACCOUNTS_PAYABLE
-      : (METHOD_ACCOUNT_CODE[paidVia as keyof typeof METHOD_ACCOUNT_CODE] ??
-        SYSTEM_ACCOUNT_CODE.CASH);
+  const paidVia = movements[0]?.paidVia;
+  if (paidVia === undefined) {
+    throw postingSourceMissing("paidVia");
+  }
+  const creditAccount = receiptCreditAccount(paidVia);
+  if (creditAccount === undefined) {
+    throw postingSourceMissing(`method:${paidVia}`);
+  }
   const totalMoney = { amount: totalAmount, currency };
 
   return entry({
@@ -91,7 +116,7 @@ function draftOpening(snapshot: StockPostingSnapshot): DraftJournalEntry | undef
 function draftAdjustments(snapshot: StockPostingSnapshot): DraftJournalEntry | undefined {
   const { sourceId, businessDate, locationId, movements } = snapshot;
   const adjustmentMovements = movements.filter(
-    (m) => m.reason === "ADJUSTMENT" && m.value.amount > 0,
+    (m) => m.reason === STOCK_MOVEMENT_REASON.ADJUSTMENT && m.value.amount > 0,
   );
   if (adjustmentMovements.length === 0) return undefined;
 
@@ -121,13 +146,13 @@ function draftAdjustments(snapshot: StockPostingSnapshot): DraftJournalEntry | u
 function draftWriteOffs(snapshot: StockPostingSnapshot): DraftJournalEntry | undefined {
   const { sourceId, businessDate, locationId, movements } = snapshot;
   const writeOffMovements = movements.filter(
-    (m) => m.reason === "DAMAGE_WRITE_OFF" && m.value.amount > 0,
+    (m) => m.reason === STOCK_MOVEMENT_REASON.DAMAGE_WRITE_OFF && m.value.amount > 0,
   );
   if (writeOffMovements.length === 0) return undefined;
 
   const lines = writeOffMovements.flatMap((m) => {
     const invCredit =
-      m.stockState === "DAMAGED"
+      m.stockState === STOCK_STATE.DAMAGED
         ? SYSTEM_ACCOUNT_CODE.INVENTORY_DAMAGED
         : SYSTEM_ACCOUNT_CODE.INVENTORY;
     return [debit(SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS, m.value), credit(invCredit, m.value)];
@@ -145,16 +170,16 @@ function draftWriteOffs(snapshot: StockPostingSnapshot): DraftJournalEntry | und
 
 export function draftStockSource(snapshot: StockPostingSnapshot): DraftJournalEntry[] {
   const isReceipt =
-    snapshot.sourceType === "STOCK_RECEIPT" ||
-    snapshot.movements.some((m) => m.reason === "PURCHASE");
+    snapshot.sourceType === STOCK_SOURCE_TYPE.STOCK_RECEIPT ||
+    snapshot.movements.some((m) => m.reason === STOCK_MOVEMENT_REASON.PURCHASE);
   if (isReceipt) {
     const receipt = draftReceipt(snapshot);
     return receipt ? [receipt] : [];
   }
 
   const isOpening =
-    snapshot.sourceType === "STOCK_OPENING" ||
-    snapshot.movements.some((m) => m.reason === "OPENING");
+    snapshot.sourceType === STOCK_SOURCE_TYPE.STOCK_OPENING ||
+    snapshot.movements.some((m) => m.reason === STOCK_MOVEMENT_REASON.OPENING);
   if (isOpening) {
     const opening = draftOpening(snapshot);
     return opening ? [opening] : [];

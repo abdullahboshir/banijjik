@@ -1,5 +1,9 @@
-import type { CurrencyCode, ModuleManifest } from "@banijjik/contracts";
-import { SEQUENCE_KEY } from "@banijjik/contracts";
+import {
+  CURRENCY_CODE,
+  SEQUENCE_KEY,
+  type CurrencyCode,
+  type ModuleManifest,
+} from "@banijjik/contracts";
 import type { RequestHandler, Router } from "express";
 import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
@@ -14,6 +18,7 @@ import { AppError } from "../../../kernel/http/index.js";
 import {
   buildOrganizationCurrencyReader,
   buildLocationLookup,
+  type OrganizationCurrencyReader,
 } from "../../core/organization/index.js";
 import type { StockPostingSnapshot, StockPostingSource } from "../accounting/index.js";
 import type { InventoryDependencies } from "./application/inventory-dependencies.js";
@@ -162,7 +167,6 @@ export function buildStockLedger(input: InventoryTenantDependencies): StockLedge
 }
 
 export { movementValue, lineValueMinor } from "./domain/money-math.js";
-export { RecordOpeningStockUseCase } from "./application/use-cases/record-opening-stock.use-case.js";
 export type { StockMovementRecord } from "./application/ports/stock-records.js";
 
 export interface InventoryPostingSource {
@@ -180,9 +184,16 @@ export function buildInventoryPostingSourceAdapter(): InventoryPostingSource {
   };
 }
 
-export function buildStockPostingSourceAdapter(): StockPostingSource {
+export interface StockPostingSourcePorts {
+  readonly currencies: OrganizationCurrencyReader;
+}
+
+function knownCurrencyCode(value: string): CurrencyCode | undefined {
+  return Object.values(CURRENCY_CODE).find((code) => code === value);
+}
+
+export function buildStockPostingSourceAdapter(ports: StockPostingSourcePorts): StockPostingSource {
   const repository = new MongoStockMovementRepository();
-  const currencyReader = buildOrganizationCurrencyReader();
   return {
     async readStockSource(source: {
       readonly organizationId: string;
@@ -196,9 +207,16 @@ export function buildStockPostingSourceAdapter(): StockPostingSource {
       });
       const first = movements[0];
       if (first === undefined) return undefined;
-      const currency = (first.unitCostCurrency ??
-        (await currencyReader.read(organizationId)) ??
-        "BDT") as CurrencyCode;
+      const currency =
+        first.unitCostCurrency === undefined
+          ? await ports.currencies.read(organizationId)
+          : knownCurrencyCode(first.unitCostCurrency);
+      if (currency === undefined) {
+        throw new AppError({
+          code: ERROR_CODE.INTERNAL,
+          messageKey: "errors.missing_currency",
+        });
+      }
       return {
         organizationId: source.organizationId,
         sourceType: source.sourceType,

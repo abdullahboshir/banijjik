@@ -11,6 +11,10 @@ export class MutableClock implements Clock {
     return new Date(this.current);
   }
 
+  setNow(now: Date): void {
+    this.current = new Date(now);
+  }
+
   advanceSeconds(seconds: number): void {
     this.current = new Date(this.current.getTime() + seconds * MILLISECONDS_PER_SECOND);
   }
