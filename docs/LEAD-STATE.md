@@ -8,10 +8,10 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-24 (21:45 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `8e0f636` (3.33, 3.6b B, 3.11 B merged) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
+Last updated: 2026-10-25 (03:00 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `dd143a5` (3.11 C merged) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
 
 ## 1. Where the project stands
-- Phase 3: 42 numbered cards. **37 fully merged**: 3.0–3.4b, 3.6, 3.6b, 3.7, 3.8 (all parts), 3.8a/b/c, 3.12–3.30, 3.33, 3.35. Partly done: 3.5a (B running), 3.11 (B merged, C left). Running: 3.34, 3.5a B. Planned, not started: 3.31, 3.32. Not planned: 3.5b, 3.9, 3.10. Track M: M.0–M.5, **M.7 (all parts)**, M.8a merged; M.6, M.8b, M.9 left. Details: `docs/STATUS.md`.
+- Phase 3: 42 numbered cards. **40 fully merged**: 3.0–3.8 (all parts), 3.8a/b/c, 3.11 (all parts), 3.12–3.30, 3.33–3.35. Running: 3.31. Planned, not started: 3.32 (after 3.31). Not planned: 3.5b, 3.9, 3.10 (last). Track M: M.0–M.5, M.6a, M.7 (all parts), M.8a merged; M.6b running; M.6c, M.8b, M.9 left. Details: `docs/STATUS.md`.
 - **Owner request (2026-10-23):** finish every partly done card and plan everything not started; the owner runs 6–7 sessions (Opus plans and reviews, Sonnet 5.5 codes).
 - **Owner (2026-10-24 evening): the lead runs the implementer tools itself** (launch, monitor, restart, answer questions) and may code cards with Sonnet subagents. How: §2a.
 - **Owner (2026-10-24 21:00): the Sonnet limit is used up (resets 00:00 Dhaka); the lead codes with Haiku subagents and monitors them closely** (check their folders while they run, review every DONE fully, never trust the report).
@@ -23,15 +23,15 @@ Last updated: 2026-10-24 (21:45 Dhaka) by Opus 5.5 · `main` = `origin/main` = t
 - **The admin browser stack starts only the API, not the worker:** a browser test can never wait for an event handler (written into the 3.7 and 3.11 refreshes).
 - Time-dependent tests follow `05-CONVENTIONS.md` "Testing" (3.26). Run date-sensitive suites between 00:00 and 06:00 Dhaka now and then.
 
-## 2. Open branches (checked 2026-10-24 21:45)
+## 2. Open branches (checked 2026-10-25 03:00)
 Prompts and new logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/` (`rules.md` shared rules; `<card>.md` task; `*-continue*.md` restart notes; `<card>*.log`, `<card>.last.md`). Older logs: the a941678b scratchpad `orchestra/` folder. Every final message starts with `STATUS: DONE | QUESTION | BLOCKED`.
 
-**Both rows are Haiku subagents of the lead chat banijjik-4d (started 20:53).** If that chat is closed they stop; a new session relaunches them fresh with the task file + `rules.md`, telling them to read the work on disk first. Never commit or revert `.claude/settings.json` in `banijjik`.
+**Both rows are Haiku subagents of the lead chat banijjik-4d.** If that chat is closed they stop; a new session relaunches them fresh with the task file + `rules.md`, telling them to read the work on disk first. Never commit or revert `.claude/settings.json` in `banijjik`. Haiku sessions stop early (context or "waiting for CI"): give each restart a continue note naming exactly what is left, and take over CI waits and links yourself when it keeps stopping.
 
 | Card / part | Branch | Folder | Tier | Who | State → next step |
 |---|---|---|---|---|---|
-| 3.34 reversal after a closed request | `s/3.34-api-reversal-after-close` | `banijjik-3.5a` | T1 | Haiku subagent (task `lead-orchestra/3.34-haiku.md`) | Code `21583844` + tests `054b6160` local, docs and ADR-140 in progress at 21:20. Next: on DONE, `card:check`, then a **full strict T1 review** (Haiku wrote much of it): decisions 1–8, every plan test by body, the Refresh 1 COMPLETED-order test, §11 table. Rebase on main (3.33/3.6b/3.11 merged since) before merging. |
-| 3.5a B order screens | `s/3.5a-ui-orders` | `banijjik-m2` | T2 | Haiku subagent (task `lead-orchestra/3.5ab-finish.md`, finish steps only) | Code was done; handoff `2c0a5fce` pushed, CI 40104886517 running at 21:20; still has to swap `CI_LINK_PLACEHOLDER`. Next: on DONE, merge check (route sizes 168.5 / 178.1 / 175.0 KiB, new-order margin only 1.9 KiB; diff vs Refresh 2 + Amendment 1), rebase on main, merge. |
+| 3.31 enrollment period revenue | `s/3.31-api-enrollment-revenue` | `banijjik-3.5a` | T1 | Haiku subagent (`lead-orchestra/3.31-task.md`, then `3.31-continue.md`) | Code pushed (`2d8ec8a8`, `6116b4d5`) + plan Amendments 1 and 2 committed on the branch (close event flag `recognizedBeforeCancel`; cancel touch keeps the capped total; create-as-ACTIVE recognises the first period). Writing API tests A1–A12 (A6 real two-transaction race), then suites, ADR-142, handoff. Next: on DONE, **full strict T1 review** (decisions 4 and 6, the amendments, every test body). |
+| M.6b storefront app | `s/M.6b-ui-storefront` | `banijjik-1.7b` | T2 (proxy and middleware reviewed as T1) | Haiku subagent (`lead-orchestra/M.6b-task.md`) | Scaffold `34020734` at 02:45. Next: on DONE, review proxy (no browser `Origin` forwarded, foreign-Origin writes 403, other-org paths 404, every `Set-Cookie` back) and host middleware strictly, route sizes ≤ 170 KiB, the CI job. |
 
 **Codex launches:** even with the allow rule, the `"$(cat …)"` form goes to the classifier. It passes once the owner says in the chat that the lead may run Codex with full access (owner did on 2026-10-24 18:00: "full access diyechi"). Codex (low effort) stops early: on lint ("BLOCKED"), on "waiting for CI", or with plan items written as "known gaps". Each restart needs a note that names exactly what is missing.
 
@@ -42,9 +42,9 @@ Prompts and new logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orches
 - **Sonnet / Haiku subagents:** Agent tool, `model: "sonnet"` (or `"haiku"` while Sonnet is out), background, in a real folder with `node_modules`. Give force-with-lease permission for the card branch in the prompt (rebases of pushed commits).
 - Always close stdin (`< /dev/null`). `TaskStop` does not kill Windows child processes: stop leftover `codex.exe` PIDs too. Free RAM was 1.9–2.3 GB with six agents.
 
-Merged and safe to delete (local and `origin`): `s/M.8a-matrimony-templates`, `s/3.27-api-enrollment-payments`, the 3.28–3.30 card branches, `s/3.35-stable-replay-test`, `s/M.7-ui-reports`, `s/M.7-api-erasure`, `s/3.24-api-order-stock-posting`, `s/3.7-ui-enrollment`, `s/3.33-api-session-resources`, `s/3.6b-ui-rental-event`, `s/3.11-ui-commission`, every `s/merge-*` and `s/docs-*` branch. **`s/merge-3.29` (on origin) is broken**: delete it. PR #2 (3.8) can be closed.
+Merged and safe to delete (local and `origin`): `s/M.8a-matrimony-templates`, `s/3.27-api-enrollment-payments`, the 3.28–3.30 card branches, `s/3.35-stable-replay-test`, `s/M.7-ui-reports`, `s/M.7-api-erasure`, `s/3.24-api-order-stock-posting`, `s/3.7-ui-enrollment`, `s/3.33-api-session-resources`, `s/3.6b-ui-rental-event`, `s/3.11-ui-commission`, `s/3.5a-ui-orders`, `s/3.34-api-reversal-after-close`, `s/M.6a-api-storefront-reads`, `s/3.11-api-order-lines`, every `s/merge-*` and `s/docs-*` branch. **`s/merge-3.29` (on origin) is broken**: delete it. PR #2 (3.8) can be closed.
 
-Folders: `banijjik-3.5a` and `banijjik-m2` are busy (table). **Free with `node_modules`:** `banijjik` (on the merged 3.33 branch; switch it to a new branch from main), `banijjik-1.7b`, `banijjik-3.11`, `banijjik-lead`, `banijjik-3.6b-a3`. `banijjik-docs` is the docs and merge folder; `banijjik-m8a` is free (no `node_modules`). Disk E: about 8.9 GB free after deleting `manoxen/.turbo` (owner OK): new worktrees with `npm install` are possible again.
+Folders: `banijjik-3.5a` and `banijjik-1.7b` are busy (table). **Free with `node_modules`:** `banijjik` (on the merged 3.33 branch; switch it to a new branch from main), `banijjik-m2`, `banijjik-3.11`, `banijjik-lead`, `banijjik-3.6b-a3`. `banijjik-docs` is the docs and merge folder; `banijjik-m8a` is free (no `node_modules`). Disk E: about 8.9 GB free after deleting `manoxen/.turbo` (owner OK): new worktrees with `npm install` are possible again.
 
 **Agents claim "done" early.** Verify every DONE: `npm run card:check` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`. A FAIL only on "rebased" when main moved by docs commits is fine.
 
@@ -58,18 +58,21 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions.
 
 ## 4. Next actions, in order
-1. Verify both §2 rows (git, CI). If the banijjik-4d chat is gone, relaunch them (Haiku, or Sonnet after 00:00). Answer `STATUS: QUESTION` (ask the owner only for product decisions).
-2. As rows finish: merge check of 3.5a B, strict T1 review of 3.34. A branch on top of main is fast-forwarded directly; stack branches so CI runs at once (this session: 3.33 → 3.6b B → 3.11 B, each rebased on the one before).
-3. **Planned, waiting:** 3.31 (T1, `docs/plans/3.31.md`, ADR-142) starts after 3.34 merges; 3.32 (T1 A + T2 B, ADR-143) after 3.31.
-4. **Plan M.6** (storefront app). Already decided by ADR-119: host → organization through `GET /storefront/resolve?host=` (`<slug>.<STOREFRONT_BASE_DOMAIN>`), host-only `sf_access` / `sf_refresh` cookies, the storefront calls the API through **its own origin** (server-side proxy keeping `/api/v1/storefront`, not forwarding a disallowed `Origin`). LOGO files are PUBLIC. Storefront endpoints exist for OTP sign-in, `/me`, erase, export, listings, my listing, photos, reports, blocks, unlock, credits, packs, purchases, `/directory/config`. **Missing (M.6a, T1 API):** a public site read (name, logo, colours, tagline from 3.12 branding), home statistics (listings by gender, approved count; pre-aggregated or cached), static pages (ABOUT/FAQ/GUIDE/TERMS/PRIVACY/REFUND Markdown, versioned, admin CRUD + storefront read). **M.6b (T2):** new `apps/storefront` Next.js app (≤ 170 KiB per route, SSR, `noindex` per template), the proxy, pages from doc 16 §3.4, CI browser job; admin editor for static pages (maybe M.6c). The M.7 A2 erase and export endpoints need M.6 pages.
-5. After 3.5a B: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10 and the phase 3 review.
+1. Verify both §2 rows (git, CI). If the banijjik-4d chat is gone, relaunch them. Answer `STATUS: QUESTION` (ask the owner only for product decisions); record answers as plan Amendments.
+2. As rows finish: strict T1 review of 3.31, review of M.6b. Stack branches so CI runs at once, and **do not push docs to `main` while a stacked branch's CI runs** (it breaks the fast-forward; happened with M.6a).
+3. After 3.31 merges: refresh and release 3.32 (T1 A + T2 B, ADR-143). After M.6b: M.6c (T2, plan `M.6.md` decisions 15–17).
+4. **Plan 3.5b** (returns and exchanges, T1) and **3.9 POS** next: 3.5a (both parts), 3.24 and 3.11 C are merged. 3.5b must revisit the 3.11 C refund rule (order-level refund ratio, `docs/plans/3.11.md` Refresh C item 7).
+5. Then M.8b, M.9, 3.10 and the phase 3 review.
 6. Follow-ups:
+   - **Flaky admin browser test** `enrollment-screens.browser.test.ts` › "enrolls a member, refuses activation until period 1 is paid…" line 134 (waits for the ACTIVE badge after the second Activate): failed 3 times since 3.34 (CI 40126070188 and twice on 3.34), green on rerun. Suspect: Activate clicked before the page refresh after the payment (stale version → 409). Small T3 card; 3.31 changes activation, so check it after 3.31.
+   - M.6a review follow-ups (`docs/handoffs/M.6a-api-review-R1.md`: stale stats race, option keys with `.`/`$`, ungated directory storefront routes, erasure event for stats).
+   - 3.5a B: `placeOrder` makes a new idempotency key per call, so a retry after a lost response shows a conflict instead of the replayed success (no duplicate: place is a state change).
+   - `order.controller.ts` `list` uses `as unknown as` for its query (pre-existing, seen in 3.11 C).
    - Refund dialog has no client-side maximum (3.30); a small T3 card if wanted.
    - Replayer safety across several worker processes (STATUS 3.16).
    - Supplier payments clearing `ACCOUNTS_PAYABLE` (after 3.24).
    - 3.33 STATUS note: bookings and sessions do not see enrollment `ResourceExclusiveHold` rows; time-off creation does not check existing bookings or sessions; **the time-off POST endpoint answers 500 (audit outside a transaction)**: a bug, worth a small card soon.
    - Two patterns for client text in admin screens: label props via `screen-text.tsx` (3.6b B) and a nested `I18nProvider` per route layout (3.11 B, `commission-client-text.tsx`). Pick one in `05-CONVENTIONS.md`.
-   - Admin navigation shows the raw key `menu.sales.orders` (seen by 3.11 B); check after 3.5a B merges.
    - Flaky API test `ordered-event-worker.test.ts` › "runs a replayed event again with fresh attempts…" (15.9 s, failed once on 3.11 B, CI 40100273547).
    - 3.23 review follow-ups (`docs/handoffs/3.23-api-review-R1.md`).
    - Flaky admin browser test `auth-flow.browser.test.ts` › "shows how long to wait, read from the Retry-After header of the API" (30 s timeout, CI 40089936122).
@@ -91,8 +94,8 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-24 21:45 – 2026-10-25 03:00** (Opus, banijjik-4d, Haiku implementers): merged 3.5a B (`f5dfd17`), 3.34 after T1 R1 (lead fixed: refund re-check inside the reversal, one currency per bad-debt journal; `2850cd6`), M.6a after T1 R1 (`f9311d8`) and 3.11 C (`dd143a5`). Planned M.6 in three parts (ADR-144), refreshed 3.11 C (`26f9981`) and 3.31 (`5f31963`); answered 3.31's two plan gaps as Amendments 1–2. Stopped one weakened test in M.6a and an `as unknown as` cast in 3.11 C while they ran.
 - **2026-10-24 20:53–21:45** (Opus, banijjik-4d; banijjik-0b handed over by message): T1 review R1 of 3.33 (lead fixed: legacy session rows without `resourceHolds` crashed cancel; import order; magic number) and merge checks of 3.6b B and 3.11 B; stacked the three and merged (`ccceb52`, `357dbe2`, `8e0f636`). Sonnet out of credit: relaunched 3.34 and the 3.5a B finish as Haiku subagents. Read the M.6 inputs (notes in §4).
 - **2026-10-24 19:50** (Opus): resumed Sonnet at 19:10; merged 3.7 B (`5541586`) and 3.24 after R2 (`65415ef`); refreshed and launched 3.34.
 - **2026-10-24 18:15–18:45** (Opus, took over while `banijjik-03` still ran its children; agreed by message that this chat owns main and LEAD-STATE): merged 3.35 (`b080b0f`), M.7 B (`c7faadc`) and M.7 A2 after T1 review R1 (`96f1954`); 3.24 re-review → R2 (`8adeda3`, 2 items). Codex had left 3.7 B and 3.6b B half done: relaunched them, 3.5a B and 3.24 R2 as Sonnet (all stopped at the Sonnet limit, resets 20:40). Codex ran 3.11 B three times (lint never fixed) and 3.33 three times (code done, tests unusable): both wait for Sonnet.
 - **2026-10-24 evening** (Opus): owner asked the lead to run the tools itself. Mapped every tool to its card from its logs; launched Qoder (3.5a B, 3.11 B, 3.24 fixes), Codex CLI (3.6b B, 3.7 B, after the owner's allow rule) and Sonnet (M.7 A2 finish, M.7 B, 3.35). Plan 3.5a Amendment 1 (`b47fafd`); 3.24 T1 review R1, changes requested (`247f4d4`). Freed 7.3 GB of disk. Handed over to a new session.
-- **2026-10-24 late afternoon** (Opus): verified the seven sessions (none done; 3.24 CI red, still working; 3.6b B and M.7 B not started). Planned 3.33 event sessions occupy their resources (T1, ADR-141, `8eaadea`).
