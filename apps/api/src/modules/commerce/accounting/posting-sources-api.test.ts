@@ -8,7 +8,7 @@ import {
 import { INVENTORY_EVENT_TYPE, STOCK_SOURCE_TYPE } from "@banijjik/contracts/inventory";
 import { asId, newId, type OrganizationId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { MongoUnitOfWork } from "../../../kernel/db/index.js";
+import { models, MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import { startCatalogApi, worldFor } from "../../../test-support/catalog-world.js";
 import { registerIamApiModels, type IamApiHarness } from "../../../test-support/iam-api-harness.js";
@@ -29,10 +29,16 @@ import {
   buildInventoryPostingSourceAdapter,
   buildStockPostingSourceAdapter,
 } from "../inventory/index.js";
-import { buildRequestAdvanceReader, MongoPaymentSummaryRepository } from "../payment/index.js";
+import {
+  buildPaymentPostingSourceAdapter,
+  buildRequestAdvanceReader,
+  MongoPaymentSummaryRepository,
+} from "../payment/index.js";
+import { buildPaymentRequestReaders } from "../../../routes/payment-request-readers.js";
 import { buildOrderPostingSourceAdapter, buildOrderRepository } from "../sales/index.js";
 import {
   buildPostOrdersHandler,
+  buildPostPaymentsHandler,
   buildPostStockHandler,
   MongoAccountRepository,
   MongoJournalRepository,
@@ -44,6 +50,7 @@ registerIamApiModels();
 const RETAIL = { industryTemplateKey: "RETAIL" };
 const DHAKA_02_00 = new Date("2026-10-23T20:00:00Z");
 const LOCAL_BUSINESS_DATE = "2026-10-24";
+const UTC_BUSINESS_DATE = "2026-10-23";
 const SUMMARY_SENTINEL = new Date("2000-01-01T00:00:00Z");
 
 let harness: IamApiHarness;
@@ -94,6 +101,26 @@ async function runOrderPosting(shop: SalesShop, orderId: string): Promise<void> 
         organizationId: shop.organizationId,
         actorUserId: null,
         payload: { orderId },
+      }),
+    ),
+  );
+}
+
+async function runPaymentPosting(shop: SalesShop, paymentId: string): Promise<void> {
+  const handler = buildPostPaymentsHandler({
+    payments: buildPaymentPostingSourceAdapter(buildPaymentRequestReaders()),
+    posting: postingDependencies(),
+  });
+  await withOrganizationContext(shop.organizationId, () =>
+    new MongoUnitOfWork().run(() =>
+      handler.handle({
+        eventId: newId(),
+        type: EVENT_TYPE.PAYMENT_RECEIVED,
+        version: 1,
+        occurredAt: harness.clock.now().toISOString(),
+        organizationId: shop.organizationId,
+        actorUserId: null,
+        payload: { paymentId },
       }),
     ),
   );
@@ -248,6 +275,9 @@ describe("posting sources through the real order, payment and stock paths", () =
       const paid = await paymentRequest;
       expect(paid.status).toBe(201);
       const revenueState = paid.body.data.allocations[0]?.revenueState as string | undefined;
+      const paymentId = paid.body.data.paymentId as string;
+
+      await runPaymentPosting(shop, paymentId);
 
       await runOrderPosting(shop, draft.orderId);
 
@@ -261,8 +291,22 @@ describe("posting sources through the real order, payment and stock paths", () =
       const settledAdvance =
         settle?.lines.find((line) => line.accountCode === SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES)
           ?.debit.amount ?? 0;
-      expect(revenueState === REVENUE_STATE.AFTER_REVENUE || settledAdvance === 300).toBe(true);
+      // The payment was written while the order was CONFIRMED, so it stays an advance and the
+      // settle entry moves exactly that advance; the two never both count the 300.
+      expect(revenueState).toBe(REVENUE_STATE.BEFORE_REVENUE);
       expect(settledAdvance).toBe(300);
+      const advanceReceived = await withOrganizationContext(shop.organizationId, () =>
+        new MongoJournalRepository().findBySource({
+          sourceType: JOURNAL_SOURCE_TYPE.PAYMENT,
+          sourceId: paymentId,
+          postingKey: POSTING_KEY.payment_in_advance,
+        }),
+      );
+      const advanceCredited =
+        advanceReceived?.lines.find(
+          (line) => line.accountCode === SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES,
+        )?.credit.amount ?? 0;
+      expect(advanceCredited - settledAdvance).toBe(0);
     } finally {
       releasePayment();
       spy.mockRestore();
@@ -346,5 +390,46 @@ describe("posting sources through the real order, payment and stock paths", () =
       }),
     );
     expect(receipt?.businessDate).toBe(LOCAL_BUSINESS_DATE);
+  });
+
+  it("stock receipt in a UTC organization posts the UTC date, not the Dhaka date, at 02:00 Dhaka", async () => {
+    harness.clock.setNow(DHAKA_02_00);
+    const shop = shopOf(await worldFor(harness, RETAIL));
+    await seedAccounts(shop.organizationId);
+    const organizationId = asId<OrganizationId>(shop.organizationId);
+    await withOrganizationContext(shop.organizationId, async () => {
+      await models({})
+        .get("Organization")
+        .updateOne({ organizationId }, { $set: { timezone: "UTC" } });
+    });
+    const inventoryItemId = await addInventoryItem(shop, "Chickpeas");
+
+    const received = await shop.actor.callWith({
+      method: "post",
+      path: `/orgs/${shop.organizationId}/stock/receipts`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: shop.locationId,
+        paidVia: "CASH",
+        lines: [{ inventoryItemId, quantity: 100, unitCost: { amount: 2000, currency: "BDT" } }],
+      },
+    });
+    expect(received.status).toBe(201);
+    const sourceId = received.body.data.sourceId as string;
+
+    await runStockPosting(shop, sourceId);
+
+    const movements = await withOrganizationContext(shop.organizationId, () =>
+      buildInventoryPostingSourceAdapter().readMovements({ organizationId, sourceId }),
+    );
+    expect(movements[0]?.businessDate).toBe(UTC_BUSINESS_DATE);
+    const receipt = await withOrganizationContext(shop.organizationId, () =>
+      new MongoJournalRepository().findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.STOCK,
+        sourceId,
+        postingKey: POSTING_KEY.stock_receipt,
+      }),
+    );
+    expect(receipt?.businessDate).toBe(UTC_BUSINESS_DATE);
   });
 });

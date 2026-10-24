@@ -18,6 +18,11 @@ export interface InventoryLocationLookup {
   isActiveLocation(locationId: string): Promise<boolean>;
 }
 
+export interface InventoryTimeZoneReader {
+  /** A stock movement's business date follows the organization time zone. */
+  read(organizationId: OrganizationId): Promise<string>;
+}
+
 export interface InventoryCurrencyReader {
   read(organizationId: OrganizationId): Promise<string>;
 }

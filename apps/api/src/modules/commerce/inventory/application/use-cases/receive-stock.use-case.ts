@@ -34,6 +34,7 @@ export class ReceiveStockUseCase {
     assertLocationReach(input.allowedLocationIds, input.locationId);
     await requireActiveLocation(deps.locations, input.locationId);
     const currency = await deps.currency.read(input.organizationId);
+    const timeZone = await deps.timeZone.read(input.organizationId);
     const allowNegativeStock = await deps.settings.allowNegativeStock(input.organizationId);
     const prepared = await Promise.all(
       input.lines.map((line) =>
@@ -49,6 +50,7 @@ export class ReceiveStockUseCase {
           locationId: input.locationId,
           inventoryItem: row.item,
           currency,
+          timeZone,
           quantityDelta: row.line.quantity,
           reason: STOCK_MOVEMENT_REASON.PURCHASE,
           sourceType: SOURCE_RECEIPT,
@@ -60,21 +62,37 @@ export class ReceiveStockUseCase {
           allowNegativeStock,
         });
       }
-      await deps.events.publish(INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED, {
-        sourceType: SOURCE_RECEIPT,
+      await recordReceipt({
+        deps,
         sourceId,
-      });
-      await deps.audit.record({
-        action: AUDIT_ACTION.STOCK_RECEIVED,
-        entityType: AUDIT_ENTITY_TYPE.stockMovement,
-        entityId: sourceId,
-        changes: {
-          locationId: { to: input.locationId },
-          lineCount: { to: input.lines.length },
-          paidVia: { to: input.paidVia },
-        },
+        locationId: input.locationId,
+        lines: input.lines,
+        paidVia: input.paidVia,
       });
       return { sourceId };
     });
   }
+}
+
+async function recordReceipt(input: {
+  readonly deps: InventoryDependencies;
+  readonly sourceId: string;
+  readonly locationId: string;
+  readonly lines: readonly unknown[];
+  readonly paidVia: StockReceiptPaidVia;
+}): Promise<void> {
+  await input.deps.events.publish(INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED, {
+    sourceType: SOURCE_RECEIPT,
+    sourceId: input.sourceId,
+  });
+  await input.deps.audit.record({
+    action: AUDIT_ACTION.STOCK_RECEIVED,
+    entityType: AUDIT_ENTITY_TYPE.stockMovement,
+    entityId: input.sourceId,
+    changes: {
+      locationId: { to: input.locationId },
+      lineCount: { to: input.lines.length },
+      paidVia: { to: input.paidVia },
+    },
+  });
 }
