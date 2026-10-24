@@ -1,5 +1,7 @@
 import { INDUSTRY_TEMPLATE_STATUS, SEED_INDUSTRY_TEMPLATE_KEY } from "@banijjik/contracts";
 import { describe, expect, it } from "vitest";
+import type { IndustryTemplateRepository } from "./application/ports/industry-template-repository.js";
+import { EnsureSeedIndustryTemplatesUseCase } from "./application/use-cases/ensure-seed-industry-templates.use-case.js";
 import { IndustryTemplate } from "./domain/industry-template.entity.js";
 import { loadSeedIndustryTemplates } from "./infrastructure/load-seed-templates.js";
 
@@ -27,8 +29,8 @@ describe("industry template seed files", () => {
 
     const created = templates.map((entry) => IndustryTemplate.create({ ...entry, now }));
 
-    expect(created).toHaveLength(8);
-    expect(created.map((entry) => entry.version)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(created).toHaveLength(10);
+    expect(created.map((entry) => entry.version)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("publishes only FCOMMERCE and RETAIL", () => {
@@ -91,5 +93,55 @@ describe("industry template seed files", () => {
         }
       }
     }
+  });
+
+  it("seeds both matrimony templates as DRAFT and parses them with the seed schema", () => {
+    const islamic = templateNamed(SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY_ISLAMIC);
+    const general = templateNamed(SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY);
+
+    expect(islamic.status).toBe(INDUSTRY_TEMPLATE_STATUS.DRAFT);
+    expect(general.status).toBe(INDUSTRY_TEMPLATE_STATUS.DRAFT);
+    expect(islamic.enabledKinds).toEqual(["SERVICE"]);
+    expect(islamic.allowedModuleKeys).toContain("directory");
+    expect(islamic.configuration.directory?.listingNumberPrefix).toBe("BIO");
+    expect(general.configuration.directory?.listingNumberPrefix).toBe("BIO");
+    // A DRAFT template is never offered at signup, so nobody signs up before the storefront (M.6).
+    const published = templates
+      .filter((entry) => entry.status === INDUSTRY_TEMPLATE_STATUS.PUBLISHED)
+      .map((entry) => entry.industryTemplateKey);
+    expect(published).not.toContain(SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY_ISLAMIC);
+    expect(published).not.toContain(SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY);
+  });
+
+  it("a second seed run leaves an edited matrimony template unchanged (insert-only, ADR-076)", async () => {
+    const stored = new Map<string, { readonly name: unknown }>();
+    const templatesRepo = {
+      async insert(template: IndustryTemplate): Promise<void> {
+        stored.set(template.industryTemplateKey, { name: template.name });
+      },
+      async findExistingKeys(keys: readonly string[]): Promise<ReadonlySet<string>> {
+        return new Set(keys.filter((key) => stored.has(key)));
+      },
+    } as unknown as IndustryTemplateRepository;
+    const clock = { now: () => new Date("2026-10-23T08:00:00.000Z") };
+
+    const first = await new EnsureSeedIndustryTemplatesUseCase({
+      templates: templatesRepo,
+      seed: templates,
+      clock,
+    }).execute();
+    expect(first.createdCount).toBe(10);
+
+    // An operator edits the seeded draft; after the first seed the database is the source of truth.
+    const edited = { name: { bn: "সম্পাদিত", en: "Edited" } };
+    stored.set(SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY_ISLAMIC, edited);
+
+    const second = await new EnsureSeedIndustryTemplatesUseCase({
+      templates: templatesRepo,
+      seed: templates,
+      clock,
+    }).execute();
+    expect(second.createdCount).toBe(0);
+    expect(stored.get(SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY_ISLAMIC)).toBe(edited);
   });
 });
