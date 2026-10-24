@@ -3,7 +3,7 @@
 - **Branch:** `s/M.6a-api-storefront-reads`, created from `origin/main` `8493a8eb` (no rebase was needed: main had not moved). Pushed without force.
 - **Model:** Claude Haiku 5.5 (Claude Code), unattended run.
 - **Plan:** `docs/plans/M.6.md`, Part M.6a only (decisions 1 to 7, the M.6a rows of Files, Interfaces, Data and the M.6a test list). The plan file has no Refresh or Amendment section, so the base text was followed.
-- **CI:** CI_LINK_PLACEHOLDER
+- **CI:** [run 40111781742](https://github.com/abdullahboshir/banijjik/actions/runs/40111781742) (code head `075d696c`; browser job passed on attempt 2 after one 30 s dialog timeout on attempt 1)
 
 ## Done
 - **Contracts** (`@banijjik/contracts/website`, new): `SITE_PAGE_KEY`, `SitePageResponse`, `SitePageUpsertRequest`, `StorefrontSitePageResponse`, `StorefrontSiteResponse`, `WEBSITE_EVENT_TYPE.PAGE_UPDATED` (`website.page.updated`), length bounds. Add-only: `WEBSITE` permissions `website.page.read` and `website.page.update`, audit `website.page.updated` and entity type `sitePage`, the event in `EVENT_TYPE` and the event payload map, the `./website` subpath export. `directory`: `StorefrontListingField` (explicit interface, see deviations), `StorefrontDirectoryFormResponse`, `StorefrontDirectoryStatsResponse`; `IndustryTemplateDirectoryBlock.homeStatsFieldKey?`.
