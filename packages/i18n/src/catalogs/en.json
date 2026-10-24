@@ -455,6 +455,7 @@
   "errors.order_contact_phone_required": "A pickup order needs a contact with a phone number.",
   "errors.order_needs_line": "An order needs at least one line.",
   "errors.packing_disabled": "Packing is off for this business.",
+  "errors.sales_performer_not_at_location": "This performer is not an active member at this location.",
   "errors.payment_reference_taken": "This payment reference has already been used.",
   "errors.deposit_required": "Advance deposit is required to confirm booking.",
   "errors.payment_allocations_invalid": "Payment allocation is invalid.",

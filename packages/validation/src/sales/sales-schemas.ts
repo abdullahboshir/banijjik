@@ -33,6 +33,8 @@ export const orderLineInputSchema = z.strictObject({
   quantity: z.number().int().positive().max(MAX_SAFE),
   modifierOptionIds: z.array(uuidV7Schema).max(MAX_MODIFIER_OPTIONS_PER_LINE).default([]),
   manualDiscount: manualDiscountSchema.optional(),
+  /** The member who performed the line (ADR-135). Null or absent: the line earns no commission. */
+  performedByMemberId: uuidV7Schema.nullable().optional(),
 });
 
 const orderLinesSchema = z.array(orderLineInputSchema).max(MAX_ORDER_LINES);
@@ -106,6 +108,11 @@ export const orderListQuerySchema = paginationQuerySchema.extend({
   to: isoInstantSchema.optional(),
 });
 
+/** `GET /sales/performers?locationId=`: the picker of the order screen (plan 3.11 Refresh C). */
+export const salesPerformersQuerySchema = z.strictObject({
+  locationId: uuidV7Schema,
+});
+
 /** Not strict: the tenant mount also puts `organizationId` on `req.params`. */
 export const orderIdParamsSchema = z.object({
   orderId: uuidV7Schema,
@@ -114,6 +121,7 @@ export const orderIdParamsSchema = z.object({
 export type OrderLineInputBody = z.infer<typeof orderLineInputSchema>;
 export type OrderCreateBody = z.infer<typeof orderCreateRequestSchema>;
 export type OrderUpdateBody = z.infer<typeof orderUpdateRequestSchema>;
+export type SalesPerformersQuery = z.infer<typeof salesPerformersQuerySchema>;
 export type OrderInstantBody = z.infer<typeof orderInstantRequestSchema>;
 export type OrderPlaceBody = z.infer<typeof orderPlaceRequestSchema>;
 export type OrderTransitionBody = z.infer<typeof orderTransitionRequestSchema>;

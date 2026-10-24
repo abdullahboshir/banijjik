@@ -13,6 +13,7 @@ export {
   orderPlaceRequestSchema,
   orderTransitionRequestSchema,
   orderUpdateRequestSchema,
+  salesPerformersQuerySchema,
   type OrderCancelBody,
   type OrderCreateBody,
   type OrderDeleteQuery,
@@ -22,4 +23,5 @@ export {
   type OrderPlaceBody,
   type OrderTransitionBody,
   type OrderUpdateBody,
+  type SalesPerformersQuery,
 } from "./sales-schemas.js";

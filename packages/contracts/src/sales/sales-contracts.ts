@@ -96,6 +96,8 @@ export type SalesAdvanceRequired =
   (typeof SALES_ADVANCE_REQUIRED)[keyof typeof SALES_ADVANCE_REQUIRED];
 
 export const MAX_ORDER_LINES = 100;
+/** The performer picker lists at most this many members of a location; no paging (plan 3.11 Refresh C). */
+export const MAX_ORDER_PERFORMERS = 100;
 export const MAX_ORDER_CANCEL_REASON_LENGTH = 200;
 export const MAX_ORDER_SEARCH_LENGTH = 120;
 export const MAX_ORDER_NOTE_LENGTH = 500;
@@ -148,6 +150,14 @@ export interface OrderLineSnapshot {
   readonly taxClassKey: string | null;
   /** What the seller entered for this line; an edit re-quotes from it (ADR-131). */
   readonly manualDiscount: ManualDiscount | null;
+  /** The member who performed or sold this line; commission accrues to them (ADR-135). Null when none. */
+  readonly performedByMemberId: string | null;
+}
+
+/** One entry of the performer picker: a member's display name, never contact data (plan 3.11 Refresh C). */
+export interface SalesPerformerResponse {
+  readonly memberId: string;
+  readonly name: string;
 }
 
 export interface OrderTotals {

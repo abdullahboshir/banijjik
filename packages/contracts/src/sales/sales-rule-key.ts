@@ -11,6 +11,8 @@ export const SALES_RULE_KEY = {
   ORDER_NEEDS_LINE: "ORDER_NEEDS_LINE",
   /** `POST …/pack` when `sales.usePacking` is off (plan 3.5a transition table). */
   PACKING_DISABLED: "PACKING_DISABLED",
+  /** A line names a performer who is not an active member assigned at the order's location (ADR-135). */
+  SALES_PERFORMER_NOT_AT_LOCATION: "SALES_PERFORMER_NOT_AT_LOCATION",
 } as const;
 
 export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
@@ -26,4 +28,5 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.order_contact_phone_required",
   "errors.order_needs_line",
   "errors.packing_disabled",
+  "errors.sales_performer_not_at_location",
 ];

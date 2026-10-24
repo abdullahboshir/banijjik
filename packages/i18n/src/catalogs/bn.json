@@ -455,6 +455,7 @@
   "errors.order_contact_phone_required": "পিকআপ অর্ডারে ফোন নম্বর থাকা কনটাক্ট দরকার।",
   "errors.order_needs_line": "অর্ডারে কমপক্ষে একটি লাইন থাকতে হবে।",
   "errors.packing_disabled": "এই ব্যবসায় প্যাকিং চালু নেই।",
+  "errors.sales_performer_not_at_location": "এই কর্মী এই শাখায় সক্রিয় সদস্য নন।",
   "errors.payment_reference_taken": "এই পেমেন্ট রেফারেন্সটি আগেই ব্যবহার করা হয়েছে।",
   "errors.deposit_required": "বুকিং নিশ্চিত করতে অগ্রিম ডিপোজিট প্রয়োজন।",
   "errors.payment_allocations_invalid": "পেমেন্ট বরাদ্দ সঠিক নয়।",

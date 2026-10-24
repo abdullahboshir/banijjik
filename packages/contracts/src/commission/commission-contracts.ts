@@ -23,7 +23,7 @@ export type CommissionEntryKind =
   (typeof COMMISSION_ENTRY_KIND)[keyof typeof COMMISSION_ENTRY_KIND];
 
 /** `ORDER_LINE` arrives with Part C (order lines with a performer). */
-export const COMMISSION_SOURCE_TYPE = defineEnum(["BOOKING"]);
+export const COMMISSION_SOURCE_TYPE = defineEnum(["BOOKING", "ORDER_LINE"]);
 export type CommissionSourceType =
   (typeof COMMISSION_SOURCE_TYPE)[keyof typeof COMMISSION_SOURCE_TYPE];
 
