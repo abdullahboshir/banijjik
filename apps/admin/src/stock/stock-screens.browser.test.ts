@@ -1,6 +1,7 @@
 import type { Page } from "puppeteer-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bodyText, gotoWhenHydrated, message, waitForText } from "../test-support/browser-helpers";
+import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
 import {
   clickByName,
   closePage,
@@ -78,6 +79,7 @@ describe("stock at two branches", () => {
       );
       (button as HTMLElement | undefined)?.click();
     }, RICE_ITEM);
+    await page.select("#receive-paid-via", "ON_CREDIT");
     await typeInto(page, "#receive-qty-0", "1000");
     await typeInto(page, "#receive-cost-0", "50");
     await clickByName(page, message("stock.receive.submit"));
@@ -86,6 +88,12 @@ describe("stock at two branches", () => {
     let text = await bodyText(page);
     expect(text).toContain("1000");
     expect(text).toMatch(/50|৳/u);
+
+    // Verify trial balance shows ACCOUNTS_PAYABLE (code 2010 or localized name)
+    await gotoWhenHydrated(page, `/${ORG_SLUG}/settings/trial-balance`, "#trial-balance-as-of");
+    await waitForText(page, message("trialBalance.balancesYes"));
+    text = await bodyText(page);
+    expect(text).toMatch(/2010|প্রদেয় হিসাব|Accounts Payable/u);
 
     await gotoWhenHydrated(page, `/${ORG_SLUG}/catalog/transfers`, "#transfer-from");
     const secondLocationId = await page.$eval(
@@ -128,5 +136,21 @@ describe("stock at two branches", () => {
     expect(text).toContain("500");
 
     await closePage(page);
+  });
+});
+
+describe("the phone and the first load", () => {
+  const routes = [
+    ["stock", () => `/${ORG_SLUG}/catalog/stock`],
+    ["transfers", () => `/${ORG_SLUG}/catalog/transfers`],
+  ] as const;
+
+  it.each(routes)("%s stays within the initial JavaScript budget", async (name, pathFn) => {
+    const page = await ownerPage();
+    const size = await measureInitialJs(page, pathFn());
+    process.stdout.write(`initial JS stock ${name}: ${toKiB(size.gzipBytes)} KiB\n`);
+    await closePage(page);
+
+    expect(toKiB(size.gzipBytes), name).toBeLessThanOrEqual(INITIAL_JS_BUDGET_KIB);
   });
 });

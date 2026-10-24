@@ -1,3 +1,4 @@
+import type { StockReceiptPaidVia } from "@banijjik/contracts/inventory";
 import type { Translator } from "@banijjik/i18n";
 
 export interface StockLabels {
@@ -63,6 +64,8 @@ export interface ReceiveStockLabels {
   close: string;
   save: string;
   location: string;
+  paidVia: string;
+  paidViaOptions: Record<StockReceiptPaidVia, string>;
   supplierNote: string;
   item: string;
   quantity: string;
@@ -79,6 +82,14 @@ export function receiveStockLabelsOf(t: Translator["t"]): ReceiveStockLabels {
     close: t("stock.sheet.close"),
     save: t("stock.receive.submit"),
     location: t("stock.field.location"),
+    paidVia: t("stock.receive.paidVia"),
+    paidViaOptions: {
+      CASH: t("stock.paidVia.CASH"),
+      BKASH: t("stock.paidVia.BKASH"),
+      NAGAD: t("stock.paidVia.NAGAD"),
+      BANK: t("stock.paidVia.BANK"),
+      ON_CREDIT: t("stock.paidVia.ON_CREDIT"),
+    },
     supplierNote: t("stock.receive.supplierNote"),
     item: t("stock.field.item"),
     quantity: t("stock.field.quantity"),
