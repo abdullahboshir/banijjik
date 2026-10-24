@@ -2,7 +2,7 @@
 
 OPTIONAL module: customer-submitted **listings** (biodata, tutor profile, room, …) with
 template custom fields, per-field visibility tiers, staff moderation and public search.
-`GEO_BD` values are checked against the Bangladesh BBS registry in `@banijjik/contracts/directory`.
+`GEO_BD` values are checked against the Bangladesh BBS registry (`@banijjik/contracts/directory`).
 
 ## Surface
 
@@ -20,10 +20,8 @@ listing, capped per business day. The queue groups OPEN reports by listing, olde
 carries the reporter or note. `directory.hideOnAccountBlocked` hides a blocked account's
 listing as the system actor; unblock does not unhide. Detail is rate limited per IP and account.
 
-**Blocks and erasure (M.7).** `ListingBlock` hides a listing from one customer's search (cap
-`blocksPerAccountMax`). Erasure and export take part through the ports from `directory-erasure-participants.ts`.
-
 **Privacy.** Every response goes through `projectListingFields` / `projectListingPhotos` (ADR-127).
+**Blocks and erasure (M.7).** `ListingBlock` hides a listing from one customer's search; erasure and export use `directory-erasure-participants.ts`.
 
 ## Settings
 
