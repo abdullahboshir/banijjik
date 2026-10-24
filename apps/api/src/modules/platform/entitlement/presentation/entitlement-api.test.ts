@@ -361,6 +361,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       "pricing",
       "sales",
       "settings",
+      "website",
       "workflow",
     ]);
     expect(response.body.data.permissions.allLocations).toEqual(

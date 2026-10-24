@@ -253,7 +253,9 @@ Public reads are cacheable (`Cache-Control` + CDN). Writes need the storefront c
 | Method & path | Auth | Flags | Notes |
 |---|---|---|---|
 | `GET /api/v1/storefront/resolve?host=` | public | rate | `<slug>.<STOREFRONT_BASE_DOMAIN>` → `{ organizationId }` (ADR-119; `siteVersion` comes with the site cards) |
-| `GET /site` · `GET /pages/{pageSlug}` | public | cache | published version only |
+| `GET /site` | public | cache | branding (name, tagline, logo, colours), feature switches (`directory`, `credit`, `customerLogin`, `website`), published page titles only; not gated by the website module (ADR-144) |
+| `GET /pages/{pageKey}` | public | | published page only, keys `ABOUT`, `FAQ`, `GUIDE`, `TERMS`, `PRIVACY`, `REFUND`; 404 when missing, unpublished or the website module is off (ADR-144) |
+| `GET /directory/form` · `GET /directory/stats` | public | cache | form definition: sections, consents, storefront-visible listing fields, photo policy; home counts from the pre-aggregated summary, 404 when the directory module is off (ADR-144) |
 | `GET /offerings?category=&q=&kind=` · `GET /offerings/{offeringSlug}` · `GET /categories` | public | cache | ACTIVE offerings, storefront-visible fields only |
 | `GET /availability?offeringSlug=&from=&to=` | public | | |
 | `POST /quotes` | public | | server pricing (manoxen `resolve-public-order-line-items` rule: never trust client prices) |
@@ -288,6 +290,8 @@ Staff (tenant, module `directory`, permissions `directory.listing.{read,review,h
 | `GET /directory/listings/{listingId}/reports?status=&page&limit` | report.read | one listing's reports with `reporterCustomerAccountId` — the reporter's account id, never their phone (ADR-134) |
 | `POST /directory/listings/{listingId}/reports/resolve` | report.resolve | `{ reportIds 1..100, outcome, note? }` closes exactly those OPEN reports, so a report filed after the screen opened stays OPEN; unknown, foreign or already-resolved ids → 409 stale, nothing written. `LISTING_HIDDEN` also needs `directory.listing.hide`, `ACCOUNT_BLOCKED` also `contact.customerAccount.block`; the ban never writes the listing — the `directory.hideOnAccountBlocked` handler hides it (ADR-134) |
 Staff (tenant, module `credit`): `GET/POST /credit/packs`, `PATCH /credit/packs/{creditPackId}`, `POST …/archive` with `credit.pack.{read,update}` (writes carry `Idempotency-Key`); `GET /credit/accounts/{customerAccountId}` (`credit.account.read`); `POST …/adjust` (`credit.account.adjust`, `Idempotency-Key`, approval token unless OWNER). `GET /credit/purchases` and `GET /credit/purchases/{creditPurchaseId}` (`credit.purchase.read`); `POST /credit/purchases/{creditPurchaseId}/verify` (`credit.purchase.verify`, `Idempotency-Key`, approval token when pack price > `credit.purchase.approvalAbove` unless OWNER); `POST /credit/purchases/{creditPurchaseId}/reject` (`credit.purchase.verify`, `Idempotency-Key`). `GET /directory/listings/{listingId}/unlock-count` returns a count only (`directory.listing.read`, ADR-130).
+
+Staff (tenant, module `website`, permissions `website.page.read`, `website.page.update`): `GET /orgs/{organizationId}/website/pages` returns all six page keys (a never-saved page as `version: 0`, empty and unpublished); `PUT /orgs/{organizationId}/website/pages/{pageKey}` with `{ title, body, isPublished, version }` creates at `version: 0`, otherwise a versioned update (stale → 409, nothing changed); audit `website.page.updated` (ADR-144).
 
 Every customer route answers `404 errors.storefront_not_available` while the business has `contact.customerLogin` off.
 | `POST /checkout` | customer or guest | I | `CheckoutRequest` (cart lines/bookings/enrollments, contact, address, payment choice) → PLACED order / HELD→REQUESTED booking / PENDING enrollment, shared `checkoutId` |

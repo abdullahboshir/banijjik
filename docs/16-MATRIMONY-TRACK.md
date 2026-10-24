@@ -87,7 +87,7 @@ How such sites work, in short (from OrdhekDeen):
 
 ### 3.4 Public site (storefront, minimal)
 - **Pages:**
-  - home (branding, short intro, statistics: listings by gender, approved count)
+  - home (branding, short intro, statistics: listings by gender, approved count) (the statistics field is the template's `homeStatsFieldKey`, read from the pre-aggregated summary, ADR-144)
   - search with filters and paged results (public fields only)
   - listing page (public and allowed tiers, "unlock contact" button, report button)
   - sign-in with phone OTP

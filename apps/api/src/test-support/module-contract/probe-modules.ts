@@ -38,21 +38,12 @@ interface ProbeProfile {
 }
 
 /**
- * Two probe modules registered only by the contract tests. They stand in for the modules that
- * do not exist yet and cover every off-path of 10-MODULE-CATALOG section 11:
- * - `website` is OPTIONAL and is the dependency of `workflow`;
- * - `workflow` is OPTIONAL, tenant-disableable, needs `website` and the PRODUCT kind.
- * Their keys are catalogue keys no real module uses yet; change them when that module arrives.
+ * Probe modules registered only by the contract tests. They stand in for the modules that
+ * do not exist yet and cover every off-path of 10-MODULE-CATALOG section 11. `website` is a real
+ * module now (M.6a), so the probe keeps only `workflow`, which is tenant-disableable, needs the
+ * real `website` and the PRODUCT kind. Its key is a catalogue key no real module uses yet.
  */
 const PROBE_PROFILES: readonly ProbeProfile[] = [
-  {
-    key: MODULE_KEY.WEBSITE,
-    moduleClass: MODULE_CLASS.OPTIONAL,
-    tenantCanDisable: false,
-    dependsOn: [],
-    providesKinds: [],
-    requiresAnyKind: [],
-  },
   {
     key: MODULE_KEY.WORKFLOW,
     moduleClass: MODULE_CLASS.OPTIONAL,
@@ -68,20 +59,6 @@ function toPascalCase(key: string): string {
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join("");
-}
-
-/** One location-overridable setting on the website probe, so the module-off suite can hide it. */
-function probeSettings(key: ModuleKey): ModuleManifest["settings"] {
-  if (key !== MODULE_KEY.WEBSITE) return [];
-  return [
-    {
-      settingKey: "website.probeEnabled",
-      value: { kind: "BOOLEAN" },
-      systemDefault: false,
-      allowsLocationOverride: true,
-      isClientVisible: false,
-    },
-  ];
 }
 
 function routePrefix(key: ModuleKey): string {
@@ -116,7 +93,7 @@ function buildProbeManifest(profile: ProbeProfile): ModuleManifest {
         order: 1,
       },
     ],
-    settings: probeSettings(key),
+    settings: [],
     customFieldEntities: [`contract_${key}`],
     botTools: [`contract.${key}.lookup`],
     storefrontSections: [`contract-${key}-banner`],

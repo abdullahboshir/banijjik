@@ -1,4 +1,6 @@
+import { MODULE_KEY, MODULE_OVERRIDE_EFFECT } from "@banijjik/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { writeModuleOverride } from "../../../test-support/entitlement-world.js";
 import {
   registerIamApiModels,
   startIamApi,
@@ -193,6 +195,26 @@ describe("storefront site API", () => {
       "directory",
       "website",
     ]);
+  });
+
+  it("answers 404 for pages while the website module is off, and the site lists none", async () => {
+    const world = await aWorld();
+    await world.alice.call("put", pagePath(world.organizationA), pageBody({ isPublished: true }));
+    await writeModuleOverride({
+      organizationId: world.organizationA,
+      moduleKey: MODULE_KEY.WEBSITE,
+      effect: MODULE_OVERRIDE_EFFECT.PLATFORM_REVOKE,
+    });
+
+    expect((await storefrontPage(world.organizationA)).status).toBe(404);
+    const site = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/site",
+    });
+    expect(site.status).toBe(200);
+    expect(site.body.data.features.website).toBe(false);
+    expect(site.body.data.pages).toEqual([]);
   });
 
   it("reports customer sign-in off until the business switches it on", async () => {

@@ -47,9 +47,9 @@ describe("system role grants (10 section 10)", () => {
   );
 
   it("gives OWNER a key of a module added later without any template row", () => {
-    // Safe: `website` is a catalogue module with no manifest and no template row yet, so a key of
-    // it proves OWNER is computed from the catalogue instead of listed.
-    const futureKey = "website.page.read" as PermissionKey;
+    // Safe: `crm` is no module of this application, so no grants row names it. A key of it proves
+    // OWNER is computed from the catalogue instead of listed.
+    const futureKey = "crm.note.read" as PermissionKey;
 
     const owner = grantedKeysOf(SYSTEM_ROLE_KEY.OWNER, [...ALL_KEYS, futureKey]);
     const manager = grantedKeysOf(SYSTEM_ROLE_KEY.MANAGER, [...ALL_KEYS, futureKey]);
