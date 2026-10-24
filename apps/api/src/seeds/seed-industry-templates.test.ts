@@ -30,7 +30,7 @@ function templates() {
 }
 
 describe("seedIndustryTemplates", () => {
-  it("seeds an empty database with the eight templates, and a second run inserts nothing", async () => {
+  it("seeds an empty database with the ten templates, and a second run inserts nothing", async () => {
     const first = await seedIndustryTemplates(clock);
     const documentsAfterFirst = await templates()
       .find({})
@@ -42,7 +42,7 @@ describe("seedIndustryTemplates", () => {
       .sort({ industryTemplateKey: 1 })
       .toArray();
 
-    expect(first.createdCount).toBe(8);
+    expect(first.createdCount).toBe(10);
     expect(second.createdCount).toBe(0);
     expect(documentsAfterSecond).toEqual(documentsAfterFirst);
   });
@@ -67,6 +67,6 @@ describe("seedIndustryTemplates", () => {
     const outcome = await seedIndustryTemplates(clock);
 
     expect(outcome.createdCount).toBe(1);
-    expect(await templates().countDocuments()).toBe(8);
+    expect(await templates().countDocuments()).toBe(10);
   });
 });
