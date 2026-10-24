@@ -5,7 +5,7 @@ import type { ModifierGroupResponse } from "@banijjik/contracts/catalog";
 import type { OrderResponse } from "@banijjik/contracts/sales";
 import { Sheet, SheetContent, type DisplayLocale } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import { OrderApprovalDialog } from "./order-approval";
+import { OrderApprovalDialog } from "./order-approval-dialog";
 import { OrderEditBody } from "./order-edit-body";
 import type { OrderLabels } from "./order-labels";
 import { useOrderEditForm } from "./use-order-edit-form";

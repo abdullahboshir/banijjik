@@ -8,11 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { banglaTranslator, renderInBangla } from "../auth/test-helpers";
 import { ApiError } from "../lib/api/api-error";
 import { orderLabelsOf } from "./order-labels";
-import {
-  OrderApprovalDialog,
-  useOrderApprovalFlow,
-  type OrderApprovalAction,
-} from "./order-approval";
+import { useOrderApprovalFlow, type OrderApprovalAction } from "./order-approval";
+import { OrderApprovalDialog } from "./order-approval-dialog";
 
 const listApproversMock = vi.fn();
 const grantApprovalMock = vi.fn();

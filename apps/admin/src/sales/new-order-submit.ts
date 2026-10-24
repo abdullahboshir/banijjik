@@ -5,11 +5,12 @@ import {
   orderApprovalSubject,
   type FulfillmentMethod,
 } from "@banijjik/contracts/sales";
-import { toast, type ContactLinkValue } from "@banijjik/ui";
+import type { ContactLinkValue } from "@banijjik/ui";
 import type { OrderCreateBody, OrderLineInputBody } from "@banijjik/validation/sales";
 import { createOrder, instantOrder, placeOrder, quoteOrder } from "./order-api";
 import type { OrderApprovalFlow } from "./order-approval";
 import type { OrderLabels } from "./order-labels";
+import { showSuccessToast } from "./order-toast";
 import {
   manualDiscountTotalOf,
   quoteLinesOf,
@@ -79,7 +80,7 @@ async function ensureDraft(context: SubmitContext): Promise<CreatedOrder> {
 
 export async function saveNewDraft(context: SubmitContext): Promise<void> {
   const draft = await ensureDraft(context);
-  toast.success(context.labels.newOrder.draftSaved);
+  void showSuccessToast(context.labels.newOrder.draftSaved);
   context.openOrder(draft.orderId);
 }
 
@@ -99,7 +100,7 @@ export async function placeNewOrder(context: SubmitContext): Promise<void> {
       });
     },
     () => {
-      toast.success(context.labels.newOrder.placed);
+      void showSuccessToast(context.labels.newOrder.placed);
       context.openOrder(draft.orderId);
     },
   );
@@ -123,7 +124,7 @@ export async function completeInstantOrder(context: SubmitContext): Promise<void
       completed.orderId = order.orderId;
     },
     () => {
-      toast.success(context.labels.newOrder.completed);
+      void showSuccessToast(context.labels.newOrder.completed);
       if (completed.orderId !== undefined) context.openOrder(completed.orderId);
     },
   );

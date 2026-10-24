@@ -1,7 +1,6 @@
 import { CONTACT_ROLE } from "@banijjik/contracts";
 import { CONTACT_TYPE } from "@banijjik/contracts/contact";
 import type { ContactLinkCandidate, ContactLinkValue } from "@banijjik/ui";
-import { normalizePhoneToE164 } from "@banijjik/validation";
 import { createContact, searchContacts } from "../contacts/contact-api";
 
 /** Finds contacts for the picker and remembers their names so a chosen id can show its name. */
@@ -34,6 +33,8 @@ export async function resolveContactId(input: ContactResolveInput): Promise<stri
   const { contact } = input;
   if (contact === null) return null;
   if (typeof contact === "string") return contact;
+  // Loaded only when a new contact is typed: the validation package carries every request schema.
+  const { normalizePhoneToE164 } = await import("@banijjik/validation");
   const phone = normalizePhoneToE164(contact.create.phone);
   if (phone === undefined) throw new Error(input.phoneInvalidMessage);
   const created = await createContact(

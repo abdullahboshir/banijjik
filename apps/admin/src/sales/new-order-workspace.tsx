@@ -18,7 +18,7 @@ import {
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { LazyOrderQuotePanel } from "./lazy-order-quote-panel";
-import { OrderApprovalDialog } from "./order-approval";
+import { LazyOrderApprovalDialog } from "./lazy-order-approval-dialog";
 import { searchContactChoices } from "./order-contact";
 import { OrderDiscountFields } from "./order-discount-fields";
 import type { OrderLabels } from "./order-labels";
@@ -220,7 +220,9 @@ export function NewOrderWorkspace(props: NewOrderWorkspaceProps): ReactElement {
         </p>
       ) : null}
       <SubmitActions {...sectionProps} />
-      <OrderApprovalDialog flow={form.approval} labels={labels.approval} />
+      {form.approval.isOpen ? (
+        <LazyOrderApprovalDialog flow={form.approval} labels={labels.approval} />
+      ) : null}
     </PageLayout>
   );
 }

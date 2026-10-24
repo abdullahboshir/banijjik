@@ -4,15 +4,16 @@ import type { CurrencyCode } from "@banijjik/contracts";
 import type { ModifierGroupResponse } from "@banijjik/contracts/catalog";
 import type { PaymentMethod } from "@banijjik/contracts/payment";
 import type { OrderResponse } from "@banijjik/contracts/sales";
-import { ConfirmDialog, type DisplayLocale } from "@banijjik/ui";
+import type { DisplayLocale } from "@banijjik/ui";
 import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
 import type { PaymentLabels } from "../payments/payment-labels";
+import { LazyOrderApprovalDialog } from "./lazy-order-approval-dialog";
+import { LazyOrderCancelSheet } from "./lazy-order-cancel-sheet";
+import { LazyOrderDeleteDialog } from "./lazy-order-delete-dialog";
 import { LazyOrderEditSheet } from "./lazy-order-edit-sheet";
 import { OrderActionBar } from "./order-action-bar";
 import { orderActionFlagsOf, type OrderDetailPermissions } from "./order-action-flags";
-import { OrderApprovalDialog } from "./order-approval";
-import { OrderCancelSheet } from "./order-cancel-sheet";
 import type { OrderLabels } from "./order-labels";
 import { OrderPaySheet } from "./order-pay-sheet";
 import { OrderPaymentSection } from "./order-payment-section";
@@ -55,17 +56,19 @@ function OrderDetailSheets(
   const toggle = (key: DialogKey) => (open: boolean) => setOpenDialog(open ? key : undefined);
   return (
     <>
-      <OrderCancelSheet
-        open={openDialog === "cancel"}
-        onOpenChange={toggle("cancel")}
-        organizationId={props.organizationId}
-        order={order}
-        hasNetPaid={props.hasNetPaid}
-        canEdit={props.canEdit}
-        labels={labels}
-        onPickContact={() => setOpenDialog("edit")}
-        onFailure={props.reportFailure}
-      />
+      {openDialog === "cancel" ? (
+        <LazyOrderCancelSheet
+          open
+          onOpenChange={toggle("cancel")}
+          organizationId={props.organizationId}
+          order={order}
+          hasNetPaid={props.hasNetPaid}
+          canEdit={props.canEdit}
+          labels={labels}
+          onPickContact={() => setOpenDialog("edit")}
+          onFailure={props.reportFailure}
+        />
+      ) : null}
       <OrderPaySheet
         open={openDialog === "pay"}
         onOpenChange={toggle("pay")}
@@ -134,20 +137,17 @@ export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
         showPayButton={permissions.canReceive && hasDue}
         onReceivePayment={() => setOpenDialog("pay")}
       />
-      <ConfirmDialog
-        open={openDialog === "delete"}
-        onOpenChange={(open) => setOpenDialog(open ? "delete" : undefined)}
-        title={labels.actions.deleteDraft}
-        description={labels.detail.deleteDescription}
-        confirmLabel={labels.actions.deleteDraft}
-        cancelLabel={labels.cancelDialog.keep}
-        closeLabel={labels.actions.close}
-        tone="danger"
-        onConfirm={() => {
-          setOpenDialog(undefined);
-          void actions.remove();
-        }}
-      />
+      {openDialog === "delete" ? (
+        <LazyOrderDeleteDialog
+          open
+          onOpenChange={(open) => setOpenDialog(open ? "delete" : undefined)}
+          labels={labels}
+          onConfirm={() => {
+            setOpenDialog(undefined);
+            void actions.remove();
+          }}
+        />
+      ) : null}
       <OrderDetailSheets
         {...props}
         openDialog={openDialog}
@@ -155,7 +155,9 @@ export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
         canEdit={flags.canEdit}
         reportFailure={actions.reportFailure}
       />
-      <OrderApprovalDialog flow={actions.approval} labels={labels.approval} />
+      {actions.approval.isOpen ? (
+        <LazyOrderApprovalDialog flow={actions.approval} labels={labels.approval} />
+      ) : null}
     </>
   );
 }

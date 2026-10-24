@@ -42,6 +42,17 @@ vi.mock("./lazy-order-edit-sheet", () => ({
   LazyOrderEditSheet: () => null,
 }));
 
+// next/dynamic needs the Next runtime; the tests render the real components directly.
+vi.mock("./lazy-order-cancel-sheet", async () => ({
+  LazyOrderCancelSheet: (await import("./order-cancel-sheet")).OrderCancelSheet,
+}));
+vi.mock("./lazy-order-delete-dialog", async () => ({
+  LazyOrderDeleteDialog: (await import("./order-delete-dialog")).OrderDeleteDialog,
+}));
+vi.mock("./lazy-order-approval-dialog", async () => ({
+  LazyOrderApprovalDialog: (await import("./order-approval-dialog")).OrderApprovalDialog,
+}));
+
 const labels = orderLabelsOf(banglaTranslator().t);
 const paymentLabels = paymentLabelsOf(banglaTranslator().t);
 const ORDER_ID = "01900000-0000-7000-8000-000000000010";
@@ -218,7 +229,7 @@ describe("OrderDetailClient status actions", () => {
     await user.click(screen.getByRole("button", { name: labels.actions.confirm }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe(banglaTranslator().t("errors.internal"));
+    expect(alert.textContent).toBe(banglaTranslator().t("errors.advance_needs_payments"));
     expect(screen.getAllByRole("button", { name: labels.detail.receivePayment })).toHaveLength(2);
   });
 

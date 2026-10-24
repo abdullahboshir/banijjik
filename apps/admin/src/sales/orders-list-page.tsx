@@ -27,8 +27,6 @@ import {
 import { OrdersList } from "./orders-list";
 
 interface OrderListMeta {
-  readonly page?: number;
-  readonly limit?: number;
   readonly hasNext?: boolean;
 }
 
@@ -173,7 +171,8 @@ export async function OrdersListPage(props: {
     holdsPermission(access.config.permissions, PERMISSION_KEY.SALES_ORDER_CREATE);
   const { result, locations } = await loadOrdersListReads(access, query);
   const labels = orderLabelsOf(t);
-  const page = result.meta?.page ?? query.page;
+  // The API echoes `page` as the text it was sent (a string on the wire), so the screen keeps its own number.
+  const page = query.page;
   const hasNext = result.meta?.hasNext ?? false;
 
   return (

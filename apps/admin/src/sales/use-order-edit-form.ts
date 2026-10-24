@@ -1,18 +1,17 @@
 "use client";
 
+import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
 import { newId } from "@banijjik/ids";
 import { toast } from "@banijjik/ui";
 import { useTranslator } from "@banijjik/web-client/client";
 import { useEffect, useRef, useState } from "react";
-import { knownMessageKeyOrInternal } from "../auth/field-errors";
-import { ApiError } from "../lib/api/api-error";
 import { useOrderApprovalFlow, type OrderApprovalFlow } from "./order-approval";
 import { resolveContactId } from "./order-contact";
 import { useEditDrafts, type EditDrafts } from "./order-edit-drafts";
 import { NO_EDIT_ERRORS, type EditErrors, type EditValues } from "./order-edit-model";
 import { saveOrderEdit } from "./order-edit-save";
 import type { OrderEditSheetProps } from "./order-edit-sheet";
-import { messageOf } from "./order-failure";
+import { messageOf, ruleKeyOf } from "./order-failure";
 import {
   discountToText,
   lineInputsOfDrafts,
@@ -20,9 +19,6 @@ import {
   parseManualDiscount,
   type OrderLineDraft,
 } from "./order-lines";
-
-const TOTAL_BELOW_PAID_KEY = "errors.order_total_below_paid";
-const CONTACT_LOCKED_KEY = "errors.order_contact_locked_by_payment";
 
 export interface OrderEditForm {
   readonly drafts: EditDrafts;
@@ -52,14 +48,14 @@ function initialValues(props: OrderEditSheetProps): EditValues {
 
 /** Which message a failed save shows, and where: next to the totals, the contact or in general. */
 function errorsOf(error: unknown, t: (key: string) => string): EditErrors {
-  const messageKey = error instanceof ApiError ? error.messageKey : undefined;
-  if (messageKey === TOTAL_BELOW_PAID_KEY) {
-    return { ...NO_EDIT_ERRORS, totals: t(knownMessageKeyOrInternal(messageKey)) };
+  const message = messageOf(error, t);
+  const ruleKey = ruleKeyOf(error);
+  if (ruleKey === SALES_RULE_KEY.ORDER_TOTAL_BELOW_PAID)
+    return { ...NO_EDIT_ERRORS, totals: message };
+  if (ruleKey === SALES_RULE_KEY.ORDER_CONTACT_LOCKED_BY_PAYMENT) {
+    return { ...NO_EDIT_ERRORS, contact: message };
   }
-  if (messageKey === CONTACT_LOCKED_KEY) {
-    return { ...NO_EDIT_ERRORS, contact: t(knownMessageKeyOrInternal(messageKey)) };
-  }
-  return { ...NO_EDIT_ERRORS, message: messageOf(error, t) };
+  return { ...NO_EDIT_ERRORS, message };
 }
 
 interface EditSaveContext {

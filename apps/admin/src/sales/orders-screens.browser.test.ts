@@ -47,6 +47,7 @@ const RECEIVED_GRAMS = 10_000;
 const ORDER_TOTAL_MINOR = RICE_UNIT_MINOR * 2 + SUGAR_UNIT_MINOR;
 const MINIMUM_TOUCH_TARGET = 43.5;
 const FIRST_ORDER_NUMBER = "000001";
+const BUYER_NAME = "করিম সাহেব";
 const SECOND_ORDER_NUMBER = "000002";
 
 let stack: BrowserStack;
@@ -250,6 +251,13 @@ async function addProductLine(
   await typeInto(page, `#order-qty-${index}`, quantity);
 }
 
+/** A pickup order needs a contact with a phone (the retail rules), so the order page makes one inline. */
+async function addNewContact(page: Page, name: string, phone: string): Promise<void> {
+  await clickByName(page, message("form.contactLink.createNew"));
+  await typeInto(page, "#order-contact-new-name", name);
+  await typeInto(page, "#order-contact-new-phone", phone);
+}
+
 async function waitForOrderPath(page: Page): Promise<string> {
   await page.waitForFunction(
     (slug) => new RegExp(`^/${slug}/orders/[0-9a-f-]{36}$`, "u").test(window.location.pathname),
@@ -304,6 +312,7 @@ describe("orders at a retail shop", () => {
   it("places, confirms, takes payment and completes two products, reducing stock", async () => {
     const page = await ownerPage();
     await gotoWhenHydrated(page, `/${ORG_SLUG}/orders/new`, "#order-product-0");
+    await addNewContact(page, BUYER_NAME, "+8801710000601");
     await addProductLine(page, 0, RICE_PRODUCT, "2");
     await clickByName(page, message("orders.new.addLine"));
     await addProductLine(page, 1, SUGAR_PRODUCT, "1");
@@ -379,6 +388,7 @@ describe("orders at a retail shop", () => {
   it("cancels a placed order and releases its reserved stock", async () => {
     const page = await ownerPage();
     await gotoWhenHydrated(page, `/${ORG_SLUG}/orders/new`, "#order-product-0");
+    await addNewContact(page, BUYER_NAME, "+8801710000602");
     await addProductLine(page, 0, RICE_PRODUCT, "1");
     await clickByName(page, message("orders.new.place"));
     const secondPath = await waitForOrderPath(page);

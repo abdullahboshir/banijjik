@@ -3,8 +3,7 @@
 import { ERROR_CODE } from "@banijjik/contracts";
 import { APPROVAL_ACTION, type ApproverSummary } from "@banijjik/contracts/iam";
 import type { Money } from "@banijjik/contracts/pricing";
-import { ApprovalPinDialog } from "@banijjik/ui";
-import { useState, type ReactElement } from "react";
+import { useState } from "react";
 import { ApiError } from "../lib/api/api-error";
 import { grantApproval, listApprovers } from "../payments/payment-api";
 import { useApprovalDialogState } from "../payments/use-approval-dialog-state";
@@ -149,39 +148,5 @@ function isPinError(error: unknown): boolean {
   return (
     error instanceof ApiError &&
     (error.code === ERROR_CODE.APPROVAL_PIN_LOCKED || error.code === ERROR_CODE.APPROVAL_INVALID)
-  );
-}
-
-export interface OrderApprovalDialogProps {
-  readonly flow: OrderApprovalFlow;
-  readonly labels: OrderApprovalLabels;
-}
-
-/** The manager PIN sheet; the flow owns the approver list and the retried action. */
-export function OrderApprovalDialog(props: OrderApprovalDialogProps): ReactElement | null {
-  // Mounted only once the approver list is known: the PIN sheet picks its first approver on mount.
-  if (!props.flow.isOpen || props.flow.approvers.length === 0) return null;
-  return (
-    <ApprovalPinDialog
-      key={props.flow.approvers[0]?.memberId ?? "approval"}
-      open={props.flow.isOpen}
-      onOpenChange={(open) => (open ? undefined : props.flow.close())}
-      title={props.labels.title}
-      approverLabel={props.labels.approver}
-      pinLabel={props.labels.pin}
-      submitLabel={props.labels.submit}
-      cancelLabel={props.labels.cancel}
-      closeLabel={props.labels.close}
-      lockedMessage={props.labels.locked}
-      approvers={props.flow.approvers.map((approver) => ({
-        memberId: approver.memberId,
-        displayName: approver.displayName,
-        hasPin: true,
-      }))}
-      {...(props.flow.errorMessage === undefined ? {} : { errorMessage: props.flow.errorMessage })}
-      isLocked={props.flow.isLocked}
-      isSubmitting={props.flow.isApproving}
-      onSubmit={(input) => void props.flow.submitPin(input)}
-    />
   );
 }

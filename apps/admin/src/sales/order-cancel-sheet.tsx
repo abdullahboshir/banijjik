@@ -1,13 +1,14 @@
 "use client";
 
 import { SALES_RULE_KEY, type OrderResponse } from "@banijjik/contracts/sales";
-import { Button, FormField, Sheet, SheetContent, Textarea, toast } from "@banijjik/ui";
+import { Button, FormField, Sheet, SheetContent, Textarea } from "@banijjik/ui";
 import { useTranslator } from "@banijjik/web-client/client";
 import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
 import { cancelOrder } from "./order-api";
 import { failureOf, type RuleFailure } from "./order-failure";
 import type { OrderLabels } from "./order-labels";
+import { showSuccessToast } from "./order-toast";
 
 export interface OrderCancelSheetProps {
   readonly open: boolean;
@@ -103,7 +104,7 @@ export function OrderCancelSheet(props: OrderCancelSheetProps): ReactElement {
         reason,
       });
       props.onOpenChange(false);
-      toast.success(labels.cancelDialog.success);
+      void showSuccessToast(labels.cancelDialog.success);
       router.refresh();
     } catch (error) {
       const failure = failureOf(error, t);
