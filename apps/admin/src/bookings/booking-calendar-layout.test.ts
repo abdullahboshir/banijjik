@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   bookingBlockOf,
   calendarBoundsFromSchedules,
+  sessionsOnDate,
   snapMinutesToSlot,
 } from "./booking-calendar-layout";
 
@@ -62,5 +63,54 @@ describe("bookingBlockOf", () => {
     });
     expect(block.topPx).toBeGreaterThan(0);
     expect(block.heightPx).toBeGreaterThan(0);
+  });
+});
+
+describe("rentals and events on the calendar", () => {
+  const rental = {
+    bookingId: "r",
+    bookingNumber: "R-1",
+    kind: "RENTAL",
+    startsAt: "2026-10-19T08:00:00.000Z",
+    endsAt: "2026-10-22T05:00:00.000Z",
+    status: "CONFIRMED",
+  } as unknown as Parameters<typeof bookingBlockOf>[0]["booking"];
+  const base = {
+    label: "R-1",
+    timeZone: "Asia/Dhaka",
+    startMinutes: 6 * 60,
+    endMinutes: 22 * 60,
+    slotStepMinutes: 30,
+  };
+
+  it("draws a multi-day rental as a bar that runs off the grid on a middle day", () => {
+    const block = bookingBlockOf({ ...base, booking: rental, businessDate: "2026-10-20" });
+    expect(block).toMatchObject({
+      continuesBefore: true,
+      continuesAfter: true,
+      topPx: 0,
+      kind: "RENTAL",
+    });
+    expect(block.heightPx).toBe(((22 - 6) * 60 * 28) / 30);
+  });
+
+  it("starts the bar at the check-in time on the first day and ends it on the last day", () => {
+    const first = bookingBlockOf({ ...base, booking: rental, businessDate: "2026-10-19" });
+    const last = bookingBlockOf({ ...base, booking: rental, businessDate: "2026-10-22" });
+    expect(first).toMatchObject({ continuesBefore: false, continuesAfter: true });
+    expect(first.topPx).toBeGreaterThan(0);
+    expect(last).toMatchObject({ continuesBefore: true, continuesAfter: false, topPx: 0 });
+  });
+
+  it("lists the event sessions that run on the shown day, earliest first", () => {
+    const sessions = [
+      { id: "late", startsAt: "2026-10-20T10:00:00.000Z", endsAt: "2026-10-20T11:00:00.000Z" },
+      { id: "other-day", startsAt: "2026-10-21T10:00:00.000Z", endsAt: "2026-10-21T11:00:00.000Z" },
+      { id: "early", startsAt: "2026-10-20T04:00:00.000Z", endsAt: "2026-10-20T05:00:00.000Z" },
+    ];
+    expect(sessionsOnDate(sessions, "2026-10-20", "Asia/Dhaka").map((s) => s.id)).toEqual([
+      "early",
+      "late",
+    ]);
   });
 });

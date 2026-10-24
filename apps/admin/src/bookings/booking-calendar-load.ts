@@ -1,12 +1,19 @@
 import { PERMISSION_KEY, type LocationResponse } from "@banijjik/contracts";
 import type { BookingResponse, ResourceResponse } from "@banijjik/contracts/booking";
 import type { OfferingResponse } from "@banijjik/contracts/catalog";
-import { fetchBusinessResource } from "../lib/api/server-resource";
+import { fetchBusinessResource, fetchBusinessResourceIfAllowed } from "../lib/api/server-resource";
 import type { OrgAccess } from "../shell/org-access";
 import { holdsPermission } from "../shell/permissions";
-import { loadBookableServices, loadBookingLookups } from "./booking-lookups";
+import {
+  loadBookableServices,
+  loadBookingLookups,
+  loadRentalAndEventOfferings,
+} from "./booking-lookups";
+import type { EventSessionView } from "./event-session-api";
 import {
   bookingsApiQuery,
+  earlierRentalsApiQuery,
+  runningRentalsOf,
   parseBookingCalendarQuery,
   resourcesApiQuery,
   type BookingCalendarQuery,
@@ -18,6 +25,8 @@ export interface BookingCalendarLoadResult {
   bookings: BookingResponse[];
   resources: ResourceResponse[];
   offerings: OfferingResponse[];
+  /** Scheduled event sessions of the location; empty when the person may not read them. */
+  eventSessions: EventSessionView[];
   slotStepMinutes: number;
   canCreate: boolean;
   noLocation: boolean;
@@ -39,6 +48,7 @@ export async function loadBookingCalendarData(input: {
       bookings: [],
       resources: [],
       offerings: [],
+      eventSessions: [],
       slotStepMinutes: lookups.slotStepMinutes,
       canCreate: false,
       noLocation: true,
@@ -46,22 +56,34 @@ export async function loadBookingCalendarData(input: {
     };
   }
   const resolvedQuery = { ...query, locationId };
-  const [bookingsResult, resourcesResult, offerings] = await Promise.all([
-    fetchBusinessResource<BookingResponse[]>(bookingsApiQuery(organizationId, resolvedQuery)),
-    fetchBusinessResource<ResourceResponse[]>(
-      `/orgs/${organizationId}/resources?${resourcesApiQuery(locationId)}`,
-    ),
-    loadBookableServices(input.access),
-  ]);
+  const [bookingsResult, earlierResult, resourcesResult, services, others, sessions] =
+    await Promise.all([
+      fetchBusinessResource<BookingResponse[]>(bookingsApiQuery(organizationId, resolvedQuery)),
+      fetchBusinessResource<BookingResponse[]>(
+        earlierRentalsApiQuery(organizationId, resolvedQuery, input.access.timeZone),
+      ),
+      fetchBusinessResource<ResourceResponse[]>(
+        `/orgs/${organizationId}/resources?${resourcesApiQuery(locationId)}`,
+      ),
+      loadBookableServices(input.access),
+      loadRentalAndEventOfferings(input.access),
+      fetchBusinessResourceIfAllowed<EventSessionView[]>(
+        `/orgs/${organizationId}/event-sessions?locationId=${locationId}&status=SCHEDULED&limit=100`,
+      ),
+    ]);
   const canCreate =
     input.access.canWrite &&
     holdsPermission(input.access.config.permissions, PERMISSION_KEY.BOOKING_BOOKING_CREATE);
   return {
     query: resolvedQuery,
     organizationId,
-    bookings: bookingsResult.data,
+    bookings: [
+      ...runningRentalsOf(earlierResult.data, resolvedQuery, input.access.timeZone),
+      ...bookingsResult.data,
+    ],
     resources: resourcesResult.data,
-    offerings,
+    offerings: [...services, ...others],
+    eventSessions: sessions ?? [],
     slotStepMinutes: lookups.slotStepMinutes,
     canCreate,
     noLocation: false,

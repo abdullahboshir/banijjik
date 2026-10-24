@@ -1,6 +1,7 @@
 import type { ContactLinkValue } from "@banijjik/ui";
 import type { BookingCreateBody } from "@banijjik/validation/booking";
 import type { FieldErrors } from "../auth/field-errors";
+import { isPositiveWholeNumber } from "./new-booking-mode";
 
 export const NEW_BOOKING_STEPS = ["service", "variant", "slot", "contact", "confirm"] as const;
 
@@ -48,7 +49,9 @@ export function canAdvanceFrom(step: NewBookingStep, form: NewBookingFormState):
     case "variant":
       return form.variantId !== "";
     case "slot":
-      return form.startsAt !== "" || form.eventSessionId !== "";
+      return (
+        (form.startsAt !== "" || form.eventSessionId !== "") && isPositiveWholeNumber(form.quantity)
+      );
     case "contact":
       return form.contact !== null;
     case "confirm":
@@ -89,7 +92,6 @@ function bookingErrorsOf(form: NewBookingFormState): FieldErrors {
   if (form.offeringId === "") errors.offeringId = "required";
   if (form.variantId === "") errors.variantId = "required";
   if (form.startsAt === "" && form.eventSessionId === "") errors.startsAt = "required";
-  const quantity = Number(form.quantity);
-  if (!Number.isInteger(quantity) || quantity < 1) errors.quantity = "positive";
+  if (!isPositiveWholeNumber(form.quantity)) errors.quantity = "positive";
   return errors;
 }

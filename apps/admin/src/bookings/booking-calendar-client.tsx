@@ -4,6 +4,8 @@ import type { ReactElement } from "react";
 import { useTranslator } from "@banijjik/web-client/client";
 import { BookingCalendarDesktop } from "./booking-calendar-desktop";
 import { BookingCalendarMobile } from "./booking-calendar-mobile";
+import { BookingCalendarSessions } from "./booking-calendar-sessions";
+import type { EventSessionView } from "./event-session-api";
 import { BookingCalendarToolbar } from "./booking-calendar-toolbar";
 import { bookingStatusLabelOf } from "./booking-labels";
 import type { NewBookingSheetLabels } from "./new-booking-sheet";
@@ -23,6 +25,7 @@ export interface BookingCalendarClientProps {
   resources: readonly ResourceResponse[];
   bookings: readonly BookingResponse[];
   offerings: readonly OfferingResponse[];
+  eventSessions: readonly EventSessionView[];
   canCreate: boolean;
   labels: {
     loading: string;
@@ -52,6 +55,7 @@ export function BookingCalendarClient(props: BookingCalendarClientProps): ReactE
         locale={props.locale}
         businessDate={props.query.date}
         offerings={props.offerings}
+        resources={props.resources}
         seed={calendar.bookingSeed}
         sheetLabels={props.labels.sheet}
         revealSignal={calendar.bookingSheetReveal}
@@ -82,6 +86,14 @@ export function BookingCalendarClient(props: BookingCalendarClientProps): ReactE
         canCreate={props.canCreate}
         statusLabel={statusLabel}
         onOpenSlot={calendar.openSlot}
+      />
+      <BookingCalendarSessions
+        orgSlug={props.orgSlug}
+        businessDate={props.query.date}
+        timeZone={props.timeZone}
+        locale={props.locale}
+        sessions={props.eventSessions}
+        offeringNames={new Map(props.offerings.map((o) => [o.offeringId, o.name]))}
       />
     </div>
   );

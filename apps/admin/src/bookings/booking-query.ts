@@ -1,3 +1,6 @@
+import type { BookingResponse } from "@banijjik/contracts/booking";
+import { addCalendarDays, localDateTimeToIso } from "./booking-local-time";
+
 type RawParam = string | string[] | undefined;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
@@ -60,6 +63,46 @@ export function bookingsApiQuery(organizationId: string, query: BookingCalendarQ
   params.set("page", "1");
   params.set("limit", String(BOOKINGS_PAGE_SIZE));
   return `/orgs/${organizationId}/bookings?${params.toString()}`;
+}
+
+/** A rental can run up to 31 days (ADR-133); the list filters by start, so look this far back. */
+export const MAX_RENTAL_LOOKBACK_DAYS = 31;
+
+/** Rentals that started before the shown day: the list filters by start time only. */
+export function earlierRentalsApiQuery(
+  organizationId: string,
+  query: BookingCalendarQuery,
+  timeZone: string,
+): string {
+  const params = new URLSearchParams();
+  if (query.locationId) params.set("locationId", query.locationId);
+  params.set(
+    "from",
+    localDateTimeToIso(addCalendarDays(query.date, -MAX_RENTAL_LOOKBACK_DAYS), "00:00", timeZone),
+  );
+  params.set(
+    "to",
+    new Date(Date.parse(localDateTimeToIso(query.date, "00:00", timeZone)) - 1).toISOString(),
+  );
+  params.set("page", "1");
+  params.set("limit", String(BOOKINGS_PAGE_SIZE));
+  return `/orgs/${organizationId}/bookings?${params.toString()}`;
+}
+
+/** Keeps the earlier bookings that are rentals still running on the shown day. */
+export function runningRentalsOf(
+  earlier: readonly BookingResponse[],
+  query: BookingCalendarQuery,
+  timeZone: string,
+): BookingResponse[] {
+  const dayStart = Date.parse(localDateTimeToIso(query.date, "00:00", timeZone));
+  return earlier.filter(
+    (booking) =>
+      booking.kind === "RENTAL" &&
+      Date.parse(booking.endsAt) > dayStart &&
+      booking.status !== "CANCELLED" &&
+      booking.status !== "EXPIRED",
+  );
 }
 
 export function resourcesApiQuery(locationId: string | undefined): string {

@@ -14,7 +14,15 @@ import {
   type NewBookingFormState,
   type NewBookingStep,
 } from "./new-booking-form";
+import {
+  bookingModeOf,
+  rentalDetailsOf,
+  rentalResourcesOf,
+  sellableSessionsOf,
+  type NewBookingModeData,
+} from "./new-booking-mode";
 import type { NewBookingSheetProps } from "./new-booking-sheet";
+import { useNewBookingQuote, useNewBookingSessions } from "./use-new-booking-mode-data";
 import { useNewBookingSlots } from "./use-new-booking-slots";
 
 function contactLabelsOf(t: (key: string) => string) {
@@ -56,6 +64,7 @@ interface NewBookingSheetModel {
   slots: ReturnType<typeof useNewBookingSlots>["slots"];
   slotsLoading: boolean;
   selectedOffering: NewBookingSheetProps["offerings"][number] | undefined;
+  modeData: NewBookingModeData;
   contactLink: ReturnType<typeof useBookingContactLink>;
   contactError: string | undefined;
   state: ReturnType<typeof useSheetSubmit>;
@@ -81,6 +90,42 @@ function sendNewBooking(input: {
   };
 }
 
+/** Rentals and events read more than a slot list: the units, the sessions and the quoted price. */
+function useNewBookingModeData(input: {
+  props: NewBookingSheetProps;
+  step: NewBookingStep;
+  form: NewBookingFormState;
+  selectedOffering: NewBookingSheetProps["offerings"][number] | undefined;
+}): NewBookingModeData {
+  const { props, step, form, selectedOffering } = input;
+  const mode = bookingModeOf(selectedOffering);
+  const rental = rentalDetailsOf(selectedOffering);
+  const { sessions, sessionsLoading } = useNewBookingSessions({
+    mode,
+    isSlotStep: step === "slot" || step === "confirm",
+    organizationId: props.organizationId,
+    locationId: props.locationId,
+    offeringId: form.offeringId,
+  });
+  const { total, quoteLoading } = useNewBookingQuote({
+    isEnabled: mode !== "SLOT" && (step === "slot" || step === "confirm"),
+    organizationId: props.organizationId,
+    locationId: props.locationId,
+    offeringId: form.offeringId,
+    variantId: form.variantId,
+    quantity: form.quantity,
+  });
+  return {
+    mode,
+    rental,
+    rentalResources: rentalResourcesOf(props.resources, rental),
+    sessions: sellableSessionsOf(sessions, { variantId: form.variantId, now: new Date() }),
+    sessionsLoading,
+    total,
+    quoteLoading,
+  };
+}
+
 export function useNewBookingSheet(props: NewBookingSheetProps): NewBookingSheetModel {
   const { t } = useTranslator();
   const [step, setStep] = useState<NewBookingStep>("service");
@@ -95,6 +140,10 @@ export function useNewBookingSheet(props: NewBookingSheetProps): NewBookingSheet
     variantId: form.variantId,
     resourceId: form.resourceId,
   });
+  const selectedOffering = props.offerings.find(
+    (offering) => offering.offeringId === form.offeringId,
+  );
+  const modeData = useNewBookingModeData({ props, step, form, selectedOffering });
   const contactLink = useBookingContactLink(props.organizationId, t);
   const state = useSheetSubmit({
     fieldNames: ["offeringId", "variantId", "startsAt", "contact", "note"],
@@ -117,7 +166,8 @@ export function useNewBookingSheet(props: NewBookingSheetProps): NewBookingSheet
     setForm,
     slots,
     slotsLoading,
-    selectedOffering: props.offerings.find((offering) => offering.offeringId === form.offeringId),
+    selectedOffering,
+    modeData,
     contactLink,
     contactError,
     state,

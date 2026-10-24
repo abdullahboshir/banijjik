@@ -1,5 +1,6 @@
 "use client";
 
+import type { ResourceResponse } from "@banijjik/contracts/booking";
 import type { OfferingResponse } from "@banijjik/contracts/catalog";
 import type { ReactElement } from "react";
 import { NewBookingFormButton } from "./new-booking-form-button";
@@ -15,6 +16,7 @@ export function BookingCalendarToolbar(props: {
   locale: string;
   businessDate: string;
   offerings: readonly OfferingResponse[];
+  resources: readonly ResourceResponse[];
   seed: NewBookingSeed;
   sheetLabels: NewBookingSheetLabels;
   revealSignal: number;
@@ -29,6 +31,7 @@ export function BookingCalendarToolbar(props: {
         timeZone={props.timeZone}
         locale={props.locale}
         offerings={props.offerings}
+        resources={props.resources}
         seed={props.seed}
         labels={props.sheetLabels}
         revealSignal={props.revealSignal}

@@ -1,10 +1,22 @@
 "use client";
 
 import type { BookingResponse, ResourceResponse } from "@banijjik/contracts/booking";
+import { useTranslator } from "@banijjik/web-client/client";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { localMinutesOfDay } from "./booking-calendar-layout";
 import type { BookingCalendarQuery } from "./booking-query";
+
+/** A rental that runs past the shown day says when it ends, so the person sees where the bar goes next. */
+function RentalUntilLine(props: { endsAt: string; timeZone: string }): ReactElement {
+  const { t, locale } = useTranslator();
+  const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: props.timeZone });
+  return (
+    <span className="text-small text-secondary">
+      {t("bookings.calendar.rentalUntil", { date: date.format(new Date(props.endsAt)) })}
+    </span>
+  );
+}
 
 export function BookingCalendarMobile(props: {
   orgSlug: string;
@@ -41,6 +53,9 @@ export function BookingCalendarMobile(props: {
                       {localMinutesOfDay(booking.startsAt, props.query.date, props.timeZone)}{" "}
                       {props.minutesSuffix}
                     </span>
+                    {booking.kind === "RENTAL" ? (
+                      <RentalUntilLine endsAt={booking.endsAt} timeZone={props.timeZone} />
+                    ) : null}
                   </Link>
                 </li>
               ))}

@@ -2,14 +2,8 @@
 
 import type { AvailabilitySlot } from "@banijjik/contracts/booking";
 import type { OfferingResponse } from "@banijjik/contracts/catalog";
-import {
-  ContactLinkInput,
-  FormField,
-  Textarea,
-  TextInput,
-  type ContactLinkInputProps,
-} from "@banijjik/ui";
-import type { ReactElement } from "react";
+import { ContactLinkInput, FormField, Textarea, type ContactLinkInputProps } from "@banijjik/ui";
+import type { ReactElement, ReactNode } from "react";
 import { formatLocalTimeRange } from "./booking-local-time";
 import type { NewBookingFormState } from "./new-booking-form";
 import type { NewBookingSheetLabels } from "./new-booking-sheet";
@@ -74,23 +68,10 @@ export function NewBookingSlotStep(props: {
   slotsLoading: boolean;
   startsAt: string;
   onPickSlot: (slot: AvailabilitySlot) => void;
-  quantity: string;
-  onQuantityChange: (quantity: string) => void;
-  isQuantityBooking: boolean;
 }): ReactElement {
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="text-small text-secondary">{props.labels.slot}</legend>
-      {props.isQuantityBooking ? (
-        <FormField label={props.labels.quantity} htmlFor="new-booking-quantity">
-          <TextInput
-            id="new-booking-quantity"
-            inputMode="numeric"
-            value={props.quantity}
-            onChange={(event) => props.onQuantityChange(event.target.value)}
-          />
-        </FormField>
-      ) : null}
       {props.slotsLoading ? (
         <p className="text-small text-secondary">{props.labels.loadingSlots}</p>
       ) : null}
@@ -160,8 +141,13 @@ export function NewBookingConfirmStep(props: {
   timeZone: string;
   serviceName: string | undefined;
   slots: AvailabilitySlot[];
+  /** The rental or event rows and the price, drawn by the mode that owns them. */
+  extra?: ReactNode;
+  /** Set by rentals and events, whose end is not one of the free slots. */
+  endsAt?: string;
 }): ReactElement {
   const endsAt =
+    props.endsAt ??
     props.slots.find((slot) => slot.startsAt === props.form.startsAt)?.endsAt ??
     props.form.startsAt;
   return (
@@ -183,6 +169,7 @@ export function NewBookingConfirmStep(props: {
               })}
         </dd>
       </div>
+      {props.extra}
     </dl>
   );
 }

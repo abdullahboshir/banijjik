@@ -15,6 +15,7 @@ import {
 import { newBookingFormHandlers } from "./new-booking-form-handlers";
 import { newBookingStepField } from "./new-booking-step-fields";
 import type { NewBookingSheetLabels } from "./new-booking-sheet";
+import type { NewBookingModeData } from "./new-booking-mode";
 import type { useNewBookingSlots } from "./use-new-booking-slots";
 
 function StepNav(props: {
@@ -60,6 +61,7 @@ export interface NewBookingSheetFormProps {
   slots: ReturnType<typeof useNewBookingSlots>["slots"];
   slotsLoading: boolean;
   selectedOffering: OfferingResponse | undefined;
+  modeData: NewBookingModeData;
   contactLink: React.ComponentProps<
     typeof import("./new-booking-sheet-fields").NewBookingContactStep
   >["contactLink"];
@@ -69,7 +71,7 @@ export interface NewBookingSheetFormProps {
 }
 
 function NewBookingSheetFormInner(props: NewBookingSheetFormProps): ReactElement {
-  const handlers = newBookingFormHandlers(props.setForm);
+  const handlers = newBookingFormHandlers(props.setForm, props.offerings);
   const { labels, step, setStep, form } = props;
   return (
     <form
@@ -94,10 +96,10 @@ function NewBookingSheetFormInner(props: NewBookingSheetFormProps): ReactElement
         slots: props.slots,
         slotsLoading: props.slotsLoading,
         selectedOffering: props.selectedOffering,
+        modeData: props.modeData,
         contactLink: props.contactLink,
         contactError: props.contactError,
         ...handlers,
-        onQuantityChange: (quantity) => props.setForm((current) => ({ ...current, quantity })),
       })}
       <SheetFeedback state={props.state} conflict={labels.conflict} reload={labels.reload} />
       <StepNav

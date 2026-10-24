@@ -1,6 +1,6 @@
 import "server-only";
 import { BOOKING_SLOT_STEP_MINUTES_SETTING_KEY } from "@banijjik/contracts/booking";
-import { OFFERING_KIND } from "@banijjik/contracts";
+import { OFFERING_KIND, type OfferingKind } from "@banijjik/contracts";
 import type { LocationResponse } from "@banijjik/contracts";
 import type {
   OfferingListItem,
@@ -31,23 +31,42 @@ export async function loadBookingLookups(access: OrgAccess): Promise<{
   return { locations: locations ?? [], slotStepMinutes };
 }
 
-export async function loadBookableServices(access: OrgAccess): Promise<OfferingResponse[]> {
+async function loadActiveOfferings(
+  access: OrgAccess,
+  kind: OfferingKind,
+): Promise<OfferingResponse[]> {
   const organizationId = access.organization.organizationId;
   const { data: list } = await fetchBusinessResource<OfferingListItem[]>(
-    `/orgs/${organizationId}/offerings?kind=${OFFERING_KIND.SERVICE}&status=ACTIVE&limit=${LOOKUP_LIMIT}`,
+    `/orgs/${organizationId}/offerings?kind=${kind}&status=ACTIVE&limit=${LOOKUP_LIMIT}`,
   );
-  const serviceIds = list.map((row) => row.offeringId);
   const offerings = await Promise.all(
-    serviceIds.map(async (offeringId) => {
+    list.map(async (row) => {
       const { data } = await fetchBusinessResource<OfferingResponse>(
-        `/orgs/${organizationId}/offerings/${offeringId}`,
+        `/orgs/${organizationId}/offerings/${row.offeringId}`,
       );
       return data;
     }),
   );
-  return offerings.filter((offering) => {
-    if (offering.kind !== OFFERING_KIND.SERVICE) return false;
+  return offerings.filter((offering) => offering.kind === kind);
+}
+
+export async function loadBookableServices(access: OrgAccess): Promise<OfferingResponse[]> {
+  const services = await loadActiveOfferings(access, OFFERING_KIND.SERVICE);
+  return services.filter((offering) => {
     const details = offering.kindDetails as ServiceDetails;
     return details.bookingMode === "SLOT" && details.requiresResource;
   });
+}
+
+/** Rentals and events book through the same sheet as services; each has its own mode there. */
+export async function loadRentalAndEventOfferings(access: OrgAccess): Promise<OfferingResponse[]> {
+  const [rentals, events] = await Promise.all([
+    loadActiveOfferings(access, OFFERING_KIND.RENTAL),
+    loadActiveOfferings(access, OFFERING_KIND.EVENT),
+  ]);
+  return [...rentals, ...events];
+}
+
+export function loadEventOfferings(access: OrgAccess): Promise<OfferingResponse[]> {
+  return loadActiveOfferings(access, OFFERING_KIND.EVENT);
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ResourceResponse } from "@banijjik/contracts/booking";
 import type { OfferingResponse } from "@banijjik/contracts/catalog";
 import type { ReactElement } from "react";
 import type { NewBookingSeed } from "./new-booking-form";
@@ -24,7 +25,6 @@ export interface NewBookingSheetLabels {
   notSet: string;
   conflict: string;
   reload: string;
-  quantity: string;
 }
 
 export interface NewBookingSheetProps {
@@ -33,6 +33,8 @@ export interface NewBookingSheetProps {
   timeZone: string;
   locale: string;
   offerings: readonly OfferingResponse[];
+  /** The location resources, so a rental can name the room or car it wants. */
+  resources: readonly ResourceResponse[];
   seed: NewBookingSeed;
   labels: NewBookingSheetLabels;
   onClose: () => void;
@@ -53,6 +55,7 @@ export function NewBookingSheet(props: NewBookingSheetProps): ReactElement {
       slots={sheet.slots}
       slotsLoading={sheet.slotsLoading}
       selectedOffering={sheet.selectedOffering}
+      modeData={sheet.modeData}
       contactLink={sheet.contactLink}
       contactError={sheet.contactError}
       state={sheet.state}

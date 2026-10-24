@@ -60,4 +60,32 @@ describe("new booking sheet steps", () => {
       errors: { quantity: "positive" },
     });
   });
+
+  it("builds a rental booking with the start, the units and the chosen resource", () => {
+    const form = emptyNewBookingForm({ locationId: "loc", businessDate: "2026-10-20" });
+    Object.assign(form, {
+      offeringId: "offering-1",
+      variantId: "variant-1",
+      startsAt: "2026-11-01T04:00:00.000Z",
+      quantity: "3",
+      resourceId: "01900000-0000-7000-8000-000000000014",
+      contact: "01900000-0000-7000-8000-000000000013",
+    });
+    const built = buildBookingCreate(form, "location-1");
+    expect(built).toMatchObject({ ok: true });
+    if (built.ok)
+      expect(built.body).toMatchObject({
+        startsAt: "2026-11-01T04:00:00.000Z",
+        quantity: 3,
+        resourceId: "01900000-0000-7000-8000-000000000014",
+      });
+  });
+
+  it("does not let a rental or event move past the slot step without units or seats", () => {
+    const form = emptyNewBookingForm({ locationId: "loc", businessDate: "2026-10-20" });
+    Object.assign(form, { startsAt: "2026-11-01T04:00:00.000Z", quantity: "" });
+    expect(canAdvanceFrom("slot", form)).toBe(false);
+    form.quantity = "2";
+    expect(canAdvanceFrom("slot", form)).toBe(true);
+  });
 });

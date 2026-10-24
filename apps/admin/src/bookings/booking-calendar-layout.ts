@@ -52,9 +52,29 @@ export function calendarBoundsFromSchedules(schedules: readonly (readonly Schedu
   return { startMinutes, endMinutes };
 }
 
+/** Whether an instant lies before, on or after the shown business day in the organization timezone. */
+export function dayRelationOf(
+  iso: string,
+  businessDate: string,
+  timeZone: string,
+): "before" | "on" | "after" {
+  const dayKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+  if (dayKey === businessDate) return "on";
+  return dayKey < businessDate ? "before" : "after";
+}
+
 export interface CalendarBookingBlock {
   readonly bookingId: string;
   readonly label: string;
+  readonly kind: BookingResponse["kind"];
+  /** A rental that started on an earlier day, or that ends on a later one, runs off the grid. */
+  readonly continuesBefore: boolean;
+  readonly continuesAfter: boolean;
   readonly topPx: number;
   readonly heightPx: number;
   readonly status: BookingResponse["status"];
@@ -66,16 +86,29 @@ export function bookingBlockOf(input: {
   businessDate: string;
   timeZone: string;
   startMinutes: number;
+  /** The last minute of the grid; a booking that runs past the day is cut there. */
+  endMinutes?: number;
   slotStepMinutes: number;
 }): CalendarBookingBlock {
-  const start = localMinutesOfDay(input.booking.startsAt, input.businessDate, input.timeZone);
-  const end = localMinutesOfDay(input.booking.endsAt, input.businessDate, input.timeZone);
+  const startRelation = dayRelationOf(input.booking.startsAt, input.businessDate, input.timeZone);
+  const endRelation = dayRelationOf(input.booking.endsAt, input.businessDate, input.timeZone);
+  const start =
+    startRelation === "before"
+      ? input.startMinutes
+      : localMinutesOfDay(input.booking.startsAt, input.businessDate, input.timeZone);
+  const end =
+    endRelation === "after"
+      ? (input.endMinutes ?? CALENDAR_DAY_END_MINUTES)
+      : localMinutesOfDay(input.booking.endsAt, input.businessDate, input.timeZone);
   const topMinutes = Math.max(start - input.startMinutes, 0);
   const durationMinutes = Math.max(end - start, input.slotStepMinutes);
   const pxPerMinute = CALENDAR_SLOT_HEIGHT_PX / input.slotStepMinutes;
   return {
     bookingId: input.booking.bookingId,
     label: input.label,
+    kind: input.booking.kind,
+    continuesBefore: startRelation === "before",
+    continuesAfter: endRelation === "after",
     topPx: Math.round(topMinutes * pxPerMinute),
     heightPx: Math.max(Math.round(durationMinutes * pxPerMinute), CALENDAR_SLOT_HEIGHT_PX),
     status: input.booking.status,
@@ -86,4 +119,19 @@ export function bookingBlockOf(input: {
 export function snapMinutesToSlot(minutesFromGridStart: number, slotStepMinutes: number): number {
   const snapped = Math.round(minutesFromGridStart / slotStepMinutes) * slotStepMinutes;
   return Math.max(snapped, 0);
+}
+
+/** The sessions that run on the shown day, earliest first. A session that spans midnight shows on both days. */
+export function sessionsOnDate<Session extends { startsAt: string; endsAt: string }>(
+  sessions: readonly Session[],
+  businessDate: string,
+  timeZone: string,
+): Session[] {
+  return sessions
+    .filter(
+      (session) =>
+        dayRelationOf(session.startsAt, businessDate, timeZone) !== "after" &&
+        dayRelationOf(session.endsAt, businessDate, timeZone) !== "before",
+    )
+    .sort((first, second) => Date.parse(first.startsAt) - Date.parse(second.startsAt));
 }

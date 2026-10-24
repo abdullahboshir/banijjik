@@ -1,5 +1,6 @@
 "use client";
 
+import type { ResourceResponse } from "@banijjik/contracts/booking";
 import type { OfferingResponse } from "@banijjik/contracts/catalog";
 import type { ComponentType, ReactElement } from "react";
 import { LazySheetButton } from "../settings/lazy-sheet-button";
@@ -13,6 +14,7 @@ export interface NewBookingFormButtonProps {
   timeZone: string;
   locale: string;
   offerings: readonly OfferingResponse[];
+  resources: readonly ResourceResponse[];
   seed: NewBookingSeed;
   labels: import("./new-booking-sheet").NewBookingSheetLabels;
   /** Increases when the calendar taps a free slot, so the seeded sheet opens too (plan 3.6 item 9). */

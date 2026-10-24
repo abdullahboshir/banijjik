@@ -29,7 +29,6 @@ function sheetLabelsOf(t: (key: string) => string): NewBookingSheetLabels {
     notSet: t("profile.notSet"),
     conflict: t("bookings.form.conflict"),
     reload: t("bookings.form.reload"),
-    quantity: t("bookings.sheet.quantity"),
   };
 }
 
@@ -86,6 +85,7 @@ export async function BookingCalendarPage(props: {
         resources={loaded.resources}
         bookings={loaded.bookings}
         offerings={loaded.offerings}
+        eventSessions={loaded.eventSessions}
         canCreate={loaded.canCreate}
         labels={labels}
       />

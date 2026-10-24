@@ -117,3 +117,33 @@ export async function seedMember(
     },
   });
 }
+
+/** Creates and publishes a bookable EVENT through the real API, so a session test starts from a known event. */
+export async function seedBookableEvent(
+  person: SeededPerson,
+  slug: string,
+  input: { readonly name: string },
+): Promise<{ offeringId: string; variantId: string }> {
+  const organizationId = await organizationIdOf(person, slug);
+  const created = await callApi(`/orgs/${organizationId}/offerings`, {
+    cookies: person.cookies,
+    body: {
+      kind: "EVENT",
+      name: input.name,
+      kindDetails: { salesCloseMinutesBefore: 0, allowWaitlist: false },
+      variants: [{ name: "Default", price: { amount: 30000, currency: "BDT" }, unitKey: "PIECE" }],
+    },
+  });
+  // Safe: the API answers with the { data: OfferingResponse } envelope (14 section 4).
+  const offering = (await created.json()) as {
+    data: { offeringId: string; version: number; variants: { variantId: string }[] };
+  };
+  await callApi(`/orgs/${organizationId}/offerings/${offering.data.offeringId}/publish`, {
+    cookies: person.cookies,
+    body: { version: offering.data.version },
+  });
+  return {
+    offeringId: offering.data.offeringId,
+    variantId: offering.data.variants[0]?.variantId as string,
+  };
+}

@@ -63,3 +63,40 @@ export function minutesToLocalTime(totalMinutes: number): string {
   const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
+
+/** The `YYYY-MM-DDTHH:mm` text a datetime-local input shows for an instant, read in `timeZone`. */
+export function isoToLocalInputValue(iso: string, timeZone: string): string {
+  const parts: Record<string, string> = {};
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  for (const part of formatter.formatToParts(new Date(iso))) {
+    if (part.type !== "literal") parts[part.type] = part.value;
+  }
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+/** Turns a datetime-local value, a wall time in `timeZone`, into a UTC ISO string; empty stays empty. */
+export function localInputValueToIso(value: string, timeZone: string): string {
+  const [date, time] = value.split("T");
+  if (date === undefined || time === undefined || date === "" || time === "") return "";
+  return localDateTimeToIso(date, time.slice(0, 5), timeZone);
+}
+
+/** The business date (YYYY-MM-DD) an instant falls on in `timeZone`. */
+export function businessDateOfIso(iso: string, timeZone: string): string {
+  return isoToLocalInputValue(iso, timeZone).slice(0, 10);
+}
+
+/** Moves a YYYY-MM-DD business date by whole calendar days (no clock involved, so no DST gap). */
+export function addCalendarDays(businessDate: string, days: number): string {
+  const [year, month, day] = businessDate.split("-").map(Number);
+  const moved = new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, (day ?? 1) + days));
+  return moved.toISOString().slice(0, 10);
+}
