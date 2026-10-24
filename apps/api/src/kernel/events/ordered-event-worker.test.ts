@@ -1,6 +1,6 @@
 import { EVENT_TYPE, MODULE_KEY } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
-import { Queue } from "bullmq";
+import { type Job, Queue } from "bullmq";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 import {
   outboxModel,
@@ -298,6 +298,16 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
     });
   }
 
+  // The job can wake by itself between the state check and the promote; that is fine, any other failure is not.
+  async function promoteIfStillDelayed(job: Job | undefined) {
+    if (job === undefined || !(await job.isDelayed())) return;
+    try {
+      await job.promote();
+    } catch (error) {
+      if (await job.isDelayed()) throw error;
+    }
+  }
+
   async function waitForJobState(event: PublishedTestEvent, state: "delayed" | "completed") {
     return waitFor(`event ${event.eventId} to be ${state}`, async () => {
       const job = await queue?.getJob(buildEventJobId(event.eventId, HANDLER_KEY));
@@ -340,7 +350,7 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
       if (ledger.handled.length === 2) return true;
       if (ledger.handled.length === 1) {
         const followerJob = await queue?.getJob(followerJobId);
-        if (followerJob && (await followerJob.isDelayed())) await followerJob.promote();
+        await promoteIfStillDelayed(followerJob);
       }
       return undefined;
     });
