@@ -9,6 +9,15 @@ export interface BlockListingResult {
   readonly created: boolean;
 }
 
+function toBlockResponse(block: ListingBlock, listingNumber: string): ListingBlockResponse {
+  return {
+    listingBlockId: block.listingBlockId,
+    listingId: block.listingId,
+    listingNumber,
+    createdAt: block.createdAt.toISOString(),
+  };
+}
+
 export class BlockListingUseCase {
   constructor(private readonly dependencies: DirectoryDependencies) {}
 
@@ -27,15 +36,7 @@ export class BlockListingUseCase {
       listing.listingId,
     );
     if (existing !== undefined) {
-      return {
-        block: {
-          listingBlockId: existing.listingBlockId,
-          listingId: existing.listingId,
-          listingNumber: listing.listingNumber,
-          createdAt: existing.createdAt.toISOString(),
-        },
-        created: false,
-      };
+      return { block: toBlockResponse(existing, listing.listingNumber), created: false };
     }
     const created = ListingBlock.create({
       organizationId: input.organizationId,
@@ -43,7 +44,9 @@ export class BlockListingUseCase {
       listingId: listing.listingId,
       now: this.dependencies.clock.now(),
     });
-    const inserted = await this.dependencies.blocks.insert(created);
+    const { block: inserted, created: wasCreated } = await this.dependencies.blocks.insert(created);
+    if (!wasCreated)
+      return { block: toBlockResponse(inserted, listing.listingNumber), created: false };
     // Insert first, then count: two parallel requests cannot both slip past a stale count. When the
     // cap is passed the new row is removed again, so the stored count never stays above the cap.
     const count = await this.dependencies.blocks.countByAccount(input.customerAccountId);
@@ -54,15 +57,7 @@ export class BlockListingUseCase {
       );
       throw blockAccountLimit();
     }
-    return {
-      block: {
-        listingBlockId: inserted.listingBlockId,
-        listingId: inserted.listingId,
-        listingNumber: listing.listingNumber,
-        createdAt: inserted.createdAt.toISOString(),
-      },
-      created: true,
-    };
+    return { block: toBlockResponse(inserted, listing.listingNumber), created: true };
   }
 }
 

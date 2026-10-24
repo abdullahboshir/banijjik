@@ -62,7 +62,7 @@ function dedupeModesOf(input: ContactRouterInput): DedupeModeReader {
 }
 
 /** Adapts the custom-field engine to the contact port: contact never imports it directly. */
-function contactFieldsOf(): ContactCustomFieldReader {
+export function contactFieldsOf(): ContactCustomFieldReader {
   const reader = buildEffectiveCustomFieldReader();
   return {
     forContacts: (organizationId) =>

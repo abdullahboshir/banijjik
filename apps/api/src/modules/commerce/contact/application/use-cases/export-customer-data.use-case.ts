@@ -1,3 +1,4 @@
+import type { EffectiveCustomField } from "@banijjik/contracts";
 import {
   CUSTOMER_DATA_EXPORT_MAX_ROWS,
   CUSTOMER_DATA_EXPORT_SECTION_KEY,
@@ -27,7 +28,21 @@ function toAccountExport(account: CustomerAccount): CustomerAccountExportData {
   };
 }
 
-function toContactExport(contact: Contact | undefined): CustomerContactExportData | null {
+/** Only values whose definition shows on the storefront; a key with no definition is dropped. */
+function storefrontVisibleValues(
+  stored: Readonly<Record<string, unknown>>,
+  fields: readonly EffectiveCustomField[],
+): Record<string, unknown> {
+  const visible = new Set(
+    fields.filter((field) => field.visibility.storefront).map((field) => field.fieldKey),
+  );
+  return Object.fromEntries(Object.entries(stored).filter(([fieldKey]) => visible.has(fieldKey)));
+}
+
+function toContactExport(
+  contact: Contact | undefined,
+  fields: readonly EffectiveCustomField[],
+): CustomerContactExportData | null {
   if (contact === undefined) return null;
   return {
     contactId: contact.contactId,
@@ -36,7 +51,7 @@ function toContactExport(contact: Contact | undefined): CustomerContactExportDat
     phoneE164: contact.phoneE164 ?? null,
     additionalPhonesE164: contact.additionalPhonesE164,
     addresses: contact.addresses,
-    customFields: contact.customFields,
+    customFields: storefrontVisibleValues(contact.customFields, fields),
     createdAt: contact.createdAt.toISOString(),
     updatedAt: contact.updatedAt.toISOString(),
   };
@@ -44,7 +59,7 @@ function toContactExport(contact: Contact | undefined): CustomerContactExportDat
 
 export type ExportCustomerDataDependencies = Pick<
   CustomerAuthDependencies,
-  "accounts" | "contacts" | "clock" | "exportParticipants"
+  "accounts" | "contacts" | "clock" | "exportParticipants" | "contactFields"
 >;
 
 /** The one section of this key; a missing participant is a wiring bug, never an empty section. */
@@ -64,11 +79,12 @@ export class ExportCustomerDataUseCase {
   constructor(private readonly dependencies: ExportCustomerDataDependencies) {}
 
   async execute(input: ExportCustomerDataInput): Promise<CustomerDataExportResponse> {
-    const { accounts, contacts, clock, exportParticipants } = this.dependencies;
+    const { accounts, contacts, clock, exportParticipants, contactFields } = this.dependencies;
     const account = await accounts.findById(input.customerAccountId);
     if (account === undefined) throw otpInvalid();
 
     const contact = await contacts.findById(account.contactId);
+    const fields = await contactFields.forContacts(input.organizationId);
     const sections: CustomerDataExportSection[] = [];
     for (const participant of exportParticipants) {
       sections.push(
@@ -83,7 +99,7 @@ export class ExportCustomerDataUseCase {
     return {
       exportedAt: clock.now().toISOString(),
       account: toAccountExport(account),
-      contact: toContactExport(contact),
+      contact: toContactExport(contact, fields),
       sections: {
         LISTING: requireSection(sections, CUSTOMER_DATA_EXPORT_SECTION_KEY.LISTING),
         DIRECTORY_ACTIVITY: requireSection(

@@ -2,7 +2,8 @@ import type { CustomerAccountId, ListingId } from "@banijjik/ids";
 import type { ListingBlock } from "../../domain/listing-block.entity.js";
 
 export interface ListingBlockRepository {
-  insert(block: ListingBlock): Promise<ListingBlock>;
+  /** `created` is false when a parallel request already stored the same block (unique index). */
+  insert(block: ListingBlock): Promise<{ readonly block: ListingBlock; readonly created: boolean }>;
   findByAccountAndListing(
     customerAccountId: CustomerAccountId,
     listingId: ListingId,

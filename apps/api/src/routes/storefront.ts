@@ -17,6 +17,7 @@ import {
 import { getRequestContext, runWithRequestContext } from "../kernel/context/index.js";
 import { AppError, sendData, validate } from "../kernel/http/index.js";
 import { rateLimit, type RateLimiter } from "../kernel/rate-limit/index.js";
+import { contactFieldsOf } from "./contact-tenant-router.js";
 import { runInOrganizationContext } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
@@ -225,6 +226,7 @@ function buildStorefrontRouters(
     accessTokenSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
     requireCustomerLogin: customerLoginSwitch(input),
     authenticateCustomer: auth.customerAuth,
+    contactFields: contactFieldsOf(),
     erasureParticipants: [
       buildDirectoryErasureParticipantFor({ clock, audit, adapters: directoryAdapters }),
       buildCreditErasureParticipant(creditDeps),

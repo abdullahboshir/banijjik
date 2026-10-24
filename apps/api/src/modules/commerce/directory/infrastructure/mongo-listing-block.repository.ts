@@ -47,7 +47,9 @@ function toListingBlockDocument(block: ListingBlock): ListingBlockDocument {
 }
 
 export class MongoListingBlockRepository implements ListingBlockRepository {
-  async insert(block: ListingBlock): Promise<ListingBlock> {
+  async insert(
+    block: ListingBlock,
+  ): Promise<{ readonly block: ListingBlock; readonly created: boolean }> {
     try {
       const [saved] = await this.model().create(
         [toListingBlockDocument(block)],
@@ -56,14 +58,14 @@ export class MongoListingBlockRepository implements ListingBlockRepository {
       if (saved === undefined) {
         throw new Error("Failed to insert listing block");
       }
-      return toListingBlock(saved.toObject());
+      return { block: toListingBlock(saved.toObject()), created: true };
     } catch (error) {
       if (isDuplicateKeyError(error)) {
         const existing = await this.findByAccountAndListing(
           block.customerAccountId,
           block.listingId,
         );
-        if (existing !== undefined) return existing;
+        if (existing !== undefined) return { block: existing, created: false };
       }
       throw error;
     }

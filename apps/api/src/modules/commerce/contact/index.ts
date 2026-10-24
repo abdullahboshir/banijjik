@@ -177,6 +177,7 @@ export interface ContactStorefrontDependencies {
   /** 404 `storefront_not_available` unless the business switched customer sign-in on. Built by routes. */
   readonly requireCustomerLogin: RequestHandler;
   readonly authenticateCustomer: RequestHandler;
+  readonly contactFields: ContactCustomFieldReader;
   readonly erasureParticipants: readonly CustomerErasureParticipant[];
   readonly exportParticipants: readonly CustomerDataExportParticipant[];
 }
@@ -200,6 +201,7 @@ export function buildContactStorefrontRouterFor(
     limiter: dependencies.limiter,
     tokens: dependencies.tokens,
     otpSecret: dependencies.storefront.otpSecret,
+    contactFields: dependencies.contactFields,
     erasureParticipants: dependencies.erasureParticipants,
     exportParticipants: dependencies.exportParticipants,
   };

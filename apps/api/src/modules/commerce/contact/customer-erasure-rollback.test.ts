@@ -1,4 +1,4 @@
-import { asId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
+import { asId, type ContactId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
@@ -40,6 +40,11 @@ afterAll(async () => {
   await harness.dispose();
 });
 
+function requireContactId(account: { contactId: ContactId } | undefined): ContactId {
+  if (account === undefined) throw new Error("account missing");
+  return account.contactId;
+}
+
 describe("Erase Transaction Rollback", () => {
   it("rolls back all changes and keeps OTP challenge valid if a participant throws", async () => {
     const world = await createTwoOrganizations(harness.app, harness.connections, {
@@ -70,8 +75,19 @@ describe("Erase Transaction Rollback", () => {
     const sessions = new MongoCustomerSessionRepository();
     const audit = buildAuditRecorder(harness.clock);
 
-    const failingParticipant = {
-      async eraseForAccount(): Promise<CustomerErasureResult> {
+    // Writes first (sessions deleted, contact anonymized) and only then fails, so the rollback has
+    // real data to undo.
+    const writingThenFailingParticipant = {
+      async eraseForAccount(input: {
+        customerAccountId: CustomerAccountId;
+      }): Promise<CustomerErasureResult> {
+        await sessions.deleteAllOfAccount(input.customerAccountId);
+        const account = await accounts.findById(input.customerAccountId);
+        const contact =
+          account === undefined ? undefined : await contacts.findById(account.contactId);
+        if (contact !== undefined) {
+          await contacts.update(contact.anonymize(harness.clock.now()), contact.version, null);
+        }
         throw new Error("Simulated participant failure");
       },
     };
@@ -89,7 +105,7 @@ describe("Erase Transaction Rollback", () => {
     };
     const failingUseCase = new EraseOwnCustomerAccountUseCase({
       ...dependencies,
-      erasureParticipants: [failingParticipant],
+      erasureParticipants: [writingThenFailingParticipant],
     });
 
     // Execute use case and expect failure
@@ -109,6 +125,16 @@ describe("Erase Transaction Rollback", () => {
       // 1. Account still exists
       const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
       expect(account).toBeDefined();
+
+      // 1b. The sessions the participant deleted are back, and the contact is not anonymized
+      const sessionRows = await harness.connections.tenantShared
+        .collection("customer_sessions")
+        .find({ customerAccountId })
+        .toArray();
+      expect(sessionRows.length).toBeGreaterThan(0);
+      const contact = await contacts.findById(requireContactId(account));
+      expect(contact?.anonymizedAt).toBeUndefined();
+      expect(contact?.phoneE164).toBe(phoneE164);
 
       // 2. Challenge was NOT consumed
       const challenge = await challenges.findById(challengeId);
