@@ -96,6 +96,7 @@ describe("ReceiveStockSheet", () => {
     await waitFor(() => expect(receiveStock).toHaveBeenCalledTimes(1));
     expect(receiveStock.mock.calls[0]?.[1]).toMatchObject({
       locationId: "loc-1",
+      paidVia: "CASH",
       lines: [
         {
           inventoryItemId: "item-rice",
@@ -105,6 +106,33 @@ describe("ReceiveStockSheet", () => {
       ],
     });
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it("posts a receipt with ON_CREDIT paidVia when selected", async () => {
+    renderReceive();
+
+    await userEvent.type(screen.getByLabelText(labels.item), "চাল");
+    await waitFor(() => expect(searchInventoryItems).toHaveBeenCalled());
+    await userEvent.click(await screen.findByRole("button", { name: /চাল/u }));
+
+    await userEvent.selectOptions(screen.getByLabelText(labels.paidVia), "ON_CREDIT");
+
+    await userEvent.type(screen.getByLabelText(labels.quantity), "1000");
+    await userEvent.type(screen.getByLabelText(labels.unitCost), "50");
+    await userEvent.click(screen.getByRole("button", { name: labels.save }));
+
+    await waitFor(() => expect(receiveStock).toHaveBeenCalledTimes(1));
+    expect(receiveStock.mock.calls[0]?.[1]).toMatchObject({
+      locationId: "loc-1",
+      paidVia: "ON_CREDIT",
+      lines: [
+        {
+          inventoryItemId: "item-rice",
+          quantity: 1000,
+          unitCost: { amount: 5000, currency: "BDT" },
+        },
+      ],
+    });
   });
 });
 
