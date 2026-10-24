@@ -10,6 +10,7 @@ export interface OrderLineRow {
   readonly quantity: number;
   readonly unitPrice: { amount: number; currency: string };
   readonly lineNetTotal: { amount: number; currency: string };
+  readonly lineDiscount: { amount: number; currency: string };
   readonly unitCostSnapshot: { amount: number; currency: string } | null;
   readonly taxClassKey: string | null;
   readonly promotionIds: readonly string[];
