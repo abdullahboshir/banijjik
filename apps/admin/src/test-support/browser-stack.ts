@@ -95,6 +95,22 @@ function startApi(mongoUri: string): ChildProcess {
   });
 }
 
+function startWorker(mongoUri: string): ChildProcess {
+  return spawn(process.execPath, [API_ENTRY], {
+    stdio: ["ignore", "ignore", "inherit"],
+    env: {
+      ...inheritedEnvironment(),
+      NODE_ENV: "development",
+      ROLE: "worker",
+      LOG_LEVEL: "warn",
+      DB_PLATFORM_URL: withDatabaseName(mongoUri, "browser_platform"),
+      DB_TENANT_SHARED_URL: withDatabaseName(mongoUri, "browser_tenant"),
+      REDIS_URL,
+      AUTH_ACCESS_TOKEN_SECRET: TEST_ACCESS_TOKEN_SECRET,
+    },
+  });
+}
+
 function startAdmin(): ChildProcess {
   return spawn(
     process.execPath,
@@ -112,6 +128,7 @@ export async function startBrowserStack(): Promise<BrowserStack> {
     replSet: { count: 1, storageEngine: "wiredTiger" },
   });
   const api = startApi(replicaSet.getUri());
+  const worker = startWorker(replicaSet.getUri());
   const admin = startAdmin();
   await waitForUrl(`${API_ORIGIN}/health`, "the API");
   await waitForUrl(`${ADMIN_ORIGIN}/sign-in`, "the admin app");
@@ -122,6 +139,7 @@ export async function startBrowserStack(): Promise<BrowserStack> {
     stop: async () => {
       await browser.close();
       admin.kill();
+      worker.kill();
       api.kill();
       await replicaSet.stop();
     },
