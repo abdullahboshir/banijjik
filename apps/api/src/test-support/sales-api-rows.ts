@@ -12,6 +12,7 @@ export interface OrderLineRow {
   readonly lineNetTotal: { amount: number; currency: string };
   readonly lineDiscount: { amount: number; currency: string };
   readonly unitCostSnapshot: { amount: number; currency: string } | null;
+  readonly returnedQuantity: number;
   readonly taxClassKey: string | null;
   readonly promotionIds: readonly string[];
   readonly manualDiscount: { type: string; value: number } | null;
@@ -44,6 +45,7 @@ export interface OrderRow {
   readonly totals: OrderTotalsRow;
   readonly fulfillment: { readonly method: string };
   readonly paymentStatus: string;
+  readonly returnStatus: string;
   readonly businessDate: string;
   readonly note: string | null;
   readonly orderDiscount: { type: string; value: number } | null;
