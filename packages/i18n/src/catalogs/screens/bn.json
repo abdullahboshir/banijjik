@@ -1467,6 +1467,7 @@
   "payments.receive.success": "পেমেন্ট সফলভাবে গ্রহণ করা হয়েছে।",
   "payments.refund.title": "পেমেন্ট রিফান্ড",
   "payments.refund.failed": "রিফান্ড ব্যর্থ হয়েছে।",
+  "payments.refund.invalidAmount": "ফেরতযোগ্য ব্যালান্সের মধ্যে একটি পরিমাণ লিখুন।",
   "payments.refund.approvalFailed": "অনুমোদন ব্যর্থ হয়েছে।",
   "payments.refund.loadApproversFailed": "অনুমোদনকারী লোড করতে ব্যর্থ হয়েছে।",
   "payments.refund.allocations": "বরাদ্দ রিফান্ড",

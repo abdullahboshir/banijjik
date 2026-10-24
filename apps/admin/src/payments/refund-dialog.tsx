@@ -226,7 +226,7 @@ function RefundForm(props: RefundFormProps): ReactElement {
         label={labels.allocations}
         disabled={refundFlow.isSubmitting}
         requestTypeLabels={labels.requestTypeLabels}
-        invalidAmountLabel={labels.failed}
+        invalidAmountLabel={labels.invalidAmount}
         onChange={form.handleAllocChange}
       />
       <FormField label={labels.note} htmlFor="refund-note">

@@ -211,6 +211,34 @@ describe("Refund and Reversal flows", () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the amount message, not the refund failed message, for an invalid allocation amount", async () => {
+    const user = userEvent.setup();
+
+    renderInBangla(
+      <RefundDialog
+        open
+        onOpenChange={() => {}}
+        organizationId="org-1"
+        payment={MOCK_PAYMENT}
+        labels={{
+          ...labels.refundDialog,
+          methodLabels: labels.method,
+          requestTypeLabels: labels.requestType,
+          cancelLabel: labels.refundDialog.cancel,
+          closeLabel: labels.refundDialog.cancel,
+          lockedMessage: labels.refundDialog.approvalLocked,
+        }}
+      />,
+    );
+
+    const allocationInput = screen.getAllByRole("textbox").at(-2) as HTMLElement;
+    await user.clear(allocationInput);
+    await user.type(allocationInput, "0");
+
+    expect(screen.getByText(labels.refundDialog.invalidAmount)).toBeDefined();
+    expect(screen.queryByText(labels.refundDialog.failed)).toBeNull();
+  });
+
   it("shows error and no PIN dialog when refund exceeds paid amount", async () => {
     const user = userEvent.setup();
 

@@ -1467,6 +1467,7 @@
   "payments.receive.success": "Payment received successfully.",
   "payments.refund.title": "Refund payment",
   "payments.refund.failed": "Refund failed.",
+  "payments.refund.invalidAmount": "Enter an amount up to the refundable balance.",
   "payments.refund.approvalFailed": "Approval failed.",
   "payments.refund.loadApproversFailed": "Failed to load approvers.",
   "payments.refund.allocations": "Allocation refunds",

@@ -78,6 +78,7 @@ export function buildDialogLabels(t: T): Pick<PaymentLabels, "refundDialog" | "r
       cancel: t("payments.refund.cancel"),
       success: t("payments.refund.success"),
       failed: t("payments.refund.failed"),
+      invalidAmount: t("payments.refund.invalidAmount"),
       approvalFailed: t("payments.refund.approvalFailed"),
       loadApproversFailed: t("payments.refund.loadApproversFailed"),
       approvalTitle: t("payments.refund.approvalTitle"),

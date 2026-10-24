@@ -110,6 +110,7 @@ export interface PaymentLabels {
     readonly cancel: string;
     readonly success: string;
     readonly failed: string;
+    readonly invalidAmount: string;
     readonly approvalFailed: string;
     readonly loadApproversFailed: string;
     readonly approvalTitle: string;
