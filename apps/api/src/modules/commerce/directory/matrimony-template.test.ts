@@ -1,18 +1,18 @@
 import { SEED_INDUSTRY_TEMPLATE_KEY } from "@banijjik/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { registerIamApiModels, startIamApi } from "../../../../test-support/iam-api-harness.js";
-import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
-import { enableDirectoryForWorld } from "../../../../test-support/directory-world.js";
+import { registerIamApiModels, startIamApi } from "../../../test-support/iam-api-harness.js";
+import type { IamApiHarness } from "../../../test-support/iam-api-harness.js";
+import { enableDirectoryForWorld } from "../../../test-support/directory-world.js";
 import {
   asCustomerCookies,
   callStorefront,
   enableCustomerLogin,
   signInCustomer,
-} from "../../../../test-support/storefront-world.js";
+} from "../../../test-support/storefront-world.js";
 import {
   createTwoOrganizations,
   type TwoOrganizations,
-} from "../../../../test-support/two-organizations.js";
+} from "../../../test-support/two-organizations.js";
 
 // A real app with the production v1 router: the listing fields and the directory block are read
 // from the seeded industry_templates rows, exactly as an operator would publish them (ADR-034).
