@@ -151,7 +151,9 @@ jobs:
       - name: Platform browser suite
         run: npm run test:browser -w @banijjik/platform
 
+      # A failed start must end the step, not wait for the job timeout (the stack stops its servers on failure).
       - name: Storefront browser suite
+        timeout-minutes: 15
         run: npm run test:browser -w @banijjik/storefront
 
   secrets:

@@ -28,12 +28,24 @@ const REDIS_URL = "redis://127.0.0.1:6380";
 const TEST_ACCESS_TOKEN_SECRET = "browser-test-only-secret-0123456789abcdef";
 const READY_TIMEOUT_MS = 40_000;
 const POLL_INTERVAL_MS = 250;
+/** The last characters of each server's output, shown when a server never becomes ready. */
+const OUTPUT_TAIL_CHARACTERS = 4_000;
 
 export interface StorefrontStack {
   readonly browser: Browser;
   readonly mongoUri: string;
   readonly stop: () => Promise<void>;
 }
+
+/** A server the stack started: its child process and the tail of what it printed. */
+interface ServerProcess {
+  readonly label: string;
+  readonly child: ChildProcess;
+  readonly outputTail: { text: string };
+}
+
+/** Something to undo when the stack stops or fails to start. */
+type Stop = () => Promise<void>;
 
 function chromePath(): string {
   const path = import.meta.env.CHROME_PATH;
@@ -47,24 +59,6 @@ function inheritedEnvironment(): NodeJS.ProcessEnv {
     (entry): entry is [string, string] => typeof entry[1] === "string",
   );
   return Object.fromEntries(entries) as NodeJS.ProcessEnv;
-}
-
-async function waitForUrl(url: string, label: string): Promise<void> {
-  const deadline = Date.now() + READY_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    if (await isReachable(url)) return;
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-  }
-  throw new Error(`${label} did not become ready in time`);
-}
-
-async function isReachable(url: string): Promise<boolean> {
-  try {
-    return (await fetch(url)).ok;
-  } catch {
-    // The server is still starting; the caller keeps polling until the deadline.
-    return false;
-  }
 }
 
 function withDatabaseName(replicaSetUri: string, databaseName: string): string {
@@ -87,47 +81,140 @@ function apiEnvironment(mongoUri: string, role: "api" | "worker"): NodeJS.Proces
   };
 }
 
-function startApiProcess(mongoUri: string, role: "api" | "worker"): ChildProcess {
-  return spawn(process.execPath, [API_ENTRY], {
-    stdio: ["ignore", "ignore", "inherit"],
+/** Starts a server with its output piped, so the tail of it can be shown when the start fails. */
+interface ServerSpec {
+  readonly label: string;
+  readonly args: readonly string[];
+  readonly cwd?: string;
+  readonly env: NodeJS.ProcessEnv;
+}
+
+function startServer(spec: ServerSpec): ServerProcess {
+  const child = spawn(process.execPath, [...spec.args], {
+    cwd: spec.cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: spec.env,
+  });
+  const outputTail = { text: "" };
+  const remember = (chunk: Buffer): void => {
+    outputTail.text = (outputTail.text + chunk.toString()).slice(-OUTPUT_TAIL_CHARACTERS);
+  };
+  child.stdout.on("data", remember);
+  child.stderr.on("data", remember);
+  return { label: spec.label, child, outputTail };
+}
+
+function startApiProcess(mongoUri: string, role: "api" | "worker"): ServerProcess {
+  return startServer({
+    label: `the ${role}`,
+    args: [API_ENTRY],
     env: apiEnvironment(mongoUri, role),
   });
 }
 
-function startStorefront(): ChildProcess {
-  return spawn(
-    process.execPath,
-    [requireFromHere.resolve("next/dist/bin/next"), "start", "-p", String(STOREFRONT_PORT)],
-    {
-      cwd: process.cwd(),
-      stdio: ["ignore", "ignore", "inherit"],
-      env: { ...inheritedEnvironment(), STOREFRONT_API_ORIGIN: API_ORIGIN },
-    },
-  );
+function startStorefront(): ServerProcess {
+  return startServer({
+    label: "the storefront",
+    args: [requireFromHere.resolve("next/dist/bin/next"), "start", "-p", String(STOREFRONT_PORT)],
+    cwd: process.cwd(),
+    env: { ...inheritedEnvironment(), STOREFRONT_API_ORIGIN: API_ORIGIN },
+  });
 }
 
-/** Starts everything a storefront browser test needs and waits until each part answers. */
-export async function startStorefrontStack(): Promise<StorefrontStack> {
+function isExited(server: ServerProcess): boolean {
+  return server.child.exitCode !== null || server.child.signalCode !== null;
+}
+
+function startFailure(server: ServerProcess, reason: string): Error {
+  const output = server.outputTail.text.trim() || "(no output)";
+  return new Error(`${server.label} ${reason}. Its recent output:\n${output}`);
+}
+
+async function probe(url: string, isReady: (status: number) => boolean): Promise<boolean> {
+  try {
+    const response = await fetch(url);
+    await response.arrayBuffer();
+    return isReady(response.status);
+  } catch {
+    // The server is still starting; the caller keeps polling until the deadline.
+    return false;
+  }
+}
+
+/** Resolves once the server answers the probe; fails fast when it exits, and carries its output on failure. */
+async function waitUntilAnswers(
+  server: ServerProcess,
+  url: string,
+  isReady: (status: number) => boolean,
+): Promise<void> {
+  const deadline = Date.now() + READY_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    if (isExited(server)) throw startFailure(server, "exited before it was ready");
+    if (await probe(url, isReady)) return;
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+  throw startFailure(server, `did not answer ${url} within ${READY_TIMEOUT_MS} ms`);
+}
+
+function killServer(server: ServerProcess): Stop {
+  return () => {
+    server.child.kill();
+    return Promise.resolve();
+  };
+}
+
+/** Undoes every started part, newest first. A part that fails to stop does not stop the others from stopping. */
+async function runStops(stops: readonly Stop[]): Promise<void> {
+  for (const stop of [...stops].reverse()) {
+    try {
+      await stop();
+    } catch {
+      // Nothing is left to report to: the start error or the test failure is what matters.
+    }
+  }
+}
+
+/** Starts the whole stack in order, recording how to undo each part as it starts. */
+async function bootStack(stops: Stop[]): Promise<StorefrontStack> {
   const replicaSet = await MongoMemoryReplSet.create({
     replSet: { count: 1, storageEngine: "wiredTiger" },
   });
+  stops.push(async () => {
+    await replicaSet.stop();
+  });
   const api = startApiProcess(replicaSet.getUri(), "api");
-  await waitForUrl(`${API_ORIGIN}/health`, "the API");
+  stops.push(killServer(api));
+  await waitUntilAnswers(api, `${API_ORIGIN}/health`, (status) => status === 200);
   const worker = startApiProcess(replicaSet.getUri(), "worker");
+  stops.push(killServer(worker));
   const storefront = startStorefront();
-  await waitForUrl(`${STOREFRONT_ORIGIN}/sign-in`, "the storefront");
+  stops.push(killServer(storefront));
+  // Any answer proves the storefront is serving: a request without a business host gets its 404 page.
+  await waitUntilAnswers(storefront, `${STOREFRONT_ORIGIN}/sign-in`, () => true);
   const browser = await puppeteer.launch({ executablePath: chromePath(), headless: true });
+  stops.push(async () => {
+    await browser.close();
+  });
   return {
     browser,
     mongoUri: replicaSet.getUri(),
-    stop: async () => {
-      await browser.close();
-      storefront.kill();
-      worker.kill();
-      api.kill();
-      await replicaSet.stop();
-    },
+    stop: () => runStops(stops),
   };
+}
+
+/**
+ * Starts everything a storefront browser test needs and waits until each part answers. When any part fails,
+ * the parts already started are stopped before the error is thrown, so a failed start never leaves a process
+ * behind (the CI step would wait for it).
+ */
+export async function startStorefrontStack(): Promise<StorefrontStack> {
+  const stops: Stop[] = [];
+  try {
+    return await bootStack(stops);
+  } catch (startError) {
+    await runStops(stops);
+    throw startError;
+  }
 }
 
 /** Reads the one-time code the test inbox recorded for a phone number (the SMS driver of development). */
