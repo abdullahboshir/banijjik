@@ -8,12 +8,13 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-24 (19:50 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `d9597da` (3.34 refresh) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
+Last updated: 2026-10-24 (21:45 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `8e0f636` (3.33, 3.6b B, 3.11 B merged) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
 
 ## 1. Where the project stands
-- Phase 3: 42 numbered cards. **35 fully merged**: 3.0–3.4b, 3.6, 3.7, 3.8 (all parts), 3.8a/b/c, 3.12–3.30, 3.35. Partly done (API merged, screens left): 3.5a (B), 3.6b (B), 3.7 (B), 3.11 (B, C). Running: 3.24 (R2), 3.33 and every Part B. Not started: 3.5b, 3.9, 3.10, 3.31, 3.32, 3.34. Track M: M.0–M.5, **M.7 (all parts)**, M.8a merged; M.6, M.8b, M.9 left. Details: `docs/STATUS.md`.
+- Phase 3: 42 numbered cards. **37 fully merged**: 3.0–3.4b, 3.6, 3.6b, 3.7, 3.8 (all parts), 3.8a/b/c, 3.12–3.30, 3.33, 3.35. Partly done: 3.5a (B running), 3.11 (B merged, C left). Running: 3.34, 3.5a B. Planned, not started: 3.31, 3.32. Not planned: 3.5b, 3.9, 3.10. Track M: M.0–M.5, **M.7 (all parts)**, M.8a merged; M.6, M.8b, M.9 left. Details: `docs/STATUS.md`.
 - **Owner request (2026-10-23):** finish every partly done card and plan everything not started; the owner runs 6–7 sessions (Opus plans and reviews, Sonnet 5.5 codes).
 - **Owner (2026-10-24 evening): the lead runs the implementer tools itself** (launch, monitor, restart, answer questions) and may code cards with Sonnet subagents. How: §2a.
+- **Owner (2026-10-24 21:00): the Sonnet limit is used up (resets 00:00 Dhaka); the lead codes with Haiku subagents and monitors them closely** (check their folders while they run, review every DONE fully, never trust the report).
 - Owner decision (3.24): a stock receipt says how it was paid (CASH/BKASH/NAGAD/BANK) or `ON_CREDIT` (new `ACCOUNTS_PAYABLE`); opening stock → `OPENING_BALANCE`.
 - Owner's tools: Claude Code in VS Code is the lead. Implementers now: Qoder CLI and Codex CLI (launched by the lead) and Sonnet subagents. Antigravity is out of quota; Cursor's weekly limit resets about 2026-10-26.
 - Note: `npm audit fix --omit=dev` deletes devDependencies from `node_modules`; run `npm install` after it.
@@ -22,18 +23,15 @@ Last updated: 2026-10-24 (19:50 Dhaka) by Opus 5.5 · `main` = `origin/main` = t
 - **The admin browser stack starts only the API, not the worker:** a browser test can never wait for an event handler (written into the 3.7 and 3.11 refreshes).
 - Time-dependent tests follow `05-CONVENTIONS.md` "Testing" (3.26). Run date-sensitive suites between 00:00 and 06:00 Dhaka now and then.
 
-## 2. Open branches (checked 2026-10-24 18:15)
+## 2. Open branches (checked 2026-10-24 21:45)
 Prompts and new logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/` (`rules.md` shared rules; `<card>.md` task; `*-continue*.md` restart notes; `<card>*.log`, `<card>.last.md`). Older logs: the a941678b scratchpad `orchestra/` folder. Every final message starts with `STATUS: DONE | QUESTION | BLOCKED`.
 
-**The Sonnet rows are subagents of the lead chat a295e696 (resumed 19:10 after a session limit).** If that chat is closed they stop. A new session cannot resume them: relaunch fresh (Codex or a new Sonnet subagent) with the task + continue note + `rules.md`, telling it to read the uncommitted work first.
+**Both rows are Haiku subagents of the lead chat banijjik-4d (started 20:53).** If that chat is closed they stop; a new session relaunches them fresh with the task file + `rules.md`, telling them to read the work on disk first. Never commit or revert `.claude/settings.json` in `banijjik`.
 
 | Card / part | Branch | Folder | Tier | Who | State → next step |
 |---|---|---|---|---|---|
-| 3.34 reversal after a closed request | `s/3.34-api-reversal-after-close` | `banijjik-3.5a` | T1 | Sonnet subagent (this chat) | Launched 19:45 from `d9597da` (plan Refresh 1). Strict T1 review on DONE. |
-| 3.6b B rental and event screens | `s/3.6b-ui-rental-event` | `banijjik-1.7b` | T2 | Sonnet subagent (resumed 19:10) | Codex left it half done (`15628e16`); Sonnet run 3 has 44 files uncommitted (session sheets, selector, calendar). Next: finish (`lead-orchestra/3.6bb-continue2.md`), merge check. |
-| 3.5a B order screens | `s/3.5a-ui-orders` | `banijjik-m2` | T2 | Sonnet subagent (resumed 19:10) | `5389a45a` (Amendment 1 API) local only + screen work uncommitted. Next: finish, merge check. |
-| 3.11 B commission screens | `s/3.11-ui-commission` | `banijjik-3.11` | T2 | Sonnet subagent (19:10) | About 42 files uncommitted, no commit; 8 lint errors left (oversized components; list in `lead-orchestra/3.11b-full3.md`); unit tests pass; the vitest setup path error Codex saw needs a check. **Next (after 20:40): Sonnet** with `3.11b-full3.md`. Codex is not suited to this refactor. |
-| 3.33 event sessions occupy resources | `s/3.33-api-session-resources` | `banijjik` | T1 | Sonnet subagent (19:10) | Local only: `5a508728` (code), `c049271e` (V/U tests, ADR-141, docs, handoff, STATUS), `8fc3fc06` (API/concurrency tests: **unusable**: the fixture uses an undefined `rental`, "createRental" makes a session, the race tests only call `reserveSeats`). **Next (after 20:40): Sonnet** rewrites A1–A15, C1–C2, J1 exactly as the plan names them, checks the code against decisions 1–12, pushes, green CI; then strict T1 review. Never commit or revert `.claude/settings.json` in this folder. |
+| 3.34 reversal after a closed request | `s/3.34-api-reversal-after-close` | `banijjik-3.5a` | T1 | Haiku subagent (task `lead-orchestra/3.34-haiku.md`) | Code `21583844` + tests `054b6160` local, docs and ADR-140 in progress at 21:20. Next: on DONE, `card:check`, then a **full strict T1 review** (Haiku wrote much of it): decisions 1–8, every plan test by body, the Refresh 1 COMPLETED-order test, §11 table. Rebase on main (3.33/3.6b/3.11 merged since) before merging. |
+| 3.5a B order screens | `s/3.5a-ui-orders` | `banijjik-m2` | T2 | Haiku subagent (task `lead-orchestra/3.5ab-finish.md`, finish steps only) | Code was done; handoff `2c0a5fce` pushed, CI 40104886517 running at 21:20; still has to swap `CI_LINK_PLACEHOLDER`. Next: on DONE, merge check (route sizes 168.5 / 178.1 / 175.0 KiB, new-order margin only 1.9 KiB; diff vs Refresh 2 + Amendment 1), rebase on main, merge. |
 
 **Codex launches:** even with the allow rule, the `"$(cat …)"` form goes to the classifier. It passes once the owner says in the chat that the lead may run Codex with full access (owner did on 2026-10-24 18:00: "full access diyechi"). Codex (low effort) stops early: on lint ("BLOCKED"), on "waiting for CI", or with plan items written as "known gaps". Each restart needs a note that names exactly what is missing.
 
@@ -41,12 +39,12 @@ Prompts and new logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orches
 - **Qoder:** out of credits since 2026-10-24 evening.
 - **Codex:** allow rule `Bash(codex exec:*)` in `banijjik/.claude/settings.json` (uncommitted; an agent once reverted it). Use exactly `codex exec -C <folder> -s danger-full-access -o <last.md> "$(cat <files…>)" < /dev/null > <log> 2>&1` (Bash, background); no extra `-c` option, no `cd … &&` prefix. `codex exec resume` fails while the thread is open in the Codex app. Default reasoning effort is low: review its work closely.
 - **Antigravity CLI** cannot run commands headless on this account: IDE only.
-- **Sonnet subagents:** Agent tool, `model: "sonnet"`, background, in a real folder with `node_modules`. Give force-with-lease permission for the card branch in the prompt (rebases of pushed commits).
+- **Sonnet / Haiku subagents:** Agent tool, `model: "sonnet"` (or `"haiku"` while Sonnet is out), background, in a real folder with `node_modules`. Give force-with-lease permission for the card branch in the prompt (rebases of pushed commits).
 - Always close stdin (`< /dev/null`). `TaskStop` does not kill Windows child processes: stop leftover `codex.exe` PIDs too. Free RAM was 1.9–2.3 GB with six agents.
 
-Merged and safe to delete (local and `origin`): `s/M.8a-matrimony-templates`, `s/3.27-api-enrollment-payments`, the 3.28–3.30 card branches, `s/3.35-stable-replay-test`, `s/M.7-ui-reports`, `s/M.7-api-erasure`, every `s/merge-*` and `s/docs-*` branch. **`s/merge-3.29` (on origin) is broken**: delete it. PR #2 (3.8) can be closed.
+Merged and safe to delete (local and `origin`): `s/M.8a-matrimony-templates`, `s/3.27-api-enrollment-payments`, the 3.28–3.30 card branches, `s/3.35-stable-replay-test`, `s/M.7-ui-reports`, `s/M.7-api-erasure`, `s/3.24-api-order-stock-posting`, `s/3.7-ui-enrollment`, `s/3.33-api-session-resources`, `s/3.6b-ui-rental-event`, `s/3.11-ui-commission`, every `s/merge-*` and `s/docs-*` branch. **`s/merge-3.29` (on origin) is broken**: delete it. PR #2 (3.8) can be closed.
 
-Folders: all busy as in the table (the 3.35 worktree is removed). `banijjik-docs` is the docs and merge folder; `banijjik-m8a` is free (no `node_modules`). Disk E: about 8.9 GB free after deleting `manoxen/.turbo` (owner OK): new worktrees with `npm install` are possible again.
+Folders: `banijjik-3.5a` and `banijjik-m2` are busy (table). **Free with `node_modules`:** `banijjik` (on the merged 3.33 branch; switch it to a new branch from main), `banijjik-1.7b`, `banijjik-3.11`, `banijjik-lead`, `banijjik-3.6b-a3`. `banijjik-docs` is the docs and merge folder; `banijjik-m8a` is free (no `node_modules`). Disk E: about 8.9 GB free after deleting `manoxen/.turbo` (owner OK): new worktrees with `npm install` are possible again.
 
 **Agents claim "done" early.** Verify every DONE: `npm run card:check` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`. A FAIL only on "rebased" when main moved by docs commits is fine.
 
@@ -55,21 +53,24 @@ Folders: all busy as in the table (the 3.35 worktree is removed). `banijjik-docs
 Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's edits; nobody may pop or drop it.
 
 ## 3. Waiting on the owner
-- Keep the 18:15 lead chat open (its Sonnet rows resume after 20:40). `banijjik-03` is done and idle: it can be closed.
+- Keep the banijjik-4d lead chat open while its Haiku rows run. The older lead chats (`banijjik-0b`, `banijjik-03`, `banijjik-54`, `banijjik-c1`) are idle and can be closed.
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions.
 
 ## 4. Next actions, in order
-1. Verify every §2 row (git, CI, `*.last.md`). Sonnet rows run as subagents of the 19:10 chat; if it is closed, relaunch them; relaunch Codex rows that stop early with an exact note; answer `STATUS: QUESTION` rows (ask the owner only for product decisions).
-2. As rows finish: merge checks for 3.6b B, 3.5a B, 3.11 B; strict T1 review of 3.33 and 3.34. Merge one by one through `s/merge-<card>` branches (cherry-pick only the non-merge commits).
-3. **Planned, waiting:** 3.31 (T1, `docs/plans/3.31.md`, ADR-142) starts after 3.34 merges; 3.32 (T1 A + T2 B, ADR-143) after 3.31. Lead next: plan M.6.
-4. **Plan M.6** (storefront app): ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open: host → organization, customer cookies across hosts. M.6a T1, M.6b T2. The M.7 A2 erase and export endpoints need M.6 pages.
+1. Verify both §2 rows (git, CI). If the banijjik-4d chat is gone, relaunch them (Haiku, or Sonnet after 00:00). Answer `STATUS: QUESTION` (ask the owner only for product decisions).
+2. As rows finish: merge check of 3.5a B, strict T1 review of 3.34. A branch on top of main is fast-forwarded directly; stack branches so CI runs at once (this session: 3.33 → 3.6b B → 3.11 B, each rebased on the one before).
+3. **Planned, waiting:** 3.31 (T1, `docs/plans/3.31.md`, ADR-142) starts after 3.34 merges; 3.32 (T1 A + T2 B, ADR-143) after 3.31.
+4. **Plan M.6** (storefront app). Already decided by ADR-119: host → organization through `GET /storefront/resolve?host=` (`<slug>.<STOREFRONT_BASE_DOMAIN>`), host-only `sf_access` / `sf_refresh` cookies, the storefront calls the API through **its own origin** (server-side proxy keeping `/api/v1/storefront`, not forwarding a disallowed `Origin`). LOGO files are PUBLIC. Storefront endpoints exist for OTP sign-in, `/me`, erase, export, listings, my listing, photos, reports, blocks, unlock, credits, packs, purchases, `/directory/config`. **Missing (M.6a, T1 API):** a public site read (name, logo, colours, tagline from 3.12 branding), home statistics (listings by gender, approved count; pre-aggregated or cached), static pages (ABOUT/FAQ/GUIDE/TERMS/PRIVACY/REFUND Markdown, versioned, admin CRUD + storefront read). **M.6b (T2):** new `apps/storefront` Next.js app (≤ 170 KiB per route, SSR, `noindex` per template), the proxy, pages from doc 16 §3.4, CI browser job; admin editor for static pages (maybe M.6c). The M.7 A2 erase and export endpoints need M.6 pages.
 5. After 3.5a B: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10 and the phase 3 review.
 6. Follow-ups:
    - Refund dialog has no client-side maximum (3.30); a small T3 card if wanted.
    - Replayer safety across several worker processes (STATUS 3.16).
    - Supplier payments clearing `ACCOUNTS_PAYABLE` (after 3.24).
-   - 3.33 STATUS note: bookings and sessions do not see enrollment `ResourceExclusiveHold` rows; time-off creation does not check existing bookings.
+   - 3.33 STATUS note: bookings and sessions do not see enrollment `ResourceExclusiveHold` rows; time-off creation does not check existing bookings or sessions; **the time-off POST endpoint answers 500 (audit outside a transaction)**: a bug, worth a small card soon.
+   - Two patterns for client text in admin screens: label props via `screen-text.tsx` (3.6b B) and a nested `I18nProvider` per route layout (3.11 B, `commission-client-text.tsx`). Pick one in `05-CONVENTIONS.md`.
+   - Admin navigation shows the raw key `menu.sales.orders` (seen by 3.11 B); check after 3.5a B merges.
+   - Flaky API test `ordered-event-worker.test.ts` › "runs a replayed event again with fresh attempts…" (15.9 s, failed once on 3.11 B, CI 40100273547).
    - 3.23 review follow-ups (`docs/handoffs/3.23-api-review-R1.md`).
    - Flaky admin browser test `auth-flow.browser.test.ts` › "shows how long to wait, read from the Retry-After header of the API" (30 s timeout, CI 40089936122).
    - M.7 B: the report detail needs `directory.listing.read` as well; grant both in moderating roles. No browser test for hide/block outcomes.
@@ -90,8 +91,8 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-24 20:53–21:45** (Opus, banijjik-4d; banijjik-0b handed over by message): T1 review R1 of 3.33 (lead fixed: legacy session rows without `resourceHolds` crashed cancel; import order; magic number) and merge checks of 3.6b B and 3.11 B; stacked the three and merged (`ccceb52`, `357dbe2`, `8e0f636`). Sonnet out of credit: relaunched 3.34 and the 3.5a B finish as Haiku subagents. Read the M.6 inputs (notes in §4).
 - **2026-10-24 19:50** (Opus): resumed Sonnet at 19:10; merged 3.7 B (`5541586`) and 3.24 after R2 (`65415ef`); refreshed and launched 3.34.
 - **2026-10-24 18:15–18:45** (Opus, took over while `banijjik-03` still ran its children; agreed by message that this chat owns main and LEAD-STATE): merged 3.35 (`b080b0f`), M.7 B (`c7faadc`) and M.7 A2 after T1 review R1 (`96f1954`); 3.24 re-review → R2 (`8adeda3`, 2 items). Codex had left 3.7 B and 3.6b B half done: relaunched them, 3.5a B and 3.24 R2 as Sonnet (all stopped at the Sonnet limit, resets 20:40). Codex ran 3.11 B three times (lint never fixed) and 3.33 three times (code done, tests unusable): both wait for Sonnet.
 - **2026-10-24 evening** (Opus): owner asked the lead to run the tools itself. Mapped every tool to its card from its logs; launched Qoder (3.5a B, 3.11 B, 3.24 fixes), Codex CLI (3.6b B, 3.7 B, after the owner's allow rule) and Sonnet (M.7 A2 finish, M.7 B, 3.35). Plan 3.5a Amendment 1 (`b47fafd`); 3.24 T1 review R1, changes requested (`247f4d4`). Freed 7.3 GB of disk. Handed over to a new session.
 - **2026-10-24 late afternoon** (Opus): verified the seven sessions (none done; 3.24 CI red, still working; 3.6b B and M.7 B not started). Planned 3.33 event sessions occupy their resources (T1, ADR-141, `8eaadea`).
-- **2026-10-24 midday** (Opus): T1 review and merge of 3.23 and merge check of 3.26 (`cecb5a0`); another lead chat was turned off by the owner. Planned 3.27 (enrollment payments, ADR-139), refreshed 3.24, planned and ran 3.28–3.30 with Sonnet subagents (owner request), merged all three (`67848d6`). Checked M.8a content; gave 3.24, 3.27 and M.8a prompts.
