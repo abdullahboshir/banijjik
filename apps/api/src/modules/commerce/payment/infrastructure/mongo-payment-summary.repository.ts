@@ -143,22 +143,17 @@ export class MongoPaymentSummaryRepository implements PaymentSummaryRepository {
   }
 
   async closeAtTotal(input: CloseSummaryInput): Promise<void> {
+    await this.setTotal(input);
+    // The tenant plugin refuses pipeline updates, so the first close time is a second write that
+    // only matches a summary not closed yet (missing and null both match).
     await getPaymentSummaryModel().updateOne(
       {
         organizationId: input.organizationId,
         requestType: input.requestType,
         requestId: input.requestId,
+        closedAt: null,
       },
-      // A pipeline update keeps the first close time when the request is closed again.
-      [
-        {
-          $set: {
-            "total.amount": input.total.amount,
-            updatedAt: input.now,
-            closedAt: { $ifNull: ["$closedAt", input.now] },
-          },
-        },
-      ],
+      { $set: { closedAt: input.now } },
       sessionOption(getActiveSession()),
     );
   }

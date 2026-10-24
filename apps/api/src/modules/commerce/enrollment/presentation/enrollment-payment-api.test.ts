@@ -6,7 +6,13 @@ import {
   ENROLLMENT_RULE_KEY,
   ENROLLMENT_SETTING,
 } from "@banijjik/contracts/enrollment";
-import { PAYMENT_EVENT_TYPE, PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
+import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
+import {
+  CLOSED_REQUEST_REVERSAL_POLICY,
+  PAYMENT_EVENT_TYPE,
+  PAYMENT_REQUEST_TYPE,
+  PAYMENT_REVERSAL_CLOSED_REQUEST_SETTING_KEY,
+} from "@banijjik/contracts/payment";
 import { newId } from "@banijjik/ids";
 import { businessDateOf } from "../../booking/index.js";
 import {
@@ -644,5 +650,79 @@ describe("enrollment payment boundaries", () => {
         )
       ).status,
     ).toBe(400);
+  });
+});
+
+async function reversePayment(world: TwoOrganizations, paymentId: string, amount: number) {
+  await world.alice.call("put", `/orgs/${world.organizationA}/me/approval-pin`, {
+    currentPassword: world.alice.person.password,
+    pin: "1234",
+  });
+  const approvers = await world.alice.call(
+    "get",
+    `/orgs/${world.organizationA}/approvers?locationId=${world.locationA1}`,
+  );
+  const granted = await world.alice.call("post", `/orgs/${world.organizationA}/approvals`, {
+    action: APPROVAL_ACTION.PAYMENT_REVERSAL,
+    subjectKey: paymentId,
+    amount: money(amount),
+    locationId: world.locationA1,
+    approverMemberId: approvers.body.data[0].memberId,
+    pin: "1234",
+  });
+  expect(granted.status, JSON.stringify(granted.body)).toBe(200);
+  return world.alice.callWith({
+    method: "post",
+    path: `/orgs/${world.organizationA}/payments/${paymentId}/reverse`,
+    idempotencyKey: newId(),
+    body: { approvalToken: granted.body.data.approvalToken },
+  });
+}
+
+/** A period part-paid with 500, then the enrollment cancelled: the cancellation keeps the 500. */
+async function cancelledEnrollmentWithPartPaid(world: TwoOrganizations) {
+  await setting(world, ENROLLMENT_SETTING.REQUIRE_PAYMENT, false);
+  const plan = await publishPlan(world);
+  const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+  const period = (await getEnrollment(world, enrollment.enrollmentId)).periods[0];
+  if (period === undefined) throw new Error("Missing first period");
+  const payment = await pay(world, period.enrollmentPeriodId, 500);
+  expect(payment.status, JSON.stringify(payment.body)).toBe(201);
+  expect((await action(world, enrollment, "cancel")).status).toBe("CANCELLED");
+  expect(await dues(world)).toEqual([]);
+  return { periodId: period.enrollmentPeriodId, paymentId: payment.body.data.paymentId as string };
+}
+
+describe("an enrollment payment reversed after the enrollment was cancelled", () => {
+  it("default REOPEN_DUE, enrollment: the period shows in dues with the kept amount", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    const { periodId, paymentId } = await cancelledEnrollmentWithPartPaid(world);
+
+    const reversed = await reversePayment(world, paymentId, 500);
+
+    expect(reversed.status, JSON.stringify(reversed.body)).toBe(201);
+    expect(reversed.body.data.writeOffs).toEqual([]);
+    const rows = await dues(world);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ requestId: periodId, due: money(500) });
+  });
+
+  it("WRITE_OFF, enrollment: the period leaves dues and the reversal records the amount", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    await setting(
+      world,
+      PAYMENT_REVERSAL_CLOSED_REQUEST_SETTING_KEY,
+      CLOSED_REQUEST_REVERSAL_POLICY.WRITE_OFF,
+    );
+    const { periodId, paymentId } = await cancelledEnrollmentWithPartPaid(world);
+
+    const reversed = await reversePayment(world, paymentId, 500);
+
+    expect(reversed.status, JSON.stringify(reversed.body)).toBe(201);
+    expect(reversed.body.data.writeOffs).toEqual([
+      { requestType: PAYMENT_REQUEST_TYPE.ENROLLMENT, requestId: periodId, amount: money(500) },
+    ]);
+    expect(await dues(world)).toEqual([]);
+    expect((await summaryRow(world, periodId))?.["total"]).toEqual(money(0));
   });
 });
