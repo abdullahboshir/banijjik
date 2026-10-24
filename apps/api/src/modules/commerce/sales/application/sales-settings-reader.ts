@@ -27,7 +27,7 @@ function booleanOf(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
-function hoursOf(value: unknown, fallback: number): number {
+function integerOf(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isInteger(value) ? value : fallback;
 }
 
@@ -69,11 +69,11 @@ export function buildSalesSettingsReader(input: {
           resolved.get(SALES_AUTO_CONFIRM_SETTING_KEY)?.value,
           SALES_AUTO_CONFIRM_DEFAULT,
         ),
-        draftExpiryHours: hoursOf(
+        draftExpiryHours: integerOf(
           resolved.get(SALES_DRAFT_EXPIRY_HOURS_SETTING_KEY)?.value,
           SALES_DRAFT_EXPIRY_HOURS_DEFAULT,
         ),
-        placedAutoCancelHours: hoursOf(
+        placedAutoCancelHours: integerOf(
           resolved.get(SALES_PLACED_AUTO_CANCEL_HOURS_SETTING_KEY)?.value,
           SALES_PLACED_AUTO_CANCEL_HOURS_DEFAULT,
         ),
@@ -87,7 +87,7 @@ export function buildSalesSettingsReader(input: {
         ),
         advanceValue: Math.max(
           0,
-          hoursOf(
+          integerOf(
             resolved.get(SALES_ADVANCE_VALUE_SETTING_KEY)?.value,
             SALES_ADVANCE_VALUE_DEFAULT,
           ),
