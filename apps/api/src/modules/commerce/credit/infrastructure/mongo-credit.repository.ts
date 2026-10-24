@@ -119,13 +119,34 @@ export class MongoCreditRepository implements CreditRepository {
     return new Map(rows.map((row) => [row._id, row.total]));
   }
 
-  async listExpiringPurchases(today: string): Promise<readonly CreditEntry[]> {
+  async listExpiringPurchasesPage(input: {
+    readonly today: string;
+    readonly after: CreditEntry | undefined;
+    readonly limit: number;
+  }): Promise<readonly CreditEntry[]> {
     const organizationId = getOrganizationId();
-    return this.readPurchasePages({
+    const Model = models({ organizationId }).get<CreditEntryDocument>(CREDIT_ENTRY_MODEL_NAME);
+    const filter: QueryFilter<CreditEntryDocument> = {
       organizationId,
       type: CREDIT_ENTRY_TYPE.PURCHASE,
-      expiresOn: { $ne: null, $lt: new Date(today) },
-    });
+      expiresOn: { $ne: null, $lt: new Date(input.today) },
+      ...(input.after ? this.keysetAfter(input.after) : {}),
+    };
+    const page = await Model.find(filter, { _id: 0 }, sessionOption(getActiveSession()))
+      .sort({ occurredAt: 1, creditEntryId: 1 })
+      .limit(input.limit)
+      .lean();
+    return page.map((document) => this.entryFromDocument(document));
+  }
+
+  private keysetAfter(cursor: CreditEntry): QueryFilter<CreditEntryDocument> {
+    const occurredAt = new Date(cursor.occurredAt);
+    return {
+      $or: [
+        { occurredAt: { $gt: occurredAt } },
+        { occurredAt, creditEntryId: { $gt: cursor.creditEntryId } },
+      ],
+    };
   }
 
   private async readPurchasePages(

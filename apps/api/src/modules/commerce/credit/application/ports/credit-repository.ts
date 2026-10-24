@@ -26,7 +26,14 @@ export interface CreditRepository {
     customerAccountId: CustomerAccountId,
     purchaseEntryIds: readonly string[],
   ): Promise<ReadonlyMap<string, number>>;
-  /** PURCHASE rows whose expiry day is before `today`, across the organization. */
-  listExpiringPurchases(today: string): Promise<readonly CreditEntry[]>;
+  /**
+   * One keyset page (oldest first by occurredAt, creditEntryId) of PURCHASE rows whose expiry day
+   * is before `today`, across the organization. Pass the last row of the previous page as `after`.
+   */
+  listExpiringPurchasesPage(input: {
+    readonly today: string;
+    readonly after: CreditEntry | undefined;
+    readonly limit: number;
+  }): Promise<readonly CreditEntry[]>;
   findPurchaseEntry(purchaseEntryId: string): Promise<CreditEntry | null>;
 }

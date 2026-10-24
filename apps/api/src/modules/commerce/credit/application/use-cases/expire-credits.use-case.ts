@@ -6,30 +6,73 @@ import {
 import { newId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
 import type { CreditDependencies } from "../ports/credit-dependencies.js";
 import { CreditEntryAlreadyExistsError, type CreditEntry } from "../../domain/index.js";
+import { getLogger } from "../../../../../kernel/logger/index.js";
 import { businessDateOf } from "./business-date.js";
+
+export const EXPIRY_PAGE_SIZE = 100;
+
+export type ExpireCreditsDependencies = Pick<
+  CreditDependencies,
+  "credit" | "unitOfWork" | "events" | "clock" | "timeZone"
+>;
 
 export interface ExpireCreditsResult {
   readonly expiredEntries: number;
+  readonly failedEntries: number;
 }
 
 /**
  * Writes one EXPIRE entry per expired purchase remainder. Idempotent through the partial unique
  * index on (organizationId, source.sourceId) for EXPIRE rows; a second run catches the duplicate
- * and changes nothing. There is no scheduler in this card: a job (3.6) calls this per organization.
+ * and changes nothing. The hourly job `credit.expireCredits` (card 3.28) calls this per organization.
+ * Purchases are read one keyset page at a time, and one failing row is logged and skipped.
  */
 export class ExpireCreditsUseCase {
-  constructor(private readonly deps: CreditDependencies) {}
+  constructor(private readonly deps: ExpireCreditsDependencies) {}
 
   async execute(input: { readonly organizationId: OrganizationId }): Promise<ExpireCreditsResult> {
     const timeZone = await this.deps.timeZone.read(input.organizationId);
     const today = businessDateOf(this.deps.clock.now(), timeZone);
-    const purchases = await this.deps.credit.listExpiringPurchases(today);
     let expiredEntries = 0;
+    let failedEntries = 0;
+    let after: CreditEntry | undefined;
 
-    for (const purchase of purchases) {
-      if (await this.expirePurchase(purchase, today)) expiredEntries += 1;
+    for (;;) {
+      const page = await this.deps.credit.listExpiringPurchasesPage({
+        today,
+        after,
+        limit: EXPIRY_PAGE_SIZE,
+      });
+      for (const purchase of page) {
+        const outcome = await this.expirePurchaseSafely(input.organizationId, purchase, today);
+        if (outcome === "expired") expiredEntries += 1;
+        if (outcome === "failed") failedEntries += 1;
+      }
+      if (page.length < EXPIRY_PAGE_SIZE) return { expiredEntries, failedEntries };
+      after = page[page.length - 1];
     }
-    return { expiredEntries };
+  }
+
+  /** One bad row must not stop the run: log it with ids only and carry on. */
+  private async expirePurchaseSafely(
+    organizationId: OrganizationId,
+    purchase: CreditEntry,
+    today: string,
+  ): Promise<"expired" | "skipped" | "failed"> {
+    try {
+      return (await this.expirePurchase(purchase, today)) ? "expired" : "skipped";
+    } catch (error) {
+      getLogger().error(
+        {
+          event: "credit.expire_purchase_failed",
+          organizationId,
+          creditEntryId: purchase.creditEntryId,
+          err: error,
+        },
+        "credit expiry failed for one purchase",
+      );
+      return "failed";
+    }
   }
 
   /** False when the balance no longer covers the remainder (already spent) or a job won the race. */

@@ -1,13 +1,16 @@
 import { CREDIT_ENTRY_TYPE, CREDIT_SOURCE_TYPE } from "@banijjik/contracts/credit";
 import { asId, newId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
 import { describe, expect, it, vi } from "vitest";
-import type { CreditDependencies } from "../ports/credit-dependencies.js";
+import type { ExpireCreditsDependencies } from "./expire-credits.use-case.js";
 import {
   CreditEntryAlreadyExistsError,
   type CreditBalance,
   type CreditEntry,
 } from "../../domain/index.js";
-import { ExpireCreditsUseCase } from "./expire-credits.use-case.js";
+import { EXPIRY_PAGE_SIZE, ExpireCreditsUseCase } from "./expire-credits.use-case.js";
+
+const logged = vi.hoisted(() => ({ error: vi.fn() }));
+vi.mock("../../../../../kernel/logger/index.js", () => ({ getLogger: () => logged }));
 
 const CUSTOMER_ACCOUNT_ID = asId<CustomerAccountId>(newId());
 const NOW = new Date("2026-10-21T08:00:00.000Z");
@@ -37,7 +40,7 @@ function purchaseEntry(input: {
 }
 
 interface Ledger {
-  readonly deps: CreditDependencies;
+  readonly deps: ExpireCreditsDependencies;
   readonly entries: CreditEntry[];
   readonly balance: { value: number };
 }
@@ -47,7 +50,10 @@ function aLedger(input: {
   readonly purchases: readonly CreditEntry[];
   readonly spentByPurchase?: Readonly<Record<string, number>>;
   readonly balance: number;
+  readonly now?: Date;
+  readonly failInsertFor?: string;
 }): Ledger {
+  const now = input.now ?? NOW;
   const entries: CreditEntry[] = [];
   const balance = { value: input.balance };
   const expiresSeen = new Set<string>();
@@ -66,6 +72,7 @@ function aLedger(input: {
   const credit = {
     insertEntry: vi.fn(async (entry: CreditEntry) => {
       if (entry.type === CREDIT_ENTRY_TYPE.EXPIRE) {
+        if (entry.source.sourceId === input.failInsertFor) throw new Error("disk full");
         if (expiresSeen.has(entry.source.sourceId)) throw new CreditEntryAlreadyExistsError();
         expiresSeen.add(entry.source.sourceId);
       }
@@ -92,7 +99,14 @@ function aLedger(input: {
     ),
     listPurchases: vi.fn(async () => input.purchases),
     sumSpendsByPurchase: vi.fn(async () => new Map(Object.entries(input.spentByPurchase ?? {}))),
-    listExpiringPurchases: vi.fn(async () => input.purchases),
+    listExpiringPurchasesPage: vi.fn(
+      async (page: { after: CreditEntry | undefined; limit: number }) => {
+        const start = page.after
+          ? input.purchases.findIndex((row) => row.creditEntryId === page.after?.creditEntryId) + 1
+          : 0;
+        return input.purchases.slice(start, start + page.limit);
+      },
+    ),
     findPurchaseEntry: vi.fn(async () => null),
   };
 
@@ -112,9 +126,9 @@ function aLedger(input: {
     credit,
     unitOfWork,
     events: { publish: vi.fn(async () => undefined) },
-    clock: { now: () => NOW },
+    clock: { now: () => now },
     timeZone: { read: vi.fn(async () => "Asia/Dhaka") },
-  } as unknown as CreditDependencies;
+  } as unknown as ExpireCreditsDependencies;
 
   return { deps, entries, balance };
 }
@@ -126,9 +140,10 @@ describe("ExpireCreditsUseCase", () => {
       balance: 10,
     });
     vi.mocked(ledger.deps.events.publish).mockRejectedValueOnce(new Error("outbox unavailable"));
-    await expect(
-      new ExpireCreditsUseCase(ledger.deps).execute({ organizationId: ORGANIZATION_ID }),
-    ).rejects.toThrow("outbox unavailable");
+    const failedRun = await new ExpireCreditsUseCase(ledger.deps).execute({
+      organizationId: ORGANIZATION_ID,
+    });
+    expect(failedRun).toEqual({ expiredEntries: 0, failedEntries: 1 });
     expect(ledger.balance.value).toBe(10);
     expect(ledger.entries).toHaveLength(0);
     expect(
@@ -226,5 +241,65 @@ describe("ExpireCreditsUseCase", () => {
       "purchase-2",
     ]);
     expect(ledger.balance.value).toBe(0);
+  });
+
+  it("processes more than one page of expiring purchases", async () => {
+    const purchases = Array.from({ length: EXPIRY_PAGE_SIZE + 1 }, (_, index) =>
+      purchaseEntry({ creditEntryId: `purchase-${String(index).padStart(3, "0")}`, credits: 1 }),
+    );
+    const ledger = aLedger({ purchases, balance: purchases.length });
+
+    const result = await new ExpireCreditsUseCase(ledger.deps).execute({
+      organizationId: ORGANIZATION_ID,
+    });
+
+    expect(result).toEqual({ expiredEntries: EXPIRY_PAGE_SIZE + 1, failedEntries: 0 });
+    expect(ledger.deps.credit.listExpiringPurchasesPage).toHaveBeenCalledTimes(2);
+    expect(ledger.balance.value).toBe(0);
+  });
+
+  it("logs one failing purchase and still expires the rest", async () => {
+    logged.error.mockClear();
+    const ledger = aLedger({
+      purchases: [
+        purchaseEntry({ creditEntryId: "purchase-1" }),
+        purchaseEntry({ creditEntryId: "purchase-bad" }),
+        purchaseEntry({ creditEntryId: "purchase-3" }),
+      ],
+      balance: 30,
+      failInsertFor: "purchase-bad",
+    });
+
+    const result = await new ExpireCreditsUseCase(ledger.deps).execute({
+      organizationId: ORGANIZATION_ID,
+    });
+
+    expect(result).toEqual({ expiredEntries: 2, failedEntries: 1 });
+    expect(ledger.entries.map((entry) => entry.source.sourceId)).toEqual([
+      "purchase-1",
+      "purchase-3",
+    ]);
+    expect(ledger.balance.value).toBe(10);
+    expect(logged.error).toHaveBeenCalledTimes(1);
+    expect(logged.error.mock.calls[0]?.[0]).toMatchObject({
+      organizationId: ORGANIZATION_ID,
+      creditEntryId: "purchase-bad",
+    });
+  });
+
+  it("uses the Dhaka local date at 02:00 Dhaka time, not the UTC date", async () => {
+    const twoAmDhaka = new Date("2026-10-20T20:00:00.000Z");
+    const ledger = aLedger({
+      purchases: [purchaseEntry({ creditEntryId: "purchase-1" })],
+      balance: 10,
+      now: twoAmDhaka,
+    });
+
+    await new ExpireCreditsUseCase(ledger.deps).execute({ organizationId: ORGANIZATION_ID });
+
+    expect(ledger.deps.credit.listExpiringPurchasesPage).toHaveBeenCalledWith(
+      expect.objectContaining({ today: "2026-10-21" }),
+    );
+    expect(ledger.entries[0]?.businessDate).toBe("2026-10-21");
   });
 });
