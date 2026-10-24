@@ -47,18 +47,17 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 
 ## 3. Waiting on the owner
 - Paste the done messages (with `card:check`) of the seven running sessions.
-- **Product decision:** a payment reversal after a cancel reopens dues (orders since 3.23, enrollment periods since 3.27): cancel caps the summary at net paid, and a later reversal lowers net paid below it. Is a reversed payment on a cancelled request still owed? (`docs/handoffs/3.27-api-review-R1.md`.)
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions (SMS provider, pricing, photo policy, domain, legal review).
 
 ## 4. Next actions, in order
 1. Verify reality (`git fetch`, folders, `origin/<branch>`, `gh run list`).
 2. Reviews as sessions report done: T1 for 3.24 and M.7 A2; merge checks for 3.5a B, 3.6b B, 3.7 B, 3.11 B and M.7 B. Merge one by one. Cherry-pick each later branch onto a fresh `s/merge-<card>` from main (i18n and manifest menu conflicts are add-only: keep both sides).
-3. **Plan 3.33 "event sessions occupy their resources"** (T1; 3.6b A3 left it out: a hall used by a session can still be rented).
-4. **Plan M.6** (storefront app): read ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open questions: host → organization resolution, customer cookies across the app and API hosts. M.6a T1; M.6b T2. The M.7 A2 erase and export endpoints need M.6 pages.
-5. After 3.24 merges: plan 3.31 (enrollment revenue posting and advance settle) and 3.32 (enrollment cancel refunds). After 3.5a B and 3.24: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10, `docs/handoffs/phase-3-review.md`.
-6. Follow-ups:
-   - **New flaky test:** `apps/api/src/kernel/events/ordered-event-worker.test.ts` "runs a replayed event again with fresh attempts, and the stream continues behind it" timed out on main CI 40066380468 ("timed out waiting for both events to be handled in order"). A small T3 card in the 3.26 style.
+3. **Ready plans not yet released:** 3.35 (T3, flaky replay test; any free folder or a lead Sonnet subagent) and 3.34 (T1, reversal after a closed request; owner decision 2026-10-24: industry standard `REOPEN_DUE` by default plus a `WRITE_OFF` option; release after 3.24 merges).
+4. **Plan 3.33 "event sessions occupy their resources"** (T1; 3.6b A3 left it out: a hall used by a session can still be rented).
+5. **Plan M.6** (storefront app): read ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open questions: host → organization resolution, customer cookies across the app and API hosts. M.6a T1; M.6b T2. The M.7 A2 erase and export endpoints need M.6 pages.
+6. After 3.24 merges: plan 3.31 (enrollment revenue posting and advance settle) and 3.32 (enrollment cancel refunds). After 3.5a B and 3.24: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10, `docs/handoffs/phase-3-review.md`.
+7. Follow-ups:
    - Refund dialog has no client-side maximum (3.30 test uses amount 0); a small T3 card if wanted.
    - The session-cancel job makes one pass over all unsettled sessions per run (3.29 handoff); fine at current volume.
    - Replayer safety across more than one worker process (STATUS 3.16 note).
@@ -82,7 +81,7 @@ Stash `stash@{4}` in `banijjik` holds the owner's uncommitted edits to `AGENTS.m
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
-- **2026-10-24 afternoon** (Opus): merge check of M.8a passed and merged (`d06e36a`); T1 review R1 of 3.27 passed, the lead fixed the stale period version after a sync, merged (`5ebe469`). Refreshed and released the screen parts 3.5a B, 3.6b B, 3.7 B, 3.11 B, plus M.7 A2 (T1) and M.7 B; new ready board (`8e729ae`). Found a new flaky kernel test and the reversal-after-cancel dues question.
+- **2026-10-24 afternoon** (Opus): merge check of M.8a passed and merged (`d06e36a`); T1 review R1 of 3.27 passed, the lead fixed the stale period version after a sync, merged (`5ebe469`). Refreshed and released the screen parts 3.5a B, 3.6b B, 3.7 B, 3.11 B, plus M.7 A2 (T1) and M.7 B; new ready board (`8e729ae`). Owner decided the reversal-after-close question (standard plus option): planned 3.34 (ADR-140) and 3.35 (flaky replay test).
 - **2026-10-24 midday** (Opus): T1 review and merge of 3.23 and merge check of 3.26 (`cecb5a0`); another lead chat was turned off by the owner. Planned 3.27 (enrollment payments, ADR-139), refreshed 3.24, planned and ran 3.28–3.30 with Sonnet subagents (owner request), merged all three (`67848d6`). Checked M.8a content; gave 3.24, 3.27 and M.8a prompts.
 - **2026-10-24 morning 2** (Opus): landed 3.11 A2 (`e103af6`, via `s/merge-3.11-a2`: force-push of the card branch is blocked by the auto-mode classifier, so rebase by cherry-pick onto a merge branch). Merge check of 3.26 A+B passed (conventions note added). T1 review of 3.23 passed (lead renamed `hoursOf` → `integerOf`; review R1 file). Both merged at `cecb5a0`, CI 40059020558 green.
 - **2026-10-24 morning** (Opus): T1 reviews passed and merged 3.6b A3 (`86230ea`) and M.7 A1 (`dad5b4a`, rebased by the lead after the session finished its own rebase); 3.11 A2 review passed, rebased, count-test fix. Plan 3.23 Amendment 2 (summary contact moves only while unpaid).

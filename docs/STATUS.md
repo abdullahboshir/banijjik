@@ -135,8 +135,11 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.28 credit expiry job | merged (2026-10-24, T2 merge check by the lead passed), CI https://github.com/abdullahboshir/banijjik/actions/runs/40063289055 | hourly `credit.expireCredits`, keyset batches, per-row catch |
 | 3.29 booking and sales leftovers | merged (2026-10-24, T2 merge check by the lead passed; handoff `docs/handoffs/3.29.md`), CI https://github.com/abdullahboshir/banijjik/actions/runs/40064685643 | time zone fails closed, session-cancel job in index order without starvation, sales job rows log at error |
 | 3.30 refund amount label | merged (2026-10-24, T3 merge check by the lead passed; test uses amount 0 because the dialog has no client-side maximum), CI https://github.com/abdullahboshir/banijjik/actions/runs/40064537361 | amount-specific message in the refund dialog; no client max check (see handoff) |
-| 3.31 enrollment period revenue posting | todo (planned after 3.27 and 3.24) | revenue per period at `periodStartsOn`, advance settle, reader revenue state |
+| 3.31 enrollment period revenue posting | todo (planned after 3.27 and 3.24) | revenue per period at `periodStartsOn`, advance settle, reader revenue state; revisit the 3.34 write-off rule for ENROLLMENT (no bad-debt journal while no income is recognised at cancel) |
 | 3.32 enrollment cancel refunds | todo (planned after 3.27) | `UNUSED_PERIODS` / `PRORATED` refunds to store credit or payment, with approval |
+| 3.33 event sessions occupy their resources | todo (the lead plans it next; T1) | 3.6b A3 left it out: a hall used by an event session can still be rented or booked |
+| 3.34 payment reversed after the request was closed | planned (2026-10-24, `docs/plans/3.34.md`, Opus; T1; starts after 3.24 merges) | owner: industry standard plus an option. Setting `payment.reversal.closedRequest`: `REOPEN_DUE` (default) or `WRITE_OFF` (bad-debt journal for retained booking fees); ADR-140 |
+| 3.35 stable replay-then-follow test | planned (2026-10-24, `docs/plans/3.35.md`, Opus; T3; ready now) | flaky `ordered-event-worker.test.ts` replay test on main CI 40066380468 |
 | Phase 3 review | todo | |
 
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
