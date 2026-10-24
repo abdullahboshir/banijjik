@@ -156,11 +156,13 @@ export {
 } from "./custom-field/custom-field-request-schemas.js";
 export {
   customerAccountBlockRequestSchema,
+  customerAccountEraseRequestSchema,
   customerOtpSendRequestSchema,
   customerOtpVerifyRequestSchema,
   storefrontOrganizationParamsSchema,
   storefrontResolveQuerySchema,
   type CustomerAccountBlockBody,
+  type CustomerAccountEraseBody,
   type CustomerOtpSendBody,
   type CustomerOtpVerifyBody,
 } from "./contact/customer-account.schema.js";

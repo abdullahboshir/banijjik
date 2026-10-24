@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   customerAccountBlockRequestSchema,
+  customerAccountEraseRequestSchema,
   customerOtpSendRequestSchema,
   customerOtpVerifyRequestSchema,
   storefrontResolveQuerySchema,
@@ -58,6 +59,25 @@ describe("customerAccountBlockRequestSchema", () => {
     expect(customerAccountBlockRequestSchema.safeParse({ version: 2 }).success).toBe(true);
     expect(customerAccountBlockRequestSchema.safeParse({}).success).toBe(false);
     expect(customerAccountBlockRequestSchema.safeParse({ version: 2, reason: "x" }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("customerAccountEraseRequestSchema", () => {
+  it("needs challengeId and 6-digit code", () => {
+    const valid = {
+      challengeId: "018f3b60-1234-7123-8123-123456789abc",
+      code: "123456",
+    };
+    expect(customerAccountEraseRequestSchema.safeParse(valid).success).toBe(true);
+    expect(customerAccountEraseRequestSchema.safeParse({ ...valid, code: "12345" }).success).toBe(
+      false,
+    );
+    expect(
+      customerAccountEraseRequestSchema.safeParse({ ...valid, challengeId: "not-a-uuid" }).success,
+    ).toBe(false);
+    expect(customerAccountEraseRequestSchema.safeParse({ ...valid, extra: true }).success).toBe(
       false,
     );
   });
