@@ -20,6 +20,8 @@ const SEED_FILE_NAMES = [
   "coaching.json",
   "restaurant.json",
   "hostel.json",
+  "matrimony-islamic.json",
+  "matrimony.json",
 ] as const;
 
 export type SeedIndustryTemplateInput = Omit<NewIndustryTemplateInput, "now">;
@@ -37,7 +39,7 @@ function toSeedInput(seed: IndustryTemplateSeed): SeedIndustryTemplateInput {
   };
 }
 
-/** The eight seed files, checked by the configuration schema. The factory checks them again on insert. */
+/** The ten seed files, checked by the configuration schema. The factory checks them again on insert. */
 export function loadSeedIndustryTemplates(): readonly SeedIndustryTemplateInput[] {
   return SEED_FILE_NAMES.map((fileName) => {
     const raw: unknown = JSON.parse(readFileSync(join(SEED_DIRECTORY, fileName), "utf8"));
