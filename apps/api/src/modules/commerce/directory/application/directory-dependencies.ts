@@ -13,6 +13,7 @@ import type {
   OrganizationTimezoneSource,
 } from "./ports/directory-context-ports.js";
 import type { EventPublisher } from "./ports/event-publisher.js";
+import type { ListingBlockRepository } from "./ports/listing-block-repository.js";
 import type { ListingReportRepository } from "./ports/listing-report-repository.js";
 import type { ListingRepository } from "./ports/listing-repository.js";
 import type { UnitOfWork } from "./ports/unit-of-work.js";
@@ -20,6 +21,7 @@ import type { UnitOfWork } from "./ports/unit-of-work.js";
 export interface DirectoryDependencies {
   readonly listings: ListingRepository;
   readonly reports: ListingReportRepository;
+  readonly blocks: ListingBlockRepository;
   readonly unitOfWork: UnitOfWork;
   readonly events: EventPublisher;
   readonly audit: AuditRecorder;

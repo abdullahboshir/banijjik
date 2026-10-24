@@ -1,6 +1,11 @@
 import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { registerModel } from "../../../../kernel/db/index.js";
 import {
+  LISTING_BLOCK_COLLECTION_NAME,
+  LISTING_BLOCK_MODEL_NAME,
+  listingBlockSchema,
+} from "./listing-block.schema.js";
+import {
   LISTING_REPORT_COLLECTION_NAME,
   LISTING_REPORT_MODEL_NAME,
   listingReportSchema,
@@ -21,6 +26,13 @@ export function registerDirectoryModels(): void {
     modelName: LISTING_REPORT_MODEL_NAME,
     collectionName: LISTING_REPORT_COLLECTION_NAME,
     schema: listingReportSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: LISTING_BLOCK_MODEL_NAME,
+    collectionName: LISTING_BLOCK_COLLECTION_NAME,
+    schema: listingBlockSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

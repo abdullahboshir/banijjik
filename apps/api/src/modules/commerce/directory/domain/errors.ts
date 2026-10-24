@@ -139,3 +139,17 @@ export function moderationForbidden(permissionKey: string): DomainRuleError {
     details: { permissionKey },
   });
 }
+
+export function blockOwnListing(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.VALIDATION_ERROR,
+    messageKey: DIRECTORY_API_MESSAGE_KEYS.blockOwnListing,
+  });
+}
+
+export function blockAccountLimit(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.CONFLICT,
+    messageKey: DIRECTORY_API_MESSAGE_KEYS.blockAccountLimit,
+  });
+}

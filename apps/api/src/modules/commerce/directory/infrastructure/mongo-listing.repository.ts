@@ -57,6 +57,9 @@ function searchFilter(request: ListingSearchRequest): object {
   if (request.listingNumber !== undefined) {
     parts.push({ listingNumber: request.listingNumber });
   }
+  if (request.excludeListingIds !== undefined && request.excludeListingIds.length > 0) {
+    parts.push({ listingId: { $nin: [...request.excludeListingIds] } });
+  }
   parts.push(...filterBranches(request.filters));
   const [only] = parts;
   return parts.length === 1 && only !== undefined ? only : { $and: parts };

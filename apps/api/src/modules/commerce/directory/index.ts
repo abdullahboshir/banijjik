@@ -49,6 +49,11 @@ import {
   ResolveListingReportsUseCase,
 } from "./application/use-cases/listing-report.use-cases.js";
 import {
+  BlockListingUseCase,
+  ListMyListingBlocksUseCase,
+  UnblockListingUseCase,
+} from "./application/use-cases/listing-block.use-cases.js";
+import {
   ArchiveMyListingUseCase,
   GetMyListingUseCase,
   SubmitMyListingUseCase,
@@ -71,12 +76,17 @@ import {
 import { UploadListingPhotoUseCase } from "./application/use-cases/upload-listing-photo.use-case.js";
 import { MongoListingRepository } from "./infrastructure/mongo-listing.repository.js";
 import { MongoListingReportRepository } from "./infrastructure/mongo-listing-report.repository.js";
+import { MongoListingBlockRepository } from "./infrastructure/mongo-listing-block.repository.js";
 import { buildDirectoryStorefrontRouter } from "./presentation/directory-storefront.router.js";
 import { buildDirectoryTenantRouter } from "./presentation/directory-tenant.router.js";
 
 export { directoryManifest } from "./module.manifest.js";
 export { registerDirectoryModels } from "./infrastructure/register-directory-models.js";
 export { MongoListingRepository } from "./infrastructure/index.js";
+export {
+  buildDirectoryErasureParticipant,
+  buildDirectoryExportParticipants,
+} from "./application/directory-erasure-participants.js";
 export type {
   CustomerAccountBlocker,
   CustomerPhoneReader,
@@ -138,6 +148,7 @@ function dependenciesOf(input: {
   return {
     listings: new MongoListingRepository(),
     reports: new MongoListingReportRepository(),
+    blocks: new MongoListingBlockRepository(),
     unitOfWork: new MongoUnitOfWork(),
     events: kernelEventPublisher,
     audit: input.audit,
@@ -202,6 +213,9 @@ export function buildDirectoryStorefrontRouterFor(input: DirectoryStorefrontDepe
     getPublicListing: new GetPublicListingUseCase(deps),
     fileReport: new FileListingReportUseCase(deps),
     reportReasons: new GetListingReportReasonsUseCase(deps),
+    blockListing: new BlockListingUseCase(deps),
+    unblockListing: new UnblockListingUseCase(deps),
+    listMyListingBlocks: new ListMyListingBlocksUseCase(deps),
     limiter: input.limiter,
     authenticateCustomer: input.authenticateCustomer,
     authenticateCustomerOptional: input.authenticateCustomerOptional,
