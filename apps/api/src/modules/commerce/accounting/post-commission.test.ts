@@ -301,6 +301,30 @@ describe("commission journals", () => {
   });
 });
 
+/** Seeds every system account except the listed codes, as an organization created before them would have. */
+async function seedAccountsExcept(
+  organizationId: OrganizationId,
+  accounts: MongoAccountRepository,
+  skippedCodes: readonly string[],
+): Promise<void> {
+  await withOrganizationContext(organizationId, async () => {
+    for (const seed of SYSTEM_ACCOUNT_SEEDS) {
+      if (skippedCodes.includes(seed.accountCode)) continue;
+      await accounts.insert(
+        Account.create({
+          organizationId,
+          accountCode: seed.accountCode,
+          name: seed.name,
+          accountType: seed.accountType,
+          isSystem: true,
+          now: NOW,
+          actorUserId: null,
+        }),
+      );
+    }
+  });
+}
+
 describe("commission system accounts", () => {
   it("gives an organization seeded before this card the two commission accounts on catch-up", async () => {
     const organizationId = asId<OrganizationId>(newId());
@@ -309,22 +333,7 @@ describe("commission system accounts", () => {
       SYSTEM_ACCOUNT_CODE.COMMISSION_EXPENSE,
       SYSTEM_ACCOUNT_CODE.COMMISSION_PAYABLE,
     ];
-    await withOrganizationContext(organizationId, async () => {
-      for (const seed of SYSTEM_ACCOUNT_SEEDS) {
-        if (commissionCodes.includes(seed.accountCode)) continue;
-        await accounts.insert(
-          Account.create({
-            organizationId,
-            accountCode: seed.accountCode,
-            name: seed.name,
-            accountType: seed.accountType,
-            isSystem: true,
-            now: NOW,
-            actorUserId: null,
-          }),
-        );
-      }
-    });
+    await seedAccountsExcept(organizationId, accounts, commissionCodes);
 
     const result = await withOrganizationContext(organizationId, () =>
       catchUpSystemAccounts({ accounts, clock: { now: () => NOW } }, async () => [organizationId]),
@@ -338,5 +347,23 @@ describe("commission system accounts", () => {
       accounts.findByCode(SYSTEM_ACCOUNT_CODE.COMMISSION_PAYABLE),
     );
     expect([expense?.accountType, payable?.accountType]).toEqual(["EXPENSE", "LIABILITY"]);
+  });
+});
+
+describe("bad debt system account", () => {
+  it("gives an organization seeded before card 3.34 the BAD_DEBT_EXPENSE expense account on catch-up", async () => {
+    const organizationId = asId<OrganizationId>(newId());
+    const accounts = new MongoAccountRepository();
+    await seedAccountsExcept(organizationId, accounts, [SYSTEM_ACCOUNT_CODE.BAD_DEBT_EXPENSE]);
+
+    const result = await withOrganizationContext(organizationId, () =>
+      catchUpSystemAccounts({ accounts, clock: { now: () => NOW } }, async () => [organizationId]),
+    );
+
+    expect(result.inserted).toBe(1);
+    const badDebt = await withOrganizationContext(organizationId, () =>
+      accounts.findByCode(SYSTEM_ACCOUNT_CODE.BAD_DEBT_EXPENSE),
+    );
+    expect(badDebt?.accountType).toBe("EXPENSE");
   });
 });

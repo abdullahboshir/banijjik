@@ -334,7 +334,7 @@ describe("a payment reversed after its request was closed (booking)", () => {
 
     const audit = await harness.connections.tenantShared
       .collection("audit_logs")
-      .findOne({ organizationId: world.organizationA, action: "payment.due.writtenOff" });
+      .findOne({ organizationId: world.organizationA, action: "payment.due.waived" });
     expect(audit?.["entityId"]).toBe(reversalId);
   });
 

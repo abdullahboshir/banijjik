@@ -24,3 +24,4 @@ Core module for recording, refunding and reversing tenant payments, tracking req
 - Order summaries initialize at place/instant sale, or lazily on the first legacy-order payment.
   Page reads use one organization/request-type/request-ID-indexed batch query.
 - Unpaid order contact edits move the summary contact transactionally; net paid locks the contact.
+- Closed requests (ADR-140): a summary closed at a lower total (booking cancel or no-show, order cancel, enrollment cancel) carries `closedAt`. A reversal of its payment follows the setting `payment.reversal.closedRequest`: `REOPEN_DUE` (default, the standard: the kept amount is owed again) or `WRITE_OFF` (the total drops to the new net paid; the amounts go to the reversal payment as `writeOffs` and are audited as `payment.due.waived`). Open requests always reopen.

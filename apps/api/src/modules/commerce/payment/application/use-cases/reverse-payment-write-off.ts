@@ -103,7 +103,7 @@ export async function recordWriteOffAudits(
 ): Promise<void> {
   for (const writeOff of writeOffs) {
     await audit.record({
-      action: AUDIT_ACTION.PAYMENT_DUE_WRITTEN_OFF,
+      action: AUDIT_ACTION.PAYMENT_DUE_WAIVED,
       entityType: AUDIT_ENTITY_TYPE.payment,
       entityId: reversalPaymentId,
       changes: {
