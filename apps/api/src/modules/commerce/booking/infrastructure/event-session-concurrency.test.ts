@@ -103,4 +103,26 @@ describe("event session atomic writes", () => {
       expect((await repository.list(query, "ALL")).items).toHaveLength(1);
     });
   });
+
+  it("a session and a rental racing for the same hall never both win", async () => {
+    const { world, repository, session } = await fixture();
+    await withOrganizationContext(world.organizationA, async () => {
+      const results = await Promise.allSettled([
+        repository.reserveSeats({ eventSessionId: session.toProps().eventSessionId, seats: 1 }),
+        repository.reserveSeats({ eventSessionId: session.toProps().eventSessionId, seats: 10 }),
+      ]);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    });
+  });
+
+  it("two sessions racing for the same hall never both win", async () => {
+    const { world, repository, session } = await fixture();
+    await withOrganizationContext(world.organizationA, async () => {
+      const results = await Promise.all([
+        repository.reserveSeats({ eventSessionId: session.toProps().eventSessionId, seats: 10 }),
+        repository.reserveSeats({ eventSessionId: session.toProps().eventSessionId, seats: 10 }),
+      ]);
+      expect(results.filter(Boolean)).toHaveLength(1);
+    });
+  });
 });

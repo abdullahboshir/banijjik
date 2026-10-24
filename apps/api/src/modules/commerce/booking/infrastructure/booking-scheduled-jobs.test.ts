@@ -221,7 +221,7 @@ describe("booking scheduled jobs", () => {
     });
   });
 
-  it("auto-completes checked-in rental bookings past grace period idempotently", async () => {
+  it("completing an ended session keeps its hall counters", async () => {
     const world = await worldFor(harness, RETAIL, SALON);
     const organizationRef = asId<OrganizationId>(world.organizationA);
     const locationId = asId<LocationId>(world.locationA1);
