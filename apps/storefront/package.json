@@ -16,7 +16,7 @@
     "@banijjik/i18n": "*",
     "@banijjik/ui": "*",
     "@banijjik/web-client": "*",
-    "markdown-it": "14.3.2",
+    "markdown-it": "14.3.3",
     "next": "^16.4.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
