@@ -22,12 +22,14 @@ const SEED_INDUSTRY_TEMPLATE_NAMES = defineEnum([
   "COACHING",
   "RESTAURANT",
   "HOSTEL",
+  "MATRIMONY_ISLAMIC",
+  "MATRIMONY",
 ]);
 
 type SeedIndustryTemplateName = keyof typeof SEED_INDUSTRY_TEMPLATE_NAMES;
 
 /**
- * The eight seed templates of 12-INDUSTRY-TEMPLATES. For seed data and tests only.
+ * The seed templates of 12-INDUSTRY-TEMPLATES and doc 16 §4. For seed data and tests only.
  * Production code must not branch on a key (ADR-097). The brand is type-only: every name
  * already matches {@link INDUSTRY_TEMPLATE_KEY_PATTERN}.
  */
