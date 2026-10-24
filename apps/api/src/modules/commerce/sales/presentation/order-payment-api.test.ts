@@ -118,14 +118,15 @@ describe("orders as payment requests", () => {
     const draft = await drafted(shop);
     expect((await pay(shop, draft.order.orderId, 100)).status).toBe(400);
     const result = await placeOrder(shop, draft.order);
-    expect((await cancel(shop, result.order)).status).toBe(200);
-    expect((await pay(shop, draft.order.orderId, 100)).status).toBe(400);
     const foreign = {
       actor: world.bob,
       organizationId: world.organizationB,
       locationId: world.locationB1,
     };
     expect((await pay(foreign, draft.order.orderId, 100)).status).toBe(400);
+    expect((await detail(shop, draft.order.orderId)).paymentStatus).toBe("UNPAID");
+    expect((await cancel(shop, result.order)).status).toBe(200);
+    expect((await pay(shop, draft.order.orderId, 100)).status).toBe(400);
   });
 
   it("snapshots BEFORE_REVENUE for PLACED and AFTER_REVENUE for a completed instant sale", async () => {
