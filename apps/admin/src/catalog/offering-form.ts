@@ -228,23 +228,31 @@ function detailsOfOffering(offering: OfferingResponse): DetailsState {
     };
   }
   if (offering.kind === OFFERING_KIND.PLAN) return planDetailsOf(details, stored);
-  if (offering.kind === OFFERING_KIND.RENTAL)
-    return {
-      ...details,
-      rateUnit: stored.rateUnit as RentalRateUnit,
-      minUnits: text("minUnits"),
-      maxUnits: text("maxUnits"),
-      checkInTime: text("checkInTime"),
-      checkOutTime: text("checkOutTime"),
-      depositAmount: moneyText(stored.depositAmount as Money | undefined),
-    };
-  if (offering.kind === OFFERING_KIND.EVENT)
-    return {
-      ...details,
-      salesCloseMinutesBefore: text("salesCloseMinutesBefore") || "0",
-      allowWaitlist: stored.allowWaitlist === true,
-    };
+  if (offering.kind === OFFERING_KIND.RENTAL) return rentalDetailsOf(details, stored);
+  if (offering.kind === OFFERING_KIND.EVENT) return eventDetailsOf(details, stored);
   return details;
+}
+
+function rentalDetailsOf(details: DetailsState, stored: Record<string, unknown>): DetailsState {
+  const text = (key: string): string => (stored[key] === undefined ? "" : String(stored[key]));
+  return {
+    ...details,
+    rateUnit: stored["rateUnit"] as RentalRateUnit,
+    minUnits: text("minUnits"),
+    maxUnits: text("maxUnits"),
+    resourceTypeKeys: resourceTypeKeysOf(stored["resourceTypeKeys"]),
+    checkInTime: text("checkInTime"),
+    checkOutTime: text("checkOutTime"),
+    depositAmount: moneyText(stored["depositAmount"] as Money | undefined),
+  };
+}
+
+function eventDetailsOf(details: DetailsState, stored: Record<string, unknown>): DetailsState {
+  return {
+    ...details,
+    salesCloseMinutesBefore: String(stored["salesCloseMinutesBefore"] ?? 0),
+    allowWaitlist: stored["allowWaitlist"] === true,
+  };
 }
 
 function planDetailsOf(details: DetailsState, stored: Record<string, unknown>): DetailsState {

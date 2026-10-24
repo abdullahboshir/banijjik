@@ -285,3 +285,96 @@ describe("formFromOffering", () => {
     });
   });
 });
+
+describe("buildOfferingPayload for rentals and events", () => {
+  function rentalForm(details: Partial<OfferingFormState["details"]>): OfferingFormState {
+    const form = newOfferingForm("RENTAL", "PIECE");
+    return {
+      ...form,
+      name: "Hall",
+      rows: [{ ...emptyRow(), price: "500" }],
+      details: { ...form.details, resourceTypeKeys: ["HALL"], ...details },
+    };
+  }
+
+  it("sends a nightly rental with units, check-in and check-out times and a deposit", () => {
+    const body = payloadOf(
+      rentalForm({
+        rateUnit: "NIGHT",
+        minUnits: "1",
+        maxUnits: "7",
+        checkInTime: "14:00",
+        checkOutTime: "11:00",
+        depositAmount: "100",
+      }),
+    );
+
+    expect(body.kindDetails).toEqual({
+      rateUnit: "NIGHT",
+      minUnits: 1,
+      maxUnits: 7,
+      resourceTypeKeys: ["HALL"],
+      checkInTime: "14:00",
+      checkOutTime: "11:00",
+      depositAmount: { amount: 10000, currency: "BDT" },
+    });
+  });
+
+  it("leaves the check-in and check-out times out of an hourly or daily rental", () => {
+    const body = payloadOf(rentalForm({ rateUnit: "HOUR", checkInTime: "14:00" }));
+
+    expect(body.kindDetails).not.toHaveProperty("checkInTime");
+  });
+
+  it("refuses a maximum below the minimum and a badly written time", () => {
+    const result = buildOfferingPayload(
+      rentalForm({ rateUnit: "NIGHT", minUnits: "3", maxUnits: "2", checkInTime: "2pm" }),
+      "BDT",
+    );
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: { maxUnits: "validation.invalid_format", checkInTime: "validation.invalid_format" },
+    });
+  });
+
+  it("sends an event that closes sales at the start and allows no waitlist", () => {
+    const form = newOfferingForm("EVENT", "PIECE");
+    const body = payloadOf({
+      ...form,
+      name: "Workshop",
+      rows: [{ ...emptyRow(), price: "300" }],
+    });
+
+    expect(body.kindDetails).toEqual({ salesCloseMinutesBefore: 0, allowWaitlist: false });
+  });
+});
+
+describe("formFromOffering for rentals and events", () => {
+  it("shows the stored rental details in the form", () => {
+    const form = formFromOffering({
+      offeringId: "o",
+      kind: "RENTAL",
+      name: "Hall",
+      description: null,
+      categories: [],
+      modifierGroups: [],
+      images: [],
+      taxClassKey: null,
+      kindDetails: {
+        rateUnit: "DAY",
+        minUnits: 2,
+        resourceTypeKeys: ["HALL"],
+        depositAmount: { amount: 5000, currency: "BDT" },
+      },
+      variants: [],
+    } as unknown as OfferingResponse);
+
+    expect(form.details).toMatchObject({
+      rateUnit: "DAY",
+      minUnits: "2",
+      resourceTypeKeys: ["HALL"],
+      depositAmount: "50",
+    });
+  });
+});

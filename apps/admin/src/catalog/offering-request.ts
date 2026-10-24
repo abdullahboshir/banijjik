@@ -20,6 +20,8 @@ import { cleanOptions, variantNameOf } from "./variant-generator";
 export const REQUIRED_KEY = "validation.required";
 export const INVALID_KEY = "validation.invalid_format";
 
+const CLOCK_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/u;
+
 export interface VariantPayload {
   variantId?: string;
   name?: string;
@@ -62,6 +64,21 @@ function optionalPositive(text: string, field: string, errors: FieldErrors): num
   const value = wholeNumberOf(text);
   if (value === undefined || value < 1) errors[field] = INVALID_KEY;
   return value;
+}
+
+/** A whole number from zero up that must be filled in. */
+function requiredWholeNumber(text: string, field: string, errors: FieldErrors): number {
+  const value = wholeNumberOf(text);
+  if (text.trim() === "") errors[field] = REQUIRED_KEY;
+  else if (value === undefined) errors[field] = INVALID_KEY;
+  return value ?? 0;
+}
+
+/** An optional HH:mm clock time; anything else is refused before the API sees it. */
+function optionalClockTime(text: string, field: string, errors: FieldErrors): string | undefined {
+  if (text.trim() === "") return undefined;
+  if (!CLOCK_TIME_PATTERN.test(text.trim())) errors[field] = INVALID_KEY;
+  return text.trim();
 }
 
 function requiredPositive(text: string, field: string, errors: FieldErrors): number {
@@ -163,18 +180,22 @@ function rentalDetails(
 ): Record<string, unknown> {
   const minUnits = requiredPositive(details.minUnits, "minUnits", errors);
   const maxUnits = optionalPositive(details.maxUnits, "maxUnits", errors);
+  if (maxUnits !== undefined && maxUnits < minUnits) errors.maxUnits = INVALID_KEY;
   const depositAmount = optionalMoney(details.depositAmount, "depositAmount", { currency, errors });
+  const isNight = details.rateUnit === "NIGHT";
+  const checkInTime = isNight
+    ? optionalClockTime(details.checkInTime, "checkInTime", errors)
+    : undefined;
+  const checkOutTime = isNight
+    ? optionalClockTime(details.checkOutTime, "checkOutTime", errors)
+    : undefined;
   return {
     rateUnit: details.rateUnit,
     minUnits,
     ...(maxUnits === undefined ? {} : { maxUnits }),
     resourceTypeKeys: [...details.resourceTypeKeys],
-    ...(details.rateUnit === "NIGHT" && details.checkInTime !== ""
-      ? { checkInTime: details.checkInTime }
-      : {}),
-    ...(details.rateUnit === "NIGHT" && details.checkOutTime !== ""
-      ? { checkOutTime: details.checkOutTime }
-      : {}),
+    ...(checkInTime === undefined ? {} : { checkInTime }),
+    ...(checkOutTime === undefined ? {} : { checkOutTime }),
     ...(depositAmount ? { depositAmount } : {}),
   };
 }
@@ -184,7 +205,7 @@ function eventDetails(
   errors: FieldErrors,
 ): Record<string, unknown> {
   return {
-    salesCloseMinutesBefore: requiredPositive(
+    salesCloseMinutesBefore: requiredWholeNumber(
       details.salesCloseMinutesBefore,
       "salesCloseMinutesBefore",
       errors,

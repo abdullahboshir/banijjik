@@ -206,6 +206,7 @@ function RentalDetails(props: PartProps): ReactElement {
       />
       <NumberField {...props} field="minUnits" labelKey="details.minUnits" />
       <NumberField {...props} field="maxUnits" labelKey="details.maxUnits" />
+      <ResourceTypePicker {...props} />
       {form.details.rateUnit === "NIGHT" ? (
         <>
           <TextField
