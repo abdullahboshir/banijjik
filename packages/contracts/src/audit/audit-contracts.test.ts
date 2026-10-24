@@ -48,6 +48,7 @@ describe("audit vocabulary", () => {
       "booking",
       "resource",
       "resourceTimeOff",
+      "eventSession",
       "creditPack",
       "creditEntry",
       "creditAccount",
