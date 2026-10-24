@@ -1,9 +1,9 @@
+import { SEQUENCE_KEY } from "@banijjik/contracts";
+import { asId, type OrganizationId } from "@banijjik/ids";
 import type {
   CustomerDataExportParticipant,
   CustomerErasureParticipant,
-} from "@banijjik/contracts/contact";
-import { SEQUENCE_KEY } from "@banijjik/contracts";
-import { asId, type OrganizationId } from "@banijjik/ids";
+} from "../contact/index.js";
 import type { RequestHandler, Router } from "express";
 import type { StorageConfig } from "../../../config/index.js";
 import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.js";

@@ -23,6 +23,7 @@ How such sites work, in short (from OrdhekDeen):
 1. **No matrimony code.** Biodata fields, filters, eligibility text, rejection reasons, photo policy and prices are template and organization data. Words come from terms (`listing` = "বায়োডাটা").
 2. **Privacy first.** Every listing field has a visibility tier, and personal data is protected as in ADR-107. The 18+ rule and guardian consent are enforced by the server. Erasure removes personal data and keeps only ids for ledgers.
 3. **Money is a ledger.** Credits are an append-only ledger (ADR-014); a purchase is idempotent; amounts are integer minor units (ADR-013).
+   *Erasure note (M.7):* when a customer erases their account, credit entries, unlocks and purchases stay as ids only, the remaining balance is forfeited (the response says how many credits), and a PENDING purchase is cancelled first so staff never verify money for an erased account.
 4. **The site's members are customers, not staff.** They use customer accounts (`09 §5.2`, ADR-045) with their own token audience; they never become Users or Members.
 
 ## 3. Capabilities (new or pulled forward)
@@ -99,7 +100,7 @@ How such sites work, in short (from OrdhekDeen):
 
 ### 3.5 Trust and safety
 - **Reports:** reasons from the template, an admin report queue, and actions: hide listing, warn, block account.
-- **Blocks:** a customer can block a listing from their results.
+- **Blocks:** a customer can block a listing from their results (at most 500 per account; the detail page by number still opens).
 - **Account ban** and erasure: the account deletes its listing → anonymized (3.1a semantics).
 - **Audit** of every moderation and credit action.
 - **Data protection:** consent text stored with the version accepted; export of one's own data. Handling sensitive personal data (religious practice, health, marital status, photos of women) follows the Bangladesh data-protection rules in force at launch: legal review before go-live (owner).

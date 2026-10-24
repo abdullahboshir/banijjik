@@ -20,7 +20,7 @@ function toChallenge(document: OtpChallengeDocument): OtpChallenge {
     attempts: stored.attempts,
     expiresAt: stored.expiresAt,
     consumedAt: stored.consumedAt,
-    purpose: (stored.purpose as CustomerOtpPurpose) ?? CUSTOMER_OTP_PURPOSE.SIGN_IN,
+    purpose: stored.purpose ?? CUSTOMER_OTP_PURPOSE.SIGN_IN,
   };
 }
 
@@ -39,7 +39,7 @@ export class MongoOtpChallengeRepository implements OtpChallengeRepository {
             : { codeCiphertext: challenge.codeCiphertext }),
           attempts: challenge.attempts,
           expiresAt: challenge.expiresAt,
-          purpose: challenge.purpose ?? CUSTOMER_OTP_PURPOSE.SIGN_IN,
+          purpose: challenge.purpose,
         },
       ],
       session,
@@ -56,6 +56,8 @@ export class MongoOtpChallengeRepository implements OtpChallengeRepository {
       .findOneAndUpdate(
         {
           phoneE164: input.phoneE164,
+          // A code sent for another purpose is never touched by a sign-in guess (M.7 decision 13).
+          purpose: { $ne: CUSTOMER_OTP_PURPOSE.ERASE_ACCOUNT },
           consumedAt: { $exists: false },
           expiresAt: { $gt: input.now },
           attempts: { $lt: input.maxAttempts },

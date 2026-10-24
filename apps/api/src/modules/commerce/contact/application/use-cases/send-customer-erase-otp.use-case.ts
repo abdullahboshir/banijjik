@@ -18,8 +18,13 @@ export interface SendCustomerEraseOtpInput {
   readonly customerAccountId: CustomerAccountId;
 }
 
+export type SendCustomerEraseOtpDependencies = Pick<
+  CustomerAuthDependencies,
+  "limiter" | "accounts" | "challenges" | "unitOfWork" | "events" | "clock" | "otpSecret"
+>;
+
 export class SendCustomerEraseOtpUseCase {
-  constructor(private readonly dependencies: CustomerAuthDependencies) {}
+  constructor(private readonly dependencies: SendCustomerEraseOtpDependencies) {}
 
   async execute(input: SendCustomerEraseOtpInput): Promise<CustomerEraseOtpSendResponse> {
     const { limiter, accounts, challenges, unitOfWork, events, clock, otpSecret } =

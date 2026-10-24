@@ -7,6 +7,10 @@ OPTIONAL module: prepaid **credit packs**, paid **listing unlocks**, and manual 
 - Storefront (`/api/v1/storefront/orgs/{organizationId}`): `/my/credits`, `/my/unlocks`, `/credit-packs`, `/credit/payment-info`, `/credit-purchases`, `/my/credit-purchases`, `/credit-purchases/{creditPurchaseId}/cancel`, listing unlock, erasure/export participants (M.7).
 - Tenant (`/orgs/{organizationId}/credit/…`): packs, customer accounts, adjustments, and purchase verification (`credit.purchase.read`, `credit.purchase.verify`).
 
+## Erasure and export (M.7)
+
+`buildCreditErasureParticipant()` cancels the account's PENDING purchases and reports the balance that is forfeited; entries, unlocks and verified purchases stay as ids. `buildCreditExportParticipant()` answers the `CREDIT` export section.
+
 ## Ledger & Purchases
 
 Credit entries are append-only (ADR-130): PURCHASE, SPEND, REFUND, EXPIRE, ADJUST with atomic `$inc` balance. Spend allocates FIFO, unexpired purchases first. Unlocks are idempotent per account/listing and daily-capped.

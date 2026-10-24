@@ -1,22 +1,21 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
-import type {
-  CreditExportSection,
-  CustomerDataExportParticipant,
-  CustomerErasureParticipant,
+import {
+  CUSTOMER_DATA_EXPORT_SECTION_KEY,
+  type CreditExportSection,
 } from "@banijjik/contracts/contact";
 import { CREDIT_EVENT_TYPE } from "@banijjik/contracts/credit";
-import { asId, type CustomerAccountId } from "@banijjik/ids";
+import type {
+  CustomerDataExportParticipant,
+  CustomerErasureParticipant,
+} from "../../contact/index.js";
 import type { CreditDependencies } from "./ports/credit-dependencies.js";
 
 export function buildCreditErasureParticipant(
-  dependencies: Pick<
-    CreditDependencies,
-    "credit" | "purchases" | "unitOfWork" | "audit" | "events"
-  >,
+  dependencies: Pick<CreditDependencies, "credit" | "purchases" | "audit" | "events">,
 ): CustomerErasureParticipant {
   return {
     async eraseForAccount(input) {
-      const accountId = asId<CustomerAccountId>(input.customerAccountId);
+      const accountId = input.customerAccountId;
       const balance = await dependencies.credit.getBalance(accountId);
       const pendingPurchases = await dependencies.purchases.listPendingByAccount(accountId);
       for (const purchase of pendingPurchases) {
@@ -45,9 +44,9 @@ export function buildCreditExportParticipant(
   dependencies: Pick<CreditDependencies, "credit" | "unlocks" | "purchases">,
 ): CustomerDataExportParticipant {
   return {
-    sectionKey: "CREDIT",
+    sectionKey: CUSTOMER_DATA_EXPORT_SECTION_KEY.CREDIT,
     async exportForAccount(input): Promise<CreditExportSection> {
-      const accountId = asId<CustomerAccountId>(input.customerAccountId);
+      const accountId = input.customerAccountId;
       const fetchLimit = input.maxRows + 1;
 
       const [balanceRecord, rawEntries, rawUnlocks, pagedPurchases] = await Promise.all([
@@ -69,29 +68,27 @@ export function buildCreditExportParticipant(
         : pagedPurchases.items;
 
       return {
-        sectionKey: "CREDIT",
+        sectionKey: CUSTOMER_DATA_EXPORT_SECTION_KEY.CREDIT,
         balance: balanceRecord?.balance ?? 0,
         entries: slicedEntries.map((e) => ({
           creditEntryId: e.creditEntryId,
           type: e.type,
           credits: e.credits,
           reason: e.reason,
-          createdAt:
-            typeof e.createdAt === "string" ? e.createdAt : (e.createdAt as Date).toISOString(),
+          createdAt: e.createdAt,
         })),
         entriesTruncated,
         unlocks: slicedUnlocks.map((u) => ({
           listingUnlockId: u.listingUnlockId,
           listingId: u.listingId,
-          unlockedAt:
-            typeof u.unlockedAt === "string" ? u.unlockedAt : (u.unlockedAt as Date).toISOString(),
+          unlockedAt: u.unlockedAt,
         })),
         unlocksTruncated,
         purchases: slicedPurchases.map((p) => ({
           creditPurchaseId: p.creditPurchaseId,
           creditPackId: p.creditPackId,
           status: p.status,
-          createdAt: p.submittedAt.toISOString(),
+          createdAt: p.createdAt.toISOString(),
         })),
         purchasesTruncated,
         truncated: entriesTruncated || unlocksTruncated || purchasesTruncated,

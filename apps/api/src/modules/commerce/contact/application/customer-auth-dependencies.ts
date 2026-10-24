@@ -1,7 +1,3 @@
-import type {
-  CustomerDataExportParticipant,
-  CustomerErasureParticipant,
-} from "@banijjik/contracts/contact";
 import type { AuditRecorder } from "../../../../kernel/audit/index.js";
 import type { RateLimiter } from "../../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
@@ -12,6 +8,10 @@ import type {
   CustomerSessionRepository,
   OtpChallengeRepository,
 } from "./ports/customer-account-ports.js";
+import type {
+  CustomerDataExportParticipant,
+  CustomerErasureParticipant,
+} from "./ports/customer-participants.js";
 import type { EventPublisher } from "./ports/event-publisher.js";
 import type { UnitOfWork } from "./ports/unit-of-work.js";
 
@@ -29,6 +29,7 @@ export interface CustomerAuthDependencies {
   readonly tokens: CustomerAccessTokenIssuer;
   /** Seals and hashes one-time codes (`OTP_SECRET`). Never logged. */
   readonly otpSecret: string;
+  /** Other modules' parts of an erasure; required, an empty list is valid in a unit test. */
   readonly erasureParticipants: readonly CustomerErasureParticipant[];
   readonly exportParticipants: readonly CustomerDataExportParticipant[];
 }

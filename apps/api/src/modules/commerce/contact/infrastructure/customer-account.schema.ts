@@ -1,4 +1,9 @@
-import { CUSTOMER_ACCOUNT_STATUS, type CustomerAccountStatus } from "@banijjik/contracts/contact";
+import {
+  CUSTOMER_ACCOUNT_STATUS,
+  CUSTOMER_OTP_PURPOSE,
+  type CustomerAccountStatus,
+  type CustomerOtpPurpose,
+} from "@banijjik/contracts/contact";
 import { Schema } from "mongoose";
 import {
   auditFields,
@@ -106,7 +111,8 @@ export interface OtpChallengeDocument {
   attempts: number;
   expiresAt: Date;
   consumedAt?: Date;
-  purpose: string;
+  /** Absent on rows written before card M.7; read as SIGN_IN. */
+  purpose?: CustomerOtpPurpose;
   createdAt: Date;
   updatedAt: Date;
   createdByUserId: string | null;
@@ -123,7 +129,12 @@ export const otpChallengeSchema = new Schema<OtpChallengeDocument>(
     attempts: { type: Number, required: true, default: 0 },
     expiresAt: { type: Date, required: true },
     consumedAt: { type: Date },
-    purpose: { type: String, required: true, default: "SIGN_IN" },
+    purpose: {
+      type: String,
+      enum: Object.values(CUSTOMER_OTP_PURPOSE),
+      required: true,
+      default: CUSTOMER_OTP_PURPOSE.SIGN_IN,
+    },
     ...auditFields,
   },
   SCHEMA_OPTIONS,

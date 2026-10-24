@@ -37,10 +37,6 @@ export class BlockListingUseCase {
         created: false,
       };
     }
-    const count = await this.dependencies.blocks.countByAccount(input.customerAccountId);
-    if (count >= DIRECTORY_SAFETY_RULES.blocksPerAccountMax) {
-      throw blockAccountLimit();
-    }
     const created = ListingBlock.create({
       organizationId: input.organizationId,
       customerAccountId: input.customerAccountId,
@@ -48,6 +44,16 @@ export class BlockListingUseCase {
       now: this.dependencies.clock.now(),
     });
     const inserted = await this.dependencies.blocks.insert(created);
+    // Insert first, then count: two parallel requests cannot both slip past a stale count. When the
+    // cap is passed the new row is removed again, so the stored count never stays above the cap.
+    const count = await this.dependencies.blocks.countByAccount(input.customerAccountId);
+    if (count > DIRECTORY_SAFETY_RULES.blocksPerAccountMax) {
+      await this.dependencies.blocks.deleteByAccountAndListing(
+        input.customerAccountId,
+        listing.listingId,
+      );
+      throw blockAccountLimit();
+    }
     return {
       block: {
         listingBlockId: inserted.listingBlockId,
