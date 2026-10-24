@@ -11,7 +11,7 @@ import {
 import { models } from "../../../../kernel/db/index.js";
 import { MongoOfferingRepository } from "../../catalog/index.js";
 import { buildResourceTypeKeysReader } from "../../../platform/industry/index.js";
-import { bookingRuleError } from "../domain/errors.js";
+import { bookingRuleError, recordNotFound } from "../domain/errors.js";
 
 const ORGANIZATION_MODEL_NAME = "Organization";
 const MEMBER_MODEL_NAME = "Member";
@@ -38,7 +38,9 @@ export function buildOrganizationTimezoneReader(): {
         .get<OrganizationRow>(ORGANIZATION_MODEL_NAME)
         .findOne({ organizationId }, { timezone: 1 })
         .lean<OrganizationRow>();
-      return row?.timezone ?? "Asia/Dhaka";
+      // Every organization gets a time zone at creation, so a missing one is broken data: fail closed.
+      if (row === null || !row.timezone) throw recordNotFound();
+      return row.timezone;
     },
   };
 }
