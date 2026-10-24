@@ -67,7 +67,6 @@ import { buildIndustryTemplateReader } from "../../../platform/industry/index.js
 import {
   buildEnrollmentPeriodPostingSource,
   buildSyncEnrollmentPaymentsHandler,
-  MongoEnrollmentRepository,
 } from "../index.js";
 
 /** The stored name of the period model (kernel models accessor), kept as a literal here. */
@@ -1131,30 +1130,29 @@ describe("enrollment period revenue: cancel, races and replays (card 3.31)", () 
     const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
     const period = await periodAt(world, enrollment.enrollmentId, 0);
     expect((await pay(world, period.enrollmentPeriodId, 10001)).status).toBe(201);
-    const original = MongoEnrollmentRepository.prototype.savePeriod;
-    // A concurrent writer bumps the period version right before the recognition write.
+    const original = MongoPaymentSummaryRepository.prototype.setTotal;
+    // A concurrent writer bumps the period version after it was read and before the recognition
+    // writes it (the summary touch runs first, inside the same transaction).
+    let bumped = false;
     const spy = vi
-      .spyOn(MongoEnrollmentRepository.prototype, "savePeriod")
+      .spyOn(MongoPaymentSummaryRepository.prototype, "setTotal")
       .mockImplementation(async function (
-        this: MongoEnrollmentRepository,
-        toSave: EnrollmentPeriod,
-        changeEnd: boolean,
+        this: MongoPaymentSummaryRepository,
+        input: Parameters<MongoPaymentSummaryRepository["setTotal"]>[0],
       ) {
-        if (toSave.revenueRecognizedOn !== undefined) {
+        if (!bumped && input.requestType === PAYMENT_REQUEST_TYPE.ENROLLMENT) {
+          bumped = true;
           await withOrganizationContext(world.organizationA, () =>
             models({})
               .get(ENROLLMENT_PERIOD_MODEL)
               .updateOne(
-                {
-                  organizationId: world.organizationA,
-                  enrollmentPeriodId: toSave.enrollmentPeriodId,
-                },
+                { organizationId: world.organizationA, enrollmentPeriodId: input.requestId },
                 { $inc: { version: 1 } },
                 bumpSessionOptions(),
               ),
           );
         }
-        return original.call(this, toSave, changeEnd);
+        return original.call(this, input);
       });
     try {
       const response = await world.alice.call(
