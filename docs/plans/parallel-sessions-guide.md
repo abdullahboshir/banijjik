@@ -113,9 +113,9 @@ A session is finished only when all of these hold. "Done" without a green CI run
 | M.7 A2 blocks, erasure, data export | now (plan Refresh A2) | | T1 | `banijjik-3.6b-a3` |
 | M.7 B report screens | now (plan Refresh B) | | T2 | `banijjik` |
 | 3.35 stable replay-then-follow test | now | | T3 | any free folder, or a lead subagent |
-| 3.33 event sessions occupy resources | the lead plans it next | | T1 | |
+| 3.33 event sessions occupy resources | now (plan `3.33.md`) | | T1 | next free folder |
 | 3.34 reversal after a closed request (option) | after 3.24 merges (plan ready) | 3.24 | T1 | |
-| M.6 storefront | the lead plans it after 3.33 | | T1 / T2 | |
+| M.6 storefront | the lead plans it next | | T1 / T2 | |
 | 3.31 enrollment revenue posting, 3.32 enrollment cancel refunds | planned when 3.24 merges | 3.24 | T1 | |
 | 3.5b returns, 3.9 POS, 3.11 C | planned when 3.5a B and 3.24 merge | | T1 | |
 | M.8b, M.9 | planned as their inputs merge | | | |
