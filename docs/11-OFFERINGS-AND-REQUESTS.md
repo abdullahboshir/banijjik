@@ -193,6 +193,9 @@ New aggregate **SalesReturn** (sales, location scope, append-only):
 
 **Bookings and enrollments** don't use SalesReturn. Their refunds are Payment REFUND (or store credit) through cancellation policy (§5.4) or `CancelEnrollment` (§8.4).
 
+**Implementation note (card 3.5b A1, API, 2026-10-25):** the return is the plan's `SalesReturn` in `sales` (routes `POST /orders/:orderId/returns` with `/preview`, `GET /sales/returns`). The window is measured from the order's `completedAt`. The lines are valued as cumulative shares of the stored net total, not by the `lineNetTotal × returnedQty / soldQty` rounding above. Approval tokens are `{ refund?, returnNotReceived? }`. Refund and reverse details, and the exchange, stay open for A2 (plan decisions 12–13).
+
+
 ## 7. Payments & store credit (module `payment`)
 
 ### 7.1 Payment (ADR-123)
