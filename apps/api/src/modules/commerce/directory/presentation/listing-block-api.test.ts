@@ -152,7 +152,7 @@ describe("Listing Block API (M.7 A2)", () => {
       cookies: viewerCookies,
       body: { listingNumber: l1.listingNumber },
     });
-    expect(blockRes.status).toBe(200);
+    expect(blockRes.status).toBe(201);
     expect(blockRes.body.data.listingNumber).toBe(l1.listingNumber);
     expect(blockRes.body.data.listingId).toBe(l1.listingId);
     const firstBlockId = blockRes.body.data.listingBlockId;
@@ -328,6 +328,31 @@ describe("Listing Block API (M.7 A2)", () => {
       body: { listingNumber: lA.listingNumber },
     });
     expect(crossRes.status).toBe(404);
+  });
+
+  it("answers one 201 and one 200 and stores one row for two parallel identical blocks", async () => {
+    const world = await aDirectoryWorld();
+    const listing = await approvedListing(world, world.organizationA);
+    const viewer = await signInCustomer(harness, world.organizationA);
+    const viewerCookies = asCustomerCookies(viewer.session);
+    const block = () =>
+      callStorefront(harness.app, {
+        method: "post",
+        organizationId: world.organizationA,
+        suffix: "/my/listing-blocks",
+        cookies: viewerCookies,
+        body: { listingNumber: listing.listingNumber },
+      });
+
+    const [first, second] = await Promise.all([block(), block()]);
+
+    expect([first.status, second.status].sort()).toEqual([200, 201]);
+    expect(first.body.data.listingBlockId).toBe(second.body.data.listingBlockId);
+    const rows = await harness.connections.tenantShared
+      .collection("listing_blocks")
+      .find({ customerAccountId: viewer.verifyResponse.body.data.customerAccountId })
+      .toArray();
+    expect(rows).toHaveLength(1);
   });
 
   it("501st block returns 409", async () => {

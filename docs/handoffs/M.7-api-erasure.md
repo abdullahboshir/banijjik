@@ -23,6 +23,11 @@
 7. **Tests rewritten where the name promised more than the body:** the sign-in/erase refusal used a random challenge id and the expired-challenge test passed because of the earlier wrong code (the first draft expired a challenge against the wall clock, not the test clock). All erase-code tests now use real challenge ids and check the stored attempts and purpose. Added: used challenge, own-phone/body-ignored, contact anonymized fields, event without phone or name, 1001-row truncation (blocks and credit entries), another account's data absent, paged block list, rollback then success with the same code.
 8. Directory README trimmed to the 30-line module rule.
 
+## Review R1 fixes (lead review of `88ff26a3`)
+1. **Export of staff-only contact fields:** `ExportCustomerDataUseCase` reads the effective contact field definitions through the required `contactFields: ContactCustomFieldReader` (wired in `routes/storefront.ts` with the adapter the tenant router uses) and exports only values whose definition has `visibility.storefront === true`; keys with no definition are dropped.
+2. **Rollback test:** the participant now deletes the account's sessions and anonymizes the contact, then throws; the test asserts sessions are back, the contact is not anonymized, the account exists and the challenge is unconsumed, then the same code works.
+3. **Block duplicate race:** `ListingBlockRepository.insert` returns `{ block, created }`; when the unique index reports a duplicate the use case answers the existing row with `created: false` and skips the cap check, so it cannot delete the older row. The route answers 201 for a new block and 200 for an existing one (the first test now expects 201).
+
 ## Verified with (real output)
 - `npx tsc --noEmit` in `apps/api`: no output. eslint over every file changed against `origin/main`: no output. prettier check on the same files: `All matched files use Prettier code style!`.
 - `apps/api`: `src/modules/commerce/contact` plus `src/modules/commerce/directory/presentation`: `Test Files 14 passed (14)`, `Tests 148 passed (148)` (before the last README trim and rebase); `src/modules/commerce/credit` plus `module-contracts.test.ts` and `module-registry-contracts.test.ts` pass (module-contracts 59/59 after the README trim).
@@ -38,11 +43,13 @@
 
 Plan list mapping: blocks (all in the first file; the "block again 200 same row" and the unblock cases are in the first test); erase code (4); erase (6 + rollback); export (5); module off (1); permission and tenancy (last test plus `cross-org listing returns 404`).
 
+R1 tests added: `exports only the contact fields visible on the storefront`; `answers one 201 and one 200 and stores one row for two parallel identical blocks`; the rollback test name is unchanged but now proves written data is undone.
+
 ## T1 self-review (guide §11)
 | # | Item | Where |
 |---|---|---|
 | 1 | Balance changes write a ledger entry; results checked | n/a: the erase changes no balance. The forfeited balance stays on the erased account id and ledger entries stay (doc 16 principle 3); only PENDING purchases are cancelled (no ledger effect) — `cancels the pending purchase and keeps the credit entries` |
-| 2 | Limits inside the transaction; double action stopped by a unique index | Challenge consume is one conditional update (`consumedAt` not set) inside the erase transaction: `refuses an expired erase challenge and a used one`; block uniqueness is the unique index `{organizationId, customerAccountId, listingId}`, a repeat returns the existing row: `blocks a listing, is idempotent on duplicate…`; the 500 cap is insert-then-count with removal (fails closed): `501st block returns 409` |
+| 2 | Limits inside the transaction; double action stopped by a unique index | Parallel identical blocks: `answers one 201 and one 200 and stores one row for two parallel identical blocks`; Challenge consume is one conditional update (`consumedAt` not set) inside the erase transaction: `refuses an expired erase challenge and a used one`; block uniqueness is the unique index `{organizationId, customerAccountId, listingId}`, a repeat returns the existing row: `blocks a listing, is idempotent on duplicate…`; the 500 cap is insert-then-count with removal (fails closed): `501st block returns 409` |
 | 3 | Currency compared, never assumed | n/a: only credit counts, no money amounts |
 | 4 | Percentage clamped | n/a |
 | 5 | Reversals undo everything | n/a: no reversal; erasure is idempotent per participant (a second call finds nothing) |
@@ -61,7 +68,7 @@ Plan list mapping: blocks (all in the first file; the "block again 200 same row"
 | 21 | Names from contracts | Section keys, purposes, audit action, event type, rules and error keys come from `@banijjik/contracts`; no runtime-built names |
 | 22 | Audit fields, `version`, indexes with `organizationId`; no literals in validation | `listing-block.schema.ts` (audit fields, `version`, both indexes start with `organizationId`); schemas use no message literals |
 | 23 | Other modules only through `index.ts`; no infrastructure class exported | Directory and credit import the ports from `contact/index.ts`; `routes/storefront.ts` takes the participants from the three `index.ts` files |
-| 24 | Plan tests exist; docs match | See the mapping above; ADR-134 amendment, doc 16 note and READMEs match the code |
+| 24 | Plan tests exist; docs match | The rollback test now writes before it throws (`rolls back all changes and keeps OTP challenge valid if a participant throws`); contact field visibility: `exports only the contact fields visible on the storefront`; See the mapping above; ADR-134 amendment, doc 16 note and READMEs match the code |
 
 ## Not done / known gaps
 - The forfeited credit balance stays as a balance row on the erased account id (no forfeit ledger entry). The plan keeps entries as they are and only reports the number; if finance wants the balance zeroed with an EXPIRE-style entry, that is a plan decision.

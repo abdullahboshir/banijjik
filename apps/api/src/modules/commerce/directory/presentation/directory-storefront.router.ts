@@ -281,7 +281,7 @@ function mountBlocks(router: Router, input: DirectoryStorefrontRouterDependencie
         customerAccountId: requireCurrentCustomerAccountId(),
         listingNumber: body.listingNumber,
       });
-      sendData(response, result.block, { status: 200 });
+      sendData(response, result.block, { status: result.created ? HTTP_CREATED : 200 });
     },
   );
 

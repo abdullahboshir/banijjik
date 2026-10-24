@@ -8,6 +8,7 @@ import type {
   CustomerSessionRepository,
   OtpChallengeRepository,
 } from "./ports/customer-account-ports.js";
+import type { ContactCustomFieldReader } from "./ports/custom-field-ports.js";
 import type {
   CustomerDataExportParticipant,
   CustomerErasureParticipant,
@@ -29,6 +30,8 @@ export interface CustomerAuthDependencies {
   readonly tokens: CustomerAccessTokenIssuer;
   /** Seals and hashes one-time codes (`OTP_SECRET`). Never logged. */
   readonly otpSecret: string;
+  /** Which stored contact values the customer may see in an export (storefront visibility). */
+  readonly contactFields: ContactCustomFieldReader;
   /** Other modules' parts of an erasure; required, an empty list is valid in a unit test. */
   readonly erasureParticipants: readonly CustomerErasureParticipant[];
   readonly exportParticipants: readonly CustomerDataExportParticipant[];

@@ -688,6 +688,55 @@ describe("Customer Erasure & Data Export API (M.7 A2)", () => {
       expect(credit.unlocksTruncated).toBe(false);
     });
 
+    it("exports only the contact fields visible on the storefront", async () => {
+      const world = await aWorld();
+      const customer = fullCustomerOf(await signInCustomer(harness, world.organizationA));
+      for (const [fieldKey, storefront] of [
+        ["shown_note", true],
+        ["staff_note", false],
+      ] as const) {
+        const created = await world.alice.call(
+          "post",
+          `/orgs/${world.organizationA}/custom-fields`,
+          {
+            entityType: "contact",
+            fieldKey,
+            fieldType: CUSTOM_FIELD_TYPE.TEXT,
+            label: { bn: "নোট", en: "Note" },
+            isRequired: false,
+            visibility: { admin: true, storefront, bot: false },
+            botAsk: false,
+            isSearchable: false,
+            isSensitive: false,
+            sortOrder: 1,
+          },
+        );
+        expect(created.status).toBe(201);
+      }
+      await harness.connections.tenantShared.collection("contacts").updateOne(
+        { phoneE164: customer.phoneE164 },
+        {
+          $set: {
+            customFields: {
+              shown_note: "visible",
+              staff_note: "internal",
+              ghost_key: "no definition",
+            },
+          },
+        },
+      );
+
+      const exportRes = await callStorefront(harness.app, {
+        method: "get",
+        organizationId: world.organizationA,
+        suffix: "/my/data-export",
+        cookies: customer.cookies,
+      });
+
+      expect(exportRes.status).toBe(200);
+      expect(exportRes.body.data.contact.customFields).toEqual({ shown_note: "visible" });
+    });
+
     it("never shows another account's blocks, reports or phone", async () => {
       const world = await aWorld();
       const owner = await createCustomerWithListing(world, world.organizationA);
