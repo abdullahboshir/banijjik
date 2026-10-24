@@ -1,7 +1,8 @@
 /**
  * Headers the proxy copies from the browser to the API. Everything else is dropped: most of all `Origin`
  * and `Host`, which the API would compare with its own allow-list (the proxy is a server-to-server call
- * from the API's view, ADR-119). `x-forwarded-for` is not forwarded: a browser could forge it.
+ * from the API's view, ADR-119). `x-forwarded-for` is copied as Next.js received it, never extended by the
+ * proxy: the API counts the storefront as one trusted hop (TRUSTED_PROXY_HOPS, M.6 amendment 1).
  */
 const FORWARDED_REQUEST_HEADERS = [
   "accept",
@@ -9,6 +10,7 @@ const FORWARDED_REQUEST_HEADERS = [
   "content-type",
   "cookie",
   "idempotency-key",
+  "x-forwarded-for",
   "user-agent",
 ] as const;
 

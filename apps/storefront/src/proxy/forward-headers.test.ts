@@ -36,4 +36,16 @@ describe("forwarded headers", () => {
     expect(outgoing.get("cookie")).toBe("sf_access=abc");
     expect(outgoing.get("idempotency-key")).toBe(IDEMPOTENCY_KEY);
   });
+
+  it("forwards the client address chain the storefront received", () => {
+    const incoming = new Headers({ "x-forwarded-for": "203.0.113.7, 198.51.100.2" });
+
+    const outgoing = headersForUpstream(incoming);
+
+    expect(outgoing.get("x-forwarded-for")).toBe("203.0.113.7, 198.51.100.2");
+  });
+
+  it("adds no address of its own when the browser sent none", () => {
+    expect(headersForUpstream(new Headers()).get("x-forwarded-for")).toBeNull();
+  });
 });
