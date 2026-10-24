@@ -8,10 +8,10 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-24 (evening, Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `96f1954` (M.7 A2 merged) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
+Last updated: 2026-10-24 (19:50 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `d9597da` (3.34 refresh) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
 
 ## 1. Where the project stands
-- Phase 3: 42 numbered cards. **33 fully merged**: 3.0–3.4b, 3.6, 3.8 (all parts), 3.8a/b/c, 3.12–3.23, 3.25–3.30, **3.35**. Partly done (API merged, screens left): 3.5a (B), 3.6b (B), 3.7 (B), 3.11 (B, C). Running: 3.24 (R2), 3.33 and every Part B. Not started: 3.5b, 3.9, 3.10, 3.31, 3.32, 3.34. Track M: M.0–M.5, **M.7 (all parts)**, M.8a merged; M.6, M.8b, M.9 left. Details: `docs/STATUS.md`.
+- Phase 3: 42 numbered cards. **35 fully merged**: 3.0–3.4b, 3.6, 3.7, 3.8 (all parts), 3.8a/b/c, 3.12–3.30, 3.35. Partly done (API merged, screens left): 3.5a (B), 3.6b (B), 3.7 (B), 3.11 (B, C). Running: 3.24 (R2), 3.33 and every Part B. Not started: 3.5b, 3.9, 3.10, 3.31, 3.32, 3.34. Track M: M.0–M.5, **M.7 (all parts)**, M.8a merged; M.6, M.8b, M.9 left. Details: `docs/STATUS.md`.
 - **Owner request (2026-10-23):** finish every partly done card and plan everything not started; the owner runs 6–7 sessions (Opus plans and reviews, Sonnet 5.5 codes).
 - **Owner (2026-10-24 evening): the lead runs the implementer tools itself** (launch, monitor, restart, answer questions) and may code cards with Sonnet subagents. How: §2a.
 - Owner decision (3.24): a stock receipt says how it was paid (CASH/BKASH/NAGAD/BANK) or `ON_CREDIT` (new `ACCOUNTS_PAYABLE`); opening stock → `OPENING_BALANCE`.
@@ -29,12 +29,11 @@ Prompts and new logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orches
 
 | Card / part | Branch | Folder | Tier | Who | State → next step |
 |---|---|---|---|---|---|
-| 3.24 order and stock posting | `s/3.24-api-order-stock-posting` | `banijjik-3.5a` | T1 | Sonnet (stopped at limit) | R1 items all fixed (re-review passed except two items). **R2** (`docs/handoffs/3.24-api-review-R2.md`: stock business date hard-codes `Asia/Dhaka`; race test accepts a double count) being fixed: local head `93d8749b` rebased, not pushed. Next: finish R2, push (`--force-with-lease` allowed), green CI, then the lead checks the two items and merges (owner rule: no new round). |
-| 3.7 B enrollment screens | `s/3.7-ui-enrollment` | `banijjik-lead` | T2 | Sonnet (stopped at limit) | `27da5626` "complete enrollment screens…" pushed, CI green; 2 files uncommitted; handoff not finished. Next: finish handoff, card:check, merge check. |
-| 3.6b B rental and event screens | `s/3.6b-ui-rental-event` | `banijjik-1.7b` | T2 | Sonnet (stopped at limit) | Codex left it half done (`15628e16`); Sonnet run 3 has 44 files uncommitted (session sheets, selector, calendar). Next: finish (`lead-orchestra/3.6bb-continue2.md`), merge check. |
-| 3.5a B order screens | `s/3.5a-ui-orders` | `banijjik-m2` | T2 | Sonnet (stopped at limit) | `5389a45a` (Amendment 1 API) local only + screen work uncommitted. Next: finish, merge check. |
-| 3.11 B commission screens | `s/3.11-ui-commission` | `banijjik-3.11` | T2 | none (Codex gave up 3 times on lint) | About 42 files uncommitted, no commit; 8 lint errors left (oversized components; list in `lead-orchestra/3.11b-full3.md`); unit tests pass; the vitest setup path error Codex saw needs a check. **Next (after 20:40): Sonnet** with `3.11b-full3.md`. Codex is not suited to this refactor. |
-| 3.33 event sessions occupy resources | `s/3.33-api-session-resources` | `banijjik` | T1 | none (Codex stopped) | Local only: `5a508728` (code), `c049271e` (V/U tests, ADR-141, docs, handoff, STATUS), `8fc3fc06` (API/concurrency tests: **unusable**: the fixture uses an undefined `rental`, "createRental" makes a session, the race tests only call `reserveSeats`). **Next (after 20:40): Sonnet** rewrites A1–A15, C1–C2, J1 exactly as the plan names them, checks the code against decisions 1–12, pushes, green CI; then strict T1 review. Never commit or revert `.claude/settings.json` in this folder. |
+| 3.34 reversal after a closed request | `s/3.34-api-reversal-after-close` | `banijjik-3.5a` | T1 | Sonnet subagent (this chat) | Launched 19:45 from `d9597da` (plan Refresh 1). Strict T1 review on DONE. |
+| 3.6b B rental and event screens | `s/3.6b-ui-rental-event` | `banijjik-1.7b` | T2 | Sonnet subagent (resumed 19:10) | Codex left it half done (`15628e16`); Sonnet run 3 has 44 files uncommitted (session sheets, selector, calendar). Next: finish (`lead-orchestra/3.6bb-continue2.md`), merge check. |
+| 3.5a B order screens | `s/3.5a-ui-orders` | `banijjik-m2` | T2 | Sonnet subagent (resumed 19:10) | `5389a45a` (Amendment 1 API) local only + screen work uncommitted. Next: finish, merge check. |
+| 3.11 B commission screens | `s/3.11-ui-commission` | `banijjik-3.11` | T2 | Sonnet subagent (19:10) | About 42 files uncommitted, no commit; 8 lint errors left (oversized components; list in `lead-orchestra/3.11b-full3.md`); unit tests pass; the vitest setup path error Codex saw needs a check. **Next (after 20:40): Sonnet** with `3.11b-full3.md`. Codex is not suited to this refactor. |
+| 3.33 event sessions occupy resources | `s/3.33-api-session-resources` | `banijjik` | T1 | Sonnet subagent (19:10) | Local only: `5a508728` (code), `c049271e` (V/U tests, ADR-141, docs, handoff, STATUS), `8fc3fc06` (API/concurrency tests: **unusable**: the fixture uses an undefined `rental`, "createRental" makes a session, the race tests only call `reserveSeats`). **Next (after 20:40): Sonnet** rewrites A1–A15, C1–C2, J1 exactly as the plan names them, checks the code against decisions 1–12, pushes, green CI; then strict T1 review. Never commit or revert `.claude/settings.json` in this folder. |
 
 **Codex launches:** even with the allow rule, the `"$(cat …)"` form goes to the classifier. It passes once the owner says in the chat that the lead may run Codex with full access (owner did on 2026-10-24 18:00: "full access diyechi"). Codex (low effort) stops early: on lint ("BLOCKED"), on "waiting for CI", or with plan items written as "known gaps". Each restart needs a note that names exactly what is missing.
 
@@ -61,11 +60,11 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions.
 
 ## 4. Next actions, in order
-1. Verify every §2 row (git, CI, `*.last.md`). After 20:40 resume or relaunch the four Sonnet rows; relaunch Codex rows that stop early with an exact note; answer `STATUS: QUESTION` rows (ask the owner only for product decisions).
-2. As rows finish: check the 3.24 R2 items and merge; merge checks for 3.7 B, 3.6b B, 3.5a B, 3.11 B; strict T1 review of 3.33. Merge one by one through `s/merge-<card>` branches (cherry-pick only the non-merge commits).
-3. **Ready to release when a folder frees up:** 3.34 (T1, plan ready, after 3.24 merges).
+1. Verify every §2 row (git, CI, `*.last.md`). Sonnet rows run as subagents of the 19:10 chat; if it is closed, relaunch them; relaunch Codex rows that stop early with an exact note; answer `STATUS: QUESTION` rows (ask the owner only for product decisions).
+2. As rows finish: merge checks for 3.6b B, 3.5a B, 3.11 B; strict T1 review of 3.33 and 3.34. Merge one by one through `s/merge-<card>` branches (cherry-pick only the non-merge commits).
+3. **Lead now:** plan 3.31 and 3.32 (3.24 merged).
 4. **Plan M.6** (storefront app): ADR-010, ADR-031, `06 §8`, `13-UX`, `routes/storefront.ts`, `contact/presentation/customer-cookies.ts`, CORS in `app.ts`. Open: host → organization, customer cookies across hosts. M.6a T1, M.6b T2. The M.7 A2 erase and export endpoints need M.6 pages.
-5. After 3.24 merges: plan 3.31 and 3.32. After 3.5a B and 3.24: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10 and the phase 3 review.
+5. After 3.5a B: 3.11 C, 3.5b, 3.9 POS. Then M.8b, M.9, 3.10 and the phase 3 review.
 6. Follow-ups:
    - Refund dialog has no client-side maximum (3.30); a small T3 card if wanted.
    - Replayer safety across several worker processes (STATUS 3.16).
@@ -91,8 +90,8 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-24 19:50** (Opus): resumed Sonnet at 19:10; merged 3.7 B (`5541586`) and 3.24 after R2 (`65415ef`); refreshed and launched 3.34.
 - **2026-10-24 18:15–18:45** (Opus, took over while `banijjik-03` still ran its children; agreed by message that this chat owns main and LEAD-STATE): merged 3.35 (`b080b0f`), M.7 B (`c7faadc`) and M.7 A2 after T1 review R1 (`96f1954`); 3.24 re-review → R2 (`8adeda3`, 2 items). Codex had left 3.7 B and 3.6b B half done: relaunched them, 3.5a B and 3.24 R2 as Sonnet (all stopped at the Sonnet limit, resets 20:40). Codex ran 3.11 B three times (lint never fixed) and 3.33 three times (code done, tests unusable): both wait for Sonnet.
 - **2026-10-24 evening** (Opus): owner asked the lead to run the tools itself. Mapped every tool to its card from its logs; launched Qoder (3.5a B, 3.11 B, 3.24 fixes), Codex CLI (3.6b B, 3.7 B, after the owner's allow rule) and Sonnet (M.7 A2 finish, M.7 B, 3.35). Plan 3.5a Amendment 1 (`b47fafd`); 3.24 T1 review R1, changes requested (`247f4d4`). Freed 7.3 GB of disk. Handed over to a new session.
 - **2026-10-24 late afternoon** (Opus): verified the seven sessions (none done; 3.24 CI red, still working; 3.6b B and M.7 B not started). Planned 3.33 event sessions occupy their resources (T1, ADR-141, `8eaadea`).
-- **2026-10-24 afternoon** (Opus): merge check of M.8a passed and merged (`d06e36a`); T1 review R1 of 3.27 passed, the lead fixed the stale period version after a sync, merged (`5ebe469`). Refreshed and released the screen parts 3.5a B, 3.6b B, 3.7 B, 3.11 B, plus M.7 A2 (T1) and M.7 B; new ready board (`8e729ae`). Owner decided the reversal-after-close question (standard plus option): planned 3.34 (ADR-140) and 3.35 (flaky replay test).
 - **2026-10-24 midday** (Opus): T1 review and merge of 3.23 and merge check of 3.26 (`cecb5a0`); another lead chat was turned off by the owner. Planned 3.27 (enrollment payments, ADR-139), refreshed 3.24, planned and ran 3.28–3.30 with Sonnet subagents (owner request), merged all three (`67848d6`). Checked M.8a content; gave 3.24, 3.27 and M.8a prompts.
