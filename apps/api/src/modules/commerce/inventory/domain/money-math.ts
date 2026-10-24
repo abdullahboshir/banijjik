@@ -27,7 +27,37 @@ export function microsToMinor(costMicros: number): number {
   return Number(divideRoundHalfUp(BigInt(costMicros), COST_MICROS_PER_MINOR));
 }
 
+function quantityToBigIntFraction(quantity: number): { numerator: bigint; denominator: bigint } {
+  if (Number.isInteger(quantity)) {
+    return { numerator: BigInt(quantity), denominator: 1n };
+  }
+  const str = quantity.toString();
+  const [intPart = "0", fracPart = ""] = str.split(".");
+  const denominator = 10n ** BigInt(fracPart.length);
+  const sign = quantity < 0 ? -1n : 1n;
+  const absInt = BigInt(intPart.replace("-", ""));
+  const numerator = sign * (absInt * denominator + BigInt(fracPart));
+  return { numerator, denominator };
+}
+
 /** Line value in minor units: (costMicros × quantity) / 10000, half up once. */
 export function lineValueMinor(costMicros: number, quantity: number): number {
-  return Number(divideRoundHalfUp(BigInt(costMicros) * BigInt(quantity), COST_MICROS_PER_MINOR));
+  const fraction = quantityToBigIntFraction(quantity);
+  const numerator = BigInt(costMicros) * fraction.numerator;
+  const denominator = COST_MICROS_PER_MINOR * fraction.denominator;
+  return Number(divideRoundHalfUp(numerator, denominator));
+}
+
+/** Computes the value in minor units of a movement using unitCostMicros or unitCostAmount. */
+export function movementValue(movement: {
+  readonly quantityDelta: number;
+  readonly unitCostMicros?: number;
+  readonly unitCostAmount?: number;
+}): number {
+  const micros =
+    movement.unitCostMicros ??
+    (movement.unitCostAmount !== undefined ? minorToMicros(movement.unitCostAmount) : undefined);
+  if (micros === undefined) return 0;
+  const quantity = movement.quantityDelta < 0 ? -movement.quantityDelta : movement.quantityDelta;
+  return lineValueMinor(micros, quantity);
 }

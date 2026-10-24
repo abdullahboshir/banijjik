@@ -26,6 +26,9 @@ export {
   type InventoryStockChangedPayload,
   type InventoryStockLowPayload,
   type InventoryTransferCompletedPayload,
+  type InventoryStockSourceRecordedPayload,
+  STOCK_RECEIPT_PAID_VIA,
+  type StockReceiptPaidVia,
 } from "./inventory-contracts.js";
 export { INVENTORY_EVENT_TYPE, type InventoryEventType } from "./inventory-event-type.js";
 export { INVENTORY_RULE_KEY, type InventoryRuleKey } from "./inventory-rule-key.js";

@@ -3,6 +3,7 @@ import {
   STOCK_MOVEMENT_REASON,
   STOCK_STATE,
   type StockMovementReason,
+  type StockReceiptPaidVia,
 } from "@banijjik/contracts/inventory";
 import {
   newId,
@@ -74,6 +75,7 @@ export function buildStockMovementDocument(input: {
   readonly now: Date;
   readonly outgoingUnitCost: Money | undefined;
   readonly unitCostMicros?: number;
+  readonly paidVia?: StockReceiptPaidVia;
 }): StockMovementRecord {
   const outgoingUnitCost = input.outgoingUnitCost;
   return {
@@ -96,6 +98,7 @@ export function buildStockMovementDocument(input: {
     ...(input.offeringId === undefined ? {} : { offeringId: input.offeringId }),
     ...(input.variantId === undefined ? {} : { variantId: input.variantId }),
     ...(input.note === undefined ? {} : { note: input.note }),
+    ...(input.paidVia === undefined ? {} : { paidVia: input.paidVia }),
     occurredAt: input.now,
     businessDate: input.now.toISOString().slice(0, 10),
     createdAt: input.now,
@@ -158,6 +161,7 @@ export function computeMovementOutcome(input: {
   readonly offeringId?: string;
   readonly variantId?: string;
   readonly note?: string;
+  readonly paidVia?: StockReceiptPaidVia;
   readonly unitCost: Money | undefined;
   readonly unitCostMicros?: number;
   readonly lowStockThreshold: number;
@@ -192,6 +196,7 @@ function movementQuantities(input: {
   readonly reason: StockMovementReason;
   readonly unitCost: Money | undefined;
   readonly unitCostMicros?: number;
+  readonly paidVia?: StockReceiptPaidVia;
   readonly lowStockThreshold: number;
   readonly allowNegativeStock: boolean;
   readonly existing: InventoryLevelRecord;
@@ -242,6 +247,7 @@ function buildMovementRecord(input: {
   readonly offeringId?: string;
   readonly variantId?: string;
   readonly note?: string;
+  readonly paidVia?: StockReceiptPaidVia;
   readonly unitCost: Money | undefined;
   readonly unitCostMicros?: number;
   readonly existing: InventoryLevelRecord;
@@ -277,5 +283,6 @@ function buildMovementRecord(input: {
     now: input.now,
     outgoingUnitCost,
     ...(unitCostMicros === undefined ? {} : { unitCostMicros }),
+    ...(input.paidVia === undefined ? {} : { paidVia: input.paidVia }),
   });
 }

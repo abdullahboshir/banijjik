@@ -38,6 +38,7 @@ export const SYSTEM_ACCOUNT_CODE = defineEnum([
   "OPENING_BALANCE",
   "COMMISSION_EXPENSE",
   "COMMISSION_PAYABLE",
+  "ACCOUNTS_PAYABLE",
 ]);
 
 export type SystemAccountCode = (typeof SYSTEM_ACCOUNT_CODE)[keyof typeof SYSTEM_ACCOUNT_CODE];

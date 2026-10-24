@@ -2,12 +2,35 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { lineValueMinor, microsToMinor, minorToMicros } from "./money-math.js";
+import { lineValueMinor, microsToMinor, minorToMicros, movementValue } from "./money-math.js";
 import { nextMovingAverage } from "./moving-average.js";
 
 const domainDir = dirname(fileURLToPath(import.meta.url));
 
 describe("moving average in cost micros", () => {
+  it("rounds movement value with decimals and sub-minor unit cost half-up consistently", () => {
+    // 2.5 units @ 5500 micros (0.55 minor units) -> 2.5 * 0.55 = 1.375 minor units.
+    // Half-up rounding on 1.375 minor units:
+    // micros = 2.5 * 5500 = 13750 micros. (13750 + 5000) / 10000 = 18750 / 10000 = 1 minor unit.
+    // Another case: 3.5 units @ 15000 micros (1.5 minor units) -> 3.5 * 1.5 = 5.25 minor units (52500 micros) -> rounds to 5.
+    // Exact half case: 1.5 units @ 10000 micros (1 minor unit) -> 1.5 minor units (15000 micros) -> (15000 + 5000)/10000 = 2 minor units (half-up).
+    expect(lineValueMinor(10_000, 1.5)).toBe(2);
+    expect(
+      movementValue({
+        quantityDelta: 1.5,
+        unitCostMicros: 10_000,
+      }),
+    ).toBe(2);
+
+    // Negative delta (e.g. SALE or DAMAGE) produces positive movement value identical to receipt
+    expect(
+      movementValue({
+        quantityDelta: -1.5,
+        unitCostMicros: 10_000,
+      }),
+    ).toBe(2);
+  });
+
   it("keeps ৳5/kg rice (0.5 paisa/gram) exact after a gram receipt", () => {
     // ৳5/kg = 500 paisa / 1000 g = 0.5 paisa/g = 5000 micros/g
     const averageMicros = nextMovingAverage({

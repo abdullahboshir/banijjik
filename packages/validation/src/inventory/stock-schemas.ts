@@ -1,4 +1,4 @@
-import { STOCK_ADJUSTMENT_REASON } from "@banijjik/contracts/inventory";
+import { STOCK_ADJUSTMENT_REASON, STOCK_RECEIPT_PAID_VIA } from "@banijjik/contracts/inventory";
 import { z } from "zod";
 import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
@@ -16,6 +16,7 @@ const receiptLineSchema = z.object({
 
 export const stockReceiptRequestSchema = z.object({
   locationId: uuidV7Schema,
+  paidVia: z.enum(Object.values(STOCK_RECEIPT_PAID_VIA) as [string, ...string[]]),
   supplierNote: z.string().trim().max(500).optional(),
   lines: z.array(receiptLineSchema).min(1).max(100),
 });

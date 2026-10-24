@@ -291,6 +291,7 @@ System accounts are seeded per org with fixed `accountCode`s (contracts enum `SY
 - Every posting is idempotent: a unique index on `(organizationId, sourceType, sourceId, postingKey)`. A reversal posts the mirrored lines with `reversesJournalEntryId`.
 - Debits = credits is asserted before insert. A failed posting retries via the outbox, and after N attempts raises an alert. It never silently skips.
 - Card 3.8c owns the built rows of the matrix (payments, bookings, expenses, store-credit expiry, rounding) and the full-day trial balance; order, stock, return and COD rows come with their cards (ADR-124).
+- Card 3.24 (ADR-138) implemented the order rows (revenue recognition, advance settle from RequestAdvanceReader, cost of goods sold from SALE movements) and stock rows (receipt funding via CASH/BKASH/NAGAD/BANK/ACCOUNTS_PAYABLE, opening stock, adjustments, and damage write-offs) via handlers `accounting.postOrders` and `accounting.postStock`.
 
 ## 11. Scheduled jobs (all `runAsSystem(SCHEDULED_JOB)`, idempotent, per org timezone)
 

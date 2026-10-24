@@ -1,10 +1,12 @@
 import {
   INVENTORY_ITEM_STATUS,
   STOCK_MOVEMENT_REASON,
+  STOCK_RECEIPT_PAID_VIA,
   STOCK_SOURCE_TYPE,
   STOCK_STATE,
   type InventoryItemStatus,
   type StockMovementReason,
+  type StockReceiptPaidVia,
   type StockSourceType,
   type StockState,
 } from "@banijjik/contracts/inventory";
@@ -83,6 +85,7 @@ export interface StockMovementDocument {
   offeringId?: string;
   variantId?: string;
   note?: string;
+  paidVia?: StockReceiptPaidVia;
   occurredAt: Date;
   businessDate: string;
   createdAt: Date;
@@ -109,6 +112,7 @@ export const stockMovementSchema = new Schema<StockMovementDocument>(
     offeringId: { type: String },
     variantId: { type: String },
     note: { type: String },
+    paidVia: { type: String, enum: Object.values(STOCK_RECEIPT_PAID_VIA) },
     occurredAt: { type: Date, required: true },
     businessDate: { type: String, required: true },
     createdByUserId: { type: String, default: null },
@@ -118,6 +122,7 @@ export const stockMovementSchema = new Schema<StockMovementDocument>(
 );
 
 stockMovementSchema.index({ organizationId: 1, stockMovementId: 1 }, { unique: true });
+stockMovementSchema.index({ organizationId: 1, sourceId: 1 });
 stockMovementSchema.index({
   organizationId: 1,
   locationId: 1,

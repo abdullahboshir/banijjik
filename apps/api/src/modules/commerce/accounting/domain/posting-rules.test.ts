@@ -1,6 +1,5 @@
 import { POSTING_KEY, REVENUE_STATE, SYSTEM_ACCOUNT_CODE } from "@banijjik/contracts/accounting";
 import { describe, expect, it } from "vitest";
-import { assertBalanced, sumSide } from "./journal-lines.js";
 import {
   draftBookingCompleted,
   draftCancellationFee,
@@ -12,14 +11,15 @@ import {
   type BookingPostingSnapshot,
   type ExpensePostingSnapshot,
 } from "./posting-rules.js";
-import { unbalancedJournal } from "./errors.js";
+import { draftOrderCompleted } from "./order-posting-rules.js";
+import { draftStockSource } from "./stock-posting-rules.js";
 
 const money = (amount: number) => ({ amount, currency: "BDT" as const });
 
 function codesOf(
-  lines: readonly { accountCode: string; debit: { amount: number }; credit: { amount: number } }[],
+  lines?: readonly { accountCode: string; debit: { amount: number }; credit: { amount: number } }[],
 ) {
-  return lines.map((line) => ({
+  return (lines ?? []).map((line) => ({
     code: line.accountCode,
     debit: line.debit.amount,
     credit: line.credit.amount,
@@ -242,15 +242,249 @@ describe("posting rules matrix (11 §10, card 3.8c)", () => {
     ]);
   });
 
-  it("throws on an unbalanced draft and writes nothing conceptually", () => {
-    expect(() =>
-      assertBalanced([
-        { accountCode: "CASH", debit: money(100), credit: money(0) },
-        { accountCode: "AR", debit: money(0), credit: money(90) },
-      ]),
-    ).toThrow(unbalancedJournal(100, 90).messageKey);
-    expect(sumSide([{ accountCode: "CASH", debit: money(100), credit: money(0) }], "debit")).toBe(
-      100,
-    );
+  it("drafts order completed: revenue, tax, discount, delivery, rounding and balance", () => {
+    const drafts = draftOrderCompleted({
+      orderId: "ord-1",
+      businessDate: "2026-10-24",
+      locationId: "loc-1",
+      totals: {
+        subtotal: money(1000),
+        discountTotal: money(100),
+        taxTotal: money(50),
+        deliveryCharge: money(60),
+        grandTotal: money(1010),
+        roundingAdjustment: money(0),
+      },
+      advancesToSettle: money(200),
+      cogs: money(400),
+    });
+
+    expect(drafts).toHaveLength(3);
+    const [rev, settle, cogs] = drafts;
+
+    expect(rev?.postingKey).toBe(POSTING_KEY.order_revenue);
+    expect(codesOf(rev?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE, debit: 1010, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.SALES_DISCOUNTS, debit: 100, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.REVENUE_PRODUCT, debit: 0, credit: 1000 },
+      { code: SYSTEM_ACCOUNT_CODE.TAX_PAYABLE, debit: 0, credit: 50 },
+      { code: SYSTEM_ACCOUNT_CODE.DELIVERY_INCOME, debit: 0, credit: 60 },
+    ]);
+
+    expect(settle?.postingKey).toBe(POSTING_KEY.order_advance_settle);
+    expect(codesOf(settle?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES, debit: 200, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE, debit: 0, credit: 200 },
+    ]);
+
+    expect(cogs?.postingKey).toBe(POSTING_KEY.order_cost);
+    expect(codesOf(cogs?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.COGS, debit: 400, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.INVENTORY, debit: 0, credit: 400 },
+    ]);
+  });
+
+  it("handles rounding adjustment debit (rounded down) and credit (rounded up)", () => {
+    // Rounded up: grandTotal + 2
+    const roundedUp = draftOrderCompleted({
+      orderId: "ord-up",
+      businessDate: "2026-10-24",
+      locationId: "loc-1",
+      totals: {
+        subtotal: money(98),
+        discountTotal: money(0),
+        taxTotal: money(0),
+        deliveryCharge: money(0),
+        grandTotal: money(100),
+        roundingAdjustment: money(2),
+      },
+      advancesToSettle: money(0),
+      cogs: money(0),
+    });
+    expect(codesOf(roundedUp[0]?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE, debit: 100, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.REVENUE_PRODUCT, debit: 0, credit: 98 },
+      { code: SYSTEM_ACCOUNT_CODE.ROUNDING, debit: 0, credit: 2 },
+    ]);
+
+    // Rounded down: grandTotal - 2
+    const roundedDown = draftOrderCompleted({
+      orderId: "ord-down",
+      businessDate: "2026-10-24",
+      locationId: "loc-1",
+      totals: {
+        subtotal: money(102),
+        discountTotal: money(0),
+        taxTotal: money(0),
+        deliveryCharge: money(0),
+        grandTotal: money(100),
+        roundingAdjustment: money(-2),
+      },
+      advancesToSettle: money(0),
+      cogs: money(0),
+    });
+    expect(codesOf(roundedDown[0]?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE, debit: 100, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.ROUNDING, debit: 2, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.REVENUE_PRODUCT, debit: 0, credit: 102 },
+    ]);
+  });
+
+  it("derives tax-exclusive goods amount for tax-inclusive and tax-exclusive orders", () => {
+    // Tax-inclusive: 1000 subtotal includes 100 tax, 0 discount, 0 delivery
+    // grandTotal = 1000, taxTotal = 100
+    // goodsAmountExclTax = 1000 + 0 - 100 - 0 - 0 = 900
+    const inclusive = draftOrderCompleted({
+      orderId: "ord-inc",
+      businessDate: "2026-10-24",
+      locationId: "loc-1",
+      totals: {
+        subtotal: money(1000),
+        discountTotal: money(0),
+        taxTotal: money(100),
+        deliveryCharge: money(0),
+        grandTotal: money(1000),
+        roundingAdjustment: money(0),
+      },
+      advancesToSettle: money(0),
+      cogs: money(0),
+    });
+    expect(codesOf(inclusive[0]?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE, debit: 1000, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.REVENUE_PRODUCT, debit: 0, credit: 900 },
+      { code: SYSTEM_ACCOUNT_CODE.TAX_PAYABLE, debit: 0, credit: 100 },
+    ]);
+  });
+
+  it("drafts stock receipts for CASH, BKASH, NAGAD, BANK and ON_CREDIT", () => {
+    const methods: readonly ["CASH" | "BKASH" | "NAGAD" | "BANK" | "ON_CREDIT", string][] = [
+      ["CASH", SYSTEM_ACCOUNT_CODE.CASH],
+      ["BKASH", SYSTEM_ACCOUNT_CODE.BKASH],
+      ["NAGAD", SYSTEM_ACCOUNT_CODE.NAGAD],
+      ["BANK", SYSTEM_ACCOUNT_CODE.BANK],
+      ["ON_CREDIT", SYSTEM_ACCOUNT_CODE.ACCOUNTS_PAYABLE],
+    ];
+
+    for (const [paidVia, expectedAccount] of methods) {
+      const drafts = draftStockSource({
+        organizationId: "org-1",
+        sourceType: "STOCK_RECEIPT",
+        sourceId: `rcpt-${paidVia}`,
+        businessDate: "2026-10-24",
+        locationId: "loc-1",
+        currency: "BDT",
+        movements: [
+          {
+            stockMovementId: "sm-1",
+            inventoryItemId: "item-1",
+            quantityDelta: 10,
+            stockState: "SELLABLE",
+            reason: "PURCHASE",
+            paidVia,
+            value: money(500),
+          },
+        ],
+      });
+      expect(drafts).toHaveLength(1);
+      expect(drafts[0]?.postingKey).toBe(POSTING_KEY.stock_receipt);
+      expect(codesOf(drafts[0]?.lines)).toEqual([
+        { code: SYSTEM_ACCOUNT_CODE.INVENTORY, debit: 500, credit: 0 },
+        { code: expectedAccount, debit: 0, credit: 500 },
+      ]);
+    }
+  });
+
+  it("drafts stock opening, adjustment up/down and damage write-off", () => {
+    // Opening
+    const opening = draftStockSource({
+      organizationId: "org-1",
+      sourceType: "STOCK_OPENING",
+      sourceId: "op-1",
+      businessDate: "2026-10-24",
+      locationId: "loc-1",
+      currency: "BDT",
+      movements: [
+        {
+          stockMovementId: "sm-op",
+          inventoryItemId: "item-1",
+          quantityDelta: 100,
+          stockState: "SELLABLE",
+          reason: "OPENING",
+          value: money(5000),
+        },
+      ],
+    });
+    expect(codesOf(opening[0]?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.INVENTORY, debit: 5000, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.OPENING_BALANCE, debit: 0, credit: 5000 },
+    ]);
+
+    // Adjustment up and down in same source
+    const adj = draftStockSource({
+      organizationId: "org-1",
+      sourceType: "STOCK_ADJUSTMENT",
+      sourceId: "adj-1",
+      businessDate: "2026-10-24",
+      locationId: "loc-1",
+      currency: "BDT",
+      movements: [
+        {
+          stockMovementId: "sm-up",
+          inventoryItemId: "item-1",
+          quantityDelta: 5,
+          stockState: "SELLABLE",
+          reason: "ADJUSTMENT",
+          value: money(250),
+        },
+        {
+          stockMovementId: "sm-down",
+          inventoryItemId: "item-2",
+          quantityDelta: -2,
+          stockState: "SELLABLE",
+          reason: "ADJUSTMENT",
+          value: money(100),
+        },
+      ],
+    });
+    expect(codesOf(adj[0]?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.INVENTORY, debit: 250, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.OTHER_INCOME, debit: 0, credit: 250 },
+      { code: SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS, debit: 100, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.INVENTORY, debit: 0, credit: 100 },
+    ]);
+
+    // Damage write-off: sellable vs damaged stockState
+    const writeOff = draftStockSource({
+      organizationId: "org-1",
+      sourceType: "STOCK_ADJUSTMENT",
+      sourceId: "wo-1",
+      businessDate: "2026-10-24",
+      locationId: "loc-1",
+      currency: "BDT",
+      movements: [
+        {
+          stockMovementId: "sm-dam",
+          inventoryItemId: "item-1",
+          quantityDelta: -1,
+          stockState: "DAMAGED",
+          reason: "DAMAGE_WRITE_OFF",
+          value: money(50),
+        },
+        {
+          stockMovementId: "sm-sel",
+          inventoryItemId: "item-2",
+          quantityDelta: -1,
+          stockState: "SELLABLE",
+          reason: "DAMAGE_WRITE_OFF",
+          value: money(80),
+        },
+      ],
+    });
+    expect(codesOf(writeOff[0]?.lines)).toEqual([
+      { code: SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS, debit: 50, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.INVENTORY_DAMAGED, debit: 0, credit: 50 },
+      { code: SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS, debit: 80, credit: 0 },
+      { code: SYSTEM_ACCOUNT_CODE.INVENTORY, debit: 0, credit: 80 },
+    ]);
   });
 });

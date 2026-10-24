@@ -1,5 +1,5 @@
 import { type Money } from "@banijjik/contracts/catalog";
-import type { StockMovementReason } from "@banijjik/contracts/inventory";
+import type { StockMovementReason, StockReceiptPaidVia } from "@banijjik/contracts/inventory";
 import type { OrganizationId, UserId } from "@banijjik/ids";
 import type { Clock } from "../../../../kernel/time/index.js";
 import type { InventoryItem } from "../domain/inventory-item.entity.js";
@@ -33,6 +33,7 @@ export interface ApplyMovementInput {
   readonly offeringId?: string;
   readonly variantId?: string;
   readonly reversesStockMovementId?: string;
+  readonly paidVia?: StockReceiptPaidVia;
   readonly lowStockThreshold: number;
   readonly allowNegativeStock: boolean;
 }
@@ -73,6 +74,7 @@ export class StockLedgerService {
       ...(input.note === undefined ? {} : { note: input.note }),
       unitCost: input.unitCost,
       ...(input.unitCostMicros === undefined ? {} : { unitCostMicros: input.unitCostMicros }),
+      ...(input.paidVia === undefined ? {} : { paidVia: input.paidVia }),
       lowStockThreshold: input.lowStockThreshold,
       allowNegativeStock: input.allowNegativeStock,
       existing,

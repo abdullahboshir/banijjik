@@ -148,6 +148,12 @@ export class InstantOrderUseCase {
       total: completed.totals.grandTotal,
       now: ctx.now,
     });
+    await this.dependencies.payments.updateTotal({
+      organizationId: ctx.organizationId,
+      orderId: completed.orderId,
+      total: completed.totals.grandTotal,
+      now: ctx.now,
+    });
     await this.publishAndAudit(ctx, completed);
     return completed;
   }

@@ -1,5 +1,11 @@
+import { SYSTEM_ROLE_KEY } from "@banijjik/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { money, startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
+import {
+  memberWithRole,
+  money,
+  startCatalogApi,
+  worldFor,
+} from "../../../../test-support/catalog-world.js";
 import { registerIamApiModels } from "../../../../test-support/iam-api-harness.js";
 import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
 import { newId } from "@banijjik/ids";
@@ -35,6 +41,7 @@ async function createItemWithStock(
     path: `/orgs/${world.organizationA}/stock/receipts`,
     body: {
       locationId,
+      paidVia: "CASH",
       lines: [{ inventoryItemId: item.inventoryItemId, quantity, unitCost: money(10) }],
     },
     idempotencyKey: newId(),
@@ -193,6 +200,7 @@ describe("stock operations", () => {
       path: `/orgs/${world.organizationA}/stock/receipts`,
       body: {
         locationId,
+        paidVia: "CASH",
         lines: [{ inventoryItemId: item.inventoryItemId, quantity: 50, unitCost: money(5) }],
       },
       idempotencyKey: newId(),
@@ -246,5 +254,55 @@ describe("stock operations", () => {
       `/orgs/${world.organizationA}/stock/levels?locationId=${world.locationA1}&limit=20`,
     );
     expect([403, 404]).toContain(denied.status);
+  });
+
+  it("validates receive request: 400 on missing paidVia, 403 on cross-org, 403 on missing permission", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const locationId = world.locationA1;
+    const item = (
+      await world.alice.call("post", `/orgs/${world.organizationA}/inventory-items`, {
+        name: "Biscuit",
+        baseUnitKey: "GRAM",
+      })
+    ).body.data;
+
+    // 1. Validation error: missing paidVia -> 400
+    const missingPaidVia = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/stock/receipts`,
+      body: {
+        locationId,
+        lines: [{ inventoryItemId: item.inventoryItemId, quantity: 10, unitCost: money(10) }],
+      },
+      idempotencyKey: newId(),
+    });
+    expect(missingPaidVia.status).toBe(400);
+
+    // 2. Cross-org denied: Bob (from org B) calls receive on org A -> 403 or 404
+    const crossOrg = await world.bob.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/stock/receipts`,
+      body: {
+        locationId,
+        paidVia: "CASH",
+        lines: [{ inventoryItemId: item.inventoryItemId, quantity: 10, unitCost: money(10) }],
+      },
+      idempotencyKey: newId(),
+    });
+    expect([403, 404]).toContain(crossOrg.status);
+
+    // 3. Permission denied: Viewer role has no stock:receive permission -> 403
+    const viewer = await memberWithRole(harness, world, SYSTEM_ROLE_KEY.VIEWER);
+    const permDenied = await viewer.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/stock/receipts`,
+      body: {
+        locationId,
+        paidVia: "CASH",
+        lines: [{ inventoryItemId: item.inventoryItemId, quantity: 10, unitCost: money(10) }],
+      },
+      idempotencyKey: newId(),
+    });
+    expect(permDenied.status).toBe(403);
   });
 });

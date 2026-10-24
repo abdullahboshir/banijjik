@@ -71,6 +71,7 @@ describe("inventory items API", () => {
       path: `/orgs/${world.organizationA}/stock/receipts`,
       body: {
         locationId,
+        paidVia: "CASH",
         lines: [{ inventoryItemId: item.inventoryItemId, quantity: 10, unitCost: money(100) }],
       },
       idempotencyKey: newId(),

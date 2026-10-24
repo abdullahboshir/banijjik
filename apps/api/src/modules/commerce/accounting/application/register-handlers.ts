@@ -5,6 +5,8 @@ import type { BookingPostingSource } from "./ports/booking-posting-source.js";
 import type { CommissionPostingSource } from "./ports/commission-posting-source.js";
 import type { ExpensePostingSource } from "./ports/expense-posting-source.js";
 import type { PaymentPostingSource } from "./ports/payment-posting-source.js";
+import type { OrderPostingSource } from "./ports/order-posting-source.js";
+import type { StockPostingSource } from "./ports/stock-posting-source.js";
 import type { AccountRepository } from "./ports/account-repository.js";
 import type { JournalRepository } from "./ports/journal-repository.js";
 import type { EventPublisher, PostJournalDependencies } from "./post-journal.js";
@@ -12,6 +14,8 @@ import { buildPostBookingsHandler } from "./handlers/post-bookings.handler.js";
 import { buildPostCommissionHandler } from "./handlers/post-commission.handler.js";
 import { buildPostExpensesHandler } from "./handlers/post-expenses.handler.js";
 import { buildPostPaymentsHandler } from "./handlers/post-payments.handler.js";
+import { buildPostOrdersHandler } from "./handlers/post-orders.handler.js";
+import { buildPostStockHandler } from "./handlers/post-stock.handler.js";
 import { buildSeedOnOrganizationCreatedHandler } from "./handlers/seed-on-organization-created.handler.js";
 
 export interface AccountingHandlerDependencies {
@@ -26,6 +30,8 @@ export interface AccountingHandlerDependencies {
   readonly bookings?: BookingPostingSource | undefined;
   /** When omitted, commission posting is not registered (the commission module is optional). */
   readonly commissions?: CommissionPostingSource | undefined;
+  readonly orders?: OrderPostingSource | undefined;
+  readonly stocks?: StockPostingSource | undefined;
   readonly expenses: ExpensePostingSource;
 }
 
@@ -76,6 +82,22 @@ export function registerAccountingEventHandlers(dependencies: AccountingHandlerD
     registerEventHandler(
       buildPostCommissionHandler({
         commissions: dependencies.commissions,
+        posting: postingOf(dependencies),
+      }),
+    );
+  }
+  if (dependencies.orders !== undefined) {
+    registerEventHandler(
+      buildPostOrdersHandler({
+        orders: dependencies.orders,
+        posting: postingOf(dependencies),
+      }),
+    );
+  }
+  if (dependencies.stocks !== undefined) {
+    registerEventHandler(
+      buildPostStockHandler({
+        stocks: dependencies.stocks,
         posting: postingOf(dependencies),
       }),
     );

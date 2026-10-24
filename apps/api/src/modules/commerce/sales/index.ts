@@ -1,5 +1,9 @@
 import type { OrderRepository } from "./application/ports/sales-ports.js";
-import type { OrderId } from "@banijjik/ids";
+import { asId, type OrderId } from "@banijjik/ids";
+import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
+import type { RequestAdvanceReader } from "../payment/index.js";
+import { movementValue, type InventoryPostingSource } from "../inventory/index.js";
+import type { OrderPostingSnapshot, OrderPostingSource } from "../accounting/index.js";
 import { MongoOrderRepository } from "./infrastructure/mongo-order.repositories.js";
 import type { Router } from "express";
 import { registerScheduledJob } from "../../../kernel/jobs/index.js";
@@ -42,4 +46,45 @@ export type { PaymentTotals } from "./domain/payment-status.js";
 export function buildOrderSnapshotReader(): { read: OrderRepository["findById"] } {
   const orders = new MongoOrderRepository();
   return { read: (orderId: OrderId) => orders.findById(orderId) };
+}
+
+export interface OrderPostingSourcePorts {
+  readonly orders?: OrderRepository | undefined;
+  readonly advances: RequestAdvanceReader;
+  readonly inventory: InventoryPostingSource;
+}
+
+export function buildOrderPostingSourceAdapter(ports: OrderPostingSourcePorts): OrderPostingSource {
+  const orders = ports.orders ?? new MongoOrderRepository();
+  return {
+    async readOrder(orderId: string): Promise<OrderPostingSnapshot | undefined> {
+      const order = await orders.findById(asId<OrderId>(orderId));
+      if (order === undefined) return undefined;
+
+      const currency = order.totals.grandTotal.currency;
+      const heldAdvance = await ports.advances.readHeldAdvance({
+        organizationId: order.organizationId,
+        requestType: PAYMENT_REQUEST_TYPE.ORDER,
+        requestId: order.orderId,
+        currency,
+      });
+
+      const movements = await ports.inventory.readMovements({
+        organizationId: order.organizationId,
+        sourceId: order.orderId,
+      });
+
+      const saleMovements = movements.filter((m) => m.reason === "SALE");
+      const cogsAmount = saleMovements.reduce((sum, m) => sum + movementValue(m), 0);
+
+      return {
+        orderId: order.orderId,
+        businessDate: order.businessDate,
+        locationId: order.locationId,
+        totals: order.totals,
+        advancesToSettle: { amount: heldAdvance.amount, currency },
+        cogs: { amount: cogsAmount, currency },
+      };
+    },
+  };
 }

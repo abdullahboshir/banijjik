@@ -1,6 +1,10 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, ERROR_CODE } from "@banijjik/contracts";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
-import { STOCK_MOVEMENT_REASON, type StockAdjustmentReason } from "@banijjik/contracts/inventory";
+import {
+  INVENTORY_EVENT_TYPE,
+  STOCK_MOVEMENT_REASON,
+  type StockAdjustmentReason,
+} from "@banijjik/contracts/inventory";
 import { newId, type InventoryItemId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { AppError } from "../../../../../kernel/http/index.js";
 import type { InventoryDependencies } from "../inventory-dependencies.js";
@@ -25,6 +29,24 @@ function adjustmentNeedsApproval(
   );
 }
 
+async function checkAdjustmentApproval(input: {
+  readonly deps: InventoryDependencies;
+  readonly organizationId: OrganizationId;
+  readonly lines: readonly { readonly quantityDelta: number }[];
+  readonly approvalToken?: string | undefined;
+}): Promise<boolean> {
+  const approvalAbove = await input.deps.settings.adjustmentApprovalAbove(input.organizationId);
+  const needsApproval = adjustmentNeedsApproval(approvalAbove, input.lines);
+  if (needsApproval && input.approvalToken === undefined) {
+    throw new AppError({
+      code: ERROR_CODE.APPROVAL_REQUIRED,
+      messageKey: "errors.approval_required",
+      details: { action: APPROVAL_ACTION.STOCK_ADJUSTMENT },
+    });
+  }
+  return needsApproval;
+}
+
 export class AdjustStockUseCase {
   constructor(private readonly dependencies: InventoryDependencies) {}
 
@@ -44,15 +66,12 @@ export class AdjustStockUseCase {
     const deps = this.dependencies;
     assertLocationReach(input.allowedLocationIds, input.locationId);
     await requireActiveLocation(deps.locations, input.locationId);
-    const approvalAbove = await deps.settings.adjustmentApprovalAbove(input.organizationId);
-    const needsApproval = adjustmentNeedsApproval(approvalAbove, input.lines);
-    if (needsApproval && input.approvalToken === undefined) {
-      throw new AppError({
-        code: ERROR_CODE.APPROVAL_REQUIRED,
-        messageKey: "errors.approval_required",
-        details: { action: APPROVAL_ACTION.STOCK_ADJUSTMENT },
-      });
-    }
+    const needsApproval = await checkAdjustmentApproval({
+      deps,
+      organizationId: input.organizationId,
+      lines: input.lines,
+      approvalToken: input.approvalToken,
+    });
     const currency = await deps.currency.read(input.organizationId);
     const allowNegativeStock = await deps.settings.allowNegativeStock(input.organizationId);
     const prepared = await Promise.all(
@@ -75,6 +94,10 @@ export class AdjustStockUseCase {
         prepared,
         currency,
         allowNegativeStock,
+        sourceId,
+      });
+      await deps.events.publish(INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED, {
+        sourceType: SOURCE_ADJUSTMENT,
         sourceId,
       });
       await deps.audit.record({

@@ -31,6 +31,10 @@ export const STOCK_ADJUSTMENT_REASON = defineEnum(["ADJUSTMENT", "DAMAGE_WRITE_O
 export type StockAdjustmentReason =
   (typeof STOCK_ADJUSTMENT_REASON)[keyof typeof STOCK_ADJUSTMENT_REASON];
 
+export const STOCK_RECEIPT_PAID_VIA = defineEnum(["CASH", "BKASH", "NAGAD", "BANK", "ON_CREDIT"]);
+export type StockReceiptPaidVia =
+  (typeof STOCK_RECEIPT_PAID_VIA)[keyof typeof STOCK_RECEIPT_PAID_VIA];
+
 export const INVENTORY_ALLOW_NEGATIVE_STOCK_SETTING_KEY = "inventory.allowNegativeStock";
 export const INVENTORY_LOW_STOCK_DEFAULT_SETTING_KEY = "inventory.lowStockDefault";
 export const INVENTORY_ADJUSTMENT_APPROVAL_ABOVE_SETTING_KEY = "inventory.adjustment.approvalAbove";
@@ -69,6 +73,7 @@ export interface StockMovementResponse {
   readonly occurredAt: string;
   readonly businessDate: string;
   readonly note?: string;
+  readonly paidVia?: StockReceiptPaidVia;
 }
 
 export interface InventoryLevelRow {
@@ -124,4 +129,9 @@ export interface InventoryTransferCompletedPayload {
   readonly transferNumber: string;
   readonly fromLocationId: string;
   readonly toLocationId: string;
+}
+
+export interface InventoryStockSourceRecordedPayload {
+  readonly sourceType: string;
+  readonly sourceId: string;
 }
