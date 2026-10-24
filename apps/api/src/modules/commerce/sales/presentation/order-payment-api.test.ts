@@ -229,6 +229,22 @@ describe("orders as payment requests", () => {
     expect(contact?.["summary"].storeCreditBalanceMinor).toBe(500);
   });
 
+  it("clears an unpaid order summary on cancellation so it leaves dues", async () => {
+    const shop = shopOf(await worldFor(harness, RETAIL));
+    const { order } = await placed(shop);
+    expect((await cancel(shop, order)).status).toBe(200);
+    const summary = await harness.connections.tenantShared
+      .collection("payment_summaries")
+      .findOne({ organizationId: shop.organizationId, requestId: order.orderId });
+    expect(summary?.["total"]).toEqual(money(0));
+    const dues = await shop.actor.call(
+      "get",
+      `/orgs/${shop.organizationId}/dues?requestType=ORDER`,
+    );
+    expect(dues.status).toBe(200);
+    expect(dues.body.data).toEqual([]);
+  });
+
   it("refuses cancellation with net paid and no contact", async () => {
     const shop = shopOf(await worldFor(harness, RETAIL));
     const { order } = await placed(shop);
