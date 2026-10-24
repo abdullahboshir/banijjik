@@ -117,6 +117,8 @@ export const PERMISSION_KEY = {
   SALES_ORDER_UPDATE: "sales.order.update",
   SALES_ORDER_CONFIRM: "sales.order.confirm",
   SALES_ORDER_CANCEL: "sales.order.cancel",
+  SALES_RETURN_READ: "sales.return.read",
+  SALES_RETURN_CREATE: "sales.return.create",
   ENROLLMENT_ENROLLMENT_READ: "enrollment.enrollment.read",
   ENROLLMENT_ENROLLMENT_CREATE: "enrollment.enrollment.create",
   ENROLLMENT_ENROLLMENT_UPDATE: "enrollment.enrollment.update",

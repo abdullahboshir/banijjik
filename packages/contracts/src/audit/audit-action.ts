@@ -117,6 +117,7 @@ export const AUDIT_ACTION = {
   ORDER_PACKED: "sales.order.packed",
   ORDER_COMPLETED: "sales.order.completed",
   ORDER_CANCELLED: "sales.order.cancelled",
+  SALES_RETURN_CREATED: "sales.return.created",
   SITE_PAGE_UPDATED: "website.page.updated",
   ...ENROLLMENT_EVENT_TYPE,
 } as const;

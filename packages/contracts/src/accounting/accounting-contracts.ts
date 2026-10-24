@@ -27,6 +27,7 @@ export const JOURNAL_SOURCE_TYPE = defineEnum([
   "STOCK",
   "RETURN",
   "COURIER",
+  "SALES_RETURN",
   "MANUAL",
   "COMMISSION",
   "ENROLLMENT",
@@ -71,6 +72,8 @@ export const POSTING_KEY = defineEnum([
   "enrollment_period_advance_settle",
   "enrollment_period_revenue_cancel",
   "enrollment_period_cancellation_fee",
+  "sales_return_value",
+  "sales_return_cogs",
 ]);
 export type PostingKey =
   (typeof POSTING_KEY)[keyof typeof POSTING_KEY] | `manual:${string}` | `reversal:${string}`;

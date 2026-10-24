@@ -1,0 +1,57 @@
+import {
+  MAX_ORDER_LINES,
+  MAX_SALES_RETURN_NOTE_LENGTH,
+  SALES_RETURN_REASON,
+  SALES_RETURN_REFUND_METHOD,
+  RETURN_DISPOSITION,
+} from "@banijjik/contracts/sales";
+import { z } from "zod";
+import { paginationQuerySchema } from "../pagination.js";
+import { uuidV7Schema } from "../uuid-v7.schema.js";
+
+const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+const APPROVAL_TOKEN_MAX_LENGTH = 200;
+
+const approvalTokenSchema = z.string().trim().min(1).max(APPROVAL_TOKEN_MAX_LENGTH);
+
+const returnLineSchema = z.strictObject({
+  orderLineId: uuidV7Schema,
+  /** Integer in the sales unit's precision (ADR-047). The server checks it against what is left. */
+  quantity: z.number().int().positive().max(MAX_SAFE),
+  disposition: z.enum(RETURN_DISPOSITION),
+});
+
+/**
+ * `POST /orders/{orderId}/returns` (plan 3.5b decision 11). The client sends quantities and
+ * dispositions only; the server computes every amount. Each approval token names its action, so a
+ * refund token and a not-received token are never mixed up.
+ */
+export const salesReturnRequestSchema = z.strictObject({
+  lines: z.array(returnLineSchema).min(1).max(MAX_ORDER_LINES),
+  returnDeliveryCharge: z.boolean().optional(),
+  refundMethod: z.enum(SALES_RETURN_REFUND_METHOD).nullable().optional(),
+  reasonKey: z.enum(SALES_RETURN_REASON),
+  note: z.string().trim().max(MAX_SALES_RETURN_NOTE_LENGTH).nullable().optional(),
+  approvalTokens: z
+    .strictObject({
+      refund: approvalTokenSchema.optional(),
+      returnNotReceived: approvalTokenSchema.optional(),
+    })
+    .optional(),
+});
+
+/** `GET /sales/returns`: the list of returns of one location (plan 3.5b decision 11). */
+export const salesReturnListQuerySchema = paginationQuerySchema.extend({
+  orderId: uuidV7Schema.optional(),
+  locationId: uuidV7Schema.optional(),
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+});
+
+export const salesReturnParamsSchema = z.object({
+  salesReturnId: uuidV7Schema,
+});
+
+export type SalesReturnRequestBody = z.infer<typeof salesReturnRequestSchema>;
+export type SalesReturnListQuery = z.infer<typeof salesReturnListQuerySchema>;
+export type SalesReturnParams = z.infer<typeof salesReturnParamsSchema>;

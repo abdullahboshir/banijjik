@@ -1,6 +1,7 @@
 import { defineEnum } from "../define-enum.js";
 import type { OfferingKind } from "../modules/offering-kind.js";
 import type { ApprovalAction, ManualDiscount, Money } from "../pricing/pricing-contracts.js";
+import type { OrderReturnStatus } from "./sales-return-contracts.js";
 
 /**
  * The full lifecycle of 09-DOMAIN-MODEL section 5.5. Card 3.5a implements the six statuses in
@@ -193,6 +194,8 @@ export interface OrderResponse {
   readonly totals: OrderTotals;
   readonly fulfillment: OrderFulfillment;
   readonly paymentStatus: PaymentStatus;
+  /** NONE until a return is made; old orders read NONE (plan 3.5b decision 7). */
+  readonly returnStatus: OrderReturnStatus;
   readonly businessDate: string;
   readonly source: OrderSource;
   readonly approval: OrderApproval | null;

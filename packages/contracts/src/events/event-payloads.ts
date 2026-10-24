@@ -62,7 +62,7 @@ import type {
   SettingChangedPayload,
   TermChangedPayload,
 } from "../settings/settings-contracts.js";
-import type { OrderEventPayload } from "../sales/sales-event-type.js";
+import type { OrderEventPayload, SalesReturnEventPayload } from "../sales/sales-event-type.js";
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 import { WEBSITE_EVENT_TYPE, type SitePageUpdatedPayload } from "../website/index.js";
 
@@ -213,5 +213,6 @@ export interface EventPayloadMap {
   readonly [SALES_EVENT_TYPE.ORDER_PACKED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_COMPLETED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_CANCELLED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.SALES_RETURN_CREATED]: SalesReturnEventPayload;
   readonly [WEBSITE_EVENT_TYPE.PAGE_UPDATED]: SitePageUpdatedPayload;
 }

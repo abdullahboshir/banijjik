@@ -31,6 +31,7 @@ export const STOCK_SOURCE_TYPE = defineEnum([
   "STOCK_OPENING",
   "STOCK_ADJUSTMENT",
   "STOCK_TRANSFER",
+  "SALES_RETURN",
 ]);
 export type StockSourceType = (typeof STOCK_SOURCE_TYPE)[keyof typeof STOCK_SOURCE_TYPE];
 

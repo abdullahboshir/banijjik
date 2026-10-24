@@ -25,3 +25,11 @@ export {
   type OrderUpdateBody,
   type SalesPerformersQuery,
 } from "./sales-schemas.js";
+export {
+  salesReturnListQuerySchema,
+  salesReturnParamsSchema,
+  salesReturnRequestSchema,
+  type SalesReturnListQuery,
+  type SalesReturnParams,
+  type SalesReturnRequestBody,
+} from "./sales-return-schemas.js";

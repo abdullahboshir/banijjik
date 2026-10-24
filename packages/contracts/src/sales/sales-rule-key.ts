@@ -13,6 +13,18 @@ export const SALES_RULE_KEY = {
   PACKING_DISABLED: "PACKING_DISABLED",
   /** A line names a performer who is not an active member assigned at the order's location (ADR-135). */
   SALES_PERFORMER_NOT_AT_LOCATION: "SALES_PERFORMER_NOT_AT_LOCATION",
+  /** A return asked after the organization's return window (sales.returnWindowDays). */
+  SALES_RETURN_WINDOW_CLOSED: "SALES_RETURN_WINDOW_CLOSED",
+  /** A return on an order that is not COMPLETED. */
+  SALES_RETURN_ORDER_NOT_RETURNABLE: "SALES_RETURN_ORDER_NOT_RETURNABLE",
+  /** A return line asks for more than is left on the order line. */
+  SALES_RETURN_QUANTITY_ABOVE_SOLD: "SALES_RETURN_QUANTITY_ABOVE_SOLD",
+  /** A refund is due but no refund method was named. */
+  SALES_RETURN_REFUND_METHOD_REQUIRED: "SALES_RETURN_REFUND_METHOD_REQUIRED",
+  /** The refund method is known but not offered yet (GATEWAY until Phase 5). */
+  PAYMENT_METHOD_NOT_AVAILABLE: "PAYMENT_METHOD_NOT_AVAILABLE",
+  /** A reason OTHER on a return needs a note. */
+  SALES_RETURN_OTHER_REASON_NEEDS_NOTE: "SALES_RETURN_OTHER_REASON_NEEDS_NOTE",
 } as const;
 
 export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
@@ -29,4 +41,10 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.order_needs_line",
   "errors.packing_disabled",
   "errors.sales_performer_not_at_location",
+  "errors.sales_return_window_closed",
+  "errors.sales_return_order_not_returnable",
+  "errors.sales_return_quantity_above_sold",
+  "errors.sales_return_refund_method_required",
+  "errors.payment_method_not_available",
+  "errors.sales_return_other_reason_needs_note",
 ];

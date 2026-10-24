@@ -54,6 +54,29 @@ export {
   SALES_EVENT_TYPE,
   type OrderEventPayload,
   type SalesEventType,
+  type SalesReturnEventPayload,
 } from "./sales-event-type.js";
+export {
+  MAX_SALES_RETURN_NOTE_LENGTH,
+  ORDER_RETURN_STATUS,
+  RETURN_DISPOSITION,
+  SALES_RETURN_LIST_MAX_LIMIT,
+  SALES_RETURN_REASON,
+  SALES_RETURN_REFUND_METHOD,
+  SALES_RETURN_STATUS,
+  SALES_RETURN_WINDOW_DAYS_DEFAULT,
+  SALES_RETURN_WINDOW_DAYS_SETTING_KEY,
+  type OrderReturnStatus,
+  type ReturnDisposition,
+  type SalesReturnApprovalResponse,
+  type SalesReturnLineResponse,
+  type SalesReturnListItem,
+  type SalesReturnPreviewResponse,
+  type SalesReturnReason,
+  type SalesReturnRefundMethod,
+  type SalesReturnRefundResponse,
+  type SalesReturnResponse,
+  type SalesReturnStatus,
+} from "./sales-return-contracts.js";
 export { SALES_MESSAGE_KEYS, SALES_RULE_KEY, type SalesRuleKey } from "./sales-rule-key.js";
 export type { Money } from "../pricing/pricing-contracts.js";
