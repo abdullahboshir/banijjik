@@ -298,6 +298,13 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
     });
   }
 
+  async function waitForJobState(event: PublishedTestEvent, state: "delayed" | "completed") {
+    return waitFor(`event ${event.eventId} to be ${state}`, async () => {
+      const job = await queue?.getJob(buildEventJobId(event.eventId, HANDLER_KEY));
+      return (await job?.getState()) === state ? job : undefined;
+    });
+  }
+
   it("runs a replayed event again with fresh attempts, and the stream continues behind it", async () => {
     const { first, second } = await publishPair();
     let isBroken = true;
@@ -347,16 +354,28 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
     const letter = await failedLetterOf(first);
     await jobs.enqueue(jobOf(second));
 
-    await withTransaction(() =>
+    const waitingJob = await waitForJobState(second, "delayed");
+    if (processing === undefined) throw new Error("event processing was not started");
+    // Freeze the queue at a known boundary so back-off cannot grow while the skip commits.
+    await processing.worker.pause();
+    expect(ledger.handled).toEqual([]);
+    const skipped = await withTransaction(() =>
       skipDeadLetter({
         eventDeadLetterId: letter.eventDeadLetterId,
         operatorId: newId(),
         reason: "posted by hand",
       }),
     );
-    await waitFor("the second event to be handled", async () =>
-      ledger.handled.length === 1 ? true : undefined,
-    );
+    expect(skipped.kind === "DONE" && skipped.after.status).toBe("SKIPPED");
+    // The behaviour under test is stream progression, not BullMQ's real-time delayed-job timer.
+    if (await waitingJob.isDelayed()) await waitingJob.promote();
+    await processing.worker.resume();
+    await waitForJobState(second, "completed");
+
+    const skippedJob = await queue?.getJob(buildEventJobId(first.eventId, HANDLER_KEY));
+    if (skippedJob === undefined) throw new Error("the skipped job was not retained");
+    await skippedJob.retry();
+    await waitForJobState(first, "completed");
 
     expect(ledger.handled).toEqual([2]);
     expect(ledger.tries.get(1)).toBe(EVENT_JOB_ATTEMPTS);
