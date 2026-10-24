@@ -102,7 +102,16 @@ class OrderPaymentAdapter implements OrderPaymentPort {
     input: Parameters<OrderPaymentPort["settleCancellation"]>[0],
   ): Promise<void> {
     const paid = await this.readNetPaid(input);
-    if (paid.amount <= 0) return;
+    if (paid.amount <= 0) {
+      await this.summaries.setTotal({
+        organizationId: input.organizationId,
+        requestType: PAYMENT_REQUEST_TYPE.ORDER,
+        requestId: input.orderId,
+        total: { amount: 0, currency: paid.currency },
+        now: input.now,
+      });
+      return;
+    }
     if (input.contactId === null)
       throw ruleError(
         SALES_RULE_KEY.ORDER_CANCEL_NEEDS_CONTACT,
