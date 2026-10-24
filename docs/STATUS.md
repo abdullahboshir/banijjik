@@ -134,7 +134,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.27 enrollment periods as payment requests | planned (2026-10-24, `docs/plans/3.27.md`, Opus; T1; runs now) | period = payment request, derived period status, payment-driven activation and OVERDUE → ACTIVE, dues; ADR-139 reserved |
 | 3.28 credit expiry job | merged (2026-10-24, T2 merge check by the lead passed), CI https://github.com/abdullahboshir/banijjik/actions/runs/40063289055 | hourly `credit.expireCredits`, keyset batches, per-row catch |
 | 3.29 booking and sales leftovers | planned (2026-10-24, `docs/plans/3.29.md`, Opus; T2) | time zone fails closed, session-cancel job in index order without starvation, sales job rows log at error |
-| 3.30 refund amount label | planned (2026-10-24, `docs/plans/3.30.md`, Opus; T3) | amount-specific message in the refund dialog |
+| 3.30 refund amount label | implemented (awaiting review), CI https://github.com/abdullahboshir/banijjik/actions/runs/40061594133 | amount-specific message in the refund dialog; no client max check (see handoff) |
 | 3.31 enrollment period revenue posting | todo (planned after 3.27 and 3.24) | revenue per period at `periodStartsOn`, advance settle, reader revenue state |
 | 3.32 enrollment cancel refunds | todo (planned after 3.27) | `UNUSED_PERIODS` / `PRORATED` refunds to store credit or payment, with approval |
 | Phase 3 review | todo | |
