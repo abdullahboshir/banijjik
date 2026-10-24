@@ -142,7 +142,7 @@ export function moderationForbidden(permissionKey: string): DomainRuleError {
 
 export function blockOwnListing(): DomainRuleError {
   return new DomainRuleError({
-    code: ERROR_CODE.VALIDATION_ERROR,
+    code: ERROR_CODE.BUSINESS_RULE,
     messageKey: DIRECTORY_API_MESSAGE_KEYS.blockOwnListing,
   });
 }
