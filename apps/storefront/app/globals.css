@@ -1,0 +1,51 @@
+@import "tailwindcss";
+@import "@banijjik/ui/styles.css";
+@source "../../../packages/ui/src";
+@source "../src";
+
+/* Bangla pages draw Latin text with Noto Sans Bengali, English pages lead with Inter (as the admin app). */
+html {
+  --font-sans: var(--font-noto-bengali), var(--font-inter), system-ui, sans-serif;
+}
+
+html[lang="en"] {
+  --font-sans: var(--font-inter), var(--font-noto-bengali), system-ui, sans-serif;
+}
+
+/* A business without its own accent colour links in its primary colour (see site/theme.ts). */
+:root {
+  --color-brand-accent: var(--color-brand-primary);
+}
+
+.text-accent {
+  color: var(--color-brand-accent);
+}
+
+/* Static pages are Markdown: keep their headings and lists readable on a small screen. */
+.page-body h2 {
+  font-size: var(--token-font-size-title);
+  font-weight: 600;
+  margin-top: 1.5rem;
+}
+
+.page-body p,
+.page-body ul,
+.page-body ol {
+  margin-top: 0.75rem;
+}
+
+.page-body ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.page-body ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+
+.page-body a {
+  color: var(--color-brand-accent);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}

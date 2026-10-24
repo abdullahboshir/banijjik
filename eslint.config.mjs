@@ -150,13 +150,21 @@ export default defineConfig(
   },
   {
     name: "banijjik/next-recommended",
-    files: ["apps/admin/**/*.{ts,tsx}", "apps/platform/**/*.{ts,tsx}"],
+    files: [
+      "apps/admin/**/*.{ts,tsx}",
+      "apps/platform/**/*.{ts,tsx}",
+      "apps/storefront/**/*.{ts,tsx}",
+    ],
     ...nextPlugin.configs.recommended,
-    settings: { next: { rootDir: ["apps/admin", "apps/platform"] } },
+    settings: { next: { rootDir: ["apps/admin", "apps/platform", "apps/storefront"] } },
   },
   {
     name: "banijjik/next-core-web-vitals",
-    files: ["apps/admin/**/*.{ts,tsx}", "apps/platform/**/*.{ts,tsx}"],
+    files: [
+      "apps/admin/**/*.{ts,tsx}",
+      "apps/platform/**/*.{ts,tsx}",
+      "apps/storefront/**/*.{ts,tsx}",
+    ],
     ...nextPlugin.configs["core-web-vitals"],
   },
   {

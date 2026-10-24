@@ -239,7 +239,11 @@ export const restrictionBlocks = [
   {
     name: "banijjik/jsx-text",
     // A new app must be added to `files`, or its JSX text is not checked.
-    files: ["apps/admin/**/*.{tsx,jsx}", "apps/platform/**/*.{tsx,jsx}"],
+    files: [
+      "apps/admin/**/*.{tsx,jsx}",
+      "apps/platform/**/*.{tsx,jsx}",
+      "apps/storefront/**/*.{tsx,jsx}",
+    ],
     ignores: TEST_FILES,
     rules: { "banijjik-guard/no-jsx-text": [ERROR, ...jsxTextSelectors] },
   },

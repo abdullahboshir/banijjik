@@ -6,3 +6,4 @@ export { createCatalogTranslator, createTranslator } from "./create-translator.j
 export type { TranslationValues, Translator, TranslatorOptions } from "./create-translator.js";
 export { DEFAULT_LOCALE, SUPPORTED_LOCALES, isSupportedLocale } from "./locales.js";
 export type { Locale } from "./locales.js";
+export { STOREFRONT_CATALOGS } from "./storefront-catalogs.js";
