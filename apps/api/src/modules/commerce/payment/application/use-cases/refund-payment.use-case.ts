@@ -79,6 +79,7 @@ function buildRefundPayment(opts: {
     externalReference: input.externalReference?.trim() || null,
     reversesPaymentId: null,
     allocations: input.allocations,
+    writeOffs: [],
     contactId: input.contactId || null,
     receivedByMemberId: input.receivedByMemberId,
     businessDate,

@@ -79,6 +79,7 @@ function buildReceivedPayment(opts: {
     externalReference: input.externalReference?.trim() || null,
     reversesPaymentId: null,
     allocations,
+    writeOffs: [],
     contactId: input.contactId || null,
     receivedByMemberId: input.receivedByMemberId,
     businessDate,

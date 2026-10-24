@@ -49,6 +49,11 @@ function toDomain(doc: PaymentDocument): Payment {
       },
       ...(a.revenueState ? { revenueState: a.revenueState } : {}),
     })),
+    writeOffs: (doc.writeOffs ?? []).map((w) => ({
+      requestType: w.requestType,
+      requestId: w.requestId,
+      amount: { amount: w.amount.amount, currency: w.amount.currency as CurrencyCode },
+    })),
     contactId: doc.contactId,
     receivedByMemberId: doc.receivedByMemberId,
     businessDate: doc.businessDate,
@@ -92,6 +97,11 @@ function toPaymentDocument(payment: Payment): PaymentDocument {
         currency: a.amount.currency,
       },
       revenueState: a.revenueState ?? null,
+    })),
+    writeOffs: props.writeOffs.map((w) => ({
+      requestType: w.requestType,
+      requestId: w.requestId,
+      amount: { amount: w.amount.amount, currency: w.amount.currency },
     })),
     contactId: props.contactId,
     receivedByMemberId: props.receivedByMemberId,

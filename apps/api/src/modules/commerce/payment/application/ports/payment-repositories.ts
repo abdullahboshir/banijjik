@@ -122,6 +122,9 @@ export interface SetSummaryTotalInput {
   readonly now: Date;
 }
 
+/** Same fields as a total change; it also marks the request closed (ADR-140). */
+export type CloseSummaryInput = SetSummaryTotalInput;
+
 export interface SetSummaryContactInput {
   readonly organizationId: OrganizationId;
   readonly requestType: PaymentRequestType;
@@ -144,6 +147,7 @@ export interface PaymentSummaryRepository {
   ): Promise<PaymentSummary | undefined>;
   ensureSummary(input: EnsureSummaryInput): Promise<void>;
   setTotal(input: SetSummaryTotalInput): Promise<void>;
+  closeAtTotal(input: CloseSummaryInput): Promise<void>;
   applyAllocation(input: ApplyAllocationInput): Promise<void>;
   applyRefund(input: ApplyRefundInput): Promise<void>;
   restoreAllocation(input: RestoreAllocationInput): Promise<void>;

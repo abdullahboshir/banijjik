@@ -116,6 +116,7 @@ function buildTerminationRefundPayment(opts: {
         revenueState: "BEFORE_REVENUE",
       },
     ],
+    writeOffs: [],
     externalReference: null,
     reversesPaymentId: null,
     receivedByMemberId: input.actorUserId ?? "system",
@@ -209,7 +210,7 @@ export async function settleRequestTermination(
   if (creditAmount > 0) {
     await creditRefundForTermination(deps, input, creditAmount);
   }
-  await deps.summaries.setTotal({
+  await deps.summaries.closeAtTotal({
     organizationId: input.organizationId,
     requestType: input.requestType,
     requestId: input.requestId,

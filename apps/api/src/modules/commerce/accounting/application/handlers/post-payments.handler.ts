@@ -2,6 +2,7 @@ import { EVENT_TYPE, MODULE_KEY, type EventEnvelope } from "@banijjik/contracts"
 import {
   JOURNAL_SOURCE_TYPE,
   POSTING_KEY,
+  SYSTEM_ACCOUNT_CODE,
   reversalPostingKeyFor,
 } from "@banijjik/contracts/accounting";
 import { STORE_CREDIT_ENTRY_KIND } from "@banijjik/contracts/payment";
@@ -14,6 +15,8 @@ import {
   draftStoreCreditExpiry,
   type PaymentPostingSnapshot,
 } from "../../domain/posting-rules.js";
+import { ensureSystemAccount } from "../ensure-system-account.js";
+import { draftBadDebtWriteOff } from "../../domain/write-off-posting-rules.js";
 import type { PaymentPostingSource } from "../ports/payment-posting-source.js";
 import { postJournalEntry, postReversal, type PostJournalDependencies } from "../post-journal.js";
 
@@ -115,6 +118,22 @@ async function postPaymentReversal(
   if (reversedCount === 0) {
     throw postingSourceMissing(`payment-reversal:${originalId}`);
   }
+  await postBadDebtWriteOff(input, actor, snapshot);
+}
+
+async function postBadDebtWriteOff(
+  input: PaymentHandlerInput,
+  actor: { readonly organizationId: OrganizationId; readonly actorUserId: UserId | null },
+  snapshot: PaymentPostingSnapshot,
+): Promise<void> {
+  const draft = draftBadDebtWriteOff(snapshot);
+  if (draft === undefined) return;
+  // Organizations seeded before card 3.34 may not have the account yet.
+  await ensureSystemAccount(
+    { accounts: input.posting.accounts, clock: input.posting.clock },
+    { organizationId: actor.organizationId, accountCode: SYSTEM_ACCOUNT_CODE.BAD_DEBT_EXPENSE },
+  );
+  await postJournalEntry(input.posting, { ...actor, draft });
 }
 
 async function handlePaymentEvent(

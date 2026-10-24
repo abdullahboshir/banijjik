@@ -7,10 +7,12 @@ import {
   permissionDefinition,
 } from "@banijjik/contracts";
 import {
+  CLOSED_REQUEST_REVERSAL_POLICY,
   PAYMENT_EVENT_TYPE,
   PAYMENT_METHODS_DEFAULT,
   PAYMENT_METHODS_SETTING_KEY,
   PAYMENT_REFUND_MANAGER_WITHOUT_APPROVAL_SETTING_KEY,
+  PAYMENT_REVERSAL_CLOSED_REQUEST_SETTING_KEY,
   PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
 } from "@banijjik/contracts/payment";
 import { defineModule } from "../../../kernel/modules/index.js";
@@ -74,6 +76,13 @@ export const paymentManifest = defineModule({
       settingKey: PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
       value: { kind: "INTEGER", min: 1, max: 3650 },
       systemDefault: 365,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+    {
+      settingKey: PAYMENT_REVERSAL_CLOSED_REQUEST_SETTING_KEY,
+      value: { kind: "ENUM", values: Object.values(CLOSED_REQUEST_REVERSAL_POLICY) },
+      systemDefault: CLOSED_REQUEST_REVERSAL_POLICY.REOPEN_DUE,
       allowsLocationOverride: false,
       isClientVisible: true,
     },

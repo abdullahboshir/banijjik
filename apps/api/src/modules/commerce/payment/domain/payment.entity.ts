@@ -4,6 +4,7 @@ import type {
   PaymentApprovalSnapshot,
   PaymentDirection,
   PaymentMethod,
+  PaymentWriteOff,
 } from "@banijjik/contracts/payment";
 import type { LocationId, OrganizationId, PaymentId, UserId } from "@banijjik/ids";
 
@@ -18,6 +19,7 @@ export interface PaymentProps {
   readonly externalReference: string | null;
   readonly reversesPaymentId: string | null;
   readonly allocations: readonly PaymentAllocation[];
+  readonly writeOffs: readonly PaymentWriteOff[];
   readonly contactId: string | null;
   readonly receivedByMemberId: string;
   readonly businessDate: string;
@@ -79,6 +81,10 @@ export class Payment {
 
   get allocations(): readonly PaymentAllocation[] {
     return this.props.allocations;
+  }
+
+  get writeOffs(): readonly PaymentWriteOff[] {
+    return this.props.writeOffs;
   }
 
   get contactId(): string | null {

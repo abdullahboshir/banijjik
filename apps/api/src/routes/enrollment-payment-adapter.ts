@@ -62,12 +62,13 @@ class EnrollmentPaymentAdapter implements EnrollmentPaymentPort {
     );
     if (!summary) return;
     const netPaid = summary.allocated.amount - summary.refunded.amount;
-    if (summary.total.amount <= netPaid) return;
-    await this.summaries.setTotal({
+    // A fully paid period is closed at its current total, so a later reversal sees a closed request.
+    const closedTotal = Math.min(summary.total.amount, netPaid);
+    await this.summaries.closeAtTotal({
       organizationId: asId<OrganizationId>(input.organizationId),
       requestType: PAYMENT_REQUEST_TYPE.ENROLLMENT,
       requestId: input.enrollmentPeriodId,
-      total: { amount: netPaid, currency: summary.total.currency },
+      total: { amount: closedTotal, currency: summary.total.currency },
       now: input.now,
     });
   }

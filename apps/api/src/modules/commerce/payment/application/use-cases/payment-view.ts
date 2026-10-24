@@ -17,6 +17,7 @@ export function toPaymentResponse(payment: Payment): PaymentResponse {
     externalReference: props.externalReference,
     reversesPaymentId: props.reversesPaymentId,
     allocations: props.allocations,
+    writeOffs: props.writeOffs,
     contactId: props.contactId,
     receivedByMemberId: props.receivedByMemberId,
     businessDate: props.businessDate,

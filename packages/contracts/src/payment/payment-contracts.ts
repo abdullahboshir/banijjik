@@ -60,6 +60,13 @@ export const PAYMENT_REFUND_MANAGER_WITHOUT_APPROVAL_SETTING_KEY =
   "payment.refund.managerWithoutApproval";
 export const PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY = "payment.storeCreditExpiryDays";
 
+/** What a reversal does to a request that was already closed at a lower total (ADR-140). */
+export const PAYMENT_REVERSAL_CLOSED_REQUEST_SETTING_KEY = "payment.reversal.closedRequest";
+
+export const CLOSED_REQUEST_REVERSAL_POLICY = defineEnum(["REOPEN_DUE", "WRITE_OFF"]);
+export type ClosedRequestReversalPolicy =
+  (typeof CLOSED_REQUEST_REVERSAL_POLICY)[keyof typeof CLOSED_REQUEST_REVERSAL_POLICY];
+
 export const PAYMENT_METHODS_DEFAULT: readonly PaymentMethod[] = [
   PAYMENT_METHOD.CASH,
   PAYMENT_METHOD.BKASH,
@@ -97,6 +104,13 @@ export interface PaymentAllocation {
   readonly revenueState?: "BEFORE_REVENUE" | "AFTER_REVENUE";
 }
 
+/** An amount a reversal forgave on a closed request (policy WRITE_OFF). */
+export interface PaymentWriteOff {
+  readonly requestType: PaymentRequestType;
+  readonly requestId: string;
+  readonly amount: Money;
+}
+
 export interface PaymentApprovalSnapshot {
   readonly approvalId: string;
   readonly approverUserId: string;
@@ -113,6 +127,7 @@ export interface PaymentResponse {
   readonly externalReference?: string | null;
   readonly reversesPaymentId?: string | null;
   readonly allocations: readonly PaymentAllocation[];
+  readonly writeOffs: readonly PaymentWriteOff[];
   readonly contactId?: string | null;
   readonly receivedByMemberId: string;
   readonly businessDate: string;

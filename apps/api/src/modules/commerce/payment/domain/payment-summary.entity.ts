@@ -11,6 +11,8 @@ export interface PaymentSummaryProps {
   readonly allocated: Money;
   readonly refunded: Money;
   readonly paymentStatus: PaymentStatus;
+  /** Set when the request was closed at a lower total (cancel, no-show); null while open. */
+  readonly closedAt: Date | null;
   readonly updatedAt: Date;
 }
 
@@ -59,6 +61,10 @@ export class PaymentSummary {
 
   get paymentStatus(): PaymentStatus {
     return this.props.paymentStatus;
+  }
+
+  get closedAt(): Date | null {
+    return this.props.closedAt;
   }
 
   get due(): Money {

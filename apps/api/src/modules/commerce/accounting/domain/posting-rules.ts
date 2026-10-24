@@ -7,7 +7,7 @@ import {
   type Money,
   type PostingKey,
 } from "@banijjik/contracts/accounting";
-import type { StoreCreditEntryKind } from "@banijjik/contracts/payment";
+import type { PaymentRequestType, StoreCreditEntryKind } from "@banijjik/contracts/payment";
 import {
   assertBalanced,
   credit,
@@ -22,6 +22,13 @@ export interface PaymentAllocationForPosting {
   readonly requestId: string;
   readonly amount: Money;
   readonly revenueState: (typeof REVENUE_STATE)[keyof typeof REVENUE_STATE];
+}
+
+/** An amount a payment reversal forgave on a closed request (ADR-140). */
+export interface PaymentWriteOffForPosting {
+  readonly requestType: PaymentRequestType;
+  readonly requestId: string;
+  readonly amount: Money;
 }
 
 /**
@@ -40,6 +47,8 @@ export interface PaymentPostingSnapshot {
   readonly overpaymentToStoreCredit?: Money | undefined;
   /** Original payment id when direction is REVERSAL. */
   readonly reversesPaymentId?: string | undefined;
+  /** Amounts forgiven by a REVERSAL under the WRITE_OFF policy. */
+  readonly writeOffs?: readonly PaymentWriteOffForPosting[] | undefined;
 }
 
 export interface StoreCreditPostingSnapshot {

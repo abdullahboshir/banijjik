@@ -29,6 +29,7 @@ export interface PaymentSummaryDocument {
     currency: string;
   };
   paymentStatus: PaymentStatus;
+  closedAt?: Date | null;
   updatedAt: Date;
 }
 
@@ -61,6 +62,7 @@ export const paymentSummarySchema = new Schema<PaymentSummaryDocument>(
       enum: Object.values(PAYMENT_STATUS),
       default: PAYMENT_STATUS.UNPAID,
     },
+    closedAt: { type: Date, default: null },
     updatedAt: { type: Date, required: true },
   },
   SCHEMA_OPTIONS,

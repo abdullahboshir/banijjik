@@ -118,7 +118,7 @@ class OrderPaymentAdapter implements OrderPaymentPort {
   ): Promise<void> {
     const paid = await this.readNetPaid(input);
     if (paid.amount <= 0) {
-      await this.summaries.setTotal({
+      await this.summaries.closeAtTotal({
         organizationId: input.organizationId,
         requestType: PAYMENT_REQUEST_TYPE.ORDER,
         requestId: input.orderId,

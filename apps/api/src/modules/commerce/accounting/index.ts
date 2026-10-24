@@ -41,6 +41,7 @@ export type {
   PaymentAllocationForPosting,
   PaymentMethodCode,
   PaymentPostingSnapshot,
+  PaymentWriteOffForPosting,
   StoreCreditPostingSnapshot,
   BookingPostingSnapshot,
   ExpensePostingSnapshot,
@@ -60,6 +61,7 @@ export {
   draftExpensePosted,
   draftExpenseVoided,
 } from "./domain/posting-rules.js";
+export { draftBadDebtWriteOff } from "./domain/write-off-posting-rules.js";
 export { draftOrderCompleted } from "./domain/order-posting-rules.js";
 export { draftStockSource } from "./domain/stock-posting-rules.js";
 export { assertBalanced, mirrorLines } from "./domain/journal-lines.js";

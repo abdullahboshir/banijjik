@@ -92,6 +92,14 @@ async function readPaymentSnapshot(
     allocations,
     overpaymentToStoreCredit: computeOverpayment(paymentDoc, totalAllocated),
     reversesPaymentId: paymentDoc.reversesPaymentId ?? undefined,
+    writeOffs: (paymentDoc.writeOffs ?? []).map((writeOff) => ({
+      requestType: writeOff.requestType,
+      requestId: writeOff.requestId,
+      amount: {
+        amount: writeOff.amount.amount,
+        currency: writeOff.amount.currency as CurrencyCode,
+      },
+    })),
   };
 }
 

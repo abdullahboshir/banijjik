@@ -23,6 +23,15 @@ export interface PaymentAllocationSubdocument {
   revenueState: "BEFORE_REVENUE" | "AFTER_REVENUE" | null;
 }
 
+export interface PaymentWriteOffSubdocument {
+  requestType: PaymentRequestType;
+  requestId: string;
+  amount: {
+    amount: number;
+    currency: string;
+  };
+}
+
 export interface PaymentApprovalSubdocument {
   approvalId: string;
   approverUserId: string;
@@ -43,6 +52,7 @@ export interface PaymentDocument {
   externalReference: string | null;
   reversesPaymentId: string | null;
   allocations: PaymentAllocationSubdocument[];
+  writeOffs: PaymentWriteOffSubdocument[];
   contactId: string | null;
   receivedByMemberId: string;
   businessDate: string;
@@ -72,6 +82,22 @@ const allocationSchema = new Schema<PaymentAllocationSubdocument>(
       type: String,
       enum: ["BEFORE_REVENUE", "AFTER_REVENUE"],
       default: null,
+    },
+  },
+  { _id: false },
+);
+
+const writeOffSchema = new Schema<PaymentWriteOffSubdocument>(
+  {
+    requestType: {
+      type: String,
+      required: true,
+      enum: Object.values(PAYMENT_REQUEST_TYPE),
+    },
+    requestId: { type: String, required: true },
+    amount: {
+      amount: { type: Number, required: true },
+      currency: { type: String, required: true },
     },
   },
   { _id: false },
@@ -109,6 +135,7 @@ export const paymentSchema = new Schema<PaymentDocument>(
     externalReference: { type: String, default: null },
     reversesPaymentId: { type: String, default: null },
     allocations: { type: [allocationSchema], default: [] },
+    writeOffs: { type: [writeOffSchema], default: [] },
     contactId: { type: String, default: null },
     receivedByMemberId: { type: String, required: true },
     businessDate: { type: String, required: true },

@@ -173,4 +173,9 @@ export const SYSTEM_ACCOUNT_SEEDS: readonly SystemAccountSeed[] = Object.freeze(
     accountType: ACCOUNT_TYPE.LIABILITY,
     name: { bn: "প্রদেয় হিসাব", en: "Accounts payable" },
   },
+  {
+    accountCode: SYSTEM_ACCOUNT_CODE.BAD_DEBT_EXPENSE,
+    accountType: ACCOUNT_TYPE.EXPENSE,
+    name: { bn: "অনাদায়ী পাওনা ব্যয়", en: "Bad debt expense" },
+  },
 ]);

@@ -104,6 +104,7 @@ export const AUDIT_ACTION = {
   PAYMENT_RECEIVED: "payment.payment.received",
   PAYMENT_REFUNDED: "payment.payment.refunded",
   PAYMENT_REVERSED: "payment.payment.reversed",
+  PAYMENT_DUE_WRITTEN_OFF: "payment.due.writtenOff",
   STORE_CREDIT_ADJUSTED: "payment.storeCredit.adjusted",
   COMMISSION_RULE_CREATED: "commission.rule.created",
   COMMISSION_RULE_UPDATED: "commission.rule.updated",

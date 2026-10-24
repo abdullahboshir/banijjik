@@ -14,6 +14,7 @@ import type {
   PaginatedResult,
   PaymentSummaryRepository,
   RestoreAllocationInput,
+  CloseSummaryInput,
   SetSummaryTotalInput,
   SetSummaryContactInput,
 } from "../application/ports/payment-repositories.js";
@@ -50,6 +51,7 @@ function toDomain(doc: PaymentSummaryDocument): PaymentSummary {
       doc.allocated.amount,
       doc.refunded.amount,
     ),
+    closedAt: doc.closedAt ?? null,
     updatedAt: doc.updatedAt,
   });
 }
@@ -137,6 +139,27 @@ export class MongoPaymentSummaryRepository implements PaymentSummaryRepository {
         },
       },
       session,
+    );
+  }
+
+  async closeAtTotal(input: CloseSummaryInput): Promise<void> {
+    await getPaymentSummaryModel().updateOne(
+      {
+        organizationId: input.organizationId,
+        requestType: input.requestType,
+        requestId: input.requestId,
+      },
+      // A pipeline update keeps the first close time when the request is closed again.
+      [
+        {
+          $set: {
+            "total.amount": input.total.amount,
+            updatedAt: input.now,
+            closedAt: { $ifNull: ["$closedAt", input.now] },
+          },
+        },
+      ],
+      sessionOption(getActiveSession()),
     );
   }
 

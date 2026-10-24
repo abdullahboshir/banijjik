@@ -8,6 +8,7 @@ import {
   STORE_CREDIT_ENTRY_KIND,
   type PaymentApprovalSnapshot,
   type PaymentResponse,
+  type PaymentWriteOff,
 } from "@banijjik/contracts/payment";
 import {
   asId,
@@ -20,6 +21,7 @@ import {
   type UserId,
 } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
+import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
 import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import type { ApprovalVerifier } from "../../../../core/iam/index.js";
@@ -44,6 +46,10 @@ import type {
   TimezoneReader,
 } from "../ports/payment-repositories.js";
 import { formatPaymentNumber, toPaymentResponse } from "./payment-view.js";
+import {
+  recordWriteOffAudits,
+  restoreAllocationsForReversal,
+} from "./reverse-payment-write-off.js";
 
 export interface ReversePaymentInput {
   readonly organizationId: OrganizationId;
@@ -60,9 +66,10 @@ async function buildReversalPayment(input: {
   readonly original: Payment;
   readonly approvalSnapshot: PaymentApprovalSnapshot;
   readonly businessDate: string;
+  readonly writeOffs: readonly PaymentWriteOff[];
   readonly now: Date;
 }): Promise<Payment> {
-  const { input: req, original, approvalSnapshot, businessDate, now } = input;
+  const { input: req, original, approvalSnapshot, businessDate, writeOffs, now } = input;
   const seq = await nextSequenceValue({
     sequenceKey: SEQUENCE_KEY.PAYMENT,
     organizationId: req.organizationId,
@@ -78,6 +85,7 @@ async function buildReversalPayment(input: {
     externalReference: null,
     reversesPaymentId: original.paymentId,
     allocations: original.allocations,
+    writeOffs,
     contactId: original.contactId,
     receivedByMemberId: req.receivedByMemberId,
     businessDate,
@@ -104,6 +112,7 @@ export interface ReversePaymentDependencies {
   readonly audit: AuditRecorder;
   readonly clock: Clock;
   readonly timeZone: TimezoneReader;
+  readonly orgConfig: OrgConfigService;
 }
 
 function computeReversalStoreCreditDelta(original: Payment): {
@@ -250,11 +259,18 @@ export class ReversePaymentUseCase {
       };
       const now = deps.clock.now();
       const businessDate = businessDateOf(now, timeZone);
+      const writeOffs = await restoreAllocationsForReversal({
+        deps,
+        organizationId: input.organizationId,
+        allocations: original.allocations,
+        now,
+      });
       const reversalPayment = await buildReversalPayment({
         input,
         original,
         approvalSnapshot,
         businessDate,
+        writeOffs,
         now,
       });
       const creditEntryId = await reverseStoreCreditSideEffects({
@@ -265,15 +281,7 @@ export class ReversePaymentUseCase {
         now,
       });
       await deps.payments.create(reversalPayment);
-      for (const alloc of original.allocations) {
-        await deps.summaries.restoreAllocation({
-          organizationId: input.organizationId,
-          requestType: alloc.requestType,
-          requestId: alloc.requestId,
-          amount: alloc.amount.amount,
-          now,
-        });
-      }
+      await recordWriteOffAudits(deps.audit, reversalPayment.paymentId, writeOffs);
       await publishReversalEffects({
         deps,
         organizationId: input.organizationId,
