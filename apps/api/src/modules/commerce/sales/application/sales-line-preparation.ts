@@ -20,6 +20,7 @@ export interface OrderLineInput {
   readonly quantity: number;
   readonly modifierOptionIds: readonly string[];
   readonly manualDiscount?: ManualDiscount | undefined;
+  readonly performedByMemberId?: string | null | undefined;
 }
 
 /** Quote result merged with the catalog facts an order line must freeze. */
@@ -79,7 +80,7 @@ function manualDiscountTotalOf(quote: QuoteResponse): Money {
 function orderLineOf(
   catalog: SalesCatalogLine,
   quoted: QuoteLineResult,
-  manualDiscount: ManualDiscount | undefined,
+  lineInput: OrderLineInput,
 ): OrderLineProps {
   return {
     orderLineId: newId(),
@@ -99,7 +100,8 @@ function orderLineOf(
     promotionIds: [...quoted.promotionIds],
     taxClassKey: catalog.taxClassKey,
     costComponents: catalog.stockComponents,
-    manualDiscount: manualDiscount ?? null,
+    manualDiscount: lineInput.manualDiscount ?? null,
+    performedByMemberId: lineInput.performedByMemberId ?? null,
   };
 }
 
@@ -126,7 +128,7 @@ export function prepareOrderLines(input: {
     if (catalog.kind !== OFFERING_KIND.PRODUCT) {
       throw kindNeedsBooking({ offeringId: catalog.offeringId, kind: catalog.kind });
     }
-    lines.push(orderLineOf(catalog, quoted, lineInput.manualDiscount));
+    lines.push(orderLineOf(catalog, quoted, lineInput));
     costLines.push({
       offeringId: catalog.offeringId,
       variantId: catalog.variantId,

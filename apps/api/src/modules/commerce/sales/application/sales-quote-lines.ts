@@ -1,14 +1,42 @@
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import { asId, type OfferingId, type OrganizationId } from "@banijjik/ids";
+import { performerNotAtLocation } from "../domain/errors.js";
 import type { PreparedLines, OrderLineInput } from "./sales-line-preparation.js";
 import { prepareOrderLines } from "./sales-line-preparation.js";
-import type { SalesCatalogReader, SalesQuoter } from "./ports/sales-ports.js";
+import type { SalesCatalogReader, SalesPerformerReader, SalesQuoter } from "./ports/sales-ports.js";
+
+function namedPerformers(lines: readonly OrderLineInput[]): string[] {
+  const named = lines.flatMap((line) =>
+    line.performedByMemberId === undefined || line.performedByMemberId === null
+      ? []
+      : [line.performedByMemberId],
+  );
+  return [...new Set(named)];
+}
+
+/**
+ * A line may name a performer only when that member is ACTIVE and assigned at the order's location
+ * (plan 3.11 Refresh C). One read covers every named member. A member of another organization is
+ * absent too, because the tenant scope hides it.
+ */
+async function assertPerformersAssignable(
+  performers: SalesPerformerReader,
+  locationId: string,
+  lines: readonly OrderLineInput[],
+): Promise<void> {
+  const named = namedPerformers(lines);
+  if (named.length === 0) return;
+  const assignable = await performers.filterAssignable(locationId, named);
+  const refused = named.find((memberId) => !assignable.has(memberId));
+  if (refused !== undefined) throw performerNotAtLocation(refused);
+}
 
 /** The only money path: the client never sends an amount, the quoter computes everything. */
 export async function quoteAndPrepare(
   ports: {
     readonly quoter: SalesQuoter;
     readonly catalog: SalesCatalogReader;
+    readonly performers: SalesPerformerReader;
   },
   input: {
     readonly organizationId: OrganizationId;
@@ -17,6 +45,7 @@ export async function quoteAndPrepare(
     readonly orderDiscount?: ManualDiscount | undefined;
   },
 ): Promise<PreparedLines> {
+  await assertPerformersAssignable(ports.performers, input.locationId, input.lines);
   const quote = await ports.quoter.quote({
     organizationId: input.organizationId,
     locationId: input.locationId,

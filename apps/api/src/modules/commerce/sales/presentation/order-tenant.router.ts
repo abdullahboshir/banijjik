@@ -6,6 +6,7 @@ import {
   orderDeleteQuerySchema,
   orderInstantRequestSchema,
   orderListQuerySchema,
+  salesPerformersQuerySchema,
   orderPlaceRequestSchema,
   orderTransitionRequestSchema,
   orderUpdateRequestSchema,
@@ -31,6 +32,12 @@ function mountOrderReadRoutes(input: {
     input.permission(PERMISSION_KEY.SALES_ORDER_READ),
     validate({ query: orderListQuerySchema }),
     input.controller.list,
+  );
+  input.router.get(
+    "/sales/performers",
+    input.permission(PERMISSION_KEY.SALES_ORDER_CREATE),
+    validate({ query: salesPerformersQuerySchema }),
+    input.controller.performers,
   );
   input.router.get(
     "/orders/:orderId",

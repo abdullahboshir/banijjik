@@ -58,6 +58,13 @@ export function orderNeedsLine(): DomainRuleError {
   return salesRuleError(SALES_RULE_KEY.ORDER_NEEDS_LINE);
 }
 
+/** A line names a performer who is not an active member assigned at the order's location (ADR-135). */
+export function performerNotAtLocation(memberId: string): DomainRuleError {
+  return salesRuleError(SALES_RULE_KEY.SALES_PERFORMER_NOT_AT_LOCATION, ERROR_CODE.BUSINESS_RULE, {
+    memberId,
+  });
+}
+
 /** Packing is a workflow step organizations turn on or off with `sales.usePacking`. */
 export function packingDisabled(): DomainRuleError {
   return salesRuleError(SALES_RULE_KEY.PACKING_DISABLED);

@@ -84,6 +84,7 @@ function lineOf(row: OrderLineDocument): OrderLineProps {
     taxClassKey: row.taxClassKey,
     costComponents: [...row.costComponents] as readonly StockComponent[],
     manualDiscount: discountOf(row.manualDiscount),
+    performedByMemberId: row.performedByMemberId ?? null,
   };
 }
 
@@ -135,6 +136,7 @@ function lineDocument(line: OrderLineProps): OrderDocument["lines"][number] {
     taxClassKey: line.taxClassKey,
     costComponents: [...line.costComponents],
     manualDiscount: line.manualDiscount,
+    performedByMemberId: line.performedByMemberId,
   };
 }
 

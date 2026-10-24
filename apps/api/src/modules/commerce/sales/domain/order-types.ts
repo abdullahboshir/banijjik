@@ -36,6 +36,8 @@ export interface OrderLineProps {
   /** Internal like `manualDiscount`: what the line draws from stock, for the commit-time cost. */
   readonly costComponents: readonly StockComponent[];
   readonly manualDiscount: ManualDiscount | null;
+  /** The member who performed the line; commission accrues to them (ADR-135). Null for a line without one. */
+  readonly performedByMemberId: string | null;
 }
 
 export interface OrderProps {

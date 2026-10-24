@@ -23,6 +23,7 @@ function toLineSnapshot(line: OrderLineProps): OrderResponse["lines"][number] {
     promotionIds: [...line.promotionIds],
     taxClassKey: line.taxClassKey,
     manualDiscount: line.manualDiscount ?? null,
+    performedByMemberId: line.performedByMemberId,
   };
 }
 

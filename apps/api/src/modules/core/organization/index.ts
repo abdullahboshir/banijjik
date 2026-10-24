@@ -54,6 +54,8 @@ import { MongoRolesVersionBumper } from "./infrastructure/mongo-roles-version-bu
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { OrganizationController } from "./presentation/organization.controller.js";
 import { buildOrganizationRouter } from "./presentation/organization.router.js";
+import type { MemberPerformerReader } from "./application/ports/member-performer-reader.js";
+import { MongoMemberPerformerReader } from "./infrastructure/mongo-member-performer-reader.js";
 
 export type { IndustryTemplateAvailability } from "./application/ports/industry-template-availability.js";
 export { registerOrganizationModels } from "./infrastructure/register-organization-models.js";
@@ -143,6 +145,13 @@ export type { MemberNameReader } from "./application/ports/member-name-reader.js
 /** Display names of members of the active organization, for modules that show who a record is about (card 3.11). */
 export function buildMemberNameReader(): MemberNameReader {
   return new MongoMemberNameReader();
+}
+
+export type { MemberPerformerReader } from "./application/ports/member-performer-reader.js";
+
+/** Members who may perform a sale at a location, by name only (plan 3.11 Refresh C). */
+export function buildMemberPerformerReader(): MemberPerformerReader {
+  return new MongoMemberPerformerReader();
 }
 
 /** Approval PIN fields on Member for iam (card 3.4b). */

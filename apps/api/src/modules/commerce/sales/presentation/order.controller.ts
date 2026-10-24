@@ -6,6 +6,7 @@ import type {
   OrderListQuery,
   OrderPlaceBody,
   OrderTransitionBody,
+  SalesPerformersQuery,
 } from "@banijjik/validation/sales";
 import { asId, type OrderId, type UserId } from "@banijjik/ids";
 import type { RequestHandler } from "express";
@@ -18,6 +19,7 @@ import type {
 import type { DeleteDraftUseCase } from "../application/use-cases/delete-draft.use-case.js";
 import type { InstantOrderUseCase } from "../application/use-cases/instant-order.use-case.js";
 import type { PlaceOrderUseCase } from "../application/use-cases/place-order.use-case.js";
+import type { ListPerformersUseCase } from "../application/use-cases/list-performers.use-case.js";
 import type {
   GetOrderUseCase,
   ListOrdersUseCase,
@@ -54,6 +56,7 @@ export class OrderController {
       readonly cancelOrder: CancelOrderUseCase;
       readonly getOrder: GetOrderUseCase;
       readonly listOrders: ListOrdersUseCase;
+      readonly listPerformers: ListPerformersUseCase;
     },
   ) {}
 
@@ -172,6 +175,12 @@ export class OrderController {
     sendData(response, page.items, {
       meta: { page: query.page, limit: query.limit, hasNext: page.hasNext },
     });
+  };
+
+  readonly performers: RequestHandler = async (request, response) => {
+    const { allowedLocationIds } = readTenantCaller();
+    const query = request.query as unknown as SalesPerformersQuery;
+    sendData(response, await this.useCases.listPerformers.execute({ allowedLocationIds, query }));
   };
 }
 

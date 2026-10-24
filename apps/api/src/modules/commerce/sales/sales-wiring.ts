@@ -13,11 +13,13 @@ import type {
   OrderPaymentPort,
   SalesApprovalVerifier,
   SalesCurrencyReader,
+  SalesPerformerReader,
   SalesQuoter,
   SalesStockLedger,
   SalesUnitCostReader,
 } from "./application/ports/sales-ports.js";
 import { CreateOrderUseCase } from "./application/use-cases/create-order.use-case.js";
+import { ListPerformersUseCase } from "./application/use-cases/list-performers.use-case.js";
 import { DeleteDraftUseCase } from "./application/use-cases/delete-draft.use-case.js";
 import { InstantOrderUseCase } from "./application/use-cases/instant-order.use-case.js";
 import { PlaceOrderUseCase } from "./application/use-cases/place-order.use-case.js";
@@ -60,6 +62,7 @@ export interface SalesTenantPorts {
   readonly currency: SalesCurrencyReader;
   readonly unitCosts: SalesUnitCostReader;
   readonly payments: OrderPaymentPort;
+  readonly performers: SalesPerformerReader;
 }
 
 /** The composition root of the module: repositories and ports, never wired anywhere else. */
@@ -86,6 +89,7 @@ export function buildSalesDependencies(ports: SalesTenantPorts): SalesDependenci
     limits: ports.limits,
     owner: buildSalesOwnerReader(),
     unitCosts: ports.unitCosts,
+    performers: ports.performers,
   };
 }
 
@@ -102,6 +106,7 @@ export function buildSalesController(dependencies: SalesDependencies): OrderCont
     cancelOrder: new CancelOrderUseCase(dependencies),
     getOrder: new GetOrderUseCase(dependencies),
     listOrders: new ListOrdersUseCase(dependencies),
+    listPerformers: new ListPerformersUseCase(dependencies),
   });
 }
 

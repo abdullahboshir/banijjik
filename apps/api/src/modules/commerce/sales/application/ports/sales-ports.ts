@@ -155,6 +155,19 @@ export interface SalesOwnerReader {
   isOwner(): Promise<boolean>;
 }
 
+/** The members a line may name as its performer (plan 3.11 Refresh C): ACTIVE and assigned at the location or at ALL. */
+export interface SalesPerformerReader {
+  /** The ids of the given members that may perform at the location; anything else is absent. */
+  filterAssignable(locationId: string, memberIds: readonly string[]): Promise<ReadonlySet<string>>;
+  /** Up to `limit` of those members, by display name, names only. */
+  listAt(locationId: string, limit: number): Promise<readonly SalesPerformerName[]>;
+}
+
+export interface SalesPerformerName {
+  readonly memberId: string;
+  readonly name: string;
+}
+
 export interface OrderPaymentPort {
   updateContact(input: {
     organizationId: OrganizationId;

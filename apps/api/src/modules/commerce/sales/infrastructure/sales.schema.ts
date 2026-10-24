@@ -61,6 +61,8 @@ export interface OrderLineDocument {
   costComponents: StockComponent[];
   /** Internal: the seller's discount input, never returned by the API. */
   manualDiscount: ManualDiscountDocument | null;
+  /** The member who performed the line; null for an order stored before 3.11 Part C. */
+  performedByMemberId: string | null;
 }
 
 export interface TotalsDocument {
@@ -163,6 +165,7 @@ const orderLineSchema = new Schema<OrderLineDocument>(
     taxClassKey: { type: String, default: null },
     costComponents: { type: [costComponentSchema], default: [] },
     manualDiscount: { type: manualDiscountSchema, default: null },
+    performedByMemberId: { type: String, default: null },
   },
   SUB_SCHEMA_OPTIONS,
 );

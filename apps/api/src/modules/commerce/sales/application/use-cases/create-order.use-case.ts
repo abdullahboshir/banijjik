@@ -52,6 +52,7 @@ export function lineInputsOf(order: Order): OrderLineInput[] {
     quantity: line.quantity,
     modifierOptionIds: line.modifiers.map((modifier) => modifier.modifierOptionId),
     ...(line.manualDiscount === null ? {} : { manualDiscount: line.manualDiscount }),
+    performedByMemberId: line.performedByMemberId,
   }));
 }
 

@@ -34,7 +34,10 @@ import {
   buildPriceQuoter,
   type PricingTenantDependencies,
 } from "../modules/commerce/pricing/index.js";
-import { buildOrganizationCurrencyReader } from "../modules/core/organization/index.js";
+import {
+  buildMemberPerformerReader,
+  buildOrganizationCurrencyReader,
+} from "../modules/core/organization/index.js";
 import { buildApprovalVerifier } from "../modules/core/iam/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import { buildLimitGuard, type OrgConfigService } from "../modules/platform/entitlement/index.js";
@@ -197,6 +200,7 @@ export function buildSalesTenantPorts(input: SalesRouterInput): SalesTenantPorts
     },
     unitCosts: unitCostReaderOf(),
     payments: buildOrderPaymentAdapter(),
+    performers: buildMemberPerformerReader(),
   };
 }
 

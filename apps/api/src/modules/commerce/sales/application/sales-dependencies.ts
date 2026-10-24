@@ -11,6 +11,7 @@ import type {
   SalesContactReader,
   SalesCurrencyReader,
   SalesOwnerReader,
+  SalesPerformerReader,
   SalesQuoter,
   SalesSettingsReader,
   SalesStockLedger,
@@ -39,6 +40,7 @@ export interface SalesDependencies {
   readonly limits: LimitGuard;
   readonly owner: SalesOwnerReader;
   readonly unitCosts: SalesUnitCostReader;
+  readonly performers: SalesPerformerReader;
 }
 
 /**
