@@ -17,6 +17,8 @@ import { buildPostExpensesHandler } from "./handlers/post-expenses.handler.js";
 import { buildPostPaymentsHandler } from "./handlers/post-payments.handler.js";
 import { buildPostOrdersHandler } from "./handlers/post-orders.handler.js";
 import { buildPostEnrollmentsHandler } from "./handlers/post-enrollments.handler.js";
+import { buildPostSalesReturnsHandler } from "./handlers/post-sales-returns.handler.js";
+import type { SalesReturnPostingSource } from "./ports/sales-return-posting-source.js";
 import { buildPostStockHandler } from "./handlers/post-stock.handler.js";
 import { buildSeedOnOrganizationCreatedHandler } from "./handlers/seed-on-organization-created.handler.js";
 
@@ -33,6 +35,8 @@ export interface AccountingHandlerDependencies {
   /** When omitted, commission posting is not registered (the commission module is optional). */
   readonly commissions?: CommissionPostingSource | undefined;
   readonly orders?: OrderPostingSource | undefined;
+  /** Required: a return that is not posted would leave the books short (plan 3.5b decision 9). */
+  readonly salesReturns: SalesReturnPostingSource;
   readonly stocks?: StockPostingSource | undefined;
   readonly expenses: ExpensePostingSource;
   /** Required: enrollment periods post revenue whenever the enrollment module emits them (card 3.31). */
@@ -101,6 +105,12 @@ export function registerAccountingEventHandlers(dependencies: AccountingHandlerD
   registerEventHandler(
     buildPostEnrollmentsHandler({
       enrollments: dependencies.enrollments,
+      posting: postingOf(dependencies),
+    }),
+  );
+  registerEventHandler(
+    buildPostSalesReturnsHandler({
+      salesReturns: dependencies.salesReturns,
       posting: postingOf(dependencies),
     }),
   );

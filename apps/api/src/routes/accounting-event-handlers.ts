@@ -18,6 +18,8 @@ import {
 import {
   buildOrderPostingSourceAdapter,
   buildOrderRepository,
+  buildSalesReturnPostingSourceAdapter,
+  buildSalesReturnRepository,
 } from "../modules/commerce/sales/index.js";
 import { systemClock } from "../kernel/time/index.js";
 import { buildEnrollmentPeriodPostingSource } from "../modules/commerce/enrollment/index.js";
@@ -42,6 +44,11 @@ export function registerAccountingAndExpenseHandlers(): void {
       orders: buildOrderRepository(),
       advances: buildRequestAdvanceReader(),
       inventory: buildInventoryPostingSourceAdapter(),
+    }),
+    salesReturns: buildSalesReturnPostingSourceAdapter({
+      returns: buildSalesReturnRepository(),
+      inventory: buildInventoryPostingSourceAdapter(),
+      organizationCurrency: (organizationId) => currencies.read(organizationId),
     }),
     stocks: buildStockPostingSourceAdapter({ currencies }),
     enrollments: buildEnrollmentPeriodPostingSource(buildRequestAdvanceReader()),

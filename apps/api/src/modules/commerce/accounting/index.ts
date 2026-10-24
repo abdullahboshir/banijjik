@@ -10,6 +10,7 @@ import type { BookingPostingSource } from "./application/ports/booking-posting-s
 import type { CommissionPostingSource } from "./application/ports/commission-posting-source.js";
 import type { OrderPostingSource } from "./application/ports/order-posting-source.js";
 import type { EnrollmentPeriodPostingSource } from "./application/ports/enrollment-posting-source.js";
+import type { SalesReturnPostingSource } from "./application/ports/sales-return-posting-source.js";
 import type { StockPostingSource } from "./application/ports/stock-posting-source.js";
 import type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 import type { ExpensePostingSource } from "./application/ports/expense-posting-source.js";
@@ -17,6 +18,7 @@ import type { PaymentPostingSource } from "./application/ports/payment-posting-s
 import { buildPostBookingsHandler } from "./application/handlers/post-bookings.handler.js";
 import { buildPostPaymentsHandler } from "./application/handlers/post-payments.handler.js";
 import { buildPostOrdersHandler } from "./application/handlers/post-orders.handler.js";
+import { buildPostSalesReturnsHandler } from "./application/handlers/post-sales-returns.handler.js";
 import { buildPostStockHandler } from "./application/handlers/post-stock.handler.js";
 import { buildPostEnrollmentsHandler } from "./application/handlers/post-enrollments.handler.js";
 import { registerAccountingEventHandlers } from "./application/register-handlers.js";
@@ -41,6 +43,8 @@ export type {
   EnrollmentPeriodPostingSnapshot,
   EnrollmentPeriodPostingSource,
 } from "./application/ports/enrollment-posting-source.js";
+export type { SalesReturnPostingSource } from "./application/ports/sales-return-posting-source.js";
+export type { SalesReturnPostingSnapshot } from "./domain/sales-return-posting-rules.js";
 export type { StockPostingSource } from "./application/ports/stock-posting-source.js";
 export type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 export type {
@@ -76,6 +80,7 @@ export {
   buildPostBookingsHandler,
   buildPostPaymentsHandler,
   buildPostOrdersHandler,
+  buildPostSalesReturnsHandler,
   buildPostStockHandler,
   buildPostEnrollmentsHandler,
 };
@@ -123,6 +128,7 @@ export interface AccountingEventHandlerInput {
   readonly bookings?: BookingPostingSource | undefined;
   readonly commissions?: CommissionPostingSource | undefined;
   readonly orders?: OrderPostingSource | undefined;
+  readonly salesReturns: SalesReturnPostingSource;
   readonly stocks?: StockPostingSource | undefined;
   readonly enrollments: EnrollmentPeriodPostingSource;
 }
@@ -141,6 +147,7 @@ export function registerAccountingHandlers(input: AccountingEventHandlerInput): 
     ...(input.bookings === undefined ? {} : { bookings: input.bookings }),
     ...(input.commissions === undefined ? {} : { commissions: input.commissions }),
     ...(input.orders === undefined ? {} : { orders: input.orders }),
+    salesReturns: input.salesReturns,
     ...(input.stocks === undefined ? {} : { stocks: input.stocks }),
   });
 }

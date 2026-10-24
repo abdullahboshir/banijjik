@@ -4,6 +4,7 @@ import type { EventHandler } from "../../../../../kernel/events/index.js";
 import {
   accrueCompletedBooking,
   accrueCompletedOrder,
+  accrueSalesReturn,
   reconcilePaymentSources,
   type AccrualDependencies,
   type CommissionEventContext,
@@ -44,6 +45,7 @@ export function buildAccrueCommissionHandler(
     eventType: EVENT_TYPE.BOOKING_COMPLETED,
     alsoHandles: [
       EVENT_TYPE.ORDER_COMPLETED,
+      EVENT_TYPE.SALES_RETURN_CREATED,
       EVENT_TYPE.PAYMENT_REFUNDED,
       EVENT_TYPE.PAYMENT_REVERSED,
     ],
@@ -52,6 +54,13 @@ export function buildAccrueCommissionHandler(
       const context = contextOf(envelope);
       if (envelope.type === EVENT_TYPE.ORDER_COMPLETED) {
         await accrueCompletedOrder(dependencies, {
+          orderId: readStringField(envelope.payload, "orderId"),
+          context,
+        });
+        return;
+      }
+      if (envelope.type === EVENT_TYPE.SALES_RETURN_CREATED) {
+        await accrueSalesReturn(dependencies, {
           orderId: readStringField(envelope.payload, "orderId"),
           context,
         });

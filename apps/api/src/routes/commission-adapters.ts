@@ -83,6 +83,7 @@ function buildOrderSourceReader(): CommissionReaders["orders"] {
           orderLineId: line.orderLineId,
           offeringId: line.offeringId,
           quantity: line.quantity,
+          returnedQuantity: line.returnedQuantity,
           lineNetTotal: line.lineNetTotal,
           lineTax: line.lineTax,
           performedByMemberId: line.performedByMemberId,

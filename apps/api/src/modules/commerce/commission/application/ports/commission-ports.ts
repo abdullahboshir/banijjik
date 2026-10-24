@@ -142,6 +142,8 @@ export interface OrderCommissionLine {
   readonly orderLineId: string;
   readonly offeringId: string;
   readonly quantity: number;
+  /** Units given back by returns so far; a return lowers the line commission by its share (ADR-135). */
+  readonly returnedQuantity: number;
   readonly lineNetTotal: Money;
   readonly lineTax: Money;
   readonly performedByMemberId: string | null;

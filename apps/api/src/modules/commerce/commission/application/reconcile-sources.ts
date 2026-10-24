@@ -80,7 +80,7 @@ function ledgerKeyOf(entry: CommissionEntry): string {
   return `${entry.sourceLineId ?? ""}|${entry.memberId}`;
 }
 
-function groupByLedger(entries: readonly CommissionEntry[]): CommissionEntry[][] {
+export function groupByLedger(entries: readonly CommissionEntry[]): CommissionEntry[][] {
   const groups = new Map<string, CommissionEntry[]>();
   for (const entry of entries) {
     const key = ledgerKeyOf(entry);
@@ -118,14 +118,9 @@ async function reconcileAllocation(
       context,
     );
   }
-  if (allocation.requestType === PAYMENT_REQUEST_TYPE.ORDER) {
-    await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.ORDER_LINE, allocation.requestId);
-    return reconcileSource(
-      dependencies,
-      { sourceType: COMMISSION_SOURCE_TYPE.ORDER_LINE, sourceId: allocation.requestId },
-      context,
-    );
-  }
+  // A refund of an order never reconciles its lines: a refund without a return is a price
+  // concession, and the lines move only when units come back (plan 3.5b decision 10, ADR-135).
+  if (allocation.requestType === PAYMENT_REQUEST_TYPE.ORDER) return NOTHING_DONE;
   return NOTHING_DONE;
 }
 

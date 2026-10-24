@@ -24,6 +24,7 @@ import {
   type CommissionEventContext,
 } from "./accrual-shared.js";
 import { reconcileSource } from "./reconcile-sources.js";
+import { reconcileOrderLinesByReturn } from "./reconcile-returns.js";
 
 export type {
   AccrualDependencies,
@@ -215,13 +216,23 @@ export async function accrueCompletedOrder(
     await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.ORDER_LINE, input.orderId);
     const order = await dependencies.orders.readOrder(input.orderId);
     if (order === undefined || order.status !== ORDER_STATUS.COMPLETED) return NOTHING_DONE;
-    const accrued = await accrueOrderLines(dependencies, order, input.context);
-    const reconciled = await reconcileSource(
-      dependencies,
-      { sourceType: COMMISSION_SOURCE_TYPE.ORDER_LINE, sourceId: input.orderId },
-      input.context,
-    );
-    return addResults(accrued, reconciled);
+    return accrueOrderLines(dependencies, order, input.context);
+  });
+}
+
+/**
+ * `sales.return.created` (plan 3.5b decision 10): every performed line of the order is brought in
+ * line with the units returned so far. The same race marker as the order path serializes the writers.
+ */
+export async function accrueSalesReturn(
+  dependencies: AccrualDependencies,
+  input: { readonly orderId: string; readonly context: CommissionEventContext },
+): Promise<AccrualResult> {
+  return dependencies.unitOfWork.run(async () => {
+    await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.ORDER_LINE, input.orderId);
+    const order = await dependencies.orders.readOrder(input.orderId);
+    if (order === undefined) return NOTHING_DONE;
+    return reconcileOrderLinesByReturn(dependencies, order, input.context);
   });
 }
 

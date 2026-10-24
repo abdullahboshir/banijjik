@@ -6,6 +6,8 @@ import type { RequestAdvanceReader } from "../payment/index.js";
 import { movementValue, type InventoryPostingSource } from "../inventory/index.js";
 import type { OrderPostingSnapshot, OrderPostingSource } from "../accounting/index.js";
 import { MongoOrderRepository } from "./infrastructure/mongo-order.repositories.js";
+import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
+import type { SalesReturnRepository } from "./application/ports/sales-return-ports.js";
 import type { Router } from "express";
 import { registerScheduledJob } from "../../../kernel/jobs/index.js";
 import {
@@ -59,6 +61,10 @@ export type {
   SettleReturnInput,
 } from "./application/ports/sales-ports.js";
 export type { PaymentTotals } from "./domain/payment-status.js";
+export { buildSalesReturnPostingSourceAdapter } from "./infrastructure/sales-return-posting-source.adapter.js";
+export function buildSalesReturnRepository(): SalesReturnRepository {
+  return new MongoSalesReturnRepository();
+}
 
 /** The composition root passes the order store to adapters that live outside this module. */
 export function buildOrderRepository(): OrderRepository {

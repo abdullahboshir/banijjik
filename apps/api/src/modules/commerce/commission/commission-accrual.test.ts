@@ -577,7 +577,7 @@ interface OrderLineInput {
   readonly tax: number;
 }
 
-function addOrder(scene: Scene, lines: readonly OrderLineInput[]): string {
+function addOrder(scene: Scene, lines: readonly OrderLineInput[], soldQuantity = 1): string {
   const orderId = newId();
   scene.orders.set(orderId, {
     orderId,
@@ -588,7 +588,8 @@ function addOrder(scene: Scene, lines: readonly OrderLineInput[]): string {
     lines: lines.map((line) => ({
       orderLineId: newId(),
       offeringId: scene.offeringId,
-      quantity: 1,
+      quantity: soldQuantity,
+      returnedQuantity: 0,
       lineNetTotal: bdt(line.net),
       lineTax: bdt(line.tax),
       performedByMemberId: line.memberId,
@@ -614,6 +615,23 @@ async function orderEntriesOf(scene: Scene, orderId: string) {
   return withOrganizationContext(scene.organizationId, () =>
     scene.dependencies.entries.listBySource(COMMISSION_SOURCE_TYPE.ORDER_LINE, orderId),
   );
+}
+
+/** Marks units of every line of the order as returned, as the sales module does before it emits the event. */
+function returnUnits(scene: Scene, orderId: string, units: number): void {
+  const order = scene.orders.get(orderId);
+  if (order === undefined) throw new Error("order fixture missing");
+  scene.orders.set(orderId, {
+    ...order,
+    lines: order.lines.map((line) => ({
+      ...line,
+      returnedQuantity: Math.min(line.quantity, line.returnedQuantity + units),
+    })),
+  });
+}
+
+function returnEnvelope(scene: Scene, orderId: string): HandlerInput {
+  return envelope(scene, EVENT_TYPE.SALES_RETURN_CREATED, { salesReturnId: newId(), orderId });
 }
 
 function sumOfAmounts(entries: readonly { readonly amount: Money }[]): number {
@@ -684,47 +702,45 @@ describe("commission accrual on performed order lines", () => {
     expect(await orderEntriesOf(scene, orderId)).toHaveLength(1);
   });
 
-  it("a refund of part of the order lowers each line's commission by the order's refunded share", async () => {
+  it("a partial return lowers that line's commission by its returned share", async () => {
     const scene = newScene();
     await runAs(scene, () => addMemberRule(scene));
-    const orderId = addOrder(scene, [
-      { memberId: scene.memberId, ...FIRST_LINE },
-      { memberId: scene.memberId, ...SECOND_LINE },
-    ]);
+    const orderId = addOrder(scene, [{ memberId: scene.memberId, ...FIRST_LINE }], 2);
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    await runAs(scene, () => handler.handle(orderEnvelope(scene, orderId)));
+    const [accrual] = await orderEntriesOf(scene, orderId);
+    const accrualAmount = accrual?.amount.amount ?? 0;
+
+    returnUnits(scene, orderId, 1);
+    await runAs(scene, () => handler.handle(returnEnvelope(scene, orderId)));
+
+    const entries = await orderEntriesOf(scene, orderId);
+    expect(sumOfAmounts(entries)).toBe(accrualAmount - Math.floor(accrualAmount / 2));
+  });
+
+  it("a full return brings the line's commission to zero", async () => {
+    const scene = newScene();
+    await runAs(scene, () => addMemberRule(scene));
+    const orderId = addOrder(scene, [{ memberId: scene.memberId, ...FIRST_LINE }]);
     const handler = buildAccrueCommissionHandler(scene.dependencies);
     await runAs(scene, () => handler.handle(orderEnvelope(scene, orderId)));
 
-    const refund = refundOfOrder(scene, orderId, ORDER_GROSS / 2);
-    await runAs(scene, () =>
-      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, refund)),
-    );
+    returnUnits(scene, orderId, 1);
+    await runAs(scene, () => handler.handle(returnEnvelope(scene, orderId)));
 
-    const entries = await orderEntriesOf(scene, orderId);
-    const netByLine = new Map<string | null, number>();
-    for (const entry of entries) {
-      netByLine.set(
-        entry.sourceLineId,
-        (netByLine.get(entry.sourceLineId) ?? 0) + entry.amount.amount,
-      );
-    }
-    expect([...netByLine.values()].sort((left, right) => left - right)).toEqual([2500, 5000]);
+    expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(0);
   });
 
-  it("a full refund brings every line's commission to zero and a reversal of that refund restores it", async () => {
+  it("a refund without a return leaves the order lines' commission unchanged", async () => {
     const scene = newScene();
     await runAs(scene, () => addMemberRule(scene));
     const orderId = addOrder(scene, [{ memberId: scene.memberId, ...FIRST_LINE }]);
     const handler = buildAccrueCommissionHandler(scene.dependencies);
     await runAs(scene, () => handler.handle(orderEnvelope(scene, orderId)));
     const refund = refundOfOrder(scene, orderId, ORDER_GROSS);
+
     await runAs(scene, () =>
       handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REFUNDED, refund)),
-    );
-    expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(0);
-
-    scene.refunded.set(orderId, bdt(0));
-    await runAs(scene, () =>
-      handler.handle(paymentEnvelope(scene, EVENT_TYPE.PAYMENT_REVERSED, refund)),
     );
 
     expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(10_000);
