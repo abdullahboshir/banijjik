@@ -340,7 +340,7 @@ describeWithRedis("replay and skip of a dead-lettered event on the worker", (red
       if (ledger.handled.length === 2) return true;
       if (ledger.handled.length === 1) {
         const followerJob = await queue?.getJob(followerJobId);
-        if (await followerJob?.isDelayed()) await followerJob.promote();
+        if (followerJob && (await followerJob.isDelayed())) await followerJob.promote();
       }
       return undefined;
     });
