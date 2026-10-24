@@ -15,6 +15,7 @@ import type {
   PaymentSummaryRepository,
   RestoreAllocationInput,
   SetSummaryTotalInput,
+  SetSummaryContactInput,
 } from "../application/ports/payment-repositories.js";
 import {
   PAYMENT_SUMMARY_MODEL_NAME,
@@ -105,6 +106,18 @@ export class MongoPaymentSummaryRepository implements PaymentSummaryRepository {
         },
       },
       { upsert: true, ...session },
+    );
+  }
+
+  async setContact(input: SetSummaryContactInput): Promise<void> {
+    await getPaymentSummaryModel().updateOne(
+      {
+        organizationId: input.organizationId,
+        requestType: input.requestType,
+        requestId: input.requestId,
+      },
+      { $set: { contactId: input.contactId, updatedAt: input.now } },
+      sessionOption(getActiveSession()),
     );
   }
 

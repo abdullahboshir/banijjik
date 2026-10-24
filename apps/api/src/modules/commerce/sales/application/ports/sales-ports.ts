@@ -156,6 +156,12 @@ export interface SalesOwnerReader {
 }
 
 export interface OrderPaymentPort {
+  updateContact(input: {
+    organizationId: OrganizationId;
+    orderId: OrderId;
+    contactId: ContactId | null;
+    now: Date;
+  }): Promise<void>;
   initializeSummary(input: {
     organizationId: OrganizationId;
     orderId: OrderId;

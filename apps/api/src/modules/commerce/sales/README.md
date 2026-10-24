@@ -21,7 +21,9 @@ Totals come from the pricing quoter; stock effects from the inventory `StockLedg
   missing summary with grandTotal (3.23 Amendment 1); no migration is needed.
 - Edits cannot reduce totals below net paid. Confirm checks `sales.advance.required` and
   `sales.advance.value` against net paid in its transaction.
-- Cancel credits net paid once. A paid order without a contact needs a refund or contact first.
+- Contact changes move the summary contact in the edit transaction, but a positive net payment
+  locks the contact until staff refund (3.23 Amendment 2).
+- Cancel credits net paid once. Paid orders without a contact must be refunded first.
 - INSTANT and PICKUP are served now; shipping methods and statuses wait for Phase 5.
 - Hourly `sales.expireDrafts` and `sales.autoCancelPlaced` are idempotent per organization;
   request-less settings resolution is supported by card 3.19.
