@@ -117,10 +117,6 @@ describe("commission screens", () => {
     const page = await ownerPage();
 
     await gotoWhenHydrated(page, `${ORG_PATH}/commission/rules`, "main button");
-    const debugText = await bodyText(page);
-    process.stdout.write(
-      `DEBUG url=${page.url()} hasAdd=${debugText.includes(message("commission.rules.add"))} text=${debugText.slice(0, 1200)}\n`,
-    );
     await clickByName(page, message("commission.rules.add"));
     await waitForDialogSettled(page);
     await page.waitForSelector("#commission-rule-member");
