@@ -13,4 +13,5 @@ export {
   type StorefrontSiteResponse,
 } from "./website-contracts.js";
 export { SITE_PAGE_KEY, type SitePageKey } from "./site-page-key.js";
+export type { LocalizedText } from "../platform/industry-template.js";
 export { WEBSITE_EVENT_TYPE, type WebsiteEventType } from "./website-event-type.js";

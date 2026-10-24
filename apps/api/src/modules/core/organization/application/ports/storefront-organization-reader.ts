@@ -7,6 +7,11 @@ export interface StorefrontOrganization {
   readonly defaultLocale: PreferredLocale;
   /** Keys the resolved-config cache; the storefront puts it into the request context like tenantContext does. */
   readonly configVersion: number;
+  /** The branding the public site shows; null where the business has not set it (card 3.12). */
+  readonly tagline: string | null;
+  readonly logoFileId: string | null;
+  readonly primaryColor: string | null;
+  readonly accentColor: string | null;
 }
 
 /**

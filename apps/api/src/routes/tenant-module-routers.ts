@@ -98,7 +98,7 @@ export function buildTenantRouters(input: TenantRoutersInput): readonly Router[]
     paymentRouter,
     commissionRouter,
     salesRouter,
-    ...[input.coreRouters.enrollmentRouter, ...tenantRouters],
+    ...[input.coreRouters.enrollmentRouter, input.coreRouters.websiteRouter, ...tenantRouters],
     ...tenantRouterFactories.map((build) => build(permission)),
   ];
 }

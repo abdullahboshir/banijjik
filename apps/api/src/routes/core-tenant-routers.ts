@@ -1,4 +1,5 @@
 import { buildEnrollmentTenantRouter } from "./enrollment-tenant-router.js";
+import { buildWebsiteAdminRouter } from "../modules/commerce/website/index.js";
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { StorageConfig } from "../config/index.js";
 import type { RequestHandler, Router } from "express";
@@ -73,6 +74,7 @@ export interface CoreTenantRouters {
   readonly commissionRouter: Router;
   readonly salesRouter: Router;
   readonly enrollmentRouter: Router;
+  readonly websiteRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -135,6 +137,7 @@ function buildCommerceTenantRouters(
   | "expenseRouter"
   | "bookingRouter"
   | "enrollmentRouter"
+  | "websiteRouter"
   | "creditRouter"
   | "paymentRouter"
   | "commissionRouter"
@@ -169,6 +172,11 @@ function buildCommerceTenantRouters(
     commissionRouter: buildCommissionTenantRouter(shared),
     salesRouter: buildSalesTenantRouter(shared),
     enrollmentRouter: buildEnrollmentTenantRouter(shared),
+    websiteRouter: buildWebsiteAdminRouter({
+      clock: input.clock,
+      audit: input.audit,
+      permission: input.permission,
+    }),
   };
 }
 

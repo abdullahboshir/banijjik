@@ -42,6 +42,7 @@ import { registerInventoryModels } from "../modules/commerce/inventory/index.js"
 import { registerDirectoryModels } from "../modules/commerce/directory/index.js";
 import { registerBookingModels } from "../modules/commerce/booking/index.js";
 import { registerCreditModels } from "../modules/commerce/credit/index.js";
+import { registerWebsiteModels } from "../modules/commerce/website/index.js";
 import { registerPaymentModels } from "../modules/commerce/payment/index.js";
 import { registerCommissionModels } from "../modules/commerce/commission/index.js";
 import { registerSalesModels } from "../modules/commerce/sales/index.js";
@@ -128,6 +129,7 @@ export function registerModuleModels(): void {
   registerCommissionModels();
   registerSalesModels();
   registerEnrollmentModels();
+  registerWebsiteModels();
   registerSettingsModels();
   registerFileModels();
 }

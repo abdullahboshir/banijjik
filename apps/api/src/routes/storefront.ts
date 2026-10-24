@@ -1,4 +1,4 @@
-import { ERROR_CODE, MODULE_KEY, type ModuleManifest } from "@banijjik/contracts";
+import { ERROR_CODE, MODULE_KEY, type ModuleKey, type ModuleManifest } from "@banijjik/contracts";
 import { CUSTOMER_LOGIN_SETTING_KEY, CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
 import {
   storefrontOrganizationParamsSchema,
@@ -49,6 +49,10 @@ import {
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import type { FileModuleDependencies } from "../modules/core/file/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
+import {
+  buildWebsiteStorefrontRouterFor,
+  type StorefrontSiteSources,
+} from "../modules/commerce/website/index.js";
 import { buildDirectoryAdapters } from "./directory-storefront-adapters.js";
 import { buildCreditModuleDeps } from "./credit-tenant-router.js";
 
@@ -117,18 +121,27 @@ function businessContext(organizations: StorefrontOrganizationReader): RequestHa
   };
 }
 
-/** Customer sign-in is on only when the business switched it on and an SMS driver exists. */
-function customerLoginSwitch(input: StorefrontRouterInput): RequestHandler {
+/** Customer sign-in is on only when the business switched it on and an SMS driver exists (M.6a decision 2). */
+function customerLoginEnabled(
+  input: StorefrontRouterInput,
+): (organizationId: string) => Promise<boolean> {
   const resolver = buildSettingsResolver({
     orgConfig: input.orgConfig,
     manifests: input.manifests,
   });
   const hasSmsDriver = input.config.storefront.smsDriver !== "disabled";
+  return async (organizationId) => {
+    if (!hasSmsDriver) return false;
+    const resolved = await resolver.resolve(organizationId, { keys: [CUSTOMER_LOGIN_SETTING_KEY] });
+    return resolved.get(CUSTOMER_LOGIN_SETTING_KEY)?.value === true;
+  };
+}
+
+function customerLoginSwitch(input: StorefrontRouterInput): RequestHandler {
+  const isEnabled = customerLoginEnabled(input);
   return async (_request, _response, next) => {
     const { organizationId } = getRequestContext();
-    if (!hasSmsDriver || organizationId === undefined) throw notAvailable();
-    const resolved = await resolver.resolve(organizationId, { keys: [CUSTOMER_LOGIN_SETTING_KEY] });
-    if (resolved.get(CUSTOMER_LOGIN_SETTING_KEY)?.value !== true) throw notAvailable();
+    if (organizationId === undefined || !(await isEnabled(organizationId))) throw notAvailable();
     next();
   };
 }
@@ -145,16 +158,35 @@ function buildCustomerAuth(config: AppConfig, clock: Clock, input: StorefrontRou
   return { customerAuth, customerAuthOptional, secret };
 }
 
-function creditModuleSwitch(input: StorefrontRouterInput): RequestHandler {
+/** A storefront route answers 404 while its owner module is off for the business. */
+function moduleSwitch(input: StorefrontRouterInput, moduleKey: ModuleKey): RequestHandler {
   return async (_request, _response, next) => {
     const { organizationId } = getRequestContext();
-    if (
-      !organizationId ||
-      !(await input.orgConfig.isModuleEffective(organizationId, MODULE_KEY.CREDIT))
-    ) {
+    if (!organizationId || !(await input.orgConfig.isModuleEffective(organizationId, moduleKey))) {
       throw notAvailable();
     }
     next();
+  };
+}
+
+function creditModuleSwitch(input: StorefrontRouterInput): RequestHandler {
+  return moduleSwitch(input, MODULE_KEY.CREDIT);
+}
+
+/** The reads behind GET /site: branding from the organization, feature switches from entitlement. */
+function buildWebsiteSiteSources(input: StorefrontRouterInput): StorefrontSiteSources {
+  const organizations = buildStorefrontOrganizationReader();
+  const isCustomerLoginOn = customerLoginEnabled(input);
+  const isOn = (organizationId: string, moduleKey: ModuleKey) =>
+    input.orgConfig.isModuleEffective(organizationId, moduleKey);
+  return {
+    readBusiness: (organizationId) => organizations.findActiveById(organizationId),
+    readFeatures: async (organizationId) => ({
+      directory: await isOn(organizationId, MODULE_KEY.DIRECTORY),
+      credit: await isOn(organizationId, MODULE_KEY.CREDIT),
+      customerLogin: await isCustomerLoginOn(organizationId),
+      website: await isOn(organizationId, MODULE_KEY.WEBSITE),
+    }),
   };
 }
 
@@ -237,7 +269,12 @@ function buildStorefrontRouters(
     ],
   });
 
-  return { directoryRouter, creditRouter, contactRouter };
+  const websiteRouter = buildWebsiteStorefrontRouterFor({
+    requireWebsiteModule: moduleSwitch(input, MODULE_KEY.WEBSITE),
+    siteSources: buildWebsiteSiteSources(input),
+  });
+
+  return { directoryRouter, creditRouter, contactRouter, websiteRouter };
 }
 
 function mountOrganizationSurface(
@@ -247,7 +284,7 @@ function mountOrganizationSurface(
 ): void {
   const { config, clock, rateLimiter } = input;
   const auth = buildCustomerAuth(config, clock, input);
-  const { directoryRouter, creditRouter, contactRouter } = buildStorefrontRouters(
+  const { directoryRouter, creditRouter, contactRouter, websiteRouter } = buildStorefrontRouters(
     input,
     rateLimiter,
     auth,
@@ -266,6 +303,7 @@ function mountOrganizationSurface(
     directoryRouter,
     creditRouter,
     contactRouter,
+    websiteRouter,
   );
 }
 
