@@ -201,6 +201,20 @@ describe("the performer of an order line", () => {
     expect(changed.body.error.code).toBe("INVALID_TRANSITION");
     expect(performerOf(await getOrder(shop, draft.orderId))).toBe(performer);
   });
+
+  it("an order stored before this card reads its lines with no performer", async () => {
+    const shop = shopOf(await worldFor(harness, RETAIL));
+    const pack = await shelfOf(shop);
+    const draft = await draftOrder(shop, { locationId: shop.locationId, lines: [lineOf(pack)] });
+    await harness.connections.tenantShared
+      .collection("orders")
+      .updateOne(
+        { organizationId: shop.organizationId, orderId: draft.orderId },
+        { $unset: { "lines.0.performedByMemberId": "" } },
+      );
+
+    expect(performerOf(await getOrder(shop, draft.orderId))).toBeNull();
+  });
 });
 
 describe("the performers lookup", () => {
