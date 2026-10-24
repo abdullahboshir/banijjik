@@ -14,7 +14,7 @@ export async function runJobRow(orderId: string, work: () => Promise<unknown>): 
     await work();
   } catch (error) {
     if (rowMovedOn(error)) return;
-    getLogger().warn(
+    getLogger().error(
       { event: "sales.job_row_failed", orderId, err: error },
       "a scheduled sales row failed; continuing with the next row",
     );
