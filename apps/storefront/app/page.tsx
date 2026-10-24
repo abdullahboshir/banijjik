@@ -7,7 +7,7 @@ import { readPublic } from "../src/api/storefront-api";
 import { HomeStats } from "../src/components/home-stats";
 import { storefrontTranslator } from "../src/i18n/translator";
 import { localizedText } from "../src/i18n/localized-text";
-import { PAGE_PATH_PREFIX, slugOfPageKey } from "../src/pages/page-routes";
+import { PAGE_PATH_PREFIX, slugOfPageKey } from "../src/static-pages/page-routes";
 import { requireOrganizationId } from "../src/site/current-site";
 
 export default async function HomePage(): Promise<ReactElement> {

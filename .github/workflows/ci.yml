@@ -151,6 +151,9 @@ jobs:
       - name: Platform browser suite
         run: npm run test:browser -w @banijjik/platform
 
+      - name: Storefront browser suite
+        run: npm run test:browser -w @banijjik/storefront
+
   secrets:
     name: secrets
     runs-on: ubuntu-24.04

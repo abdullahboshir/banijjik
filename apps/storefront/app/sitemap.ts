@@ -2,7 +2,7 @@ import type { StorefrontSiteResponse } from "@banijjik/contracts/website";
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 import { readPublic } from "../src/api/storefront-api";
-import { PAGE_PATH_PREFIX, slugOfPageKey } from "../src/pages/page-routes";
+import { PAGE_PATH_PREFIX, slugOfPageKey } from "../src/static-pages/page-routes";
 import { requireOrganizationId } from "../src/site/current-site";
 
 const HTTPS = "https";

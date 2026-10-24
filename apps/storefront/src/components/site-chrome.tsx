@@ -5,7 +5,7 @@ import type { Locale, Translator } from "@banijjik/i18n";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { localizedText } from "../i18n/localized-text";
-import { PAGE_PATH_PREFIX, slugOfPageKey } from "../pages/page-routes";
+import { PAGE_PATH_PREFIX, slugOfPageKey } from "../static-pages/page-routes";
 import { SignOutButton } from "./sign-out-button";
 
 export interface SiteChromeProps {
