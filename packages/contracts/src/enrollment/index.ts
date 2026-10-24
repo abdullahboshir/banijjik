@@ -1,4 +1,5 @@
 import { defineEnum } from "../define-enum.js";
+import type { Money } from "../catalog/catalog-contracts.js";
 
 export const ENROLLMENT_STATUS = defineEnum([
   "PENDING",
@@ -40,10 +41,28 @@ export const ENROLLMENT_EVENT_TYPE = {
   ENROLLMENT_OVERDUE: "enrollment.enrollment.overdueMarked",
   ENROLLMENT_RENEWAL_DUE: "enrollment.enrollment.renewalDueReached",
   ENROLLMENT_CHECK_IN_RECORDED: "enrollment.checkIn.recorded",
+  PERIOD_REVENUE_RECOGNIZED: "enrollment.period.revenueRecognized",
+  PERIOD_REVENUE_CLOSED: "enrollment.period.revenueClosed",
 } as const;
 export interface EnrollmentEventPayload {
   readonly enrollmentId: string;
   readonly enrollmentPeriodId?: string;
+}
+/** A period's whole fee became revenue, once, on its start or activation (card 3.31). */
+export interface PeriodRevenueRecognizedPayload {
+  readonly enrollmentId: string;
+  readonly enrollmentPeriodId: string;
+}
+/**
+ * A cancelled period closed at what the business kept. `recognizedBeforeCancel` says which
+ * journal applies, so the handler never compares amounts (the kept amount can equal the fee).
+ */
+export interface PeriodRevenueClosedPayload {
+  readonly enrollmentId: string;
+  readonly enrollmentPeriodId: string;
+  readonly keptAmount: Money;
+  readonly recognizedAmount: Money;
+  readonly recognizedBeforeCancel: boolean;
 }
 export interface CheckInEventPayload {
   readonly checkInId: string;
