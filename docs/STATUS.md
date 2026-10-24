@@ -133,8 +133,13 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.26 stable kernel tests | merged (2026-10-24, Parts A and B, T2 merge check passed; conventions note added to `05-CONVENTIONS.md` "Testing"), CI [40047359619](https://github.com/abdullahboshir/banijjik/actions/runs/40047359619) | Test 1 and 2: handler-start signals for lock takeover; isolated rate-limit fixture with a future clock to avoid real-time TTL deletion. Test 3 (Part B, after 3.22): the skip test observes the successor's delayed queue state instead of polling. All three files passed 30 consecutive local runs (rate limiter and ordered worker: thread pool after local Node fork/OOM crashes); handoff `docs/handoffs/3.26.md` includes the proposed conventions note. The lead applies the note and removes the flaky-test note in LEAD-STATE at merge. |
 | 3.27 enrollment periods as payment requests | planned (2026-10-24, `docs/plans/3.27.md`, Opus; T1; runs now) | period = payment request, derived period status, payment-driven activation and OVERDUE → ACTIVE, dues; ADR-139 reserved |
 | 3.28 credit expiry job | merged (2026-10-24, T2 merge check by the lead passed), CI https://github.com/abdullahboshir/banijjik/actions/runs/40063289055 | hourly `credit.expireCredits`, keyset batches, per-row catch |
+<<<<<<< HEAD
 | 3.29 booking and sales leftovers | planned (2026-10-24, `docs/plans/3.29.md`, Opus; T2) | time zone fails closed, session-cancel job in index order without starvation, sales job rows log at error |
 | 3.30 refund amount label | merged (2026-10-24, T3 merge check by the lead passed; test uses amount 0 because the dialog has no client-side maximum), CI https://github.com/abdullahboshir/banijjik/actions/runs/40064537361 | amount-specific message in the refund dialog; no client max check (see handoff) |
+=======
+| 3.29 booking and sales leftovers | merged (2026-10-24, T2 merge check by the lead passed), CI https://github.com/abdullahboshir/banijjik/actions/runs/40064685643 | time zone fails closed, session-cancel job in index order without starvation, sales job rows log at error |
+| 3.30 refund amount label | planned (2026-10-24, `docs/plans/3.30.md`, Opus; T3) | amount-specific message in the refund dialog |
+>>>>>>> 11426301 (docs(status): record card 3.29 handoff)
 | 3.31 enrollment period revenue posting | todo (planned after 3.27 and 3.24) | revenue per period at `periodStartsOn`, advance settle, reader revenue state |
 | 3.32 enrollment cancel refunds | todo (planned after 3.27) | `UNUSED_PERIODS` / `PRORATED` refunds to store credit or payment, with approval |
 | Phase 3 review | todo | |
