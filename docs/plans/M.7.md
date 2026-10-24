@@ -173,3 +173,64 @@ Part A2 files: listed when the lead refreshes the plan after A1 merges.
 
 ## Done when
 Each part: its tests pass, CI is green on the branch head, the handoff has the §11 table (A1, A2), and `npm run card:check` is all PASS.
+
+---
+
+## Refresh A2 (2026-10-24, lead, Based on commit: `main` after 3.27 and M.8a)
+
+A1 is merged. Decisions 9–11 stand. This section adds what the code needs and lists the files. Where they differ, this section wins.
+
+### A2 decisions added
+13. **The erase code has its own purpose.** `OtpChallenge` gets `purpose: CUSTOMER_OTP_PURPOSE` (`SIGN_IN | ERASE_ACCOUNT`, new in `@banijjik/contracts/contact`). The schema default is `SIGN_IN`, so existing rows stay valid and need no migration. Sign-in verify refuses a challenge whose purpose is not `SIGN_IN`. Erase refuses any purpose other than `ERASE_ACCOUNT`. So a code sent for signing in can never delete an account.
+    - `POST /storefront/orgs/:organizationId/my/account/erase/otp` (signed-in customer, no body): sends an `ERASE_ACCOUNT` challenge to the **account's own phone** and returns `{ challengeId, expiresAt }`. Same per-phone and per-IP send limits as sign-in (`CUSTOMER_OTP_RULES`). The SMS goes through the existing outbox handler (`send-customer-otp-sms.handler.ts`) with its own message key per purpose ("code to delete your account").
+    - `POST .../my/account/erase` `{ challengeId, code }`: the challenge must belong to the account's phone, be unused, unexpired, have attempts left (`canTakeGuess`) and have purpose `ERASE_ACCOUNT`. A wrong code counts an attempt, like sign-in. It is consumed in the erase transaction.
+14. **Contact owns erasure. Other modules take part through required ports.** Contact gets a new use case `EraseOwnCustomerAccountUseCase`. Its dependencies include `erasureParticipants: readonly CustomerErasureParticipant[]` (required, can be empty in a unit test):
+    ```ts
+    export interface CustomerErasureParticipant {
+      /** Inside the erase transaction. Idempotent: a second call finds nothing to do. */
+      eraseForAccount(input: { organizationId: OrganizationId; customerAccountId: CustomerAccountId; now: Date }): Promise<void>;
+    }
+    ```
+    - **directory** exports `buildDirectoryErasureParticipant()`: archives the account's active listing through the same domain path as `ArchiveMyListingUseCase` (entity `archive()`, audit `LISTING_ARCHIVED`, event `LISTING_ARCHIVED`; no listing is fine), and deletes the blocks and OPEN reports **filed by** the account. Reports filed **against** the listing stay for staff.
+    - **credit** exports `buildCreditErasureParticipant()`: cancels every PENDING purchase of the account the way `CancelCreditPurchaseUseCase` does (audit and event per purchase). Entries, unlocks and verified purchases stay (doc 16 §2.3).
+    - Wired in `routes/storefront.ts` next to the existing builders. No module imports another module's infrastructure.
+    - Then contact anonymizes the account's contact: `Contact.anonymize(now)` and `endCustomerLogin()` (deletes the account and its sessions), with actor null. The contact update uses its `version` read in the same transaction. Audit `CUSTOMER_ACCOUNT_ERASED` (new in contracts) with the account id only. Event `contact.customer_account.erased` (new in contracts) with ids only.
+    - Response `200 { erased: true, forfeitedCredits: <balance before erase> }`, and the auth cookies are cleared, as on logout.
+15. **Data export through a second port:**
+    ```ts
+    export interface CustomerDataExportParticipant {
+      readonly sectionKey: CustomerDataExportSectionKey; // contracts enum: LISTING | DIRECTORY_ACTIVITY | CREDIT
+      exportForAccount(input: { organizationId: OrganizationId; customerAccountId: CustomerAccountId; maxRows: number }): Promise<CustomerDataExportSection>;
+    }
+    ```
+    The section response types live in `@banijjik/contracts/contact` (`customer-data-export.ts`). Every list has `truncated: boolean`, and `maxRows` is 1000 (constant in contracts). Directory gives the listing with all tiers and its consents with version hashes (`LISTING`), plus the blocks and reports filed (`DIRECTORY_ACTIVITY`). Credit gives entries, unlocks and purchases (`CREDIT`). Contact adds the account (phone, created, last login) and the contact's fields. No `_id`, no internal field, no secret, no OTP data.
+    - Rate limit 3 per account per day: the kernel limiter with `keyOf` = `customerAccountId`, as the directory storefront router does.
+16. **Blocks (decision 9) live in directory.** Collection `listing_blocks`, tenant plugin, audit fields, `version`, unique `{ organizationId, customerAccountId, listingId }`, list index `{ organizationId, customerAccountId, createdAt }`. The search's `$nin` reads at most `blocksPerAccountMax` ids with one indexed query. A blocked listing is still allowed in the unlock flow: blocking is the caller's own filter, not a ban.
+17. **Order inside the erase transaction:** verify and consume the challenge, then the participants (directory, then credit), then the contact. Any failure rolls back everything, and the code stays consumed only if the transaction committed.
+
+### Files (Part A2)
+| Path | Create/Change | Owns / add-only | Purpose |
+|---|---|---|---|
+| `packages/contracts/src/contact/**` | Change | add-only | `CUSTOMER_OTP_PURPOSE`, erase audit action and event, export section types and keys, `CUSTOMER_DATA_EXPORT_MAX_ROWS` |
+| `packages/contracts/src/directory/**` | Change | add-only | block rule keys and limits (if not in A1's `DIRECTORY_SAFETY_RULES`) |
+| `packages/validation/src/contact/**`, `packages/validation/src/directory/**` | Change | add-only | erase body, block body and params |
+| `apps/api/src/modules/commerce/contact/**` (OTP purpose, erase and export use cases, ports, storefront routes, README) | Change/Create | owns | decisions 10, 11, 13–15, 17 |
+| `apps/api/src/modules/commerce/directory/**` (blocks: domain, schema, repository, routes; erasure and export participants; search exclusion; README) | Change/Create | owns | decisions 9, 14–16 |
+| `apps/api/src/modules/commerce/credit/**` (erasure and export participants, README) | Change/Create | owns | decisions 14, 15 |
+| `apps/api/src/routes/storefront.ts` | Change | add-only | wire the participants |
+| `packages/i18n` catalogs | Change | add-only | SMS text per purpose, rule messages |
+| `docs/16 §2.3` note, ADR-134 amendment (erase code purpose, participants), `docs/handoffs/M.7-api-erasure.md`, STATUS row M.7 | Change/Create | | |
+
+### Tests (Part A2, must exist and pass)
+- Blocks: block, block again (200, same row), unblock (204, also with no block), list paged; the 501st block → 409; a signed-in search hides blocked listings, the detail by number still opens; blocking one's own listing → 422; another organization's listing number → 404.
+- Erase code: a sign-in code is refused for erase and an erase code is refused for sign-in; a wrong code counts an attempt; an expired or used challenge is refused; the send goes only to the account's own phone (body ignored or refused).
+- Erase: after erase, the listing is ARCHIVED with its data cleared, the account and sessions are gone (the old cookie gets 401), the contact is anonymized, filed blocks and open reports are deleted, reports against the listing remain, a PENDING purchase is CANCELLED, credit entries remain; the response shows the forfeited balance; audit and event carry no phone or name. A failing participant (test double that throws) rolls back everything and the code stays usable.
+- Export: every section present with `truncated` flags, the 1001st row cut, no `_id` or secret field, the fourth export in a day → 429; another account's data never appears.
+- Module off: erasure and export run every participant whatever the module state. The data may exist from a time when the module was on, and erasure is the customer's right. Tests: with `directory` off, erase still archives the listing; with `credit` off, the export still lists the credit entries.
+- Permission and tenancy: unauthenticated → 401; a token of another organization → 401/403 as the storefront does today; cross-org listing numbers → 404.
+- T1 §11 table in the handoff, items 1, 2, 6, 7, 11, 15–24 each with a test or file.
+
+---
+
+## Refresh B (2026-10-24, lead)
+Decision 12 stands. The routes exist: `GET /directory/reports`, `GET /directory/listings/:listingId/reports`, `POST /directory/listings/:listingId/reports/resolve`, and `reportReasons` in `GET /directory/config`. The menu entry exists (`groupKey: "directory"`, path `directory/reports`, `DIRECTORY_REPORT_READ`). No API change. Folders: `apps/admin/src/directory/**`, `packages/i18n` (add-only). Part B can run beside A2: A2 changes no tenant route and no admin file.

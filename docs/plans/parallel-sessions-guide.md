@@ -102,25 +102,21 @@ A session is finished only when all of these hold. "Done" without a green CI run
 8. Commit and push the handoff and STATUS. CI must be green on this last push too.
 9. Run `npm run card:check` after that CI run is green. Every line must say PASS. Paste the whole output into the "done" message. A "done" without this output is not done, and the lead does not start a review.
 
-## 9. Ready board (2026-10-23 late night)
+## 9. Ready board (2026-10-24 afternoon)
 | Card / part | Ready? | Waits for | Tier | Folder |
 |---|---|---|---|---|
-| **3.22** ordered handlers follow whole streams | **now, first** | | T1 | `banijjik` |
-| 3.6b A3 event bookings | now | | T1 | `banijjik-m2` |
-| 3.7 Part A enrollment, R1 fixes | now (rebase on main first) | | T1 | `banijjik-1.7b` |
-| 3.23 orders as payment requests | now | | T1 | `banijjik-3.5a` |
-| 3.25 local posting dates and held advances | now | | T1 | `banijjik-lead` |
-| 3.26 stable kernel tests, Part A | now | | T2 | cloud |
-| M.7 A1 reports | now | | T1 | cloud |
-| M.8a matrimony templates | now | | T2 | cloud |
-| 3.11 A2 payouts and posting | after 3.22 merges | 3.22 | T1 | `banijjik-3.11` |
-| 3.26 Part B | after 3.22 merges | 3.22 | T2 | |
-| 3.24 order and stock posting | after 3.22 and 3.23 merge | 3.22, 3.23 | T1 | |
-| 3.5a Part B order screens | after 3.23 merges; the lead refreshes the plan first | 3.23 | T2 | |
-| 3.6b Part B, 3.7 Part B, 3.11 B | after their API part merges; refresh first | | T2 | |
-| event sessions occupy resources | after 3.6b A3; plan then | 3.6b A3 | T1 | |
-| 3.5b returns, 3.9 POS, 3.11 C | planned when 3.5a B, 3.23 and 3.24 merge | | T1 | |
-| M.6 storefront, M.7 A2/B, M.8b, M.9 | planned as their inputs merge (M.6 next) | | | |
+| 3.24 order and stock posting | running | | T1 | `banijjik-3.5a` |
+| 3.5a Part B order screens | now (plan Refresh 2) | | T2 | `banijjik-m2` |
+| 3.6b Part B rental and event screens | now (plan Refresh 3) | | T2 | `banijjik-1.7b` |
+| 3.7 Part B enrollment screens | now (plan Refresh 2) | | T2 | `banijjik-lead` |
+| 3.11 Part B commission screens | now (plan Refresh B) | | T2 | `banijjik-3.11` |
+| M.7 A2 blocks, erasure, data export | now (plan Refresh A2) | | T1 | `banijjik-3.6b-a3` |
+| M.7 B report screens | now (plan Refresh B) | | T2 | `banijjik` |
+| 3.33 event sessions occupy resources | the lead plans it next | | T1 | |
+| M.6 storefront | the lead plans it after 3.33 | | T1 / T2 | |
+| 3.31 enrollment revenue posting, 3.32 enrollment cancel refunds | planned when 3.24 merges | 3.24 | T1 | |
+| 3.5b returns, 3.9 POS, 3.11 C | planned when 3.5a B and 3.24 merge | | T1 | |
+| M.8b, M.9 | planned as their inputs merge | | | |
 | 3.10 reports, then the phase review | last | everything above | | |
 
 The lead updates this board after each merge.
