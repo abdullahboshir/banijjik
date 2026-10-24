@@ -13,10 +13,11 @@ import {
   type OrganizationId,
   type UserId,
 } from "@banijjik/ids";
-import { recordNotFound, stockComponentsRequired } from "../domain/errors.js";
+import { recordNotFound, returnCostMissing, stockComponentsRequired } from "../domain/errors.js";
 import { microsToMinor } from "../domain/money-math.js";
 import type { InventoryDependencies } from "./inventory-dependencies.js";
 import type { InventoryItem } from "../domain/inventory-item.entity.js";
+import type { InventoryLevelRecord } from "./ports/stock-records.js";
 
 export interface StockLedgerReserveInput {
   readonly organizationId: OrganizationId;
@@ -32,6 +33,26 @@ export interface StockLedgerReserveInput {
 
 /** `commitSale` writes SALE movements, so it must name a real actor. */
 export type StockLedgerCommitInput = StockLedgerReserveInput & { readonly actorUserId: UserId };
+
+interface SoldCost {
+  readonly micros: number;
+  readonly currency: string;
+}
+
+function sameCost(left: SoldCost, right: SoldCost): boolean {
+  return left.micros === right.micros && left.currency === right.currency;
+}
+
+/** The sale a return values its goods at: the order's SALE movements (plan 3.5b decision 7). */
+export interface StockReturnCostSource {
+  readonly sourceType: string;
+  readonly sourceId: string;
+}
+
+interface ReturnUnitCostFields {
+  readonly unitCost?: Money;
+  readonly unitCostMicros?: number;
+}
 
 interface ExpandedComponentLine {
   readonly inventoryItemId: InventoryItemId;
@@ -153,7 +174,11 @@ export class StockLedger {
   }
 
   async returnStock(
-    input: StockLedgerCommitInput & { readonly disposition: StockReturnDisposition },
+    input: StockLedgerCommitInput & {
+      readonly disposition: StockReturnDisposition;
+      /** Set by a sales return: the goods go back at the cost the sale used. Unset: today's average. */
+      readonly costFrom?: StockReturnCostSource;
+    },
   ): Promise<void> {
     const { stockLedger, settings, currency, timeZone, levels } = this.dependencies;
     const expanded = await this.expandLines(input.organizationId, input.lines);
@@ -187,19 +212,68 @@ export class StockLedger {
         sourceId: input.sourceId,
         offeringId: line.offeringId,
         variantId: line.variantId,
-        ...(fromLevel === undefined
-          ? {}
-          : {
-              unitCost: {
-                amount: microsToMinor(fromLevel.averageUnitCostMicros),
-                currency: fromLevel.averageUnitCostCurrency as Money["currency"],
-              },
-              unitCostMicros: fromLevel.averageUnitCostMicros,
-            }),
+        ...(await this.returnUnitCostFields(input, line, fromLevel)),
         lowStockThreshold: threshold,
         allowNegativeStock: input.allowNegativeStock,
       });
     }
+  }
+
+  /**
+   * A return that names its sale carries the cost the goods left stock at, so the reversed cost of
+   * goods equals the cost posted at completion. Without a sale, it carries today's average.
+   */
+  private async returnUnitCostFields(
+    input: { readonly organizationId: OrganizationId; readonly costFrom?: StockReturnCostSource },
+    line: ExpandedComponentLine,
+    fromLevel: InventoryLevelRecord | undefined,
+  ): Promise<ReturnUnitCostFields> {
+    if (input.costFrom !== undefined) {
+      return this.soldUnitCostFields(input.organizationId, input.costFrom, line);
+    }
+    if (fromLevel === undefined) return {};
+    return {
+      unitCost: {
+        amount: microsToMinor(fromLevel.averageUnitCostMicros),
+        currency: fromLevel.averageUnitCostCurrency as Money["currency"],
+      },
+      unitCostMicros: fromLevel.averageUnitCostMicros,
+    };
+  }
+
+  /**
+   * Refuses when the sale has no SALE movement for the item with one agreed cost: the average is
+   * never used silently in its place (plan 3.5b risks, decision 7).
+   */
+  private async soldUnitCostFields(
+    organizationId: OrganizationId,
+    costFrom: StockReturnCostSource,
+    line: ExpandedComponentLine,
+  ): Promise<ReturnUnitCostFields> {
+    const movements = await this.dependencies.movements.findBySource({
+      organizationId,
+      sourceId: costFrom.sourceId,
+      sourceType: costFrom.sourceType,
+    });
+    const soldCosts = movements.flatMap((movement) => {
+      if (movement.reason !== STOCK_MOVEMENT_REASON.SALE) return [];
+      if (movement.inventoryItemId !== line.inventoryItemId) return [];
+      if (movement.unitCostMicros === undefined || movement.unitCostCurrency === undefined) {
+        return [];
+      }
+      return [{ micros: movement.unitCostMicros, currency: movement.unitCostCurrency }];
+    });
+    const [first] = soldCosts;
+    if (first === undefined || soldCosts.some((cost) => !sameCost(cost, first))) {
+      throw returnCostMissing(costFrom.sourceId, line.inventoryItemId);
+    }
+    return {
+      unitCost: {
+        amount: microsToMinor(first.micros),
+        currency: first.currency as Money["currency"],
+      },
+      unitCostMicros: first.micros,
+    };
   }
 
   private async requireItem(inventoryItemId: InventoryItemId): Promise<InventoryItem> {

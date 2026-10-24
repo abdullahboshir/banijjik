@@ -1,3 +1,4 @@
+import { ORDER_RETURN_STATUS } from "@banijjik/contracts/sales";
 import {
   asId,
   type ContactId,
@@ -108,6 +109,7 @@ export function toOrder(row: OrderDocument): Order {
     cancelReason: row.cancelReason,
     customFields: row.customFields,
     hasStockLines: row.hasStockLines,
+    returnStatus: row.returnStatus ?? ORDER_RETURN_STATUS.NONE,
     version: row.version,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -166,6 +168,7 @@ function mutableFieldsOf(props: OrderProps): MutableOrderFields {
     cancelReason: props.cancelReason,
     customFields: { ...props.customFields },
     hasStockLines: props.hasStockLines,
+    returnStatus: props.returnStatus,
     createdAt: props.createdAt,
     updatedAt: props.updatedAt,
     createdByUserId: props.createdByUserId,

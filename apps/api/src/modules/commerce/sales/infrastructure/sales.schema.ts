@@ -3,9 +3,11 @@ import type { StockComponent } from "@banijjik/contracts/catalog";
 import { OFFERING_KIND, type OfferingKind } from "@banijjik/contracts";
 import {
   FULFILLMENT_METHOD,
+  ORDER_RETURN_STATUS,
   ORDER_SOURCE,
   ORDER_STATUS,
   type FulfillmentMethod,
+  type OrderReturnStatus,
   type OrderSource,
   type OrderStatus,
 } from "@banijjik/contracts/sales";
@@ -100,6 +102,7 @@ export interface OrderDocument {
   customFields: Record<string, unknown>;
   /** Whether the order holds a stock reservation; the stock port cannot answer this. */
   hasStockLines: boolean;
+  returnStatus: OrderReturnStatus;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -216,6 +219,12 @@ export const orderSchema = new Schema<OrderDocument>(
     cancelReason: { type: String, default: null },
     customFields: { type: Schema.Types.Mixed, default: {} },
     hasStockLines: { type: Boolean, required: true, default: false },
+    returnStatus: {
+      type: String,
+      required: true,
+      default: ORDER_RETURN_STATUS.NONE,
+      enum: Object.values(ORDER_RETURN_STATUS),
+    },
     ...versionField,
     ...auditFields,
   },

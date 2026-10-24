@@ -4,6 +4,8 @@ export const INVENTORY_RULE_KEY = {
   ITEM_BASE_UNIT_IMMUTABLE: "INVENTORY_ITEM_BASE_UNIT_IMMUTABLE",
   INVALID_STOCK_COMPONENT: "INVALID_STOCK_COMPONENT",
   STOCK_COMPONENTS_REQUIRED: "STOCK_COMPONENTS_REQUIRED",
+  /** A return names a sale whose SALE movements do not carry the item's cost (no silent average). */
+  RETURN_COST_MISSING: "INVENTORY_RETURN_COST_MISSING",
 } as const;
 
 export type InventoryRuleKey = (typeof INVENTORY_RULE_KEY)[keyof typeof INVENTORY_RULE_KEY];

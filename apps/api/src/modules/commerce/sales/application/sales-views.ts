@@ -41,6 +41,7 @@ export function toOrderResponse(order: Order, paymentTotals: PaymentTotals): Ord
     totals: props.totals,
     fulfillment: props.fulfillment,
     paymentStatus: derivePaymentStatus(props.totals.grandTotal, paymentTotals),
+    returnStatus: props.returnStatus,
     businessDate: props.businessDate,
     source: props.source,
     approval: props.approval,

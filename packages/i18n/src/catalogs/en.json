@@ -302,6 +302,7 @@
   "errors.inventory_item_base_unit_immutable": "The base unit cannot change after stock movements exist.",
   "errors.inventory_invalid_stock_component": "Choose an active inventory item and a valid quantity.",
   "errors.inventory_stock_components_required": "This variant has no stock components to reserve or return.",
+  "errors.inventory_return_cost_missing": "The stock cost of this sale cannot be found, so the goods cannot be returned at their sale cost.",
   "errors.offering_slug_taken": "This web address name is already used. Choose another.",
   "errors.offering_sku_taken": "Another item already uses this SKU.",
   "errors.offering_kind_not_allowed": "This kind of item is not offered by your business.",

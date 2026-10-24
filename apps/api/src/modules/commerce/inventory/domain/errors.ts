@@ -51,6 +51,15 @@ export function invalidStockComponent(path: string): DomainRuleError {
   });
 }
 
+/** Refused rather than valued at today's average: a return must go back at the sale's cost (plan 3.5b decision 7). */
+export function returnCostMissing(sourceId: string, inventoryItemId: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "errors.inventory_return_cost_missing",
+    details: { ruleKey: INVENTORY_RULE_KEY.RETURN_COST_MISSING, sourceId, inventoryItemId },
+  });
+}
+
 export function stockComponentsRequired(offeringId: string, variantId: string): DomainRuleError {
   return new DomainRuleError({
     code: ERROR_CODE.BUSINESS_RULE,

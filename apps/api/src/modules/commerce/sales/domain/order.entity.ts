@@ -1,6 +1,7 @@
 import {
   ORDER_CANCELLABLE_STATUSES,
   ORDER_EDITABLE_STATUSES,
+  ORDER_RETURN_STATUS,
   ORDER_STATUS,
   type Money,
   type OrderApproval,
@@ -50,6 +51,7 @@ export class Order implements OrderProps {
   readonly cancelReason: string | null;
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly hasStockLines: boolean;
+  readonly returnStatus: OrderProps["returnStatus"];
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -75,6 +77,7 @@ export class Order implements OrderProps {
     this.cancelReason = props.cancelReason;
     this.customFields = props.customFields;
     this.hasStockLines = props.hasStockLines;
+    this.returnStatus = props.returnStatus;
     this.version = props.version;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -103,6 +106,7 @@ export class Order implements OrderProps {
       cancelReason: null,
       customFields: input.customFields,
       hasStockLines: input.hasStockLines,
+      returnStatus: ORDER_RETURN_STATUS.NONE,
       version: INITIAL_VERSION,
       createdAt: input.now,
       updatedAt: input.now,
@@ -135,6 +139,7 @@ export class Order implements OrderProps {
       cancelReason: this.cancelReason,
       customFields: this.customFields,
       hasStockLines: this.hasStockLines,
+      returnStatus: this.returnStatus,
       version: this.version,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

@@ -7,6 +7,7 @@ import type {
   OrderFulfillment,
   OrderLineModifierSnapshot,
   OrderSource,
+  OrderReturnStatus,
   OrderStatus,
   OrderTotals,
 } from "@banijjik/contracts/sales";
@@ -63,6 +64,8 @@ export interface OrderProps {
    * and cancel need it because the stock port cannot answer "is there a reservation?".
    */
   readonly hasStockLines: boolean;
+  /** NONE until a return; moved by the return use cases with one versioned order write (plan 3.5b decision 7). */
+  readonly returnStatus: OrderReturnStatus;
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
