@@ -136,7 +136,7 @@ describe("module override rules", () => {
   it("refuses a module that has no manifest yet", async () => {
     const { organizationId } = await createTenant();
 
-    const response = await grant(organizationId, MODULE_KEY.POS);
+    const response = await grant(organizationId, MODULE_KEY.KITCHEN_DISPLAY);
 
     expect(response.status).toBe(422);
     expect(response.body.error.details.ruleKey).toBe("MODULE_NOT_REGISTERED");
