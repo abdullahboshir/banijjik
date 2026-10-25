@@ -79,25 +79,18 @@ function ownerCookies(): string {
   return owner.cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
 }
 
-async function apiRequest<T>(method: "GET" | "PUT", path: string, body?: object): Promise<T> {
+async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`http://localhost:${API_PORT}/api/v1${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      Cookie: ownerCookies(),
-      Origin: ADMIN_ORIGIN,
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    headers: { Cookie: ownerCookies(), Origin: ADMIN_ORIGIN },
   });
   if (!response.ok) {
-    throw new Error(`${method} ${path} answered ${response.status}: ${await response.text()}`);
+    throw new Error(`GET ${path} answered ${response.status}: ${await response.text()}`);
   }
   return (await response.json()) as T;
 }
 
 async function firstLocationId(): Promise<string> {
-  const body = await apiRequest<{ data: { locationId: string }[] }>(
-    "GET",
+  const body = await apiGet<{ data: { locationId: string }[] }>(
     `/orgs/${organizationId}/locations?status=ACTIVE&limit=100`,
   );
   const location = body.data[0];
@@ -105,11 +98,21 @@ async function firstLocationId(): Promise<string> {
   return location.locationId;
 }
 
+/** The PIN answers with no body, so the status is the whole check. */
 async function setOwnerApprovalPin(): Promise<void> {
-  await apiRequest("PUT", `/orgs/${organizationId}/me/approval-pin`, {
-    currentPassword: owner.password,
-    pin: APPROVAL_PIN,
-  });
+  const response = await fetch(
+    `http://localhost:${API_PORT}/api/v1/orgs/${organizationId}/me/approval-pin`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: ownerCookies(),
+        Origin: ADMIN_ORIGIN,
+      },
+      body: JSON.stringify({ currentPassword: owner.password, pin: APPROVAL_PIN }),
+    },
+  );
+  if (!response.ok) throw new Error(`approval PIN answered ${response.status}`);
 }
 
 /** A product without stock components: the return test is about money and the order, not the shelf. */
@@ -203,18 +206,14 @@ async function clickLabelledCheckbox(page: Page, text: string): Promise<void> {
 }
 
 async function apiGetReturn(salesReturnId: string): Promise<SalesReturnResponse> {
-  const body = await apiRequest<{ data: SalesReturnResponse }>(
-    "GET",
+  const body = await apiGet<{ data: SalesReturnResponse }>(
     `/orgs/${organizationId}/sales/returns/${salesReturnId}`,
   );
   return body.data;
 }
 
 async function apiGetOrder(): Promise<OrderResponse> {
-  const body = await apiRequest<{ data: OrderResponse }>(
-    "GET",
-    `/orgs/${organizationId}/orders/${orderId}`,
-  );
+  const body = await apiGet<{ data: OrderResponse }>(`/orgs/${organizationId}/orders/${orderId}`);
   return body.data;
 }
 
