@@ -133,6 +133,19 @@ function applySaveOutcome({ outcome, draft, show, router }: SaveContext): boolea
   return true;
 }
 
+interface SubmitContext {
+  readonly organizationId: string;
+  readonly draft: DraftState;
+  readonly show: (problems: readonly FieldProblem[]) => void;
+}
+
+async function sendSubmit({ organizationId, draft, show }: SubmitContext): Promise<void> {
+  const result = await submitCall(organizationId, draft.consentKeys);
+  if (!result.ok) return show(result.fields);
+  draft.setStatus(result.data?.status);
+  draft.setNotice(SUBMITTED_TEXT_KEY);
+}
+
 /** The form's answers, the step being shown, and the calls: save the draft, then submit it. */
 export function useListingFormState(input: ListingFormInput): ListingFormState {
   const { organizationId, form } = input;
@@ -159,13 +172,6 @@ export function useListingFormState(input: ListingFormInput): ListingFormState {
       show,
       router,
     });
-
-  const sendSubmit = async (): Promise<void> => {
-    const result = await submitCall(organizationId, draft.consentKeys);
-    if (!result.ok) return show(result.fields);
-    draft.setStatus(result.data?.status);
-    draft.setNotice(SUBMITTED_TEXT_KEY);
-  };
 
   const run = (action: () => Promise<void>): Promise<void> => runBusy(draft, action);
 
@@ -201,7 +207,7 @@ export function useListingFormState(input: ListingFormInput): ListingFormState {
           return;
         }
         if (!(await saveDraft())) return;
-        await sendSubmit();
+        await sendSubmit({ organizationId, draft, show });
       }),
   };
 }
