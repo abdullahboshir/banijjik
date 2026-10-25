@@ -2,6 +2,8 @@ import {
   MODULE_CLASS,
   MODULE_KEY,
   PERMISSION_KEY,
+  SETTINGS_TOPIC,
+  SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
 import { WEBSITE_EVENT_TYPE } from "@banijjik/contracts/website";
@@ -28,7 +30,19 @@ export const websiteManifest = defineModule({
     admin: ["/orgs/:organizationId/website"],
     storefront: ["/storefront/orgs/:organizationId/pages"],
   },
-  menu: [],
+  menu: [
+    {
+      menuKey: "website.pages",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.website.pages",
+      path: "website/pages",
+      iconKey: "globe",
+      permissionKey: PERMISSION_KEY.WEBSITE_PAGE_READ,
+      order: 60,
+      settingsTopicKey: SETTINGS_TOPIC.WEBSITE,
+    },
+  ],
   settings: [],
   customFieldEntities: [],
   botTools: [],
