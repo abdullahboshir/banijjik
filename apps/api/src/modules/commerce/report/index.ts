@@ -7,6 +7,7 @@ import { DailyReportUseCase } from "./application/daily.use-case.js";
 import { HomeReportUseCase } from "./application/home.use-case.js";
 import { buildSummarizeEventHandler } from "./application/summarize-event.handler.js";
 import type {
+  DailySummaryWriter,
   OrganizationLocalSettings,
   ReportSourceReader,
 } from "./application/ports/report-ports.js";
@@ -34,6 +35,11 @@ export interface ReportTenantDependencies {
   readonly orgConfig: Pick<OrgConfigService, "isModuleEffective">;
   readonly settings: OrganizationLocalSettings;
   readonly clock: Clock;
+}
+
+/** The daily-row writer, for tests and the rebuild card that seed or repair rows through the same path. */
+export function buildDailySummaryWriter(): DailySummaryWriter {
+  return new MongoDailySummaryRepository();
 }
 
 export function buildReportRouter(dependencies: ReportTenantDependencies): Router {

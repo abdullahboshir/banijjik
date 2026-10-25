@@ -8,6 +8,7 @@ import {
 } from "@banijjik/contracts";
 import { PAYMENT_ROLE_GRANTS } from "./payment-role-grants.js";
 import { POS_ROLE_GRANTS } from "./pos-role-grants.js";
+import { REPORT_ROLE_GRANTS } from "./report-role-grants.js";
 import { SALES_ROLE_GRANTS } from "./sales-role-grants.js";
 
 /**
@@ -216,6 +217,7 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
   },
   payment: PAYMENT_ROLE_GRANTS,
   pos: POS_ROLE_GRANTS,
+  report: REPORT_ROLE_GRANTS,
   commission: {
     [SYSTEM_ROLE_KEY.OWNER]: "ALL",
     [SYSTEM_ROLE_KEY.MANAGER]: "ALL",

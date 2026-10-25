@@ -5,7 +5,7 @@ day (`DailySummary`) and serves the home and the reports from those rows. No req
 
 - **Counting:** the worker's `report.summarize` handler (UNORDERED) takes each sale, return, booking,
   enrollment, check-in, payment and expense event. The marker `ReportEventApplied` is written first
-  in the same transaction as the `$inc`, so a redelivery counts nothing (ADR-147).
+  in the same transaction as the `$inc`, so a redelivery counts nothing (ADR-148).
 - **Dates:** every event counts on the organization-local date of its own instant or of the fact
   (`domain/business-date.ts`). A fact in another currency is refused.
 - **Sources:** `routes/report-sources.ts` answers through each module's index with only the counted

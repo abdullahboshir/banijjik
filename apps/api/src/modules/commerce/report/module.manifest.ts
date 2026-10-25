@@ -8,7 +8,7 @@ import { defineModule } from "../../../kernel/modules/index.js";
 import { REPORT_HANDLED_EVENT_TYPES } from "./application/event-increments.js";
 
 /**
- * The report manifest (card 3.10, ADR-147). CORE and not disableable: every business has a home.
+ * The report manifest (card 3.10, ADR-148). CORE and not disableable: every business has a home.
  * It has no settings and no menu entry yet; the screens and their menu arrive with Part B.
  */
 export const reportManifest = defineModule({
