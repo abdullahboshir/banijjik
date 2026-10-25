@@ -1,6 +1,6 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, SEQUENCE_KEY } from "@banijjik/contracts";
 import { SALES_EVENT_TYPE } from "@banijjik/contracts/sales";
-import { newId, type SalesReturnId, type UserId } from "@banijjik/ids";
+import { newId, type OrderId, type SalesReturnId, type UserId } from "@banijjik/ids";
 import type { SalesReturnRequestBody } from "@banijjik/validation/sales";
 import { nextSequenceValue } from "../../../../kernel/sequence/index.js";
 import type { SalesReturnRecord, SalesReturnLineRecord } from "../domain/sales-return.record.js";
@@ -21,10 +21,12 @@ export interface WriteSalesReturnArgs {
   readonly input: SalesReturnWriteInput;
   readonly prepared: PreparedSalesReturn;
   readonly actorUserId: UserId;
+  /** The new order of an exchange (plan 3.5b E7); null for a plain return. Set on the row once. */
+  readonly exchangeOrderId: OrderId | null;
 }
 
 export async function writeSalesReturn(args: WriteSalesReturnArgs): Promise<SalesReturnRecord> {
-  const { deps, input, prepared, actorUserId } = args;
+  const { deps, input, prepared, actorUserId, exchangeOrderId } = args;
   const { order, plan, settlement, currency } = prepared;
   const settings = await deps.settings.read(input.organizationId);
   const memberId = await deps.members.memberIdOf(actorUserId, input.organizationId);
@@ -72,6 +74,7 @@ export async function writeSalesReturn(args: WriteSalesReturnArgs): Promise<Sale
     plan,
     approvals,
     salesReturnId,
+    exchangeOrderId,
     paymentIds: { paymentId: payment.paymentId, storeCreditEntryId: payment.storeCreditEntryId },
     actorUserId,
     now,
@@ -120,6 +123,7 @@ interface ReturnRecordArgs {
   readonly plan: SalesReturnPlan;
   readonly approvals: ConsumedReturnApprovals;
   readonly salesReturnId: SalesReturnId;
+  readonly exchangeOrderId: OrderId | null;
   readonly paymentIds: {
     readonly paymentId: string | null;
     readonly storeCreditEntryId: string | null;
@@ -160,7 +164,7 @@ async function buildReturnRecord(args: ReturnRecordArgs): Promise<SalesReturnRec
     approvals: args.approvals.records,
     status: "ACTIVE",
     reversal: null,
-    exchangeOrderId: null,
+    exchangeOrderId: args.exchangeOrderId,
     businessDate: prepared.today,
     version: 1,
     createdAt: args.now,

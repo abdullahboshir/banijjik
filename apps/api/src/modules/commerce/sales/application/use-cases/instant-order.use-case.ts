@@ -47,6 +47,8 @@ import {
 
 /** Everything the transaction needs, gathered before the unit of work opens. */
 export interface PreparedInstantSale {
+  /** Picked here, before the transaction, so a caller can write rows that point at the new order (plan 3.5b E7). */
+  readonly orderId: OrderId;
   readonly organizationId: OrderWriteInput["organizationId"];
   readonly actorUserId: UserId;
   readonly locationId: string;
@@ -103,6 +105,7 @@ export class InstantOrderUseCase {
     const ownerExempt =
       settings.discountOwnerWithoutApproval && (await this.dependencies.owner.isOwner());
     return {
+      orderId: newId<OrderId>(),
       organizationId: input.organizationId,
       actorUserId: input.actorUserId,
       locationId: input.body.locationId,
@@ -177,7 +180,7 @@ export class InstantOrderUseCase {
     approval: Order["approval"],
   ): Order {
     return Order.createDraft({
-      orderId: newId<OrderId>(),
+      orderId: ctx.orderId,
       organizationId: ctx.organizationId,
       locationId: asId<LocationId>(ctx.locationId),
       contactId: ctx.contactId,

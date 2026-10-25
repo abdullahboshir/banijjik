@@ -58,6 +58,13 @@ import {
 } from "./application/use-cases/sales-return.use-cases.js";
 import { ReverseSalesReturnUseCase } from "./application/sales-return-reverse.js";
 import { SalesReturnController } from "./presentation/sales-return.controller.js";
+import { buildInstantSaleService } from "./application/instant-sale.service.js";
+import {
+  CreateSalesExchangeUseCase,
+  PreviewSalesExchangeUseCase,
+  type SalesExchangeDependencies,
+} from "./application/use-cases/sales-exchange.use-cases.js";
+import { SalesExchangeController } from "./presentation/sales-exchange.controller.js";
 import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
 
 /**
@@ -140,6 +147,18 @@ export function buildSalesReturnController(ports: SalesTenantPorts): SalesReturn
     list: new ListSalesReturnsUseCase(dependencies),
     get: new GetSalesReturnUseCase(dependencies),
     reverse: new ReverseSalesReturnUseCase(dependencies),
+  });
+}
+
+/** The exchange uses the return's dependencies and the instant sale's two steps (plan 3.5b E6). */
+export function buildSalesExchangeController(ports: SalesTenantPorts): SalesExchangeController {
+  const dependencies: SalesExchangeDependencies = {
+    returns: buildSalesReturnDependencies(ports),
+    sales: buildInstantSaleService(buildSalesDependencies(ports)),
+  };
+  return new SalesExchangeController({
+    preview: new PreviewSalesExchangeUseCase(dependencies),
+    create: new CreateSalesExchangeUseCase(dependencies),
   });
 }
 

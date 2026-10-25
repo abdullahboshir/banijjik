@@ -47,6 +47,7 @@ export class CreateSalesReturnUseCase {
         input,
         prepared,
         actorUserId,
+        exchangeOrderId: null,
       });
       return toSalesReturnResponse(record);
     });

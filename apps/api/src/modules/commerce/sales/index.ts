@@ -13,6 +13,7 @@ import { registerScheduledJob } from "../../../kernel/jobs/index.js";
 import {
   buildSalesController,
   buildSalesDependencies,
+  buildSalesExchangeController,
   buildSalesJobDependencies,
   buildSalesReturnController,
   buildSalesReturnDependencies,
@@ -30,6 +31,7 @@ import type {
 import { buildExpireDraftsJob } from "./application/jobs/expire-drafts.job.js";
 import { buildAutoCancelPlacedJob } from "./application/jobs/auto-cancel-placed.job.js";
 import { buildSalesTenantRouter } from "./presentation/order-tenant.router.js";
+import { buildSalesExchangeTenantRouter } from "./presentation/sales-exchange-tenant.router.js";
 import { buildSalesReturnTenantRouter } from "./presentation/sales-return-tenant.router.js";
 import {
   buildInstantSaleService,
@@ -52,6 +54,13 @@ export function buildSalesRouter(dependencies: SalesTenantRouterDependencies): R
   router.use(
     buildSalesReturnTenantRouter({
       controller: buildSalesReturnController(dependencies),
+      permission: dependencies.permission,
+      idempotency: dependencies.idempotency,
+    }),
+  );
+  router.use(
+    buildSalesExchangeTenantRouter({
+      controller: buildSalesExchangeController(dependencies),
       permission: dependencies.permission,
       idempotency: dependencies.idempotency,
     }),
