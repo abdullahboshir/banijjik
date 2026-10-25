@@ -23,6 +23,9 @@ export interface EnrollmentActionLabels {
   readonly cancelClose: string;
   readonly cancelDone: string;
   readonly refundable: string;
+  readonly refundablePeriods: string;
+  /** The period name by its id, so the cancel result can name each refundable period. */
+  readonly periodNames: Readonly<Record<string, string>>;
   readonly refundLater: string;
 }
 
@@ -42,6 +45,7 @@ function CancelResult(props: {
   onClose: () => void;
 }): ReactElement {
   const { outcome, labels } = props;
+  const refundableRows = outcome.refundableByPeriod.filter((row) => row.amount.amount > 0);
   return (
     <div role="status" className="flex flex-col gap-2 rounded-lg border border-default p-4">
       <p className="text-body font-semibold text-primary">{labels.cancelDone}</p>
@@ -49,6 +53,22 @@ function CancelResult(props: {
         <p className="text-body text-primary">
           {labels.refundable}: {formatMoney(outcome.refundableAmount, { locale: props.locale })}
         </p>
+      ) : null}
+      {refundableRows.length > 0 ? (
+        <div className="flex flex-col gap-1">
+          <p className="text-small font-semibold text-secondary">{labels.refundablePeriods}</p>
+          <ul className="flex flex-col gap-1">
+            {refundableRows.map((row) => (
+              <li
+                key={row.enrollmentPeriodId}
+                className="flex justify-between gap-3 text-small text-primary"
+              >
+                <span>{labels.periodNames[row.enrollmentPeriodId] ?? row.enrollmentPeriodId}</span>
+                <span>{formatMoney(row.amount, { locale: props.locale })}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
       <p className="text-small text-secondary">{labels.refundLater}</p>
       <Button type="button" onClick={props.onClose}>

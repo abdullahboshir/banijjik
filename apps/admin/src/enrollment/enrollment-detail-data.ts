@@ -40,6 +40,7 @@ export interface EnrollmentDetailData {
   readonly allowedMethods: readonly PaymentMethod[];
   readonly dueMinorByPeriodId: Readonly<Record<string, number>>;
   readonly canReceive: boolean;
+  readonly canRefund: boolean;
 }
 
 export async function loadEnrollmentDetail(
@@ -82,5 +83,8 @@ export async function loadEnrollmentDetail(
     canReceive:
       access.canWrite &&
       holdsPermission(access.config.permissions, PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE),
+    canRefund:
+      access.canWrite &&
+      holdsPermission(access.config.permissions, PERMISSION_KEY.PAYMENT_PAYMENT_REFUND),
   };
 }

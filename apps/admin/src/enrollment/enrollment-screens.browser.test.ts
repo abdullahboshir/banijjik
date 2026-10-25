@@ -1,5 +1,17 @@
 import type { Page } from "puppeteer-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ENROLLMENT_REFUND_POLICY, ENROLLMENT_SETTING } from "@banijjik/contracts/enrollment";
+import { PAYMENT_METHOD } from "@banijjik/contracts/payment";
+import {
+  ADMIN_ORIGIN,
+  API_PORT,
+  organizationIdOf,
+  seedOrganizationWithBody,
+  seedPerson,
+  startBrowserStack,
+  type BrowserStack,
+  type SeededPerson,
+} from "../test-support/browser-stack";
 import {
   bodyText,
   clickButton,
@@ -19,13 +31,6 @@ import {
   waitForDialogSettled,
 } from "../test-support/browser-page";
 import { publishTemplate, seedMember, seedMonthlyPlan } from "../test-support/browser-seed";
-import {
-  seedOrganizationWithBody,
-  seedPerson,
-  startBrowserStack,
-  type BrowserStack,
-  type SeededPerson,
-} from "../test-support/browser-stack";
 import gymFixture from "../test-support/gym-industry-fixture.json" with { type: "json" };
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
 
@@ -69,7 +74,7 @@ async function ownerPage(): Promise<Page> {
   return page;
 }
 
-async function enrollMember(page: Page): Promise<string> {
+async function enrollMember(page: Page, avoidPaths: readonly string[] = []): Promise<string> {
   await gotoWhenHydrated(page, `${GYM_PATH}/enrollments`, "main");
   await clickByName(page, message("enrollment.list.add").replace("{term}", ENROLLMENT_TERM));
   await waitForDialogSettled(page);
@@ -88,20 +93,28 @@ async function enrollMember(page: Page): Promise<string> {
   await clickInDialog(page, message("enrollment.sheet.save"));
   await page.waitForFunction(() => document.querySelector("[role=dialog]") === null);
   const pattern = /^\/gym-fit\/enrollments\/[\w-]+$/;
+  // The list also holds enrollments from earlier tests; the new one is the match not seen before.
   await page.waitForFunction(
-    (source) =>
-      Array.from(document.querySelectorAll("main a")).some((anchor) =>
-        new RegExp(source).test(anchor.getAttribute("href") ?? ""),
-      ),
+    (source, known) =>
+      Array.from(document.querySelectorAll("main a")).some((anchor) => {
+        const href = anchor.getAttribute("href") ?? "";
+        return new RegExp(source).test(href) && !known.includes(href);
+      }),
     {},
     pattern.source,
+    avoidPaths,
   );
-  return (await page.evaluate((source) => {
-    const anchor = Array.from(document.querySelectorAll("main a")).find((candidate) =>
-      new RegExp(source).test(candidate.getAttribute("href") ?? ""),
-    );
-    return anchor?.getAttribute("href") ?? "";
-  }, pattern.source)) as string;
+  return (await page.evaluate(
+    (source, known) => {
+      const anchor = Array.from(document.querySelectorAll("main a")).find((candidate) => {
+        const href = candidate.getAttribute("href") ?? "";
+        return new RegExp(source).test(href) && !known.includes(href);
+      });
+      return anchor?.getAttribute("href") ?? "";
+    },
+    pattern.source,
+    avoidPaths,
+  )) as string;
 }
 
 async function showsBadge(page: Page, label: string): Promise<boolean> {
@@ -139,6 +152,68 @@ async function tapCheckIn(page: Page, expectedRows: number): Promise<void> {
   );
 }
 
+/**
+ * Loads the page again until exactly this many period-row buttons carry the label, for a change
+ * the worker makes in the background (rule 6: wait by reloading, never race the worker).
+ */
+async function reloadUntilButtonCount(
+  page: Page,
+  path: string,
+  label: string,
+  expected: number,
+): Promise<void> {
+  const deadline = Date.now() + WORKER_ACTIVATION_WAIT_MS;
+  while (Date.now() < deadline) {
+    await gotoWhenHydrated(page, path, "main");
+    const seen = await page.evaluate(
+      (wanted) =>
+        Array.from(document.querySelectorAll("main ul li button")).filter((button) =>
+          (button.textContent ?? "").includes(wanted),
+        ).length,
+      label,
+    );
+    if (seen === expected) return;
+    await new Promise((resolve) => setTimeout(resolve, RELOAD_INTERVAL_MS));
+  }
+  const shown = await bodyText(page);
+  throw new Error(
+    `"${label}" buttons never reached ${expected}; the page shows: ${shown.slice(0, 600)}`,
+  );
+}
+
+/** Receives what the one payable period asks for, then waits for the worker to settle its status. */
+async function payOpenPeriod(page: Page, path: string): Promise<void> {
+  await reloadUntilButtonCount(page, path, message("enrollment.detail.receivePayment"), 1);
+  await clickButton(page, "main ul li button", (text) =>
+    text.includes(message("enrollment.detail.receivePayment")),
+  );
+  await waitForDialogSettled(page);
+  await clickInDialog(page, message("payments.receive.submit"));
+  await page.waitForFunction(() => document.querySelector("[role=dialog]") === null);
+  await waitForText(page, message("enrollment.detail.updating"));
+  await reloadUntilButtonCount(page, path, message("enrollment.detail.receivePayment"), 0);
+}
+
+/** PATCHes one organization setting through the real API as the owner. */
+async function patchOwnerSetting(
+  settingKey: string,
+  value: string | number | boolean,
+): Promise<void> {
+  const organizationId = await organizationIdOf(owner, "gym-fit");
+  const cookieHeader = owner.cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+  const response = await fetch(
+    `http://localhost:${API_PORT}/api/v1/orgs/${organizationId}/settings`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Cookie: cookieHeader, Origin: ADMIN_ORIGIN },
+      body: JSON.stringify({ items: [{ settingKey, value }] }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`PATCH ${settingKey} answered ${response.status}: ${await response.text()}`);
+  }
+}
+
 describe("GYM enrollment flow", () => {
   it("enrolls a member, refuses activation until period 1 is paid, then activates and checks in twice", async () => {
     const page = await ownerPage();
@@ -172,6 +247,76 @@ describe("GYM enrollment flow", () => {
     await waitForTextIn(page, "main", `${message("enrollment.detail.sessions")}: 2`);
     await closePage(page);
   });
+});
+
+describe("GYM enrollment refund flow", () => {
+  it("cancels a paid membership with two paid periods under UNUSED_PERIODS and refunds the future period to store credit", async () => {
+    const page = await ownerPage();
+    const refundPath = await enrollMember(page, detailPath ? [detailPath] : []);
+
+    await gotoWhenHydrated(page, refundPath, "main");
+    await waitForBadge(page, message("enrollment.status.PENDING"));
+    await clickByName(page, message("enrollment.action.activate"));
+    await waitForText(page, message("enrollment.errors.payment_required"));
+
+    // Period 1 starts today and runs.
+    await payOpenPeriod(page, refundPath);
+    await reloadUntilBadge(page, refundPath, message("enrollment.status.ACTIVE"));
+
+    // Renewing inside the running period adds period 2, which starts after today.
+    await gotoWhenHydrated(page, refundPath, "main");
+    await clickByName(page, message("enrollment.action.renew"));
+    await payOpenPeriod(page, refundPath);
+
+    await patchOwnerSetting(
+      ENROLLMENT_SETTING.REFUND_POLICY,
+      ENROLLMENT_REFUND_POLICY.UNUSED_PERIODS,
+    );
+
+    await gotoWhenHydrated(page, refundPath, "main");
+    await clickByName(page, message("enrollment.action.cancel"));
+    await waitForDialogSettled(page);
+    // The cancel response is watched, so a failure names the API's answer, not just the page.
+    const cancelResponse = page.waitForResponse(
+      (response) => response.request().method() === "POST" && response.url().endsWith("/cancel"),
+    );
+    await clickInDialog(page, message("enrollment.cancel.confirm"));
+    const cancelled = (await (await cancelResponse).json()) as {
+      data?: Record<string, unknown>;
+    };
+    process.stdout.write(
+      `cancel refundableByPeriod: ${JSON.stringify(cancelled.data?.refundableByPeriod)}\n`,
+    );
+    await waitForText(page, message("enrollment.cancel.refundablePeriods"));
+    // One refundable row: the future period; the one already running is not refundable.
+    // The row list renders with the response, so the count is polled instead of read once.
+    let refundableRows = 0;
+    const rowsDeadline = Date.now() + WORKER_ACTIVATION_WAIT_MS;
+    while (refundableRows !== 1 && Date.now() < rowsDeadline) {
+      refundableRows = await page.evaluate(
+        () => document.querySelectorAll("main [role=status] ul li").length,
+      );
+      if (refundableRows !== 1) await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    expect(refundableRows, `cancel data: ${JSON.stringify(cancelled.data)}`).toBe(1);
+
+    await clickByName(page, message("enrollment.cancel.close"));
+    await reloadUntilBadge(page, refundPath, message("enrollment.status.CANCELLED"));
+
+    // A refund button on the future period only; the used period has no limit left to refund.
+    await reloadUntilButtonCount(page, refundPath, message("enrollment.detail.refund"), 1);
+    await clickButton(page, "main ul li button", (text) =>
+      text.includes(message("enrollment.detail.refund")),
+    );
+    await waitForDialogSettled(page);
+    await page.select("#refund-method", PAYMENT_METHOD.STORE_CREDIT);
+    await clickInDialog(page, message("payments.refund.submit"));
+    await page.waitForFunction(() => document.querySelector("[role=dialog]") === null);
+
+    // The refund spent the period's limit, so no refund button is left after the worker settles.
+    await reloadUntilButtonCount(page, refundPath, message("enrollment.detail.refund"), 0);
+    await closePage(page);
+  }, 240_000);
 });
 
 describe("the phone and the first load", () => {

@@ -212,6 +212,48 @@ describe("Refund and Reversal flows", () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
+  it("refuses a refund above the maximum before sending, and sends within it", async () => {
+    const user = userEvent.setup();
+    refundPaymentMock.mockResolvedValue({ ...MOCK_PAYMENT, direction: PAYMENT_DIRECTION.REFUND });
+
+    renderInBangla(
+      <RefundDialog
+        open
+        onOpenChange={() => {}}
+        organizationId="org-1"
+        payment={MOCK_PAYMENT}
+        maxAmount={{ amount: 20000, currency: "BDT" }}
+        labels={{
+          ...labels.refundDialog,
+          methodLabels: labels.method,
+          requestTypeLabels: labels.requestType,
+          cancelLabel: labels.refundDialog.cancel,
+          closeLabel: labels.refundDialog.cancel,
+          lockedMessage: labels.refundDialog.approvalLocked,
+        }}
+      />,
+    );
+
+    // The dialog opens at the paid amount, which is above this refund's maximum.
+    const amountInput = screen.getByLabelText(`${labels.refundDialog.amount} (BDT)`);
+    expect(screen.getByText(labels.refundDialog.invalidAmount)).toBeDefined();
+    const submitBtn = screen.getByRole("button", { name: labels.refundDialog.submit });
+    expect(submitBtn).toHaveProperty("disabled", true);
+    expect(refundPaymentMock).not.toHaveBeenCalled();
+
+    await user.clear(amountInput);
+    await user.type(amountInput, "200");
+    expect(screen.queryByText(labels.refundDialog.invalidAmount)).toBeNull();
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(refundPaymentMock).toHaveBeenCalledWith(
+        "org-1",
+        expect.objectContaining({ amount: { amount: 20000, currency: "BDT" } }),
+      );
+    });
+  });
+
   it("shows the amount message, not the refund failed message, for an invalid allocation amount", async () => {
     const user = userEvent.setup();
 

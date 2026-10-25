@@ -1,4 +1,5 @@
 import { PERMISSION_KEY, type PermissionKey } from "@banijjik/contracts";
+import type { EnrollmentPeriodResponse } from "@banijjik/contracts/enrollment";
 import type { Translator } from "@banijjik/i18n";
 import { currencySymbolOf, DetailHeader, EmptyState, StatusBadge } from "@banijjik/ui";
 import type { ReactElement } from "react";
@@ -27,7 +28,15 @@ import {
 
 type Translate = Translator["t"];
 
-function actionLabelsOf(t: Translate, enrollmentTerm: string): EnrollmentActionLabels {
+function periodLabelOf(t: Translate, period: EnrollmentPeriodResponse): string {
+  return t("enrollment.detail.period", { number: period.periodNumber });
+}
+
+function actionLabelsOf(
+  t: Translate,
+  enrollmentTerm: string,
+  data: EnrollmentDetailData,
+): EnrollmentActionLabels {
   const actions = Object.fromEntries(
     (["activate", "freeze", "unfreeze", "renew", "cancel"] as const).map((key) => [
       key,
@@ -46,6 +55,13 @@ function actionLabelsOf(t: Translate, enrollmentTerm: string): EnrollmentActionL
     cancelClose: t("enrollment.cancel.close"),
     cancelDone: t("enrollment.cancel.done"),
     refundable: t("enrollment.cancel.refundable"),
+    refundablePeriods: t("enrollment.cancel.refundablePeriods"),
+    periodNames: Object.fromEntries(
+      data.enrollment.periods.map((period) => [
+        period.enrollmentPeriodId,
+        periodLabelOf(t, period),
+      ]),
+    ),
     refundLater: t("enrollment.cancel.refundLater"),
   };
 }
@@ -57,13 +73,11 @@ function periodLabelsOf(t: Translate, data: EnrollmentDetailData): EnrollmentPer
     fee: t("enrollment.detail.fee"),
     sessions: t("enrollment.detail.sessions"),
     receivePayment: t("enrollment.detail.receivePayment"),
+    refund: t("enrollment.detail.refund"),
     updating: t("enrollment.detail.updating"),
     reloadStatus: t("enrollment.detail.reloadStatus"),
     periodNames: Object.fromEntries(
-      data.enrollment.periods.map((period) => [
-        period.periodNumber,
-        t("enrollment.detail.period", { number: period.periodNumber }),
-      ]),
+      data.enrollment.periods.map((period) => [period.periodNumber, periodLabelOf(t, period)]),
     ),
     statusNames: periodStatusLabels(t),
     sessionsOf: t("enrollment.detail.sessionsOf", { used: "{used}", allowed: "{allowed}" }),
@@ -71,6 +85,14 @@ function periodLabelsOf(t: Translate, data: EnrollmentDetailData): EnrollmentPer
       ...paymentLabels.receiveSheet,
       methodLabels: paymentLabels.method,
       requestTypeLabels: paymentLabels.requestType,
+    },
+    refundDialogLabels: {
+      ...paymentLabels.refundDialog,
+      methodLabels: paymentLabels.method,
+      requestTypeLabels: paymentLabels.requestType,
+      cancelLabel: paymentLabels.refundDialog.cancel,
+      closeLabel: paymentLabels.refundDialog.cancel,
+      lockedMessage: paymentLabels.refundDialog.approvalLocked,
     },
   };
 }
@@ -167,7 +189,7 @@ export async function EnrollmentDetailPage(props: {
         version={enrollment.version}
         actions={actions}
         locale={locale}
-        labels={actionLabelsOf(t, words.enrollmentTerm)}
+        labels={actionLabelsOf(t, words.enrollmentTerm, data)}
       />
       <EnrollmentPeriodsSection
         organizationId={access.organization.organizationId}
@@ -178,6 +200,7 @@ export async function EnrollmentDetailPage(props: {
         currencySymbol={currencySymbolOf(data.currency)}
         allowedMethods={data.allowedMethods}
         canReceive={data.canReceive}
+        canRefund={data.canRefund}
         dueMinorByPeriodId={data.dueMinorByPeriodId}
         locale={locale}
         labels={periodLabelsOf(t, data)}

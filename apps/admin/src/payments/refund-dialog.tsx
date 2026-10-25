@@ -1,17 +1,16 @@
 "use client";
 
 import {
-  ACCEPTED_PAYMENT_METHODS,
   PAYMENT_METHOD,
+  type Money,
+  type PaymentAllocation,
   type PaymentMethod,
   type PaymentRequestType,
   type PaymentResponse,
 } from "@banijjik/contracts/payment";
 import {
   ApprovalPinDialog,
-  Button,
   FormField,
-  Select,
   Sheet,
   SheetContent,
   TextInput,
@@ -21,14 +20,29 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
 import type { PaymentLabels } from "./payment-labels";
 import { RefundAllocationsList, buildRefundAllocations } from "./refund-allocations";
+import { RefundFooterActions, RefundMethodAndRefFields } from "./refund-dialog-fields";
 import { minorUnitsToDecimal } from "./receive-payment-allocations";
 import { useRefundFlow, type RefundFlowState } from "./use-refund-flow";
+
+/**
+ * What the refund returns money for. A payment answers it as a whole; an enrollment period of a
+ * cancelled enrollment answers it with that period as its only allocation (3.32 Part B).
+ */
+export interface RefundTarget {
+  readonly locationId: string;
+  readonly contactId?: string | null;
+  readonly method: PaymentMethod;
+  readonly amount: Money;
+  readonly allocations: readonly PaymentAllocation[];
+}
 
 export interface RefundDialogProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly organizationId: string;
-  readonly payment: PaymentResponse;
+  readonly payment: RefundTarget;
+  /** The most this refund may give back; a larger amount is refused before sending. */
+  readonly maxAmount?: Money | undefined;
   readonly onSuccess?: ((refundedPayment: PaymentResponse) => void) | undefined;
   readonly labels: PaymentLabels["refundDialog"] & {
     readonly methodLabels: Readonly<Record<PaymentMethod, string>>;
@@ -37,6 +51,14 @@ export interface RefundDialogProps {
     readonly lockedMessage: string;
     readonly requestTypeLabels?: Readonly<Record<PaymentRequestType, string>> | undefined;
   };
+}
+
+export type RefundDialogLabels = RefundDialogProps["labels"];
+
+export function isAboveRefundLimit(amount: Money, limit: Money | undefined): boolean {
+  if (!limit) return false;
+  if (amount.currency !== limit.currency) return true;
+  return amount.amount > limit.amount;
 }
 
 function resolveDefaultRefundMethod(paymentMethod: PaymentMethod): PaymentMethod {
@@ -51,129 +73,60 @@ function resolveDefaultRefundMethod(paymentMethod: PaymentMethod): PaymentMethod
 }
 
 interface RefundFormProps {
-  readonly payment: PaymentResponse;
+  readonly payment: RefundTarget;
+  readonly maxAmount: Money | undefined;
   readonly labels: RefundDialogProps["labels"];
   readonly refundFlow: RefundFlowState;
   readonly onCancel: () => void;
 }
 
-interface RefundMethodAndRefProps {
-  readonly method: PaymentMethod;
-  readonly isMobileMoney: boolean;
-  readonly externalReference: string;
-  readonly disabled: boolean;
-  readonly labels: RefundDialogProps["labels"];
-  readonly onMethodChange: (m: PaymentMethod) => void;
-  readonly onReferenceChange: (ref: string) => void;
-}
-
-function RefundMethodAndRefFields(props: RefundMethodAndRefProps): ReactElement {
-  const {
-    method,
-    isMobileMoney,
-    externalReference,
-    disabled,
-    labels,
-    onMethodChange,
-    onReferenceChange,
-  } = props;
-  return (
-    <>
-      <FormField label={labels.method} htmlFor="refund-method">
-        <Select
-          id="refund-method"
-          value={method}
-          onChange={(e) => onMethodChange(e.target.value as PaymentMethod)}
-          disabled={disabled}
-        >
-          {ACCEPTED_PAYMENT_METHODS.map((m) => (
-            <option key={m} value={m}>
-              {labels.methodLabels[m] ?? m}
-            </option>
-          ))}
-        </Select>
-      </FormField>
-      {isMobileMoney ? (
-        <FormField label={labels.reference} htmlFor="refund-reference">
-          <TextInput
-            id="refund-reference"
-            value={externalReference}
-            onChange={(e) => onReferenceChange(e.target.value)}
-            disabled={disabled}
-          />
-        </FormField>
-      ) : null}
-    </>
+/** One allocation follows the refund amount; several of them are edited on their own rows. */
+function useRefundAllocationAmounts(payment: RefundTarget, amountMinor: number) {
+  const [amounts, setAmounts] = useState<readonly number[]>(() =>
+    payment.allocations.map((allocation) => allocation.amount.amount),
   );
+
+  function handleChange(index: number, newMinor: number): void {
+    setAmounts((prev) => prev.map((value, position) => (position === index ? newMinor : value)));
+  }
+
+  return {
+    effective: payment.allocations.length === 1 ? ([amountMinor] as const) : amounts,
+    handleChange,
+  };
 }
 
-function RefundFooterActions(props: {
-  readonly errorMessage?: string | undefined;
-  readonly isSubmitting: boolean;
-  readonly disabled: boolean;
-  readonly cancelLabel: string;
-  readonly submitLabel: string;
-  readonly onCancel: () => void;
-}): ReactElement {
-  const { errorMessage, isSubmitting, disabled, cancelLabel, submitLabel, onCancel } = props;
-  return (
-    <>
-      {errorMessage ? <p className="text-body-sm text-error">{errorMessage}</p> : null}
-      <div className="flex justify-end gap-2 pt-3">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
-          {cancelLabel}
-        </Button>
-        <Button type="submit" isLoading={isSubmitting} disabled={disabled}>
-          {submitLabel}
-        </Button>
-      </div>
-    </>
-  );
-}
-
-function useRefundFormState(payment: PaymentResponse, refundFlow: RefundFlowState) {
+function useRefundFormState(
+  payment: RefundTarget,
+  refundFlow: RefundFlowState,
+  maxAmount: Money | undefined,
+) {
   const [method, setMethod] = useState<PaymentMethod>(resolveDefaultRefundMethod(payment.method));
   const [amountText, setAmountText] = useState<string>(() =>
     minorUnitsToDecimal(payment.amount.amount),
   );
   const [externalReference, setExternalReference] = useState<string>("");
   const [note, setNote] = useState<string>("");
-  const [allocationAmounts, setAllocationAmounts] = useState<readonly number[]>(() =>
-    payment.allocations.map((a) => a.amount.amount),
-  );
-
   const parsedAmount = parseMoneyInput(amountText, 2)?.minorUnits ?? 0;
+  const amount = { amount: parsedAmount, currency: payment.amount.currency };
   const isMobileMoney = method === PAYMENT_METHOD.BKASH || method === PAYMENT_METHOD.NAGAD;
-
-  function handleAllocChange(index: number, newMinor: number): void {
-    setAllocationAmounts((prev) => {
-      const copy = [...prev];
-      copy[index] = newMinor;
-      return copy;
-    });
-  }
-
-  function handleAmountChange(value: string): void {
-    setAmountText(value);
-    const parsed = parseMoneyInput(value, 2)?.minorUnits ?? 0;
-    if (payment.allocations.length === 1) setAllocationAmounts([parsed]);
-  }
+  const isAboveMaximum = isAboveRefundLimit(amount, maxAmount);
+  const allocations = useRefundAllocationAmounts(payment, parsedAmount);
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
-    if (parsedAmount <= 0) return;
-    const allocations = buildRefundAllocations({
-      allocations: payment.allocations,
-      parsedAmount,
-      allocationAmounts,
-      currency: payment.amount.currency,
-    });
+    if (parsedAmount <= 0 || isAboveMaximum) return;
     await refundFlow.executeRefund({
       locationId: payment.locationId,
       method,
-      amount: { amount: parsedAmount, currency: payment.amount.currency },
+      amount,
       externalReference: isMobileMoney ? externalReference.trim() : null,
-      allocations,
+      allocations: buildRefundAllocations({
+        allocations: payment.allocations,
+        parsedAmount,
+        allocationAmounts: allocations.effective,
+        currency: payment.amount.currency,
+      }),
       contactId: payment.contactId ?? null,
       note: note.trim() || null,
     });
@@ -183,22 +136,23 @@ function useRefundFormState(payment: PaymentResponse, refundFlow: RefundFlowStat
     method,
     setMethod,
     amountText,
-    handleAmountChange,
+    setAmountText,
     externalReference,
     setExternalReference,
     note,
     setNote,
-    allocationAmounts,
-    handleAllocChange,
+    allocationAmounts: allocations.effective,
+    handleAllocChange: allocations.handleChange,
     parsedAmount,
     isMobileMoney,
+    isAboveMaximum,
     handleSubmit,
   };
 }
 
 function RefundForm(props: RefundFormProps): ReactElement {
-  const { payment, labels, refundFlow, onCancel } = props;
-  const form = useRefundFormState(payment, refundFlow);
+  const { payment, maxAmount, labels, refundFlow, onCancel } = props;
+  const form = useRefundFormState(payment, refundFlow, maxAmount);
 
   return (
     <form onSubmit={(e) => void form.handleSubmit(e)} className="flex flex-col gap-4 py-2">
@@ -207,7 +161,9 @@ function RefundForm(props: RefundFormProps): ReactElement {
         isMobileMoney={form.isMobileMoney}
         externalReference={form.externalReference}
         disabled={refundFlow.isSubmitting}
-        labels={labels}
+        methodLabel={labels.method}
+        referenceLabel={labels.reference}
+        methodLabels={labels.methodLabels}
         onMethodChange={form.setMethod}
         onReferenceChange={form.setExternalReference}
       />
@@ -216,10 +172,13 @@ function RefundForm(props: RefundFormProps): ReactElement {
           id="refund-amount"
           inputMode="decimal"
           value={form.amountText}
-          onChange={(e) => form.handleAmountChange(e.target.value)}
+          onChange={(e) => form.setAmountText(e.target.value)}
           disabled={refundFlow.isSubmitting}
         />
       </FormField>
+      {form.isAboveMaximum ? (
+        <p className="text-caption text-error">{labels.invalidAmount}</p>
+      ) : null}
       <RefundAllocationsList
         allocations={payment.allocations}
         allocationAmounts={form.allocationAmounts}
@@ -240,7 +199,7 @@ function RefundForm(props: RefundFormProps): ReactElement {
       <RefundFooterActions
         errorMessage={refundFlow.errorMessage}
         isSubmitting={refundFlow.isSubmitting}
-        disabled={refundFlow.isSubmitting || form.parsedAmount <= 0}
+        disabled={refundFlow.isSubmitting || form.parsedAmount <= 0 || form.isAboveMaximum}
         cancelLabel={labels.cancel}
         submitLabel={labels.submit}
         onCancel={onCancel}
@@ -251,7 +210,7 @@ function RefundForm(props: RefundFormProps): ReactElement {
 
 export function RefundDialog(props: RefundDialogProps): ReactElement {
   const router = useRouter();
-  const { payment, labels } = props;
+  const { payment, maxAmount, labels } = props;
 
   const refundFlow = useRefundFlow({
     organizationId: props.organizationId,
@@ -272,6 +231,7 @@ export function RefundDialog(props: RefundDialogProps): ReactElement {
         <SheetContent title={labels.title} closeLabel={labels.cancel}>
           <RefundForm
             payment={payment}
+            maxAmount={maxAmount}
             labels={labels}
             refundFlow={refundFlow}
             onCancel={() => props.onOpenChange(false)}

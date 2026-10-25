@@ -21,6 +21,8 @@ export interface EnrollmentActionFailure {
 
 export interface CancelOutcome {
   readonly refundableAmount: Money | undefined;
+  /** What each period may still give back, as the cancel fixed it (3.32). */
+  readonly refundableByPeriod: readonly { enrollmentPeriodId: string; amount: Money }[];
 }
 
 function failureOf(error: unknown): EnrollmentActionFailure {
@@ -56,7 +58,10 @@ export function useEnrollmentActions(input: {
     try {
       const result = await transitionEnrollment({ ...input, action, idempotencyKey: newId() });
       if (action === ENROLLMENT_ACTION_KEY.CANCEL) {
-        setCancelOutcome({ refundableAmount: result.refundableAmount });
+        setCancelOutcome({
+          refundableAmount: result.refundableAmount,
+          refundableByPeriod: result.refundableByPeriod ?? [],
+        });
         return;
       }
       router.refresh();
