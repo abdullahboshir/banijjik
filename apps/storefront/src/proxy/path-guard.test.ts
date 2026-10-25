@@ -22,6 +22,15 @@ describe("path guard", () => {
     expect(isAllowedStorefrontPath([], ORGANIZATION_ID)).toBe(false);
   });
 
+  it("refuses a segment that hides a slash, so an encoded path cannot reach another organization", () => {
+    const climbOut = `../../orgs/${OTHER_ORGANIZATION_ID}`;
+    expect(isAllowedStorefrontPath(["orgs", ORGANIZATION_ID, climbOut], ORGANIZATION_ID)).toBe(
+      false,
+    );
+    expect(isAllowedStorefrontPath(["orgs", ORGANIZATION_ID, "a\\b"], ORGANIZATION_ID)).toBe(false);
+    expect(isAllowedPublicFilePath(["..%2F", "../secret"])).toBe(false);
+  });
+
   it("allows only the host lookup as the bare resolve path", () => {
     expect(isAllowedStorefrontPath(["resolve"], ORGANIZATION_ID)).toBe(true);
     expect(isAllowedStorefrontPath(["resolve", "extra"], ORGANIZATION_ID)).toBe(false);

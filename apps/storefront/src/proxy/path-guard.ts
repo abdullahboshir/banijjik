@@ -2,13 +2,19 @@
  * Decides which upstream paths the browser may reach through the proxy. The organization in the path
  * must be the one the Host resolved to: a path that names another business is refused before it is
  * forwarded (M.6 decision 10). Dot segments are refused so no path can climb out of the allowed prefix.
+ * The segments arrive decoded, so an encoded slash (`..%2F..%2Forgs%2F<other>`) shows up as a `/` inside
+ * one segment: that is refused too, or the upstream URL would gain path levels the guard never saw.
  */
 const DOT_SEGMENTS: ReadonlySet<string> = new Set([".", ".."]);
+const PATH_SEPARATORS = ["/", "\\"] as const;
 const RESOLVE_SEGMENT = "resolve";
 const ORGANIZATIONS_SEGMENT = "orgs";
 
 function hasDotSegment(segments: readonly string[]): boolean {
-  return segments.some((segment) => DOT_SEGMENTS.has(segment) || segment.includes("\\"));
+  return segments.some(
+    (segment) =>
+      DOT_SEGMENTS.has(segment) || PATH_SEPARATORS.some((separator) => segment.includes(separator)),
+  );
 }
 
 /** `segments` are the decoded parts after `/api/v1/storefront/`. */

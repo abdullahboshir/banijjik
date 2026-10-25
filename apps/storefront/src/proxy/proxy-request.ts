@@ -30,8 +30,10 @@ export function proxyError(code: ErrorCode, messageKey: string, status?: number)
   return Response.json({ error: { code, messageKey } }, { status: httpStatus });
 }
 
+/** Each decoded segment is encoded again, so the API receives exactly the path levels the guard checked. */
 function upstreamUrl(context: ProxyContext, route: ProxyRoute): string {
-  return `${context.apiOrigin}${route.apiPrefix}/${route.segments.join("/")}${context.search}`;
+  const path = route.segments.map((segment) => encodeURIComponent(segment)).join("/");
+  return `${context.apiOrigin}${route.apiPrefix}/${path}${context.search}`;
 }
 
 async function sendUpstream(context: ProxyContext, route: ProxyRoute): Promise<Response> {
