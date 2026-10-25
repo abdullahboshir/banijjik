@@ -122,4 +122,3 @@ export type { TopicCardLink, TopicCardProps } from "./components/topic-card.js";
 export { DashboardFrame } from "./components/dashboard-frame.js";
 export type { DashboardFrameProps } from "./components/dashboard-frame.js";
 export type { EmptyStateKind } from "./components/empty-state.js";
-export { renderMarkdown } from "./markdown/render-markdown.js";

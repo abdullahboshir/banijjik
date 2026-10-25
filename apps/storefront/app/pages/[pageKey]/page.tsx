@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import { readPublic } from "../../../src/api/storefront-api";
 import { storefrontTranslator } from "../../../src/i18n/translator";
 import { localizedText } from "../../../src/i18n/localized-text";
-import { renderMarkdown } from "@banijjik/ui";
+import { renderMarkdown } from "@banijjik/ui/markdown";
 import { pageKeyOfSlug } from "../../../src/static-pages/page-routes";
 import { requireOrganizationId } from "../../../src/site/current-site";
 

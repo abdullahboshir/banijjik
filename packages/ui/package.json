@@ -17,6 +17,10 @@
       "types": "./dist/components/toast.d.ts",
       "default": "./dist/components/toast.js"
     },
+    "./markdown": {
+      "types": "./dist/markdown/render-markdown.d.ts",
+      "default": "./dist/markdown/render-markdown.js"
+    },
     "./styles.css": "./src/styles.css"
   },
   "files": [

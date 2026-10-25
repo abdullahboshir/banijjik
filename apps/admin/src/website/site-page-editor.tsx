@@ -1,7 +1,8 @@
 "use client";
 
 import type { SitePageKey, SitePageResponse } from "@banijjik/contracts/website";
-import { Button, FormField, Textarea, TextInput, renderMarkdown } from "@banijjik/ui";
+import { Button, FormField, Textarea, TextInput } from "@banijjik/ui";
+import { renderMarkdown } from "@banijjik/ui/markdown";
 import { useTranslator } from "@banijjik/web-client/client";
 import { useState, type ReactElement } from "react";
 import { isVersionConflict } from "../directory/review-run";
@@ -15,6 +16,34 @@ export interface SitePageEditorProps {
 }
 
 type Locale = "bn" | "en";
+interface SaveEdits {
+  readonly organizationId: string;
+  readonly pageKey: SitePageKey;
+  readonly draft: SitePageDraft;
+  readonly version: number;
+  readonly setVersion: (version: number) => void;
+  readonly setIsBusy: (busy: boolean) => void;
+  readonly setNotice: (notice: string | undefined) => void;
+}
+
+/** A versioned save; a stale version shows the conflict text, nothing is overwritten. */
+async function saveEdits(input: SaveEdits): Promise<void> {
+  const [firstProblem] = draftProblemKeys(input.draft);
+  if (firstProblem !== undefined) return input.setNotice(firstProblem);
+  input.setIsBusy(true);
+  input.setNotice(undefined);
+  try {
+    const body = upsertBodyOf(input.draft, input.version);
+    const saved = await saveSitePage(input.organizationId, input.pageKey, body);
+    input.setVersion(saved.version);
+    input.setNotice("website.pages.saved");
+  } catch (error) {
+    input.setNotice(isVersionConflict(error) ? "website.pages.conflict" : "website.pages.failed");
+  } finally {
+    input.setIsBusy(false);
+  }
+}
+
 const LOCALES: readonly Locale[] = ["bn", "en"];
 
 /** One static page: a title and a Markdown body per language, a publish switch, a preview, a versioned save. */
@@ -28,22 +57,16 @@ export function SitePageEditor({
   const [version, setVersion] = useState(page.version);
   const [isBusy, setIsBusy] = useState(false);
   const [notice, setNotice] = useState<string | undefined>(undefined);
-  const problems = draftProblemKeys(draft);
-
-  async function save(): Promise<void> {
-    if (problems.length > 0) return setNotice(problems[0]);
-    setIsBusy(true);
-    setNotice(undefined);
-    try {
-      const saved = await saveSitePage(organizationId, page.pageKey, upsertBodyOf(draft, version));
-      setVersion(saved.version);
-      setNotice("website.pages.saved");
-    } catch (error) {
-      setNotice(isVersionConflict(error) ? "website.pages.conflict" : "website.pages.failed");
-    } finally {
-      setIsBusy(false);
-    }
-  }
+  const save = (): Promise<void> =>
+    saveEdits({
+      organizationId,
+      pageKey: page.pageKey,
+      draft,
+      version,
+      setVersion,
+      setIsBusy,
+      setNotice,
+    });
 
   return (
     <section className="flex flex-col gap-4 rounded-md border border-default p-4">
