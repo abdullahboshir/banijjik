@@ -66,6 +66,16 @@ export const salesManifest = defineModule({
       permissionKey: PERMISSION_KEY.SALES_ORDER_READ,
       order: 10,
     },
+    {
+      menuKey: "sales.returns",
+      surface: SURFACE.ADMIN,
+      groupKey: "sales",
+      labelTermKey: "menu.sales.returns",
+      path: "returns",
+      iconKey: "receipt",
+      permissionKey: PERMISSION_KEY.SALES_RETURN_READ,
+      order: 10,
+    },
   ],
   settings: [
     {

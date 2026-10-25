@@ -2,11 +2,11 @@
 
 import { ApprovalPinDialog } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import type { OrderApprovalFlow } from "./order-approval";
+import type { ApprovalDialogView } from "./order-approval";
 import type { OrderApprovalLabels } from "./order-labels";
 
 export interface OrderApprovalDialogProps {
-  readonly flow: OrderApprovalFlow;
+  readonly flow: ApprovalDialogView;
   readonly labels: OrderApprovalLabels;
 }
 

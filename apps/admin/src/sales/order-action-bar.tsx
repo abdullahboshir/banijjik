@@ -17,6 +17,10 @@ export interface OrderActionBarProps {
   readonly onCancel: () => void;
   readonly onDelete: () => void;
   readonly onReceivePayment: () => void;
+  /** The "Return" action of a completed order inside the return window (plan 3.5b card B). */
+  readonly returnAvailable: boolean;
+  readonly returnLabel: string;
+  readonly onReturn: () => void;
 }
 
 function TransitionButtons(props: OrderActionBarProps): ReactElement {
@@ -51,6 +55,11 @@ function SecondaryButtons(props: OrderActionBarProps): ReactElement {
   const { flags, actions, labels } = props;
   return (
     <>
+      {props.returnAvailable ? (
+        <Button variant="secondary" disabled={actions.isSaving} onClick={props.onReturn}>
+          {props.returnLabel}
+        </Button>
+      ) : null}
       {flags.canEdit ? (
         <Button variant="secondary" disabled={actions.isSaving} onClick={props.onEdit}>
           {labels.actions.edit}
@@ -96,7 +105,7 @@ function FailureNotice(props: OrderActionBarProps): ReactElement | null {
 
 /** The status actions the staff member may take, and the refusal that follows a failed one. */
 export function OrderActionBar(props: OrderActionBarProps): ReactElement | null {
-  if (!props.flags.hasActions) return null;
+  if (!props.flags.hasActions && !props.returnAvailable) return null;
   return (
     <PageSection title={props.labels.detail.actionsTitle}>
       <div className="flex flex-wrap gap-2">

@@ -24,6 +24,9 @@ interface PendingApproval {
   readonly onApproved: () => void;
 }
 
+/** What the PIN dialog needs: the state and the three handlers, without the retried action. */
+export type ApprovalDialogView = Omit<OrderApprovalFlow, "attempt">;
+
 export interface OrderApprovalFlow {
   readonly isOpen: boolean;
   readonly approvers: readonly ApproverSummary[];

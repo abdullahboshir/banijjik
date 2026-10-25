@@ -12,11 +12,14 @@ import { LazyOrderApprovalDialog } from "./lazy-order-approval-dialog";
 import { LazyOrderCancelSheet } from "./lazy-order-cancel-sheet";
 import { LazyOrderDeleteDialog } from "./lazy-order-delete-dialog";
 import { LazyOrderEditSheet } from "./lazy-order-edit-sheet";
+import { LazyReturnSheet } from "./lazy-return-sheet";
+import type { ReturnLabels } from "./return-labels";
 import { OrderActionBar } from "./order-action-bar";
 import { orderActionFlagsOf, type OrderDetailPermissions } from "./order-action-flags";
 import type { OrderLabels } from "./order-labels";
 import { OrderPaySheet } from "./order-pay-sheet";
 import { OrderPaymentSection } from "./order-payment-section";
+import { canOfferReturn } from "./return-model";
 import { useOrderActions } from "./use-order-actions";
 
 export type { OrderDetailPermissions } from "./order-action-flags";
@@ -41,9 +44,59 @@ export interface OrderDetailClientProps {
   readonly paymentLabels: PaymentLabels;
   /** The commission module is on, so the edit sheet offers the "Done by" select. */
   readonly performersEnabled: boolean;
+  /** Whether the return window of this order is still open for the business date (plan decision 2). */
+  readonly returnWindowOpen: boolean;
+  readonly returnLabels: ReturnLabels;
 }
 
-type DialogKey = "cancel" | "delete" | "edit" | "pay";
+type DialogKey = "cancel" | "delete" | "edit" | "pay" | "return";
+
+/** The cancel sheet of an order; the paid amount note and the contact way out live inside it. */
+function OrderCancelSlot(props: {
+  readonly props: OrderDetailClientProps & {
+    readonly canEdit: boolean;
+    readonly reportFailure: (error: unknown) => void;
+  };
+  readonly onOpenChange: (open: boolean) => void;
+  readonly onPickContact: () => void;
+}): ReactElement {
+  const { props: detail } = props;
+  return (
+    <LazyOrderCancelSheet
+      open
+      onOpenChange={props.onOpenChange}
+      organizationId={detail.organizationId}
+      order={detail.order}
+      hasNetPaid={detail.hasNetPaid}
+      canEdit={detail.canEdit}
+      labels={detail.labels}
+      onPickContact={props.onPickContact}
+      onFailure={detail.reportFailure}
+    />
+  );
+}
+
+/** The return sheet of a completed order (plan 3.5b card B), loaded when the staff member opens it. */
+function OrderReturnSheetSlot(props: {
+  readonly props: OrderDetailClientProps;
+  readonly onOpenChange: (open: boolean) => void;
+}): ReactElement {
+  const { props: detail } = props;
+  return (
+    <LazyReturnSheet
+      open
+      onOpenChange={props.onOpenChange}
+      orgSlug={detail.orgSlug}
+      organizationId={detail.organizationId}
+      order={detail.order}
+      allowedMethods={detail.allowedMethods}
+      methodLabels={detail.paymentLabels.method}
+      locale={detail.locale}
+      labels={detail.returnLabels}
+      approvalLabels={detail.labels.approval}
+    />
+  );
+}
 
 function OrderDetailSheets(
   props: OrderDetailClientProps & {
@@ -59,16 +112,10 @@ function OrderDetailSheets(
   return (
     <>
       {openDialog === "cancel" ? (
-        <LazyOrderCancelSheet
-          open
+        <OrderCancelSlot
+          props={props}
           onOpenChange={toggle("cancel")}
-          organizationId={props.organizationId}
-          order={order}
-          hasNetPaid={props.hasNetPaid}
-          canEdit={props.canEdit}
-          labels={labels}
           onPickContact={() => setOpenDialog("edit")}
-          onFailure={props.reportFailure}
         />
       ) : null}
       <OrderPaySheet
@@ -87,6 +134,9 @@ function OrderDetailSheets(
           router.refresh();
         }}
       />
+      {openDialog === "return" ? (
+        <OrderReturnSheetSlot props={props} onOpenChange={toggle("return")} />
+      ) : null}
       <LazyOrderEditSheet
         open={openDialog === "edit"}
         onOpenChange={toggle("edit")}
@@ -105,6 +155,25 @@ function OrderDetailSheets(
   );
 }
 
+/** The delete confirmation of a draft; confirming closes it and removes the draft. */
+function OrderDeleteSlot(props: {
+  readonly labels: OrderLabels;
+  readonly onClose: () => void;
+  readonly onConfirm: () => void;
+}): ReactElement {
+  return (
+    <LazyOrderDeleteDialog
+      open
+      onOpenChange={(open) => (open ? undefined : props.onClose())}
+      labels={props.labels}
+      onConfirm={() => {
+        props.onClose();
+        props.onConfirm();
+      }}
+    />
+  );
+}
+
 export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
   const { labels, order, permissions } = props;
   const [openDialog, setOpenDialog] = useState<DialogKey | undefined>();
@@ -117,6 +186,7 @@ export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
   });
   const flags = orderActionFlagsOf(order.status, permissions, props.usePacking);
   const hasDue = props.remainingDueMinor > 0;
+  const returnAvailable = permissions.canReturn && canOfferReturn(order, props.returnWindowOpen);
 
   return (
     <>
@@ -130,6 +200,9 @@ export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
         onCancel={() => setOpenDialog("cancel")}
         onDelete={() => setOpenDialog("delete")}
         onReceivePayment={() => setOpenDialog("pay")}
+        returnAvailable={returnAvailable}
+        returnLabel={props.returnLabels.sheet.open}
+        onReturn={() => setOpenDialog("return")}
       />
       <OrderPaymentSection
         order={order}
@@ -141,14 +214,10 @@ export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
         onReceivePayment={() => setOpenDialog("pay")}
       />
       {openDialog === "delete" ? (
-        <LazyOrderDeleteDialog
-          open
-          onOpenChange={(open) => setOpenDialog(open ? "delete" : undefined)}
+        <OrderDeleteSlot
           labels={labels}
-          onConfirm={() => {
-            setOpenDialog(undefined);
-            void actions.remove();
-          }}
+          onClose={() => setOpenDialog(undefined)}
+          onConfirm={() => void actions.remove()}
         />
       ) : null}
       <OrderDetailSheets

@@ -10,6 +10,7 @@ export interface OrderDetailPermissions {
   readonly canConfirm: boolean;
   readonly canCancel: boolean;
   readonly canReceive: boolean;
+  readonly canReturn: boolean;
 }
 
 export interface OrderActionFlags {

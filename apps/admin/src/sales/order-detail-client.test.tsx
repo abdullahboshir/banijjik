@@ -9,6 +9,7 @@ import { ApiError } from "../lib/api/api-error";
 import { paymentLabelsOf } from "../payments/payment-labels";
 import { OrderDetailClient } from "./order-detail-client";
 import { orderLabelsOf } from "./order-labels";
+import { returnLabelsOf } from "./return-labels";
 
 const { refresh, push } = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push }) }));
@@ -107,6 +108,8 @@ function renderClient(
   renderInBangla(
     <OrderDetailClient
       performersEnabled={false}
+      returnWindowOpen={false}
+      returnLabels={returnLabelsOf(banglaTranslator().t)}
       orgSlug="acme"
       organizationId="org-1"
       order={orderWith(status)}
@@ -122,6 +125,7 @@ function renderClient(
         canConfirm: true,
         canCancel: true,
         canReceive: true,
+        canReturn: false,
         ...overrides.permissions,
       }}
       usePacking={overrides.usePacking ?? false}

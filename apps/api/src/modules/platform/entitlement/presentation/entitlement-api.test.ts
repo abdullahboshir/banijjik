@@ -157,6 +157,7 @@ describe("the entitlement gate", () => {
       "contact.contacts",
       "organization.profile",
       "sales.orders",
+      "sales.returns",
       "organization.branding",
       "catalog.categories",
       "expense.expenses",

@@ -14,7 +14,10 @@ import {
   type PaymentMethod,
 } from "@banijjik/contracts/payment";
 import {
+  ORDER_RETURN_STATUS,
   PAYMENT_STATUS,
+  SALES_RETURN_WINDOW_DAYS_DEFAULT,
+  SALES_RETURN_WINDOW_DAYS_SETTING_KEY,
   SALES_USE_PACKING_DEFAULT,
   SALES_USE_PACKING_SETTING_KEY,
   type OrderResponse,
@@ -22,6 +25,7 @@ import {
 } from "@banijjik/contracts/sales";
 import { DetailHeader, EmptyState, MoneyText, StatusBadge, currencySymbolOf } from "@banijjik/ui";
 import type { Locale } from "@banijjik/i18n";
+import Link from "next/link";
 import type { ReactElement } from "react";
 import { loadCatalogLookups } from "../catalog/catalog-lookups";
 import { fetchBusinessResource, fetchBusinessResourceIfAllowed } from "../lib/api/server-resource";
@@ -38,6 +42,8 @@ import { LinesSection, SummarySection, TotalsSection } from "./order-detail-sect
 import { OrderHistorySection } from "./order-history";
 import { orderLabelsOf, orderUnitLabel, type OrderLabels } from "./order-labels";
 import { commissionEnabledOf, performerNamesOf } from "./order-performer-names";
+import { returnLabelsOf, type ReturnLabels } from "./return-labels";
+import { isWithinReturnWindow, todayInTimeZone } from "./return-model";
 
 const DUES_PAGE_LIMIT = 100;
 const AUDIT_PAGE_LIMIT = 50;
@@ -70,6 +76,11 @@ function resolveRemainingDue(order: OrderResponse, dueItem: DueItemResponse | un
   return order.paymentStatus === PAYMENT_STATUS.UNPAID ? order.totals.grandTotal.amount : 0;
 }
 
+function resolveReturnWindowDays(settingsResult: SettingsResponse | null | undefined): number {
+  const value = settingsResult?.settings[SALES_RETURN_WINDOW_DAYS_SETTING_KEY]?.value;
+  return typeof value === "number" ? value : SALES_RETURN_WINDOW_DAYS_DEFAULT;
+}
+
 function resolvePermissions(
   permissions: CallerPermissionsResponse,
   canWrite: boolean,
@@ -82,6 +93,7 @@ function resolvePermissions(
     canConfirm: atLocation(PERMISSION_KEY.SALES_ORDER_CONFIRM),
     canCancel: atLocation(PERMISSION_KEY.SALES_ORDER_CANCEL),
     canReceive: atLocation(PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE),
+    canReturn: atLocation(PERMISSION_KEY.SALES_RETURN_CREATE),
   };
 }
 
@@ -106,7 +118,7 @@ async function loadOrderDetailReads(access: OrgAccess, order: OrderResponse) {
   const [lookups, settingsResult, duesResult, auditResult, performersResult] = await Promise.all([
     loadCatalogLookups(access),
     fetchBusinessResourceIfAllowed<SettingsResponse>(
-      `/orgs/${organizationId}/settings?keys=${PAYMENT_METHODS_SETTING_KEY},${SALES_USE_PACKING_SETTING_KEY}&location=${order.locationId}`,
+      `/orgs/${organizationId}/settings?keys=${PAYMENT_METHODS_SETTING_KEY},${SALES_USE_PACKING_SETTING_KEY},${SALES_RETURN_WINDOW_DAYS_SETTING_KEY}&location=${order.locationId}`,
     ),
     order.contactId === null
       ? Promise.resolve(undefined)
@@ -176,7 +188,35 @@ function OrderDetailClientSlot(props: {
       labels={orderLabelsOf(translator.t)}
       paymentLabels={paymentLabelsOf(translator.t)}
       performersEnabled={reads.commissionOn}
+      returnWindowOpen={isWithinReturnWindow(
+        order.businessDate,
+        resolveReturnWindowDays(reads.settingsResult),
+        todayInTimeZone(access.timeZone),
+      )}
+      returnLabels={returnLabelsOf(translator.t)}
     />
+  );
+}
+
+/** The return status of the order and a link to its returns (plan 3.5b card B). */
+function OrderReturnsLine(props: {
+  readonly orgSlug: string;
+  readonly order: OrderResponse;
+  readonly labels: ReturnLabels;
+}): ReactElement {
+  const { order, labels } = props;
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-body text-secondary">
+      <span>{labels.orderReturnStatus[order.returnStatus]}</span>
+      {order.returnStatus === ORDER_RETURN_STATUS.NONE ? null : (
+        <Link
+          href={`/${props.orgSlug}/returns?orderId=${order.orderId}`}
+          className="inline-flex min-h-11 items-center text-brand underline"
+        >
+          {labels.orderLink}
+        </Link>
+      )}
+    </div>
   );
 }
 
@@ -232,6 +272,7 @@ export async function OrderDetailPage(props: {
   return (
     <div className="flex flex-col gap-6">
       <OrderHeader orgSlug={props.orgSlug} order={order} labels={labels} locale={locale} />
+      <OrderReturnsLine orgSlug={props.orgSlug} order={order} labels={returnLabelsOf(t)} />
       <OrderDetailClientSlot
         orgSlug={props.orgSlug}
         access={access}
