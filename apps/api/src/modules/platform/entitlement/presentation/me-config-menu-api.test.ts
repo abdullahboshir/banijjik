@@ -47,6 +47,7 @@ const SALES_RETURNS_MENU_KEY = "sales.returns";
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
   "settings.terms",
+  "website.pages",
   "settings.modules",
   "customField.fields",
 ];
