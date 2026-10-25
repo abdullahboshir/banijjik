@@ -166,3 +166,27 @@ readonly homeStatsFieldKey?: string | undefined;
 - The proxy is security-critical: its tests (decision 10) are part of M.6b's merge check; the lead reviews `apps/storefront` proxy and middleware files as strictly as T1 code.
 - Stats aggregation cost grows with approved listings; one aggregation per listing event is fine at pilot scale. If one business passes about 50,000 listings, move to counter updates: write it in the module README.
 - The first new Next.js app since admin and platform: copy their config, budgets script and browser stack, do not invent a new structure.
+
+## Refresh M.6c (2026-10-25, lead, based on `main d633f44`)
+**Start after M.6b merges** (it builds the storefront app, its proxy, layout, sign-in and the browser stack). Branch `s/M.6c-ui-storefront-account`, T2 (merge check). Decisions 15–17 stand; this section adds what the M.6a/M.6b work showed.
+
+- C1 **Field renderer in the storefront.** The admin renderer (`apps/admin/src/contacts/…`) lives in another app and cannot be imported. Build a small renderer in `apps/storefront/src/fields/` for exactly the field types the form read returns (`TEXT`, `LONG_TEXT`, `NUMBER`, `DECIMAL`, `BOOLEAN`, `DATE`, `SELECT`, `MULTI_SELECT`, `PHONE`, `EMAIL`, `URL`, `GEO_BD`), using `@banijjik/ui` inputs and the shared value schema from `packages/validation/src/custom-field` for client checks (the API stays the authority). `GEO_BD` is two dependent selects (division, then district; upazila when the field asks for it) from `packages/contracts/src/directory/geo-bd-registry.ts`. Labels come from the field's `label.bn` / `label.en`; no industry nouns in code (ADR-033). Moving the admin renderer into a shared package is out of scope.
+- C2 **Fix the submit 500 (found by M.6b):** `SubmitMyListingUseCase` (directory) lets a `ZodError` escape when a required custom field is missing, so the storefront answers 500. Convert it to the normal `VALIDATION_ERROR` with `details.fields` (field path `customFields.<fieldKey>`), the same shape the draft save uses. Test: `submitting a listing without a required field answers 422 with the field path`. The form shows the field errors on their steps.
+- C3 **Steps:** one step per template section (`sectionKey`, in template order), the required fields of a step must be valid before "Next"; the draft saves on every step change (`PUT /my/listing` with `version`; a 409 shows the conflict message and reloads). Submit lists the consent checkboxes from `GET /directory/form` (the consents the template defines) and sends their keys.
+- C4 **Credits and purchases** follow the M.5 API (`/my/credits`, `/credit-packs`, `POST /my/credit-purchases` with `Idempotency-Key`, own purchases with cancel). Payment info text comes from the business settings the API returns; nothing is hard-coded.
+- C5 **Erase** uses the M.7 A2 OTP step: a separate code is sent to the customer's phone; the account and listing go away only after the code. Export downloads the JSON the API returns.
+- C6 **Admin page editor** (decision 17): Markdown per locale, preview rendered by the storefront's Markdown rules from M.6b (`apps/storefront/src/markdown`). The admin cannot import it either: move the pure Markdown renderer into `packages/ui` (or a new folder in an existing package) so both apps use the same rules, or render the preview through a server action that calls the same function. Pick the package move if it is a pure function without Next dependencies; otherwise stop and ask.
+- C7 **Browser tests** reuse the M.6b helpers (`publishTemplate`, `grantDirectoryModule`, `latestSmsCode` with `sentAfter`, the GEO_BD sample). The stacks run the worker: wait for results by reloading or polling, never race them. Node on Windows cannot resolve `*.sites.localhost`: tests that fetch with Node run on CI; Chrome resolves it everywhere.
+- C8 **Budgets:** storefront ≤ 170 KiB per route measured as M.6b measures it; admin `website/pages` ≤ 180 KiB. The steps form, the credit purchase sheet and the erase dialog load lazily.
+
+### Files (M.6c)
+| Path | Create/Change | Owns / add-only | Purpose |
+|---|---|---|---|
+| `apps/storefront/src/**` (account pages, `fields/`, credits, connections, report, block, export, erase) | Create/Change | owns | decisions 15–16, C1, C3–C5 |
+| `apps/api/src/modules/commerce/directory/**` | Change | owns | C2 |
+| `packages/ui` (Markdown renderer moved) or a server action | Change | owns | C6 |
+| `apps/admin/src/website/**`, `apps/admin/app/[orgSlug]/(app)/website/**`, the website manifest menu entry | Create/Change | owns / add-only | decision 17 |
+| `packages/i18n` | Change | add-only | storefront account and admin editor text |
+| handoff `docs/handoffs/M.6c-ui.md`, STATUS row M.6 | Change/Create | | |
+
+### Tests (M.6c): the M.6c list in "Tests" above, plus C2's API test and unit tests of the field renderer (each type, GEO_BD dependent selects, required check per step).
