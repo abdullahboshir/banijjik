@@ -1,0 +1,47 @@
+/**
+ * POS contracts of card 3.9 (`@banijjik/contracts/pos`).
+ * The main index is at its line limit, so this vocabulary has its own entry.
+ */
+export {
+  POS_ALLOW_CREDIT_SALE_DEFAULT,
+  POS_ALLOW_CREDIT_SALE_SETTING_KEY,
+  POS_API_MESSAGE_KEY_LIST,
+  POS_API_MESSAGE_KEYS,
+  POS_CATALOG_SNAPSHOT_DEFAULT_LIMIT,
+  POS_CATALOG_SNAPSHOT_MAX_LIMIT,
+  POS_DEVICE_COOKIE_MAX_AGE_DAYS,
+  POS_DEVICE_COOKIE_NAME,
+  POS_DEVICE_COOKIE_PATH,
+  POS_DEVICE_NAME_MAX_LENGTH,
+  POS_DEVICE_STATUS,
+  POS_MAX_SALE_PAYMENTS,
+  POS_PAIRING_RULES,
+  POS_RECEIPT_FOOTER_DEFAULT,
+  POS_RECEIPT_FOOTER_MAX_LENGTH,
+  POS_RECEIPT_FOOTER_SETTING_KEY,
+  POS_REQUIRE_SHIFT_DEFAULT,
+  POS_REQUIRE_SHIFT_SETTING_KEY,
+  POS_RULE_KEY,
+  POS_SALE_PAYMENT_METHODS,
+  POS_SESSION_NOTE_MAX_LENGTH,
+  POS_SESSION_STATUS,
+  type PosCatalogRemovedRow,
+  type PosCatalogRow,
+  type PosCatalogSnapshotResponse,
+  type PosDeviceCreatedResponse,
+  type PosDeviceResponse,
+  type PosDeviceStatus,
+  type PosMethodTotal,
+  type PosPairResponse,
+  type PosRuleKey,
+  type PosSalePaymentResponse,
+  type PosSaleResponse,
+  type PosSessionResponse,
+  type PosSessionStatus,
+  type PosZReport,
+} from "./pos-contracts.js";
+export {
+  POS_EVENT_TYPE,
+  type PosEventType,
+  type PosRegisterClosedPayload,
+} from "./pos-event-type.js";

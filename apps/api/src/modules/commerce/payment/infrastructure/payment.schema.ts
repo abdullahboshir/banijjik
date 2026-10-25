@@ -58,6 +58,7 @@ export interface PaymentDocument {
   businessDate: string;
   approval: PaymentApprovalSubdocument | null;
   note: string | null;
+  posSessionId: string | null;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -141,6 +142,7 @@ export const paymentSchema = new Schema<PaymentDocument>(
     businessDate: { type: String, required: true },
     approval: { type: approvalSchema, default: null },
     note: { type: String, default: null },
+    posSessionId: { type: String, default: null },
     version: { type: Number, required: true, default: 1 },
     ...auditFields,
   },
@@ -149,6 +151,8 @@ export const paymentSchema = new Schema<PaymentDocument>(
 
 paymentSchema.index({ organizationId: 1, paymentId: 1 }, { unique: true });
 paymentSchema.index({ organizationId: 1, paymentNumber: 1 });
+// The Z-report and the expected cash of a register read a session by method and direction (plan 3.9 decision 5).
+paymentSchema.index({ organizationId: 1, posSessionId: 1, method: 1, direction: 1 });
 paymentSchema.index({ organizationId: 1, locationId: 1, createdAt: -1 });
 paymentSchema.index({ organizationId: 1, contactId: 1, createdAt: -1 });
 paymentSchema.index({

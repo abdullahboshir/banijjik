@@ -38,6 +38,19 @@ export interface TenantRoutersInput {
   readonly coreRouters: CoreTenantRouters;
 }
 
+/** The module routers added after the first wave, in the order they joined; probe routers of tests follow. */
+function laterModuleRouters(
+  coreRouters: CoreTenantRouters,
+  probeRouters: readonly Router[],
+): readonly Router[] {
+  return [
+    coreRouters.enrollmentRouter,
+    coreRouters.websiteRouter,
+    coreRouters.posRouter,
+    ...probeRouters,
+  ];
+}
+
 /**
  * Pipeline order: authenticate, tenantContext, locationAccess, entitlement, permission, validate,
  * controller (01 section 3). The permission check is a per-route guard (`permission(key)`).
@@ -98,7 +111,7 @@ export function buildTenantRouters(input: TenantRoutersInput): readonly Router[]
     paymentRouter,
     commissionRouter,
     salesRouter,
-    ...[input.coreRouters.enrollmentRouter, input.coreRouters.websiteRouter, ...tenantRouters],
+    ...laterModuleRouters(input.coreRouters, tenantRouters),
     ...tenantRouterFactories.map((build) => build(permission)),
   ];
 }

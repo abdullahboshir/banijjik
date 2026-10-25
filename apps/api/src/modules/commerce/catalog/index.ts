@@ -98,6 +98,14 @@ export type {
   DefaultStockItemPort,
   InventoryComponentsPort,
 } from "./application/ports/inventory-ports.js";
+export {
+  buildPosSnapshotReader,
+  type PosSnapshotItem,
+  type PosSnapshotKey,
+  type PosSnapshotPage,
+  type PosSnapshotQuery,
+  type PosSnapshotReader,
+} from "./infrastructure/mongo-pos-snapshot.reader.js";
 export { MongoOfferingRepository } from "./infrastructure/mongo-offering.repository.js";
 export { MongoCategoryRepository } from "./infrastructure/mongo-category.repository.js";
 export {

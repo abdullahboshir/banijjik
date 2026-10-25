@@ -65,6 +65,7 @@ function toDomain(doc: PaymentDocument): Payment {
         }
       : null,
     note: doc.note,
+    posSessionId: doc.posSessionId ?? null,
     version: doc.version,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
@@ -114,6 +115,7 @@ function toPaymentDocument(payment: Payment): PaymentDocument {
         }
       : null,
     note: props.note,
+    posSessionId: props.posSessionId ?? null,
     version: props.version,
     createdAt: props.createdAt,
     updatedAt: props.updatedAt,

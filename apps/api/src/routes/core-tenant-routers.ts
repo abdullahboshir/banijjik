@@ -37,6 +37,7 @@ import { buildCommissionTenantRouter } from "./commission-adapters.js";
 import { buildPaymentTenantRouterFor } from "./payment-tenant-router.js";
 import { buildBookkeepingTenantRouter } from "./bookkeeping-tenant-router.js";
 import { buildSalesTenantRouter } from "./sales-tenant-router.js";
+import { buildPosTenantRouter, type PosRouterInput } from "./pos-adapters.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -50,6 +51,8 @@ export interface CoreTenantRouterInput {
   readonly manifests: readonly ModuleManifest[];
   readonly rateLimiter: RateLimiter;
   readonly storage: StorageConfig;
+  /** The POS pairing secret and cookie flag, read from the config in routes/v1.ts. */
+  readonly pos: PosRouterInput["pos"];
   /** Tests lower the quota, shorten the upload timeout or swap the storage. Production passes none. */
   readonly fileOverrides?: FileModuleDependencies["overrides"];
 }
@@ -75,6 +78,7 @@ export interface CoreTenantRouters {
   readonly salesRouter: Router;
   readonly enrollmentRouter: Router;
   readonly websiteRouter: Router;
+  readonly posRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -142,6 +146,7 @@ function buildCommerceTenantRouters(
   | "paymentRouter"
   | "commissionRouter"
   | "salesRouter"
+  | "posRouter"
 > {
   const shared = {
     clock: input.clock,
@@ -171,6 +176,7 @@ function buildCommerceTenantRouters(
     paymentRouter: buildPaymentTenantRouterFor(shared),
     commissionRouter: buildCommissionTenantRouter(shared),
     salesRouter: buildSalesTenantRouter(shared),
+    posRouter: buildPosTenantRouter({ ...shared, pos: input.pos }),
     enrollmentRouter: buildEnrollmentTenantRouter(shared),
     websiteRouter: buildWebsiteAdminRouter({
       clock: input.clock,

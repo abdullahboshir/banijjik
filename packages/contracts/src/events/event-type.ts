@@ -11,6 +11,7 @@ import { DIRECTORY_EVENT_TYPE } from "../directory/directory-event-type.js";
 import { IAM_EVENT_TYPE } from "../iam/iam-event-type.js";
 import { ORGANIZATION_EVENT_TYPE } from "../organization/organization-event-type.js";
 import { PAYMENT_EVENT_TYPE } from "../payment/payment-event-type.js";
+import { POS_EVENT_TYPE } from "../pos/pos-event-type.js";
 import { PRICING_EVENT_TYPE } from "../pricing/pricing-event-type.js";
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 import { SETTINGS_EVENT_TYPE } from "../settings/settings-event-type.js";
@@ -36,6 +37,7 @@ export const EVENT_TYPE = Object.freeze({
   ...COMMISSION_EVENT_TYPE,
   ...SALES_EVENT_TYPE,
   ...WEBSITE_EVENT_TYPE,
+  ...POS_EVENT_TYPE,
 } as const);
 
 export type EventType = (typeof EVENT_TYPE)[keyof typeof EVENT_TYPE];

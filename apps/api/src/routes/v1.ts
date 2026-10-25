@@ -46,6 +46,7 @@ import { registerWebsiteModels } from "../modules/commerce/website/index.js";
 import { registerPaymentModels } from "../modules/commerce/payment/index.js";
 import { registerCommissionModels } from "../modules/commerce/commission/index.js";
 import { registerSalesModels } from "../modules/commerce/sales/index.js";
+import { registerPosModels } from "../modules/commerce/pos/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
@@ -130,6 +131,7 @@ export function registerModuleModels(): void {
   registerSalesModels();
   registerEnrollmentModels();
   registerWebsiteModels();
+  registerPosModels();
   registerSettingsModels();
   registerFileModels();
 }
@@ -245,6 +247,10 @@ function buildCoreRouters(input: {
     manifests: registry.all(),
     rateLimiter: dependencies.rateLimiter,
     storage: dependencies.config.storage,
+    pos: {
+      pairingSecret: dependencies.config.storefront.otpSecret,
+      isSecureCookies: dependencies.config.nodeEnv === "production",
+    },
     ...(dependencies.fileOverrides === undefined
       ? {}
       : { fileOverrides: dependencies.fileOverrides }),

@@ -45,6 +45,8 @@ export type ListingReportId = Id<"ListingReport">;
 export type ListingBlockId = Id<"ListingBlock">;
 export type SitePageId = Id<"SitePage">;
 export type DirectoryListingStatsId = Id<"DirectoryListingStats">;
+export type PosDeviceId = Id<"PosDevice">;
+export type PosSessionId = Id<"PosSession">;
 
 export class InvalidIdError extends Error {
   constructor() {

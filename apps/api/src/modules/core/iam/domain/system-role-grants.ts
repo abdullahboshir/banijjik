@@ -6,6 +6,7 @@ import {
   type PermissionKey,
   type SystemRoleKey,
 } from "@banijjik/contracts";
+import { POS_ROLE_GRANTS } from "./pos-role-grants.js";
 
 /**
  * What a system role gets from one module (10-MODULE-CATALOG section 10).
@@ -30,7 +31,7 @@ const CONTACT_DAILY_KEYS: readonly PermissionKey[] = [
 /** Riders and viewers read contacts only: not the website login of a customer. */
 const CONTACT_READ_ONLY_KEYS: readonly PermissionKey[] = [PERMISSION_KEY.CONTACT_CONTACT_READ];
 
-type ModuleGrants = Readonly<Record<SystemRoleKey, GrantSpec>>;
+export type ModuleGrants = Readonly<Record<SystemRoleKey, GrantSpec>>;
 
 /**
  * The code template of the six system roles, one row per module (ADR-054). A release that changes
@@ -233,6 +234,7 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
     [SYSTEM_ROLE_KEY.RIDER]: "NONE",
     [SYSTEM_ROLE_KEY.VIEWER]: "READ",
   },
+  pos: POS_ROLE_GRANTS,
   commission: {
     [SYSTEM_ROLE_KEY.OWNER]: "ALL",
     [SYSTEM_ROLE_KEY.MANAGER]: "ALL",

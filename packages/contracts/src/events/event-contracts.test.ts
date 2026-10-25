@@ -15,6 +15,7 @@ import { PAYMENT_EVENT_TYPE } from "../payment/payment-event-type.js";
 import { PRICING_EVENT_TYPE } from "../pricing/pricing-event-type.js";
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 import { WEBSITE_EVENT_TYPE } from "../website/website-event-type.js";
+import { POS_EVENT_TYPE } from "../pos/pos-event-type.js";
 import { SETTINGS_EVENT_TYPE } from "../settings/settings-event-type.js";
 import { EVENT_TYPE } from "./event-type.js";
 import { OUTBOX_STATUS } from "./outbox-status.js";
@@ -42,6 +43,7 @@ describe("event types", () => {
       ...Object.values(COMMISSION_EVENT_TYPE),
       ...Object.values(SALES_EVENT_TYPE),
       ...Object.values(WEBSITE_EVENT_TYPE),
+      ...Object.values(POS_EVENT_TYPE),
       ...Object.values(ENROLLMENT_EVENT_TYPE),
     ].sort();
 

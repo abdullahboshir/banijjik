@@ -65,6 +65,7 @@ import type {
 import type { OrderEventPayload, SalesReturnEventPayload } from "../sales/sales-event-type.js";
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 import { WEBSITE_EVENT_TYPE, type SitePageUpdatedPayload } from "../website/index.js";
+import { POS_EVENT_TYPE, type PosRegisterClosedPayload } from "../pos/pos-event-type.js";
 
 export interface JournalPostedPayload {
   readonly journalEntryId: string;
@@ -215,4 +216,5 @@ export interface EventPayloadMap {
   readonly [SALES_EVENT_TYPE.ORDER_CANCELLED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.SALES_RETURN_CREATED]: SalesReturnEventPayload;
   readonly [WEBSITE_EVENT_TYPE.PAGE_UPDATED]: SitePageUpdatedPayload;
+  readonly [POS_EVENT_TYPE.REGISTER_CLOSED]: PosRegisterClosedPayload;
 }

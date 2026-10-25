@@ -25,6 +25,8 @@ export interface PaymentProps {
   readonly businessDate: string;
   readonly approval: PaymentApprovalSnapshot | null;
   readonly note: string | null;
+  /** The register session a till payment belongs to (11 section 7.1); null for every other payment. */
+  readonly posSessionId?: string | null;
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;

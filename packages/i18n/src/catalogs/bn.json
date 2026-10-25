@@ -506,5 +506,20 @@
   "errors.order_total_below_paid": "অর্ডারের মোট মূল্য পরিশোধিত নিট অর্থের চেয়ে কম হতে পারে না।",
   "errors.order_cancel_needs_contact": "যোগাযোগ ছাড়া অর্ডার বাতিল করার আগে পরিশোধিত অর্থ ফেরত দিন।",
   "errors.order_contact_locked_by_payment": "এই অর্ডারের যোগাযোগ পরিবর্তন করার আগে পরিশোধিত অর্থ ফেরত দিন।",
-  "account.commission": "আমার কমিশন"
+  "account.commission": "আমার কমিশন",
+  "permission.pos.device.manage": "POS ডিভাইস যুক্ত করা, দেখা ও বাতিল করা",
+  "permission.pos.session.open": "ব্রাউজারকে POS ডিভাইসের সাথে যুক্ত করা ও রেজিস্টার খোলা",
+  "permission.pos.sale.create": "POS-এ বিক্রি করা",
+  "permission.pos.register.close": "রেজিস্টার বন্ধ করা ও ক্যাশ গোনা",
+  "permission.pos.report.read": "সব রেজিস্টারের Z-রিপোর্ট দেখা",
+  "errors.pos_pairing_invalid": "কোডটি সঠিক নয়, মেয়াদ শেষ হয়েছে বা আগেই ব্যবহার করা হয়েছে।",
+  "errors.pos_device_required": "এই শাখার জন্য এই ব্রাউজারকে একটি POS ডিভাইসের সাথে যুক্ত থাকতে হবে।",
+  "errors.pos_session_already_open": "এই ডিভাইসের রেজিস্টার আগেই খোলা আছে।",
+  "errors.pos_session_required": "বিক্রির আগে রেজিস্টার খুলুন।",
+  "errors.pos_session_closed": "এই রেজিস্টার আগেই বন্ধ করা হয়েছে।",
+  "errors.pos_payment_short": "পেমেন্ট বিলের চেয়ে কম। বাকিতে বিক্রি চালু এবং গ্রাহক যুক্ত থাকলেই বাকি রাখা যায়।",
+  "errors.pos_overpayment_not_cash": "পেমেন্ট বিলের চেয়ে বেশি। সঠিক অঙ্ক পাঠান এবং নগদে হাতে পাওয়া টাকা আলাদা ঘরে লিখুন।",
+  "errors.pos_cash_tendered_invalid": "নগদে পাওয়া টাকা নগদ পেমেন্টের চেয়ে কম, অথবা কোনো নগদ পেমেন্ট নেই।",
+  "errors.pos_tender_required": "এই বিলের জন্য একটি পেমেন্ট বা স্টোর ক্রেডিট যোগ করুন।",
+  "errors.pos_currency_mismatch": "সব অঙ্ক আপনার ব্যবসার মুদ্রায় হতে হবে।"
 }

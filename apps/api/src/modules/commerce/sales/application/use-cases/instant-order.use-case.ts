@@ -5,6 +5,7 @@ import {
   ORDER_SOURCE,
   SALES_EVENT_TYPE,
   type OrderResponse,
+  type OrderSource,
 } from "@banijjik/contracts/sales";
 import {
   asId,
@@ -45,7 +46,7 @@ import {
  */
 
 /** Everything the transaction needs, gathered before the unit of work opens. */
-interface InstantSaleContext {
+export interface PreparedInstantSale {
   readonly organizationId: OrderWriteInput["organizationId"];
   readonly actorUserId: UserId;
   readonly locationId: string;
@@ -56,28 +57,32 @@ interface InstantSaleContext {
   readonly settings: SalesSettings;
   readonly prepared: PreparedLines;
   readonly ownerExempt: boolean;
+  readonly source: OrderSource;
+  /** What the customer owes for these lines, known before the transaction so the caller can check the tender. */
+  readonly grandTotal: Money;
+}
+
+export interface InstantSaleInput extends OrderWriteInput {
+  readonly actorUserId: UserId;
+  readonly body: OrderBodyBase & { readonly lines: readonly OrderLineInput[] };
+  /** Where the sale was rung up; the admin route leaves it out and gets ADMIN. */
+  readonly source?: OrderSource;
 }
 
 export class InstantOrderUseCase {
   constructor(private readonly dependencies: SalesDependencies) {}
 
-  async execute(
-    input: OrderWriteInput & {
-      readonly actorUserId: UserId;
-      readonly body: OrderBodyBase & { readonly lines: readonly OrderLineInput[] };
-    },
-  ): Promise<OrderResponse> {
-    const ctx = await this.buildContext(input);
-    const order = await this.dependencies.unitOfWork.run(() => this.inTransaction(ctx));
+  async execute(input: InstantSaleInput): Promise<OrderResponse> {
+    const prepared = await this.prepare(input);
+    const order = await this.dependencies.unitOfWork.run(() => this.commit(prepared));
     return toOrderResponse(order, await this.dependencies.payments.readTotals(order.orderId));
   }
 
-  private async buildContext(
-    input: OrderWriteInput & {
-      readonly actorUserId: UserId;
-      readonly body: OrderBodyBase & { readonly lines: readonly OrderLineInput[] };
-    },
-  ): Promise<InstantSaleContext> {
+  /**
+   * Quote, price and check everything that needs no transaction. The POS reads the grand total
+   * from it before it opens its own unit of work, so the tender can be checked first.
+   */
+  async prepare(input: InstantSaleInput): Promise<PreparedInstantSale> {
     assertLocationAllowed(input.body.locationId, input.allowedLocationIds);
     const contactId =
       input.body.contactId === undefined ? null : asId<ContactId>(input.body.contactId);
@@ -104,10 +109,13 @@ export class InstantOrderUseCase {
       settings,
       prepared,
       ownerExempt,
+      source: input.source ?? ORDER_SOURCE.ADMIN,
+      grandTotal: prepared.totals.grandTotal,
     };
   }
 
-  private async inTransaction(ctx: InstantSaleContext): Promise<Order> {
+  /** Writes the order, its stock movements and its summary. It must run inside a unit of work. */
+  async commit(ctx: PreparedInstantSale): Promise<Order> {
     const approval = await resolveApproval({
       approvalsRequired: ctx.prepared.approvalsRequired,
       orderId: null,
@@ -159,7 +167,7 @@ export class InstantOrderUseCase {
   }
 
   private placeDraft(
-    ctx: InstantSaleContext,
+    ctx: PreparedInstantSale,
     orderNumber: string,
     approval: Order["approval"],
   ): Order {
@@ -174,7 +182,7 @@ export class InstantOrderUseCase {
       lines: ctx.prepared.lines,
       totals: ctx.prepared.totals,
       businessDate: businessDateOf(ctx.now, ctx.timeZone),
-      source: ORDER_SOURCE.ADMIN,
+      source: ctx.source,
       note: ctx.body.note ?? null,
       orderDiscount: ctx.body.orderDiscount ?? null,
       customFields: ctx.body.customFields ?? {},
@@ -198,7 +206,7 @@ export class InstantOrderUseCase {
    * the level's average cost is captured at commit time (ADR-125).
    */
   private async settleStock(
-    ctx: InstantSaleContext,
+    ctx: PreparedInstantSale,
     orderId: OrderId,
   ): Promise<ReadonlyMap<string, Money | null>> {
     const stockInput = stockInputOf({
@@ -226,7 +234,7 @@ export class InstantOrderUseCase {
     return unitCosts;
   }
 
-  private async publishAndAudit(ctx: InstantSaleContext, order: Order): Promise<void> {
+  private async publishAndAudit(ctx: PreparedInstantSale, order: Order): Promise<void> {
     await this.dependencies.events.publish(
       SALES_EVENT_TYPE.ORDER_PLACED,
       { orderId: order.orderId },

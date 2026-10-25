@@ -64,6 +64,8 @@ describe("audit vocabulary", () => {
       "checkIn",
       "listingReport",
       "sitePage",
+      "posDevice",
+      "posSession",
     ]);
   });
 });

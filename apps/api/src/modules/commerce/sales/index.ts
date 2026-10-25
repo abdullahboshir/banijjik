@@ -25,6 +25,12 @@ import { buildExpireDraftsJob } from "./application/jobs/expire-drafts.job.js";
 import { buildAutoCancelPlacedJob } from "./application/jobs/auto-cancel-placed.job.js";
 import { buildSalesTenantRouter } from "./presentation/order-tenant.router.js";
 import { buildSalesReturnTenantRouter } from "./presentation/sales-return-tenant.router.js";
+import {
+  buildInstantSaleService,
+  type InstantSaleInput,
+  type InstantSaleService,
+  type PreparedInstantSale,
+} from "./application/instant-sale.service.js";
 
 export { salesManifest } from "./module.manifest.js";
 export { registerSalesModels } from "./infrastructure/register-sales-models.js";
@@ -64,6 +70,18 @@ export type { PaymentTotals } from "./domain/payment-status.js";
 export { buildSalesReturnPostingSourceAdapter } from "./infrastructure/sales-return-posting-source.adapter.js";
 export function buildSalesReturnRepository(): SalesReturnRepository {
   return new MongoSalesReturnRepository();
+}
+
+export type { InstantSaleInput, InstantSaleService, PreparedInstantSale };
+export {
+  buildOrderTotalsReader,
+  type OrderTotalsReader,
+  type OrderTotalsRow,
+} from "./infrastructure/mongo-order-totals.reader.js";
+
+/** The instant sale in two steps, for the POS that owns the unit of work (plan 3.9 decision 4). */
+export function buildInstantSale(ports: SalesTenantPorts): InstantSaleService {
+  return buildInstantSaleService(buildSalesDependencies(ports));
 }
 
 /** The composition root passes the order store to adapters that live outside this module. */

@@ -506,5 +506,20 @@
   "errors.order_total_below_paid": "The order total cannot be less than the net amount paid.",
   "errors.order_cancel_needs_contact": "Refund the paid amount before cancelling an order without a contact.",
   "errors.order_contact_locked_by_payment": "Refund the paid amount before changing this order's contact.",
-  "account.commission": "My commission"
+  "account.commission": "My commission",
+  "permission.pos.device.manage": "Add, list and revoke POS devices",
+  "permission.pos.session.open": "Pair a browser as a POS device and open the register",
+  "permission.pos.sale.create": "Ring up sales at the POS",
+  "permission.pos.register.close": "Close the register and count the drawer",
+  "permission.pos.report.read": "View Z-reports of all registers",
+  "errors.pos_pairing_invalid": "The code is wrong, has expired or was already used.",
+  "errors.pos_device_required": "This browser must be paired with a POS device for this location.",
+  "errors.pos_session_already_open": "The register of this device is already open.",
+  "errors.pos_session_required": "Open the register before selling.",
+  "errors.pos_session_closed": "This register is already closed.",
+  "errors.pos_payment_short": "The payments are less than the bill. A due is allowed only when credit sales are on and a customer is attached.",
+  "errors.pos_overpayment_not_cash": "The payments are more than the bill. Send the exact amounts and put the cash handed over in the cash tendered field.",
+  "errors.pos_cash_tendered_invalid": "The cash handed over is less than the cash payment, or there is no cash payment.",
+  "errors.pos_tender_required": "Add a payment or store credit for this bill.",
+  "errors.pos_currency_mismatch": "Every amount must be in your business currency."
 }

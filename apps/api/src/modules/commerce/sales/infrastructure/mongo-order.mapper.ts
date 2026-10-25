@@ -38,7 +38,7 @@ function discountOf(row: ManualDiscountDocument | null): ManualDiscount | null {
   return row === null ? null : { type: row.type, value: row.value };
 }
 
-function totalsOf(row: TotalsDocument): OrderTotals {
+export function totalsOf(row: TotalsDocument): OrderTotals {
   return {
     subtotal: moneyOf(row.subtotal),
     discountTotal: moneyOf(row.discountTotal),

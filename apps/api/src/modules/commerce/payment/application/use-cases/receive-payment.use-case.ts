@@ -57,6 +57,8 @@ export interface ReceivePaymentInput {
   readonly receivedByMemberId: string;
   readonly actorUserId: UserId | null;
   readonly note?: string | null;
+  /** Set by the POS: the open register session this payment is counted in. */
+  readonly posSessionId?: string | null;
 }
 
 function buildReceivedPayment(opts: {
@@ -85,6 +87,7 @@ function buildReceivedPayment(opts: {
     businessDate,
     approval: null,
     note: input.note ?? null,
+    posSessionId: input.posSessionId ?? null,
     version: 1,
     createdAt: now,
     updatedAt: now,

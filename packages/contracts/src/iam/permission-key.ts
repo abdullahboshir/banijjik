@@ -127,6 +127,11 @@ export const PERMISSION_KEY = {
   ENROLLMENT_CHECK_IN_CREATE: "enrollment.checkIn.create",
   WEBSITE_PAGE_READ: "website.page.read",
   WEBSITE_PAGE_UPDATE: "website.page.update",
+  POS_DEVICE_MANAGE: "pos.device.manage",
+  POS_SESSION_OPEN: "pos.session.open",
+  POS_SALE_CREATE: "pos.sale.create",
+  POS_REGISTER_CLOSE: "pos.register.close",
+  POS_REPORT_READ: "pos.report.read",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

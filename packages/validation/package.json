@@ -53,6 +53,10 @@
     "./sales": {
       "types": "./dist/sales/index.d.ts",
       "default": "./dist/sales/index.js"
+    },
+    "./pos": {
+      "types": "./dist/pos/index.d.ts",
+      "default": "./dist/pos/index.js"
     }
   },
   "files": [
