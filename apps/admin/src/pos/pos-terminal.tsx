@@ -3,7 +3,7 @@
 import type { CurrencyCode } from "@banijjik/contracts";
 import type { Money } from "@banijjik/contracts/payment";
 import type { PosCatalogRow, PosSessionResponse } from "@banijjik/contracts/pos";
-import { Button } from "@banijjik/ui";
+import { Button, type DisplayLocale } from "@banijjik/ui";
 import { newId } from "@banijjik/ids";
 import { useEffect, useState, type ReactElement } from "react";
 import { openSession, pairDevice } from "./pos-api";
@@ -16,6 +16,7 @@ import { loadAllCatalogRows, resolveStartPhase, type PosStartPhase } from "./pos
 export interface PosTerminalProps {
   readonly organizationId: string;
   readonly currency: CurrencyCode;
+  readonly locale: DisplayLocale;
   readonly labels: PosLabels;
 }
 
@@ -23,7 +24,7 @@ export interface PosTerminalProps {
 type TerminalView = PosStartPhase | { readonly kind: "loading" } | { readonly kind: "failed" };
 
 export function PosTerminal(props: PosTerminalProps): ReactElement {
-  const { organizationId, currency, labels } = props;
+  const { organizationId, currency, locale, labels } = props;
   const [view, setView] = useState<TerminalView>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -55,23 +56,59 @@ export function PosTerminal(props: PosTerminalProps): ReactElement {
     setView({ kind: "selling", session, rows });
   }
 
+  return (
+    <TerminalScreen
+      view={view}
+      organizationId={organizationId}
+      currency={currency}
+      locale={locale}
+      labels={labels}
+      onRetry={() => setAttempt((count) => count + 1)}
+      onPair={handlePair}
+      onOpen={handleOpen}
+    />
+  );
+}
+
+interface TerminalScreenProps {
+  readonly view: TerminalView;
+  readonly organizationId: string;
+  readonly currency: CurrencyCode;
+  readonly locale: DisplayLocale;
+  readonly labels: PosLabels;
+  readonly onRetry: () => void;
+  readonly onPair: (pairingCode: string) => Promise<void>;
+  readonly onOpen: (openingFloat: Money) => Promise<void>;
+}
+
+function FailedStart(props: {
+  readonly labels: PosLabels;
+  readonly onRetry: () => void;
+}): ReactElement {
+  const { labels, onRetry } = props;
+  return (
+    <div className="flex flex-col items-start gap-3 p-4">
+      <p role="alert" className="text-body text-danger">
+        {labels.loadFailed}
+      </p>
+      <Button className="min-h-14" onClick={onRetry}>
+        {labels.retry}
+      </Button>
+    </div>
+  );
+}
+
+/** Picks the one screen the till is on: loading, failed, pair, open, or sell. */
+function TerminalScreen(props: TerminalScreenProps): ReactElement {
+  const { view, organizationId, currency, locale, labels, onRetry, onPair, onOpen } = props;
   if (view.kind === "loading") {
     return <p className="p-4 text-body text-secondary">{labels.loading}</p>;
   }
   if (view.kind === "failed") {
-    return (
-      <div className="flex flex-col items-start gap-3 p-4">
-        <p role="alert" className="text-body text-danger">
-          {labels.loadFailed}
-        </p>
-        <Button className="min-h-14" onClick={() => setAttempt((count) => count + 1)}>
-          {labels.retry}
-        </Button>
-      </div>
-    );
+    return <FailedStart labels={labels} onRetry={onRetry} />;
   }
   if (view.kind === "pairing") {
-    return <PosPairingForm labels={labels} onPair={handlePair} />;
+    return <PosPairingForm labels={labels} onPair={onPair} />;
   }
   if (view.kind === "opening") {
     return (
@@ -79,9 +116,18 @@ export function PosTerminal(props: PosTerminalProps): ReactElement {
         labels={labels}
         currency={currency}
         failureText={labels.loadFailed}
-        onOpen={handleOpen}
+        onOpen={onOpen}
       />
     );
   }
-  return <PosSaleScreen labels={labels} rows={view.rows} />;
+  return (
+    <PosSaleScreen
+      organizationId={organizationId}
+      locationId={view.session.locationId}
+      currency={currency}
+      locale={locale}
+      labels={labels}
+      rows={view.rows}
+    />
+  );
 }

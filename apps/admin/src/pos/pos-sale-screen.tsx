@@ -1,15 +1,23 @@
 "use client";
 
-import type { PosCatalogRow } from "@banijjik/contracts/pos";
-import { Button, TextInput } from "@banijjik/ui";
+import type { CurrencyCode } from "@banijjik/contracts";
+import type { PosCatalogRow, PosSaleResponse } from "@banijjik/contracts/pos";
+import { Button, TextInput, type DisplayLocale } from "@banijjik/ui";
 import { useMemo, useReducer, useState, type ReactElement } from "react";
-import { cartItemCount, cartReducer, EMPTY_CART } from "./cart";
+import { cartItemCount, cartReducer, EMPTY_CART, type CartLine } from "./cart";
 import { searchCatalog } from "./catalog-search";
 import { PosCartPanel } from "./pos-cart-panel";
+import { PosPaymentSheetLazy } from "./pos-payment-sheet-lazy";
+import { PosReceiptLazy } from "./pos-receipt-lazy";
 import type { PosLabels } from "./pos-labels";
+import { buildReceiptModel, type ReceiptModel } from "./receipt-model";
 import { useOnlineStatus } from "./use-online-status";
 
 export interface PosSaleScreenProps {
+  readonly organizationId: string;
+  readonly locationId: string;
+  readonly currency: CurrencyCode;
+  readonly locale: DisplayLocale;
   readonly labels: PosLabels;
   readonly rows: readonly PosCatalogRow[];
 }
@@ -40,24 +48,122 @@ function ResultRow(props: {
   );
 }
 
-/** Scan or type to find a product, tap to add it, then take payment (the payment step is wired in part 2). */
+function SaleSearch(props: {
+  readonly labels: PosLabels;
+  readonly query: string;
+  readonly onQueryChange: (query: string) => void;
+  readonly results: readonly PosCatalogRow[];
+  readonly onAdd: (row: PosCatalogRow) => void;
+}): ReactElement {
+  const { labels, query, onQueryChange, results, onAdd } = props;
+  return (
+    <>
+      <TextInput
+        type="search"
+        autoFocus
+        placeholder={labels.searchPlaceholder}
+        value={query}
+        onChange={(event) => onQueryChange(event.target.value)}
+        className="min-h-14 text-h3"
+      />
+      {query.trim() && results.length === 0 ? (
+        <p className="text-body text-secondary">{labels.noResults}</p>
+      ) : null}
+      <ul className="flex flex-col gap-2">
+        {results.map((row) => (
+          <ResultRow key={row.variantId} row={row} labels={labels} onAdd={onAdd} />
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/** Scan or type to find a product, tap to add it, then Pay; the receipt shows after a completed sale. */
 export function PosSaleScreen(props: PosSaleScreenProps): ReactElement {
-  const { labels, rows } = props;
-  const [query, setQuery] = useState("");
+  const { organizationId, locationId, currency, locale, labels, rows } = props;
   const [cart, dispatch] = useReducer(cartReducer, EMPTY_CART);
+  const [paying, setPaying] = useState(false);
+  const [receipt, setReceipt] = useState<ReceiptModel | null>(null);
   const isOnline = useOnlineStatus();
+
+  function handlePaid(sale: PosSaleResponse): void {
+    setPaying(false);
+    setReceipt(buildReceiptModel(sale));
+    dispatch({ type: "clear" });
+  }
+
+  if (receipt) {
+    return (
+      <PosReceiptLazy
+        labels={labels}
+        locale={locale}
+        model={receipt}
+        onNewSale={() => setReceipt(null)}
+      />
+    );
+  }
+  if (paying) {
+    return (
+      <PosPaymentSheetLazy
+        organizationId={organizationId}
+        locationId={locationId}
+        currency={currency}
+        locale={locale}
+        lines={cart.lines}
+        labels={labels}
+        onPaid={handlePaid}
+        onBack={() => setPaying(false)}
+      />
+    );
+  }
+
+  return (
+    <SaleMain
+      labels={labels}
+      isOnline={isOnline}
+      rows={rows}
+      cartLines={cart.lines}
+      cartCount={cartItemCount(cart)}
+      onAdd={(row) =>
+        dispatch({
+          type: "add",
+          line: {
+            offeringId: row.offeringId,
+            variantId: row.variantId,
+            offeringName: row.offeringName,
+            variantName: row.variantName,
+          },
+        })
+      }
+      onQuantity={(lineKey, quantity) => dispatch({ type: "setQuantity", lineKey, quantity })}
+      onRemove={(lineKey) => dispatch({ type: "remove", lineKey })}
+      onClear={() => dispatch({ type: "clear" })}
+      onPay={() => setPaying(true)}
+    />
+  );
+}
+
+interface SaleMainProps {
+  readonly labels: PosLabels;
+  readonly isOnline: boolean;
+  readonly rows: readonly PosCatalogRow[];
+  readonly cartLines: readonly CartLine[];
+  readonly cartCount: number;
+  readonly onAdd: (row: PosCatalogRow) => void;
+  readonly onQuantity: (lineKey: string, quantity: number) => void;
+  readonly onRemove: (lineKey: string) => void;
+  readonly onClear: () => void;
+  readonly onPay: () => void;
+}
+
+/** The sale itself: search, cart and the Pay button. Pay is off offline and for an empty cart. */
+function SaleMain(props: SaleMainProps): ReactElement {
+  const { labels, isOnline, rows, cartLines, cartCount, onAdd, onQuantity, onRemove } = props;
+  const [query, setQuery] = useState("");
   const results = useMemo(() => searchCatalog(rows, query), [rows, query]);
 
   function handleAdd(row: PosCatalogRow): void {
-    dispatch({
-      type: "add",
-      line: {
-        offeringId: row.offeringId,
-        variantId: row.variantId,
-        offeringName: row.offeringName,
-        variantName: row.variantName,
-      },
-    });
+    onAdd(row);
     setQuery("");
   }
 
@@ -68,32 +174,24 @@ export function PosSaleScreen(props: PosSaleScreenProps): ReactElement {
           {labels.offline}
         </p>
       )}
-      <TextInput
-        type="search"
-        autoFocus
-        placeholder={labels.searchPlaceholder}
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        className="min-h-14 text-h3"
+      <SaleSearch
+        labels={labels}
+        query={query}
+        onQueryChange={setQuery}
+        results={results}
+        onAdd={handleAdd}
       />
-      {query.trim() && results.length === 0 ? (
-        <p className="text-body text-secondary">{labels.noResults}</p>
-      ) : null}
-      <ul className="flex flex-col gap-2">
-        {results.map((row) => (
-          <ResultRow key={row.variantId} row={row} labels={labels} onAdd={handleAdd} />
-        ))}
-      </ul>
       <PosCartPanel
         labels={labels}
-        lines={cart.lines}
-        onQuantity={(lineKey, quantity) => dispatch({ type: "setQuantity", lineKey, quantity })}
-        onRemove={(lineKey) => dispatch({ type: "remove", lineKey })}
-        onClear={() => dispatch({ type: "clear" })}
+        lines={cartLines}
+        onQuantity={onQuantity}
+        onRemove={onRemove}
+        onClear={props.onClear}
       />
       <Button
         className={`${TOUCH_TARGET_CLASS} w-full`}
-        disabled={!isOnline || cartItemCount(cart) === 0}
+        disabled={!isOnline || cartCount === 0}
+        onClick={props.onPay}
       >
         {labels.pay}
       </Button>

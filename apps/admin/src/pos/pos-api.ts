@@ -4,6 +4,7 @@ import type {
   PosSaleResponse,
   PosSessionResponse,
 } from "@banijjik/contracts/pos";
+import type { QuoteRequest, QuoteResponse } from "@banijjik/contracts/pricing";
 import type { PosSaleBody } from "@banijjik/validation/pos";
 import { apiFetch } from "../lib/api/api-client";
 
@@ -72,6 +73,18 @@ export async function createSale(
     method: "POST",
     body,
     idempotencyKey,
+  });
+  return result.data;
+}
+
+/** The server prices the cart at the device location. The till never prices a line itself. */
+export async function quoteCart(
+  organizationId: string,
+  body: QuoteRequest,
+): Promise<QuoteResponse> {
+  const result = await apiFetch<QuoteResponse>(`/orgs/${organizationId}/quotes`, {
+    method: "POST",
+    body,
   });
   return result.data;
 }

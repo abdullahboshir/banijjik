@@ -29,6 +29,7 @@ export async function PosPage(props: { readonly orgSlug: string }): Promise<Reac
     <PosTerminal
       organizationId={access.organization.organizationId}
       currency={currency}
+      locale={translator.locale}
       labels={posLabelsOf(translator)}
     />
   );
