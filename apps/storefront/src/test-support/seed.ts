@@ -1,4 +1,4 @@
-import { INDUSTRY_TEMPLATE_STATUS } from "@banijjik/contracts";
+import { INDUSTRY_TEMPLATE_STATUS, MODULE_KEY, MODULE_OVERRIDE_EFFECT } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
 import { MongoClient } from "mongodb";
 import matrimonyBusiness from "./matrimony-business.json" with { type: "json" };
@@ -102,6 +102,40 @@ export async function publishTemplate(stack: StorefrontStack, templateKey: strin
   }
 }
 
+/**
+ * The directory is an OPTIONAL module: a platform grant switches it on, as the API tests do. This stack has
+ * no platform admin, so the grant is written straight in the database and `configVersion` is bumped so
+ * cached configuration is read again.
+ */
+export async function grantDirectoryModule(
+  stack: StorefrontStack,
+  organizationId: string,
+): Promise<void> {
+  const client = await MongoClient.connect(stack.mongoUri);
+  try {
+    const platform = client.db("browser_platform");
+    const now = new Date();
+    await platform.collection("module_overrides").insertOne({
+      moduleOverrideId: newId(),
+      organizationId,
+      moduleKey: MODULE_KEY.DIRECTORY,
+      effect: MODULE_OVERRIDE_EFFECT.PLATFORM_GRANT,
+      reason: "browser test",
+      expiresAt: null,
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+      createdByUserId: null,
+      updatedByUserId: null,
+    });
+    await platform
+      .collection("organizations")
+      .updateOne({ organizationId }, { $inc: { configVersion: 1 } });
+  } finally {
+    await client.close();
+  }
+}
+
 /** The business with the matrimony template (directory and website modules on). */
 export async function seedBusiness(owner: Session, slug: string, name: string): Promise<string> {
   await callApi("/me/orgs", {
@@ -172,10 +206,11 @@ export async function signInCustomer(
   stack: StorefrontStack,
   organizationId: string,
 ): Promise<Session> {
+  const sentAfter = new Date();
   await callApi(`/storefront/orgs/${organizationId}/auth/otp/send`, {
     body: { phone: CUSTOMER_PHONE },
   });
-  const code = await latestSmsCode(stack, CUSTOMER_PHONE);
+  const code = await latestSmsCode(stack, CUSTOMER_PHONE, sentAfter);
   const { data, setCookies } = await callApi<{ name: string | null }>(
     `/storefront/orgs/${organizationId}/auth/otp/verify`,
     { body: { phone: CUSTOMER_PHONE, code } },
@@ -200,6 +235,7 @@ const SAMPLE_BY_TYPE: Readonly<Record<string, unknown>> = {
   PHONE: "+8801700000000",
   EMAIL: "test@example.com",
   URL: "https://example.com",
+  GEO_BD: { divisionKey: "dhaka", districtKey: "dhaka" },
 };
 
 /** A value for a field the form requires: the first option of a choice, a sample of any other type. */

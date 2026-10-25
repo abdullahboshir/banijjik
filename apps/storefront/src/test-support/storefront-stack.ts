@@ -217,15 +217,30 @@ export async function startStorefrontStack(): Promise<StorefrontStack> {
   }
 }
 
-/** Reads the one-time code the test inbox recorded for a phone number (the SMS driver of development). */
-export async function latestSmsCode(stack: StorefrontStack, phoneE164: string): Promise<string> {
+/**
+ * Reads the one-time code the test inbox recorded for a phone number (the SMS driver of development).
+ * The worker sends the SMS from the outbox after the request returns, so this waits for a message
+ * recorded at or after `sentAfter`: an earlier code for the same phone is never taken for the new one.
+ */
+export async function latestSmsCode(
+  stack: StorefrontStack,
+  phoneE164: string,
+  sentAfter: Date,
+): Promise<string> {
   const client = await MongoClient.connect(stack.mongoUri);
   try {
     const messages = client.db("browser_tenant").collection("sms_test_messages");
-    const message = await messages.findOne({ phoneE164 }, { sort: { createdAt: -1 } });
-    const code = /\b(\d{6})\b/.exec(String(message?.["text"] ?? ""))?.[1];
-    if (!code) throw new Error(`No test-inbox code for ${phoneE164}`);
-    return code;
+    const deadline = Date.now() + READY_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const message = await messages.findOne(
+        { phoneE164, createdAt: { $gte: sentAfter } },
+        { sort: { createdAt: -1 } },
+      );
+      const code = /\b(\d{6})\b/.exec(String(message?.["text"] ?? ""))?.[1];
+      if (code) return code;
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    }
+    throw new Error(`No test-inbox code for ${phoneE164}`);
   } finally {
     await client.close();
   }

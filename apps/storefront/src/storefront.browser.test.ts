@@ -7,6 +7,7 @@ import {
   seedBusiness,
   seedOwner,
   enableCustomerLogin,
+  grantDirectoryModule,
   publishAboutPage,
   publishTemplate,
   signInCustomer,
@@ -53,6 +54,7 @@ beforeAll(async () => {
   await publishTemplate(stack, "MATRIMONY");
   owner = await seedOwner();
   organizationId = await seedBusiness(owner, SLUG, BUSINESS_NAME);
+  await grantDirectoryModule(stack, organizationId);
   await seedBranding(owner, organizationId, PNG_BYTES);
   await enableCustomerLogin(owner, organizationId);
   await publishAboutPage(owner, organizationId);
@@ -114,7 +116,8 @@ describe("the public storefront", () => {
     const hasStatistics = await page.$("#home-stats-title");
     await page.close();
     expect(logoCount).toBeGreaterThan(0);
-    expect(brandColour).toBe("#1F6F5C");
+    // The API stores colours in lower case.
+    expect(brandColour).toBe("#1f6f5c");
     expect(hasStatistics).not.toBeNull();
   });
 
@@ -141,9 +144,10 @@ describe("the public storefront", () => {
   it("signs a customer in with the test-inbox code, sets the cookies and shows the account in the header", async () => {
     const page = await openStorefront("/sign-in", DESKTOP_VIEWPORT);
     await page.type("#sign-in-phone", PHONE_NUMBER);
+    const sentAfter = new Date();
     await clickSubmit(page);
     await page.waitForSelector("#sign-in-code");
-    const code = await latestSmsCode(stack, PHONE_NUMBER);
+    const code = await latestSmsCode(stack, PHONE_NUMBER, sentAfter);
     await page.type("#sign-in-code", code);
     await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }), clickSubmit(page)]);
     const cookieNames = (await page.cookies()).map((cookie) => cookie.name);
