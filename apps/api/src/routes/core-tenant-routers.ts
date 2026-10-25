@@ -38,6 +38,7 @@ import { buildPaymentTenantRouterFor } from "./payment-tenant-router.js";
 import { buildBookkeepingTenantRouter } from "./bookkeeping-tenant-router.js";
 import { buildSalesTenantRouter } from "./sales-tenant-router.js";
 import { buildPosTenantRouter, type PosRouterInput } from "./pos-adapters.js";
+import { buildReportTenantRouter } from "./report-tenant-router.js";
 import { MODULE_MANIFESTS } from "./module-registry.js";
 
 export interface CoreTenantRouterInput {
@@ -79,6 +80,7 @@ export interface CoreTenantRouters {
   readonly enrollmentRouter: Router;
   readonly websiteRouter: Router;
   readonly posRouter: Router;
+  readonly reportRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -147,6 +149,7 @@ function buildCommerceTenantRouters(
   | "commissionRouter"
   | "salesRouter"
   | "posRouter"
+  | "reportRouter"
 > {
   const shared = {
     clock: input.clock,
@@ -177,6 +180,7 @@ function buildCommerceTenantRouters(
     commissionRouter: buildCommissionTenantRouter(shared),
     salesRouter: buildSalesTenantRouter(shared),
     posRouter: buildPosTenantRouter({ ...shared, pos: input.pos }),
+    reportRouter: buildReportTenantRouter(shared),
     enrollmentRouter: buildEnrollmentTenantRouter(shared),
     websiteRouter: buildWebsiteAdminRouter({
       clock: input.clock,

@@ -11,6 +11,7 @@ export const SYSTEM_REASON = defineEnum([
   "WEBHOOK_ROUTING",
   "SCHEDULED_JOB",
   "PUBLIC_FILE",
+  "REPORT_REBUILD",
 ]);
 
 export type SystemReason = (typeof SYSTEM_REASON)[keyof typeof SYSTEM_REASON];

@@ -560,5 +560,11 @@
   "website.pages.failed": "The page could not be saved. Try again.",
   "website.pages.error.titleRequired": "A published page needs a title in at least one language.",
   "website.pages.error.titleTooLong": "A title can have at most 120 characters.",
-  "website.pages.error.bodyTooLong": "A body can have at most 20,000 characters."
+  "website.pages.error.bodyTooLong": "A body can have at most 20,000 characters.",
+  "permission.report.home.read": "See today, yesterday and this month for the business",
+  "permission.report.daily.read": "See the daily reports for any date range",
+  "errors.report_currency_mismatch": "A figure in another currency than the business currency cannot be counted in the reports.",
+  "errors.report_source_missing": "A figure needed for the reports is missing from its record.",
+  "validation.report_range_too_long": "A report can show at most 92 days",
+  "validation.report_range_reversed": "The start date must be on or before the end date"
 }

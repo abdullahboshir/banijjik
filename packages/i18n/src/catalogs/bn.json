@@ -560,5 +560,11 @@
   "website.pages.failed": "পাতা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
   "website.pages.error.titleRequired": "প্রকাশিত পাতার অন্তত এক ভাষায় শিরোনাম লাগবে।",
   "website.pages.error.titleTooLong": "শিরোনাম সর্বোচ্চ ১২০ অক্ষর হতে পারে।",
-  "website.pages.error.bodyTooLong": "মূল লেখা সর্বোচ্চ ২০,০০০ অক্ষর হতে পারে।"
+  "website.pages.error.bodyTooLong": "মূল লেখা সর্বোচ্চ ২০,০০০ অক্ষর হতে পারে।",
+  "permission.report.home.read": "ব্যবসার আজ, গতকাল ও এই মাসের হিসাব দেখা",
+  "permission.report.daily.read": "যেকোনো তারিখের সীমার দৈনিক প্রতিবেদন দেখা",
+  "errors.report_currency_mismatch": "ব্যবসার মুদ্রার বাইরের মুদ্রার হিসাব প্রতিবেদনে গোনা যায় না।",
+  "errors.report_source_missing": "প্রতিবেদনের জন্য দরকারি একটি তথ্য তার রেকর্ডে নেই।",
+  "validation.report_range_too_long": "একটি প্রতিবেদনে সর্বোচ্চ ৯২ দিন দেখানো যায়",
+  "validation.report_range_reversed": "শুরুর তারিখ শেষের তারিখের আগে বা সমান হতে হবে"
 }
