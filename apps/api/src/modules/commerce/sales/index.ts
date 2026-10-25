@@ -63,6 +63,7 @@ export function registerSalesScheduledJobs(ports: SalesJobPorts): void {
 export type {
   OrderPaymentPort,
   OrderRepository,
+  ReceivedOrderPayment,
   ReturnSettlementResult,
   SettleReturnInput,
 } from "./application/ports/sales-ports.js";

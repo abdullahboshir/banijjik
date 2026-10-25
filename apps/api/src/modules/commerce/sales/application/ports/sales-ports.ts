@@ -217,7 +217,8 @@ export interface OrderPaymentPort {
     amountMinor: number;
     now: Date;
   }): Promise<void>;
-  receiveReturnPayback(input: {
+  /** An IN payment allocated to one order, run inside the caller's transaction (3.5b A2, A3). */
+  receiveOrderPayment(input: {
     organizationId: OrganizationId;
     orderId: OrderId;
     locationId: LocationId;
@@ -227,8 +228,9 @@ export interface OrderPaymentPort {
     amount: Money;
     contactId: ContactId | null;
     externalReference: string | null;
+    note: string | null;
     now: Date;
-  }): Promise<string>;
+  }): Promise<ReceivedOrderPayment>;
   settleCancellation(input: {
     organizationId: OrganizationId;
     orderId: OrderId;
@@ -258,6 +260,13 @@ export interface SettleReturnInput {
     readonly note: string | null;
   } | null;
   readonly now: Date;
+}
+
+export interface ReceivedOrderPayment {
+  readonly paymentId: string;
+  readonly paymentNumber: string;
+  readonly method: PaymentMethod;
+  readonly amount: Money;
 }
 
 export interface ReturnSettlementResult {

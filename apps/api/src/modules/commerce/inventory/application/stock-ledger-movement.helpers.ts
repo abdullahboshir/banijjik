@@ -28,8 +28,12 @@ export function movementDeltas(
     // Write-off: quantityDelta is negative on sellable; damaged rises by the absolute amount.
     return { onHandDelta: quantityDelta, damagedDelta: -quantityDelta };
   }
-  if (reason === STOCK_MOVEMENT_REASON.RETURN_DAMAGED) {
-    // Damaged returns restock damaged only (docs/11 §4.5); quantityDelta is positive.
+  if (
+    reason === STOCK_MOVEMENT_REASON.RETURN_DAMAGED ||
+    reason === STOCK_MOVEMENT_REASON.RETURN_DAMAGED_REVERSAL
+  ) {
+    // Damaged returns restock damaged only (docs/11 §4.5), and their reversal takes the same
+    // bucket back out, so the sellable stock is untouched in both directions.
     return { onHandDelta: 0, damagedDelta: quantityDelta };
   }
   return { onHandDelta: quantityDelta, damagedDelta: 0 };
@@ -40,6 +44,7 @@ export function stockStateForReason(
 ): (typeof STOCK_STATE)[keyof typeof STOCK_STATE] {
   if (
     reason === STOCK_MOVEMENT_REASON.RETURN_DAMAGED ||
+    reason === STOCK_MOVEMENT_REASON.RETURN_DAMAGED_REVERSAL ||
     reason === STOCK_MOVEMENT_REASON.DAMAGE_WRITE_OFF
   ) {
     return STOCK_STATE.DAMAGED;
@@ -53,8 +58,11 @@ export function assertStockAvailable(input: {
   readonly previousAvailable: number;
   readonly nextOnHand: number;
   readonly nextAvailable: number;
+  readonly nextDamaged: number;
 }): void {
-  if (!input.allowNegativeStock && (input.nextOnHand < 0 || input.nextAvailable < 0)) {
+  // The damaged bucket never goes below zero, whatever allowNegativeStock says (3.5b R4).
+  const goesNegative = input.nextOnHand < 0 || input.nextAvailable < 0;
+  if (input.nextDamaged < 0 || (!input.allowNegativeStock && goesNegative)) {
     throw insufficientStock(input.inventoryItemId, input.previousAvailable);
   }
 }
@@ -232,6 +240,7 @@ function movementQuantities(input: {
     previousAvailable,
     nextOnHand,
     nextAvailable,
+    nextDamaged,
   });
   const averageUnitCostMicros = nextAverageUnitCostMicros({
     existing: input.existing,
@@ -270,6 +279,7 @@ function buildMovementRecord(input: {
 }): StockMovementRecord {
   const { onHandDelta } = movementDeltas(input.reason, input.quantityDelta);
   const outgoingUnitCost = outgoingUnitCostForMovement({
+    reason: input.reason,
     onHandDelta,
     existing: input.existing,
     unitCost: input.unitCost,

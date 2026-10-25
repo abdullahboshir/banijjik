@@ -62,7 +62,7 @@ export class MongoSalesReturnRepository implements SalesReturnRepository {
         },
       },
     });
-    return toSalesReturnRecord(updated as SalesReturnDocument);
+    return toSalesReturnRecord(updated);
   }
 
   async sumActiveDeliveryReturned(

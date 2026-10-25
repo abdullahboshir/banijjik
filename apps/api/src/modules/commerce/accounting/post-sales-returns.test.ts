@@ -1,5 +1,10 @@
 import { EVENT_TYPE } from "@banijjik/contracts";
-import { JOURNAL_SOURCE_TYPE, POSTING_KEY, type Money } from "@banijjik/contracts/accounting";
+import {
+  JOURNAL_SOURCE_TYPE,
+  POSTING_KEY,
+  reversalPostingKeyFor,
+  type Money,
+} from "@banijjik/contracts/accounting";
 import { asId, newId, type OrganizationId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { initializeModels, withTransaction } from "../../../kernel/db/index.js";
@@ -101,12 +106,19 @@ function snapshotOf(
   };
 }
 
-function handleEvent(scene: Scene, salesReturnId: string, orderId: string) {
+function handleEvent(
+  scene: Scene,
+  salesReturnId: string,
+  orderId: string,
+  type:
+    | typeof EVENT_TYPE.SALES_RETURN_CREATED
+    | typeof EVENT_TYPE.SALES_RETURN_REVERSED = EVENT_TYPE.SALES_RETURN_CREATED,
+) {
   return withOrganizationContext(scene.organizationId, () =>
     withTransaction(() =>
       scene.handler.handle({
         eventId: newId(),
-        type: EVENT_TYPE.SALES_RETURN_CREATED,
+        type,
         version: 1,
         occurredAt: NOW.toISOString(),
         organizationId: scene.organizationId,
@@ -182,5 +194,33 @@ describe("accounting postSalesReturns handler", () => {
 
     expect(await findEntry(scene, salesReturnId, POSTING_KEY.sales_return_cogs)).toBeUndefined();
     expect(await findEntry(scene, salesReturnId, POSTING_KEY.sales_return_value)).toBeDefined();
+  });
+});
+
+describe("accounting postSalesReturns handler: reversal", () => {
+  it("the reversal posts the mirror of both return journals once, also on event replay", async () => {
+    const scene = await newScene();
+    const salesReturnId = newId();
+    const orderId = newId();
+    scene.returns.set(salesReturnId, snapshotOf(salesReturnId, { cost: bdt(400) }));
+    await handleEvent(scene, salesReturnId, orderId);
+
+    await handleEvent(scene, salesReturnId, orderId, EVENT_TYPE.SALES_RETURN_REVERSED);
+    await handleEvent(scene, salesReturnId, orderId, EVENT_TYPE.SALES_RETURN_REVERSED);
+
+    for (const originalKey of [POSTING_KEY.sales_return_value, POSTING_KEY.sales_return_cogs]) {
+      const original = await findEntry(scene, salesReturnId, originalKey);
+      const mirror = await findEntry(scene, salesReturnId, reversalPostingKeyFor(originalKey));
+      expect(mirror).toBeDefined();
+      expect(mirror?.lines.map((line) => line.debit.amount)).toEqual(
+        original?.lines.map((line) => line.credit.amount),
+      );
+    }
+    const trial = await withOrganizationContext(scene.organizationId, () =>
+      scene.trialBalance.execute(scene.organizationId, BUSINESS_DATE),
+    );
+    expect(trial.balances).toBe(true);
+    expect(trial.debitTotal.amount).toBe(2 * (1000 + 400));
+    expect(trial.accounts.every((account) => account.balance.amount === 0)).toBe(true);
   });
 });

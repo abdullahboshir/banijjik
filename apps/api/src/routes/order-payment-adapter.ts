@@ -2,9 +2,8 @@ import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 import { BOOKING_TERMINATION_MODE, CANCEL_FEE_MODE } from "@banijjik/contracts/booking";
 import { type Money, PAYMENT_METHOD, PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
-import { asId, type OrganizationId, type OrderId } from "@banijjik/ids";
+import { asId, type OrderId } from "@banijjik/ids";
 import type { AuditRecorder } from "../kernel/audit/index.js";
-import { getRequestContext } from "../kernel/context/index.js";
 import { kernelEventPublisher } from "../kernel/events/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
@@ -16,6 +15,7 @@ import {
   MongoPaymentSummaryRepository,
   MongoStoreCreditRepository,
   settleRequestTermination,
+  type ReceivePaymentUseCase,
   type RefundPaymentUseCase,
 } from "../modules/commerce/payment/index.js";
 import type {
@@ -31,23 +31,14 @@ import {
 } from "../modules/core/organization/index.js";
 import { buildApprovalVerifier } from "../modules/core/iam/index.js";
 import { buildPaymentRequestReaders } from "./payment-request-readers.js";
+import { activeOrganizationId, ruleError } from "./order-payment-rules.js";
 import { paymentTimezoneReader } from "./payment-timezone-reader.js";
-
-function activeOrganizationId(): OrganizationId {
-  const { organizationId } = getRequestContext();
-  if (!organizationId) throw new DomainRuleError({ code: ERROR_CODE.INTERNAL });
-  return asId<OrganizationId>(organizationId);
-}
-
-function ruleError(ruleKey: string, messageKey: string): DomainRuleError {
-  return new DomainRuleError({ code: ERROR_CODE.BUSINESS_RULE, messageKey, details: { ruleKey } });
-}
 
 /** All repository calls join the caller's active Mongo session. */
 class OrderPaymentAdapter implements OrderPaymentPort {
   constructor(
     private readonly refunds: RefundPaymentUseCase,
-    private readonly receives: import("../modules/commerce/payment/index.js").ReceivePaymentUseCase,
+    private readonly receives: ReceivePaymentUseCase,
   ) {}
 
   private readonly summaries = new MongoPaymentSummaryRepository();
@@ -199,8 +190,14 @@ class OrderPaymentAdapter implements OrderPaymentPort {
       PAYMENT_REQUEST_TYPE.ORDER,
       input.orderId,
     );
-    if (summary === null || summary === undefined || summary.total.currency !== input.currency) {
+    if (summary === null || summary === undefined) {
       throw new DomainRuleError({ code: ERROR_CODE.INTERNAL, details: { orderId: input.orderId } });
+    }
+    if (summary.total.currency !== input.currency) {
+      throw ruleError(
+        SALES_RULE_KEY.SALES_RETURN_REVERSE_CURRENCY_MISMATCH,
+        "errors.sales_return_reverse_currency_mismatch",
+      );
     }
     await this.summaries.setTotal({
       organizationId: input.organizationId,
@@ -211,9 +208,9 @@ class OrderPaymentAdapter implements OrderPaymentPort {
     });
   }
 
-  async receiveReturnPayback(
-    input: Parameters<OrderPaymentPort["receiveReturnPayback"]>[0],
-  ): Promise<string> {
+  async receiveOrderPayment(
+    input: Parameters<OrderPaymentPort["receiveOrderPayment"]>[0],
+  ): ReturnType<OrderPaymentPort["receiveOrderPayment"]> {
     const payment = await this.receives.execute({
       organizationId: input.organizationId,
       locationId: input.locationId,
@@ -230,9 +227,14 @@ class OrderPaymentAdapter implements OrderPaymentPort {
       contactId: input.contactId,
       receivedByMemberId: input.receivedByMemberId,
       actorUserId: input.actorUserId,
-      note: "Sales return reversal payback",
+      note: input.note,
     });
-    return payment.paymentId;
+    return {
+      paymentId: payment.paymentId,
+      paymentNumber: payment.paymentNumber,
+      method: payment.method,
+      amount: payment.amount,
+    };
   }
 
   async settleCancellation(

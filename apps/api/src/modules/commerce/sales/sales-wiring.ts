@@ -55,8 +55,8 @@ import {
   GetSalesReturnUseCase,
   ListSalesReturnsUseCase,
   PreviewSalesReturnUseCase,
-  ReverseSalesReturnUseCase,
 } from "./application/use-cases/sales-return.use-cases.js";
+import { ReverseSalesReturnUseCase } from "./application/sales-return-reverse.js";
 import { SalesReturnController } from "./presentation/sales-return.controller.js";
 import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
 

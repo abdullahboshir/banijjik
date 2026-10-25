@@ -630,6 +630,23 @@ function returnUnits(scene: Scene, orderId: string, units: number): void {
   });
 }
 
+/** The reverse of a return: the sales module lowers the returned quantity before it emits the event. */
+function unreturnUnits(scene: Scene, orderId: string, units: number): void {
+  const order = scene.orders.get(orderId);
+  if (order === undefined) throw new Error("order fixture missing");
+  scene.orders.set(orderId, {
+    ...order,
+    lines: order.lines.map((line) => ({
+      ...line,
+      returnedQuantity: Math.max(0, line.returnedQuantity - units),
+    })),
+  });
+}
+
+function reversalEnvelope(scene: Scene, orderId: string): HandlerInput {
+  return envelope(scene, EVENT_TYPE.SALES_RETURN_REVERSED, { salesReturnId: newId(), orderId });
+}
+
 function returnEnvelope(scene: Scene, orderId: string): HandlerInput {
   return envelope(scene, EVENT_TYPE.SALES_RETURN_CREATED, { salesReturnId: newId(), orderId });
 }
@@ -729,6 +746,24 @@ describe("commission accrual on performed order lines", () => {
     await runAs(scene, () => handler.handle(returnEnvelope(scene, orderId)));
 
     expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(0);
+  });
+
+  it("a reversed return raises the line commission back", async () => {
+    const scene = newScene();
+    await runAs(scene, () => addMemberRule(scene));
+    const orderId = addOrder(scene, [{ memberId: scene.memberId, ...FIRST_LINE }]);
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+    await runAs(scene, () => handler.handle(orderEnvelope(scene, orderId)));
+    const accrualAmount = sumOfAmounts(await orderEntriesOf(scene, orderId));
+    returnUnits(scene, orderId, 1);
+    await runAs(scene, () => handler.handle(returnEnvelope(scene, orderId)));
+    expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(0);
+
+    unreturnUnits(scene, orderId, 1);
+    await runAs(scene, () => handler.handle(reversalEnvelope(scene, orderId)));
+    await runAs(scene, () => handler.handle(reversalEnvelope(scene, orderId)));
+
+    expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(accrualAmount);
   });
 
   it("a refund without a return leaves the order lines' commission unchanged", async () => {

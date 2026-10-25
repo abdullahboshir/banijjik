@@ -53,4 +53,24 @@ describe("projectLevelsFromMovements", () => {
     expect(level?.onHand).toBe(0);
     expect(level?.damaged).toBe(0);
   });
+
+  it("a damaged return and its reversal leave sellable stock untouched and net damaged to zero", () => {
+    const returnedId = newId<StockMovementId>();
+    const map = projectLevelsFromMovements([
+      movement({
+        stockMovementId: returnedId,
+        quantityDelta: 2,
+        reason: STOCK_MOVEMENT_REASON.RETURN_DAMAGED,
+      }),
+      movement({
+        stockMovementId: newId<StockMovementId>(),
+        quantityDelta: -2,
+        reason: STOCK_MOVEMENT_REASON.RETURN_DAMAGED_REVERSAL,
+        reversesStockMovementId: returnedId,
+      }),
+    ]);
+    const level = map.get("loc-1:01900000-0000-7000-8000-000000000002");
+    expect(level?.onHand).toBe(0);
+    expect(level?.damaged).toBe(0);
+  });
 });

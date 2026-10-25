@@ -50,6 +50,7 @@ export const salesManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.SALES_ORDER_CANCEL),
     permissionDefinition(PERMISSION_KEY.SALES_RETURN_READ),
     permissionDefinition(PERMISSION_KEY.SALES_RETURN_CREATE),
+    permissionDefinition(PERMISSION_KEY.SALES_RETURN_REVERSE),
   ],
   routes: {
     admin: ["/orgs/:organizationId/orders", "/orgs/:organizationId/sales"],

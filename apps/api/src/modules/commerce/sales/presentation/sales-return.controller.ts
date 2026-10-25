@@ -2,6 +2,7 @@ import type {
   SalesReturnListQuery,
   SalesReturnParams,
   SalesReturnRequestBody,
+  SalesReturnReverseRequestBody,
 } from "@banijjik/validation/sales";
 import { asId, type OrderId, type SalesReturnId } from "@banijjik/ids";
 import type { RequestHandler } from "express";
@@ -10,10 +11,10 @@ import { sendData } from "../../../../kernel/http/index.js";
 import type {
   CreateSalesReturnUseCase,
   GetSalesReturnUseCase,
-  ReverseSalesReturnUseCase,
   ListSalesReturnsUseCase,
   PreviewSalesReturnUseCase,
 } from "../application/use-cases/sales-return.use-cases.js";
+import type { ReverseSalesReturnUseCase } from "../application/sales-return-reverse.js";
 
 const HTTP_CREATED = 201;
 
@@ -94,8 +95,7 @@ export class SalesReturnController {
   readonly reverse: RequestHandler = async (_request, response) => {
     const caller = readTenantCaller();
     const params = response.locals["validated"].params as SalesReturnParams;
-    const body = response.locals["validated"].body;
-    if (caller.actorUserId === null) throw new Error("Authenticated actor is required");
+    const body = response.locals["validated"].body as SalesReturnReverseRequestBody;
     sendData(
       response,
       await this.useCases.reverse.execute({

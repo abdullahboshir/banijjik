@@ -471,6 +471,7 @@
   "errors.sales_return_exchange_not_reversible": "এক্সচেঞ্জের ফেরত রিভার্স করা যায় না।",
   "errors.sales_return_stock_gone": "ফেরত দেওয়া পণ্য আর রিভার্স করার জন্য মজুদে নেই।",
   "errors.sales_return_reverse_order_not_completed": "শুধু সম্পন্ন অর্ডারের ফেরত রিভার্স করা যায়।",
+  "errors.sales_return_reverse_currency_mismatch": "অর্ডারের পেমেন্ট মোট ফেরতের মুদ্রা থেকে ভিন্ন মুদ্রায় আছে।",
   "errors.payment_reference_taken": "এই পেমেন্ট রেফারেন্সটি আগেই ব্যবহার করা হয়েছে।",
   "errors.deposit_required": "বুকিং নিশ্চিত করতে অগ্রিম ডিপোজিট প্রয়োজন।",
   "errors.payment_allocations_invalid": "পেমেন্ট বরাদ্দ সঠিক নয়।",

@@ -5,7 +5,11 @@ import { postingSourceMissing } from "../../domain/errors.js";
 import { draftSalesReturn } from "../../domain/sales-return-posting-rules.js";
 import type { SalesReturnPostingSource } from "../ports/sales-return-posting-source.js";
 import { postJournalEntry, postReversal, type PostJournalDependencies } from "../post-journal.js";
-import { POSTING_KEY } from "@banijjik/contracts/accounting";
+import {
+  JOURNAL_SOURCE_TYPE,
+  POSTING_KEY,
+  reversalPostingKeyFor,
+} from "@banijjik/contracts/accounting";
 
 /** Posts a return once per (SALES_RETURN, salesReturnId, postingKey); a redelivered event changes nothing. */
 export function buildPostSalesReturnsHandler(input: {
@@ -46,7 +50,7 @@ async function handleSalesReturnEvent(
   if (envelopeTypeIsReversal(envelope)) {
     for (const postingKey of [POSTING_KEY.sales_return_value, POSTING_KEY.sales_return_cogs]) {
       const original = await input.posting.journals.findBySource({
-        sourceType: "SALES_RETURN",
+        sourceType: JOURNAL_SOURCE_TYPE.SALES_RETURN,
         sourceId: snapshot.salesReturnId,
         postingKey,
       });
@@ -55,7 +59,7 @@ async function handleSalesReturnEvent(
         organizationId,
         actorUserId,
         original,
-        postingKey: `reversal:${postingKey}`,
+        postingKey: reversalPostingKeyFor(postingKey),
         businessDate: snapshot.businessDate,
       });
     }
@@ -69,5 +73,5 @@ async function handleSalesReturnEvent(
 function envelopeTypeIsReversal(
   envelope: EventEnvelope<{ readonly salesReturnId: string; readonly orderId: string }>,
 ): boolean {
-  return envelope.type === "sales.return.reversed";
+  return envelope.type === EVENT_TYPE.SALES_RETURN_REVERSED;
 }

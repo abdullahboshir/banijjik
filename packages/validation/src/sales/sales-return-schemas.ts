@@ -3,6 +3,7 @@ import {
   MAX_ORDER_LINES,
   MAX_SALES_RETURN_NOTE_LENGTH,
   SALES_RETURN_REASON,
+  SALES_RETURN_REVERSE_REASON,
   RETURN_DISPOSITION,
 } from "@banijjik/contracts/sales";
 import { z } from "zod";
@@ -13,12 +14,6 @@ const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const APPROVAL_TOKEN_MAX_LENGTH = 200;
 
 const approvalTokenSchema = z.string().trim().min(1).max(APPROVAL_TOKEN_MAX_LENGTH);
-
-const salesReturnReverseReasonSchema = z.enum([
-  "ENTERED_BY_MISTAKE",
-  "CUSTOMER_TOOK_GOODS_BACK",
-  "OTHER",
-]);
 
 const returnLineSchema = z.strictObject({
   orderLineId: uuidV7Schema,
@@ -63,7 +58,7 @@ export const salesReturnParamsSchema = z.object({
 
 export const salesReturnReverseRequestSchema = z.strictObject({
   version: z.number().int().positive(),
-  reasonKey: salesReturnReverseReasonSchema,
+  reasonKey: z.enum(SALES_RETURN_REVERSE_REASON),
   note: z.string().trim().max(MAX_SALES_RETURN_NOTE_LENGTH).nullable().optional(),
   payback: z
     .strictObject({
@@ -71,7 +66,8 @@ export const salesReturnReverseRequestSchema = z.strictObject({
       externalReference: z.string().trim().min(1).max(100).optional(),
     })
     .optional(),
-  approvalToken: approvalTokenSchema,
+  /** Optional in the schema so a missing token answers APPROVAL_REQUIRED with the action (plan R3). */
+  approvalToken: approvalTokenSchema.optional(),
 });
 
 export type SalesReturnRequestBody = z.infer<typeof salesReturnRequestSchema>;

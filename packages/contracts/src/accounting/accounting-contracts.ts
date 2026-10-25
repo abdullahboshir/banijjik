@@ -75,6 +75,8 @@ export const POSTING_KEY = defineEnum([
   "enrollment_period_refund_revenue",
   "sales_return_value",
   "sales_return_cogs",
+  "reversal_sales_return_value",
+  "reversal_sales_return_cogs",
 ]);
 export type PostingKey =
   (typeof POSTING_KEY)[keyof typeof POSTING_KEY] | `manual:${string}` | `reversal:${string}`;
@@ -89,6 +91,10 @@ export function reversalPostingKeyFor(originalKey: PostingKey): PostingKey {
       return POSTING_KEY.reversal_payment_store_credit;
     case POSTING_KEY.overpayment_to_store_credit:
       return POSTING_KEY.reversal_overpayment_to_store_credit;
+    case POSTING_KEY.sales_return_value:
+      return POSTING_KEY.reversal_sales_return_value;
+    case POSTING_KEY.sales_return_cogs:
+      return POSTING_KEY.reversal_sales_return_cogs;
     default:
       return POSTING_KEY.reversal;
   }

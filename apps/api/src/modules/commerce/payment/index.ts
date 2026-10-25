@@ -15,6 +15,7 @@ import type {
   PaymentRepository,
   PaymentSummaryRepository,
   StoreCreditRepository,
+  TimezoneReader,
 } from "./application/ports/payment-repositories.js";
 import {
   RequestReaderRegistry,
@@ -245,7 +246,7 @@ export function buildReceivePaymentUseCase(input: {
   readonly orgConfig: OrgConfigService;
   readonly audit: AuditRecorder;
   readonly clock: Clock;
-  readonly timeZone: import("./application/ports/payment-repositories.js").TimezoneReader;
+  readonly timeZone: TimezoneReader;
 }): ReceivePaymentUseCase {
   return new ReceivePaymentUseCase({
     payments: new MongoPaymentRepository(),

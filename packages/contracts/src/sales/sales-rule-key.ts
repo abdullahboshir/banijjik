@@ -30,6 +30,8 @@ export const SALES_RULE_KEY = {
   SALES_RETURN_EXCHANGE_NOT_REVERSIBLE: "SALES_RETURN_EXCHANGE_NOT_REVERSIBLE",
   SALES_RETURN_STOCK_GONE: "SALES_RETURN_STOCK_GONE",
   SALES_RETURN_REVERSE_ORDER_NOT_COMPLETED: "SALES_RETURN_REVERSE_ORDER_NOT_COMPLETED",
+  /** The order payment summary is in another currency than the return (never guessed). */
+  SALES_RETURN_REVERSE_CURRENCY_MISMATCH: "SALES_RETURN_REVERSE_CURRENCY_MISMATCH",
 } as const;
 
 export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
@@ -57,4 +59,5 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.sales_return_exchange_not_reversible",
   "errors.sales_return_stock_gone",
   "errors.sales_return_reverse_order_not_completed",
+  "errors.sales_return_reverse_currency_mismatch",
 ];

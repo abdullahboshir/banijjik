@@ -34,11 +34,15 @@ export function nextAverageUnitCostMicros(input: {
 }
 
 export function outgoingUnitCostForMovement(input: {
+  readonly reason: StockMovementReason;
   readonly onHandDelta: number;
   readonly existing: InventoryLevelRecord;
   readonly unitCost: Money | undefined;
 }): Money | undefined {
-  if (input.onHandDelta < 0) {
+  // A reversed return leaves at the cost it came in at, so the books mirror it exactly.
+  const keepsStoredCost =
+    input.reason === STOCK_MOVEMENT_REASON.RETURN_REVERSAL && input.unitCost !== undefined;
+  if (input.onHandDelta < 0 && !keepsStoredCost) {
     return {
       amount: microsToMinor(input.existing.averageUnitCostMicros),
       currency: input.existing.averageUnitCostCurrency as CurrencyCode,

@@ -27,6 +27,15 @@ export const SALES_RETURN_REASON = defineEnum([
 export type SalesReturnReason = (typeof SALES_RETURN_REASON)[keyof typeof SALES_RETURN_REASON];
 
 /** Refund methods a return may pay out with; GATEWAY is refused until Phase 5 (plan decision 5). */
+/** Reasons a staff member picks to reverse a return. OTHER needs a note (plan 3.5b R1). */
+export const SALES_RETURN_REVERSE_REASON = defineEnum([
+  "ENTERED_BY_MISTAKE",
+  "CUSTOMER_TOOK_GOODS_BACK",
+  "OTHER",
+]);
+export type SalesReturnReverseReason =
+  (typeof SALES_RETURN_REVERSE_REASON)[keyof typeof SALES_RETURN_REVERSE_REASON];
+
 export const SALES_RETURN_REFUND_METHOD = defineEnum([
   "CASH",
   "BKASH",
