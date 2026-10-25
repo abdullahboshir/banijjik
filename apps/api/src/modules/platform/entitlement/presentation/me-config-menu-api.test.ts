@@ -43,6 +43,7 @@ const TAX_CLASSES_MENU_KEY = "pricing.taxClasses";
 const SALES_ORDERS_MENU_KEY = "sales.orders";
 // Returns (card 3.5b B) sit right after orders for every role that reads returns.
 const SALES_RETURNS_MENU_KEY = "sales.returns";
+const POS_REGISTER_MENU_KEY = "pos.register";
 
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
@@ -87,6 +88,7 @@ describe("the settings menu of the organization module", () => {
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
+      POS_REGISTER_MENU_KEY,
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
@@ -129,6 +131,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
       ORGANIZATION_MENU_KEYS.locations,
+      POS_REGISTER_MENU_KEY,
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,
@@ -153,6 +156,7 @@ describe("the settings menu of the organization module", () => {
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
+      POS_REGISTER_MENU_KEY,
       CATALOG_MENU_KEYS.modifierGroups,
       EXPENSE_MENU_KEYS.categories,
       ORGANIZATION_MENU_KEYS.staff,

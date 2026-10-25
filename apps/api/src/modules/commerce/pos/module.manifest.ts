@@ -20,7 +20,7 @@ import { defineModule } from "../../../kernel/modules/index.js";
 
 /**
  * The POS manifest (card 3.9, ADR-146). OPTIONAL: it is sold with the shop packages and as the
- * `ADDON_POS` add-on. The screens arrive with Part B, so no menu entry is declared yet.
+ * `ADDON_POS` add-on. Its one menu entry opens the till screen (card 3.9 Part B).
  */
 export const posManifest = defineModule({
   key: MODULE_KEY.POS,
@@ -44,7 +44,18 @@ export const posManifest = defineModule({
   routes: {
     admin: ["/orgs/:organizationId/pos"],
   },
-  menu: [],
+  menu: [
+    {
+      menuKey: "pos.register",
+      surface: SURFACE.ADMIN,
+      groupKey: "sales",
+      labelTermKey: "menu.pos.register",
+      path: "pos",
+      iconKey: "receipt",
+      permissionKey: PERMISSION_KEY.POS_SESSION_OPEN,
+      order: 20,
+    },
+  ],
   settings: [
     {
       settingKey: POS_REQUIRE_SHIFT_SETTING_KEY,
