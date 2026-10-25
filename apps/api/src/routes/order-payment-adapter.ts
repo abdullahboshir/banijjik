@@ -137,6 +137,10 @@ class OrderPaymentAdapter implements OrderPaymentPort {
       input.orderId,
     );
     if (!summary) throw new DomainRuleError({ code: ERROR_CODE.NOT_FOUND });
+    // A summary in another currency is a broken invariant: refuse instead of settling in it.
+    if (summary.total.currency !== input.currency) {
+      throw new DomainRuleError({ code: ERROR_CODE.INTERNAL, details: { orderId: input.orderId } });
+    }
     return {
       totalMinor: summary.total.amount,
       netPaidMinor: summary.allocated.amount - summary.refunded.amount,

@@ -199,9 +199,11 @@ export interface OrderPaymentPort {
   readTotalsMany(orderIds: readonly OrderId[]): Promise<ReadonlyMap<OrderId, PaymentTotals>>;
   readNetPaid(input: { organizationId: OrganizationId; orderId: OrderId }): Promise<Money>;
   /** The payment summary of the order: the total the customer owes and the net paid so far. */
+  /** Refuses when the payment summary is in another currency than the order (never assumed). */
   readSettlementBase(input: {
     organizationId: OrganizationId;
     orderId: OrderId;
+    currency: Money["currency"];
   }): Promise<{ readonly totalMinor: number; readonly netPaidMinor: number }>;
   /**
    * Writes the order total after a return and, when money is due back, the refund (plan 3.5b

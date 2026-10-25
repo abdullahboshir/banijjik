@@ -120,7 +120,6 @@ async function reconcileAllocation(
   }
   // A refund of an order never reconciles its lines: a refund without a return is a price
   // concession, and the lines move only when units come back (plan 3.5b decision 10, ADR-135).
-  if (allocation.requestType === PAYMENT_REQUEST_TYPE.ORDER) return NOTHING_DONE;
   return NOTHING_DONE;
 }
 

@@ -110,6 +110,7 @@ async function quoteReturn(
   const base = await dependencies.payments.readSettlementBase({
     organizationId: input.organizationId,
     orderId: input.orderId,
+    currency,
   });
   const settlement = settleReturn({
     totalMinor: base.totalMinor,
