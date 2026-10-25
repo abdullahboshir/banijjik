@@ -8,10 +8,10 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-25 (08:40 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `dd51581` (3.5b A1 merged) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
+Last updated: 2026-10-25 (11:40 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `dcd7539` (3.9 A1 and M.6b merged) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
 
 ## 1. Where the project stands
-- Phase 3: 42 numbered cards. **Merged:** 3.0–3.8 (all parts), 3.8a/b/c, 3.11 (all parts), 3.12–3.31, 3.33–3.36, **3.5b A1**. Running: 3.9 A1 (Sonnet subagent). Planned: 3.32 (needs a refresh after 3.31), 3.5b A2/B (A2 needs a refresh against the merged A1 code), 3.9 A2/B. Last: 3.10. Track M: M.0–M.5, M.6a, M.7, M.8a merged; M.6b in CI (the lead is finishing it); M.6c, M.8b, M.9 left. Details: `docs/STATUS.md`.
+- Phase 3: 42 numbered cards. **Merged:** 3.0–3.8 (all parts), 3.8a/b/c, 3.11 (all parts), 3.12–3.31, 3.33–3.36, 3.5b A1, **3.9 A1** (`541467f`). Planned and ready for the owner: 3.32 A/B, 3.5b A2/B, 3.9 A2 (with Amendment 1)/B, 3.10 A/B. Needs a lead refresh: 3.5b A3 exchange (now unblocked). Track M: M.0–M.5, M.6a, **M.6b** (`dcd7539`), M.7, M.8a merged; M.6c, M.8b ready; M.9 waits for the SMS provider. Details: `docs/STATUS.md`.
 - **Owner request (2026-10-23):** finish every partly done card and plan everything not started; Opus plans and reviews, Sonnet codes.
 - **Owner (2026-10-24): the lead runs the implementer tools itself** (launch, monitor, restart, answer questions) and may code cards with Sonnet subagents. How: §2a. Sonnet is available again (its limit reset at 00:00 Dhaka).
 - **Owner (2026-10-25 08:10, asked again and confirmed): the lead fast-forwards and pushes `main` after green CI.**
@@ -22,13 +22,12 @@ Last updated: 2026-10-25 (08:40 Dhaka) by Opus 5.5 · `main` = `origin/main` = t
 - **The admin and storefront browser stacks start the API and the worker** (since 3.24): event handlers run in the background. A test waits for their result (reload or poll with a deadline) and never races them with a click (3.36: Activate after a payment got a correct 409 because the worker had activated first).
 - Time-dependent tests follow `05-CONVENTIONS.md` "Testing" (3.26). Run date-sensitive suites between 00:00 and 06:00 Dhaka now and then.
 
-## 2. Open branches (checked 2026-10-25 08:40)
+## 2. Open branches (checked 2026-10-25 11:40)
 Prompts and logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/` (`rules.md` shared rules; `<card>-task.md`; `*-continue*.md` restart notes). Every final message starts with `STATUS: DONE | QUESTION | BLOCKED`. Never commit or revert `.claude/settings.json` in `banijjik`.
 
 | Card / part | Branch | Folder | Tier | State → next step |
 |---|---|---|---|---|
-| 3.9 A1 POS API | `s/3.9-api-pos` (the agent creates it from `origin/main`) | `banijjik-3.5a` | T1 | **Sonnet subagent running** since 08:05 (prompt `rules.md` + `3.9-a1-task.md`; it may force-with-lease its own branch). If this chat has ended, the agent is gone: read the folder and `origin/s/3.9-api-pos`, then relaunch with a continue note that names what is left. On DONE: rerun `card:check`, then the **strict T1 review** (the order and its payments in one transaction, sessions and Z-report money). 3.5b A1 merged meanwhile, so contracts count tests change after its rebase (the agent was told). |
-| M.6b storefront app | `s/M.6b-ui-storefront` (pushed `afbd5113`, base `fb9639f`) | `banijjik-1.7b` | T2 (proxy + middleware as T1) | The lead fixed the browser suite setup: reserved slug `shop` → `rahim-bibaho`; publish the MATRIMONY template; grant the OPTIONAL directory module in the DB; wait for the OTP SMS with a `sentAfter` time (the suite signs in the same phone twice); a GEO_BD sample value; lower-case brand colour. Local run: 6 of 8 pass; the 2 left (`answers an unknown host…`, `keeps the initial JavaScript…`) fail only on Windows, where Node cannot resolve `*.sites.localhost`. **Next:** read CI on `afbd5113` (Linux should resolve it); if they fail there too, fetch through `127.0.0.1` with a Host header. Then rebase on main, CI link and measured route sizes into `docs/handoffs/M.6b-ui.md`, the M.6 STATUS row, `card:check`, the strict proxy review (Amendment 1: forwarded client address chain, `TRUSTED_PROXY_HOPS`), merge. |
+| (none) | | | | No lead or agent branch is open. The owner runs the cards of `lead-orchestra/owner-guide/` in Qoder or ChatGPT; each arrives as `s/<card>-…` on origin. Add a row here when one arrives. |
 
 ### 2a. Launching implementers (owner approved, 2026-10-24)
 - **Qoder:** out of credits since 2026-10-24 evening.
@@ -37,9 +36,11 @@ Prompts and logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/
 - **Sonnet / Haiku subagents:** Agent tool, `model: "sonnet"` (or `"haiku"` while Sonnet is out), background, in a real folder with `node_modules`. Give force-with-lease permission for the card branch in the prompt (rebases of pushed commits).
 - Always close stdin (`< /dev/null`). `TaskStop` does not kill Windows child processes: stop leftover `codex.exe` PIDs too.
 
-Merged and safe to delete (local and `origin`): `s/3.36-stable-enrollment-browser-test`, `s/3.5b-api-returns`, `s/M.8a-matrimony-templates`, `s/3.27-api-enrollment-payments`, the 3.28–3.30 card branches, `s/3.35-stable-replay-test`, `s/M.7-ui-reports`, `s/M.7-api-erasure`, `s/3.24-api-order-stock-posting`, `s/3.7-ui-enrollment`, `s/3.33-api-session-resources`, `s/3.6b-ui-rental-event`, `s/3.11-ui-commission`, `s/3.5a-ui-orders`, `s/3.34-api-reversal-after-close`, `s/M.6a-api-storefront-reads`, `s/3.11-api-order-lines`, `s/3.31-api-enrollment-revenue`, every `s/merge-*` and `s/docs-*` branch. **`s/merge-3.29` (on origin) is broken**: delete it. PR #2 (3.8) can be closed.
+Merged and safe to delete (local and `origin`): `s/3.36-stable-enrollment-browser-test`, `s/3.5b-api-returns`, `s/M.8a-matrimony-templates`, `s/3.27-api-enrollment-payments`, the 3.28–3.30 card branches, `s/3.35-stable-replay-test`, `s/M.7-ui-reports`, `s/M.7-api-erasure`, `s/3.24-api-order-stock-posting`, `s/3.7-ui-enrollment`, `s/3.33-api-session-resources`, `s/3.6b-ui-rental-event`, `s/3.11-ui-commission`, `s/3.5a-ui-orders`, `s/3.34-api-reversal-after-close`, `s/M.6a-api-storefront-reads`, `s/3.11-api-order-lines`, `s/3.31-api-enrollment-revenue`, `s/3.9-api-pos`, `s/M.6b-ui-storefront`, every `s/merge-*` and `s/docs-*` branch. **`s/merge-3.29` (on origin) is broken**: delete it. PR #2 (3.8) can be closed.
 
-Folders: `banijjik-3.5a` holds 3.9 A1, `banijjik-1.7b` holds M.6b. **Free with `node_modules`:** `banijjik-m2` (merged 3.5b A1 branch), `banijjik-3.11` (merged 3.36 branch), `banijjik` (merged 3.33 branch), `banijjik-lead`, `banijjik-3.6b-a3`; switch to a new branch from main first. Free RAM was about 1.7 GB with one agent: run at most two or three. `banijjik-docs` is the docs and merge folder; `banijjik-m8a` is free (no `node_modules`). Disk E: about 8.9 GB free.
+Folders (all on merged branches; the owner guide assigns them): `banijjik-m2` → 3.32, `banijjik-3.11` → 3.5b, `banijjik-lead` → M.8b, `banijjik-3.5a` → 3.9, `banijjik-3.6b-a3` → 3.10, `banijjik-1.7b` → M.6c. `banijjik` stays the lead's main folder; `banijjik-docs` is the docs and merge folder; `banijjik-m8a` is free (no `node_modules`). Free RAM was about 1.7 GB with one agent: at most two at once. Disk E: about 8.4 GB free.
+
+**Disk C: filled up (2026-10-25 11:00):** tool output and git hooks failed with ENOSPC. Leftover MongoMemoryServer folders `%TEMP%/mongo-mem-*` (about 200 MB each) were the cause; the owner allowed deleting them (1.6 GB free after). Check `Get-PSDrive C` when commands fail oddly; delete only `mongo-mem-*` folders while no `mongod` runs. As a fallback, run git and npm with `npm_config_cache=E:/tmp-lead/npm-cache TEMP=E:/tmp-lead/tmp TMP=E:/tmp-lead/tmp`.
 
 **Agents claim "done" early.** Verify every DONE: `npm run card:check` in the folder, `origin/<branch>`, `gh run view <run> --json jobs`. A FAIL only on "rebased" when main moved by docs commits is fine.
 
@@ -49,18 +50,20 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 
 ## 3. Waiting on the owner
 - **3.5b decision 10 (now merged):** a refund without a return no longer lowers order-line commission; only returned units do. A ledger already lowered by a refund is raised back to its return-based target on the next return of that order (test data only before launch). Say if this should change (it would be a new card).
+- **3.9 POS device limit (review F4):** the `posDevices` package limit is not enforced; the seeded numbers (STORE and CHAT 0, SHOP 1, BUNDLE 2, `ADDON_POS` adds nothing) would block a store that buys the add-on. The owner names the numbers; then a small card adds the `LimitGuard` check.
 - **Other product decisions open:** 3.9 offline selling (default in the plan: online only at launch); M.6 listing pages are all `noindex` until a template switch is decided.
 - Delete the empty folder `E:/tmp-unused`. Close the idle older lead chats (`banijjik-0b`, `-03`, `-54`, `-c1`, `-4d`).
 - Keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions.
 
 ## 4. Next actions, in order
-**Owner (2026-10-25 09:30): the owner implements the remaining cards in ChatGPT and Qoder; the lead planned all of them** (on main: `3.32.md` Refresh 1, `3.5b.md` Refresh 2, `3.9.md` A2/B detail, `M.6.md` Refresh M.6c, `M.8b.md`, `3.10.md`, `M.9.md`). Ready now: **3.32 A**, **3.5b A2**, **M.8b**. After 3.9 A1: 3.9 A2, 3.5b A3 (exchange, needs a refresh then), 3.10 A. After M.6b: M.6c. After A parts: their B parts. M.9 A waits for the owner's SMS provider choice. The lead reviews every branch (T1 strict) and merges.
-1. **M.6b and 3.9 A1:** both Sonnet agents stopped on the session limit (resets 12:30 Dhaka) after pushing nearly finished work (M.6b `1893cc2b` docs + "skip nomodule polyfills in the budget like admin": check that admin really measures this way; 3.9 A1 `338527ac` test updates + STATUS). Verify CI and `card:check`, then review and merge (3.9 A1 strict T1; M.6b proxy strict).
-2. Review the owner's branches as they arrive.
+**Owner (2026-10-25 09:30): the owner implements the remaining cards in ChatGPT and Qoder; the lead planned all of them** (on main: `3.32.md` Refresh 1, `3.5b.md` Refresh 2, `3.9.md` A2/B detail, `M.6.md` Refresh M.6c, `M.8b.md`, `3.10.md`, `M.9.md`). Ready now: **3.32 A**, **3.5b A2**, **M.8b**, **3.9 A2**, **3.10 A**, **M.6c**. After A parts: their B parts. M.9 A waits for the owner's SMS provider choice. The lead reviews every branch (T1 strict) and merges.
+**Paste-ready prompts for the owner (2026-10-25 10:50):** `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/owner-guide/` (`00-README.md` in Bengali: order, folder, start condition; `01`–`10` one file per card part with the shared rules appended: 3.32 A → `banijjik-m2`, 3.5b A2 → `banijjik-3.11`, M.8b → `banijjik-lead`, 3.9 A2 → `banijjik-3.5a`, 3.10 A → `banijjik-3.6b-a3`, M.6c → `banijjik-1.7b`, then the B parts in their A folders). Not written yet: 3.5b A3/B2, M.9 A (SMS provider). When a branch arrives, run `card:check` in its folder before reviewing. Update a prompt there when a plan changes (the 3.9 A2 prompt already names Amendment 1).
+1. **Refresh 3.5b A3 (exchange)** against the merged 3.9 A1 code (`buildInstantSale` prepare/commit, `CreatePosSaleUseCase` as the one-transaction pattern) and write `lead-orchestra/owner-guide/11-3.5b-A3.md`; B2 after A3.
+2. Review the owner's branches as they arrive (T1 strict for 3.32 A and 3.5b A2; 3.9 A2 money parts strict; 3.10 A counting strict).
 3. Then the phase 3 review.
 5. Follow-ups:
-   - **New bug (small card):** the directory's `SubmitMyListingUseCase` lets a ZodError escape when a required custom field is missing: the storefront answers 500 instead of 422 (seen in the M.6b suite with `permanent_address` missing).
+   - 3.9 A1 review F3: a till cash payment reversed (3.34 `REVERSAL`) before the close still counts in expected cash (the reversal row has no `posSessionId`). The directory submit 500 → 422 is now M.6c C2.
    - `sync-indexes.test.ts` (spawns processes) timed out on `main` CI 40151387531, the second time after CI 40131011005 (a rerun passed). Give it more time or a small card.
    - 3.5b A1 review follow-ups (`docs/handoffs/3.5b-api-review-R1.md`): `as unknown as` in every accounting event handler; payment's `PaymentApprovalSnapshot.approverUserId` holds a member id.
    - M.6a review follow-ups (`docs/handoffs/M.6a-api-review-R1.md`: stale stats race, option keys with `.`/`$`, ungated directory storefront routes, erasure event for stats).
@@ -88,8 +91,8 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-25 09:30–11:40** (Opus 5.5, two lead chats one after the other): planned every remaining card (`0cb31b1`…`8f44ce6`); wrote the owner's paste-ready prompts in `lead-orchestra/owner-guide/`. T1 review R1 of 3.9 A1 (accepted; F1/F2 into the plan as Amendment 1 for A2) and review R1 of M.6b (lead fixed an encoded-slash path traversal in the storefront proxy); stacked and merged both (`541467f`, `dcd7539`). Disk C: was full: deleted leftover `mongo-mem-*` folders with the owner's OK.
 - **2026-10-25 07:50–08:40** (Opus 5.5, Sonnet implementer): 3.36 root cause: the browser stack runs the worker since 3.24, so a staff Activate after the payment raced it (correct 409); the test now reloads until ACTIVE; merged (`fb9639f`). Rebased 3.5b A1 on 3.31, T1 review R1 (lead fixes: currency compared before settling, dead branch, a 60-line split) and merged (`dd51581`). Launched 3.9 A1 (Sonnet). Took over M.6b and fixed its browser setup step by step (6 of 8 pass locally).
 - **2026-10-25 03:00–07:45** (Opus, banijjik-4d, Haiku implementers): T1 review and merge of 3.31 (`09b0921`). Planned 3.5b (ADR-145, `852f473`) and 3.9 POS (ADR-146, `49920df`); answered 3.5b A1 Amendments 1–2 and M.6b Amendment 1. Took over CI waits from stalling Haiku agents. Started lead card 3.36.
 - **2026-10-24 21:45 – 2026-10-25 03:00** (Opus, banijjik-4d, Haiku implementers): merged 3.5a B (`f5dfd17`), 3.34 after T1 R1 (`2850cd6`), M.6a after T1 R1 (`f9311d8`) and 3.11 C (`dd143a5`). Planned M.6 in three parts (ADR-144), refreshed 3.11 C and 3.31.
 - **2026-10-24 20:53–21:45** (Opus, banijjik-4d): T1 review R1 of 3.33 and merge checks of 3.6b B and 3.11 B; stacked the three and merged (`ccceb52`, `357dbe2`, `8e0f636`). Relaunched 3.34 and the 3.5a B finish as Haiku subagents.
-- **2026-10-24 19:50** (Opus): resumed Sonnet at 19:10; merged 3.7 B (`5541586`) and 3.24 after R2 (`65415ef`); refreshed and launched 3.34.
