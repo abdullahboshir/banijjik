@@ -58,6 +58,12 @@ function postingOf(dependencies: AccountingHandlerDependencies): PostJournalDepe
  * posting-source adapters are provided (cards 3.8 / 3.6 merge later).
  */
 export function registerAccountingEventHandlers(dependencies: AccountingHandlerDependencies): void {
+  registerRequiredHandlers(dependencies);
+  registerOptionalHandlers(dependencies);
+}
+
+/** Streams whose posting sources are always wired: a missing one would leave the books short. */
+function registerRequiredHandlers(dependencies: AccountingHandlerDependencies): void {
   registerEventHandler(
     buildSeedOnOrganizationCreatedHandler({
       accounts: dependencies.accounts,
@@ -70,6 +76,21 @@ export function registerAccountingEventHandlers(dependencies: AccountingHandlerD
       posting: postingOf(dependencies),
     }),
   );
+  registerEventHandler(
+    buildPostEnrollmentsHandler({
+      enrollments: dependencies.enrollments,
+      posting: postingOf(dependencies),
+    }),
+  );
+  registerEventHandler(
+    buildPostSalesReturnsHandler({
+      salesReturns: dependencies.salesReturns,
+      posting: postingOf(dependencies),
+    }),
+  );
+}
+
+function registerOptionalHandlers(dependencies: AccountingHandlerDependencies): void {
   if (dependencies.payments !== undefined) {
     registerEventHandler(
       buildPostPaymentsHandler({
@@ -102,18 +123,6 @@ export function registerAccountingEventHandlers(dependencies: AccountingHandlerD
       }),
     );
   }
-  registerEventHandler(
-    buildPostEnrollmentsHandler({
-      enrollments: dependencies.enrollments,
-      posting: postingOf(dependencies),
-    }),
-  );
-  registerEventHandler(
-    buildPostSalesReturnsHandler({
-      salesReturns: dependencies.salesReturns,
-      posting: postingOf(dependencies),
-    }),
-  );
   if (dependencies.stocks !== undefined) {
     registerEventHandler(
       buildPostStockHandler({
