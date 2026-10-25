@@ -45,6 +45,9 @@ let stack: StorefrontStack;
 let owner: Session;
 let organizationId: string;
 let listingNumber: string;
+/** The signed-in pages (M.6c) are measured with a customer signed in. */
+let customerCookie = "";
+const SIGNED_IN_PATHS = ["/my/listing", "/my/credits", "/my/connections", "/my/account"];
 
 const HOME = `http://${SLUG}.${BASE_DOMAIN}:${STOREFRONT_PORT}`;
 
@@ -59,6 +62,7 @@ beforeAll(async () => {
   await enableCustomerLogin(owner, organizationId);
   await publishAboutPage(owner, organizationId);
   const customer = await signInCustomer(stack, organizationId);
+  customerCookie = customer.cookieHeader;
   listingNumber = (await seedApprovedListing(owner, customer, organizationId)).listingNumber;
   await waitForStatistics();
 }, 240_000);
@@ -92,8 +96,10 @@ async function openStorefront(
 }
 
 /** Gzip size of the scripts the HTML of a route references: what the browser loads before the page works. */
-async function initialJsKib(path: string): Promise<number> {
-  const response = await fetch(`${HOME}${path}`);
+async function initialJsKib(path: string, cookieHeader?: string): Promise<number> {
+  const response = await fetch(`${HOME}${path}`, {
+    headers: cookieHeader === undefined ? {} : { Cookie: cookieHeader },
+  });
   const html = await response.text();
   // Legacy polyfills carry `nomodule`: modern browsers never download them (same rule as the admin suite).
   const sources = (html.match(/<script\b[^>]*>/g) ?? [])
@@ -174,15 +180,26 @@ describe("the public storefront", () => {
   });
 
   it("keeps the initial JavaScript of each route within the budget", async () => {
-    const sizes = await Promise.all(
-      ["/", "/search", `/listings/${listingNumber}`, "/sign-in"].map(async (path) =>
-        initialJsKib(path),
-      ),
+    const publicPaths = ["/", "/search", `/listings/${listingNumber}`, "/sign-in"];
+    const publicSizes = await Promise.all(publicPaths.map((path) => initialJsKib(path)));
+    const signedInSizes = await Promise.all(
+      SIGNED_IN_PATHS.map((path) => initialJsKib(path, customerCookie)),
     );
-    process.stdout
-      .write(`initial JS per route (KiB gzip): ${sizes.map((size) => size.toFixed(1)).join(", ")}
-`);
-    for (const size of sizes) expect(size).toBeLessThanOrEqual(INITIAL_JS_BUDGET_KIB);
+    const routes = [...publicPaths, ...SIGNED_IN_PATHS];
+    const sizes = [...publicSizes, ...signedInSizes];
+    process.stdout.write(
+      routes
+        .map(
+          (path, index) => `initial JS ${path}: ${sizes[index]?.toFixed(1)} KiB gzip
+`,
+        )
+        .join(""),
+    );
+    routes.forEach((path, index) => {
+      expect(sizes[index] ?? Number.POSITIVE_INFINITY, path).toBeLessThanOrEqual(
+        INITIAL_JS_BUDGET_KIB,
+      );
+    });
   });
 
   it("has no sideways scroll on a phone", async () => {

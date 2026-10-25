@@ -111,6 +111,15 @@ export async function grantDirectoryModule(
   stack: StorefrontStack,
   organizationId: string,
 ): Promise<void> {
+  await grantOptionalModule(stack, organizationId, MODULE_KEY.DIRECTORY);
+}
+
+/** Any optional module (directory, credit): the same platform grant, written the same way. */
+export async function grantOptionalModule(
+  stack: StorefrontStack,
+  organizationId: string,
+  moduleKey: string,
+): Promise<void> {
   const client = await MongoClient.connect(stack.mongoUri);
   try {
     const platform = client.db("browser_platform");
@@ -118,7 +127,7 @@ export async function grantDirectoryModule(
     await platform.collection("module_overrides").insertOne({
       moduleOverrideId: newId(),
       organizationId,
-      moduleKey: MODULE_KEY.DIRECTORY,
+      moduleKey,
       effect: MODULE_OVERRIDE_EFFECT.PLATFORM_GRANT,
       reason: "browser test",
       expiresAt: null,
