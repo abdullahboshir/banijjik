@@ -57,12 +57,26 @@ export function validatePaymentAllocations(input: {
   return { totalAllocated, overpaymentAmount };
 }
 
+/**
+ * Each request is checked once against what was paid and its refund limit (3.32), so two
+ * allocations to the same request in one refund would each pass alone and exceed them together.
+ */
+function assertOneAllocationPerRequest(allocations: readonly PaymentAllocation[]): void {
+  const requestKeys = new Set(
+    allocations.map((alloc) => `${alloc.requestType}:${alloc.requestId}`),
+  );
+  if (requestKeys.size !== allocations.length) {
+    throw paymentAllocationsInvalidError("A refund allocates to each request once");
+  }
+}
+
 export function validateRefundAllocations(input: {
   readonly refundAmount: Money;
   readonly allocations: readonly PaymentAllocation[];
   readonly currentPaidByRequest: ReadonlyMap<string, number>;
 }): number {
   let totalAllocated = 0;
+  assertOneAllocationPerRequest(input.allocations);
   for (const alloc of input.allocations) {
     if (alloc.amount.currency !== input.refundAmount.currency) {
       throw paymentAllocationsInvalidError("Currency mismatch in refund allocations");

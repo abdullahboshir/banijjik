@@ -1521,6 +1521,25 @@ describe("enrollment cancel refunds (3.32)", () => {
     expect(results.map((result) => result.status).sort()).toEqual([201, 422]);
     expect((await summaryRow(world, periodId))?.refunded.amount).toBe(7000);
   });
+  it("a refund that allocates twice to the same period is refused and refunds nothing", async () => {
+    const { world, periodId } = await refundableFixture();
+    const split = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/refunds`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: world.locationA1,
+        method: "CASH",
+        amount: money(8000),
+        allocations: [
+          { requestType: "ENROLLMENT", requestId: periodId, amount: money(4000) },
+          { requestType: "ENROLLMENT", requestId: periodId, amount: money(4000) },
+        ],
+      },
+    });
+    expect(split.status, JSON.stringify(split.body)).toBe(400);
+    expect((await summaryRow(world, periodId))?.refunded.amount).toBe(0);
+  });
   it("a refund on a closed summary lowers its total, so the period never shows in dues; a refund on an open summary still reopens the due", async () => {
     const { world, periodId } = await refundableFixture();
     expect((await pay(world, periodId, 4000, true)).status).toBe(201);
