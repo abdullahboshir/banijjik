@@ -1,4 +1,4 @@
-import { DomainRuleError } from "@banijjik/contracts";
+import { DomainRuleError, type CurrencyCode } from "@banijjik/contracts";
 import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
 import { describe, expect, it } from "vitest";
 import { planSalesExchange } from "./sales-exchange-plan.js";
@@ -13,11 +13,13 @@ function ruleKeyOf(run: () => unknown): unknown {
   return undefined;
 }
 
-const BDT = "BDT";
-const USD = "USD";
+const BDT: CurrencyCode = "BDT";
+// Only BDT is a CurrencyCode today; a second code is widened on purpose to test the mismatch rule.
+const OTHER_CURRENCY: string = "USD";
+const USD = OTHER_CURRENCY as CurrencyCode;
 
 function bdt(amount: number) {
-  return { amount, currency: BDT } as const;
+  return { amount, currency: BDT };
 }
 
 describe("sales exchange money plan", () => {

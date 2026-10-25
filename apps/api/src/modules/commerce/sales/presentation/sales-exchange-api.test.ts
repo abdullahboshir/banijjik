@@ -3,7 +3,7 @@ import { PERMISSION_KEY, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
 import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
 import { newId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { money, startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
+import { startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
 import {
   registerIamApiModels,
   type IamApiHarness,
@@ -23,12 +23,20 @@ import {
   stockOf,
 } from "../../../../test-support/sales-return-world.js";
 import {
-  ordersPath,
   publishOffering,
   setSetting,
   shopOf,
   type SalesShop,
 } from "../../../../test-support/sales-api-world.js";
+import {
+  creditBalanceOf,
+  exchangeBody,
+  newProduct,
+  paidSale,
+  postExchange,
+  previewExchange,
+  returnsOf,
+} from "../../../../test-support/sales-exchange-world.js";
 import type { TwoOrganizations } from "../../../../test-support/two-organizations.js";
 
 registerIamApiModels();
@@ -46,130 +54,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await harness.dispose();
 });
-
-interface ExchangeOptions {
-  readonly returned: readonly {
-    readonly orderLineId: string;
-    readonly quantity: number;
-    readonly disposition?: string;
-  }[];
-  readonly sold: readonly {
-    readonly offeringId: string;
-    readonly variantId: string;
-    readonly quantity: number;
-  }[];
-  readonly payments?: readonly { readonly method: string; readonly amount: number }[];
-  readonly orderDiscount?: { readonly type: string; readonly value: number };
-  readonly returnApprovalTokens?: { readonly refund?: string; readonly returnNotReceived?: string };
-  readonly orderApprovalToken?: string;
-}
-
-/** The exchange body: the return lines, the new order's lines, and the payments on the new order. */
-function exchangeBody(options: ExchangeOptions): Record<string, unknown> {
-  return {
-    return: {
-      lines: options.returned.map((line) => ({
-        orderLineId: line.orderLineId,
-        quantity: line.quantity,
-        disposition: line.disposition ?? "RESTOCK",
-      })),
-      reasonKey: "CHANGED_MIND",
-      ...(options.returnApprovalTokens === undefined
-        ? {}
-        : { approvalTokens: options.returnApprovalTokens }),
-    },
-    order: {
-      lines: options.sold.map((line) => ({
-        offeringId: line.offeringId,
-        variantId: line.variantId,
-        quantity: line.quantity,
-      })),
-      ...(options.orderDiscount === undefined ? {} : { orderDiscount: options.orderDiscount }),
-      ...(options.orderApprovalToken === undefined
-        ? {}
-        : { approvalToken: options.orderApprovalToken }),
-    },
-    payments: (options.payments ?? []).map((payment) => ({
-      method: payment.method,
-      amount: money(payment.amount),
-    })),
-  };
-}
-
-function postExchange(
-  actor: SalesShop["actor"],
-  target: { readonly organizationId: string; readonly orderId: string },
-  body: object,
-  idempotencyKey: string = newId(),
-) {
-  return actor.callWith({
-    method: "post",
-    path: ordersPath(target.organizationId, `/${target.orderId}/exchange`),
-    idempotencyKey,
-    body,
-  });
-}
-
-function previewExchange(
-  actor: SalesShop["actor"],
-  target: { readonly organizationId: string; readonly orderId: string },
-  body: object,
-) {
-  return actor.call(
-    "post",
-    ordersPath(target.organizationId, `/${target.orderId}/exchange/preview`),
-    body,
-  );
-}
-
-/** The returns of one order, as the list shows them. */
-async function returnsOf(
-  shop: SalesShop,
-  orderId: string,
-): Promise<readonly { salesReturnId: string }[]> {
-  const response = await shop.actor.call(
-    "get",
-    `/orgs/${shop.organizationId}/sales/returns?orderId=${orderId}`,
-  );
-  expect(response.status).toBe(HTTP_OK);
-  return response.body.data as readonly { salesReturnId: string }[];
-}
-
-/** The store-credit balance of a contact: its CREDIT entries less its DEBIT entries. */
-async function creditBalanceOf(shop: SalesShop, contactId: string): Promise<number> {
-  const response = await shop.actor.call(
-    "get",
-    `/orgs/${shop.organizationId}/store-credit?contactId=${contactId}`,
-  );
-  expect(response.status).toBe(HTTP_OK);
-  const entries = response.body.data as readonly {
-    direction: string;
-    amount: { amount: number };
-  }[];
-  return entries.reduce(
-    (sum, entry) =>
-      sum + (entry.direction === "CREDIT" ? entry.amount.amount : -entry.amount.amount),
-    0,
-  );
-}
-
-/** A counter sale of `quantity` units with a contact, paid in full in cash. */
-async function paidSale(shop: SalesShop, quantity: number, stockItemId?: string) {
-  const contactId = await newContact(shop);
-  const sold = await soldLine(shop, quantity, {
-    contactId,
-    ...(stockItemId === undefined ? {} : { stockItemId }),
-  });
-  const paid = await payOrder(shop, sold.order.orderId, {
-    amount: sold.order.totals.grandTotal.amount,
-  });
-  expect(paid.status).toBe(HTTP_CREATED);
-  return { ...sold, contactId };
-}
-
-async function newProduct(shop: SalesShop, priceAmount: number) {
-  return publishOffering(shop, { kind: "PRODUCT", name: `Item ${newId()}`, priceAmount });
-}
 
 describe("exchange a return for a new order API: money and stock", () => {
   it("an exchange for a cheaper item leaves the difference as store credit", async () => {
@@ -416,8 +300,8 @@ describe("exchange a return for a new order API: rules and approvals", () => {
     });
     const target = { organizationId: shop.organizationId, orderId: order.orderId };
 
-    const first = await postExchange(shop.actor, target, body, key);
-    const replay = await postExchange(shop.actor, target, body, key);
+    const first = await postExchange(shop.actor, { ...target, idempotencyKey: key }, body);
+    const replay = await postExchange(shop.actor, { ...target, idempotencyKey: key }, body);
 
     expect(first.status).toBe(HTTP_CREATED);
     expect(replay.status).toBe(HTTP_CREATED);
