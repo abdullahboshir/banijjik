@@ -36,6 +36,7 @@ function periodWith(status: EnrollmentPeriodResponse["status"]): EnrollmentPerio
     periodStartsOn: "2026-10-01",
     periodEndsOn: "2026-10-31",
     fee: money(100000),
+    refundRemaining: null,
     sessionsAllowed: 12,
     sessionsUsed: 2,
     status,
