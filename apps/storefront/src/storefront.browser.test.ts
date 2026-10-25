@@ -23,7 +23,8 @@ import {
 /** 13-UX section 11 and M.6 decision 8: initial JavaScript per route, gzip, in KiB. */
 const INITIAL_JS_BUDGET_KIB = 170;
 const BYTES_PER_KIB = 1024;
-const SLUG = "shop";
+/** `shop` is a reserved organization slug, so the test business uses another one. */
+const SLUG = "rahim-bibaho";
 const BUSINESS_NAME = "আকমি ট্রেডার্স";
 const PHONE_VIEWPORT = { width: 390, height: 844, isMobile: true, hasTouch: true } as const;
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 } as const;
