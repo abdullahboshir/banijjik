@@ -37,6 +37,9 @@ const MEMBER_NAME = "কামাল হোসেন";
 const MEMBER_PHONE = "+8801710000777";
 const EMERGENCY_PHONE = "+8801710000999";
 const MINIMUM_TOUCH_TARGET = 43.5;
+/** How long the worker gets to handle the payment event and activate the enrollment. */
+const WORKER_ACTIVATION_WAIT_MS = 30_000;
+const RELOAD_INTERVAL_MS = 500;
 
 let stack: BrowserStack;
 let owner: SeededPerson;
@@ -101,16 +104,29 @@ async function enrollMember(page: Page): Promise<string> {
   }, pattern.source)) as string;
 }
 
-/** Like `waitForBadge`, but a timeout says what the page shows, so a CI failure names its cause. */
-async function waitForBadgeOrExplain(page: Page, label: string): Promise<void> {
-  try {
-    await waitForBadge(page, label);
-  } catch (error) {
-    const shown = await page.$eval("main", (main) => main.textContent ?? "");
-    throw new Error(`badge "${label}" never appeared; the page shows: ${shown.slice(0, 600)}`, {
-      cause: error,
-    });
+async function showsBadge(page: Page, label: string): Promise<boolean> {
+  return page.evaluate(
+    (wanted) =>
+      Array.from(document.querySelectorAll("[data-tone]")).some(
+        (badge) => badge.textContent === wanted,
+      ),
+    label,
+  );
+}
+
+/**
+ * Loads the page again until a status badge shows, for a change the worker makes in the
+ * background. A timeout says what the page shows, so a CI failure names its cause.
+ */
+async function reloadUntilBadge(page: Page, path: string, label: string): Promise<void> {
+  const deadline = Date.now() + WORKER_ACTIVATION_WAIT_MS;
+  while (Date.now() < deadline) {
+    await gotoWhenHydrated(page, path, "main");
+    if (await showsBadge(page, label)) return;
+    await new Promise((resolve) => setTimeout(resolve, RELOAD_INTERVAL_MS));
   }
+  const shown = await page.$eval("main", (main) => main.textContent ?? "");
+  throw new Error(`badge "${label}" never appeared; the page shows: ${shown.slice(0, 600)}`);
 }
 
 async function tapCheckIn(page: Page, expectedRows: number): Promise<void> {
@@ -141,13 +157,11 @@ describe("GYM enrollment flow", () => {
     await page.waitForFunction(() => document.querySelector("[role=dialog]") === null);
     await waitForText(page, message("enrollment.detail.updating"));
 
-    // Load the page again instead of clicking while the refresh the payment started is still
-    // running: a click on a button that is re-rendering can be lost (card 3.36).
-    await gotoWhenHydrated(page, detailPath, "main");
-    await waitForBadge(page, message("enrollment.status.PENDING"));
-    // The worker is not running here: Activate syncs the paid period itself (3.27 decision 6).
-    await clickByName(page, message("enrollment.action.activate"));
-    await waitForBadgeOrExplain(page, message("enrollment.status.ACTIVE"));
+    // The stack runs the worker (since 3.24): its payment handler activates the paid enrollment
+    // (3.27 decision 7). A staff click here would race it and get a correct 409 with the stale
+    // version, so the test waits for the worker instead (card 3.36). The staff path right after
+    // a payment is covered by the API test "activates on a staff action right after the payment".
+    await reloadUntilBadge(page, detailPath, message("enrollment.status.ACTIVE"));
 
     await gotoWhenHydrated(page, `${GYM_PATH}/check-ins`, "main");
     await page.type("#check-in-contact", MEMBER_NAME);
