@@ -15,6 +15,7 @@ import { buildPostBookingsHandler } from "./handlers/post-bookings.handler.js";
 import { buildPostCommissionHandler } from "./handlers/post-commission.handler.js";
 import { buildPostExpensesHandler } from "./handlers/post-expenses.handler.js";
 import { buildPostPaymentsHandler } from "./handlers/post-payments.handler.js";
+import { buildPostEnrollmentRefundsHandler } from "./handlers/post-enrollment-refunds.handler.js";
 import { buildPostOrdersHandler } from "./handlers/post-orders.handler.js";
 import { buildPostEnrollmentsHandler } from "./handlers/post-enrollments.handler.js";
 import { buildPostSalesReturnsHandler } from "./handlers/post-sales-returns.handler.js";
@@ -92,6 +93,13 @@ function registerRequiredHandlers(dependencies: AccountingHandlerDependencies): 
 
 function registerOptionalHandlers(dependencies: AccountingHandlerDependencies): void {
   if (dependencies.payments !== undefined) {
+    registerEventHandler(
+      buildPostEnrollmentRefundsHandler({
+        payments: dependencies.payments,
+        enrollments: dependencies.enrollments,
+        posting: postingOf(dependencies),
+      }),
+    );
     registerEventHandler(
       buildPostPaymentsHandler({
         payments: dependencies.payments,

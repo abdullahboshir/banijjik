@@ -29,6 +29,12 @@ const seats = () => models({}).get<EnrollmentSeats>(ENROLLMENT_SEATS_MODEL);
 const checkIns = () => models({}).get<CheckIn>(CHECK_IN_MODEL);
 
 export class MongoEnrollmentRepository implements EnrollmentRepository {
+  async periodForRefund(enrollmentPeriodId: string): Promise<EnrollmentPeriod | undefined> {
+    const row = await periods()
+      .findOne({ enrollmentPeriodId }, projection, options())
+      .lean<EnrollmentPeriod>();
+    return row ?? undefined;
+  }
   async insert(enrollment: Enrollment, period: EnrollmentPeriod): Promise<void> {
     await enrollments().create([enrollment], options());
     await this.insertPeriod(period);
@@ -114,6 +120,15 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
       update: {
         $set: {
           sessionsUsed: period.sessionsUsed,
+          ...(period.refundableOnCancel === undefined
+            ? {}
+            : { refundableOnCancel: period.refundableOnCancel }),
+          ...(period.refundedAtCancel === undefined
+            ? {}
+            : { refundedAtCancel: period.refundedAtCancel }),
+          ...(period.revenueClosedAs === undefined
+            ? {}
+            : { revenueClosedAs: period.revenueClosedAs }),
           status: period.status,
           ...(period.revenueRecognizedOn === undefined
             ? {}

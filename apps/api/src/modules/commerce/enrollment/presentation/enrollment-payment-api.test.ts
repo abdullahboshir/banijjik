@@ -24,6 +24,7 @@ import { asId, newId, type OrganizationId } from "@banijjik/ids";
 import { businessDateOf } from "../../booking/index.js";
 import {
   buildPostEnrollmentsHandler,
+  buildPostEnrollmentRefundsHandler,
   buildPostPaymentsHandler,
   MongoAccountRepository,
   MongoJournalRepository,
@@ -1340,3 +1341,202 @@ async function failIfPaymentFinishedFirst(request: Promise<unknown>): Promise<ne
   await request;
   throw new Error("payment finished before it reached the summary write");
 }
+
+async function refundableFixture(policy = "UNUSED_PERIODS") {
+  const world = await worldFor(harness, RETAIL, GYM);
+  await setting(world, ENROLLMENT_SETTING.REFUND_POLICY, policy);
+  const plan = await publishPlan(world);
+  const enrollment = await enroll(world, {
+    ...plan,
+    startsOn: addDays(today(), 5),
+    autoRenew: false,
+  });
+  const periodId = enrollment.currentEnrollmentPeriodId;
+  const payment = await pay(world, periodId, 10001);
+  expect(payment.status).toBe(201);
+  await syncPayments(
+    world.organizationA,
+    today(),
+    PAYMENT_EVENT_TYPE.PAYMENT_RECEIVED,
+    payment.body.data.paymentId,
+  );
+  const latest = await getEnrollment(world, enrollment.enrollmentId);
+  const cancelled = await world.alice.call(
+    "post",
+    `/orgs/${world.organizationA}/enrollments/${enrollment.enrollmentId}/cancel`,
+    { version: latest.version },
+  );
+  expect(cancelled.status, JSON.stringify(cancelled.body)).toBe(200);
+  return { world, periodId, cancelled, enrollment };
+}
+
+describe("enrollment cancel refunds (3.32)", () => {
+  it("a refund without the permission needs an approval token", async () => {
+    const { world, periodId } = await refundableFixture();
+    await setting(world, "payment.refund.managerWithoutApproval", false);
+    const refused = await pay(world, periodId, 100, true);
+    expect(refused.body.error.details.ruleKey).toBe("errors.payment_approval_required");
+    expect((await summaryRow(world, periodId))?.refunded.amount).toBe(0);
+  });
+  it("refunding a period kept as a cancellation fee lowers CANCELLATION_FEE_INCOME; refunding a recognised period lowers REVENUE_PLAN", async () => {
+    for (const future of [false, true]) {
+      const world = await worldFor(harness, RETAIL, GYM);
+      await seedAccountsFor(world);
+      await setting(world, ENROLLMENT_SETTING.REFUND_POLICY, "PRORATED");
+      const plan = await publishPlan(world);
+      const enrollment = await enroll(world, {
+        ...plan,
+        startsOn: future ? addDays(today(), 5) : today(),
+        autoRenew: false,
+      });
+      const periodId = enrollment.currentEnrollmentPeriodId;
+      const payment = await pay(world, periodId, 10001);
+      await syncPayments(
+        world.organizationA,
+        today(),
+        PAYMENT_EVENT_TYPE.PAYMENT_RECEIVED,
+        payment.body.data.paymentId,
+      );
+      await postPaymentEvent(
+        world,
+        PAYMENT_EVENT_TYPE.PAYMENT_RECEIVED,
+        payment.body.data.paymentId,
+      );
+      await postEnrollmentEvents(world);
+      await action(world, await getEnrollment(world, enrollment.enrollmentId), "cancel");
+      await postEnrollmentEvents(world);
+      const refund = await pay(world, periodId, 10001, true);
+      expect(refund.status, JSON.stringify(refund.body)).toBe(201);
+      await postPaymentEvent(
+        world,
+        PAYMENT_EVENT_TYPE.PAYMENT_REFUNDED,
+        refund.body.data.paymentId,
+      );
+      const handler = buildPostEnrollmentRefundsHandler({
+        payments: buildPaymentPostingSourceAdapter(buildPaymentRequestReaders()),
+        enrollments: buildEnrollmentPeriodPostingSource(buildRequestAdvanceReader()),
+        posting: postingDependencies(),
+      });
+      await withOrganizationContext(world.organizationA, () =>
+        new MongoUnitOfWork().run(() =>
+          handler.handle(
+            makeEnvelope(
+              world.organizationA,
+              PAYMENT_EVENT_TYPE.PAYMENT_REFUNDED,
+              refund.body.data.paymentId,
+            ),
+          ),
+        ),
+      );
+      expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.ACCOUNTS_RECEIVABLE)).toBe(0);
+      expect(await netBalance(world, SYSTEM_ACCOUNT_CODE.CUSTOMER_ADVANCES)).toBe(0);
+      expect(
+        await netBalance(
+          world,
+          future ? SYSTEM_ACCOUNT_CODE.CANCELLATION_FEE_INCOME : SYSTEM_ACCOUNT_CODE.REVENUE_PLAN,
+        ),
+      ).toBe(0);
+    }
+  });
+  it("a refund on an open summary still reopens the due", async () => {
+    const world = await worldFor(harness, RETAIL, GYM);
+    const plan = await publishPlan(world);
+    const enrollment = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    expect((await pay(world, enrollment.currentEnrollmentPeriodId, 10001)).status).toBe(201);
+    expect((await pay(world, enrollment.currentEnrollmentPeriodId, 1000, true)).status).toBe(201);
+    expect((await summaryRow(world, enrollment.currentEnrollmentPeriodId))?.total.amount).toBe(
+      10001,
+    );
+    expect(await dues(world)).toHaveLength(1);
+  });
+  it("cancel stores each period's refundable amount and how it closed, and returns the amounts per period", async () => {
+    const { world, periodId, cancelled, enrollment } = await refundableFixture();
+    expect(cancelled.body.data.refundableByPeriod).toEqual([
+      { enrollmentPeriodId: periodId, amount: money(10001) },
+    ]);
+    const period = (await getEnrollment(world, enrollment.enrollmentId)).periods[0];
+    expect(period).toMatchObject({
+      refundableOnCancel: money(10001),
+      refundedAtCancel: money(0),
+      revenueClosedAs: "CANCELLATION_FEE",
+      refundRemaining: money(10001),
+    });
+  });
+  it("a payment on a cancelled enrollment period is refused", async () => {
+    const { world, periodId } = await refundableFixture();
+    expect((await pay(world, periodId, 1)).status).toBe(400);
+  });
+  it("a refund up to the limit works to store credit and by cash; above the limit is 422", async () => {
+    const { world, periodId, enrollment } = await refundableFixture();
+    expect((await pay(world, periodId, 10002, true)).status).toBe(422);
+    expect((await pay(world, periodId, 5000, true)).status).toBe(201);
+    const credit = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/refunds`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: world.locationA1,
+        contactId: enrollment.billToContactId,
+        method: "STORE_CREDIT",
+        amount: money(5001),
+        allocations: [{ requestType: "ENROLLMENT", requestId: periodId, amount: money(5001) }],
+      },
+    });
+    expect(credit.status, JSON.stringify(credit.body)).toBe(201);
+    expect((await pay(world, periodId, 1, true)).status).toBe(422);
+    expect(await dues(world)).toEqual([]);
+  });
+  it("two parallel refunds of the same period never pass the limit together", async () => {
+    const { world, periodId } = await refundableFixture();
+    const results = await Promise.all([
+      pay(world, periodId, 7000, true),
+      pay(world, periodId, 7000, true),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([201, 422]);
+    expect((await summaryRow(world, periodId))?.refunded.amount).toBe(7000);
+  });
+  it("a refund on a closed summary lowers its total, so the period never shows in dues; a refund on an open summary still reopens the due", async () => {
+    const { world, periodId } = await refundableFixture();
+    expect((await pay(world, periodId, 4000, true)).status).toBe(201);
+    expect((await summaryRow(world, periodId))?.total.amount).toBe(6001);
+    expect(await dues(world)).toEqual([]);
+  });
+  it("policy NONE stores zero and refuses every refund of the cancelled periods", async () => {
+    const { world, periodId, cancelled } = await refundableFixture("NONE");
+    expect(cancelled.body.data.refundableAmount.amount).toBe(0);
+    expect((await pay(world, periodId, 1, true)).status).toBe(422);
+  });
+  it("the refund revenue entry posts once on event replay", async () => {
+    const { world, periodId } = await refundableFixture();
+    await seedAccountsFor(world);
+    const refund = await pay(world, periodId, 4000, true);
+    expect(refund.status).toBe(201);
+    const handler = buildPostEnrollmentRefundsHandler({
+      payments: buildPaymentPostingSourceAdapter(buildPaymentRequestReaders()),
+      enrollments: buildEnrollmentPeriodPostingSource(buildRequestAdvanceReader()),
+      posting: postingDependencies(),
+    });
+    const envelope = makeEnvelope(
+      world.organizationA,
+      PAYMENT_EVENT_TYPE.PAYMENT_REFUNDED,
+      refund.body.data.paymentId,
+    );
+    for (let replay = 0; replay < 2; replay++)
+      await withOrganizationContext(world.organizationA, () =>
+        new MongoUnitOfWork().run(() => handler.handle(envelope)),
+      );
+    const journal = await journalOf(world, {
+      sourceType: JOURNAL_SOURCE_TYPE.PAYMENT,
+      sourceId: refund.body.data.paymentId,
+      postingKey: POSTING_KEY.enrollment_period_refund_revenue,
+    });
+    expect(lineAmount(journal, SYSTEM_ACCOUNT_CODE.CANCELLATION_FEE_INCOME, "debit")).toBe(4000);
+    expect(
+      await harness.connections.tenantShared.collection("journal_entries").countDocuments({
+        organizationId: world.organizationA,
+        sourceId: refund.body.data.paymentId,
+        postingKey: POSTING_KEY.enrollment_period_refund_revenue,
+      }),
+    ).toBe(1);
+  });
+});

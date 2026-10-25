@@ -172,17 +172,11 @@ async function prepareRefundContext(deps: RefundPaymentDependencies, input: Refu
   if (needsApproval && !input.approvalToken && !input.approvalSnapshot) {
     throw paymentApprovalRequiredError();
   }
-  const enrichedAllocations = await validateRefundRequests(
-    deps.requestReaders,
-    deps.summaries,
-    input,
-  );
-  const enrichedInput: RefundPaymentInput = { ...input, allocations: enrichedAllocations };
   const timeZone = await deps.timeZone.read(input.organizationId);
   const now = deps.clock.now();
   const businessDate = businessDateOf(now, timeZone);
   const expiresAt = await resolveRefundExpiryDate(deps.orgConfig, input.organizationId, now);
-  return { needsApproval, enrichedInput, now, businessDate, expiresAt };
+  return { needsApproval, now, businessDate, expiresAt };
 }
 
 export class RefundPaymentUseCase {
@@ -190,10 +184,15 @@ export class RefundPaymentUseCase {
 
   async execute(input: RefundPaymentInput): Promise<PaymentResponse> {
     const deps = this.dependencies;
-    const { needsApproval, enrichedInput, now, businessDate, expiresAt } =
-      await prepareRefundContext(deps, input);
+    const { needsApproval, now, businessDate, expiresAt } = await prepareRefundContext(deps, input);
 
     return deps.unitOfWork.run(async () => {
+      const enrichedAllocations = await validateRefundRequests(
+        deps.requestReaders,
+        deps.summaries,
+        input,
+      );
+      const enrichedInput: RefundPaymentInput = { ...input, allocations: enrichedAllocations };
       const approvalSnapshot = await resolveRefundApproval(
         deps.approvals,
         needsApproval,

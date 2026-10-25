@@ -1,6 +1,7 @@
 import type { Money } from "@banijjik/contracts/catalog";
 import {
   ENROLLMENT_EVENT_TYPE,
+  ENROLLMENT_REVENUE_CLOSE,
   ENROLLMENT_PERIOD_STATUS,
   ENROLLMENT_STATUS,
 } from "@banijjik/contracts/enrollment";
@@ -156,6 +157,20 @@ async function closeOnePeriod(
       announce: false,
     });
   }
+  await dependencies.repository.savePeriod(
+    {
+      ...closedPeriod,
+      ...(kept.amount > 0
+        ? {
+            revenueClosedAs: recognizedBeforeCancel
+              ? ENROLLMENT_REVENUE_CLOSE.REVENUE
+              : ENROLLMENT_REVENUE_CLOSE.CANCELLATION_FEE,
+          }
+        : {}),
+      updatedByUserId: actorUserId,
+    },
+    false,
+  );
   await dependencies.events.publish(
     ENROLLMENT_EVENT_TYPE.PERIOD_REVENUE_CLOSED,
     {

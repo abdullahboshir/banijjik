@@ -32,6 +32,14 @@ export interface EnrollmentPeriodPostingRecord {
  * id; the cancel date is the cancelled enrollment's endsOn (set by the cancel transition).
  */
 export function buildEnrollmentPeriodPostingSource(advances: HeldAdvanceReader): {
+  readRefundClose(enrollmentPeriodId: string): Promise<
+    | {
+        revenueClosedAs: "REVENUE" | "CANCELLATION_FEE";
+        currency: Money["currency"];
+        locationId: string | null;
+      }
+    | undefined
+  >;
   readPeriod(input: {
     organizationId: string;
     enrollmentPeriodId: string;
@@ -39,6 +47,15 @@ export function buildEnrollmentPeriodPostingSource(advances: HeldAdvanceReader):
 } {
   const repository = new MongoEnrollmentRepository();
   return {
+    async readRefundClose(enrollmentPeriodId) {
+      const enrollment = await repository.periodForRefund(enrollmentPeriodId);
+      if (!enrollment?.revenueClosedAs) return undefined;
+      return {
+        revenueClosedAs: enrollment.revenueClosedAs,
+        currency: enrollment.fee.currency,
+        locationId: enrollment.locationId,
+      };
+    },
     async readPeriod(input: { organizationId: string; enrollmentPeriodId: string }) {
       const organizationId = asId<OrganizationId>(input.organizationId);
       const period = await repository.findPeriod(organizationId, input.enrollmentPeriodId);

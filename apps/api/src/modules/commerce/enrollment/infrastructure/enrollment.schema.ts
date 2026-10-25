@@ -85,6 +85,9 @@ const period = new Schema<EnrollmentPeriod>(
     sessionsUsed: { type: Number, required: true },
     status: { type: String, enum: Object.values(ENROLLMENT_PERIOD_STATUS), required: true },
     revenueRecognizedOn: String,
+    refundableOnCancel: money,
+    refundedAtCancel: money,
+    revenueClosedAs: { type: String, enum: ["REVENUE", "CANCELLATION_FEE"] },
   },
   SCHEMA_OPTIONS,
 );

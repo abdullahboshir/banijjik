@@ -199,6 +199,11 @@ export class MongoPaymentSummaryRepository implements PaymentSummaryRepository {
   }
 
   async applyRefund(input: ApplyRefundInput): Promise<void> {
+    const before = await this.findByRequest(
+      input.organizationId,
+      input.requestType,
+      input.requestId,
+    );
     const model = getPaymentSummaryModel();
     const session = sessionOption(getActiveSession());
 
@@ -220,6 +225,21 @@ export class MongoPaymentSummaryRepository implements PaymentSummaryRepository {
 
     if (result.matchedCount === 0) {
       throw paymentRefundExceedsPaidError();
+    }
+    if (before?.closedAt) {
+      await this.setTotal({
+        organizationId: input.organizationId,
+        requestType: input.requestType,
+        requestId: input.requestId,
+        total: {
+          amount: Math.max(
+            before.allocated.amount - before.refunded.amount - input.amount,
+            before.total.amount - input.amount,
+          ),
+          currency: before.total.currency,
+        },
+        now: input.now,
+      });
     }
   }
 

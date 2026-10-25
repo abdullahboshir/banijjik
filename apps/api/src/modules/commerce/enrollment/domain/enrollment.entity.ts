@@ -3,6 +3,7 @@ import type {
   EnrollmentStatus,
   EnrollmentPeriodStatus,
   EnrollmentAction,
+  EnrollmentRevenueClose,
 } from "@banijjik/contracts/enrollment";
 
 export interface EnrollmentFreeze {
@@ -57,5 +58,8 @@ export interface EnrollmentPeriod extends EnrollmentAuditFields {
   readonly status: EnrollmentPeriodStatus;
   /** Local business date the whole fee became revenue; set once, never changed (card 3.31). */
   readonly revenueRecognizedOn?: string;
+  readonly refundableOnCancel?: Money;
+  readonly refundedAtCancel?: Money;
+  readonly revenueClosedAs?: EnrollmentRevenueClose;
   readonly version: number;
 }

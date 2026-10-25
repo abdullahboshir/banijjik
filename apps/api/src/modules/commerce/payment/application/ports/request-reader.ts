@@ -8,6 +8,8 @@ export interface RequestReadSnapshot {
   readonly revenueState: "BEFORE_REVENUE" | "AFTER_REVENUE";
   readonly contactId: string | null;
   readonly locationId: LocationId | null;
+  readonly acceptsPayments: boolean;
+  readonly refundLimit: Money | null;
 }
 
 export interface RequestReader {

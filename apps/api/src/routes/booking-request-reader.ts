@@ -22,6 +22,8 @@ export function buildBookingRequestReader(
           booking.status === BOOKING_STATUS.COMPLETED ? "AFTER_REVENUE" : "BEFORE_REVENUE",
         contactId: booking.contactId,
         locationId: booking.locationId,
+        acceptsPayments: true,
+        refundLimit: null,
       };
     },
   };

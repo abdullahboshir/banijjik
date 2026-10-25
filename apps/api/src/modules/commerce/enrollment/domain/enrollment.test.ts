@@ -7,7 +7,7 @@ import {
 } from "@banijjik/contracts/enrollment";
 import { addBillingPeriod } from "./period-dates.js";
 import { assertTransition, freezeEnrollment, unfreezeEnrollment } from "./transitions.js";
-import { refundableAmount } from "./refunds.js";
+import { refundableAmount, refundableByPeriod, refundRemaining } from "./refunds.js";
 import type { Enrollment, EnrollmentPeriod } from "./enrollment.entity.js";
 
 function enrollment(overrides: Partial<Enrollment> = {}): Enrollment {
@@ -67,6 +67,32 @@ function period(overrides: Partial<EnrollmentPeriod> = {}): EnrollmentPeriod {
 }
 
 describe("enrollment business rules", () => {
+  it("refundableByPeriod splits UNUSED_PERIODS and PRORATED per period and ignores unpaid periods", () => {
+    const current = period();
+    const future = period({ periodStartsOn: "2026-02-01", periodEndsOn: "2026-02-28" });
+    const unpaid = period({ status: "OPEN" });
+    const amounts = refundableByPeriod([current, future, unpaid], "2026-01-16", {
+      policy: "PRORATED",
+      currency: "BDT",
+    });
+    expect(amounts.get(current.enrollmentPeriodId)?.amount).toBe(5161);
+    expect(amounts.get(future.enrollmentPeriodId)?.amount).toBe(10001);
+    expect(amounts.get(unpaid.enrollmentPeriodId)?.amount).toBe(0);
+    expect(
+      refundableByPeriod([current, future], "2026-01-16", {
+        policy: "UNUSED_PERIODS",
+        currency: "BDT",
+      }).get(current.enrollmentPeriodId)?.amount,
+    ).toBe(0);
+  });
+  it("the limit is the stored amount minus what was refunded since cancel", () => {
+    const paid = period({
+      refundableOnCancel: { amount: 1000, currency: "BDT" },
+      refundedAtCancel: { amount: 200, currency: "BDT" },
+    });
+    expect(refundRemaining(paid, { amount: 500, currency: "BDT" }).amount).toBe(700);
+    expect(refundRemaining(paid, { amount: 2000, currency: "BDT" }).amount).toBe(0);
+  });
   it.each([
     ["2025-01-31", { unit: "MONTH", count: 1 }, "2025-02-28"],
     ["2024-01-31", { unit: "MONTH", count: 1 }, "2024-02-29"],
@@ -151,6 +177,6 @@ describe("enrollment business rules", () => {
         policy: ENROLLMENT_REFUND_POLICY.PRORATED,
         currency: "BDT",
       }).amount,
-    ).toBe(5161);
+    ).toBe(15162);
   });
 });

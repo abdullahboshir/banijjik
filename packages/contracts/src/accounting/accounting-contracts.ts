@@ -72,6 +72,7 @@ export const POSTING_KEY = defineEnum([
   "enrollment_period_advance_settle",
   "enrollment_period_revenue_cancel",
   "enrollment_period_cancellation_fee",
+  "enrollment_period_refund_revenue",
   "sales_return_value",
   "sales_return_cogs",
 ]);

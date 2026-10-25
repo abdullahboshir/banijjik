@@ -1,8 +1,16 @@
 import { ENROLLMENT_PERIOD_STATUS, ENROLLMENT_STATUS } from "@banijjik/contracts/enrollment";
 import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
-import { asId, type LocationId } from "@banijjik/ids";
-import { buildEnrollmentPeriodSnapshotReader } from "../modules/commerce/enrollment/index.js";
-import type { RequestReader } from "../modules/commerce/payment/index.js";
+import { asId, type LocationId, type OrganizationId } from "@banijjik/ids";
+import {
+  buildEnrollmentPeriodSnapshotReader,
+  refundRemaining,
+  type EnrollmentPeriodSnapshot,
+} from "../modules/commerce/enrollment/index.js";
+import {
+  MongoPaymentSummaryRepository,
+  type PaymentSummaryRepository,
+  type RequestReader,
+} from "../modules/commerce/payment/index.js";
 
 /**
  * An enrollment period is the payment request (decision 2). Missing, foreign, WAIVED and
@@ -12,6 +20,7 @@ import type { RequestReader } from "../modules/commerce/payment/index.js";
  */
 export function buildEnrollmentRequestReader(
   periods = buildEnrollmentPeriodSnapshotReader(),
+  summaries: PaymentSummaryRepository = new MongoPaymentSummaryRepository(),
 ): RequestReader {
   return {
     read: async (organizationId, requestId) => {
@@ -20,7 +29,8 @@ export function buildEnrollmentRequestReader(
         return undefined;
       const { period, enrollment } = snapshot;
       if (period.status === ENROLLMENT_PERIOD_STATUS.WAIVED) return undefined;
-      if (enrollment.status === ENROLLMENT_STATUS.CANCELLED) return undefined;
+      if (enrollment.status === ENROLLMENT_STATUS.CANCELLED)
+        return cancelledSnapshot({ organizationId, period, enrollment, summaries });
       return {
         requestId: period.enrollmentPeriodId,
         requestType: PAYMENT_REQUEST_TYPE.ENROLLMENT,
@@ -28,7 +38,36 @@ export function buildEnrollmentRequestReader(
         contactId: enrollment.billToContactId,
         locationId: asId<LocationId>(period.locationId),
         revenueState: period.revenueRecognizedOn === undefined ? "BEFORE_REVENUE" : "AFTER_REVENUE",
+        acceptsPayments: true,
+        refundLimit: null,
       };
     },
+  };
+}
+
+async function cancelledSnapshot(input: {
+  organizationId: OrganizationId;
+  period: EnrollmentPeriodSnapshot["period"];
+  enrollment: EnrollmentPeriodSnapshot["enrollment"];
+  summaries: PaymentSummaryRepository;
+}) {
+  const { organizationId, period, enrollment, summaries } = input;
+  const summary = await summaries.findByRequest(
+    organizationId,
+    PAYMENT_REQUEST_TYPE.ENROLLMENT,
+    period.enrollmentPeriodId,
+  );
+  return {
+    requestId: period.enrollmentPeriodId,
+    requestType: PAYMENT_REQUEST_TYPE.ENROLLMENT,
+    total: period.fee,
+    contactId: enrollment.billToContactId,
+    locationId: asId<LocationId>(period.locationId),
+    revenueState: "AFTER_REVENUE" as const,
+    acceptsPayments: false,
+    refundLimit: refundRemaining(
+      period,
+      summary?.refunded ?? { amount: 0, currency: period.fee.currency },
+    ),
   };
 }

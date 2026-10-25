@@ -12,6 +12,9 @@ export const ENROLLMENT_STATUS = defineEnum([
 ]);
 export type EnrollmentStatus = (typeof ENROLLMENT_STATUS)[keyof typeof ENROLLMENT_STATUS];
 export const ENROLLMENT_PERIOD_STATUS = defineEnum(["OPEN", "PAID", "PARTIAL", "WAIVED"]);
+export const ENROLLMENT_REVENUE_CLOSE = defineEnum(["REVENUE", "CANCELLATION_FEE"]);
+export type EnrollmentRevenueClose =
+  (typeof ENROLLMENT_REVENUE_CLOSE)[keyof typeof ENROLLMENT_REVENUE_CLOSE];
 export type EnrollmentPeriodStatus =
   (typeof ENROLLMENT_PERIOD_STATUS)[keyof typeof ENROLLMENT_PERIOD_STATUS];
 export const ENROLLMENT_ACTION = defineEnum([

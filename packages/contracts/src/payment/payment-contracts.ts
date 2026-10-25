@@ -82,6 +82,7 @@ export const PAYMENT_RULE_KEYS = Object.freeze({
   PAYMENT_ALLOCATIONS_INVALID: "errors.payment_allocations_invalid",
   PAYMENT_OVERPAYMENT_REQUIRES_CONTACT: "errors.payment_overpayment_requires_contact",
   PAYMENT_REFUND_EXCEEDS_PAID: "errors.payment_refund_exceeds_paid",
+  PAYMENT_REFUND_ABOVE_LIMIT: "errors.payment_refund_above_limit",
   PAYMENT_REVERSAL_ALREADY_REVERSED: "errors.payment_reversal_already_reversed",
   PAYMENT_REVERSAL_HAS_REFUND: "errors.payment_reversal_has_refund",
   OVERPAYMENT_CREDIT_SPENT: "errors.overpayment_credit_spent",

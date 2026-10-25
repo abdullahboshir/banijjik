@@ -19,6 +19,7 @@ import {
 export type PaymentMethodCode = keyof typeof METHOD_ACCOUNT_CODE;
 
 export interface PaymentAllocationForPosting {
+  readonly requestType?: PaymentRequestType;
   readonly requestId: string;
   readonly amount: Money;
   readonly revenueState: (typeof REVENUE_STATE)[keyof typeof REVENUE_STATE];

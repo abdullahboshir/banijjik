@@ -57,6 +57,7 @@ export async function validateAllocationLimits(
     }
     const snapshot = await reader.read(input.organizationId, alloc.requestId);
     if (!snapshot) throw paymentRequestNotFoundError(alloc.requestId);
+    if (!snapshot.acceptsPayments) throw paymentRequestNotFoundError(alloc.requestId);
     if (snapshot.total.currency !== alloc.amount.currency) {
       throw paymentAllocationsInvalidError("Currency mismatch with request total");
     }

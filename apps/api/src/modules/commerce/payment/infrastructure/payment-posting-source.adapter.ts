@@ -39,6 +39,7 @@ async function buildPostingAllocations(
   for (const alloc of paymentDoc.allocations) {
     const revenueState = await resolveAllocationRevenueState(organizationId, alloc, requestReaders);
     allocations.push({
+      requestType: alloc.requestType,
       requestId: alloc.requestId,
       amount: {
         amount: alloc.amount.amount,

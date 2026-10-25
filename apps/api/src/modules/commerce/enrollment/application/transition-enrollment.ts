@@ -3,7 +3,6 @@ import {
   ENROLLMENT_PERIOD_STATUS,
   ENROLLMENT_EVENT_TYPE,
   ENROLLMENT_RULE_KEY,
-  ENROLLMENT_REFUND_POLICY,
   type EnrollmentAction,
   type EnrollmentStatus,
 } from "@banijjik/contracts/enrollment";
@@ -17,10 +16,10 @@ import {
   unfreezeEnrollment,
 } from "../domain/transitions.js";
 import { addBillingPeriod, addDays } from "../domain/period-dates.js";
-import { refundableAmount } from "../domain/refunds.js";
+import { settleCancellation } from "./settle-cancellation.js";
 import type { TransitionInput } from "./ports.js";
 import { syncPeriodPaymentStatus } from "./sync-period-payment.js";
-import { closeCancelledPeriods, settleRevenueAfterTransition } from "./period-revenue.js";
+import { settleRevenueAfterTransition } from "./period-revenue.js";
 import { recordTransition } from "./record-transition.js";
 import {
   auditFields,
@@ -29,7 +28,6 @@ import {
   releaseEnrollment,
   type EnrollmentDependencies,
 } from "./dependencies.js";
-
 const events = {
   activate: ENROLLMENT_EVENT_TYPE.ENROLLMENT_ACTIVATED,
   freeze: ENROLLMENT_EVENT_TYPE.ENROLLMENT_FROZEN,
@@ -51,8 +49,8 @@ type TransitionState = {
 export interface TransitionResult {
   readonly enrollment: Enrollment;
   readonly refundableAmount?: Money;
+  readonly refundableByPeriod?: readonly { enrollmentPeriodId: string; amount: Money }[];
 }
-
 export async function transitionEnrollment(
   dependencies: EnrollmentDependencies,
   input: TransitionInput,
@@ -98,56 +96,12 @@ export async function transitionEnrollment(
     return settleCancellation(dependencies, { input, enrollment: saved, today });
   });
 }
-/** Completion can arrive through several actions; it always emits the completed event. */
 function eventForTransition(
   action: EnrollmentAction,
   status: EnrollmentStatus,
 ): (typeof events)[EnrollmentAction] {
   if (status === ENROLLMENT_STATUS.COMPLETED) return ENROLLMENT_EVENT_TYPE.ENROLLMENT_COMPLETED;
   return events[action];
-}
-/** Cap the summaries first, then close the periods at what was kept (decision 6). */
-async function settleCancellation(
-  dependencies: EnrollmentDependencies,
-  settlement: { input: TransitionInput; enrollment: Enrollment; today: string },
-): Promise<TransitionResult> {
-  const { input, enrollment, today } = settlement;
-  await capPeriodSummaries(dependencies, enrollment);
-  await closeCancelledPeriods({ dependencies, enrollment, cancelDate: today, input });
-  return cancellationResult(dependencies, enrollment, today);
-}
-/** A cancelled enrollment owes nothing more: every non-waived period's summary total drops to its net paid (decision 4). */
-async function capPeriodSummaries(
-  dependencies: EnrollmentDependencies,
-  enrollment: Enrollment,
-): Promise<void> {
-  const now = dependencies.clock.now();
-  for (const period of await dependencies.repository.periods(enrollment.enrollmentId)) {
-    if (period.status === ENROLLMENT_PERIOD_STATUS.WAIVED) continue;
-    await dependencies.payments.capTotalAtNetPaid({
-      organizationId: enrollment.organizationId,
-      enrollmentPeriodId: period.enrollmentPeriodId,
-      now,
-    });
-  }
-}
-async function cancellationResult(
-  dependencies: EnrollmentDependencies,
-  enrollment: Enrollment,
-  today: string,
-): Promise<TransitionResult> {
-  const settings = await dependencies.context.settings(enrollment.organizationId);
-  const policy =
-    Object.values(ENROLLMENT_REFUND_POLICY).find((value) => value === settings.refundPolicy) ??
-    ENROLLMENT_REFUND_POLICY.NONE;
-  return {
-    enrollment,
-    refundableAmount: refundableAmount(
-      await dependencies.repository.periods(enrollment.enrollmentId),
-      today,
-      { policy, currency: enrollment.firstRecurringFee.currency },
-    ),
-  };
 }
 async function applyTransition(
   dependencies: EnrollmentDependencies,
@@ -200,13 +154,10 @@ async function activateEnrollment(
 ): Promise<Enrollment> {
   const settings = await dependencies.context.settings(state.input.organizationId);
   if (state.today < state.enrollment.startsOn) transitionRefused(ENROLLMENT_RULE_KEY.START_DATE);
-  // Staff activating right after a payment must not wait for the worker (decision 6).
   const period = await syncPeriodPaymentStatus(dependencies, state.period, state.input.actorUserId);
   const paid =
     period.status === ENROLLMENT_PERIOD_STATUS.PAID ||
     period.status === ENROLLMENT_PERIOD_STATUS.WAIVED;
-  // Being overdue means unpaid: recovery needs the current period paid even when activation
-  // generally does not require payment (decision 7).
   const mustPay = settings.requirePayment || state.enrollment.status === ENROLLMENT_STATUS.OVERDUE;
   if (mustPay && !paid) transitionRefused(ENROLLMENT_RULE_KEY.PAYMENT_REQUIRED);
   return { ...state.enrollment, status: ENROLLMENT_STATUS.ACTIVE };
@@ -282,7 +233,4 @@ async function appendRenewalPeriod(
     now,
   });
   return automated ? { ...enrollment, currentEnrollmentPeriodId: enrollmentPeriodId } : enrollment;
-}
-export function transitionEvent(action: EnrollmentAction): (typeof events)[EnrollmentAction] {
-  return events[action];
 }

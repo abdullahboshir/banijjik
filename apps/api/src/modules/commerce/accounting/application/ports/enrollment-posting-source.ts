@@ -16,6 +16,14 @@ export interface EnrollmentPeriodPostingSnapshot {
 }
 
 export interface EnrollmentPeriodPostingSource {
+  readRefundClose(enrollmentPeriodId: string): Promise<
+    | {
+        revenueClosedAs: "REVENUE" | "CANCELLATION_FEE";
+        currency: Money["currency"];
+        locationId: string | null;
+      }
+    | undefined
+  >;
   readPeriod(input: {
     readonly organizationId: string;
     readonly enrollmentPeriodId: string;

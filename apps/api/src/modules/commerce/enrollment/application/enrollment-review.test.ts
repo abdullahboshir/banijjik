@@ -279,6 +279,8 @@ function reviewFixture() {
         currency: "BDT" as const,
       };
     },
+    readRefunded: async () => ({ amount: 0, currency: "BDT" as const }),
+    readRefundedMany: async () => new Map(),
     capTotalAtNetPaid: vi.fn(),
     listPeriodIdsOfPayment: async () => [],
   };

@@ -10,6 +10,7 @@ import type { Clock } from "../../../../kernel/time/index.js";
 import type { ResourceExclusiveHoldPort } from "../../booking/index.js";
 import type { ApprovalVerifier } from "../../../core/iam/index.js";
 import type { Enrollment, EnrollmentPeriod } from "../domain/enrollment.entity.js";
+import { refundRemaining } from "../domain/refunds.js";
 import type {
   EnrollmentRepository,
   EnrollmentContext,
@@ -109,5 +110,23 @@ export async function detail(
     page: 1,
     limit: 100,
   });
-  return { ...enrollment, periods };
+  const detailedPeriods = [];
+  const refunded =
+    enrollment.status === "CANCELLED"
+      ? await dependencies.payments.readRefundedMany(
+          enrollment.organizationId,
+          periods.map((period) => period.enrollmentPeriodId),
+        )
+      : new Map();
+  for (const period of periods) {
+    const remaining =
+      enrollment.status === "CANCELLED"
+        ? refundRemaining(
+            period,
+            refunded.get(period.enrollmentPeriodId) ?? { amount: 0, currency: period.fee.currency },
+          )
+        : null;
+    detailedPeriods.push({ ...period, refundRemaining: remaining });
+  }
+  return { ...enrollment, periods: detailedPeriods };
 }

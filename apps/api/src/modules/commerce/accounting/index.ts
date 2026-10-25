@@ -72,6 +72,7 @@ export {
   draftExpenseVoided,
 } from "./domain/posting-rules.js";
 export { draftBadDebtWriteOff } from "./domain/write-off-posting-rules.js";
+export { buildPostEnrollmentRefundsHandler } from "./application/handlers/post-enrollment-refunds.handler.js";
 export { draftOrderCompleted } from "./domain/order-posting-rules.js";
 export { draftStockSource } from "./domain/stock-posting-rules.js";
 export { assertBalanced, mirrorLines } from "./domain/journal-lines.js";

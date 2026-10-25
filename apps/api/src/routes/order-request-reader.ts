@@ -21,6 +21,8 @@ export function buildOrderRequestReader(orders = buildOrderSnapshotReader()): Re
         contactId: order.contactId,
         locationId: order.locationId,
         revenueState: order.status === ORDER_STATUS.COMPLETED ? "AFTER_REVENUE" : "BEFORE_REVENUE",
+        acceptsPayments: true,
+        refundLimit: null,
       };
     },
   };

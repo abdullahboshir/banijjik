@@ -472,6 +472,7 @@
   "errors.payment_allocations_invalid": "Payment allocation is invalid.",
   "errors.payment_overpayment_requires_contact": "Selecting a contact is required to keep excess payment as store credit.",
   "errors.payment_refund_exceeds_paid": "Refund cannot exceed the paid amount.",
+  "errors.payment_refund_above_limit": "Refund cannot exceed the remaining cancellation refund limit.",
   "errors.payment_reversal_already_reversed": "This payment has already been reversed.",
   "errors.payment_reversal_has_refund": "A payment with refunds cannot be reversed.",
   "errors.overpayment_credit_spent": "The store credit from excess payment has already been spent and cannot be reversed.",

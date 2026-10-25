@@ -23,6 +23,7 @@ import {
   paymentRequestNotFoundError,
   storeCreditConflictError,
   storeCreditContactRequiredError,
+  paymentRefundAboveLimitError,
 } from "../../domain/errors.js";
 import type {
   ContactStoreCreditPort,
@@ -59,6 +60,15 @@ async function readCurrentPaidAndAllocations(
       throw paymentAllocationsInvalidError(`Unregistered request type ${alloc.requestType}`);
     const snapshot = await reader.read(input.organizationId, alloc.requestId);
     if (!snapshot) throw paymentRequestNotFoundError(alloc.requestId);
+    if (snapshot.refundLimit && snapshot.refundLimit.currency !== alloc.amount.currency)
+      throw paymentAllocationsInvalidError("Currency mismatch with refund limit");
+    if (
+      snapshot.refundLimit &&
+      alloc.amount.currency === snapshot.refundLimit.currency &&
+      alloc.amount.amount > snapshot.refundLimit.amount
+    ) {
+      throw paymentRefundAboveLimitError(alloc.requestId, snapshot.refundLimit);
+    }
 
     const summary = await summaries.findByRequest(
       input.organizationId,

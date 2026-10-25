@@ -76,6 +76,30 @@ class EnrollmentPaymentAdapter implements EnrollmentPaymentPort {
     return { amount: 0, currency };
   }
 
+  async readRefunded(input: Parameters<EnrollmentPaymentPort["readRefunded"]>[0]): Promise<Money> {
+    const summary = await this.summaries.findByRequest(
+      asId<OrganizationId>(input.organizationId),
+      PAYMENT_REQUEST_TYPE.ENROLLMENT,
+      input.enrollmentPeriodId,
+    );
+    if (summary) return summary.refunded;
+    const currency = await this.currencies.read(asId<OrganizationId>(input.organizationId));
+    if (!currency) throw new DomainRuleError({ code: ERROR_CODE.NOT_FOUND });
+    return { amount: 0, currency };
+  }
+
+  async readRefundedMany(
+    organizationId: string,
+    enrollmentPeriodIds: readonly string[],
+  ): Promise<ReadonlyMap<string, Money>> {
+    const summaries = await this.summaries.findByRequests(
+      asId<OrganizationId>(organizationId),
+      PAYMENT_REQUEST_TYPE.ENROLLMENT,
+      enrollmentPeriodIds,
+    );
+    return new Map(summaries.map((summary) => [summary.requestId, summary.refunded]));
+  }
+
   async capTotalAtNetPaid(
     input: Parameters<EnrollmentPaymentPort["capTotalAtNetPaid"]>[0],
   ): Promise<void> {

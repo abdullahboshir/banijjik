@@ -780,6 +780,8 @@ describe("Payment API", () => {
           revenueState: "BEFORE_REVENUE",
           contactId,
           locationId: asId<LocationId>(world.locationA1),
+          acceptsPayments: true,
+          refundLimit: null,
         };
       },
     });

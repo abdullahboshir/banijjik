@@ -40,6 +40,7 @@ export interface EnrollmentResponse extends EnrollmentAuditResponse {
   }[];
 }
 export interface EnrollmentPeriodResponse extends EnrollmentAuditResponse {
+  readonly refundRemaining: Money | null;
   readonly enrollmentPeriodId: string;
   readonly enrollmentId: string;
   readonly periodNumber: number;
@@ -69,4 +70,5 @@ export interface CheckInResponse extends EnrollmentAuditResponse {
 export interface EnrollmentTransitionResponse {
   readonly enrollment: EnrollmentResponse;
   readonly refundableAmount?: Money;
+  readonly refundableByPeriod?: readonly { enrollmentPeriodId: string; amount: Money }[];
 }

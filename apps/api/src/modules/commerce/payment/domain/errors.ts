@@ -41,6 +41,16 @@ export function paymentRefundExceedsPaidError(): DomainRuleError {
   });
 }
 
+export function paymentRefundAboveLimitError(
+  requestId: string,
+  limit: import("@banijjik/contracts/payment").Money,
+): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    details: { ruleKey: PAYMENT_RULE_KEYS.PAYMENT_REFUND_ABOVE_LIMIT, requestId, limit },
+  });
+}
+
 export function paymentReversalAlreadyReversedError(): DomainRuleError {
   return new DomainRuleError({
     code: ERROR_CODE.CONFLICT,

@@ -72,6 +72,11 @@ export interface EnrollmentPaymentPort {
   }): Promise<void>;
   /** Net paid (allocated − refunded) in minor units, read with the active session. Zero when no summary exists. */
   readNetPaid(input: { organizationId: string; enrollmentPeriodId: string }): Promise<Money>;
+  readRefunded(input: { organizationId: string; enrollmentPeriodId: string }): Promise<Money>;
+  readRefundedMany(
+    organizationId: string,
+    enrollmentPeriodIds: readonly string[],
+  ): Promise<ReadonlyMap<string, Money>>;
   /** Lowers the summary total to the net paid amount (cancel). Never raises it. */
   capTotalAtNetPaid(input: {
     organizationId: string;
