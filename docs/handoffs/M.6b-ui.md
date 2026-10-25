@@ -3,7 +3,7 @@
 - **Branch:** `s/M.6b-ui-storefront`, created from `origin/main` (`f9311d89`, M.6a merged), rebased on the latest main before the push. Pushed without force.
 - **Model:** Claude Haiku 5.5 (Claude Code), unattended run.
 - **Plan:** `docs/plans/M.6.md`, Part M.6b only (decisions 8 to 14, the M.6b rows of Files, the M.6b test list, the noindex note). The plan has no Refresh or Amendment section, so the base text was followed.
-- **CI:** CI_LINK_PENDING
+- **CI:** green, https://github.com/abdullahboshir/banijjik/actions/runs/40161032003
 
 ## Done
 
@@ -62,7 +62,13 @@ Local checks: `tsc --noEmit` passes for the storefront (including the browser te
 
 ## Route sizes
 
-Per-route initial JavaScript is measured by the browser test (budget 170 KiB gzip). Local upper bound: all client chunks of the production build total 192.7 KiB gzip (11 files, the largest 70.3 KiB); the per-route figures are in the CI log of the browser suite.
+Measured in the CI browser suite (https://github.com/abdullahboshir/banijjik/actions/runs/40161032003), KiB gzip, budget 170: `/` 149.0, `/search` 149.0, `/listings/<n>` 149.0, `/sign-in` 150.6.
+
+The first CI run showed 187.7 because the test also counted the `nomodule` legacy polyfill (38.7 KiB), which modern browsers never download. The test now skips `nomodule` scripts, exactly as the admin suite does (`apps/admin/src/test-support/initial-js-size.ts`). The budget stays 170; no page code changed.
+
+## Lead's browser-suite fixes (before this session)
+
+Reserved slug for the seeded business, matrimony template published before seeding, directory grant, OTP wait with `sentAfter`, GEO_BD sample value, lower-case colour.
 
 ## Known gaps
 
