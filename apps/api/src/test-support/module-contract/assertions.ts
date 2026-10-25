@@ -1,4 +1,4 @@
-import { EVENT_TYPE, type ModuleManifest } from "@banijjik/contracts";
+import { EVENT_TYPE, SETTING_VALUE_SOURCE, type ModuleManifest } from "@banijjik/contracts";
 import { expect } from "vitest";
 import { publishTestEvent } from "../event-fixtures.js";
 import { EventHandlerRegistry } from "../../kernel/events/event-handler-registry.js";
@@ -104,8 +104,10 @@ function settingsPath(organizationId: string): string {
 
 function settingsOf(response: {
   body: Record<string, unknown>;
-}): Record<string, { value: unknown }> {
-  const data = response.body["data"] as { settings?: Record<string, { value: unknown }> };
+}): Record<string, { value: unknown; source?: string }> {
+  const data = response.body["data"] as {
+    settings?: Record<string, { value: unknown; source?: string }>;
+  };
   return data.settings ?? {};
 }
 
@@ -122,9 +124,10 @@ export async function assertDeclaredSettingsAreServed(
   const listed = await organization.owner.call("get", path);
   expect(listed.status, "GET /settings").toBe(200);
   for (const setting of manifest.settings) {
-    expect(settingsOf(listed)[setting.settingKey]?.value, setting.settingKey).toEqual(
-      setting.systemDefault,
-    );
+    const served = settingsOf(listed)[setting.settingKey];
+    // An industry template may start a setting at its own value (12-INDUSTRY-TEMPLATES); only a value that comes from the system must be the declared default.
+    if (served?.source === SETTING_VALUE_SOURCE.INDUSTRY) continue;
+    expect(served?.value, setting.settingKey).toEqual(setting.systemDefault);
   }
   const [first] = manifest.settings;
   if (first === undefined) return;

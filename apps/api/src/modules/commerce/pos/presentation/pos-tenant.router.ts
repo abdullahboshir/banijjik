@@ -25,7 +25,7 @@ export interface PosRouterDependencies {
 }
 
 function mountDeviceRoutes(input: PosRouterDependencies, router: Router): void {
-  const { controller, permission, idempotency } = input;
+  const { controller, permission } = input;
   router.get(
     "/pos/devices",
     permission(PERMISSION_KEY.POS_DEVICE_MANAGE),
@@ -35,8 +35,8 @@ function mountDeviceRoutes(input: PosRouterDependencies, router: Router): void {
   router.post(
     "/pos/devices",
     permission(PERMISSION_KEY.POS_DEVICE_MANAGE),
+    // No Idempotency-Key: it moves no money, and a stored answer would keep the one-time code.
     validate({ body: posDeviceCreateRequestSchema }),
-    idempotency,
     controller.createDevice,
   );
   // Registered before the `:posDeviceId` routes, so "pair" is never read as an id.
