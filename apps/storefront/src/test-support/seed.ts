@@ -1,4 +1,6 @@
+import { INDUSTRY_TEMPLATE_STATUS } from "@banijjik/contracts";
 import { newId } from "@banijjik/ids";
+import { MongoClient } from "mongodb";
 import matrimonyBusiness from "./matrimony-business.json" with { type: "json" };
 import {
   API_ORIGIN,
@@ -78,6 +80,26 @@ export async function seedOwner(): Promise<Session> {
     body: { name, email, password: PASSWORD, preferredLocale: "bn" },
   });
   return { cookieHeader: cookieHeaderOf(setCookies), name };
+}
+
+/**
+ * The seeded industry templates are DRAFT and this stack has no platform admin to publish them, so
+ * the test business's template is published straight in the database (as the admin browser seed does).
+ */
+export async function publishTemplate(stack: StorefrontStack, templateKey: string): Promise<void> {
+  const client = await MongoClient.connect(stack.mongoUri);
+  try {
+    await client
+      .db("browser_platform")
+      .collection("industry_templates")
+      .updateOne(
+        // A seeded-template field name in a DB filter, not a branch on industry (ADR-033).
+        { ["industryTemplateKey"]: templateKey },
+        { $set: { status: INDUSTRY_TEMPLATE_STATUS.PUBLISHED } },
+      );
+  } finally {
+    await client.close();
+  }
 }
 
 /** The business with the matrimony template (directory and website modules on). */

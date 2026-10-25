@@ -8,6 +8,7 @@ import {
   seedOwner,
   enableCustomerLogin,
   publishAboutPage,
+  publishTemplate,
   signInCustomer,
   type Session,
 } from "./test-support/seed";
@@ -48,6 +49,8 @@ const HOME = `http://${SLUG}.${BASE_DOMAIN}:${STOREFRONT_PORT}`;
 
 beforeAll(async () => {
   stack = await startStorefrontStack();
+  // The template named by test-support/matrimony-business.json.
+  await publishTemplate(stack, "MATRIMONY");
   owner = await seedOwner();
   organizationId = await seedBusiness(owner, SLUG, BUSINESS_NAME);
   await seedBranding(owner, organizationId, PNG_BYTES);
