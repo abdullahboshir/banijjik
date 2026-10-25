@@ -35,6 +35,42 @@ export interface PosReceiptLabels {
 }
 
 /** Every visible string of the till, resolved on the server so the client bundle carries no catalog. */
+export interface PosCloseLabels {
+  readonly title: string;
+  readonly counted: string;
+  readonly note: string;
+  readonly submit: string;
+  readonly failed: string;
+  readonly noOpen: string;
+  readonly back: string;
+}
+
+export interface PosZReportLabels {
+  readonly title: string;
+  readonly number: string;
+  readonly opened: string;
+  readonly closed: string;
+  readonly sales: string;
+  readonly gross: string;
+  readonly discount: string;
+  readonly tax: string;
+  readonly grandTotal: string;
+  readonly received: string;
+  readonly collected: string;
+  readonly refunded: string;
+  readonly returns: string;
+  readonly returnsValue: string;
+  readonly returnsRefunded: string;
+  readonly storeCreditUsed: string;
+  readonly duesCreated: string;
+  readonly openingFloat: string;
+  readonly expectedCash: string;
+  readonly countedCash: string;
+  readonly variance: string;
+  readonly print: string;
+  readonly done: string;
+}
+
 export interface PosLabels {
   readonly title: string;
   readonly pairTitle: string;
@@ -66,6 +102,10 @@ export interface PosLabels {
   readonly permissionDenied: string;
   readonly payLabels: PosPayLabels;
   readonly receiptLabels: PosReceiptLabels;
+  readonly closeLabels: PosCloseLabels;
+  readonly zReportLabels: PosZReportLabels;
+  readonly closeRegister: string;
+  readonly closeBlocked: string;
 }
 
 function payLabelsOf(t: Translator["t"]): PosPayLabels {
@@ -106,6 +146,46 @@ function receiptLabelsOf(t: Translator["t"]): PosReceiptLabels {
   };
 }
 
+function closeLabelsOf(t: Translator["t"]): PosCloseLabels {
+  return {
+    title: t("pos.close.title"),
+    counted: t("pos.close.counted"),
+    note: t("pos.close.note"),
+    submit: t("pos.close.submit"),
+    failed: t("pos.close.failed"),
+    noOpen: t("pos.close.noOpen"),
+    back: t("pos.close.back"),
+  };
+}
+
+function zReportLabelsOf(t: Translator["t"]): PosZReportLabels {
+  return {
+    title: t("pos.z.title"),
+    number: t("pos.z.number"),
+    opened: t("pos.z.opened"),
+    closed: t("pos.z.closed"),
+    sales: t("pos.z.sales"),
+    gross: t("pos.z.gross"),
+    discount: t("pos.z.discount"),
+    tax: t("pos.z.tax"),
+    grandTotal: t("pos.z.grandTotal"),
+    received: t("pos.z.received"),
+    collected: t("pos.z.collected"),
+    refunded: t("pos.z.refunded"),
+    returns: t("pos.z.returns"),
+    returnsValue: t("pos.z.returnsValue"),
+    returnsRefunded: t("pos.z.returnsRefunded"),
+    storeCreditUsed: t("pos.z.storeCreditUsed"),
+    duesCreated: t("pos.z.duesCreated"),
+    openingFloat: t("pos.z.openingFloat"),
+    expectedCash: t("pos.z.expectedCash"),
+    countedCash: t("pos.z.countedCash"),
+    variance: t("pos.z.variance"),
+    print: t("pos.z.print"),
+    done: t("pos.z.done"),
+  };
+}
+
 export function posLabelsOf(translator: Translator): PosLabels {
   const { t } = translator;
   return {
@@ -139,5 +219,9 @@ export function posLabelsOf(translator: Translator): PosLabels {
     permissionDenied: t("state.permissionDenied"),
     payLabels: payLabelsOf(t),
     receiptLabels: receiptLabelsOf(t),
+    closeLabels: closeLabelsOf(t),
+    zReportLabels: zReportLabelsOf(t),
+    closeRegister: t("pos.sale.closeRegister"),
+    closeBlocked: t("pos.sale.closeBlocked"),
   };
 }

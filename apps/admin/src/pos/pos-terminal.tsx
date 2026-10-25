@@ -8,6 +8,7 @@ import { newId } from "@banijjik/ids";
 import { useEffect, useState, type ReactElement } from "react";
 import { openSession, pairDevice } from "./pos-api";
 import type { PosLabels } from "./pos-labels";
+import { PosCloseLazy } from "./pos-close-lazy";
 import { PosOpenRegisterForm } from "./pos-open-register-form";
 import { PosPairingForm } from "./pos-pairing-form";
 import { PosSaleScreen } from "./pos-sale-screen";
@@ -21,7 +22,14 @@ export interface PosTerminalProps {
 }
 
 /** The device cookie only reaches the API, so the first screen is decided in the browser. */
-type TerminalView = PosStartPhase | { readonly kind: "loading" } | { readonly kind: "failed" };
+type SellingView = Extract<PosStartPhase, { readonly kind: "selling" }>;
+
+/** Closing keeps the sale view it came from, so "back to the sale" restores the same register and rows. */
+type TerminalView =
+  | PosStartPhase
+  | { readonly kind: "loading" }
+  | { readonly kind: "failed" }
+  | { readonly kind: "closing"; readonly sellingView: SellingView };
 
 export function PosTerminal(props: PosTerminalProps): ReactElement {
   const { organizationId, currency, locale, labels } = props;
@@ -56,6 +64,15 @@ export function PosTerminal(props: PosTerminalProps): ReactElement {
     setView({ kind: "selling", session, rows });
   }
 
+  /** Back from the close screen returns to the same register; a finished close starts again from the top. */
+  async function handleCloseDone(): Promise<void> {
+    try {
+      setView(await resolveStartPhase(organizationId));
+    } catch {
+      setView({ kind: "failed" });
+    }
+  }
+
   return (
     <TerminalScreen
       view={view}
@@ -66,6 +83,9 @@ export function PosTerminal(props: PosTerminalProps): ReactElement {
       onRetry={() => setAttempt((count) => count + 1)}
       onPair={handlePair}
       onOpen={handleOpen}
+      onStartClose={(sellingView) => setView({ kind: "closing", sellingView })}
+      onBackToSale={(sellingView) => setView(sellingView)}
+      onCloseDone={() => void handleCloseDone()}
     />
   );
 }
@@ -79,6 +99,9 @@ interface TerminalScreenProps {
   readonly onRetry: () => void;
   readonly onPair: (pairingCode: string) => Promise<void>;
   readonly onOpen: (openingFloat: Money) => Promise<void>;
+  readonly onStartClose: (sellingView: SellingView) => void;
+  readonly onBackToSale: (sellingView: SellingView) => void;
+  readonly onCloseDone: () => void;
 }
 
 function FailedStart(props: {
@@ -120,6 +143,18 @@ function TerminalScreen(props: TerminalScreenProps): ReactElement {
       />
     );
   }
+  if (view.kind === "closing") {
+    return (
+      <PosCloseLazy
+        organizationId={organizationId}
+        currency={currency}
+        locale={locale}
+        labels={labels}
+        onBack={() => props.onBackToSale(view.sellingView)}
+        onDone={props.onCloseDone}
+      />
+    );
+  }
   return (
     <PosSaleScreen
       organizationId={organizationId}
@@ -128,6 +163,7 @@ function TerminalScreen(props: TerminalScreenProps): ReactElement {
       locale={locale}
       labels={labels}
       rows={view.rows}
+      onCloseRegister={() => props.onStartClose(view)}
     />
   );
 }

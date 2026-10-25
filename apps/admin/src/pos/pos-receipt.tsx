@@ -11,7 +11,7 @@ export const RECEIPT_PAPER_WIDTHS_MM = [58, 80] as const;
 export type ReceiptPaperWidthMm = (typeof RECEIPT_PAPER_WIDTHS_MM)[number];
 
 /** Only digits reach the stylesheet: the width is one of the two constants above. */
-function printPageRuleOf(paperWidthMm: ReceiptPaperWidthMm): string {
+export function printPageRuleOf(paperWidthMm: ReceiptPaperWidthMm): string {
   return `@media print { @page { size: ${String(paperWidthMm)}mm auto; margin: 2mm; } }`;
 }
 

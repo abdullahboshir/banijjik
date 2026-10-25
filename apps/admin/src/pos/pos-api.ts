@@ -3,9 +3,10 @@ import type {
   PosCatalogSnapshotResponse,
   PosSaleResponse,
   PosSessionResponse,
+  PosZReport,
 } from "@banijjik/contracts/pos";
 import type { QuoteRequest, QuoteResponse } from "@banijjik/contracts/pricing";
-import type { PosSaleBody } from "@banijjik/validation/pos";
+import type { PosSaleBody, PosSessionCloseBody } from "@banijjik/validation/pos";
 import { apiFetch } from "../lib/api/api-client";
 
 function posBase(organizationId: string): string {
@@ -86,5 +87,32 @@ export async function quoteCart(
     method: "POST",
     body,
   });
+  return result.data;
+}
+
+/**
+ * Counts the drawer and closes the register. The caller keeps one key per attempt, so a retry after a
+ * lost answer replays the close instead of closing a second time (ADR-014).
+ */
+export async function closeSession(
+  organizationId: string,
+  posSessionId: string,
+  request: { readonly body: PosSessionCloseBody; readonly idempotencyKey: string },
+): Promise<PosSessionResponse> {
+  const result = await apiFetch<PosSessionResponse>(
+    `${posBase(organizationId)}/sessions/${posSessionId}/close`,
+    { method: "POST", body: request.body, idempotencyKey: request.idempotencyKey },
+  );
+  return result.data;
+}
+
+/** The frozen Z-report of a closed register. */
+export async function fetchZReport(
+  organizationId: string,
+  posSessionId: string,
+): Promise<PosZReport> {
+  const result = await apiFetch<PosZReport>(
+    `${posBase(organizationId)}/sessions/${posSessionId}/z-report`,
+  );
   return result.data;
 }

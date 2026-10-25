@@ -20,6 +20,7 @@ export interface PosSaleScreenProps {
   readonly locale: DisplayLocale;
   readonly labels: PosLabels;
   readonly rows: readonly PosCatalogRow[];
+  readonly onCloseRegister: () => void;
 }
 
 const TOUCH_TARGET_CLASS = "min-h-14";
@@ -78,9 +79,21 @@ function SaleSearch(props: {
   );
 }
 
+/** The line the cart keeps for a scanned or tapped row; the price stays with the server's quote. */
+function cartLineOf(
+  row: PosCatalogRow,
+): Pick<PosCatalogRow, "offeringId" | "variantId" | "offeringName" | "variantName"> {
+  return {
+    offeringId: row.offeringId,
+    variantId: row.variantId,
+    offeringName: row.offeringName,
+    variantName: row.variantName,
+  };
+}
+
 /** Scan or type to find a product, tap to add it, then Pay; the receipt shows after a completed sale. */
 export function PosSaleScreen(props: PosSaleScreenProps): ReactElement {
-  const { organizationId, locationId, currency, locale, labels, rows } = props;
+  const { organizationId, locationId, currency, locale, labels, rows, onCloseRegister } = props;
   const [cart, dispatch] = useReducer(cartReducer, EMPTY_CART);
   const [paying, setPaying] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptModel | null>(null);
@@ -124,21 +137,12 @@ export function PosSaleScreen(props: PosSaleScreenProps): ReactElement {
       rows={rows}
       cartLines={cart.lines}
       cartCount={cartItemCount(cart)}
-      onAdd={(row) =>
-        dispatch({
-          type: "add",
-          line: {
-            offeringId: row.offeringId,
-            variantId: row.variantId,
-            offeringName: row.offeringName,
-            variantName: row.variantName,
-          },
-        })
-      }
+      onAdd={(row) => dispatch({ type: "add", line: cartLineOf(row) })}
       onQuantity={(lineKey, quantity) => dispatch({ type: "setQuantity", lineKey, quantity })}
       onRemove={(lineKey) => dispatch({ type: "remove", lineKey })}
       onClear={() => dispatch({ type: "clear" })}
       onPay={() => setPaying(true)}
+      onCloseRegister={onCloseRegister}
     />
   );
 }
@@ -154,6 +158,7 @@ interface SaleMainProps {
   readonly onRemove: (lineKey: string) => void;
   readonly onClear: () => void;
   readonly onPay: () => void;
+  readonly onCloseRegister: () => void;
 }
 
 /** The sale itself: search, cart and the Pay button. Pay is off offline and for an empty cart. */
@@ -194,6 +199,15 @@ function SaleMain(props: SaleMainProps): ReactElement {
         onClick={props.onPay}
       >
         {labels.pay}
+      </Button>
+      {cartCount > 0 ? <p className="text-small text-secondary">{labels.closeBlocked}</p> : null}
+      <Button
+        variant="secondary"
+        className={`${TOUCH_TARGET_CLASS} w-full`}
+        disabled={cartCount > 0}
+        onClick={props.onCloseRegister}
+      >
+        {labels.closeRegister}
       </Button>
     </div>
   );
