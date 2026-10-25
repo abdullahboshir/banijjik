@@ -68,6 +68,25 @@ export interface SmsSender {
   send(message: { readonly phoneE164: string; readonly text: string }): Promise<void>;
 }
 
+/**
+ * Sends one transactional SMS to a customer's phone (M.8b). The caller never sees the phone: this
+ * port resolves it from the account, skips a blocked or erased account, and keeps the dedupe record
+ * in the same unit of work as the send.
+ */
+export interface CustomerSmsNotifier {
+  sendToCustomer(input: {
+    readonly customerAccountId: string;
+    readonly text: string;
+    readonly dedupeKey: string;
+  }): Promise<void>;
+}
+
+/** Keeps the "this message was sent" record, so a redelivered event never costs a second SMS. */
+export interface CustomerSmsSentRepository {
+  /** True when this call wrote the record, false when the dedupe key was already there. */
+  claim(input: { readonly dedupeKey: string; readonly now: Date }): Promise<boolean>;
+}
+
 /** Builds the SMS text in the business's language, with the business name and the code. */
 export interface OtpMessageComposer {
   compose(code: string, purpose: CustomerOtpPurpose): Promise<string>;

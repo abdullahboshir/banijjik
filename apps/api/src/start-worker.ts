@@ -16,6 +16,7 @@ import { startScheduledJobs } from "./kernel/jobs/index.js";
 import { registerAccountingAndExpenseHandlers } from "./routes/accounting-event-handlers.js";
 import { registerCommissionHandlers } from "./routes/commission-adapters.js";
 import { registerContactHandlers } from "./routes/contact-event-handlers.js";
+import { registerDirectoryReviewSmsHandler } from "./routes/directory-event-handlers.js";
 import {
   registerDirectoryEventHandlers,
   registerDirectoryStatsHandler,
@@ -24,7 +25,10 @@ import { buildDirectoryBlockReader } from "./modules/platform/industry/index.js"
 import { buildEventModuleEffectiveness } from "./routes/module-effectiveness.js";
 import { buildModuleRegistry } from "./routes/module-registry.js";
 import { systemClock } from "./kernel/time/index.js";
-import { buildOrgConfigService } from "./modules/platform/entitlement/index.js";
+import {
+  buildOrgConfigService,
+  type OrgConfigService,
+} from "./modules/platform/entitlement/index.js";
 import {
   buildOrganizationConfigPorts,
   buildResolvedConfigSources,
@@ -39,6 +43,23 @@ import type { ModuleRegistry } from "./kernel/modules/index.js";
  * close the databases. The worker starts even when Redis is away; the dispatcher then keeps
  * events pending and backs off until it returns.
  */
+interface WorkerOrgConfig {
+  readonly registry: ModuleRegistry;
+  readonly orgConfig: OrgConfigService;
+}
+
+function buildWorkerOrgConfig(): WorkerOrgConfig {
+  const registry: ModuleRegistry = buildModuleRegistry();
+  const orgConfig = buildOrgConfigService({
+    registry,
+    clock: systemClock,
+    ...buildOrganizationConfigPorts(),
+    ...buildResolvedConfigSources(registry),
+    templates: buildIndustryTemplateReader(systemClock),
+  });
+  return { registry, orgConfig };
+}
+
 export function startWorker(
   config: AppConfig,
   logger: Logger,
@@ -49,13 +70,12 @@ export function startWorker(
   registerAccountingAndExpenseHandlers();
   registerDirectoryEventHandlers({ clock: systemClock, audit: buildAuditRecorder(systemClock) });
   registerDirectoryStatsHandler(buildDirectoryBlockReader());
-  const registry: ModuleRegistry = buildModuleRegistry();
-  const orgConfig = buildOrgConfigService({
-    registry,
+  const { registry, orgConfig } = buildWorkerOrgConfig();
+  registerDirectoryReviewSmsHandler({
     clock: systemClock,
-    ...buildOrganizationConfigPorts(),
-    ...buildResolvedConfigSources(registry),
-    templates: buildIndustryTemplateReader(systemClock),
+    smsDriver: config.storefront.smsDriver,
+    orgConfig,
+    manifests: registry.all(),
   });
   registerCommissionHandlers(systemClock, orgConfig);
   registerBookingScheduledJobs({

@@ -18,6 +18,8 @@ export interface DirectorySettingsReader {
   oneListingPerAccount(organizationId: OrganizationId): Promise<boolean>;
   reviewEdits(organizationId: OrganizationId): Promise<boolean>;
   photoPolicy(organizationId: OrganizationId): Promise<DirectoryPhotoPolicy>;
+  /** One SMS per review result while it is on (M.8b). */
+  notifyReviewBySms(organizationId: OrganizationId): Promise<boolean>;
 }
 
 export interface CustomerPhoneReader {

@@ -8,6 +8,8 @@ export type DirectoryPhotoPolicy =
 export const DIRECTORY_ONE_LISTING_SETTING_KEY = "directory.oneListingPerAccount";
 export const DIRECTORY_REVIEW_EDITS_SETTING_KEY = "directory.reviewEdits";
 export const DIRECTORY_PHOTO_POLICY_SETTING_KEY = "directory.photoPolicy";
+/** Sends one SMS when staff approve or reject a listing (M.8b). */
+export const DIRECTORY_NOTIFY_REVIEW_BY_SMS_SETTING_KEY = "directory.notifyReviewBySms";
 
 /** Scraping limits on public listing search (ADR-127). */
 export const DIRECTORY_SEARCH_RULES = {

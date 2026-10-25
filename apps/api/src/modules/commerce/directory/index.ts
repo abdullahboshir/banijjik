@@ -3,6 +3,7 @@ import { asId, type OrganizationId } from "@banijjik/ids";
 import type {
   CustomerDataExportParticipant,
   CustomerErasureParticipant,
+  CustomerSmsNotifier,
 } from "../contact/index.js";
 import type { RequestHandler, Router } from "express";
 import type { StorageConfig } from "../../../config/index.js";
@@ -35,6 +36,9 @@ import type {
   OrganizationTimezoneSource,
 } from "./application/ports/directory-context-ports.js";
 import { buildHideOnAccountBlockedHandler } from "./application/handlers/hide-on-account-blocked.handler.js";
+import { buildNotifyReviewResultHandler } from "./application/handlers/notify-review-result.handler.js";
+import type { ReviewResultMessageComposer } from "./application/ports/review-result-message-composer.js";
+import type { ListingRepository } from "./application/ports/listing-repository.js";
 import { CountListingUnlocksUseCase } from "./application/use-cases/count-listing-unlocks.use-case.js";
 import {
   FileListingReportUseCase,
@@ -121,7 +125,12 @@ export type {
   OrganizationTimezoneSource,
 } from "./application/ports/directory-context-ports.js";
 export type { ListingRepository } from "./application/ports/listing-repository.js";
+export type {
+  ListingReviewOutcome,
+  ReviewResultMessageComposer,
+} from "./application/ports/review-result-message-composer.js";
 export type { Listing } from "./domain/listing.entity.js";
+export { buildNotifyReviewResultHandler } from "./application/handlers/notify-review-result.handler.js";
 export { asListingFieldRules } from "./application/ports/directory-context-ports.js";
 export { projectListingFields } from "./domain/project-listing.js";
 
@@ -289,4 +298,18 @@ export function registerDirectoryEventHandlers(dependencies: {
       clock: dependencies.clock,
     }),
   );
+}
+
+/**
+ * Registers the review-result SMS handler (M.8b). The caller supplies the contact module's notifier
+ * and the composer that reads the business's language and template reasons, so this module never
+ * imports another module's implementation.
+ */
+export function registerDirectoryReviewResultHandler(dependencies: {
+  readonly listings: ListingRepository;
+  readonly settings: DirectorySettingsReader;
+  readonly notifier: CustomerSmsNotifier;
+  readonly composer: ReviewResultMessageComposer;
+}): void {
+  registerEventHandler(buildNotifyReviewResultHandler(dependencies));
 }

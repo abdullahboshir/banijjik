@@ -24,6 +24,7 @@ export {
 } from "./directory-contracts.js";
 export { DIRECTORY_EVENT_TYPE, type DirectoryEventType } from "./directory-event-type.js";
 export {
+  DIRECTORY_NOTIFY_REVIEW_BY_SMS_SETTING_KEY,
   DIRECTORY_ONE_LISTING_SETTING_KEY,
   DIRECTORY_PHOTO_POLICY,
   DIRECTORY_PHOTO_POLICY_SETTING_KEY,

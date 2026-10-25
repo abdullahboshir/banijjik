@@ -8,6 +8,7 @@ import {
 } from "@banijjik/contracts";
 import {
   DIRECTORY_EVENT_TYPE,
+  DIRECTORY_NOTIFY_REVIEW_BY_SMS_SETTING_KEY,
   DIRECTORY_ONE_LISTING_SETTING_KEY,
   DIRECTORY_PHOTO_POLICY,
   DIRECTORY_PHOTO_POLICY_SETTING_KEY,
@@ -100,6 +101,13 @@ export const directoryManifest = defineModule({
       allowsLocationOverride: false,
       isClientVisible: true,
     },
+    {
+      settingKey: DIRECTORY_NOTIFY_REVIEW_BY_SMS_SETTING_KEY,
+      value: { kind: "BOOLEAN" },
+      systemDefault: true,
+      allowsLocationOverride: false,
+      isClientVisible: false,
+    },
   ],
   customFieldEntities: ["listing"],
   botTools: [],
@@ -119,6 +127,7 @@ export const directoryManifest = defineModule({
     consumes: [
       CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_BLOCKED,
       DIRECTORY_EVENT_TYPE.LISTING_APPROVED,
+      DIRECTORY_EVENT_TYPE.LISTING_REJECTED,
       DIRECTORY_EVENT_TYPE.LISTING_HIDDEN,
       DIRECTORY_EVENT_TYPE.LISTING_UNHIDDEN,
       DIRECTORY_EVENT_TYPE.LISTING_ARCHIVED,

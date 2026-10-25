@@ -521,5 +521,7 @@
   "errors.pos_overpayment_not_cash": "পেমেন্ট বিলের চেয়ে বেশি। সঠিক অঙ্ক পাঠান এবং নগদে হাতে পাওয়া টাকা আলাদা ঘরে লিখুন।",
   "errors.pos_cash_tendered_invalid": "নগদে পাওয়া টাকা নগদ পেমেন্টের চেয়ে কম, অথবা কোনো নগদ পেমেন্ট নেই।",
   "errors.pos_tender_required": "এই বিলের জন্য একটি পেমেন্ট বা স্টোর ক্রেডিট যোগ করুন।",
-  "errors.pos_currency_mismatch": "সব অঙ্ক আপনার ব্যবসার মুদ্রায় হতে হবে।"
+  "errors.pos_currency_mismatch": "সব অঙ্ক আপনার ব্যবসার মুদ্রায় হতে হবে।",
+  "sms.listingApproved": "{businessName}: আপনার তালিকা {listingNumber} অনুমোদিত হয়েছে।",
+  "sms.listingRejected": "{businessName}: আপনার তালিকা {listingNumber} অনুমোদিত হয়নি। কারণ: {reasons}।"
 }

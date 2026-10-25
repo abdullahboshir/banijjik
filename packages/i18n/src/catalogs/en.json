@@ -521,5 +521,7 @@
   "errors.pos_overpayment_not_cash": "The payments are more than the bill. Send the exact amounts and put the cash handed over in the cash tendered field.",
   "errors.pos_cash_tendered_invalid": "The cash handed over is less than the cash payment, or there is no cash payment.",
   "errors.pos_tender_required": "Add a payment or store credit for this bill.",
-  "errors.pos_currency_mismatch": "Every amount must be in your business currency."
+  "errors.pos_currency_mismatch": "Every amount must be in your business currency.",
+  "sms.listingApproved": "{businessName}: your listing {listingNumber} was approved.",
+  "sms.listingRejected": "{businessName}: your listing {listingNumber} was not approved. Reason: {reasons}."
 }

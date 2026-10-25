@@ -3,6 +3,7 @@ import type {
   IndustryTemplateDirectoryBlock,
 } from "@banijjik/contracts/directory";
 import {
+  DIRECTORY_NOTIFY_REVIEW_BY_SMS_SETTING_KEY,
   DIRECTORY_PHOTO_POLICY,
   DIRECTORY_PHOTO_POLICY_SETTING_KEY,
   DIRECTORY_REVIEW_EDITS_SETTING_KEY,
@@ -49,6 +50,12 @@ export function directorySettingsFromResolver(resolve: {
         return value as DirectoryPhotoPolicy;
       }
       return DIRECTORY_PHOTO_POLICY.NONE;
+    },
+    async notifyReviewBySms(organizationId) {
+      const map = await resolve.resolve(organizationId, {
+        keys: [DIRECTORY_NOTIFY_REVIEW_BY_SMS_SETTING_KEY],
+      });
+      return map.get(DIRECTORY_NOTIFY_REVIEW_BY_SMS_SETTING_KEY)?.value !== false;
     },
   };
 }

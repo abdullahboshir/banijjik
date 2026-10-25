@@ -6,7 +6,7 @@ import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.j
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import type { CustomerAccountStatusReader } from "../../../kernel/auth/index.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
-import { kernelEventPublisher, registerEventHandler } from "../../../kernel/events/index.js";
+import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import type { ContactWriteDependencies } from "./application/contact-dependencies.js";
@@ -22,15 +22,14 @@ import type {
 } from "./application/ports/customer-participants.js";
 import type {
   CustomerAccessTokenIssuer,
+  CustomerSmsNotifier,
   OtpMessageComposer,
-  SmsSender,
 } from "./application/ports/customer-account-ports.js";
 import type {
   ContactRoleCatalog,
   DedupeModeReader,
   HomeLocationLookup,
 } from "./application/ports/settings-and-locations.js";
-import { buildSendCustomerOtpSmsHandler } from "./application/send-customer-otp-sms.handler.js";
 import {
   BlockCustomerAccountUseCase,
   GetCustomerAccountUseCase,
@@ -62,7 +61,6 @@ import { MongoContactRepository } from "./infrastructure/mongo-contact.repositor
 import { MongoCustomerAccountRepository } from "./infrastructure/mongo-customer-account.repository.js";
 import { MongoCustomerSessionRepository } from "./infrastructure/mongo-customer-session.repository.js";
 import { MongoOtpChallengeRepository } from "./infrastructure/mongo-otp-challenge.repository.js";
-import { DisabledSmsSender, TestInboxSmsSender } from "./infrastructure/sms-senders.js";
 import { ContactController } from "./presentation/contact.controller.js";
 import { buildContactStorefrontRouter } from "./presentation/contact-storefront.router.js";
 import { buildContactTenantRouter } from "./presentation/contact-tenant.router.js";
@@ -76,6 +74,7 @@ export { buildContactBillToReader } from "./infrastructure/contact-bill-to-reade
 export { registerContactModels } from "./infrastructure/register-contact-models.js";
 export { buildSalesContactReader } from "./sales-contact-reader.js";
 export { buildCustomerAccountBlocker } from "./customer-account-blocker.js";
+export { buildCustomerSmsNotifier, registerContactEventHandlers } from "./customer-sms-notifier.js";
 export type {
   ContactCustomFieldReader,
   ContactRoleCatalog,
@@ -83,6 +82,7 @@ export type {
   CustomerDataExportParticipant,
   CustomerErasureParticipant,
   CustomerErasureResult,
+  CustomerSmsNotifier,
   DedupeModeReader,
   HomeLocationLookup,
   OtpMessageComposer,
@@ -300,25 +300,4 @@ export function buildContactLookup(): {
       return contact ? { contactId: contact.contactId } : undefined;
     },
   };
-}
-
-export interface ContactEventHandlerDependencies {
-  readonly storefront: Pick<StorefrontConfig, "otpSecret" | "smsDriver">;
-  readonly composer: OtpMessageComposer;
-}
-
-function buildSmsSender(driver: StorefrontConfig["smsDriver"]): SmsSender {
-  return driver === "test-inbox" ? new TestInboxSmsSender() : new DisabledSmsSender();
-}
-
-/** Registers the event handlers of the contact module. The worker calls it before it starts (ADR-090). */
-export function registerContactEventHandlers(dependencies: ContactEventHandlerDependencies): void {
-  registerEventHandler(
-    buildSendCustomerOtpSmsHandler({
-      challenges: new MongoOtpChallengeRepository(),
-      sender: buildSmsSender(dependencies.storefront.smsDriver),
-      composer: dependencies.composer,
-      otpSecret: dependencies.storefront.otpSecret,
-    }),
-  );
 }

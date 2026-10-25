@@ -6,7 +6,7 @@ protection and the contact-link field (ADR-110, ADR-073).
 
 - **Class:** `CORE` (10-MODULE-CATALOG section 1).
 - **Entities:** `Contact` (tenant DB, versioned, soft-archived, custom fields of entity `contact`); `CustomerAccount`, `CustomerSession` and `OtpChallenge` for the customer's phone-code login to the public site (ADR-119).
-- **Public API (`index.ts`):** `contactManifest`, `registerContactModels()`, `buildContactRouter()`, `buildContactStorefrontRouterFor()`, `buildCustomerAccountStatusReader()`, `registerContactEventHandlers()`.
+- **Public API (`index.ts`):** `contactManifest`, `registerContactModels()`, `buildContactRouter()`, `buildContactStorefrontRouterFor()`, `buildCustomerAccountStatusReader()`, `buildCustomerSmsNotifier()`, `registerContactEventHandlers()`.
 - **Endpoints:** `/orgs/{organizationId}/contacts` (14-API.md section 5.2), `/contacts/{contactId}/customer-account[/block|/unblock]` for staff, and `/storefront/orgs/{organizationId}/auth/*`, `/me`, `/my/account/erase*`, `/my/data-export` for customers.
 - **Events:** emits `contact.contact.{created,updated,archived,anonymized}`, `contact.customerOtp.requested` (challenge id only) and `contact.customerAccount.{blocked,unblocked,erased}`; consumes none. The handler `contact.sendCustomerOtp` sends the code by SMS through the `SmsSender` port.
 - **Permissions:** `contact.contact.{read,create,update,archive,anonymize,readSensitive}`, `contact.customerAccount.{read,block}`.

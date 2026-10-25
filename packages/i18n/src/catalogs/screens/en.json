@@ -1997,5 +1997,7 @@
   "orders.source.BOT": "Chatbot",
   "orders.source.API": "API",
   "orders.source.POS": "POS",
-  "orders.cancelReason.AUTO_PLACED_TIMEOUT": "Auto-cancelled after the time limit"
+  "orders.cancelReason.AUTO_PLACED_TIMEOUT": "Auto-cancelled after the time limit",
+  "setting.directory.notifyReviewBySms": "Review-result SMS",
+  "setting.directory.notifyReviewBySms.description": "The customer gets one SMS when a listing is approved or rejected."
 }

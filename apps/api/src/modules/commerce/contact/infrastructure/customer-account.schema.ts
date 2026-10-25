@@ -20,8 +20,12 @@ export const OTP_CHALLENGE_MODEL_NAME = "OtpChallenge";
 export const OTP_CHALLENGE_COLLECTION_NAME = "otp_challenges";
 export const SMS_TEST_MESSAGE_MODEL_NAME = "SmsTestMessage";
 export const SMS_TEST_MESSAGE_COLLECTION_NAME = "sms_test_messages";
+export const CUSTOMER_SMS_SENT_MODEL_NAME = "CustomerSmsSent";
+export const CUSTOMER_SMS_SENT_COLLECTION_NAME = "customer_sms_sent";
 
 const SECONDS_PER_DAY = 24 * 60 * 60;
+/** A review result is never re-sent after this; the record only guards against retries (M.8b). */
+const SENT_RECORD_TTL_DAYS = 90;
 
 export interface CustomerAccountDocument {
   customerAccountId: string;
@@ -171,3 +175,33 @@ export const smsTestMessageSchema = new Schema<SmsTestMessageDocument>(
 smsTestMessageSchema.index({ organizationId: 1, smsTestMessageId: 1 }, { unique: true });
 smsTestMessageSchema.index({ organizationId: 1, phoneE164: 1, createdAt: -1 });
 smsTestMessageSchema.index({ createdAt: 1 }, { expireAfterSeconds: SECONDS_PER_DAY });
+
+export interface CustomerSmsSentDocument {
+  customerSmsSentId: string;
+  organizationId: string;
+  dedupeKey: string;
+  sentAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  createdByUserId: string | null;
+  updatedByUserId: string | null;
+}
+
+/** No phone and no text: the record proves a message was sent, and nothing more (ADR-119, M.8b). */
+export const customerSmsSentSchema = new Schema<CustomerSmsSentDocument>(
+  {
+    ...domainIdField("customerSmsSentId"),
+    organizationId: { type: String, required: true, immutable: true },
+    dedupeKey: { type: String, required: true, immutable: true },
+    sentAt: { type: Date, required: true },
+    ...auditFields,
+  },
+  SCHEMA_OPTIONS,
+);
+
+customerSmsSentSchema.index({ organizationId: 1, customerSmsSentId: 1 }, { unique: true });
+customerSmsSentSchema.index({ organizationId: 1, dedupeKey: 1 }, { unique: true });
+customerSmsSentSchema.index(
+  { sentAt: 1 },
+  { expireAfterSeconds: SENT_RECORD_TTL_DAYS * SECONDS_PER_DAY },
+);

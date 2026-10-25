@@ -1997,5 +1997,7 @@
   "orders.source.BOT": "চ্যাটবট",
   "orders.source.API": "এপিআই",
   "orders.source.POS": "পিওএস",
-  "orders.cancelReason.AUTO_PLACED_TIMEOUT": "সময় শেষে স্বয়ংক্রিয় বাতিল"
+  "orders.cancelReason.AUTO_PLACED_TIMEOUT": "সময় শেষে স্বয়ংক্রিয় বাতিল",
+  "setting.directory.notifyReviewBySms": "রিভিউ ফলাফলের SMS",
+  "setting.directory.notifyReviewBySms.description": "তালিকা অনুমোদিত বা প্রত্যাখ্যাত হলে গ্রাহক একটি SMS পাবেন।"
 }
