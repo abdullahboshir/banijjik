@@ -8,10 +8,10 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-25 (11:40 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `dcd7539` (3.9 A1 and M.6b merged) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
+Last updated: 2026-10-25 (12:10 Dhaka) by Opus 5.5 · `main` = `origin/main` = this state save on top of `e40283d` (3.5b A3 plan refresh) (pushed). **The `/lead` skill reads `main:docs/LEAD-STATE.md` from the local ref: run `git fetch origin && git fetch . origin/main:main` first, or read `origin/main`.**
 
 ## 1. Where the project stands
-- Phase 3: 42 numbered cards. **Merged:** 3.0–3.8 (all parts), 3.8a/b/c, 3.11 (all parts), 3.12–3.31, 3.33–3.36, 3.5b A1, **3.9 A1** (`541467f`). Planned and ready for the owner: 3.32 A/B, 3.5b A2/B, 3.9 A2 (with Amendment 1)/B, 3.10 A/B. Needs a lead refresh: 3.5b A3 exchange (now unblocked). Track M: M.0–M.5, M.6a, **M.6b** (`dcd7539`), M.7, M.8a merged; M.6c, M.8b ready; M.9 waits for the SMS provider. Details: `docs/STATUS.md`.
+- Phase 3: 42 numbered cards. **Merged:** 3.0–3.8 (all parts), 3.8a/b/c, 3.11 (all parts), 3.12–3.31, 3.33–3.36, 3.5b A1, **3.9 A1** (`541467f`). Planned and ready for the owner: 3.32 A/B, 3.5b A2/B, 3.9 A2 (with Amendment 1)/B, 3.10 A/B, **3.5b A3** (plan "Refresh 3", `e40283d`; B2 screen planned there too). Track M: M.0–M.5, M.6a, **M.6b** (`dcd7539`), M.7, M.8a merged; M.6c, M.8b ready; M.9 waits for the SMS provider. Details: `docs/STATUS.md`.
 - **Owner request (2026-10-23):** finish every partly done card and plan everything not started; Opus plans and reviews, Sonnet codes.
 - **Owner (2026-10-24): the lead runs the implementer tools itself** (launch, monitor, restart, answer questions) and may code cards with Sonnet subagents. How: §2a. Sonnet is available again (its limit reset at 00:00 Dhaka).
 - **Owner (2026-10-25 08:10, asked again and confirmed): the lead fast-forwards and pushes `main` after green CI.**
@@ -22,12 +22,14 @@ Last updated: 2026-10-25 (11:40 Dhaka) by Opus 5.5 · `main` = `origin/main` = t
 - **The admin and storefront browser stacks start the API and the worker** (since 3.24): event handlers run in the background. A test waits for their result (reload or poll with a deadline) and never races them with a click (3.36: Activate after a payment got a correct 409 because the worker had activated first).
 - Time-dependent tests follow `05-CONVENTIONS.md` "Testing" (3.26). Run date-sensitive suites between 00:00 and 06:00 Dhaka now and then.
 
-## 2. Open branches (checked 2026-10-25 11:40)
+## 2. Open branches (checked 2026-10-25 12:10)
 Prompts and logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/` (`rules.md` shared rules; `<card>-task.md`; `*-continue*.md` restart notes). Every final message starts with `STATUS: DONE | QUESTION | BLOCKED`. Never commit or revert `.claude/settings.json` in `banijjik`.
 
 | Card / part | Branch | Folder | Tier | State → next step |
 |---|---|---|---|---|
-| (none) | | | | No lead or agent branch is open. The owner runs the cards of `lead-orchestra/owner-guide/` in Qoder or ChatGPT; each arrives as `s/<card>-…` on origin. Add a row here when one arrives. |
+| 3.5b A2 reverse | `s/3.5b-api-return-reverse` (`13d5a87`, on top of `93fdc3e`) | `banijjik-3.11` | T1 | Owner's tool; handoff `3.5b-api-a2.md` committed, CI 40166235651 was running at 12:05. Wait for DONE + `card:check`, then T1 review. Already seen in the diff (raise in R1): inline `import(...)` types in `order-payment-adapter.ts` and payment `index.ts`; fixed English note `"Sales return reversal payback"` (A3 E8 wants a `note` input, no fixed text); `restoreReturnTotal` throws `INTERNAL` on a currency mismatch (should be a rule error). |
+| 3.32 A enrollment refunds | `s/3.32-api-enrollment-refunds` (`18fee3d`) | Codex desktop worktree `C:/Users/Abdullah Bashir/.codex/worktrees/3-32-api-enrollment-refunds/banijjik-m2` | T1 | Owner's Codex; pushed, no DONE yet. Then `card:check` in that folder and T1 review. Both 3.32 A and 3.5b A2 touch payment code: the second to merge rebases. |
+| M.8b review result SMS | `s/M.8b-api-review-sms` (`d712b58`) | `banijjik-lead` | T2 | Owner's tool; pushed, no DONE yet. Then merge check. 3.5b A3 starts in this folder after M.8b and A2 merge (`owner-guide/11-3.5b-A3.md`). |
 
 ### 2a. Launching implementers (owner approved, 2026-10-24)
 - **Qoder:** out of credits since 2026-10-24 evening.
@@ -58,10 +60,11 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 
 ## 4. Next actions, in order
 **Owner (2026-10-25 09:30): the owner implements the remaining cards in ChatGPT and Qoder; the lead planned all of them** (on main: `3.32.md` Refresh 1, `3.5b.md` Refresh 2, `3.9.md` A2/B detail, `M.6.md` Refresh M.6c, `M.8b.md`, `3.10.md`, `M.9.md`). Ready now: **3.32 A**, **3.5b A2**, **M.8b**, **3.9 A2**, **3.10 A**, **M.6c**. After A parts: their B parts. M.9 A waits for the owner's SMS provider choice. The lead reviews every branch (T1 strict) and merges.
-**Paste-ready prompts for the owner (2026-10-25 10:50):** `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/owner-guide/` (`00-README.md` in Bengali: order, folder, start condition; `01`–`10` one file per card part with the shared rules appended: 3.32 A → `banijjik-m2`, 3.5b A2 → `banijjik-3.11`, M.8b → `banijjik-lead`, 3.9 A2 → `banijjik-3.5a`, 3.10 A → `banijjik-3.6b-a3`, M.6c → `banijjik-1.7b`, then the B parts in their A folders). Not written yet: 3.5b A3/B2, M.9 A (SMS provider). When a branch arrives, run `card:check` in its folder before reviewing. Update a prompt there when a plan changes (the 3.9 A2 prompt already names Amendment 1).
-1. **Refresh 3.5b A3 (exchange)** against the merged 3.9 A1 code (`buildInstantSale` prepare/commit, `CreatePosSaleUseCase` as the one-transaction pattern) and write `lead-orchestra/owner-guide/11-3.5b-A3.md`; B2 after A3.
-2. Review the owner's branches as they arrive (T1 strict for 3.32 A and 3.5b A2; 3.9 A2 money parts strict; 3.10 A counting strict).
+**Paste-ready prompts for the owner (2026-10-25 10:50):** `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/owner-guide/` (`00-README.md` in Bengali: order, folder, start condition; `01`–`10` one file per card part with the shared rules appended: 3.32 A → `banijjik-m2`, 3.5b A2 → `banijjik-3.11`, M.8b → `banijjik-lead`, 3.9 A2 → `banijjik-3.5a`, 3.10 A → `banijjik-3.6b-a3`, M.6c → `banijjik-1.7b`, then the B parts in their A folders; `11-3.5b-A3.md` → `banijjik-lead` after A2 and M.8b merge). Not written yet: 3.5b B2 (after A3 and B merge; plan in Refresh 3), M.9 A (SMS provider). When a branch arrives, run `card:check` in its folder before reviewing. Update a prompt there when a plan changes (the 3.9 A2 prompt already names Amendment 1; if the A2 review renames `receiveReturnPayback`, A3 E8 already says "use the merged name").
+1. Review the owner's branches as their DONE arrives (§2: 3.5b A2 and 3.32 A T1 strict, M.8b merge check; later 3.9 A2 money parts strict, 3.10 A counting strict). Merge one by one; the second rebases.
+2. After A2 merges, tell the owner A3 may start; after A3 and B merge, write `owner-guide/12-3.5b-B2.md`.
 3. Then the phase 3 review.
+4. A3 lead decision to confirm with the owner when convenient: an exchange's store-credit refund needs the same REFUND approval as a return (exempt callers skip it).
 5. Follow-ups:
    - 3.9 A1 review F3: a till cash payment reversed (3.34 `REVERSAL`) before the close still counts in expected cash (the reversal row has no `posSessionId`). The directory submit 500 → 422 is now M.6c C2.
    - `sync-indexes.test.ts` (spawns processes) timed out on `main` CI 40151387531, the second time after CI 40131011005 (a rerun passed). Give it more time or a small card.
@@ -91,8 +94,8 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-25 11:50–12:10** (Opus 5.5): refreshed 3.5b A3 exchange on the 3.9 A1 pattern (plan "Refresh 3" E1–E10 + B2, `e40283d`) and wrote `owner-guide/11-3.5b-A3.md`. The owner's 3.5b A2, 3.32 A and M.8b branches arrived on origin (no DONE yet); listed them in §2.
 - **2026-10-25 09:30–11:40** (Opus 5.5, two lead chats one after the other): planned every remaining card (`0cb31b1`…`8f44ce6`); wrote the owner's paste-ready prompts in `lead-orchestra/owner-guide/`. T1 review R1 of 3.9 A1 (accepted; F1/F2 into the plan as Amendment 1 for A2) and review R1 of M.6b (lead fixed an encoded-slash path traversal in the storefront proxy); stacked and merged both (`541467f`, `dcd7539`). Disk C: was full: deleted leftover `mongo-mem-*` folders with the owner's OK.
 - **2026-10-25 07:50–08:40** (Opus 5.5, Sonnet implementer): 3.36 root cause: the browser stack runs the worker since 3.24, so a staff Activate after the payment raced it (correct 409); the test now reloads until ACTIVE; merged (`fb9639f`). Rebased 3.5b A1 on 3.31, T1 review R1 (lead fixes: currency compared before settling, dead branch, a 60-line split) and merged (`dd51581`). Launched 3.9 A1 (Sonnet). Took over M.6b and fixed its browser setup step by step (6 of 8 pass locally).
 - **2026-10-25 03:00–07:45** (Opus, banijjik-4d, Haiku implementers): T1 review and merge of 3.31 (`09b0921`). Planned 3.5b (ADR-145, `852f473`) and 3.9 POS (ADR-146, `49920df`); answered 3.5b A1 Amendments 1–2 and M.6b Amendment 1. Took over CI waits from stalling Haiku agents. Started lead card 3.36.
 - **2026-10-24 21:45 – 2026-10-25 03:00** (Opus, banijjik-4d, Haiku implementers): merged 3.5a B (`f5dfd17`), 3.34 after T1 R1 (`2850cd6`), M.6a after T1 R1 (`f9311d8`) and 3.11 C (`dd143a5`). Planned M.6 in three parts (ADR-144), refreshed 3.11 C and 3.31.
-- **2026-10-24 20:53–21:45** (Opus, banijjik-4d): T1 review R1 of 3.33 and merge checks of 3.6b B and 3.11 B; stacked the three and merged (`ccceb52`, `357dbe2`, `8e0f636`). Relaunched 3.34 and the 3.5a B finish as Haiku subagents.
