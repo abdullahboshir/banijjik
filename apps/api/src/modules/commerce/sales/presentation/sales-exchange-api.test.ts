@@ -135,15 +135,22 @@ async function returnsOf(
   return response.body.data as readonly { salesReturnId: string }[];
 }
 
-/** The store-credit balance of a contact: the sum of its ledger entries. */
+/** The store-credit balance of a contact: its CREDIT entries less its DEBIT entries. */
 async function creditBalanceOf(shop: SalesShop, contactId: string): Promise<number> {
   const response = await shop.actor.call(
     "get",
     `/orgs/${shop.organizationId}/store-credit?contactId=${contactId}`,
   );
   expect(response.status).toBe(HTTP_OK);
-  const entries = response.body.data as readonly { amount: { amount: number } }[];
-  return entries.reduce((sum, entry) => sum + entry.amount.amount, 0);
+  const entries = response.body.data as readonly {
+    direction: string;
+    amount: { amount: number };
+  }[];
+  return entries.reduce(
+    (sum, entry) =>
+      sum + (entry.direction === "CREDIT" ? entry.amount.amount : -entry.amount.amount),
+    0,
+  );
 }
 
 /** A counter sale of `quantity` units with a contact, paid in full in cash. */
@@ -300,7 +307,7 @@ describe("exchange a return for a new order API: money and stock", () => {
       exchangeBody({
         returned: [{ orderLineId: line.orderLineId, quantity: 1 }],
         sold: [{ ...dearer, quantity: 1 }],
-        orderDiscount: { type: "AMOUNT", value: 100 },
+        orderDiscount: { type: "AMOUNT", value: 1000 },
       }),
     );
 
@@ -533,7 +540,9 @@ describe("exchange a return for a new order API: access", () => {
       }),
     );
 
-    expect(response.status).toBe(HTTP_FORBIDDEN);
+    // Location-owned rows are invisible outside the caller's locations, so the order reads as
+    // not found there, exactly as the A1 and A2 return tests record.
+    expect(response.status).toBe(HTTP_NOT_FOUND);
     expect(await returnsOf(elsewhere, order.orderId)).toEqual([]);
   });
 });

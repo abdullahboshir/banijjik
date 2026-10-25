@@ -19,8 +19,12 @@ export class MongoContactStoreCreditAdapter implements ContactStoreCreditPort {
   ): Promise<{ balanceMinor: number; version: number } | undefined> {
     const doc = await models({})
       .get<{ summary?: { storeCreditBalanceMinor?: number }; version: number }>(CONTACT_MODEL_NAME)
-      .findOne({ organizationId, contactId })
-      .select({ "summary.storeCreditBalanceMinor": 1, version: 1 })
+      .findOne(
+        { organizationId, contactId },
+        { "summary.storeCreditBalanceMinor": 1, version: 1 },
+        // The read joins the caller's transaction: a return writes its store credit first, then the payment spends it.
+        sessionOption(getActiveSession()),
+      )
       .lean<{ summary?: { storeCreditBalanceMinor?: number }; version: number }>();
 
     if (!doc) return undefined;
