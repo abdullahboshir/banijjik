@@ -84,7 +84,19 @@ export interface SalesReturnResponse {
   readonly note: string | null;
   readonly approvals: readonly SalesReturnApprovalResponse[];
   readonly status: SalesReturnStatus;
-  readonly reversedBySalesReturnId: string | null;
+  readonly reversal: {
+    readonly reversedAt: string;
+    readonly reversedByUserId: string;
+    readonly reasonKey: string;
+    readonly note: string | null;
+    readonly paybackPaymentId: string | null;
+    readonly approval: {
+      readonly action: string;
+      readonly approvalId: string;
+      readonly approverMemberId: string;
+      readonly approvedAt: string;
+    };
+  } | null;
   readonly exchangeOrderId: string | null;
   readonly businessDate: string;
   readonly version: number;

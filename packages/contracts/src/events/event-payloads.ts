@@ -215,6 +215,7 @@ export interface EventPayloadMap {
   readonly [SALES_EVENT_TYPE.ORDER_COMPLETED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_CANCELLED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.SALES_RETURN_CREATED]: SalesReturnEventPayload;
+  readonly [SALES_EVENT_TYPE.SALES_RETURN_REVERSED]: SalesReturnEventPayload;
   readonly [WEBSITE_EVENT_TYPE.PAGE_UPDATED]: SitePageUpdatedPayload;
   readonly [POS_EVENT_TYPE.REGISTER_CLOSED]: PosRegisterClosedPayload;
 }

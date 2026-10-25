@@ -118,6 +118,7 @@ export const AUDIT_ACTION = {
   ORDER_COMPLETED: "sales.order.completed",
   ORDER_CANCELLED: "sales.order.cancelled",
   SALES_RETURN_CREATED: "sales.return.created",
+  SALES_RETURN_REVERSED: "sales.return.reversed",
   SITE_PAGE_UPDATED: "website.page.updated",
   POS_DEVICE_CREATED: "pos.device.created",
   POS_DEVICE_PAIRED: "pos.device.paired",

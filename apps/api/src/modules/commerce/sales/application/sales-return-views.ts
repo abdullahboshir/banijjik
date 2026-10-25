@@ -33,7 +33,20 @@ export function toSalesReturnResponse(record: SalesReturnRecord): SalesReturnRes
       approvedAt: approval.approvedAt.toISOString(),
     })),
     status: record.status,
-    reversedBySalesReturnId: record.reversedBySalesReturnId,
+    reversal:
+      record.reversal === null
+        ? null
+        : {
+            reversedAt: record.reversal.reversedAt.toISOString(),
+            reversedByUserId: record.reversal.reversedByUserId,
+            reasonKey: record.reversal.reasonKey,
+            note: record.reversal.note,
+            paybackPaymentId: record.reversal.paybackPaymentId,
+            approval: {
+              ...record.reversal.approval,
+              approvedAt: record.reversal.approval.approvedAt.toISOString(),
+            },
+          },
     exchangeOrderId: record.exchangeOrderId,
     businessDate: record.businessDate,
     version: record.version,

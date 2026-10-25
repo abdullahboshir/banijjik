@@ -12,6 +12,7 @@ export const SALES_EVENT_TYPE = Object.freeze({
   ORDER_CANCELLED: "sales.order.cancelled",
   /** A return of goods from a completed order (plan 3.5b decision 8). */
   SALES_RETURN_CREATED: "sales.return.created",
+  SALES_RETURN_REVERSED: "sales.return.reversed",
 } as const);
 
 export type SalesEventType = (typeof SALES_EVENT_TYPE)[keyof typeof SALES_EVENT_TYPE];

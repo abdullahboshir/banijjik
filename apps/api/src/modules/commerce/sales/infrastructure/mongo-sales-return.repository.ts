@@ -1,7 +1,12 @@
 import { SALES_RETURN_STATUS } from "@banijjik/contracts/sales";
 import type { OrderId, OrganizationId, SalesReturnId } from "@banijjik/ids";
 import type { Model, QueryFilter } from "mongoose";
-import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
+import {
+  getActiveSession,
+  models,
+  sessionOption,
+  updateVersioned,
+} from "../../../../kernel/db/index.js";
 import type {
   SalesReturnListFilter,
   SalesReturnPage,
@@ -39,6 +44,25 @@ export class MongoSalesReturnRepository implements SalesReturnRepository {
       .findOne({ salesReturnId }, { _id: 0 }, sessionOption(getActiveSession()))
       .lean<SalesReturnDocument>();
     return row === null ? undefined : toSalesReturnRecord(row);
+  }
+
+  async reverse(
+    input: Parameters<SalesReturnRepository["reverse"]>[0],
+  ): Promise<SalesReturnRecord> {
+    const updated = await updateVersioned({
+      model: returnModel(),
+      filter: { salesReturnId: input.salesReturnId, status: SALES_RETURN_STATUS.ACTIVE },
+      expectedVersion: input.expectedVersion,
+      update: {
+        $set: {
+          status: SALES_RETURN_STATUS.REVERSED,
+          reversal: input.reversal,
+          updatedAt: input.reversal.reversedAt,
+          updatedByUserId: input.reversal.reversedByUserId,
+        },
+      },
+    });
+    return toSalesReturnRecord(updated as SalesReturnDocument);
   }
 
   async sumActiveDeliveryReturned(

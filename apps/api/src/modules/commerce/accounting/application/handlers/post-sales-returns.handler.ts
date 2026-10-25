@@ -4,7 +4,8 @@ import type { EventHandler } from "../../../../../kernel/events/index.js";
 import { postingSourceMissing } from "../../domain/errors.js";
 import { draftSalesReturn } from "../../domain/sales-return-posting-rules.js";
 import type { SalesReturnPostingSource } from "../ports/sales-return-posting-source.js";
-import { postJournalEntry, type PostJournalDependencies } from "../post-journal.js";
+import { postJournalEntry, postReversal, type PostJournalDependencies } from "../post-journal.js";
+import { POSTING_KEY } from "@banijjik/contracts/accounting";
 
 /** Posts a return once per (SALES_RETURN, salesReturnId, postingKey); a redelivered event changes nothing. */
 export function buildPostSalesReturnsHandler(input: {
@@ -15,10 +16,11 @@ export function buildPostSalesReturnsHandler(input: {
     handlerKey: "accounting.postSalesReturns",
     moduleKey: MODULE_KEY.ACCOUNTING,
     eventType: EVENT_TYPE.SALES_RETURN_CREATED,
+    alsoHandles: [EVENT_TYPE.SALES_RETURN_REVERSED],
     ordering: "ORDERED",
     streamPrefixes: ["order:"],
     async handle(envelope) {
-      await handleSalesReturnCreated(
+      await handleSalesReturnEvent(
         input,
         envelope as unknown as EventEnvelope<{ salesReturnId: string; orderId: string }>,
       );
@@ -26,7 +28,7 @@ export function buildPostSalesReturnsHandler(input: {
   };
 }
 
-async function handleSalesReturnCreated(
+async function handleSalesReturnEvent(
   input: {
     readonly salesReturns: SalesReturnPostingSource;
     readonly posting: PostJournalDependencies;
@@ -40,7 +42,32 @@ async function handleSalesReturnCreated(
   if (snapshot === undefined) {
     throw postingSourceMissing(`sales-return:${envelope.payload.salesReturnId}`);
   }
-  for (const draft of draftSalesReturn(snapshot)) {
+  const drafts = draftSalesReturn(snapshot);
+  if (envelopeTypeIsReversal(envelope)) {
+    for (const postingKey of [POSTING_KEY.sales_return_value, POSTING_KEY.sales_return_cogs]) {
+      const original = await input.posting.journals.findBySource({
+        sourceType: "SALES_RETURN",
+        sourceId: snapshot.salesReturnId,
+        postingKey,
+      });
+      if (original === undefined) continue;
+      await postReversal(input.posting, {
+        organizationId,
+        actorUserId,
+        original,
+        postingKey: `reversal:${postingKey}`,
+        businessDate: snapshot.businessDate,
+      });
+    }
+    return;
+  }
+  for (const draft of drafts) {
     await postJournalEntry(input.posting, { organizationId, actorUserId, draft });
   }
+}
+
+function envelopeTypeIsReversal(
+  envelope: EventEnvelope<{ readonly salesReturnId: string; readonly orderId: string }>,
+): boolean {
+  return envelope.type === "sales.return.reversed";
 }

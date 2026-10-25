@@ -20,6 +20,11 @@ export interface SalesReturnPage {
 export interface SalesReturnRepository {
   insert(record: SalesReturnRecord): Promise<void>;
   findById(salesReturnId: SalesReturnId): Promise<SalesReturnRecord | undefined>;
+  reverse(input: {
+    readonly salesReturnId: SalesReturnId;
+    readonly expectedVersion: number;
+    readonly reversal: NonNullable<SalesReturnRecord["reversal"]>;
+  }): Promise<SalesReturnRecord>;
   /** Σ of `deliveryChargeReturned` over the order's ACTIVE returns (plan decision 4). */
   sumActiveDeliveryReturned(organizationId: OrganizationId, orderId: OrderId): Promise<number>;
   list(filter: SalesReturnListFilter): Promise<SalesReturnPage>;

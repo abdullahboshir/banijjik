@@ -24,7 +24,7 @@ import type { PaymentTotals } from "../../domain/payment-status.js";
 export type SalesQuoter = Pick<PriceQuoter, "quote">;
 export type SalesStockLedger = Pick<
   StockLedger,
-  "reserve" | "release" | "commitSale" | "returnStock"
+  "reserve" | "release" | "commitSale" | "returnStock" | "reverseReturn"
 >;
 export type SalesApprovalVerifier = Pick<ApprovalVerifier, "consume">;
 /** The stock-ledger input shape, taken from the port so sales never imports inventory internals. */
@@ -210,6 +210,25 @@ export interface OrderPaymentPort {
    * decision 5). Runs inside the caller's transaction.
    */
   settleReturn(input: SettleReturnInput): Promise<ReturnSettlementResult>;
+  restoreReturnTotal(input: {
+    organizationId: OrganizationId;
+    orderId: OrderId;
+    currency: Money["currency"];
+    amountMinor: number;
+    now: Date;
+  }): Promise<void>;
+  receiveReturnPayback(input: {
+    organizationId: OrganizationId;
+    orderId: OrderId;
+    locationId: LocationId;
+    actorUserId: UserId;
+    receivedByMemberId: string;
+    method: PaymentMethod;
+    amount: Money;
+    contactId: ContactId | null;
+    externalReference: string | null;
+    now: Date;
+  }): Promise<string>;
   settleCancellation(input: {
     organizationId: OrganizationId;
     orderId: OrderId;

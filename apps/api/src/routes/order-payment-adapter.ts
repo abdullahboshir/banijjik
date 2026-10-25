@@ -9,6 +9,7 @@ import { kernelEventPublisher } from "../kernel/events/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
   buildRefundPaymentUseCase,
+  buildReceivePaymentUseCase,
   findStoreCreditEntryIdOfPayment,
   MongoContactStoreCreditAdapter,
   MongoPaymentRepository,
@@ -30,6 +31,7 @@ import {
 } from "../modules/core/organization/index.js";
 import { buildApprovalVerifier } from "../modules/core/iam/index.js";
 import { buildPaymentRequestReaders } from "./payment-request-readers.js";
+import { paymentTimezoneReader } from "./payment-timezone-reader.js";
 
 function activeOrganizationId(): OrganizationId {
   const { organizationId } = getRequestContext();
@@ -43,7 +45,10 @@ function ruleError(ruleKey: string, messageKey: string): DomainRuleError {
 
 /** All repository calls join the caller's active Mongo session. */
 class OrderPaymentAdapter implements OrderPaymentPort {
-  constructor(private readonly refunds: RefundPaymentUseCase) {}
+  constructor(
+    private readonly refunds: RefundPaymentUseCase,
+    private readonly receives: import("../modules/commerce/payment/index.js").ReceivePaymentUseCase,
+  ) {}
 
   private readonly summaries = new MongoPaymentSummaryRepository();
   private readonly currencies = buildOrganizationCurrencyReader();
@@ -186,6 +191,50 @@ class OrderPaymentAdapter implements OrderPaymentPort {
     return { paymentId: payment.paymentId, storeCreditEntryId };
   }
 
+  async restoreReturnTotal(
+    input: Parameters<OrderPaymentPort["restoreReturnTotal"]>[0],
+  ): Promise<void> {
+    const summary = await this.summaries.findByRequest(
+      input.organizationId,
+      PAYMENT_REQUEST_TYPE.ORDER,
+      input.orderId,
+    );
+    if (summary === null || summary === undefined || summary.total.currency !== input.currency) {
+      throw new DomainRuleError({ code: ERROR_CODE.INTERNAL, details: { orderId: input.orderId } });
+    }
+    await this.summaries.setTotal({
+      organizationId: input.organizationId,
+      requestType: PAYMENT_REQUEST_TYPE.ORDER,
+      requestId: input.orderId,
+      total: { amount: summary.total.amount + input.amountMinor, currency: input.currency },
+      now: input.now,
+    });
+  }
+
+  async receiveReturnPayback(
+    input: Parameters<OrderPaymentPort["receiveReturnPayback"]>[0],
+  ): Promise<string> {
+    const payment = await this.receives.execute({
+      organizationId: input.organizationId,
+      locationId: input.locationId,
+      method: input.method,
+      amount: input.amount,
+      externalReference: input.externalReference,
+      allocations: [
+        {
+          requestType: PAYMENT_REQUEST_TYPE.ORDER,
+          requestId: input.orderId,
+          amount: input.amount,
+        },
+      ],
+      contactId: input.contactId,
+      receivedByMemberId: input.receivedByMemberId,
+      actorUserId: input.actorUserId,
+      note: "Sales return reversal payback",
+    });
+    return payment.paymentId;
+  }
+
   async settleCancellation(
     input: Parameters<OrderPaymentPort["settleCancellation"]>[0],
   ): Promise<void> {
@@ -253,13 +302,16 @@ export function buildOrderPaymentAdapter(
     orgConfig: dependencies.orgConfig,
     audit: dependencies.audit,
     clock: dependencies.clock,
-    timeZone: {
-      read: async (organizationId: OrganizationId) => {
-        const timezone = await timezones.read(organizationId);
-        if (!timezone) throw new DomainRuleError({ code: ERROR_CODE.NOT_FOUND });
-        return timezone;
-      },
-    },
+    timeZone: paymentTimezoneReader(timezones),
   });
-  return new OrderPaymentAdapter(refunds);
+  return new OrderPaymentAdapter(
+    refunds,
+    buildReceivePaymentUseCase({
+      requestReaders: buildPaymentRequestReaders(),
+      orgConfig: dependencies.orgConfig,
+      audit: dependencies.audit,
+      clock: dependencies.clock,
+      timeZone: paymentTimezoneReader(timezones),
+    }),
+  );
 }

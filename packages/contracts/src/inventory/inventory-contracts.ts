@@ -16,6 +16,7 @@ export const STOCK_MOVEMENT_REASON = defineEnum([
   "SALE",
   "RETURN",
   "RETURN_DAMAGED",
+  "RETURN_REVERSAL",
 ]);
 export type StockMovementReason =
   (typeof STOCK_MOVEMENT_REASON)[keyof typeof STOCK_MOVEMENT_REASON];

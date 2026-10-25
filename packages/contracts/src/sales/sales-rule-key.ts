@@ -27,6 +27,9 @@ export const SALES_RULE_KEY = {
   SALES_RETURN_OTHER_REASON_NEEDS_NOTE: "SALES_RETURN_OTHER_REASON_NEEDS_NOTE",
   /** A store-credit refund of a return needs a contact on the order (plan 3.5b amendment 2). */
   SALES_RETURN_STORE_CREDIT_NEEDS_CONTACT: "SALES_RETURN_STORE_CREDIT_NEEDS_CONTACT",
+  SALES_RETURN_EXCHANGE_NOT_REVERSIBLE: "SALES_RETURN_EXCHANGE_NOT_REVERSIBLE",
+  SALES_RETURN_STOCK_GONE: "SALES_RETURN_STOCK_GONE",
+  SALES_RETURN_REVERSE_ORDER_NOT_COMPLETED: "SALES_RETURN_REVERSE_ORDER_NOT_COMPLETED",
 } as const;
 
 export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
@@ -51,4 +54,7 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.sales_return_other_reason_needs_note",
   "errors.sales_return_duplicate_line",
   "errors.sales_return_store_credit_needs_contact",
+  "errors.sales_return_exchange_not_reversible",
+  "errors.sales_return_stock_gone",
+  "errors.sales_return_reverse_order_not_completed",
 ];

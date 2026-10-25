@@ -239,3 +239,25 @@ export {
   type SessionMethodTotal,
   type SessionOrderAllocation,
 } from "./infrastructure/mongo-payment-session.reader.js";
+
+export function buildReceivePaymentUseCase(input: {
+  readonly requestReaders: RequestReaderRegistry;
+  readonly orgConfig: OrgConfigService;
+  readonly audit: AuditRecorder;
+  readonly clock: Clock;
+  readonly timeZone: import("./application/ports/payment-repositories.js").TimezoneReader;
+}): ReceivePaymentUseCase {
+  return new ReceivePaymentUseCase({
+    payments: new MongoPaymentRepository(),
+    storeCredit: new MongoStoreCreditRepository(),
+    summaries: new MongoPaymentSummaryRepository(),
+    contactStoreCredit: new MongoContactStoreCreditAdapter(),
+    requestReaders: input.requestReaders,
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+    audit: input.audit,
+    clock: input.clock,
+    timeZone: input.timeZone,
+    orgConfig: input.orgConfig,
+  });
+}

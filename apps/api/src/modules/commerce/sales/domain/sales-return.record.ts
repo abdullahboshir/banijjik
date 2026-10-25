@@ -39,6 +39,15 @@ export interface SalesReturnApprovalRecord {
   readonly approvedAt: Date;
 }
 
+export interface SalesReturnReversalRecord {
+  readonly reversedAt: Date;
+  readonly reversedByUserId: UserId;
+  readonly reasonKey: string;
+  readonly note: string | null;
+  readonly paybackPaymentId: string | null;
+  readonly approval: SalesReturnApprovalRecord;
+}
+
 /** One return of goods from a completed order (plan 3.5b decision 1). Append-only apart from the A2 status change. */
 export interface SalesReturnRecord {
   readonly salesReturnId: SalesReturnId;
@@ -57,7 +66,7 @@ export interface SalesReturnRecord {
   readonly note: string | null;
   readonly approvals: readonly SalesReturnApprovalRecord[];
   readonly status: SalesReturnStatus;
-  readonly reversedBySalesReturnId: string | null;
+  readonly reversal: SalesReturnReversalRecord | null;
   readonly exchangeOrderId: string | null;
   readonly businessDate: string;
   readonly version: number;

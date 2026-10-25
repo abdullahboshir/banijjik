@@ -55,6 +55,7 @@ import {
   GetSalesReturnUseCase,
   ListSalesReturnsUseCase,
   PreviewSalesReturnUseCase,
+  ReverseSalesReturnUseCase,
 } from "./application/use-cases/sales-return.use-cases.js";
 import { SalesReturnController } from "./presentation/sales-return.controller.js";
 import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
@@ -138,6 +139,7 @@ export function buildSalesReturnController(ports: SalesTenantPorts): SalesReturn
     create: new CreateSalesReturnUseCase(dependencies),
     list: new ListSalesReturnsUseCase(dependencies),
     get: new GetSalesReturnUseCase(dependencies),
+    reverse: new ReverseSalesReturnUseCase(dependencies),
   });
 }
 

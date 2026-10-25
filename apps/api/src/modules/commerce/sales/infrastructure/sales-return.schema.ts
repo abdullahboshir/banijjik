@@ -64,7 +64,14 @@ export interface SalesReturnDocument {
   note: string | null;
   approvals: SalesReturnApprovalDocument[];
   status: SalesReturnStatus;
-  reversedBySalesReturnId: string | null;
+  reversal: {
+    reversedAt: Date;
+    reversedByUserId: string;
+    reasonKey: string;
+    note: string | null;
+    paybackPaymentId: string | null;
+    approval: SalesReturnApprovalDocument;
+  } | null;
   exchangeOrderId: string | null;
   businessDate: string;
   version: number;
@@ -110,6 +117,18 @@ const approvalSchema = new Schema<SalesReturnApprovalDocument>(
   SUB_SCHEMA_OPTIONS,
 );
 
+const reversalSchema = new Schema(
+  {
+    reversedAt: { type: Date, required: true },
+    reversedByUserId: { type: String, required: true },
+    reasonKey: { type: String, required: true },
+    note: { type: String, default: null },
+    paybackPaymentId: { type: String, default: null },
+    approval: { type: approvalSchema, required: true },
+  },
+  SUB_SCHEMA_OPTIONS,
+);
+
 const refundSchema = new Schema<SalesReturnRefundDocument>(
   {
     method: { type: String, default: null, enum: Object.values(SALES_RETURN_REFUND_METHOD) },
@@ -138,7 +157,7 @@ export const salesReturnSchema = new Schema<SalesReturnDocument>(
     note: { type: String, default: null },
     approvals: { type: [approvalSchema], default: [] },
     status: { type: String, required: true, enum: Object.values(SALES_RETURN_STATUS) },
-    reversedBySalesReturnId: { type: String, default: null },
+    reversal: { type: reversalSchema, default: null },
     exchangeOrderId: { type: String, default: null },
     businessDate: { type: String, required: true },
     ...versionField,

@@ -10,6 +10,7 @@ import { sendData } from "../../../../kernel/http/index.js";
 import type {
   CreateSalesReturnUseCase,
   GetSalesReturnUseCase,
+  ReverseSalesReturnUseCase,
   ListSalesReturnsUseCase,
   PreviewSalesReturnUseCase,
 } from "../application/use-cases/sales-return.use-cases.js";
@@ -21,6 +22,7 @@ export interface SalesReturnUseCases {
   readonly create: CreateSalesReturnUseCase;
   readonly list: ListSalesReturnsUseCase;
   readonly get: GetSalesReturnUseCase;
+  readonly reverse: ReverseSalesReturnUseCase;
 }
 
 function orderIdOf(params: unknown): OrderId {
@@ -85,6 +87,23 @@ export class SalesReturnController {
       await this.useCases.get.execute({
         salesReturnId: asId<SalesReturnId>(params.salesReturnId),
         allowedLocationIds: caller.allowedLocationIds,
+      }),
+    );
+  };
+
+  readonly reverse: RequestHandler = async (_request, response) => {
+    const caller = readTenantCaller();
+    const params = response.locals["validated"].params as SalesReturnParams;
+    const body = response.locals["validated"].body;
+    if (caller.actorUserId === null) throw new Error("Authenticated actor is required");
+    sendData(
+      response,
+      await this.useCases.reverse.execute({
+        organizationId: caller.organizationId,
+        allowedLocationIds: caller.allowedLocationIds,
+        actorUserId: caller.actorUserId,
+        salesReturnId: asId<SalesReturnId>(params.salesReturnId),
+        body,
       }),
     );
   };

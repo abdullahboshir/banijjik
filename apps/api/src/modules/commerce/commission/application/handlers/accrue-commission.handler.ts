@@ -46,6 +46,7 @@ export function buildAccrueCommissionHandler(
     alsoHandles: [
       EVENT_TYPE.ORDER_COMPLETED,
       EVENT_TYPE.SALES_RETURN_CREATED,
+      EVENT_TYPE.SALES_RETURN_REVERSED,
       EVENT_TYPE.PAYMENT_REFUNDED,
       EVENT_TYPE.PAYMENT_REVERSED,
     ],
@@ -59,7 +60,10 @@ export function buildAccrueCommissionHandler(
         });
         return;
       }
-      if (envelope.type === EVENT_TYPE.SALES_RETURN_CREATED) {
+      if (
+        envelope.type === EVENT_TYPE.SALES_RETURN_CREATED ||
+        envelope.type === EVENT_TYPE.SALES_RETURN_REVERSED
+      ) {
         await accrueSalesReturn(dependencies, {
           orderId: readStringField(envelope.payload, "orderId"),
           context,

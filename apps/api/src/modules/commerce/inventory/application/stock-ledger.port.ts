@@ -18,6 +18,7 @@ import { microsToMinor } from "../domain/money-math.js";
 import type { InventoryDependencies } from "./inventory-dependencies.js";
 import type { InventoryItem } from "../domain/inventory-item.entity.js";
 import type { InventoryLevelRecord } from "./ports/stock-records.js";
+import { reverseReturnStock } from "./stock-ledger-reversal.js";
 
 export interface StockLedgerReserveInput {
   readonly organizationId: OrganizationId;
@@ -217,6 +218,15 @@ export class StockLedger {
         allowNegativeStock: input.allowNegativeStock,
       });
     }
+  }
+
+  async reverseReturn(input: {
+    readonly organizationId: OrganizationId;
+    readonly locationId: string;
+    readonly actorUserId: UserId;
+    readonly salesReturnId: string;
+  }): Promise<void> {
+    await reverseReturnStock(this.dependencies, input);
   }
 
   /**

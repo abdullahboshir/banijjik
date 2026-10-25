@@ -158,7 +158,7 @@ async function buildReturnRecord(args: ReturnRecordArgs): Promise<SalesReturnRec
     note: input.body.note ?? null,
     approvals: args.approvals.records,
     status: "ACTIVE",
-    reversedBySalesReturnId: null,
+    reversal: null,
     exchangeOrderId: null,
     businessDate: prepared.today,
     version: 1,

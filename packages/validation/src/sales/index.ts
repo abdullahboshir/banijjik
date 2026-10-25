@@ -29,7 +29,9 @@ export {
   salesReturnListQuerySchema,
   salesReturnParamsSchema,
   salesReturnRequestSchema,
+  salesReturnReverseRequestSchema,
   type SalesReturnListQuery,
   type SalesReturnParams,
   type SalesReturnRequestBody,
+  type SalesReturnReverseRequestBody,
 } from "./sales-return-schemas.js";

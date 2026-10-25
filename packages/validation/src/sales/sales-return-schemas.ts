@@ -14,6 +14,12 @@ const APPROVAL_TOKEN_MAX_LENGTH = 200;
 
 const approvalTokenSchema = z.string().trim().min(1).max(APPROVAL_TOKEN_MAX_LENGTH);
 
+const salesReturnReverseReasonSchema = z.enum([
+  "ENTERED_BY_MISTAKE",
+  "CUSTOMER_TOOK_GOODS_BACK",
+  "OTHER",
+]);
+
 const returnLineSchema = z.strictObject({
   orderLineId: uuidV7Schema,
   /** Integer in the sales unit's precision (ADR-047). The server checks it against what is left. */
@@ -55,6 +61,20 @@ export const salesReturnParamsSchema = z.object({
   salesReturnId: uuidV7Schema,
 });
 
+export const salesReturnReverseRequestSchema = z.strictObject({
+  version: z.number().int().positive(),
+  reasonKey: salesReturnReverseReasonSchema,
+  note: z.string().trim().max(MAX_SALES_RETURN_NOTE_LENGTH).nullable().optional(),
+  payback: z
+    .strictObject({
+      method: z.enum(PAYMENT_METHOD),
+      externalReference: z.string().trim().min(1).max(100).optional(),
+    })
+    .optional(),
+  approvalToken: approvalTokenSchema,
+});
+
 export type SalesReturnRequestBody = z.infer<typeof salesReturnRequestSchema>;
 export type SalesReturnListQuery = z.infer<typeof salesReturnListQuerySchema>;
 export type SalesReturnParams = z.infer<typeof salesReturnParamsSchema>;
+export type SalesReturnReverseRequestBody = z.infer<typeof salesReturnReverseRequestSchema>;

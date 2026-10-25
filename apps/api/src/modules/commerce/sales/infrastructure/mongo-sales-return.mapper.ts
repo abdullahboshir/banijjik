@@ -19,42 +19,17 @@ export function toSalesReturnRecord(document: SalesReturnDocument): SalesReturnR
     orderId: asId<OrderId>(document.orderId),
     locationId: asId<LocationId>(document.locationId),
     contactId: document.contactId === null ? null : asId<ContactId>(document.contactId),
-    lines: document.lines.map((line) => ({
-      orderLineId: line.orderLineId,
-      offeringId: line.offeringId,
-      variantId: line.variantId,
-      nameSnapshot: line.nameSnapshot,
-      quantity: line.quantity,
-      disposition: line.disposition,
-      value: {
-        amount: line.value.amount,
-        currency: line.value.currency as SalesReturnRecord["value"]["currency"],
-      },
-      taxPart: {
-        amount: line.taxPart.amount,
-        currency: line.taxPart.currency as SalesReturnRecord["value"]["currency"],
-      },
-    })),
+    lines: linesOf(document),
     deliveryChargeReturned: moneyOf(document.deliveryChargeReturned),
     roundingReturned: moneyOf(document.roundingReturned),
     value: moneyOf(document.value),
-    refund: {
-      method: document.refund.method,
-      amount: moneyOf(document.refund.amount),
-      paymentId: document.refund.paymentId,
-      storeCreditEntryId: document.refund.storeCreditEntryId,
-    },
+    refund: { ...document.refund, amount: moneyOf(document.refund.amount) },
     dueReduced: moneyOf(document.dueReduced),
     reasonKey: document.reasonKey,
     note: document.note,
-    approvals: document.approvals.map((approval) => ({
-      action: approval.action,
-      approvalId: approval.approvalId,
-      approverMemberId: approval.approverMemberId,
-      approvedAt: approval.approvedAt,
-    })),
+    approvals: document.approvals.map((approval) => ({ ...approval })),
     status: document.status,
-    reversedBySalesReturnId: document.reversedBySalesReturnId,
+    reversal: reversalOf(document),
     exchangeOrderId: document.exchangeOrderId,
     businessDate: document.businessDate,
     version: document.version,
@@ -64,6 +39,23 @@ export function toSalesReturnRecord(document: SalesReturnDocument): SalesReturnR
       document.createdByUserId === null ? null : asId<UserId>(document.createdByUserId),
     updatedByUserId:
       document.updatedByUserId === null ? null : asId<UserId>(document.updatedByUserId),
+  };
+}
+
+function linesOf(document: SalesReturnDocument): SalesReturnRecord["lines"] {
+  return document.lines.map((line) => ({
+    ...line,
+    value: moneyOf(line.value),
+    taxPart: moneyOf(line.taxPart),
+  }));
+}
+
+function reversalOf(document: SalesReturnDocument): SalesReturnRecord["reversal"] {
+  if (document.reversal === null || document.reversal === undefined) return null;
+  return {
+    ...document.reversal,
+    reversedByUserId: asId<UserId>(document.reversal.reversedByUserId),
+    approval: { ...document.reversal.approval },
   };
 }
 
@@ -102,7 +94,13 @@ export function toSalesReturnDocument(record: SalesReturnRecord): SalesReturnDoc
     note: record.note,
     approvals: record.approvals.map((approval) => ({ ...approval })),
     status: record.status,
-    reversedBySalesReturnId: record.reversedBySalesReturnId,
+    reversal:
+      record.reversal === null
+        ? null
+        : {
+            ...record.reversal,
+            approval: { ...record.reversal.approval },
+          },
     exchangeOrderId: record.exchangeOrderId,
     businessDate: record.businessDate,
     version: record.version,

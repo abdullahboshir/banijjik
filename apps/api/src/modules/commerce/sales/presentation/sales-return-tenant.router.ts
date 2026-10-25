@@ -4,6 +4,7 @@ import {
   salesReturnListQuerySchema,
   salesReturnParamsSchema,
   salesReturnRequestSchema,
+  salesReturnReverseRequestSchema,
 } from "@banijjik/validation/sales";
 import { Router, type RequestHandler } from "express";
 import type { PermissionMiddlewareFactory } from "../../../../kernel/access/index.js";
@@ -41,6 +42,13 @@ export function buildSalesReturnTenantRouter(input: SalesReturnRouterDependencie
     permission(PERMISSION_KEY.SALES_RETURN_READ),
     validate({ query: salesReturnListQuerySchema }),
     controller.list,
+  );
+  router.post(
+    "/sales/returns/:salesReturnId/reverse",
+    permission(PERMISSION_KEY.SALES_RETURN_REVERSE),
+    validate({ params: salesReturnParamsSchema, body: salesReturnReverseRequestSchema }),
+    idempotency,
+    controller.reverse,
   );
   router.get(
     "/sales/returns/:salesReturnId",
