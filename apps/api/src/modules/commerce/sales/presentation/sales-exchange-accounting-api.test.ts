@@ -1,8 +1,4 @@
 import { POSTING_KEY, SYSTEM_ACCOUNT_CODE } from "@banijjik/contracts/accounting";
-import { eventHandlerRegistry } from "../../../../kernel/events/index.js";
-import { runEventHandler } from "../../../../kernel/events/handler-runner.js";
-import type { ModuleEffectiveness } from "../../../../kernel/events/module-effectiveness.js";
-import type { OutboxEventDocument } from "../../../../kernel/events/outbox-event.schema.js";
 import { registerAccountingAndExpenseHandlers } from "../../../../routes/accounting-event-handlers.js";
 import { MongoJournalRepository } from "../../accounting/index.js";
 import { startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
@@ -10,7 +6,7 @@ import {
   registerIamApiModels,
   type IamApiHarness,
 } from "../../../../test-support/iam-api-harness.js";
-import { outboxModel } from "../../../../test-support/event-fixtures.js";
+import { processOrganizationOutbox } from "../../../../test-support/outbox-replay.js";
 import { withOrganizationContext } from "../../../../test-support/organization-context.js";
 import { asId, type OrganizationId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -25,7 +21,6 @@ import {
 registerIamApiModels();
 const RETAIL = { industryTemplateKey: "RETAIL" };
 const HTTP_CREATED = 201;
-const EFFECTIVE: ModuleEffectiveness = { isEffective: async () => true };
 const TRIAL_BALANCE_DATE = "2099-12-31";
 let harness: IamApiHarness;
 
@@ -36,31 +31,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await harness.dispose();
 });
-
-/**
- * Runs every handler of the organization's events in outbox order, as the worker would. Each run
- * goes through the exactly-once marker, so a second call is a replay that must post nothing.
- */
-async function processOutbox(organizationId: string): Promise<void> {
-  const events = await outboxModel()
-    .find({ organizationId })
-    .sort({ occurredAt: 1, streamSequence: 1 })
-    .lean<OutboxEventDocument[]>();
-  for (const event of events) {
-    for (const handler of eventHandlerRegistry.handlersFor(event)) {
-      await runEventHandler(
-        {
-          eventId: event.eventId,
-          handlerKey: handler.handlerKey,
-          type: event.type,
-          organizationId,
-        },
-        eventHandlerRegistry,
-        EFFECTIVE,
-      );
-    }
-  }
-}
 
 describe("exchange postings API: accounting", () => {
   it("the exchange posts the return and the new order once each, also on event replay (trial balance: the contact's store credit liability equals creditLeft)", async () => {
@@ -82,8 +52,8 @@ describe("exchange postings API: accounting", () => {
     const newOrderId = exchanged.body.data.order.orderId as string;
 
     const journals = new MongoJournalRepository();
-    await processOutbox(shop.organizationId);
-    await processOutbox(shop.organizationId);
+    await processOrganizationOutbox(shop.organizationId);
+    await processOrganizationOutbox(shop.organizationId);
 
     await withOrganizationContext(organizationId, async () => {
       const entries = await journals.list({ page: 1, limit: 100 });

@@ -18,6 +18,8 @@ export interface ExchangeOptions {
   readonly sold: readonly {
     readonly offeringId: string;
     readonly variantId: string;
+    /** The member who performed the line, when the test needs commission on it (ADR-135). */
+    readonly performedByMemberId?: string;
     readonly quantity: number;
   }[];
   readonly payments?: readonly { readonly method: string; readonly amount: number }[];
@@ -45,6 +47,9 @@ export function exchangeBody(options: ExchangeOptions): Record<string, unknown> 
         offeringId: line.offeringId,
         variantId: line.variantId,
         quantity: line.quantity,
+        ...(line.performedByMemberId === undefined
+          ? {}
+          : { performedByMemberId: line.performedByMemberId }),
       })),
       ...(options.orderDiscount === undefined ? {} : { orderDiscount: options.orderDiscount }),
       ...(options.orderApprovalToken === undefined
