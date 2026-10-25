@@ -24,6 +24,7 @@ export interface ZReportInput {
   readonly closedAt: Date;
   readonly closedByMemberId: MemberId;
   readonly methodTotals: readonly SessionMethodTotal[];
+  readonly collectionTotals?: readonly SessionMethodTotal[] | undefined;
   readonly orderAllocations: readonly SessionOrderAllocation[];
   readonly soldOrders: readonly SoldOrderTotals[];
   readonly expectedCash: Money;
@@ -79,6 +80,7 @@ export function buildZReport(input: ZReportInput): PosZReport {
   const { session, soldOrders } = input;
   const { currency } = session.openingFloat;
   const money = (amount: number): Money => ({ amount, currency });
+  const refunds = methodTotalsOf(input.methodTotals, PAYMENT_DIRECTION.REFUND, false);
   return {
     zReportNumber: input.zReportNumber,
     posSessionId: session.posSessionId,
@@ -94,7 +96,13 @@ export function buildZReport(input: ZReportInput): PosZReport {
     tax: money(sumOf(soldOrders, (order) => order.taxMinor)),
     grandTotal: money(sumOf(soldOrders, (order) => order.grandTotalMinor)),
     paymentsIn: methodTotalsOf(input.methodTotals, PAYMENT_DIRECTION.IN, true),
-    refunds: methodTotalsOf(input.methodTotals, PAYMENT_DIRECTION.REFUND, false),
+    collections: methodTotalsOf(input.collectionTotals ?? [], PAYMENT_DIRECTION.IN, true),
+    refunds,
+    returns: {
+      count: refunds.reduce((sum, row) => sum + row.count, 0),
+      value: money(refunds.reduce((sum, row) => sum + row.total.amount, 0)),
+      refunds,
+    },
     storeCreditUsed: money(storeCreditUsedMinor(input.methodTotals)),
     duesCreated: money(duesCreatedMinor(soldOrders, input.orderAllocations)),
     openingFloat: session.openingFloat,

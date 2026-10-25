@@ -259,6 +259,7 @@ export interface SettleReturnInput {
     readonly hasRefundWithoutApprovalPermission: boolean;
     readonly note: string | null;
   } | null;
+  readonly posSessionId?: string | null;
   readonly now: Date;
 }
 

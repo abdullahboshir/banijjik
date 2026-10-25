@@ -133,6 +133,7 @@ export const PERMISSION_KEY = {
   POS_SALE_CREATE: "pos.sale.create",
   POS_REGISTER_CLOSE: "pos.register.close",
   POS_REPORT_READ: "pos.report.read",
+  POS_PRICE_OVERRIDE: "pos.price.override",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

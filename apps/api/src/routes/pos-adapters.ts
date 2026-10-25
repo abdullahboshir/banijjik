@@ -35,13 +35,20 @@ import {
 } from "../modules/commerce/payment/index.js";
 import {
   buildPosRouter,
+  type PosApprovalVerifier,
   type PosCaller,
   type PosPaymentPort,
   type PosRateLimit,
+  type PosRequestReader,
   type PosSettingsReader,
   type PosSoldOrdersReader,
 } from "../modules/commerce/pos/index.js";
-import { buildInstantSale, buildOrderTotalsReader } from "../modules/commerce/sales/index.js";
+import {
+  buildInstantSale,
+  buildOrderTotalsReader,
+  buildPosSalesReturn,
+} from "../modules/commerce/sales/index.js";
+import { buildApprovalVerifier } from "../modules/core/iam/index.js";
 import {
   buildLocationLookup,
   buildMembershipDirectory,
@@ -116,9 +123,9 @@ function settingsOf(input: PosRouterInput): PosSettingsReader {
   };
 }
 
-function paymentsOf(input: PosRouterInput): PosPaymentPort {
+function receiveUseCaseOf(input: PosRouterInput): ReceivePaymentUseCase {
   const timezones = buildOrganizationTimezoneReader();
-  const receive = new ReceivePaymentUseCase({
+  return new ReceivePaymentUseCase({
     payments: new MongoPaymentRepository(),
     storeCredit: new MongoStoreCreditRepository(),
     summaries: new MongoPaymentSummaryRepository(),
@@ -137,6 +144,10 @@ function paymentsOf(input: PosRouterInput): PosPaymentPort {
     },
     orgConfig: input.orgConfig,
   });
+}
+
+function paymentsOf(input: PosRouterInput): PosPaymentPort {
+  const receive = receiveUseCaseOf(input);
   const sessions = buildPaymentSessionReader();
   return {
     async receive(payment) {
@@ -165,16 +176,57 @@ function paymentsOf(input: PosRouterInput): PosPaymentPort {
         amount: response.amount,
       };
     },
+    async collect(payment) {
+      const response = await receive.execute({
+        organizationId: payment.organizationId,
+        locationId: payment.locationId,
+        method: payment.method,
+        amount: payment.amount,
+        externalReference: payment.externalReference,
+        allocations: payment.allocations,
+        contactId: payment.contactId,
+        receivedByMemberId: payment.receivedByMemberId,
+        actorUserId: payment.actorUserId,
+        posSessionId: payment.posSessionId,
+      });
+      return {
+        paymentId: asId<PaymentId>(response.paymentId),
+        paymentNumber: response.paymentNumber,
+        method: response.method,
+        amount: response.amount,
+      };
+    },
     methodTotals: (query) => sessions.methodTotals(query),
+    collectionTotals: (query) => sessions.collectionTotals(query),
     orderAllocations: (query) => sessions.orderAllocations(query),
+  };
+}
+
+function requestReadersOf(): PosRequestReader {
+  const registry = buildPaymentRequestReaders();
+  return {
+    async read(organizationId, requestType, requestId) {
+      const reader = registry.get(requestType);
+      if (reader === undefined) return undefined;
+      return reader.read(organizationId, requestId);
+    },
+  };
+}
+
+function approvalsOf(input: PosRouterInput): PosApprovalVerifier {
+  const verifier = buildApprovalVerifier({ audit: input.audit, clock: input.clock });
+  return {
+    async consume(token, expected) {
+      await verifier.consume(token, expected);
+    },
   };
 }
 
 function soldOrdersOf(): PosSoldOrdersReader {
   const reader = buildOrderTotalsReader();
   return {
-    async readMany(orderIds) {
-      const rows = await reader.readMany(orderIds);
+    async readByPosSession(posSessionId) {
+      const rows = await reader.readByPosSession(posSessionId);
       return rows.map((row) => ({
         orderId: row.orderId,
         subtotalMinor: row.totals.subtotal.amount,
@@ -207,12 +259,14 @@ function rateLimitOf(limiter: RateLimiter): PosRateLimit {
 /** The POS API on the tenant pipeline (card 3.9): every port the module cannot build itself. */
 export function buildPosTenantRouter(input: PosRouterInput): Router {
   const currencies = buildOrganizationCurrencyReader();
+  const salesPorts = buildSalesTenantPorts(input);
   return buildPosRouter({
     clock: input.clock,
     audit: input.audit,
     permission: input.permission,
     idempotency: input.idempotency,
     caller: callerOf(input),
+    approvals: approvalsOf(input),
     locations: buildLocationLookup(),
     currency: {
       read: async (organizationId) => {
@@ -222,8 +276,10 @@ export function buildPosTenantRouter(input: PosRouterInput): Router {
       },
     },
     settings: settingsOf(input),
-    sales: buildInstantSale(buildSalesTenantPorts(input)),
+    sales: buildInstantSale(salesPorts),
+    salesReturns: buildPosSalesReturn(salesPorts),
     payments: paymentsOf(input),
+    requestReaders: requestReadersOf(),
     soldOrders: soldOrdersOf(),
     catalog: buildPosSnapshotReader(),
     rateLimit: rateLimitOf(input.rateLimiter),

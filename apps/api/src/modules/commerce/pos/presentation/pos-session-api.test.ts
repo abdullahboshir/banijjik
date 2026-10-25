@@ -272,6 +272,36 @@ describe("POS Z-report", () => {
     expect(await listOrders(shop)).toHaveLength(3);
   });
 
+  it("the Z-report counts a credit sale with no payment", async () => {
+    const { shop, till, pack } = await aCounter();
+    const session = await openRegister(till, FLOAT);
+    const contactId = await addCustomer(shop, "Rahim", "+8801700000053");
+
+    const creditSale = await saleCall(till, sale(pack, [], { contactId }));
+    const closed = await closeRegister(till, { session, countedCash: FLOAT });
+    const report = await tillCall(till, {
+      method: "get",
+      suffix: `/sessions/${session.posSessionId}/z-report`,
+    });
+    const storedOrder = await harness.connections.tenantShared
+      .collection("orders")
+      .findOne({ orderId: creditSale.body.data.order.orderId });
+
+    expect(creditSale.status, JSON.stringify(creditSale.body)).toBe(201);
+    expect(creditSale.body.data.posSessionId).toBe(session.posSessionId);
+    expect(creditSale.body.data.dueAmount).toEqual(bdt(PRICE));
+    expect(storedOrder?.posSessionId).toBe(session.posSessionId);
+    expect(closed.status, JSON.stringify(closed.body)).toBe(200);
+    expect(report.body.data).toMatchObject({
+      salesCount: 1,
+      grandTotal: bdt(PRICE),
+      duesCreated: bdt(PRICE),
+      paymentsIn: [],
+      expectedCash: bdt(FLOAT),
+      variance: bdt(0),
+    });
+  });
+
   it("has no report while the register is still open", async () => {
     const { till } = await aCounter();
     const session = await openRegister(till, 0);

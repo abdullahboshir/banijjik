@@ -50,6 +50,7 @@ export class Order implements OrderProps {
   readonly orderDiscount: OrderProps["orderDiscount"];
   readonly cancelReason: string | null;
   readonly customFields: Readonly<Record<string, unknown>>;
+  readonly posSessionId: OrderProps["posSessionId"];
   readonly hasStockLines: boolean;
   readonly returnStatus: OrderProps["returnStatus"];
   readonly completedAt: OrderProps["completedAt"];
@@ -77,6 +78,7 @@ export class Order implements OrderProps {
     this.orderDiscount = props.orderDiscount;
     this.cancelReason = props.cancelReason;
     this.customFields = props.customFields;
+    this.posSessionId = props.posSessionId;
     this.hasStockLines = props.hasStockLines;
     this.returnStatus = props.returnStatus;
     this.completedAt = props.completedAt;
@@ -107,6 +109,7 @@ export class Order implements OrderProps {
       orderDiscount: input.orderDiscount,
       cancelReason: null,
       customFields: input.customFields,
+      posSessionId: input.posSessionId,
       hasStockLines: input.hasStockLines,
       returnStatus: ORDER_RETURN_STATUS.NONE,
       completedAt: null,
@@ -141,6 +144,7 @@ export class Order implements OrderProps {
       orderDiscount: this.orderDiscount,
       cancelReason: this.cancelReason,
       customFields: this.customFields,
+      posSessionId: this.posSessionId,
       hasStockLines: this.hasStockLines,
       returnStatus: this.returnStatus,
       completedAt: this.completedAt,

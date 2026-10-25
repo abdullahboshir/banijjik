@@ -122,6 +122,7 @@ export class CreateOrderUseCase {
       orderDiscount: input.body.orderDiscount ?? null,
       customFields: input.body.customFields ?? {},
       hasStockLines: prepared !== undefined && prepared.trackedLines.length > 0,
+      posSessionId: null,
       createdByUserId: input.actorUserId,
       now,
     });

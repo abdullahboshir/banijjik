@@ -74,6 +74,12 @@ function lineOf(row: OrderLineDocument): OrderLineProps {
     nameSnapshot: row.nameSnapshot,
     quantity: row.quantity,
     unitPrice: moneyOf(row.unitPrice),
+    listUnitPrice:
+      row.listUnitPrice === undefined ? moneyOf(row.unitPrice) : moneyOf(row.listUnitPrice),
+    unitPriceOverride:
+      row.unitPriceOverride === undefined || row.unitPriceOverride === null
+        ? null
+        : moneyOf(row.unitPriceOverride),
     lineGross: moneyOf(row.lineGross),
     lineDiscount: moneyOf(row.lineDiscount),
     lineTax: moneyOf(row.lineTax),
@@ -109,6 +115,7 @@ export function toOrder(row: OrderDocument): Order {
     cancelReason: row.cancelReason,
     customFields: row.customFields,
     hasStockLines: row.hasStockLines,
+    posSessionId: row.posSessionId ?? null,
     returnStatus: row.returnStatus ?? ORDER_RETURN_STATUS.NONE,
     completedAt: row.completedAt ?? null,
     version: row.version,
@@ -128,6 +135,8 @@ function lineDocument(line: OrderLineProps): OrderDocument["lines"][number] {
     nameSnapshot: line.nameSnapshot,
     quantity: line.quantity,
     unitPrice: line.unitPrice,
+    listUnitPrice: line.listUnitPrice,
+    unitPriceOverride: line.unitPriceOverride,
     lineGross: line.lineGross,
     lineDiscount: line.lineDiscount,
     lineTax: line.lineTax,
@@ -169,6 +178,7 @@ function mutableFieldsOf(props: OrderProps): MutableOrderFields {
     cancelReason: props.cancelReason,
     customFields: { ...props.customFields },
     hasStockLines: props.hasStockLines,
+    posSessionId: props.posSessionId,
     returnStatus: props.returnStatus,
     completedAt: props.completedAt,
     createdAt: props.createdAt,

@@ -3,6 +3,7 @@ import {
   POS_DEVICE_STATUS,
   POS_SESSION_STATUS,
   type PosDeviceStatus,
+  type PosHeldCartPayload,
   type PosSessionStatus,
   type PosZReport,
 } from "@banijjik/contracts/pos";
@@ -19,6 +20,8 @@ export const POS_DEVICE_MODEL_NAME = "PosDevice";
 export const POS_DEVICE_COLLECTION_NAME = "pos_devices";
 export const POS_SESSION_MODEL_NAME = "PosSession";
 export const POS_SESSION_COLLECTION_NAME = "pos_sessions";
+export const POS_HELD_CART_MODEL_NAME = "PosHeldCart";
+export const POS_HELD_CART_COLLECTION_NAME = "pos_held_carts";
 
 export interface MoneyDocument {
   amount: number;
@@ -142,3 +145,39 @@ posSessionSchema.index(
   { unique: true, partialFilterExpression: { zReportNumber: { $type: "string" } } },
 );
 posSessionSchema.index({ organizationId: 1, locationId: 1, openedAt: -1, posSessionId: -1 });
+
+export interface PosHeldCartDocument {
+  posHeldCartId: string;
+  organizationId: string;
+  locationId: string;
+  posDeviceId: string;
+  heldByMemberId: string;
+  label: string;
+  cart: PosHeldCartPayload;
+  expiresAt: Date;
+  version: number;
+  createdAt: Date;
+  updatedAt: Date;
+  createdByUserId: string | null;
+  updatedByUserId: string | null;
+}
+
+export const posHeldCartSchema = new Schema<PosHeldCartDocument>(
+  {
+    ...domainIdField("posHeldCartId"),
+    organizationId: { type: String, required: true, immutable: true },
+    locationId: { type: String, required: true, immutable: true },
+    posDeviceId: { type: String, required: true, immutable: true },
+    heldByMemberId: { type: String, required: true, immutable: true },
+    label: { type: String, required: true },
+    cart: { type: Schema.Types.Mixed, required: true },
+    expiresAt: { type: Date, required: true, immutable: true },
+    ...versionField,
+    ...auditFields,
+  },
+  SCHEMA_OPTIONS,
+);
+
+posHeldCartSchema.index({ organizationId: 1, posHeldCartId: 1 }, { unique: true });
+posHeldCartSchema.index({ organizationId: 1, posDeviceId: 1, createdAt: -1, posHeldCartId: -1 });
+posHeldCartSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

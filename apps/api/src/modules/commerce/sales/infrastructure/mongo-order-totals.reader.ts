@@ -8,24 +8,19 @@ export interface OrderTotalsRow {
   readonly totals: OrderTotals;
 }
 
-/** The money totals of many orders in one query: the Z-report sums them without loading lines. */
+/** The money totals of the orders one register sold: the Z-report sums them without loading lines. */
 export interface OrderTotalsReader {
-  readMany(orderIds: readonly string[]): Promise<readonly OrderTotalsRow[]>;
+  readByPosSession(posSessionId: string): Promise<readonly OrderTotalsRow[]>;
 }
 
 const TOTALS_PROJECTION = { _id: 0, orderId: 1, totals: 1 };
 
 export function buildOrderTotalsReader(): OrderTotalsReader {
   return {
-    async readMany(orderIds) {
-      if (orderIds.length === 0) return [];
+    async readByPosSession(posSessionId) {
       const rows = await models({})
         .get<OrderDocument>(ORDER_MODEL_NAME)
-        .find(
-          { orderId: { $in: [...orderIds] } },
-          TOTALS_PROJECTION,
-          sessionOption(getActiveSession()),
-        )
+        .find({ posSessionId }, TOTALS_PROJECTION, sessionOption(getActiveSession()))
         .lean<Pick<OrderDocument, "orderId" | "totals">[]>();
       return rows.map((row) => ({ orderId: row.orderId, totals: totalsOf(row.totals) }));
     },

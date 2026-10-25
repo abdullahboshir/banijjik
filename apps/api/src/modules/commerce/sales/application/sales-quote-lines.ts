@@ -55,6 +55,9 @@ export async function quoteAndPrepare(
       quantity: line.quantity,
       modifierOptionIds: line.modifierOptionIds,
       ...(line.manualDiscount === undefined ? {} : { manualDiscount: line.manualDiscount }),
+      ...(line.unitPriceOverride === undefined
+        ? {}
+        : { unitPriceOverride: line.unitPriceOverride }),
     })),
     ...(input.orderDiscount === undefined ? {} : { orderDiscount: input.orderDiscount }),
   });

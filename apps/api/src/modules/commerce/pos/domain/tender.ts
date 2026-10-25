@@ -64,7 +64,10 @@ export function planTender(input: TenderInput): TenderPlan {
   const totalMinor = input.grandTotal.amount;
   const storeCreditMinor = input.storeCreditUse?.amount ?? 0;
   const appliedMinor = storeCreditMinor + sumMinor(input.payments);
-  if (appliedMinor === 0 && totalMinor > 0) throw posRuleError(POS_RULE_KEY.TENDER_REQUIRED);
+  const mayLeaveDue = input.allowCreditSale && input.hasContact;
+  if (appliedMinor === 0 && totalMinor > 0 && !mayLeaveDue) {
+    throw posRuleError(POS_RULE_KEY.TENDER_REQUIRED);
+  }
   if (appliedMinor > totalMinor) {
     throw posRuleError(POS_RULE_KEY.OVERPAYMENT_NOT_CASH, {
       excessMinor: appliedMinor - totalMinor,
@@ -72,7 +75,7 @@ export function planTender(input: TenderInput): TenderPlan {
   }
   const changeMinor = changeOf(input);
   const dueMinor = totalMinor - appliedMinor;
-  if (dueMinor > 0 && !(input.allowCreditSale && input.hasContact)) {
+  if (dueMinor > 0 && !mayLeaveDue) {
     throw posRuleError(POS_RULE_KEY.PAYMENT_SHORT, { dueMinor });
   }
   return { storeCreditMinor, changeMinor, dueMinor, currency: input.grandTotal.currency };

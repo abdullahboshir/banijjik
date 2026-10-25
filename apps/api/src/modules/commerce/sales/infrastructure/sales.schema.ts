@@ -50,6 +50,8 @@ export interface OrderLineDocument {
   nameSnapshot: string;
   quantity: number;
   unitPrice: MoneyDocument;
+  listUnitPrice?: MoneyDocument;
+  unitPriceOverride?: MoneyDocument | null;
   lineGross: MoneyDocument;
   lineDiscount: MoneyDocument;
   lineTax: MoneyDocument;
@@ -102,6 +104,8 @@ export interface OrderDocument {
   customFields: Record<string, unknown>;
   /** Whether the order holds a stock reservation; the stock port cannot answer this. */
   hasStockLines: boolean;
+  /** The POS register that sold this order; null for every other order (plan 3.9 A2-6). */
+  posSessionId: string | null;
   returnStatus: OrderReturnStatus;
   completedAt: Date | null;
   version: number;
@@ -158,6 +162,8 @@ const orderLineSchema = new Schema<OrderLineDocument>(
     nameSnapshot: { type: String, required: true },
     quantity: { type: Number, required: true },
     unitPrice: { type: moneySchema, required: true },
+    listUnitPrice: { type: moneySchema, default: undefined },
+    unitPriceOverride: { type: moneySchema, default: null },
     lineGross: { type: moneySchema, required: true },
     lineDiscount: { type: moneySchema, required: true },
     lineTax: { type: moneySchema, required: true },
@@ -220,6 +226,7 @@ export const orderSchema = new Schema<OrderDocument>(
     cancelReason: { type: String, default: null },
     customFields: { type: Schema.Types.Mixed, default: {} },
     hasStockLines: { type: Boolean, required: true, default: false },
+    posSessionId: { type: String, default: null },
     completedAt: { type: Date, default: null },
     returnStatus: {
       type: String,
@@ -240,6 +247,11 @@ orderSchema.index(
 );
 orderSchema.index({ organizationId: 1, locationId: 1, status: 1, createdAt: -1 });
 orderSchema.index({ organizationId: 1, contactId: 1, createdAt: -1 });
+/** The Z-report read of one register's sales (plan 3.9 A2-6): only till orders are indexed. */
+orderSchema.index(
+  { organizationId: 1, posSessionId: 1 },
+  { partialFilterExpression: { posSessionId: { $type: "string" } } },
+);
 /** The drafts and placed-orders scans of the hourly jobs (plan decisions 4 and 5). */
 orderSchema.index({ organizationId: 1, status: 1, createdAt: 1, orderId: 1 });
 

@@ -139,6 +139,10 @@ export interface OrderLineSnapshot {
   /** Integer in the sales unit's precision (ADR-047). */
   readonly quantity: number;
   readonly unitPrice: Money;
+  /** The catalog unit price before a POS override (card 3.9 A2-2). */
+  readonly listUnitPrice: Money;
+  /** The POS unit price override when one was applied, or null (card 3.9 A2-2). */
+  readonly unitPriceOverride: Money | null;
   readonly lineGross: Money;
   readonly lineDiscount: Money;
   readonly lineTax: Money;
@@ -198,6 +202,8 @@ export interface OrderResponse {
   readonly returnStatus: OrderReturnStatus;
   readonly businessDate: string;
   readonly source: OrderSource;
+  /** The register session that sold this order at the till, or null (card 3.9 A2-6). */
+  readonly posSessionId?: string | null;
   readonly approval: OrderApproval | null;
   readonly note: string | null;
   /** What the seller entered for the whole order; an edit re-quotes from it (ADR-131). */

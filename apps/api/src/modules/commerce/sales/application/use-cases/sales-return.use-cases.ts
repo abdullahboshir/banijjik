@@ -24,6 +24,7 @@ import { assertLocationAllowed } from "../sales-transition-shared.js";
 export type SalesReturnWriteInput = SalesReturnCallerInput & {
   readonly orderId: OrderId;
   readonly body: SalesReturnRequestBody;
+  readonly posSessionId?: string | null;
 };
 
 export class PreviewSalesReturnUseCase {

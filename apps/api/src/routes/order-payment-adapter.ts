@@ -173,6 +173,7 @@ class OrderPaymentAdapter implements OrderPaymentPort {
       actorUserId: input.actorUserId,
       hasRefundWithoutApprovalPermission: refund.hasRefundWithoutApprovalPermission,
       ...(refund.approval === null ? {} : { approvalSnapshot: refund.approval }),
+      posSessionId: input.posSessionId ?? null,
       note: refund.note,
     });
     const storeCreditEntryId =

@@ -1,4 +1,5 @@
 import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
+import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
 import { POS_API_MESSAGE_KEYS, POS_RULE_KEY, type PosRuleKey } from "@banijjik/contracts/pos";
 
 export { DomainRuleError };
@@ -13,6 +14,14 @@ export function locationForbidden(): DomainRuleError {
 
 export function forbidden(): DomainRuleError {
   return new DomainRuleError({ code: ERROR_CODE.FORBIDDEN });
+}
+
+export function priceOverrideApprovalRequired(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.APPROVAL_REQUIRED,
+    messageKey: "errors.approval_required",
+    details: { action: APPROVAL_ACTION.PRICE_OVERRIDE },
+  });
 }
 
 /** A rare collision (two devices drew the same pairing code at once): the client simply asks again. */
@@ -64,6 +73,8 @@ const RULE_MESSAGE_KEY: Readonly<Record<PosRuleKey, string>> = {
   [POS_RULE_KEY.CASH_TENDERED_INVALID]: POS_API_MESSAGE_KEYS.cashTenderedInvalid,
   [POS_RULE_KEY.TENDER_REQUIRED]: POS_API_MESSAGE_KEYS.tenderRequired,
   [POS_RULE_KEY.CURRENCY_MISMATCH]: POS_API_MESSAGE_KEYS.currencyMismatch,
+  [POS_RULE_KEY.HELD_CART_LIMIT]: POS_API_MESSAGE_KEYS.heldCartLimit,
+  [POS_RULE_KEY.COLLECTION_MISMATCH]: POS_API_MESSAGE_KEYS.collectionMismatch,
 };
 
 /** A tender rule that failed: 422 with the rule key in `details` and its own message key. */

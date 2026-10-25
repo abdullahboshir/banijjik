@@ -28,6 +28,8 @@ export interface QuoteLineSource {
   readonly kind: string;
   readonly categoryIds: readonly string[];
   readonly unitPriceMinor: number;
+  readonly listUnitPriceMinor?: number;
+  readonly unitPriceOverrideMinor?: number | null;
   readonly precision: number;
   readonly taxClassKey: string | undefined;
   readonly taxRateBasisPoints: number;

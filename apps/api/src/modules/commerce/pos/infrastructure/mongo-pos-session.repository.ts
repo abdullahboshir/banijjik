@@ -1,4 +1,4 @@
-import { POS_SESSION_STATUS } from "@banijjik/contracts/pos";
+import { POS_SESSION_STATUS, type PosSessionStatus } from "@banijjik/contracts/pos";
 import {
   asId,
   type LocationId,
@@ -8,7 +8,7 @@ import {
   type PosSessionId,
   type UserId,
 } from "@banijjik/ids";
-import type { Model } from "mongoose";
+import type { Model, QueryFilter } from "mongoose";
 import {
   getActiveSession,
   isDuplicateKeyError,
@@ -16,7 +16,7 @@ import {
   sessionOption,
   updateVersioned,
 } from "../../../../kernel/db/index.js";
-import type { PosSessionRepository } from "../application/ports/pos-ports.js";
+import type { PosSessionListCursor, PosSessionRepository } from "../application/ports/pos-ports.js";
 import { sessionAlreadyOpen } from "../domain/errors.js";
 import type { PosSession } from "../domain/pos-session.entity.js";
 import {
@@ -90,6 +90,42 @@ export class MongoPosSessionRepository implements PosSessionRepository {
       )
       .lean<PosSessionDocument>();
     return row === null ? undefined : toSession(row);
+  }
+
+  async list(input: {
+    readonly allowedLocationIds: readonly string[] | "ALL";
+    readonly locationId?: LocationId | undefined;
+    readonly status?: PosSessionStatus | undefined;
+    readonly after?: PosSessionListCursor | undefined;
+    readonly limit: number;
+  }): Promise<{
+    readonly items: readonly PosSession[];
+    readonly next: PosSessionListCursor | null;
+  }> {
+    const query: QueryFilter<PosSessionDocument> = {};
+    if (input.locationId !== undefined) query.locationId = input.locationId;
+    if (input.status !== undefined) query.status = input.status;
+    if (input.after !== undefined) {
+      query.$or = [
+        { openedAt: { $lt: input.after.openedAt } },
+        { openedAt: input.after.openedAt, posSessionId: { $lt: input.after.posSessionId } },
+      ];
+    }
+    const rows = await sessionModel()
+      .find(query)
+      .sort({ openedAt: -1, posSessionId: -1 })
+      .limit(input.limit + 1)
+      .lean<PosSessionDocument[]>();
+    const items = rows.slice(0, input.limit).map(toSession);
+    const hasNext = rows.length > input.limit;
+    const last = items.at(-1);
+    return {
+      items,
+      next:
+        hasNext && last !== undefined
+          ? { openedAt: last.openedAt, posSessionId: last.posSessionId }
+          : null,
+    };
   }
 
   async markSale(posSessionId: PosSessionId, now: Date): Promise<boolean> {

@@ -187,17 +187,13 @@ export class ClosePosSessionUseCase {
     readonly note: string | null;
     readonly closedAt: Date;
   }): Promise<PosSession> {
-    const { sessions, payments, soldOrders, audit, events } = this.dependencies;
+    const { sessions, audit, events } = this.dependencies;
     const { open, organizationId } = input;
-    const methodTotals = await payments.methodTotals({
-      organizationId,
-      posSessionId: open.posSessionId,
+    const totals = await this.readSessionTotals(organizationId, open.posSessionId);
+    const expected = expectedCash({
+      openingFloat: open.openingFloat,
+      methodTotals: totals.methodTotals,
     });
-    const orderAllocations = await payments.orderAllocations({
-      organizationId,
-      posSessionId: open.posSessionId,
-    });
-    const expected = expectedCash({ openingFloat: open.openingFloat, methodTotals });
     const zReportNumber = String(
       await nextSequenceValue({ organizationId, sequenceKey: SEQUENCE_KEY.ZREPORT }),
     ).padStart(Z_REPORT_NUMBER_WIDTH, "0");
@@ -206,9 +202,7 @@ export class ClosePosSessionUseCase {
       zReportNumber,
       closedAt: input.closedAt,
       closedByMemberId: input.memberId,
-      methodTotals,
-      orderAllocations,
-      soldOrders: await soldOrders.readMany(orderAllocations.map((row) => row.orderId)),
+      ...totals,
       expectedCash: expected,
       countedCash: input.countedCash,
     });
@@ -231,6 +225,19 @@ export class ClosePosSessionUseCase {
       },
     });
     return closed;
+  }
+
+  private async readSessionTotals(organizationId: OrganizationId, posSessionId: PosSessionId) {
+    const { payments, soldOrders: soldOrdersReader } = this.dependencies;
+    const methodTotals = await payments.methodTotals({ organizationId, posSessionId });
+    const orderAllocations = await payments.orderAllocations({ organizationId, posSessionId });
+    const soldOrders = await soldOrdersReader.readByPosSession(posSessionId);
+    const collectionTotals = await payments.collectionTotals({
+      organizationId,
+      posSessionId,
+      soldOrderIds: soldOrders.map((order) => order.orderId),
+    });
+    return { methodTotals, collectionTotals, orderAllocations, soldOrders };
   }
 }
 

@@ -1,4 +1,4 @@
-import type { ManualDiscount, QuoteResponse } from "@banijjik/contracts/pricing";
+import type { ManualDiscount, Money, QuoteResponse } from "@banijjik/contracts/pricing";
 import { asId, type LocationId, type OfferingId, type OrganizationId } from "@banijjik/ids";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import {
@@ -22,6 +22,7 @@ export interface QuoteLineRequest {
   readonly quantity: number;
   readonly modifierOptionIds: readonly string[];
   readonly manualDiscount?: ManualDiscount;
+  readonly unitPriceOverride?: Money;
 }
 
 export interface QuoteUseCaseInput {
@@ -46,10 +47,18 @@ export interface QuoteDependencies {
 type CatalogLine = Awaited<ReturnType<CatalogQuoteReader["readLines"]>>[number];
 type Settings = Awaited<ReturnType<PricingSettingsReader["read"]>>;
 
-function assertCatalogLines(catalogLines: readonly CatalogLine[], currency: string): void {
+function assertCatalogLines(
+  catalogLines: readonly CatalogLine[],
+  inputLines: readonly QuoteLineRequest[],
+  currency: string,
+): void {
   for (const [index, source] of catalogLines.entries()) {
     if (!source.isAvailable) throw offeringNotAvailable(source.offeringId);
     if (source.currency !== currency) throw currencyMismatch(`lines.${index}`);
+    const override = inputLines[index]?.unitPriceOverride;
+    if (override !== undefined && override.currency !== currency) {
+      throw currencyMismatch(`lines.${index}.unitPriceOverride`);
+    }
   }
 }
 
@@ -75,13 +84,19 @@ function toQuoteLines(input: {
   readonly rateByKey: Map<string, number>;
 }): QuoteLineSource[] {
   return input.catalogLines.map((source, index) => {
+    const requestLine = input.inputLines[index];
+    const overrideMinor = requestLine?.unitPriceOverride?.amount ?? null;
+    const effectiveUnitPriceMinor = overrideMinor ?? source.unitPriceMinor;
     const key = source.taxClassKey ?? input.settings.defaultTaxClassKey;
     if (key === "") {
       return {
         ...source,
+        unitPriceMinor: effectiveUnitPriceMinor,
+        listUnitPriceMinor: source.unitPriceMinor,
+        unitPriceOverrideMinor: overrideMinor,
         taxClassKey: undefined,
         taxRateBasisPoints: 0,
-        manualDiscount: input.inputLines[index]?.manualDiscount,
+        manualDiscount: requestLine?.manualDiscount,
       };
     }
     const rate = input.rateByKey.get(key);
@@ -90,9 +105,12 @@ function toQuoteLines(input: {
     }
     return {
       ...source,
+      unitPriceMinor: effectiveUnitPriceMinor,
+      listUnitPriceMinor: source.unitPriceMinor,
+      unitPriceOverrideMinor: overrideMinor,
       taxClassKey: key,
       taxRateBasisPoints: rate,
-      manualDiscount: input.inputLines[index]?.manualDiscount,
+      manualDiscount: requestLine?.manualDiscount,
     };
   });
 }
@@ -139,7 +157,7 @@ export class QuoteUseCase {
       this.dependencies.promotions.listActiveForQuote(),
     ]);
 
-    assertCatalogLines(catalogLines, currency);
+    assertCatalogLines(catalogLines, input.lines, currency);
     const rateByKey = await rateByTaxClassKey(this.dependencies.taxClasses, catalogLines, settings);
     const lines = toQuoteLines({
       catalogLines,

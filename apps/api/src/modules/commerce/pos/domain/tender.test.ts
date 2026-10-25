@@ -115,6 +115,20 @@ describe("planTender", () => {
     expect(free).toMatchObject({ dueMinor: 0, changeMinor: 0 });
   });
 
+  it("a full credit sale with no payment is a due when credit sale is on and a contact is attached", () => {
+    const fullCredit = { allowCreditSale: true, hasContact: true };
+
+    const plan = planTender(tenderOf(fullCredit));
+    const noContact = () => planTender(tenderOf({ allowCreditSale: true }));
+    const switchedOff = () => planTender(tenderOf({ hasContact: true }));
+
+    expect(plan).toMatchObject({ dueMinor: 1_000, changeMinor: 0, storeCreditMinor: 0 });
+    expect([ruleKeyOf(noContact), ruleKeyOf(switchedOff)]).toEqual([
+      POS_RULE_KEY.TENDER_REQUIRED,
+      POS_RULE_KEY.TENDER_REQUIRED,
+    ]);
+  });
+
   it("refuses an amount in another currency", () => {
     const run = () =>
       planTender(

@@ -58,6 +58,7 @@ export async function writeSalesReturn(args: WriteSalesReturnArgs): Promise<Sale
     currency,
     newTotalMinor: settlement.newTotalMinor,
     refund: refundRequestOf(prepared, input.body, approvals),
+    posSessionId: input.posSessionId ?? null,
     now,
   });
   await deps.orders.update(

@@ -66,6 +66,7 @@ describe("audit vocabulary", () => {
       "sitePage",
       "posDevice",
       "posSession",
+      "posHeldCart",
     ]);
   });
 });

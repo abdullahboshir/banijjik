@@ -529,5 +529,8 @@
   "errors.pos_tender_required": "Add a payment or store credit for this bill.",
   "errors.pos_currency_mismatch": "Every amount must be in your business currency.",
   "sms.listingApproved": "{businessName}: your listing {listingNumber} was approved.",
-  "sms.listingRejected": "{businessName}: your listing {listingNumber} was not approved. Reason: {reasons}."
+  "sms.listingRejected": "{businessName}: your listing {listingNumber} was not approved. Reason: {reasons}.",
+  "permission.pos.price.override": "Override item prices at the POS",
+  "errors.pos_held_cart_limit": "This device already has 20 held carts. Resume or delete one before holding another.",
+  "errors.pos_collection_mismatch": "The payments must equal the due allocations."
 }

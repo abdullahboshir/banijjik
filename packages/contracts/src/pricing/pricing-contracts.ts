@@ -117,6 +117,8 @@ export interface QuoteLineInput {
   readonly quantity: number;
   readonly modifierOptionIds: readonly string[];
   readonly manualDiscount?: ManualDiscount;
+  /** Optional POS price override per sales unit (card 3.9 A2-2). */
+  readonly unitPriceOverride?: Money;
 }
 
 export interface QuoteRequest {
@@ -134,6 +136,10 @@ export interface QuoteLineResult {
   readonly variantId: string;
   readonly quantity: number;
   readonly unitPrice: Money;
+  /** The catalog unit price before a POS override (card 3.9 A2-2). */
+  readonly listUnitPrice: Money;
+  /** The POS unit price override when one was applied, or null (card 3.9 A2-2). */
+  readonly unitPriceOverride: Money | null;
   readonly lineGross: Money;
   readonly promotionDiscount: Money;
   readonly manualDiscount: Money;

@@ -126,6 +126,9 @@ export const AUDIT_ACTION = {
   POS_SESSION_OPENED: "pos.session.opened",
   POS_SESSION_CLOSED: "pos.session.closed",
   POS_SALE_CREATED: "pos.sale.created",
+  POS_HELD_CART_CREATED: "pos.heldCart.created",
+  POS_HELD_CART_DELETED: "pos.heldCart.deleted",
+  POS_COLLECTION_CREATED: "pos.collection.created",
   ...ENROLLMENT_EVENT_TYPE,
 } as const;
 
@@ -183,6 +186,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "sitePage",
   "posDevice",
   "posSession",
+  "posHeldCart",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

@@ -15,7 +15,13 @@ import {
   buildSalesDependencies,
   buildSalesJobDependencies,
   buildSalesReturnController,
+  buildSalesReturnDependencies,
 } from "./sales-wiring.js";
+import {
+  CreateSalesReturnUseCase,
+  type SalesReturnWriteInput,
+} from "./application/use-cases/sales-return.use-cases.js";
+import type { SalesReturnResponse } from "@banijjik/contracts/sales";
 import type {
   SalesJobPorts,
   SalesTenantPorts,
@@ -84,6 +90,17 @@ export {
 export function buildInstantSale(ports: SalesTenantPorts): InstantSaleService {
   return buildInstantSaleService(buildSalesDependencies(ports));
 }
+
+export interface PosSalesReturnService {
+  create(input: SalesReturnWriteInput): Promise<SalesReturnResponse>;
+}
+
+/** The return use case for a POS till return, which sets `posSessionId` on the refund (card 3.9 A2-4). */
+export function buildPosSalesReturn(ports: SalesTenantPorts): PosSalesReturnService {
+  const useCase = new CreateSalesReturnUseCase(buildSalesReturnDependencies(ports));
+  return { create: (input) => useCase.execute(input) };
+}
+export type { SalesReturnWriteInput };
 
 /** The composition root passes the order store to adapters that live outside this module. */
 export function buildOrderRepository(): OrderRepository {

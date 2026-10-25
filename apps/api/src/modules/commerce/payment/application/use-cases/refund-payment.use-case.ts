@@ -61,6 +61,8 @@ export interface RefundPaymentInput {
    * for its own subject (a sales return). Never set from an HTTP body; the validation schema refuses it.
    */
   readonly approvalSnapshot?: PaymentApprovalSnapshot | undefined;
+  /** Internal only (card 3.9 A2-4): set by POS returns, never from `POST /refunds`. */
+  readonly posSessionId?: string | null;
   readonly note?: string | null;
 }
 
@@ -88,6 +90,7 @@ function buildRefundPayment(opts: {
     contactId: input.contactId || null,
     receivedByMemberId: input.receivedByMemberId,
     businessDate,
+    posSessionId: input.posSessionId ?? null,
     approval: approvalSnapshot,
     note: input.note ?? null,
     version: 1,

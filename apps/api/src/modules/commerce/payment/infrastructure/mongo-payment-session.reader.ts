@@ -33,6 +33,11 @@ export interface PaymentSessionReader {
     readonly organizationId: OrganizationId;
     readonly posSessionId: string;
   }): Promise<readonly SessionMethodTotal[]>;
+  collectionTotals(input: {
+    readonly organizationId: OrganizationId;
+    readonly posSessionId: string;
+    readonly soldOrderIds: readonly string[];
+  }): Promise<readonly SessionMethodTotal[]>;
   orderAllocations(input: {
     readonly organizationId: OrganizationId;
     readonly posSessionId: string;
@@ -104,10 +109,45 @@ function foldAllocations(groups: readonly AllocationGroup[]): readonly SessionOr
   return [...byOrder].map(([orderId, entry]) => ({ orderId, ...entry }));
 }
 
+async function readCollectionGroups(
+  organizationId: OrganizationId,
+  posSessionId: string,
+  soldOrderIds: readonly string[],
+): Promise<readonly MethodGroup[]> {
+  return paymentModel().aggregate<MethodGroup>(
+    [
+      {
+        $match: {
+          organizationId,
+          posSessionId,
+          direction: PAYMENT_DIRECTION.IN,
+          "allocations.requestId": { $nin: [...soldOrderIds] },
+        },
+      },
+      {
+        $group: {
+          _id: { method: "$method", direction: "$direction", currency: "$amount.currency" },
+          totalMinor: { $sum: "$amount.amount" },
+          count: { $sum: 1 },
+        },
+      },
+    ],
+    sessionOption(getActiveSession()),
+  );
+}
+
 export function buildPaymentSessionReader(): PaymentSessionReader {
   return {
     async methodTotals({ organizationId, posSessionId }) {
       const groups = await readMethodGroups(organizationId, posSessionId);
+      return groups.map((group) => ({
+        ...group._id,
+        totalMinor: group.totalMinor,
+        count: group.count,
+      }));
+    },
+    async collectionTotals({ organizationId, posSessionId, soldOrderIds }) {
+      const groups = await readCollectionGroups(organizationId, posSessionId, soldOrderIds);
       return groups.map((group) => ({
         ...group._id,
         totalMinor: group.totalMinor,

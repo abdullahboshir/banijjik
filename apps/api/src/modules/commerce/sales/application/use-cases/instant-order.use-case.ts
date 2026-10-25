@@ -58,6 +58,8 @@ export interface PreparedInstantSale {
   readonly prepared: PreparedLines;
   readonly ownerExempt: boolean;
   readonly source: OrderSource;
+  /** The register that rang this sale up (plan 3.9 A2-6). Null for every order not sold at a till. */
+  readonly posSessionId: string | null;
   /** What the customer owes for these lines, known before the transaction so the caller can check the tender. */
   readonly grandTotal: Money;
 }
@@ -67,6 +69,8 @@ export interface InstantSaleInput extends OrderWriteInput {
   readonly body: OrderBodyBase & { readonly lines: readonly OrderLineInput[] };
   /** Where the sale was rung up; the admin route leaves it out and gets ADMIN. */
   readonly source?: OrderSource;
+  /** Set only by the POS, whose own session lookup decided it; every other caller leaves it out. */
+  readonly posSessionId?: string | null;
 }
 
 export class InstantOrderUseCase {
@@ -110,6 +114,7 @@ export class InstantOrderUseCase {
       prepared,
       ownerExempt,
       source: input.source ?? ORDER_SOURCE.ADMIN,
+      posSessionId: input.posSessionId ?? null,
       grandTotal: prepared.totals.grandTotal,
     };
   }
@@ -187,6 +192,7 @@ export class InstantOrderUseCase {
       orderDiscount: ctx.body.orderDiscount ?? null,
       customFields: ctx.body.customFields ?? {},
       hasStockLines: ctx.prepared.trackedLines.length > 0,
+      posSessionId: ctx.posSessionId,
       createdByUserId: ctx.actorUserId,
       now: ctx.now,
     }).place({

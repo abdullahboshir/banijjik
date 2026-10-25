@@ -21,6 +21,7 @@ export interface OrderLineInput {
   readonly modifierOptionIds: readonly string[];
   readonly manualDiscount?: ManualDiscount | undefined;
   readonly performedByMemberId?: string | null | undefined;
+  readonly unitPriceOverride?: Money | undefined;
 }
 
 /** Quote result merged with the catalog facts an order line must freeze. */
@@ -47,6 +48,8 @@ export interface PreparedLines {
    * approval token must cover (ADR-121); it is never taken from the client.
    */
   readonly manualDiscountTotal: Money;
+  /** Sum of `(listUnitPrice - unitPriceOverride) * quantity` for lines overridden below list price (A2-2). */
+  readonly priceOverrideReductionTotal: Money;
 }
 
 function toTotals(quote: QuoteResponse): OrderTotals {
@@ -76,6 +79,17 @@ function manualDiscountTotalOf(quote: QuoteResponse): Money {
   };
 }
 
+function priceOverrideReductionTotalOf(quote: QuoteResponse): Money {
+  const amount = quote.lines.reduce((sum, line) => {
+    const override = line.unitPriceOverride;
+    if (override === null || override === undefined) return sum;
+    const diff = line.listUnitPrice.amount - override.amount;
+    if (diff <= 0) return sum;
+    return sum + diff * line.quantity;
+  }, 0);
+  return { amount, currency: quote.totals.grandTotal.currency };
+}
+
 /** The frozen line: quote money plus the catalog facts that must not change under the order. */
 function orderLineOf(
   catalog: SalesCatalogLine,
@@ -90,6 +104,8 @@ function orderLineOf(
     nameSnapshot: catalog.nameSnapshot,
     quantity: quoted.quantity,
     unitPrice: quoted.unitPrice,
+    listUnitPrice: quoted.listUnitPrice,
+    unitPriceOverride: quoted.unitPriceOverride,
     lineGross: quoted.lineGross,
     lineDiscount: quoted.lineDiscount,
     lineTax: quoted.lineTax,
@@ -149,5 +165,6 @@ export function prepareOrderLines(input: {
     costLines,
     approvalsRequired: input.quote.approvalsRequired,
     manualDiscountTotal: manualDiscountTotalOf(input.quote),
+    priceOverrideReductionTotal: priceOverrideReductionTotalOf(input.quote),
   };
 }

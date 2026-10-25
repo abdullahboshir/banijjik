@@ -1,6 +1,7 @@
 import { defineEnum } from "../define-enum.js";
 import { PAYMENT_METHOD } from "../payment/payment-contracts.js";
 import type { Money, PaymentMethod } from "../payment/payment-contracts.js";
+import type { ManualDiscount } from "../pricing/pricing-contracts.js";
 import type { OrderResponse } from "../sales/sales-contracts.js";
 
 export const POS_DEVICE_STATUS = defineEnum(["ACTIVE", "REVOKED"]);
@@ -33,6 +34,12 @@ export const POS_SALE_PAYMENT_METHODS: readonly PaymentMethod[] = [
 export const POS_MAX_SALE_PAYMENTS = 5;
 export const POS_DEVICE_NAME_MAX_LENGTH = 80;
 export const POS_SESSION_NOTE_MAX_LENGTH = 200;
+export const POS_HELD_CART_MAX_PER_DEVICE = 20;
+export const POS_HELD_CART_TTL_HOURS = 24;
+export const POS_HELD_CART_LABEL_MAX_LENGTH = 40;
+export const POS_MAX_COLLECTION_ALLOCATIONS = 10;
+export const POS_SESSION_LIST_DEFAULT_LIMIT = 20;
+export const POS_SESSION_LIST_MAX_LIMIT = 100;
 
 /** Compact rows for a local cache, so this page may be larger than the usual 100 (plan decision 8). */
 export const POS_CATALOG_SNAPSHOT_MAX_LIMIT = 500;
@@ -54,6 +61,8 @@ export const POS_RULE_KEY = {
   CASH_TENDERED_INVALID: "POS_CASH_TENDERED_INVALID",
   TENDER_REQUIRED: "POS_TENDER_REQUIRED",
   CURRENCY_MISMATCH: "POS_CURRENCY_MISMATCH",
+  HELD_CART_LIMIT: "POS_HELD_CART_LIMIT",
+  COLLECTION_MISMATCH: "POS_COLLECTION_MISMATCH",
 } as const;
 
 export type PosRuleKey = (typeof POS_RULE_KEY)[keyof typeof POS_RULE_KEY];
@@ -69,6 +78,8 @@ export const POS_API_MESSAGE_KEYS = {
   cashTenderedInvalid: "errors.pos_cash_tendered_invalid",
   tenderRequired: "errors.pos_tender_required",
   currencyMismatch: "errors.pos_currency_mismatch",
+  heldCartLimit: "errors.pos_held_cart_limit",
+  collectionMismatch: "errors.pos_collection_mismatch",
 } as const;
 
 export const POS_API_MESSAGE_KEY_LIST: readonly string[] = Object.values(POS_API_MESSAGE_KEYS);
@@ -104,6 +115,12 @@ export interface PosMethodTotal {
   readonly count: number;
 }
 
+export interface PosZReportReturns {
+  readonly count: number;
+  readonly value: Money;
+  readonly refunds: readonly PosMethodTotal[];
+}
+
 /** The numbered Z-report, frozen when the register closes (plan decision 7). */
 export interface PosZReport {
   readonly zReportNumber: string;
@@ -120,7 +137,9 @@ export interface PosZReport {
   readonly tax: Money;
   readonly grandTotal: Money;
   readonly paymentsIn: readonly PosMethodTotal[];
+  readonly collections: readonly PosMethodTotal[];
   readonly refunds: readonly PosMethodTotal[];
+  readonly returns: PosZReportReturns;
   readonly storeCreditUsed: Money;
   readonly duesCreated: Money;
   readonly openingFloat: Money;
@@ -192,4 +211,45 @@ export interface PosCatalogSnapshotResponse {
   readonly removed: readonly PosCatalogRemovedRow[];
   readonly nextCursor: string | null;
   readonly serverTime: string;
+}
+
+export interface PosHeldCartLine {
+  readonly offeringId: string;
+  readonly variantId: string;
+  readonly quantity: number;
+  readonly modifierOptionIds: readonly string[];
+  readonly manualDiscount?: ManualDiscount;
+  readonly performedByMemberId?: string | null;
+}
+
+/** Held carts store no prices, payments or approval tokens: the sale re-quotes when resumed (A2-1). */
+export interface PosHeldCartPayload {
+  readonly contactId?: string | null;
+  readonly lines: readonly PosHeldCartLine[];
+  readonly orderDiscount?: ManualDiscount;
+  readonly note?: string;
+  readonly customFields?: Readonly<Record<string, unknown>>;
+}
+
+export interface PosHeldCartResponse {
+  readonly posHeldCartId: string;
+  readonly posDeviceId: string;
+  readonly locationId: string;
+  readonly label: string;
+  readonly cart: PosHeldCartPayload;
+  readonly heldByMemberId: string;
+  readonly expiresAt: string;
+  readonly version: number;
+  readonly createdAt: string;
+}
+
+export interface PosCollectionResponse {
+  readonly posSessionId: string | null;
+  readonly payments: readonly PosSalePaymentResponse[];
+  readonly changeDue: Money;
+}
+
+export interface PosSessionListResponse {
+  readonly items: readonly PosSessionResponse[];
+  readonly nextCursor: string | null;
 }

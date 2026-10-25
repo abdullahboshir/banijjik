@@ -34,6 +34,10 @@ export const posManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.POS_DEVICE_MANAGE, { surface: SURFACE.POS }),
     permissionDefinition(PERMISSION_KEY.POS_SESSION_OPEN, { surface: SURFACE.POS }),
     permissionDefinition(PERMISSION_KEY.POS_SALE_CREATE, { surface: SURFACE.POS }),
+    permissionDefinition(PERMISSION_KEY.POS_PRICE_OVERRIDE, {
+      surface: SURFACE.POS,
+      isSensitive: true,
+    }),
     permissionDefinition(PERMISSION_KEY.POS_REGISTER_CLOSE, { surface: SURFACE.POS }),
     permissionDefinition(PERMISSION_KEY.POS_REPORT_READ, { surface: SURFACE.POS }),
   ],

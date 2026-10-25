@@ -25,6 +25,8 @@ export interface OrderLineProps {
   readonly nameSnapshot: string;
   readonly quantity: number;
   readonly unitPrice: Money;
+  readonly listUnitPrice: Money;
+  readonly unitPriceOverride: Money | null;
   readonly lineGross: Money;
   readonly lineDiscount: Money;
   readonly lineTax: Money;
@@ -60,6 +62,11 @@ export interface OrderProps {
   readonly cancelReason: string | null;
   readonly customFields: Readonly<Record<string, unknown>>;
   /**
+   * The POS register that sold this order (plan 3.9 A2-6). Null for every order not rung up at a
+   * till, which is what lets the Z-report count a credit sale that has no payment of its own.
+   */
+  readonly posSessionId: string | null;
+  /**
    * Whether the order holds a stock reservation (tracked lines were reserved at place). Complete
    * and cancel need it because the stock port cannot answer "is there a reservation?".
    */
@@ -89,6 +96,7 @@ export interface NewOrderInput {
   readonly orderDiscount: ManualDiscount | null;
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly hasStockLines: boolean;
+  readonly posSessionId: string | null;
   readonly createdByUserId: UserId | null;
   readonly now: Date;
 }

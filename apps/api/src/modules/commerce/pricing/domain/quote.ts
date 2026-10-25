@@ -80,11 +80,15 @@ function buildLineResults(
       taxInclusive: input.taxInclusive,
     });
     const lineNetTotal = input.taxInclusive ? taxable : taxable + lineTax;
+    const listMinor = row.line.listUnitPriceMinor ?? row.line.unitPriceMinor;
+    const overrideMinor = row.line.unitPriceOverrideMinor ?? null;
     return {
       offeringId: row.line.offeringId,
       variantId: row.line.variantId,
       quantity: row.line.quantity,
       unitPrice: moneyOf(row.line.unitPriceMinor, currency),
+      listUnitPrice: moneyOf(listMinor, currency),
+      unitPriceOverride: overrideMinor === null ? null : moneyOf(overrideMinor, currency),
       lineGross: moneyOf(row.lineGross, currency),
       promotionDiscount: moneyOf(row.promotionDiscount, currency),
       manualDiscount: moneyOf(row.manualDiscount, currency),

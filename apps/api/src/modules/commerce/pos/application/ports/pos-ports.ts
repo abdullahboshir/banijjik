@@ -1,16 +1,19 @@
-import type { Money, PaymentMethod } from "@banijjik/contracts/payment";
-import type { PosSalePaymentResponse } from "@banijjik/contracts/pos";
+import type { ApprovalAction } from "@banijjik/contracts/iam";
+import type { Money, PaymentMethod, PaymentRequestType } from "@banijjik/contracts/payment";
+import type { PosSalePaymentResponse, PosSessionStatus } from "@banijjik/contracts/pos";
 import type {
   LocationId,
   MemberId,
   OrganizationId,
   PosDeviceId,
+  PosHeldCartId,
   PosSessionId,
   UserId,
 } from "@banijjik/ids";
 import type { PermissionKey } from "@banijjik/contracts";
 import type { PosSnapshotPage, PosSnapshotQuery } from "../../../catalog/index.js";
 import type { PosDevice } from "../../domain/pos-device.entity.js";
+import type { PosHeldCart } from "../../domain/pos-held-cart.entity.js";
 import type { PosSession } from "../../domain/pos-session.entity.js";
 import type {
   SessionMethodTotal,
@@ -52,15 +55,42 @@ export interface PosDeviceRepository {
   touchLastSeen(posDeviceId: PosDeviceId, now: Date): Promise<void>;
 }
 
+export interface PosSessionListCursor {
+  readonly openedAt: Date;
+  readonly posSessionId: string;
+}
+
 export interface PosSessionRepository {
   /** A second OPEN session on a device answers `sessionAlreadyOpen` from the unique partial index. */
   insert(session: PosSession): Promise<void>;
   findById(posSessionId: PosSessionId): Promise<PosSession | undefined>;
   findOpenByDevice(posDeviceId: PosDeviceId): Promise<PosSession | undefined>;
+  list(input: {
+    readonly allowedLocationIds: readonly string[] | "ALL";
+    readonly locationId?: LocationId | undefined;
+    readonly status?: PosSessionStatus | undefined;
+    readonly after?: PosSessionListCursor | undefined;
+    readonly limit: number;
+  }): Promise<{
+    readonly items: readonly PosSession[];
+    readonly next: PosSessionListCursor | null;
+  }>;
   /** Writes `lastSaleAt` on the OPEN session; false when it is no longer open. The write is the conflict point with the close. */
   markSale(posSessionId: PosSessionId, now: Date): Promise<boolean>;
   /** Throws a 409 for a stale version. */
   close(session: PosSession, expectedVersion: number): Promise<PosSession>;
+}
+
+export interface PosHeldCartRepository {
+  countActiveByDevice(posDeviceId: PosDeviceId, now: Date): Promise<number>;
+  insert(cart: PosHeldCart): Promise<void>;
+  listActiveByDevice(posDeviceId: PosDeviceId, now: Date): Promise<readonly PosHeldCart[]>;
+  findById(posHeldCartId: PosHeldCartId): Promise<PosHeldCart | undefined>;
+  deleteById(input: {
+    readonly posHeldCartId: PosHeldCartId;
+    readonly posDeviceId: PosDeviceId;
+    readonly expectedVersion: number;
+  }): Promise<boolean>;
 }
 
 export interface PosSettings {
@@ -101,12 +131,35 @@ export interface PosReceivePaymentInput {
   readonly posSessionId: PosSessionId | null;
 }
 
+export interface PosCollectPaymentInput {
+  readonly organizationId: OrganizationId;
+  readonly locationId: LocationId;
+  readonly method: PaymentMethod;
+  readonly amount: Money;
+  readonly externalReference: string | null;
+  readonly allocations: readonly {
+    readonly requestType: PaymentRequestType;
+    readonly requestId: string;
+    readonly amount: Money;
+  }[];
+  readonly contactId: string | null;
+  readonly receivedByMemberId: MemberId;
+  readonly actorUserId: UserId;
+  readonly posSessionId: PosSessionId | null;
+}
+
 /** The payment module as the till sees it: take a payment, and read what a register has taken. */
 export interface PosPaymentPort {
   receive(input: PosReceivePaymentInput): Promise<PosSalePaymentResponse>;
+  collect(input: PosCollectPaymentInput): Promise<PosSalePaymentResponse>;
   methodTotals(input: {
     readonly organizationId: OrganizationId;
     readonly posSessionId: PosSessionId;
+  }): Promise<readonly SessionMethodTotal[]>;
+  collectionTotals(input: {
+    readonly organizationId: OrganizationId;
+    readonly posSessionId: PosSessionId;
+    readonly soldOrderIds: readonly string[];
   }): Promise<readonly SessionMethodTotal[]>;
   orderAllocations(input: {
     readonly organizationId: OrganizationId;
@@ -114,8 +167,35 @@ export interface PosPaymentPort {
   }): Promise<readonly SessionOrderAllocation[]>;
 }
 
+export interface PosRequestSnapshot {
+  readonly requestId: string;
+  readonly requestType: PaymentRequestType;
+  readonly locationId: LocationId | null;
+  readonly contactId: string | null;
+}
+
+export interface PosRequestReader {
+  read(
+    organizationId: OrganizationId,
+    requestType: PaymentRequestType,
+    requestId: string,
+  ): Promise<PosRequestSnapshot | undefined>;
+}
+
+export interface PosApprovalVerifier {
+  consume(
+    token: string,
+    expected: {
+      readonly action: ApprovalAction;
+      readonly subjectKey: string;
+      readonly amount: Money;
+    },
+  ): Promise<void>;
+}
+
+/** The orders sold at one register, in one read: what the Z-report's sales come from (A2-6). */
 export interface PosSoldOrdersReader {
-  readMany(orderIds: readonly string[]): Promise<readonly SoldOrderTotals[]>;
+  readByPosSession(posSessionId: PosSessionId): Promise<readonly SoldOrderTotals[]>;
 }
 
 /** The catalog module's keyset page of sellable variants for one location. */
