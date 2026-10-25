@@ -1371,6 +1371,32 @@ async function refundableFixture(policy = "UNUSED_PERIODS") {
 }
 
 describe("enrollment cancel refunds (3.32)", () => {
+  it("refuses foreign refund periods and a refund outside the caller's assigned location", async () => {
+    const { world, periodId } = await refundableFixture();
+    const foreign = await payAt(
+      { actor: world.bob, organizationId: world.organizationB, locationId: world.locationB1 },
+      periodId,
+      100,
+      { refund: true },
+    );
+    expect(foreign.status).toBe(400);
+    const roleId = await findSystemRoleId(
+      harness.connections,
+      world.organizationA,
+      SYSTEM_ROLE_KEY.MANAGER,
+    );
+    const member = await addMemberWithAssignments(harness.app, world.organizationA, [
+      { locationId: world.locationA2, roleId },
+    ]);
+    const denied = await payAt(
+      { actor: member.actor, organizationId: world.organizationA, locationId: world.locationA1 },
+      periodId,
+      100,
+      { refund: true },
+    );
+    expect(denied.status).toBe(403);
+    expect((await summaryRow(world, periodId))?.refunded.amount).toBe(0);
+  });
   it("a refund without the permission needs an approval token", async () => {
     const { world, periodId } = await refundableFixture();
     await setting(world, "payment.refund.managerWithoutApproval", false);
@@ -1500,6 +1526,12 @@ describe("enrollment cancel refunds (3.32)", () => {
     expect((await pay(world, periodId, 4000, true)).status).toBe(201);
     expect((await summaryRow(world, periodId))?.total.amount).toBe(6001);
     expect(await dues(world)).toEqual([]);
+    const plan = await publishPlan(world);
+    const open = await enroll(world, { ...plan, startsOn: today(), autoRenew: false });
+    expect((await pay(world, open.currentEnrollmentPeriodId, 10001)).status).toBe(201);
+    expect((await pay(world, open.currentEnrollmentPeriodId, 1000, true)).status).toBe(201);
+    expect((await summaryRow(world, open.currentEnrollmentPeriodId))?.total.amount).toBe(10001);
+    expect(await dues(world)).toHaveLength(1);
   });
   it("policy NONE stores zero and refuses every refund of the cancelled periods", async () => {
     const { world, periodId, cancelled } = await refundableFixture("NONE");
