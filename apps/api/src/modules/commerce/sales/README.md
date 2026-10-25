@@ -25,7 +25,4 @@ Totals come from the pricing quoter; stock effects from the inventory `StockLedg
 - Exports `buildOrderPostingSourceAdapter` to supply snapshots to `accounting.postOrders`.
 - INSTANT and PICKUP are served now; shipping methods and statuses wait for Phase 5.
 - Hourly `sales.expireDrafts` and `sales.autoCancelPlaced` are idempotent per organization.
-
-## Exchange (3.5b A3)
-
-`POST /orders/:orderId/exchange` takes a return of goods from a completed order and sells a new order in one unit of work. The return credit (always store credit) pays the new order first; `planSalesExchange` in `domain/` holds the money. The return restocks before the new sale reserves, so a same-variant swap works. `POST …/exchange/preview` gives the same numbers without writing. Approvals and the discount approval are the same as a return and an instant sale. See `docs/handoffs/3.5b-api-a3.md`.
+- Exchange (3.5b A3, `POST /orders/:orderId/exchange` and `/exchange/preview`): return and new order in one unit of work; the return restocks first and its store credit pays first (`planSalesExchange`).
