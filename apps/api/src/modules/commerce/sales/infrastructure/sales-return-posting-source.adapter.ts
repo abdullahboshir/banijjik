@@ -68,6 +68,7 @@ export function buildSalesReturnPostingSourceAdapter(
       return {
         salesReturnId: record.salesReturnId,
         businessDate: record.businessDate,
+        reversalBusinessDate: record.reversal?.businessDate ?? null,
         locationId: record.locationId,
         lineValue: { amount: sumOf(record.lines.map((line) => line.value.amount)), currency },
         lineTax: { amount: sumOf(record.lines.map((line) => line.taxPart.amount)), currency },

@@ -66,6 +66,7 @@ export interface SalesReturnDocument {
   status: SalesReturnStatus;
   reversal: {
     reversedAt: Date;
+    businessDate: string;
     reversedByUserId: string;
     reasonKey: string;
     note: string | null;
@@ -120,6 +121,7 @@ const approvalSchema = new Schema<SalesReturnApprovalDocument>(
 const reversalSchema = new Schema(
   {
     reversedAt: { type: Date, required: true },
+    businessDate: { type: String, required: true },
     reversedByUserId: { type: String, required: true },
     reasonKey: { type: String, required: true },
     note: { type: String, default: null },

@@ -11,6 +11,7 @@ import {
 } from "@banijjik/contracts/sales";
 import type { OrganizationId, SalesReturnId, UserId } from "@banijjik/ids";
 import type { SalesReturnReverseRequestBody } from "@banijjik/validation/sales";
+import { businessDateOf } from "../domain/business-date.js";
 import { DomainRuleError, recordNotFound, salesRuleError } from "../domain/errors.js";
 import type { Order } from "../domain/order.entity.js";
 import { otherReasonNeedsNote, returnApprovalRequired } from "../domain/sales-return-errors.js";
@@ -172,6 +173,7 @@ async function saveReversedReturn(args: {
 }): Promise<SalesReturnRecord> {
   const { dependencies, input, context, paybackPaymentId } = args;
   const now = dependencies.clock.now();
+  const timeZone = await dependencies.timeZone.read(input.organizationId);
   const lines = context.order.lines.map((line) => {
     const returned = context.record.lines.find((entry) => entry.orderLineId === line.orderLineId);
     if (returned === undefined) return line;
@@ -186,6 +188,7 @@ async function saveReversedReturn(args: {
     expectedVersion: input.body.version,
     reversal: {
       reversedAt: now,
+      businessDate: businessDateOf(now, timeZone),
       reversedByUserId: context.actorUserId,
       reasonKey: input.body.reasonKey,
       note: input.body.note ?? null,

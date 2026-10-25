@@ -16,6 +16,8 @@ import {
 export interface SalesReturnPostingSnapshot {
   readonly salesReturnId: string;
   readonly businessDate: string;
+  /** Set once the return is reversed: the mirror journals are dated on this day. */
+  readonly reversalBusinessDate: string | null;
   readonly locationId: string | null;
   /** Σ of the line values, tax included. */
   readonly lineValue: Money;

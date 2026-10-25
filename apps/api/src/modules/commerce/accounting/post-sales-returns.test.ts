@@ -45,6 +45,7 @@ afterAll(async () => {
 
 const NOW = new Date("2026-10-25T10:00:00Z");
 const BUSINESS_DATE = "2026-10-25";
+const REVERSAL_DATE = "2026-10-27";
 
 function bdt(amount: number): Money {
   return { amount, currency: "BDT" };
@@ -96,6 +97,7 @@ function snapshotOf(
   return {
     salesReturnId,
     businessDate: BUSINESS_DATE,
+    reversalBusinessDate: null,
     locationId: newId(),
     lineValue: bdt(1000),
     lineTax: bdt(100),
@@ -204,6 +206,10 @@ describe("accounting postSalesReturns handler: reversal", () => {
     const orderId = newId();
     scene.returns.set(salesReturnId, snapshotOf(salesReturnId, { cost: bdt(400) }));
     await handleEvent(scene, salesReturnId, orderId);
+    scene.returns.set(
+      salesReturnId,
+      snapshotOf(salesReturnId, { cost: bdt(400), reversalBusinessDate: REVERSAL_DATE }),
+    );
 
     await handleEvent(scene, salesReturnId, orderId, EVENT_TYPE.SALES_RETURN_REVERSED);
     await handleEvent(scene, salesReturnId, orderId, EVENT_TYPE.SALES_RETURN_REVERSED);
@@ -212,12 +218,14 @@ describe("accounting postSalesReturns handler: reversal", () => {
       const original = await findEntry(scene, salesReturnId, originalKey);
       const mirror = await findEntry(scene, salesReturnId, reversalPostingKeyFor(originalKey));
       expect(mirror).toBeDefined();
+      // The reversal belongs to the day it happened; the return's own day keeps its numbers.
+      expect(mirror?.businessDate).toBe(REVERSAL_DATE);
       expect(mirror?.lines.map((line) => line.debit.amount)).toEqual(
         original?.lines.map((line) => line.credit.amount),
       );
     }
     const trial = await withOrganizationContext(scene.organizationId, () =>
-      scene.trialBalance.execute(scene.organizationId, BUSINESS_DATE),
+      scene.trialBalance.execute(scene.organizationId, REVERSAL_DATE),
     );
     expect(trial.balances).toBe(true);
     expect(trial.debitTotal.amount).toBe(2 * (1000 + 400));

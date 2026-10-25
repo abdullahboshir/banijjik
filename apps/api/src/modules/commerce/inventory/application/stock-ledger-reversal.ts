@@ -1,4 +1,4 @@
-import { CURRENCY_CODE, ERROR_CODE } from "@banijjik/contracts";
+import { CURRENCY_CODE, type CurrencyCode, ERROR_CODE } from "@banijjik/contracts";
 import { STOCK_MOVEMENT_REASON, STOCK_SOURCE_TYPE } from "@banijjik/contracts/inventory";
 import type { Money } from "@banijjik/contracts/catalog";
 import type { InventoryItemId, OrganizationId, UserId } from "@banijjik/ids";
@@ -27,6 +27,12 @@ function isReturnMovement(movement: StockMovementRecord): boolean {
   );
 }
 
+const KNOWN_CURRENCY_CODES: readonly string[] = Object.values(CURRENCY_CODE);
+
+function isCurrencyCode(value: string): value is CurrencyCode {
+  return KNOWN_CURRENCY_CODES.includes(value);
+}
+
 /** The stored unit cost, in the organization currency; another stored currency is a data fault. */
 function storedUnitCost(
   movement: StockMovementRecord,
@@ -34,7 +40,7 @@ function storedUnitCost(
 ): { readonly unitCost?: Money } {
   if (movement.unitCostAmount === undefined || movement.unitCostCurrency === undefined) return {};
   const stored = movement.unitCostCurrency;
-  if (stored !== organizationCurrency || stored !== CURRENCY_CODE.BDT) {
+  if (stored !== organizationCurrency || !isCurrencyCode(stored)) {
     throw new DomainRuleError({
       code: ERROR_CODE.INTERNAL,
       details: { stockMovementId: movement.stockMovementId },

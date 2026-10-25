@@ -10,6 +10,7 @@ function snapshotOf(overrides: Partial<SalesReturnPostingSnapshot>): SalesReturn
   return {
     salesReturnId: "return-1",
     businessDate: "2026-10-25",
+    reversalBusinessDate: null,
     locationId: "location-1",
     lineValue: bdt(1000),
     lineTax: bdt(100),

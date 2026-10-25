@@ -41,6 +41,8 @@ export interface SalesReturnApprovalRecord {
 
 export interface SalesReturnReversalRecord {
   readonly reversedAt: Date;
+  /** The organization's local date of the reversal: its mirror journals are dated here, not on the return's date. */
+  readonly businessDate: string;
   readonly reversedByUserId: UserId;
   readonly reasonKey: string;
   readonly note: string | null;

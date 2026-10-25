@@ -46,8 +46,11 @@ async function handleSalesReturnEvent(
   if (snapshot === undefined) {
     throw postingSourceMissing(`sales-return:${envelope.payload.salesReturnId}`);
   }
-  const drafts = draftSalesReturn(snapshot);
   if (envelopeTypeIsReversal(envelope)) {
+    const reversalBusinessDate = snapshot.reversalBusinessDate;
+    if (reversalBusinessDate === null) {
+      throw postingSourceMissing(`sales-return-reversal:${snapshot.salesReturnId}`);
+    }
     for (const postingKey of [POSTING_KEY.sales_return_value, POSTING_KEY.sales_return_cogs]) {
       const original = await input.posting.journals.findBySource({
         sourceType: JOURNAL_SOURCE_TYPE.SALES_RETURN,
@@ -60,12 +63,12 @@ async function handleSalesReturnEvent(
         actorUserId,
         original,
         postingKey: reversalPostingKeyFor(postingKey),
-        businessDate: snapshot.businessDate,
+        businessDate: reversalBusinessDate,
       });
     }
     return;
   }
-  for (const draft of drafts) {
+  for (const draft of draftSalesReturn(snapshot)) {
     await postJournalEntry(input.posting, { organizationId, actorUserId, draft });
   }
 }
