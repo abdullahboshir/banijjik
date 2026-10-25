@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderMarkdown } from "./render-markdown";
+import { renderMarkdown } from "./render-markdown.js";
 
 describe("markdown rendering", () => {
   it("drops raw HTML and keeps safe links only", () => {
