@@ -14,6 +14,7 @@
   "dependencies": {
     "@banijjik/contracts": "*",
     "@banijjik/i18n": "*",
+    "@banijjik/ids": "*",
     "@banijjik/ui": "*",
     "@banijjik/web-client": "*",
     "markdown-it": "14.3.3",
@@ -22,7 +23,6 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@banijjik/ids": "*",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/markdown-it": "14.1.2",
     "@types/node": "^22.0.0",
