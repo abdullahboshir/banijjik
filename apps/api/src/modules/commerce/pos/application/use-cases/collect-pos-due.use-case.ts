@@ -78,6 +78,18 @@ function computeChangeMinor(body: PosCollectionBody): number {
   return body.cashTendered.amount - cashMinor;
 }
 
+/**
+ * Every payment of a collection is recorded under one contact, so the dues must belong to the same
+ * customer (or to none); another customer's due would land on the wrong statement.
+ */
+function sameContact(current: string | null, next: string | null): string | null {
+  if (next === null) return current;
+  if (current !== null && current !== next) {
+    throw posRuleError(POS_RULE_KEY.COLLECTION_MIXED_CONTACTS);
+  }
+  return next;
+}
+
 /** Splits the request allocations across the payments so each payment's allocations sum to its amount. */
 function sliceAllocationsAcrossPayments(
   allocations: PosCollectionBody["allocations"],
@@ -196,9 +208,7 @@ export class CollectPosDueUseCase {
       if (snapshot.locationId !== null && snapshot.locationId !== device.locationId) {
         throw locationForbidden();
       }
-      if (contactId === null && snapshot.contactId !== null) {
-        contactId = snapshot.contactId;
-      }
+      contactId = sameContact(contactId, snapshot.contactId);
     }
     return contactId;
   }

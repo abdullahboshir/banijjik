@@ -75,6 +75,7 @@ const RULE_MESSAGE_KEY: Readonly<Record<PosRuleKey, string>> = {
   [POS_RULE_KEY.CURRENCY_MISMATCH]: POS_API_MESSAGE_KEYS.currencyMismatch,
   [POS_RULE_KEY.HELD_CART_LIMIT]: POS_API_MESSAGE_KEYS.heldCartLimit,
   [POS_RULE_KEY.COLLECTION_MISMATCH]: POS_API_MESSAGE_KEYS.collectionMismatch,
+  [POS_RULE_KEY.COLLECTION_MIXED_CONTACTS]: POS_API_MESSAGE_KEYS.collectionMixedContacts,
 };
 
 /** A tender rule that failed: 422 with the rule key in `details` and its own message key. */

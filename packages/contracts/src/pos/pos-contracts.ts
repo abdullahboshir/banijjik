@@ -63,6 +63,7 @@ export const POS_RULE_KEY = {
   CURRENCY_MISMATCH: "POS_CURRENCY_MISMATCH",
   HELD_CART_LIMIT: "POS_HELD_CART_LIMIT",
   COLLECTION_MISMATCH: "POS_COLLECTION_MISMATCH",
+  COLLECTION_MIXED_CONTACTS: "POS_COLLECTION_MIXED_CONTACTS",
 } as const;
 
 export type PosRuleKey = (typeof POS_RULE_KEY)[keyof typeof POS_RULE_KEY];
@@ -80,6 +81,7 @@ export const POS_API_MESSAGE_KEYS = {
   currencyMismatch: "errors.pos_currency_mismatch",
   heldCartLimit: "errors.pos_held_cart_limit",
   collectionMismatch: "errors.pos_collection_mismatch",
+  collectionMixedContacts: "errors.pos_collection_mixed_contacts",
 } as const;
 
 export const POS_API_MESSAGE_KEY_LIST: readonly string[] = Object.values(POS_API_MESSAGE_KEYS);

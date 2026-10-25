@@ -81,7 +81,8 @@ async function seedBookingDue(input: {
   await harness.connections.tenantShared.collection("bookings").insertOne({
     bookingId,
     organizationId: input.organizationId,
-    bookingNumber: "BKG-000001",
+    // Unique per seeded booking, so one test can seed two dues.
+    bookingNumber: `BKG-${bookingId.slice(-6)}`,
     locationId: input.locationId,
     contactId: input.contactId,
     offeringId: input.offeringId,
@@ -211,6 +212,69 @@ describe("POS due collections and cash returns", () => {
 
     expect(otherLocation.status).toBe(403);
     expect(otherLocation.body.error.code).toBe("LOCATION_FORBIDDEN");
+  });
+
+  it("the dues of two customers in one collection are refused", async () => {
+    const { world, shop, till, pack } = await aCounter();
+    await openRegister(till, FLOAT);
+    const bookingIds: string[] = [];
+    for (const [name, phone] of [
+      ["Karim", "+8801700000064"],
+      ["Rahim", "+8801700000065"],
+    ] as const) {
+      const contactId = await addCustomer(shop, name, phone);
+      bookingIds.push(
+        await seedBookingDue({
+          organizationId: shop.organizationId,
+          locationId: world.locationA1,
+          contactId,
+          offeringId: pack.offeringId,
+          variantId: pack.variantId,
+          totalAmount: 1_000,
+        }),
+      );
+    }
+
+    const mixed = await tillCall(till, {
+      method: "post",
+      suffix: "/collections",
+      body: {
+        allocations: bookingIds.map((requestId) => ({
+          requestType: "BOOKING",
+          requestId,
+          amount: bdt(1_000),
+        })),
+        payments: [{ method: "CASH", amount: bdt(2_000) }],
+      },
+    });
+
+    expect(mixed.status).toBe(422);
+    expect(mixed.body.error.details.ruleKey).toBe("POS_COLLECTION_MIXED_CONTACTS");
+  });
+
+  it("another organization's due is 404", async () => {
+    const { world, shop, till, pack } = await aCounter();
+    await openRegister(till, FLOAT);
+    const contactId = await addCustomer(shop, "Karim", "+8801700000066");
+    const bookingId = await seedBookingDue({
+      organizationId: world.organizationB,
+      locationId: world.locationB1,
+      contactId,
+      offeringId: pack.offeringId,
+      variantId: pack.variantId,
+      totalAmount: 3_000,
+    });
+
+    const otherOrganization = await tillCall(till, {
+      method: "post",
+      suffix: "/collections",
+      body: {
+        allocations: [{ requestType: "BOOKING", requestId: bookingId, amount: bdt(3_000) }],
+        payments: [{ method: "CASH", amount: bdt(3_000) }],
+      },
+    });
+
+    expect(otherOrganization.status).toBe(404);
   });
 
   it("a POS cash return lowers the session's expected cash by the refund", async () => {

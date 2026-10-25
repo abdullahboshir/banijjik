@@ -532,5 +532,6 @@
   "sms.listingRejected": "{businessName}: your listing {listingNumber} was not approved. Reason: {reasons}.",
   "permission.pos.price.override": "Override item prices at the POS",
   "errors.pos_held_cart_limit": "This device already has 20 held carts. Resume or delete one before holding another.",
-  "errors.pos_collection_mismatch": "The payments must equal the due allocations."
+  "errors.pos_collection_mismatch": "The payments must equal the due allocations.",
+  "errors.pos_collection_mixed_contacts": "Collect the dues of one customer at a time."
 }

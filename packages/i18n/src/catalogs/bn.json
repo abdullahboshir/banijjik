@@ -532,5 +532,6 @@
   "sms.listingRejected": "{businessName}: আপনার তালিকা {listingNumber} অনুমোদিত হয়নি। কারণ: {reasons}।",
   "permission.pos.price.override": "POS-এ পণ্যের দাম পরিবর্তন করা",
   "errors.pos_held_cart_limit": "এই ডিভাইসে ইতিমধ্যে ২০টি স্থগিত কার্ট আছে। নতুন কার্ট রাখার আগে একটি চালু বা মুছে ফেলুন।",
-  "errors.pos_collection_mismatch": "পেমেন্টের যোগফল বকেয়া বরাদ্দের সমান হতে হবে।"
+  "errors.pos_collection_mismatch": "পেমেন্টের যোগফল বকেয়া বরাদ্দের সমান হতে হবে।",
+  "errors.pos_collection_mixed_contacts": "একবারে একজন গ্রাহকের বকেয়া নিন।"
 }
