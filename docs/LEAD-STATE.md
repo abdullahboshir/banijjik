@@ -55,10 +55,10 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - Older: P1 rotate leaked secrets (repo is public), phone usability check (deferred), doc 16 §6 matrimony decisions.
 
 ## 4. Next actions, in order
-1. **M.6b:** finish per the §2 row, then the strict proxy review and merge.
-2. **3.9 A1:** watch the agent; on DONE verify and do the strict T1 review.
-3. **Refresh 3.5b A2** against the merged A1 code (reverse, exchange; `docs/plans/3.5b.md` §A2) and release it; **refresh and release 3.32** (its plan predates 3.31's amendments); after M.6b → M.6c.
-4. Then 3.9 A2/B, 3.5b B, M.8b, M.9, 3.10 and the phase 3 review.
+**Owner (2026-10-25 09:30): the owner implements the remaining cards in ChatGPT and Qoder; the lead planned all of them** (on main: `3.32.md` Refresh 1, `3.5b.md` Refresh 2, `3.9.md` A2/B detail, `M.6.md` Refresh M.6c, `M.8b.md`, `3.10.md`, `M.9.md`). Ready now: **3.32 A**, **3.5b A2**, **M.8b**. After 3.9 A1: 3.9 A2, 3.5b A3 (exchange, needs a refresh then), 3.10 A. After M.6b: M.6c. After A parts: their B parts. M.9 A waits for the owner's SMS provider choice. The lead reviews every branch (T1 strict) and merges.
+1. **M.6b and 3.9 A1:** both Sonnet agents stopped on the session limit (resets 12:30 Dhaka) after pushing nearly finished work (M.6b `1893cc2b` docs + "skip nomodule polyfills in the budget like admin": check that admin really measures this way; 3.9 A1 `338527ac` test updates + STATUS). Verify CI and `card:check`, then review and merge (3.9 A1 strict T1; M.6b proxy strict).
+2. Review the owner's branches as they arrive.
+3. Then the phase 3 review.
 5. Follow-ups:
    - **New bug (small card):** the directory's `SubmitMyListingUseCase` lets a ZodError escape when a required custom field is missing: the storefront answers 500 instead of 422 (seen in the M.6b suite with `permanent_address` missing).
    - `sync-indexes.test.ts` (spawns processes) timed out on `main` CI 40151387531, the second time after CI 40131011005 (a rerun passed). Give it more time or a small card.
