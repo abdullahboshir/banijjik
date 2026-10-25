@@ -1,4 +1,8 @@
-import { AUDIT_ACTION } from "@banijjik/contracts";
+import {
+  AUDIT_ACTION,
+  VALIDATION_FALLBACK_MESSAGE_KEY,
+  VALIDATION_MESSAGE_KEYS,
+} from "@banijjik/contracts";
 import {
   DIRECTORY_EVENT_TYPE,
   DIRECTORY_PHOTO_POLICY,
@@ -10,12 +14,51 @@ import type { CustomerAccountId, OrganizationId } from "@banijjik/ids";
 import { CUSTOM_FIELD_AUDIENCE, buildCustomFieldValuesSchema } from "@banijjik/validation";
 import { toListingFilterEntries } from "@banijjik/validation/directory";
 import { Listing } from "../../domain/listing.entity.js";
-import { listingNotFound, photoPolicyNone } from "../../domain/errors.js";
+import { customFieldsInvalid, listingNotFound, photoPolicyNone } from "../../domain/errors.js";
 import type { DirectoryDependencies } from "../directory-dependencies.js";
 import { asListingFieldRules } from "../ports/directory-context-ports.js";
 import { toListingResponse } from "../listing-view.js";
 import { recordListingChange } from "../listing-records.js";
 import { assertSubmissionRules, finalReasonKeysOf } from "../submission-rules.js";
+
+interface ZodLikeIssue {
+  readonly path: readonly PropertyKey[];
+  readonly code: string;
+}
+
+/** Only the issue code is the message key, the same rule as the request validation (M.6 C2). */
+function customFieldMessageKey(code: string): string {
+  const messageKey = `validation.${code}`;
+  return VALIDATION_MESSAGE_KEYS.includes(messageKey)
+    ? messageKey
+    : VALIDATION_FALLBACK_MESSAGE_KEY;
+}
+
+function customFieldIssueField(issue: ZodLikeIssue): { path: string; messageKey: string } {
+  return {
+    path: ["customFields", ...issue.path.map(String)].join("."),
+    messageKey: customFieldMessageKey(issue.code),
+  };
+}
+
+/**
+ * Parses the custom field values against the form rules. A value the rules refuse becomes a 400
+ * VALIDATION_ERROR naming `customFields.<fieldKey>`, never an unhandled ZodError (a 500).
+ */
+function parseCustomFieldValues(
+  rules: ReturnType<typeof asListingFieldRules>,
+  mode: "CREATE" | "UPDATE",
+  customFields: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = buildCustomFieldValuesSchema(rules, {
+    audience: CUSTOM_FIELD_AUDIENCE.STOREFRONT,
+    mode,
+  }).safeParse(customFields);
+  if (!result.success) {
+    throw customFieldsInvalid(result.error.issues.map(customFieldIssueField));
+  }
+  return result.data as Record<string, unknown>;
+}
 
 export class GetMyListingUseCase {
   constructor(private readonly dependencies: DirectoryDependencies) {}
@@ -120,10 +163,7 @@ export class UpsertMyListingUseCase {
     const { listings, unitOfWork, fields, settings, template } = this.dependencies;
     const effective = await fields.forOrganization(input.organizationId);
     const rules = asListingFieldRules(effective);
-    const parsed = buildCustomFieldValuesSchema(rules, {
-      audience: CUSTOM_FIELD_AUDIENCE.STOREFRONT,
-      mode: "UPDATE",
-    }).parse(input.body.customFields ?? {}) as Record<string, unknown>;
+    const parsed = parseCustomFieldValues(rules, "UPDATE", input.body.customFields ?? {});
     const photoFileIds = input.body.photoFileIds ?? [];
     const photoPolicy = await settings.photoPolicy(input.organizationId);
     if (photoFileIds.length > 0 && photoPolicy === DIRECTORY_PHOTO_POLICY.NONE) {
@@ -178,10 +218,7 @@ export class SubmitMyListingUseCase {
     if (existing === undefined) throw listingNotFound();
     const effective = await fields.forOrganization(input.organizationId);
     const rules = asListingFieldRules(effective);
-    buildCustomFieldValuesSchema(rules, {
-      audience: CUSTOM_FIELD_AUDIENCE.STOREFRONT,
-      mode: "CREATE",
-    }).parse(existing.customFields);
+    parseCustomFieldValues(rules, "CREATE", existing.customFields);
     const [directory, accountPhone, photoPolicy] = await Promise.all([
       template.directoryBlockOf(input.organizationId),
       phones.phoneOf(input.customerAccountId),

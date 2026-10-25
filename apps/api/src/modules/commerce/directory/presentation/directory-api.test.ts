@@ -281,6 +281,33 @@ describe("directory listings", () => {
     expect(crossOrg.status).toBe(404);
   });
 
+  it("submitting a listing without a required field answers 400 with the field path", async () => {
+    const world = await aDirectoryWorld();
+    const customer = await signInCustomer(harness, world.organizationA);
+    const cookies = asCustomerCookies(customer.session);
+    await callStorefront(harness.app, {
+      method: "put",
+      organizationId: world.organizationA,
+      suffix: "/my/listing",
+      cookies,
+      body: { customFields: { family_note: "joint" } },
+    });
+
+    const submitted = await callStorefront(harness.app, {
+      method: "post",
+      organizationId: world.organizationA,
+      suffix: "/my/listing/submit",
+      cookies,
+      body: { consents: [] },
+    });
+    expect(submitted.status).toBe(400);
+    expect(submitted.body.error.code).toBe("VALIDATION_ERROR");
+    const paths = (submitted.body.error.details.fields as { path: string }[]).map(
+      (field) => field.path,
+    );
+    expect(paths).toContain("customFields.age_band");
+  });
+
   it("filters approved listings and uses the attribute index", async () => {
     const world = await aDirectoryWorld();
     const customer = await signInCustomer(harness, world.organizationA);

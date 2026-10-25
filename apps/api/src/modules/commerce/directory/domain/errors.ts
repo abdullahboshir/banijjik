@@ -153,3 +153,13 @@ export function blockAccountLimit(): DomainRuleError {
     messageKey: DIRECTORY_API_MESSAGE_KEYS.blockAccountLimit,
   });
 }
+
+/**
+ * A custom field value the form cannot accept. `fields` use the `customFields.<fieldKey>` path, the same
+ * shape the request validation answers, so the storefront shows each message on its step (M.6 C2).
+ */
+export function customFieldsInvalid(
+  fields: readonly { readonly path: string; readonly messageKey: string }[],
+): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.VALIDATION_ERROR, details: { fields } });
+}
