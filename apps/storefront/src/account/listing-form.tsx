@@ -12,6 +12,8 @@ import { fieldsOfSection } from "../fields/field-rules";
 import { translatorFor } from "../i18n/client-translator";
 import { localizedText } from "../i18n/localized-text";
 import { ArchiveListingButton } from "./archive-listing-button";
+import { PhotoUploadInput } from "./photo-upload-input";
+import { showsPhotoUpload } from "./photo-upload";
 import { useListingFormState, type ListingFormState } from "./listing-form-state";
 import { listingIsOpenForEditing, type SectionStep } from "./listing-steps";
 
@@ -52,6 +54,11 @@ export function ListingForm(props: ListingFormProps): ReactElement {
         })}
       </p>
       <StepBody context={context} />
+      {showsPhotoUpload(props.form.photoPolicy) &&
+      props.listing !== undefined &&
+      state.stepIndex >= state.steps.length - 1 ? (
+        <PhotoUploadInput organizationId={props.organizationId} locale={props.locale} />
+      ) : null}
       {state.notice ? (
         <p role="alert" className="text-body text-danger">
           {translator.t(state.notice)}

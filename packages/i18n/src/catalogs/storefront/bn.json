@@ -118,5 +118,8 @@
   "storefront.nav.myAccount": "আমার অ্যাকাউন্ট",
   "storefront.nav.myConnections": "যোগাযোগ",
   "storefront.nav.myCredits": "ক্রেডিট",
-  "storefront.nav.myListing": "আমার বায়োডাটা"
+  "storefront.nav.myListing": "আমার বায়োডাটা",
+  "storefront.account.photoLabel": "ছবি (ঐচ্ছিক)",
+  "storefront.account.photoHint": "একটি ছবি যোগ করুন। ছবি ব্যবসার অনুমতি অনুযায়ী দেখানো হবে।",
+  "storefront.account.photoFailed": "ছবি যোগ করা যায়নি। ফাইলের ধরন ও আকার দেখে আবার চেষ্টা করুন।"
 }

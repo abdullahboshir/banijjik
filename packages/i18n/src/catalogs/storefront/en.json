@@ -118,5 +118,8 @@
   "storefront.nav.myAccount": "My account",
   "storefront.nav.myConnections": "Connections",
   "storefront.nav.myCredits": "Credits",
-  "storefront.nav.myListing": "My biodata"
+  "storefront.nav.myListing": "My biodata",
+  "storefront.account.photoLabel": "Photo (optional)",
+  "storefront.account.photoHint": "Add one photo. The business decides where it is shown.",
+  "storefront.account.photoFailed": "The photo could not be added. Check the file type and size, then try again."
 }
