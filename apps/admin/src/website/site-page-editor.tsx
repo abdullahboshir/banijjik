@@ -85,6 +85,7 @@ export function SitePageEditor({
         />
       ))}
       <PublishSwitch
+        id={`page-publish-${page.pageKey}`}
         checked={draft.isPublished}
         disabled={!canEdit || isBusy}
         label={t("website.pages.publish")}
@@ -164,11 +165,13 @@ function LocaleFields({
 }
 
 function PublishSwitch({
+  id,
   checked,
   disabled,
   label,
   onChange,
 }: {
+  readonly id: string;
   readonly checked: boolean;
   readonly disabled: boolean;
   readonly label: string;
@@ -177,6 +180,7 @@ function PublishSwitch({
   return (
     <label className="flex min-h-11 items-center gap-3 text-body text-primary">
       <input
+        id={id}
         type="checkbox"
         className="size-5"
         checked={checked}
