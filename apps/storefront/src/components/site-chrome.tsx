@@ -43,6 +43,14 @@ function LanguageLinks({
   );
 }
 
+/** The signed-in pages of the storefront (M.6 decisions 15 and 16). */
+const ACCOUNT_LINKS: readonly { readonly href: string; readonly labelKey: string }[] = [
+  { href: "/my/listing", labelKey: "storefront.nav.myListing" },
+  { href: "/my/connections", labelKey: "storefront.nav.myConnections" },
+  { href: "/my/credits", labelKey: "storefront.nav.myCredits" },
+  { href: "/my/account", labelKey: "storefront.nav.myAccount" },
+];
+
 function AccountArea({
   site,
   translator,
@@ -61,6 +69,13 @@ function AccountArea({
       <span className="text-secondary">
         {translator.t("storefront.nav.signedInAs", { name: customer.name ?? customer.phoneE164 })}
       </span>
+      <nav aria-label={translator.t("storefront.nav.account")} className="flex flex-wrap gap-3">
+        {ACCOUNT_LINKS.map((link) => (
+          <Link key={link.href} href={link.href} className="font-semibold text-primary underline">
+            {translator.t(link.labelKey)}
+          </Link>
+        ))}
+      </nav>
       <SignOutButton organizationId={site.organizationId} locale={translator.locale} />
     </div>
   );

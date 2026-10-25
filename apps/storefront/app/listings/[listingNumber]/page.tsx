@@ -1,4 +1,5 @@
 import type {
+  DirectoryReportReason,
   ListingResponse,
   StorefrontDirectoryFormResponse,
 } from "@banijjik/contracts/directory";
@@ -8,8 +9,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactElement } from "react";
+import type { Locale } from "@banijjik/i18n";
 import { readAsVisitor, readPublic, readSignedInCustomer } from "../../../src/api/storefront-api";
 import { ListingSections } from "../../../src/components/listing-sections";
+import { LazyReportForm } from "../../../src/listing/lazy-report-form";
+import { ListingActions } from "../../../src/listing/listing-actions";
 import { storefrontTranslator } from "../../../src/i18n/translator";
 import { requireOrganizationId } from "../../../src/site/current-site";
 
@@ -21,6 +25,38 @@ interface ListingPageProps {
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
+
+async function SignedInTools({
+  organizationId,
+  listingNumber,
+  locale,
+  canUnlock,
+}: {
+  readonly organizationId: string;
+  readonly listingNumber: string;
+  readonly locale: Locale;
+  readonly canUnlock: boolean;
+}): Promise<ReactElement> {
+  const reasons = await readSignedInCustomer<DirectoryReportReason[]>(
+    `/orgs/${organizationId}/listing-report-reasons`,
+  );
+  return (
+    <section className="flex flex-col gap-6 rounded-md border border-default bg-subtle p-4">
+      <ListingActions
+        organizationId={organizationId}
+        listingNumber={listingNumber}
+        locale={locale}
+        canUnlock={canUnlock}
+      />
+      <LazyReportForm
+        organizationId={organizationId}
+        listingNumber={listingNumber}
+        locale={locale}
+        reasons={reasons ?? []}
+      />
+    </section>
+  );
+}
 
 export default async function ListingPage({ params }: ListingPageProps): Promise<ReactElement> {
   const organizationId = await requireOrganizationId();
@@ -58,6 +94,14 @@ export default async function ListingPage({ params }: ListingPageProps): Promise
           </Link>
         </aside>
       ) : null}
+      {customer === undefined ? null : (
+        <SignedInTools
+          organizationId={organizationId}
+          listingNumber={listing.listingNumber}
+          locale={locale}
+          canUnlock={site?.features.credit === true}
+        />
+      )}
       <Link href="/search" className="inline-flex min-h-11 w-fit items-center underline">
         {translator.t("storefront.listing.backToSearch")}
       </Link>
