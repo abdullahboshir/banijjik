@@ -32,8 +32,9 @@ import { measureInitialJs, toKiB } from "../test-support/initial-js-size";
 
 /** M.6c C8: the admin `website/pages` route stays within 180 KiB of initial JavaScript. */
 const ADMIN_ROUTE_BUDGET_KIB = 180;
-const SLUG = "webco";
-const ORG_NAME = "ওয়েবকো";
+/** The invitation helper of the admin browser tests opens the business `acme` (test-support/browser-helpers). */
+const SLUG = "acme";
+const ORG_NAME = "অ্যাক্মে";
 const PAGE_PATH = `/${SLUG}/website/pages`;
 const ABOUT_TITLE = "About Webco";
 const ABOUT_BODY = "Hello **Webco**";
@@ -42,6 +43,8 @@ const STAFF_ROLE = "স্টাফ";
 const STAFF_NAME = "স্টাফ সদস্য";
 const API_ORIGIN = `http://localhost:${API_PORT}`;
 const SAVE_TIMEOUT_MS = 30_000;
+const POLL_MS = 500;
+const HTTP_OK = 200;
 
 let stack: BrowserStack;
 let owner: SeededPerson;
@@ -121,13 +124,30 @@ async function putAboutAsOtherEditor(version: number, title: string): Promise<vo
   if (!response.ok) throw new Error(`other editor's save answered ${response.status}`);
 }
 
-async function storefrontAboutTitle(): Promise<string | undefined> {
+interface StorefrontReading {
+  readonly status: number;
+  readonly title: string | undefined;
+}
+
+/** The storefront read of ABOUT, polled to a deadline; returns the last reading (the status is in the report). */
+async function waitForStorefrontAbout(expectedTitle: string): Promise<StorefrontReading> {
+  const deadline = Date.now() + SAVE_TIMEOUT_MS;
+  let reading: StorefrontReading = { status: 0, title: undefined };
+  while (Date.now() < deadline) {
+    reading = await readStorefrontAbout();
+    if (reading.title === expectedTitle) return reading;
+    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+  }
+  return reading;
+}
+
+async function readStorefrontAbout(): Promise<StorefrontReading> {
   const response = await fetch(
     `${API_ORIGIN}/api/v1/storefront/orgs/${organizationId}/pages/ABOUT`,
   );
-  if (response.status !== 200) return undefined;
+  if (response.status !== HTTP_OK) return { status: response.status, title: undefined };
   const body = (await response.json()) as { data: { title: { en: string } } };
-  return body.data.title.en;
+  return { status: response.status, title: body.data.title.en };
 }
 
 describe("the website page editor", () => {
@@ -141,7 +161,10 @@ describe("the website page editor", () => {
     await waitForText(page, message("website.pages.saved"));
     await closePage(page);
 
-    expect(await storefrontAboutTitle()).toBe(ABOUT_TITLE);
+    expect(await waitForStorefrontAbout(ABOUT_TITLE)).toEqual({
+      status: HTTP_OK,
+      title: ABOUT_TITLE,
+    });
   });
 
   it(
@@ -164,7 +187,10 @@ describe("the website page editor", () => {
       await waitForText(page, message("website.pages.conflict"));
       await closePage(page);
 
-      expect(await storefrontAboutTitle()).toBe("Saved by someone else");
+      expect(await waitForStorefrontAbout("Saved by someone else")).toEqual({
+        status: HTTP_OK,
+        title: "Saved by someone else",
+      });
     },
     SAVE_TIMEOUT_MS,
   );
@@ -183,7 +209,7 @@ describe("the website page editor", () => {
     await signUpAsInvitee(staff, link, { name: STAFF_NAME, email: memberEmail });
     await waitForPath(staff, new URL(link).pathname);
     await clickByName(staff, message("accept.submit"));
-    await waitForPath(staff, "/webco");
+    await waitForPath(staff, `/${SLUG}`);
     await gotoWhenHydrated(staff, PAGE_PATH, "#page-title-ABOUT-en");
     const titleDisabled = await staff.$eval(
       "#page-title-ABOUT-en",

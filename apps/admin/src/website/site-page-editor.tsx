@@ -2,10 +2,10 @@
 
 import type { SitePageKey, SitePageResponse } from "@banijjik/contracts/website";
 import { Button, FormField, Textarea, TextInput } from "@banijjik/ui";
-import { renderMarkdown } from "@banijjik/ui/markdown";
 import { useTranslator } from "@banijjik/web-client/client";
 import { useState, type ReactElement } from "react";
 import { isVersionConflict } from "../directory/review-run";
+import { LazyMarkdownPreview } from "./markdown-preview-lazy";
 import { draftOf, draftProblemKeys, upsertBodyOf, type SitePageDraft } from "./site-page-draft";
 import { saveSitePage } from "./website-api";
 
@@ -158,7 +158,7 @@ function LocaleFields({
       </FormField>
       <div className="rounded-md bg-subtle p-3 text-body text-primary">
         <p className="text-small text-secondary">{t("website.pages.preview")}</p>
-        <div dangerouslySetInnerHTML={{ __html: renderMarkdown(draft.body[locale]) }} />
+        <LazyMarkdownPreview markdown={draft.body[locale]} />
       </div>
     </fieldset>
   );
