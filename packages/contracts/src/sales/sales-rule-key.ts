@@ -32,6 +32,12 @@ export const SALES_RULE_KEY = {
   SALES_RETURN_REVERSE_ORDER_NOT_COMPLETED: "SALES_RETURN_REVERSE_ORDER_NOT_COMPLETED",
   /** The order payment summary is in another currency than the return (never guessed). */
   SALES_RETURN_REVERSE_CURRENCY_MISMATCH: "SALES_RETURN_REVERSE_CURRENCY_MISMATCH",
+  /** An exchange on an order without a contact: the store credit and a possible due need one (plan 3.5b E3). */
+  SALES_EXCHANGE_NEEDS_CONTACT: "SALES_EXCHANGE_NEEDS_CONTACT",
+  /** The exchange payments are more than what the new order still owes after the credit (plan 3.5b E4). */
+  SALES_EXCHANGE_PAYMENTS_ABOVE_TOTAL: "SALES_EXCHANGE_PAYMENTS_ABOVE_TOTAL",
+  /** An exchange payment or the return credit is in another currency than the new order (never assumed). */
+  SALES_EXCHANGE_CURRENCY_MISMATCH: "SALES_EXCHANGE_CURRENCY_MISMATCH",
 } as const;
 
 export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
@@ -60,4 +66,7 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.sales_return_stock_gone",
   "errors.sales_return_reverse_order_not_completed",
   "errors.sales_return_reverse_currency_mismatch",
+  "errors.sales_exchange_needs_contact",
+  "errors.sales_exchange_payments_above_total",
+  "errors.sales_exchange_currency_mismatch",
 ];

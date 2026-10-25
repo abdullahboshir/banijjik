@@ -82,3 +82,11 @@ export {
 } from "./sales-return-contracts.js";
 export { SALES_MESSAGE_KEYS, SALES_RULE_KEY, type SalesRuleKey } from "./sales-rule-key.js";
 export type { Money } from "../pricing/pricing-contracts.js";
+export {
+  MAX_EXCHANGE_PAYMENTS,
+  SALES_EXCHANGE_PAYMENT_METHODS,
+  type SalesExchangePaymentMethod,
+  type SalesExchangePaymentResponse,
+  type SalesExchangePreviewResponse,
+  type SalesExchangeResponse,
+} from "./sales-exchange-contracts.js";

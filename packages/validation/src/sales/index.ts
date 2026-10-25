@@ -35,3 +35,8 @@ export {
   type SalesReturnRequestBody,
   type SalesReturnReverseRequestBody,
 } from "./sales-return-schemas.js";
+export {
+  salesExchangeRequestSchema,
+  type SalesExchangePaymentBody,
+  type SalesExchangeRequestBody,
+} from "./sales-exchange-schemas.js";
