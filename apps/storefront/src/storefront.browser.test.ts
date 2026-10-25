@@ -95,9 +95,11 @@ async function openStorefront(
 async function initialJsKib(path: string): Promise<number> {
   const response = await fetch(`${HOME}${path}`);
   const html = await response.text();
-  const sources = [...html.matchAll(/<script\b[^>]*\ssrc="([^"]+)"/g)].map(
-    (match) => match[1] ?? "",
-  );
+  // Legacy polyfills carry `nomodule`: modern browsers never download them (same rule as the admin suite).
+  const sources = (html.match(/<script\b[^>]*>/g) ?? [])
+    .filter((tag) => !/\snomodule\b/i.test(tag))
+    .map((tag) => /\ssrc="([^"]+)"/.exec(tag)?.[1] ?? "")
+    .filter((source) => source !== "");
   let total = 0;
   for (const source of new Set(sources)) {
     const script = await fetch(new URL(source, HOME));
@@ -177,6 +179,9 @@ describe("the public storefront", () => {
         initialJsKib(path),
       ),
     );
+    process.stdout
+      .write(`initial JS per route (KiB gzip): ${sizes.map((size) => size.toFixed(1)).join(", ")}
+`);
     for (const size of sizes) expect(size).toBeLessThanOrEqual(INITIAL_JS_BUDGET_KIB);
   });
 
