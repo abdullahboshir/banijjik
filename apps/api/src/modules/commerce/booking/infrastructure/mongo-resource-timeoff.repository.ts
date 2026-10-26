@@ -1,6 +1,6 @@
 import type { ResourceId } from "@banijjik/ids";
 import type { Model } from "mongoose";
-import { models } from "../../../../kernel/db/index.js";
+import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
 import type {
   ResourceTimeOffRecord,
   ResourceTimeOffRepository,
@@ -13,7 +13,7 @@ function timeOffModel(): Model<ResourceTimeOffDocument> {
 
 export class MongoResourceTimeOffRepository implements ResourceTimeOffRepository {
   async insert(record: ResourceTimeOffRecord): Promise<void> {
-    await timeOffModel().create([record]);
+    await timeOffModel().create([record], sessionOption(getActiveSession()));
   }
 
   async listForResource(resourceId: ResourceId): Promise<readonly ResourceTimeOffRecord[]> {

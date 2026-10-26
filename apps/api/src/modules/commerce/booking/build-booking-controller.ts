@@ -243,6 +243,7 @@ function resourceUseCases(
     createResourceTimeOff: new CreateResourceTimeOffUseCase({
       resources: repos.resources,
       timeOff: repos.timeOff,
+      unitOfWork: repos.unitOfWork,
       audit: input.audit,
       clock: input.clock,
     }),
