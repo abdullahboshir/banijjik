@@ -20,6 +20,10 @@ import { buildReportTenantRouter } from "./presentation/report-tenant.router.js"
 
 export { reportManifest } from "./module.manifest.js";
 export { registerReportModels } from "./infrastructure/register-report-models.js";
+export {
+  DAILY_SUMMARY_MODEL_NAME,
+  REPORT_EVENT_APPLIED_MODEL_NAME,
+} from "./infrastructure/report.schema.js";
 export type {
   BookingFact,
   ExpenseFact,
