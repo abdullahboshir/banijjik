@@ -38,6 +38,8 @@ const COUNTED_CASH_TEXT = "80";
 /** The same budget as the other admin screens; the sheets, the close screen and the receipt load lazily. */
 const POS_BUDGET_KIB = INITIAL_JS_BUDGET_KIB;
 const TOUCH_TARGET_PX = 56;
+const CLOSE_WAIT_MS = 20_000;
+const CLOSE_POLL_MS = 500;
 
 let stack: BrowserStack;
 let owner: SeededPerson;
@@ -191,19 +193,25 @@ async function closeRegister(page: Page): Promise<void> {
   await waitForText(page, message("pos.close.title"));
   await typeInLabel(page, message("pos.close.counted"), COUNTED_CASH_TEXT);
   await clickByName(page, message("pos.close.submit"));
-  await waitForText(page, message("pos.z.title"));
+  // The Z-report title also sits inside the submit button, so wait for the report-only print button.
+  await waitForText(page, message("pos.z.print"));
 }
 
 /** The closed register of this till: the newest CLOSED session at this location. */
+/** Polls the session list until this till's register reads CLOSED: the close answer can land a moment later. */
 async function closedSessionId(): Promise<string> {
-  const listed = await apiGet<{ data: PosSessionListResponse }>(
-    `/orgs/${organizationId}/pos/sessions?locationId=${locationId}&limit=20`,
-  );
-  const session = listed.data.items.find((item) => item.status === POS_SESSION_STATUS.CLOSED);
-  if (session === undefined) {
-    throw new Error(`no closed register at the shop: ${JSON.stringify(listed).slice(0, 400)}`);
+  const deadline = Date.now() + CLOSE_WAIT_MS;
+  let lastListing = "";
+  while (Date.now() < deadline) {
+    const listed = await apiGet<{ data: PosSessionListResponse }>(
+      `/orgs/${organizationId}/pos/sessions?locationId=${locationId}&limit=20`,
+    );
+    lastListing = JSON.stringify(listed).slice(0, 400);
+    const session = listed.data.items.find((item) => item.status === POS_SESSION_STATUS.CLOSED);
+    if (session !== undefined) return session.posSessionId;
+    await new Promise((resolve) => setTimeout(resolve, CLOSE_POLL_MS));
   }
-  return session.posSessionId;
+  throw new Error(`no closed register at the shop: ${lastListing}`);
 }
 
 async function zReportOf(posSessionId: string): Promise<PosZReport> {
