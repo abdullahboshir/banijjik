@@ -13,6 +13,7 @@ import {
 } from "../test-support/browser-helpers";
 import {
   clickByName,
+  waitForHydration,
   closePage,
   openPage,
   PHONE_VIEWPORT,
@@ -156,7 +157,15 @@ describe("the website page editor", () => {
     await openPagesEditor(page);
     await page.type("#page-title-ABOUT-en", ABOUT_TITLE);
     await page.type("#page-body-ABOUT-en", ABOUT_BODY);
+    await waitForHydration(page, "#page-publish-ABOUT");
     await page.click("#page-publish-ABOUT");
+    // The save must carry the published state: confirm the switch took it before saving.
+    await page.waitForFunction(
+      () =>
+        (document.getElementById("page-publish-ABOUT") as HTMLInputElement | null)?.checked ===
+        true,
+      { timeout: SAVE_TIMEOUT_MS, polling: POLL_MS },
+    );
     await saveAbout(page);
     await waitForText(page, message("website.pages.saved"));
     await closePage(page);
