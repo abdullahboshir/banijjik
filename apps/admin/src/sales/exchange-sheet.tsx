@@ -9,7 +9,6 @@ import {
   type SalesExchangeResponse,
 } from "@banijjik/contracts/sales";
 import { Button, Sheet, SheetContent, type DisplayLocale } from "@banijjik/ui";
-import { useTranslator } from "@banijjik/web-client/client";
 import { useState, type ReactElement } from "react";
 import { ExchangePaymentStep } from "./exchange-payment-step";
 import {
@@ -20,7 +19,7 @@ import {
   stepBlockerOf,
   stepTitleOf,
 } from "./exchange-step-rules";
-import { exchangeLabelsOf, type ExchangeLabels } from "./exchange-labels";
+import type { ExchangeLabels } from "./exchange-labels";
 import { ExchangeResult } from "./exchange-result";
 import { exchangeBlockerOf, exchangeMethodsFor, type ExchangeBlocker } from "./exchange-model";
 import { ExchangeNewLinesStep, ExchangeReturnStep } from "./exchange-steps";
@@ -208,8 +207,7 @@ function ExchangeWizard(props: {
 
 /** Exchange items: the goods that come back, the new goods, then the server's numbers and the payments. */
 export function ExchangeSheet(props: ExchangeSheetProps): ReactElement {
-  const { t } = useTranslator();
-  const exchange = exchangeLabelsOf(t);
+  const exchange = props.labels.exchange;
   const { form, actions } = useExchangeForm(props.order);
   const previewState = useExchangePreview({
     organizationId: props.organizationId,
