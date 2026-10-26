@@ -38,6 +38,7 @@ export {
   type PosDeviceCreatedResponse,
   type PosDeviceResponse,
   type PosDeviceStatus,
+  type PosDeviceUsageResponse,
   type PosHeldCartLine,
   type PosHeldCartPayload,
   type PosHeldCartResponse,

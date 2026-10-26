@@ -18,6 +18,7 @@ export const PACKAGE_KEY = {
   PACK_MEMBERS_5: "PACK_MEMBERS_5",
   PACK_AI_1000: "PACK_AI_1000",
   PACK_SMS_500: "PACK_SMS_500",
+  PACK_POS_DEVICE: "PACK_POS_DEVICE",
 } as const;
 
 export type PackageKey = (typeof PACKAGE_KEY)[keyof typeof PACKAGE_KEY];

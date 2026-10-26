@@ -33,6 +33,11 @@ export interface PosRouterDependencies {
 function mountDeviceRoutes(input: PosRouterDependencies, router: Router): void {
   const { controller, permission } = input;
   router.get(
+    "/pos/devices/usage",
+    permission(PERMISSION_KEY.POS_DEVICE_MANAGE),
+    controller.getDeviceUsage,
+  );
+  router.get(
     "/pos/devices",
     permission(PERMISSION_KEY.POS_DEVICE_MANAGE),
     validate({ query: posDeviceListQuerySchema }),

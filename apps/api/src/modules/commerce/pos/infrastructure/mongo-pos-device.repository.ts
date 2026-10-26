@@ -27,6 +27,15 @@ function toUserId(value: string | null): UserId | null {
   return value === null ? null : asId<UserId>(value);
 }
 
+function deviceListQuery(filter: {
+  readonly allowedLocationIds: readonly string[] | "ALL";
+  readonly locationId?: LocationId | undefined;
+}): QueryFilter<PosDeviceDocument> {
+  if (filter.locationId !== undefined) return { locationId: filter.locationId };
+  if (filter.allowedLocationIds === "ALL") return {};
+  return { locationId: { $in: [...filter.allowedLocationIds] } };
+}
+
 function toDevice(row: PosDeviceDocument): PosDevice {
   return {
     posDeviceId: asId<PosDeviceId>(row.posDeviceId),
@@ -75,14 +84,13 @@ export class MongoPosDeviceRepository implements PosDeviceRepository {
   }
 
   async list(filter: {
+    readonly allowedLocationIds: readonly string[] | "ALL";
     readonly locationId?: LocationId | undefined;
     readonly page: number;
     readonly limit: number;
   }): Promise<Page<PosDevice>> {
-    const query: QueryFilter<PosDeviceDocument> = {};
-    if (filter.locationId !== undefined) query.locationId = filter.locationId;
     const rows = await deviceModel()
-      .find(query)
+      .find(deviceListQuery(filter))
       .sort({ createdAt: -1, posDeviceId: -1 })
       .skip((filter.page - 1) * filter.limit)
       .limit(filter.limit + 1)
@@ -91,6 +99,13 @@ export class MongoPosDeviceRepository implements PosDeviceRepository {
       items: rows.slice(0, filter.limit).map(toDevice),
       hasNext: rows.length > filter.limit,
     };
+  }
+
+  countActive(): Promise<number> {
+    return deviceModel().countDocuments(
+      { status: POS_DEVICE_STATUS.ACTIVE },
+      sessionOption(getActiveSession()),
+    );
   }
 
   async claimPairing(input: {

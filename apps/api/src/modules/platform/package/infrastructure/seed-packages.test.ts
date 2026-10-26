@@ -58,5 +58,11 @@ describe("seed packages (10-MODULE-CATALOG section 9)", () => {
     expect(seedOf(PACKAGE_KEY.PACK_MEMBERS_5).limitIncrements).toEqual({ members: 5 });
     expect(seedOf(PACKAGE_KEY.PACK_AI_1000).limitIncrements).toEqual({ aiMessagesPerMonth: 1000 });
     expect(seedOf(PACKAGE_KEY.PACK_SMS_500).limitIncrements).toEqual({ smsPerMonth: 500 });
+    expect(seedOf(PACKAGE_KEY.PACK_POS_DEVICE).limitIncrements).toEqual({ posDevices: 1 });
+  });
+
+  it("ADDON_POS adds the POS module and one device", () => {
+    expect(seedOf(PACKAGE_KEY.ADDON_POS).moduleKeys).toEqual(["pos"]);
+    expect(seedOf(PACKAGE_KEY.ADDON_POS).limitIncrements).toEqual({ posDevices: 1 });
   });
 });

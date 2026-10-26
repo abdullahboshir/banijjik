@@ -255,3 +255,8 @@ export interface PosSessionListResponse {
   readonly items: readonly PosSessionResponse[];
   readonly nextCursor: string | null;
 }
+
+/** Active tills of the whole organization. The package limit itself is `limits.posDevices` on `/me/config`. */
+export interface PosDeviceUsageResponse {
+  readonly activeDeviceCount: number;
+}

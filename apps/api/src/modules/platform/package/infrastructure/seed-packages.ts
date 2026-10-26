@@ -61,6 +61,15 @@ function moduleAddOn(packageKey: string, moduleKeys: readonly string[]): SeedPac
   return { packageKey, isAddOn: true, moduleKeys, limits: NO_LIMITS, limitIncrements: {} };
 }
 
+/** A module add-on that also raises a counted limit (ADDON_POS: the module plus one till). */
+function moduleAddOnWithIncrements(
+  packageKey: string,
+  moduleKeys: readonly string[],
+  limitIncrements: LimitIncrements,
+): SeedPackage {
+  return { packageKey, isAddOn: true, moduleKeys, limits: NO_LIMITS, limitIncrements };
+}
+
 function limitPack(packageKey: string, limitIncrements: LimitIncrements): SeedPackage {
   return { packageKey, isAddOn: true, moduleKeys: [], limits: NO_LIMITS, limitIncrements };
 }
@@ -122,7 +131,9 @@ export const SEED_PACKAGES: readonly SeedPackage[] = [
   moduleAddOn(PACKAGE_KEY.ADDON_AUTOMATION, [MODULE_KEY.WORKFLOW]),
   moduleAddOn(PACKAGE_KEY.ADDON_WEBSITE, [MODULE_KEY.WEBSITE]),
   moduleAddOn(PACKAGE_KEY.ADDON_CHAT, CHAT_MODULE_KEYS),
-  moduleAddOn(PACKAGE_KEY.ADDON_POS, [MODULE_KEY.POS]),
+  moduleAddOnWithIncrements(PACKAGE_KEY.ADDON_POS, [MODULE_KEY.POS], {
+    [LIMIT_KEY.POS_DEVICES]: 1,
+  }),
   moduleAddOn(PACKAGE_KEY.ADDON_CAPABILITY_ACADEMIC, [MODULE_KEY.ACADEMIC]),
   moduleAddOn(PACKAGE_KEY.ADDON_CAPABILITY_CLINICAL, [MODULE_KEY.CLINICAL]),
   moduleAddOn(PACKAGE_KEY.ADDON_CAPABILITY_KITCHEN, [MODULE_KEY.KITCHEN_DISPLAY]),
@@ -131,4 +142,5 @@ export const SEED_PACKAGES: readonly SeedPackage[] = [
   limitPack(PACKAGE_KEY.PACK_MEMBERS_5, { [LIMIT_KEY.MEMBERS]: 5 }),
   limitPack(PACKAGE_KEY.PACK_AI_1000, { [LIMIT_KEY.AI_MESSAGES_PER_MONTH]: 1000 }),
   limitPack(PACKAGE_KEY.PACK_SMS_500, { [LIMIT_KEY.SMS_PER_MONTH]: 500 }),
+  limitPack(PACKAGE_KEY.PACK_POS_DEVICE, { [LIMIT_KEY.POS_DEVICES]: 1 }),
 ];

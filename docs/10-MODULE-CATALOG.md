@@ -268,12 +268,14 @@ All numbers are **seed proposals** stored in the DB. Changing them needs no code
 | `ADDON_BOOKKEEPING` | module `bookkeeping` |
 | `ADDON_PAYMENT_GATEWAY` | module `payment-gateway` (also included free in STORE and BUNDLE once card 5.17 ships; decided in P2) |
 | `ADDON_AUTOMATION` | module `workflow` (already in BUNDLE) |
-| `ADDON_WEBSITE`, `ADDON_CHAT`, `ADDON_POS` | upgrade path: the other base package's extra modules, for orgs that want two of three without the full bundle |
+| `ADDON_WEBSITE`, `ADDON_CHAT` | upgrade path: the other base package's extra modules, for orgs that want two of three without the full bundle |
+| `ADDON_POS` | module `pos` + `posDevices +1` |
 | `ADDON_CAPABILITY_ACADEMIC`, `_CLINICAL`, `_KITCHEN` | capability modules (Phase 7; template-filtered) |
 | `PACK_LOCATION` | `locations +1` |
 | `PACK_MEMBERS_5` | `members +5` |
 | `PACK_AI_1000` | `aiMessagesPerMonth +1000` |
 | `PACK_SMS_500` | `smsPerMonth +500` |
+| `PACK_POS_DEVICE` | `posDevices +1` |
 
 **Limit semantics**
 - Monthly limits count by `businessDate` in the org timezone and reset on the 1st.

@@ -9,6 +9,7 @@ import type {
   PosCaller,
   PosCatalogReader,
   PosCurrencyReader,
+  PosDeviceLimit,
   PosLocationReader,
   PosPaymentPort,
   PosRateLimit,
@@ -23,6 +24,7 @@ import { CreatePosReturnUseCase } from "./application/use-cases/create-pos-retur
 import { CreatePosSaleUseCase } from "./application/use-cases/create-pos-sale.use-case.js";
 import {
   CreatePosDeviceUseCase,
+  GetPosDeviceUsageUseCase,
   ListPosDevicesUseCase,
   PairPosDeviceUseCase,
   RevokePosDeviceUseCase,
@@ -56,6 +58,7 @@ export type {
   PosCatalogReader,
   PosCollectPaymentInput,
   PosCurrencyReader,
+  PosDeviceLimit,
   PosLocationReader,
   PosPaymentPort,
   PosRateLimit,
@@ -85,6 +88,7 @@ export interface PosTenantDependencies {
   readonly soldOrders: PosSoldOrdersReader;
   readonly catalog: PosCatalogReader;
   readonly rateLimit: PosRateLimit;
+  readonly deviceLimit: PosDeviceLimit;
   /** Keys the pairing-code HMAC (`OTP_SECRET`). Never logged. */
   readonly pairingSecret: string;
   readonly isSecureCookies: boolean;
@@ -104,6 +108,7 @@ function buildSessionAndDeviceUseCases(input: {
       ...deviceWrite,
       locations: dependencies.locations,
       pairingSecret: dependencies.pairingSecret,
+      deviceLimit: dependencies.deviceLimit,
     }),
     pairDevice: new PairPosDeviceUseCase({
       ...deviceWrite,
@@ -112,6 +117,7 @@ function buildSessionAndDeviceUseCases(input: {
     }),
     revokeDevice: new RevokePosDeviceUseCase(deviceWrite),
     listDevices: new ListPosDevicesUseCase({ devices, clock }),
+    getDeviceUsage: new GetPosDeviceUsageUseCase({ devices }),
     openSession: new OpenPosSessionUseCase({
       sessions,
       caller: dependencies.caller,

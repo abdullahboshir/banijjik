@@ -16,6 +16,7 @@ import type { OrganizationContextRunner } from "./application/ports/organization
 import type { OrganizationConfigSource } from "./application/ports/organization-config-source.js";
 import type { MemberNameReader } from "./application/ports/member-name-reader.js";
 import type { OrganizationCurrencyReader } from "./application/ports/organization-currency-reader.js";
+import type { OrganizationLimitLock } from "./application/ports/organization-limit-lock.js";
 import type { OrganizationTimezoneReader } from "./application/ports/organization-timezone-reader.js";
 import type { StorefrontOrganizationReader } from "./application/ports/storefront-organization-reader.js";
 import { MongoStorefrontOrganizationReader } from "./infrastructure/mongo-storefront-organization.reader.js";
@@ -47,6 +48,7 @@ import { MongoMemberAccessReader } from "./infrastructure/mongo-member-access-re
 import { MongoMemberNameReader } from "./infrastructure/mongo-member-name-reader.js";
 import { MongoMembershipDirectory } from "./infrastructure/mongo-membership-directory.js";
 import { MongoMemberRepository } from "./infrastructure/mongo-member.repository.js";
+import { MongoOrganizationLimitLock } from "./infrastructure/mongo-organization-limit-lock.js";
 import { MongoOrganizationRepository } from "./infrastructure/mongo-organization.repository.js";
 import { MongoOrganizationTemplateUsage } from "./infrastructure/mongo-organization-template-usage.js";
 import { ChangeIndustryTemplateUseCase } from "./application/use-cases/change-industry-template.use-case.js";
@@ -298,4 +300,9 @@ export type {
 /** Finds an ACTIVE business for the public site (card M.1). */
 export function buildStorefrontOrganizationReader(): StorefrontOrganizationReader {
   return new MongoStorefrontOrganizationReader();
+}
+
+/** Serializes limit-checked creates of one organization, so two last-slot writes cannot both pass. */
+export function buildOrganizationLimitLock(): OrganizationLimitLock {
+  return new MongoOrganizationLimitLock();
 }

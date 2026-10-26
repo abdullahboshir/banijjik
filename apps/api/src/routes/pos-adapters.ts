@@ -1,5 +1,6 @@
 import {
   ERROR_CODE,
+  LIMIT_KEY,
   SYSTEM_REASON,
   type ModuleManifest,
   type PermissionKey,
@@ -37,6 +38,7 @@ import {
   buildPosRouter,
   type PosApprovalVerifier,
   type PosCaller,
+  type PosDeviceLimit,
   type PosPaymentPort,
   type PosRateLimit,
   type PosRequestReader,
@@ -53,10 +55,11 @@ import {
   buildLocationLookup,
   buildMembershipDirectory,
   buildOrganizationCurrencyReader,
+  buildOrganizationLimitLock,
   buildOrganizationTimezoneReader,
 } from "../modules/core/organization/index.js";
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
-import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
+import { buildLimitGuard, type OrgConfigService } from "../modules/platform/entitlement/index.js";
 import { buildPaymentRequestReaders } from "./payment-request-readers.js";
 import { buildSalesTenantPorts } from "./sales-tenant-router.js";
 
@@ -238,6 +241,17 @@ function soldOrdersOf(): PosSoldOrdersReader {
   };
 }
 
+function deviceLimitOf(orgConfig: OrgConfigService): PosDeviceLimit {
+  const lock = buildOrganizationLimitLock();
+  const limits = buildLimitGuard(orgConfig);
+  return {
+    async assertCanAdd(organizationId, countActive) {
+      await lock.acquire(organizationId);
+      await limits.assertBelow(LIMIT_KEY.POS_DEVICES, await countActive());
+    },
+  };
+}
+
 function rateLimitOf(limiter: RateLimiter): PosRateLimit {
   return {
     async consumePairingAttempt(memberKey) {
@@ -283,6 +297,7 @@ export function buildPosTenantRouter(input: PosRouterInput): Router {
     soldOrders: soldOrdersOf(),
     catalog: buildPosSnapshotReader(),
     rateLimit: rateLimitOf(input.rateLimiter),
+    deviceLimit: deviceLimitOf(input.orgConfig),
     pairingSecret: input.pos.pairingSecret,
     isSecureCookies: input.pos.isSecureCookies,
   });

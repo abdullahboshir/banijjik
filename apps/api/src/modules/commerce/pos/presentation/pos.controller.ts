@@ -28,6 +28,7 @@ import type { CreatePosReturnUseCase } from "../application/use-cases/create-pos
 import type { CreatePosSaleUseCase } from "../application/use-cases/create-pos-sale.use-case.js";
 import type {
   CreatePosDeviceUseCase,
+  GetPosDeviceUsageUseCase,
   ListPosDevicesUseCase,
   PairPosDeviceUseCase,
   RevokePosDeviceUseCase,
@@ -57,6 +58,7 @@ export interface PosControllerDependencies {
   readonly pairDevice: PairPosDeviceUseCase;
   readonly revokeDevice: RevokePosDeviceUseCase;
   readonly listDevices: ListPosDevicesUseCase;
+  readonly getDeviceUsage: GetPosDeviceUsageUseCase;
   readonly openSession: OpenPosSessionUseCase;
   readonly closeSession: ClosePosSessionUseCase;
   readonly getZReport: GetPosZReportUseCase;
@@ -114,21 +116,30 @@ export class PosController {
 
   readonly revokeDevice: RequestHandler = async (request, response) => {
     const body: PosDeviceRevokeBody = request.body;
-    const { actorUserId } = readTenantCaller();
+    const { actorUserId, allowedLocationIds } = readTenantCaller();
     const revoked = await this.dependencies.revokeDevice.execute({
       actorUserId,
       posDeviceId: asId<PosDeviceId>(paramOf(request, "posDeviceId")),
       version: body.version,
+      allowedLocationIds,
     });
     sendData(response, revoked);
   };
 
   readonly listDevices: RequestHandler = async (_request, response) => {
     const query: PosDeviceListQuery = response.locals["validated"].query;
-    const result = await this.dependencies.listDevices.execute(query);
+    const { allowedLocationIds } = readTenantCaller();
+    const result = await this.dependencies.listDevices.execute({
+      ...query,
+      allowedLocationIds,
+    });
     sendData(response, result.items, {
       meta: { page: query.page, limit: query.limit, hasNext: result.hasNext },
     });
+  };
+
+  readonly getDeviceUsage: RequestHandler = async (_request, response) => {
+    sendData(response, await this.dependencies.getDeviceUsage.execute());
   };
 
   readonly openSession: RequestHandler = async (request, response) => {

@@ -97,6 +97,7 @@ export const posDeviceSchema = new Schema<PosDeviceDocument>(
 
 posDeviceSchema.index({ organizationId: 1, posDeviceId: 1 }, { unique: true });
 posDeviceSchema.index({ organizationId: 1, locationId: 1, createdAt: -1, posDeviceId: -1 });
+posDeviceSchema.index({ organizationId: 1, status: 1 });
 // The cookie secret finds its device in one indexed read; two devices never share one.
 posDeviceSchema.index(
   { organizationId: 1, secretHash: 1 },

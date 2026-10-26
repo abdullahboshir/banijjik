@@ -584,5 +584,6 @@
   "sms.failure.INVALID_NUMBER": "বাংলাদেশের মোবাইল নম্বর প্রয়োজন",
   "sms.failure.NOT_ALLOWED": "বার্তাটি অনুমোদিত নয়",
   "sms.failure.IP_NOT_WHITELISTED": "সার্ভারের আইপি অনুমোদিত নয়",
-  "sms.failure.PROVIDER_REFUSED": "সেবাদাতা বার্তাটি প্রত্যাখ্যান করেছে"
+  "sms.failure.PROVIDER_REFUSED": "সেবাদাতা বার্তাটি প্রত্যাখ্যান করেছে",
+  "package.PACK_POS_DEVICE.name": "অতিরিক্ত পিওএস ডিভাইস"
 }

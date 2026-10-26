@@ -3,6 +3,7 @@ import {
   POS_PAIRING_RULES,
   type PosDeviceCreatedResponse,
   type PosDeviceResponse,
+  type PosDeviceUsageResponse,
   type PosPairResponse,
 } from "@banijjik/contracts/pos";
 import {
@@ -30,6 +31,7 @@ import {
 } from "../pairing-secrets.js";
 import type {
   Page,
+  PosDeviceLimit,
   PosDeviceRepository,
   PosLocationReader,
   PosRateLimit,
@@ -38,6 +40,15 @@ import type {
 
 const MILLISECONDS_PER_MINUTE = 60_000;
 const MAX_CODE_ATTEMPTS = 5;
+
+function assertLocationAllowed(
+  allowedLocationIds: readonly string[] | "ALL",
+  locationId: string,
+): void {
+  if (allowedLocationIds !== "ALL" && !allowedLocationIds.includes(locationId)) {
+    throw locationForbidden();
+  }
+}
 
 export function toDeviceResponse(device: PosDevice, now: Date): PosDeviceResponse {
   return {
@@ -64,6 +75,7 @@ export interface CreateDeviceDependencies extends DeviceWriteDependencies {
   readonly locations: PosLocationReader;
   /** Keys the pairing-code HMAC (`OTP_SECRET`). Never logged. */
   readonly pairingSecret: string;
+  readonly deviceLimit: PosDeviceLimit;
 }
 
 /** `POST /pos/devices`: the device and its one-time pairing code, shown once (plan decision 2). */
@@ -77,13 +89,9 @@ export class CreatePosDeviceUseCase {
     readonly locationId: string;
     readonly name: string;
   }): Promise<PosDeviceCreatedResponse> {
-    const { devices, locations, unitOfWork, audit, clock, pairingSecret } = this.dependencies;
-    if (
-      input.allowedLocationIds !== "ALL" &&
-      !input.allowedLocationIds.includes(input.locationId)
-    ) {
-      throw locationForbidden();
-    }
+    const { devices, locations, unitOfWork, audit, clock, pairingSecret, deviceLimit } =
+      this.dependencies;
+    assertLocationAllowed(input.allowedLocationIds, input.locationId);
     if (!(await locations.isActiveLocation(input.locationId))) throw recordNotFound();
     const now = clock.now();
     const { code, codeHash } = await this.freeCode(input.organizationId, pairingSecret);
@@ -100,6 +108,7 @@ export class CreatePosDeviceUseCase {
       now,
     });
     await unitOfWork.run(async () => {
+      await deviceLimit.assertCanAdd(input.organizationId, () => devices.countActive());
       await devices.insert(device);
       await audit.record({
         action: AUDIT_ACTION.POS_DEVICE_CREATED,
@@ -183,8 +192,12 @@ export class RevokePosDeviceUseCase {
     readonly actorUserId: UserId;
     readonly posDeviceId: PosDeviceId;
     readonly version: number;
+    readonly allowedLocationIds: readonly string[] | "ALL";
   }): Promise<PosDeviceResponse> {
     const { devices, unitOfWork, audit, clock } = this.dependencies;
+    const existing = await devices.findById(input.posDeviceId);
+    if (existing === undefined) throw recordNotFound();
+    assertLocationAllowed(input.allowedLocationIds, existing.locationId);
     const now = clock.now();
     const revoked = await unitOfWork.run(async () => {
       const done = await devices.revoke({
@@ -209,13 +222,18 @@ export class ListPosDevicesUseCase {
   constructor(private readonly dependencies: Pick<DeviceWriteDependencies, "devices" | "clock">) {}
 
   async execute(input: {
+    readonly allowedLocationIds: readonly string[] | "ALL";
     readonly locationId?: string | undefined;
     readonly page: number;
     readonly limit: number;
   }): Promise<Page<PosDeviceResponse>> {
+    if (input.locationId !== undefined) {
+      assertLocationAllowed(input.allowedLocationIds, input.locationId);
+    }
     const { devices, clock } = this.dependencies;
     const now = clock.now();
     const found = await devices.list({
+      allowedLocationIds: input.allowedLocationIds,
       locationId: input.locationId === undefined ? undefined : asId<LocationId>(input.locationId),
       page: input.page,
       limit: input.limit,
@@ -224,5 +242,14 @@ export class ListPosDevicesUseCase {
       items: found.items.map((device) => toDeviceResponse(device, now)),
       hasNext: found.hasNext,
     };
+  }
+}
+
+/** `GET /pos/devices/usage`: ACTIVE devices of the whole organization (the number the limit counts). */
+export class GetPosDeviceUsageUseCase {
+  constructor(private readonly dependencies: Pick<DeviceWriteDependencies, "devices">) {}
+
+  async execute(): Promise<PosDeviceUsageResponse> {
+    return { activeDeviceCount: await this.dependencies.devices.countActive() };
   }
 }

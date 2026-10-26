@@ -26,6 +26,11 @@ export interface Page<T> {
   readonly hasNext: boolean;
 }
 
+export interface PosDeviceLimit {
+  /** Inside the caller's transaction: lock, count, refuse with LIMIT_REACHED at the package limit. */
+  assertCanAdd(organizationId: OrganizationId, countActive: () => Promise<number>): Promise<void>;
+}
+
 export interface PosDeviceRepository {
   /** The unique index on waiting pairing codes turns a collision into a retryable 409. */
   insert(device: PosDevice): Promise<void>;
@@ -33,10 +38,12 @@ export interface PosDeviceRepository {
   findBySecretHash(secretHash: string): Promise<PosDevice | undefined>;
   findByPairingCodeHash(pairingCodeHash: string): Promise<PosDevice | undefined>;
   list(filter: {
+    readonly allowedLocationIds: readonly string[] | "ALL";
     readonly locationId?: LocationId | undefined;
     readonly page: number;
     readonly limit: number;
   }): Promise<Page<PosDevice>>;
+  countActive(): Promise<number>;
   /** Stores the secret and clears the code in one conditional write; false when the code was used or has expired. */
   claimPairing(input: {
     readonly posDeviceId: PosDeviceId;
