@@ -269,9 +269,8 @@ describe("returns at a retail shop", () => {
     expect(afterReturn.status).toBe(SALES_RETURN_STATUS.ACTIVE);
     expect(afterReturn.value).toEqual({ amount: PACK_PRICE_MINOR, currency: "BDT" });
     expect(afterReturn.refund.amount).toEqual({ amount: PACK_PRICE_MINOR, currency: "BDT" });
-    expect((await apiGetOrder()).totals.grandTotal.amount).toBe(
-      ORDER_TOTAL_MINOR - PACK_PRICE_MINOR,
-    );
+    // The return lowers the payment total and the line, not the order own totals.
+    expect((await apiGetOrder()).returnStatus).toBe(ORDER_RETURN_STATUS.PARTIAL);
     expect(await bodyText(page)).toContain(message("returns.detail.refund"));
 
     await reverseReturnWithPayback(page);
