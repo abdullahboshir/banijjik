@@ -8,7 +8,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-26 (afternoon) by Opus 5.5 (lead `banijjik-fa`, sole lead) · `main` = `origin/main` = this state commit on top of `2054dc49` (M.9 A1 review R1; pushed).
+Last updated: 2026-10-26 (evening) by Opus 5.5 (lead `banijjik-fa`, sole lead) · `main` = `origin/main` = this state commit on top of `2326334b` (plans 3.38, 3.39; pushed).
 
 ## 1. Where the project stands
 - **Phase 3: every card and part is merged** (3.9 B `6d316a5e` and 3.10 B `b2e0ff29` were the last). What remains for phase 3 is the mandatory **phase 3 review** (`docs/handoffs/phase-3-review.md`, roadmap "Phase done" criteria) and the follow-ups in §4. Track M: M.0–M.8b and M.6 merged; **M.9 A1 in review (R1 changes required)**, then M.9 A2, then Part B (go-live, ops). Sonnet weekly limit until 2026-10-29.
@@ -32,6 +32,8 @@ Prompts and logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/
 | Card / part | Branch | Folder | Tier | State → next step |
 |---|---|---|---|---|
 | M.9 A1 SMS gateways API | `s/M.9-api-sms-gateways` (`fdca2c6f`, base `6d316a5e`, behind main) | `banijjik-m8a` (owner's Codex works there: do not touch) | T1 | **Review R1 done: changes required** (`docs/handoffs/M.9-api-review-R1.md`, F1–F6 must, F7–F12 small; BulkSMSBD `type=unicode` matches the plan). No green CI yet (both runs cancelled). Owner pastes R1 to Codex → on DONE: rebase check, green CI on head, `card:check`, re-review R2 (F1 public dev key, F2 stub deps, F3 real gateway OTP tests, F4 non-JSON 4xx, F5 hot-file rewrite, F6 secret asserts). |
+| 3.38 time-off transaction | `s/3.38-api-time-off-transaction` (not started) | `banijjik-m2` | T2 | Owner runs `owner-guide/15-3.38.md` in Cursor. On DONE: merge check against `docs/plans/3.38.md`. |
+| 3.39 A POS device limit (API) | `s/3.39-api-pos-device-limit` (not started) | `banijjik-3.5a` | T2 | Owner runs `owner-guide/16-3.39-A.md` in Cursor. On DONE: merge check, read the lock and location-scope parts as T1 (decisions 1, 5). After merge, the owner starts `17-3.39-B.md` in the same folder. |
 
 ### 2a. Launching implementers (owner approved, 2026-10-24)
 - **Qoder:** out of credits since 2026-10-24 evening.
@@ -65,7 +67,7 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 ## 4. Next actions, in order
 **Owner (2026-10-25 09:30): the owner implements the remaining cards in ChatGPT and Qoder; the lead planned all of them** (on main: `3.32.md` Refresh 1, `3.5b.md` Refresh 2, `3.9.md` A2/B detail, `M.6.md` Refresh M.6c, `M.8b.md`, `3.10.md`, `M.9.md`). Owner (2026-10-25 evening): the lead's Haiku agents finish the partly done cards (3.5b A3, M.6c); the owner's tools (Qoder/ChatGPT) take the rest from the owner guide: **3.9 B** (`banijjik-3.5a`), **3.10 A** (`banijjik-3.6b-a3`), **3.5b B** (`banijjik-3.11`), **M.9 A1** (`banijjik-m8a`, one `npm ci` first). The README table and prompts 05/08/09/10/12 were updated for the reinstalled PC (no Docker, gh path). The lead reviews every branch (T1 strict) and merges.
 **Paste-ready prompts for the owner (2026-10-25 10:50):** `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/owner-guide/` (`00-README.md` in Bengali: order, folder, start condition; `01`–`10` one file per card part with the shared rules appended: 3.32 A → `banijjik-m2`, 3.5b A2 → `banijjik-3.11`, M.8b → `banijjik-lead`, 3.9 A2 → `banijjik-3.5a`, 3.10 A → `banijjik-3.6b-a3`, M.6c → `banijjik-1.7b`, then the B parts in their A folders; `11-3.5b-A3.md` → `banijjik-lead`; `12-M.9-A1.md` → `banijjik-m8a`; rows 1–3 are marked merged). Not written yet: 3.5b B2 (after A3 and B merge; plan in Refresh 3), M.9 A2 (after A1 merges). When a branch arrives, run `card:check` in its folder before reviewing. Update a prompt there when a plan changes (the 3.9 A2 prompt already names Amendment 1; if the A2 review renames `receiveReturnPayback`, A3 E8 already says "use the merged name").
-1. **Phase 3 review now** (does not depend on M.9): Opus, `docs/handoffs/phase-3-review.md` like `phase-2-review.md`. Check the roadmap "Phase done" criteria, cross-card names, contracts and ports, doc-vs-code drift, and the STATUS gaps. Turn the follow-ups below into small cards (time-off POST 500 first; `posDevices` limit after the owner names numbers; 3.9 B gaps: held carts, till returns, price-override UI).
+1. **Phase 3 review now** (does not depend on M.9, 3.38 or 3.39): Opus, `docs/handoffs/phase-3-review.md` like `phase-2-review.md`. Check the roadmap "Phase done" criteria, cross-card names, contracts and ports, doc-vs-code drift, and the STATUS gaps. Group the follow-ups below into a few small cards after it (3.9 B gaps: held carts, till returns, price-override UI). 3.38 and 3.39 are already planned (owner chose the industry standard for POS devices: limit in the package, devices managed in Settings, `ADDON_POS` +1, `PACK_POS_DEVICE`).
 2. M.9 A1 R2 when Codex reports DONE (§2). After A1 merges, write `owner-guide/14-M.9-A2.md` (plan decisions 17–19).
 4. A3 lead decision to confirm with the owner when convenient: an exchange's store-credit refund needs the same REFUND approval as a return (exempt callers skip it).
 5. Follow-ups:
@@ -77,7 +79,7 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
    - 3.5a B: `placeOrder` makes a new idempotency key per call, so a retry after a lost response shows a conflict instead of the replayed success.
    - `order.controller.ts` `list` uses `as unknown as` for its query (pre-existing). Refund dialog has no client-side maximum (3.30).
    - Replayer safety across several worker processes (STATUS 3.16). Supplier payments clearing `ACCOUNTS_PAYABLE` (after 3.24).
-   - 3.33 STATUS note: bookings and sessions do not see enrollment `ResourceExclusiveHold` rows; time-off creation does not check existing bookings or sessions; **the time-off POST endpoint answers 500 (audit outside a transaction)**: worth a small card soon.
+   - 3.33 STATUS note: bookings and sessions do not see enrollment `ResourceExclusiveHold` rows; time-off creation does not check existing bookings or sessions (product decision; the 500 is card 3.38).
    - Two patterns for client text in admin screens (`screen-text.tsx` label props vs a nested `I18nProvider`): pick one in `05-CONVENTIONS.md`.
    - Flaky: `ordered-event-worker.test.ts` › "runs a replayed event again with fresh attempts…" (CI 40100273547); admin `auth-flow.browser.test.ts` › "shows how long to wait…" (CI 40089936122). 3.23 review follow-ups (`docs/handoffs/3.23-api-review-R1.md`).
    - M.7 B: the report detail needs `directory.listing.read` as well; no browser test for hide/block outcomes.
@@ -98,8 +100,8 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-26 evening** (Opus 5.5, `banijjik-fa`): planned 3.38 (time-off 500) and 3.39 (POS device limit, industry standard per owner; found the device list and revoke ignore the caller's locations, and that admin had no device screen); owner-guide prompts 15–17 for Cursor.
 - **2026-10-26 afternoon** (Opus 5.5, `banijjik-fa`): M.9 A1 T1 review R1, changes required (`2054dc49`). Confirmed that every phase 3 card is merged; the phase 3 review is next.
 - **2026-10-26 midday** (Sonnet 5.5, `banijjik-fa`): merge checks passed, 3.9 B (`6d316a5e`) and 3.10 B (`b2e0ff29`) merged and pushed. Open follow-ups: small card to remove `contact.contact.create`/`update` from the cashier (`CONTACT_DAILY_KEYS`, plus a denied test); fix 3.10 B gaps are in its handoff. Local dev stack runs from `banijjik` (Mongo rs0 on 27018 in `C:/banijjik-dev`; Redis 5 exe not started: blocked by the classifier, owner starts it). Only M.9 A1 (owner ChatGPT) is open; next: its T1 review, then M.9 A2 prompt, then the phase 3 review.
 - **2026-10-26 morning** (Sonnet 5.5, `banijjik-fa`): `/lead` checks; agreed with b9, 9e, 00, 67 that fa is the sole lead; added the Bangla SMS check as M.9 Part B item 13 (`c2bde283`). No merges; 3.9 B (CI 40268691537) and 3.10 B (CI 40269535363) wait for DONE from 67.
 - **2026-10-25 late evening** (Sonnet 5.5, lead in `banijjik`): `/lead` check only. Fixed the M.6c lint failure (`26684d19`). Found the 3.5b A3 Haiku agent still active in `banijjik-lead`; left it alone. No merges.
-- **2026-10-26 early morning** (Opus 5.5, `banijjik-b9`): merged 3.5b B (peer agent; merge check) and M.6c (R2: lead removed a debug write; CI infra flake rerun green); wrote `owner-guide/13-3.5b-B2.md` (peer agent took it); 3.10 A review R1 sent back (real-Mongo exactly-once tests, unused enum); fixed the 3.10 plan wording (ADR-148, 400).
