@@ -208,19 +208,13 @@ async function setValue(page: Page, selector: string, value: string): Promise<vo
     selector,
     (element, next) => {
       const isSelect = element instanceof HTMLSelectElement;
-      const prototype = prototypeOf(element);
-      Object.getOwnPropertyDescriptor(prototype, "value")?.set?.call(element, next);
+      // The element's own prototype owns the native value setter (input, textarea or select).
+      const nativeSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), "value");
+      nativeSetter?.set?.call(element, next);
       element.dispatchEvent(new Event(isSelect ? "change" : "input", { bubbles: true }));
     },
     value,
   );
-}
-
-/** The DOM prototype whose value setter React does not wrap (select, textarea or input). */
-function prototypeOf(element: Element): object {
-  if (element instanceof HTMLSelectElement) return HTMLSelectElement.prototype;
-  if (element instanceof HTMLTextAreaElement) return HTMLTextAreaElement.prototype;
-  return HTMLInputElement.prototype;
 }
 
 async function fillGeo(page: Page, field: FormField): Promise<void> {
