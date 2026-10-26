@@ -1,3 +1,4 @@
+import { OFFERING_KIND } from "@banijjik/contracts";
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import {
@@ -159,6 +160,7 @@ export class UpdateOrderUseCase {
       input.body.orderDiscount === undefined ? existing.orderDiscount : input.body.orderDiscount;
     if (lines.length === 0) return undefined;
     return quoteAndPrepare(this.dependencies, {
+      allowedKinds: [OFFERING_KIND.PRODUCT],
       organizationId: input.organizationId,
       locationId: existing.locationId,
       lines,

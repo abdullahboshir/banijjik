@@ -12,6 +12,7 @@ import type {
   SalesCurrencyReader,
   SalesOwnerReader,
   SalesPerformerReader,
+  SalesKindReader,
   SalesQuoter,
   SalesSettingsReader,
   SalesStockLedger,
@@ -41,6 +42,7 @@ export interface SalesDependencies {
   readonly owner: SalesOwnerReader;
   readonly unitCosts: SalesUnitCostReader;
   readonly performers: SalesPerformerReader;
+  readonly kinds: SalesKindReader;
 }
 
 /**

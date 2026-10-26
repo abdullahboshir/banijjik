@@ -78,7 +78,7 @@ async function offeringsChangedAtLocation(query: PosSnapshotQuery): Promise<read
 function filterOf(query: PosSnapshotQuery, changedIds: readonly string[]): Record<string, unknown> {
   const filter: Record<string, unknown> = {
     organizationId: query.organizationId,
-    kind: OFFERING_KIND.PRODUCT,
+    kind: { $in: [OFFERING_KIND.PRODUCT, OFFERING_KIND.SERVICE] },
   };
   if (query.since === undefined) {
     filter["status"] = OFFERING_STATUS.ACTIVE;

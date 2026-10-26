@@ -1,3 +1,4 @@
+import { OFFERING_KIND } from "@banijjik/contracts";
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, LIMIT_KEY, SEQUENCE_KEY } from "@banijjik/contracts";
 import type { Money } from "@banijjik/contracts/pricing";
 import {
@@ -97,6 +98,7 @@ export class InstantOrderUseCase {
     const timeZone = await this.dependencies.timeZone.read(input.organizationId);
     const now = this.dependencies.clock.now();
     const prepared = await quoteAndPrepare(this.dependencies, {
+      allowedKinds: [OFFERING_KIND.PRODUCT, OFFERING_KIND.SERVICE],
       organizationId: input.organizationId,
       locationId: input.body.locationId,
       lines: input.body.lines,

@@ -210,6 +210,9 @@ export function buildSalesTenantPorts(input: SalesRouterInput): SalesTenantPorts
       clock: input.clock,
     }),
     performers: buildMemberPerformerReader(),
+    kinds: {
+      effectiveKinds: async () => (await input.orgConfig.current()).config.kinds,
+    },
     ...returnPortsOf(input),
   };
 }

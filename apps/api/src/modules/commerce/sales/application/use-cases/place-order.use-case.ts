@@ -1,3 +1,4 @@
+import { OFFERING_KIND } from "@banijjik/contracts";
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, LIMIT_KEY, SEQUENCE_KEY } from "@banijjik/contracts";
 import {
   FULFILLMENT_METHOD,
@@ -71,6 +72,7 @@ export class PlaceOrderUseCase {
     const timeZone = await this.dependencies.timeZone.read(input.organizationId);
     const now = this.dependencies.clock.now();
     const prepared = await quoteAndPrepare(this.dependencies, {
+      allowedKinds: [OFFERING_KIND.PRODUCT],
       organizationId: input.organizationId,
       locationId: draft.locationId,
       lines: lineInputsOf(draft),

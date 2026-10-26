@@ -135,6 +135,7 @@ describe("accounting postOrders handler", () => {
         roundingAdjustment: bdt(0),
       },
       advancesToSettle: bdt(0),
+      serviceGoods: bdt(0),
       cogs: bdt(0),
     });
 
@@ -165,6 +166,7 @@ describe("accounting postOrders handler", () => {
         roundingAdjustment: bdt(0),
       },
       advancesToSettle: bdt(0),
+      serviceGoods: bdt(0),
       cogs: bdt(0),
     });
 
@@ -205,6 +207,7 @@ describe("accounting postOrders handler", () => {
         roundingAdjustment: bdt(0),
       },
       advancesToSettle: bdt(300),
+      serviceGoods: bdt(0),
       cogs: bdt(0),
     });
 
@@ -246,6 +249,7 @@ describe("accounting postOrders handler", () => {
         roundingAdjustment: bdt(0),
       },
       advancesToSettle: bdt(0),
+      serviceGoods: bdt(0),
       cogs: bdt(0),
     });
 
@@ -291,6 +295,7 @@ describe("accounting postOrders handler", () => {
         roundingAdjustment: bdt(0),
       },
       advancesToSettle: bdt(0),
+      serviceGoods: bdt(0),
       cogs: bdt(200),
     });
 
@@ -375,6 +380,7 @@ describe("accounting postOrders handler", () => {
         roundingAdjustment: bdt(0),
       },
       advancesToSettle: bdt(100),
+      serviceGoods: bdt(0),
       cogs: bdt(150),
     });
 
@@ -409,6 +415,7 @@ describe("accounting postOrders handler", () => {
         roundingAdjustment: bdt(0),
       },
       advancesToSettle: bdt(0),
+      serviceGoods: bdt(0),
       cogs: bdt(0),
     });
 
@@ -522,6 +529,7 @@ describe("accounting postOrders handler", () => {
         roundingAdjustment: bdt(0),
       },
       advancesToSettle: bdt(0),
+      serviceGoods: bdt(0),
       cogs: bdt(0),
     });
 

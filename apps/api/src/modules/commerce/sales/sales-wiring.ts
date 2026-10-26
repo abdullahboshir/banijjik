@@ -14,6 +14,7 @@ import type {
   SalesApprovalVerifier,
   SalesCurrencyReader,
   SalesPerformerReader,
+  SalesKindReader,
   SalesQuoter,
   SalesStockLedger,
   SalesUnitCostReader,
@@ -85,6 +86,7 @@ export interface SalesTenantPorts {
   readonly unitCosts: SalesUnitCostReader;
   readonly payments: OrderPaymentPort;
   readonly performers: SalesPerformerReader;
+  readonly kinds: SalesKindReader;
   /** Returns (plan 3.5b): the refund exemption, the approval rule and the member lookup come from routes. */
   readonly refundApproval: SalesRefundApprovalRule;
   readonly refundPermission: SalesRefundPermissionReader;
@@ -116,6 +118,7 @@ export function buildSalesDependencies(ports: SalesTenantPorts): SalesDependenci
     owner: buildSalesOwnerReader(),
     unitCosts: ports.unitCosts,
     performers: ports.performers,
+    kinds: ports.kinds,
   };
 }
 

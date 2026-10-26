@@ -1,3 +1,4 @@
+import { OFFERING_KIND } from "@banijjik/contracts";
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import type { CurrencyCode } from "@banijjik/contracts";
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
@@ -131,6 +132,7 @@ export class CreateOrderUseCase {
   private async quoteBody(input: CreateOrderInput): Promise<PreparedLines | undefined> {
     if (input.body.lines.length === 0) return undefined;
     return quoteAndPrepare(this.dependencies, {
+      allowedKinds: [OFFERING_KIND.PRODUCT],
       organizationId: input.organizationId,
       locationId: input.body.locationId,
       lines: input.body.lines,

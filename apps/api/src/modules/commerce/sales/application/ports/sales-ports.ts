@@ -21,6 +21,10 @@ import type { ApprovalVerifier } from "../../../../core/iam/index.js";
 import type { Order } from "../../domain/order.entity.js";
 import type { PaymentTotals } from "../../domain/payment-status.js";
 
+export interface SalesKindReader {
+  effectiveKinds(organizationId: OrganizationId): Promise<readonly OfferingKind[]>;
+}
+
 export type SalesQuoter = Pick<PriceQuoter, "quote">;
 export type SalesStockLedger = Pick<
   StockLedger,

@@ -1,4 +1,4 @@
-import { OFFERING_KIND } from "@banijjik/contracts";
+import { OFFERING_KIND, type OfferingKind } from "@banijjik/contracts";
 import type { StockComponent } from "@banijjik/contracts/catalog";
 import type {
   ApprovalRequired,
@@ -115,17 +115,18 @@ function orderLineOf(
     returnedQuantity: 0,
     promotionIds: [...quoted.promotionIds],
     taxClassKey: catalog.taxClassKey,
-    costComponents: catalog.stockComponents,
+    costComponents: catalog.kind === OFFERING_KIND.SERVICE ? [] : catalog.stockComponents,
     manualDiscount: lineInput.manualDiscount ?? null,
     performedByMemberId: lineInput.performedByMemberId ?? null,
   };
 }
 
 /**
- * Only PRODUCT-kind offerings are sold here; SERVICE, PLAN, RENTAL and EVENT lines go to
- * bookings and enrollments (11 §5.5). Quote lines and catalog lines share the input's order.
+ * Instant sales allow walk-in services without calendar holds (11 §5.3); other orders allow
+ * products only. Quote lines and catalog lines share the input's order.
  */
 export function prepareOrderLines(input: {
+  readonly allowedKinds: readonly OfferingKind[];
   readonly quote: QuoteResponse;
   readonly catalogLines: readonly SalesCatalogLine[];
   readonly lineInputs: readonly OrderLineInput[];
@@ -141,16 +142,17 @@ export function prepareOrderLines(input: {
     const quoted = input.quote.lines[index];
     const catalog = input.catalogLines[index];
     if (quoted === undefined || catalog === undefined) throw recordNotFound();
-    if (catalog.kind !== OFFERING_KIND.PRODUCT) {
+    if (!input.allowedKinds.includes(catalog.kind)) {
       throw kindNeedsBooking({ offeringId: catalog.offeringId, kind: catalog.kind });
     }
+    const stockComponents = catalog.kind === OFFERING_KIND.SERVICE ? [] : catalog.stockComponents;
     lines.push(orderLineOf(catalog, quoted, lineInput));
     costLines.push({
       offeringId: catalog.offeringId,
       variantId: catalog.variantId,
-      stockComponents: catalog.stockComponents,
+      stockComponents,
     });
-    if (catalog.stockComponents.length > 0) {
+    if (stockComponents.length > 0) {
       trackedLines.push({
         offeringId: catalog.offeringId,
         variantId: catalog.variantId,

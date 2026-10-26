@@ -256,6 +256,7 @@ describe("posting rules matrix (11 §10, card 3.8c)", () => {
         roundingAdjustment: money(0),
       },
       advancesToSettle: money(200),
+      serviceGoods: money(0),
       cogs: money(400),
     });
 
@@ -299,6 +300,7 @@ describe("posting rules matrix (11 §10, card 3.8c)", () => {
         roundingAdjustment: money(2),
       },
       advancesToSettle: money(0),
+      serviceGoods: money(0),
       cogs: money(0),
     });
     expect(codesOf(roundedUp[0]?.lines)).toEqual([
@@ -321,6 +323,7 @@ describe("posting rules matrix (11 §10, card 3.8c)", () => {
         roundingAdjustment: money(-2),
       },
       advancesToSettle: money(0),
+      serviceGoods: money(0),
       cogs: money(0),
     });
     expect(codesOf(roundedDown[0]?.lines)).toEqual([
@@ -347,6 +350,7 @@ describe("posting rules matrix (11 §10, card 3.8c)", () => {
         roundingAdjustment: money(0),
       },
       advancesToSettle: money(0),
+      serviceGoods: money(0),
       cogs: money(0),
     });
     expect(codesOf(inclusive[0]?.lines)).toEqual([

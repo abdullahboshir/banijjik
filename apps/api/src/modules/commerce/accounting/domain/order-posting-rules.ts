@@ -1,3 +1,4 @@
+import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
 import {
   JOURNAL_SOURCE_TYPE,
   POSTING_KEY,
@@ -33,6 +34,7 @@ export interface OrderPostingSnapshot {
   };
   readonly advancesToSettle: Money;
   readonly cogs: Money;
+  readonly serviceGoods: Money;
 }
 
 function buildDebitLines(
@@ -61,11 +63,19 @@ function buildDebitLines(
 function buildCreditLines(
   totals: OrderPostingSnapshot["totals"],
   goodsAmount: number,
+  serviceGoods: Money,
 ): DraftJournalLine[] {
   const lines: DraftJournalLine[] = [];
   const currency = totals.grandTotal.currency;
-  if (goodsAmount > 0) {
-    lines.push(credit(SYSTEM_ACCOUNT_CODE.REVENUE_PRODUCT, { amount: goodsAmount, currency }));
+  if (serviceGoods.amount > goodsAmount || serviceGoods.currency !== currency) {
+    throw new DomainRuleError({ code: ERROR_CODE.INTERNAL });
+  }
+  const productGoods = goodsAmount - serviceGoods.amount;
+  if (productGoods > 0) {
+    lines.push(credit(SYSTEM_ACCOUNT_CODE.REVENUE_PRODUCT, { amount: productGoods, currency }));
+  }
+  if (serviceGoods.amount > 0) {
+    lines.push(credit(SYSTEM_ACCOUNT_CODE.REVENUE_SERVICE, serviceGoods));
   }
   if (totals.taxTotal.amount > 0) {
     lines.push(credit(SYSTEM_ACCOUNT_CODE.TAX_PAYABLE, totals.taxTotal));
@@ -95,7 +105,7 @@ export function draftOrderCompleted(snapshot: OrderPostingSnapshot): DraftJourna
     totals.discountTotal,
     totals.roundingAdjustment,
   );
-  const credits = buildCreditLines(totals, goodsAmount);
+  const credits = buildCreditLines(totals, goodsAmount, snapshot.serviceGoods);
   const revenueLines = [...debits, ...credits];
 
   if (revenueLines.length > 0) {

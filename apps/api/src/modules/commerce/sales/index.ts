@@ -1,3 +1,4 @@
+import { OFFERING_KIND } from "@banijjik/contracts";
 import type { OrderRepository } from "./application/ports/sales-ports.js";
 import { asId, type OrderId } from "@banijjik/ids";
 import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
@@ -154,6 +155,16 @@ export function buildOrderPostingSourceAdapter(ports: OrderPostingSourcePorts): 
         businessDate: order.businessDate,
         locationId: order.locationId,
         totals: order.totals,
+        serviceGoods: {
+          amount: order.lines
+            .filter((line) => line.kind === OFFERING_KIND.SERVICE)
+            .reduce(
+              (sum, line) =>
+                sum + line.lineNetTotal.amount + line.lineDiscount.amount - line.lineTax.amount,
+              0,
+            ),
+          currency,
+        },
         advancesToSettle: { amount: heldAdvance.amount, currency },
         cogs: { amount: cogsAmount, currency },
       };
