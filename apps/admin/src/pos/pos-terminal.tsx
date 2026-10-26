@@ -5,14 +5,16 @@ import type { Money } from "@banijjik/contracts/payment";
 import type { PosCatalogRow, PosSessionResponse } from "@banijjik/contracts/pos";
 import { Button, type DisplayLocale } from "@banijjik/ui";
 import { newId } from "@banijjik/ids";
-import { useEffect, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useState, type ReactElement } from "react";
 import { openSession, pairDevice } from "./pos-api";
 import type { PosLabels } from "./pos-labels";
 import { PosCloseLazy } from "./pos-close-lazy";
 import { PosOpenRegisterForm } from "./pos-open-register-form";
 import { PosPairingForm } from "./pos-pairing-form";
 import { PosSaleScreen } from "./pos-sale-screen";
-import { loadAllCatalogRows, resolveStartPhase, type PosStartPhase } from "./pos-start";
+import { resolveStartPhase, type PosStartPhase } from "./pos-start";
+import { useCatalogRefresh } from "./pos-catalog-refresh";
+import { syncCatalog } from "./pos-catalog-sync";
 
 export interface PosTerminalProps {
   readonly organizationId: string;
@@ -31,6 +33,22 @@ type TerminalView =
   | { readonly kind: "loading" }
   | { readonly kind: "failed" }
   | { readonly kind: "closing"; readonly sellingView: SellingView };
+
+/** The first screen after a change, or the failure screen when the till cannot be read again. */
+async function startPhaseView(organizationId: string): Promise<TerminalView> {
+  try {
+    return await resolveStartPhase(organizationId);
+  } catch {
+    return { kind: "failed" };
+  }
+}
+
+async function reloadStartPhase(
+  organizationId: string,
+  setView: (view: TerminalView) => void,
+): Promise<void> {
+  setView(await startPhaseView(organizationId));
+}
 
 export function PosTerminal(props: PosTerminalProps): ReactElement {
   const { organizationId, currency, locale, labels, canFindCustomer } = props;
@@ -53,6 +71,18 @@ export function PosTerminal(props: PosTerminalProps): ReactElement {
     };
   }, [organizationId, attempt]);
 
+  const sellingRegister = view.kind === "selling" ? view.session : null;
+  const handleRows = useCallback(
+    (posSessionId: string, rows: readonly PosCatalogRow[]) =>
+      setView((current) =>
+        current.kind === "selling" && current.session.posSessionId === posSessionId
+          ? { ...current, rows }
+          : current,
+      ),
+    [],
+  );
+  useCatalogRefresh(organizationId, sellingRegister, handleRows);
+
   async function handlePair(pairingCode: string): Promise<void> {
     await pairDevice(organizationId, pairingCode);
     setView(await resolveStartPhase(organizationId));
@@ -61,18 +91,14 @@ export function PosTerminal(props: PosTerminalProps): ReactElement {
   async function handleOpen(openingFloat: Money): Promise<void> {
     // One key per click: the register form is disabled while the request runs (ADR-014).
     const session: PosSessionResponse = await openSession(organizationId, openingFloat, newId());
-    const rows: readonly PosCatalogRow[] = await loadAllCatalogRows(organizationId);
+    const rows: readonly PosCatalogRow[] = await syncCatalog(organizationId, session.locationId);
     setView({ kind: "selling", session, rows });
   }
 
-  /** Back from the close screen returns to the same register; a finished close starts again from the top. */
-  async function handleCloseDone(): Promise<void> {
-    try {
-      setView(await resolveStartPhase(organizationId));
-    } catch {
-      setView({ kind: "failed" });
-    }
-  }
+  /** A finished close starts again from the top; a failed reload shows the failure screen. */
+  const handleCloseDone = (): void => {
+    void reloadStartPhase(organizationId, setView);
+  };
 
   return (
     <TerminalScreen
@@ -87,7 +113,7 @@ export function PosTerminal(props: PosTerminalProps): ReactElement {
       onOpen={handleOpen}
       onStartClose={(sellingView) => setView({ kind: "closing", sellingView })}
       onBackToSale={(sellingView) => setView(sellingView)}
-      onCloseDone={() => void handleCloseDone()}
+      onCloseDone={handleCloseDone}
     />
   );
 }

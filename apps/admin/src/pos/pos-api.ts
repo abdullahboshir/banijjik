@@ -48,12 +48,14 @@ export async function openSession(
   return result.data;
 }
 
+/** One page of the snapshot. `since` (the cached server time) asks for the changes only. */
 export async function fetchCatalogPage(
   organizationId: string,
-  cursor: string | null,
+  page: { readonly cursor: string | null; readonly since: string | null },
 ): Promise<PosCatalogSnapshotResponse> {
   const query = new URLSearchParams();
-  if (cursor) query.set("cursor", cursor);
+  if (page.cursor) query.set("cursor", page.cursor);
+  if (page.since) query.set("since", page.since);
   const suffix = query.toString() ? `?${query.toString()}` : "";
   const result = await apiFetch<PosCatalogSnapshotResponse>(
     `${posBase(organizationId)}/catalog-snapshot${suffix}`,
