@@ -67,6 +67,7 @@ describe("audit vocabulary", () => {
       "posDevice",
       "posSession",
       "posHeldCart",
+      "smsGatewaySetting",
     ]);
   });
 });

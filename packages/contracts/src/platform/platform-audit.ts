@@ -25,6 +25,8 @@ export const PLATFORM_AUDIT_ACTION = {
   EVENT_DEAD_LETTER_REPLAY_REQUESTED: "platform.eventDeadLetter.replayRequested",
   EVENT_DEAD_LETTER_SKIPPED: "platform.eventDeadLetter.skipped",
   OUTBOX_EVENT_REPLAYED: "platform.outboxEvent.replayed",
+  SMS_GATEWAY_UPDATED: "platform.sms_gateway.updated",
+  SMS_GATEWAY_TESTED: "platform.sms_gateway.tested",
 } as const;
 
 export type PlatformAuditAction =
@@ -39,6 +41,7 @@ export const PLATFORM_AUDIT_TARGET_TYPE = defineEnum([
   "platform_operator",
   "industry_template",
   "event_dead_letter",
+  "sms_gateway",
   "outbox_event",
 ]);
 export type PlatformAuditTargetType =

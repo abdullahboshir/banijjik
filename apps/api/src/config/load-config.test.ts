@@ -34,6 +34,7 @@ const customerLoginEnv = {
 };
 
 const productionEnv = {
+  CREDENTIALS_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString("base64"),
   ...objectStorageEnv,
   ...customerLoginEnv,
   AUTH_ACCESS_TOKEN_SECRET: FAKE_ACCESS_SECRET,
@@ -77,6 +78,11 @@ describe("loadConfig", () => {
         refreshTokenTtlDays: 30,
         sessionFamilyMaxDays: 90,
       },
+      sms: {
+        encryptionKey: expect.any(String),
+        adareachBaseUrl: "https://api.mobireach.com.bd",
+        bulksmsbdBaseUrl: "https://bulksmsbd.net/api",
+      },
       storage: { driver: "local", localRoot: expect.any(String) },
       storefront: {
         otpSecret: expect.any(String),
@@ -88,6 +94,7 @@ describe("loadConfig", () => {
     expect(Object.isFrozen(config.storage)).toBe(true);
     expect(Object.isFrozen(config.database)).toBe(true);
     expect(Object.isFrozen(config.auth)).toBe(true);
+    expect(Object.isFrozen(config.sms)).toBe(true);
   });
 
   it("accepts ROLE=worker", () => {
@@ -633,6 +640,19 @@ describe("loadConfig customer sign-in (card M.1)", () => {
     expect(error.issues).toEqual([
       expect.objectContaining({ key: "SMS_DRIVER", problem: "INVALID" }),
     ]);
+  });
+
+  it("requires the credentials key in production when the gateway driver is selected", () => {
+    const missingKey = Object.fromEntries(
+      Object.entries(productionEnv).filter(([key]) => key !== "CREDENTIALS_ENCRYPTION_KEY"),
+    );
+    const error = catchConfigError({ ...missingKey, SMS_DRIVER: "gateway" });
+    expect(error.issues).toContainEqual(
+      expect.objectContaining({ key: "CREDENTIALS_ENCRYPTION_KEY", problem: "MISSING" }),
+    );
+    expect(loadConfig({ ...productionEnv, SMS_DRIVER: "gateway" }).storefront.smsDriver).toBe(
+      "gateway",
+    );
   });
 
   it("refuses a missing, a short and a placeholder OTP_SECRET in production, and never prints it", () => {

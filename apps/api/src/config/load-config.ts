@@ -1,3 +1,4 @@
+import { readSmsConfig } from "./read-sms-config.js";
 import { ConfigError, type AppConfig, type ConfigIssue } from "./app-config.js";
 import {
   ALLOW_LOCAL_SERVICES_HINT,
@@ -72,7 +73,7 @@ function readTrustedProxyHops(env: Environment, isProduction: boolean): FieldRes
   return readField(env, rule);
 }
 
-type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin" | "storage" | "storefront">;
+type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin" | "storage" | "storefront" | "sms">;
 type ServerSettings = Pick<
   AppConfig,
   "port" | "logLevel" | "role" | "trustedProxyHops" | "corsAllowedOrigins"
@@ -155,7 +156,7 @@ function readBaseConfig(env: Environment): ConfigSection<BaseConfig> {
   }
   return { issues, value: { nodeEnv: nodeEnv.value, ...server.value, ...stores.value } };
 }
-type RuntimeSettings = Pick<AppConfig, "auth" | "storage" | "storefront">;
+type RuntimeSettings = Pick<AppConfig, "auth" | "storage" | "storefront" | "sms">;
 
 /** The sections that production treats differently from development: sign-in, files and customer sign-in. */
 function readRuntimeSettings(env: Environment): {
@@ -166,13 +167,24 @@ function readRuntimeSettings(env: Environment): {
   const auth = readAuthConfig(env, isProduction);
   const storage = readStorageConfig(env, isProduction);
   const storefront = readStorefrontConfig(env, isProduction);
-  const issues = [...auth.issues, ...storage.issues, ...storefront.issues];
-  if (auth.value === undefined || storage.value === undefined || storefront.value === undefined) {
+  const sms = readSmsConfig(env, isProduction);
+  const issues = [...auth.issues, ...storage.issues, ...storefront.issues, ...sms.issues];
+  if (
+    auth.value === undefined ||
+    storage.value === undefined ||
+    storefront.value === undefined ||
+    sms.value === undefined
+  ) {
     return { issues };
   }
   return {
     issues,
-    value: { auth: auth.value, storage: storage.value, storefront: storefront.value },
+    value: {
+      auth: auth.value,
+      storage: storage.value,
+      storefront: storefront.value,
+      sms: sms.value,
+    },
   };
 }
 

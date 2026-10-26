@@ -155,10 +155,10 @@ export const otpSecretRule: FieldRule<string> = {
 export const DEVELOPMENT_OTP_SECRET = "change-me-development-only-otp-secret-0123456789abcdef";
 
 /** `test-inbox` writes messages to a collection for tests; `disabled` sends nothing and turns customer sign-in off. */
-export const SMS_DRIVERS = ["test-inbox", "disabled"] as const;
+export const SMS_DRIVERS = ["test-inbox", "disabled", "gateway"] as const;
 export const smsDriverRule: FieldRule<(typeof SMS_DRIVERS)[number]> = {
   key: "SMS_DRIVER",
-  hint: "must be test-inbox or disabled",
+  hint: "must be test-inbox, disabled or gateway",
   schema: z.enum(SMS_DRIVERS),
 };
 export const SMS_TEST_INBOX_IN_PRODUCTION_HINT =

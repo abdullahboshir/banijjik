@@ -1,3 +1,4 @@
+import type { SmsPurpose } from "@banijjik/contracts/sms";
 import type { CustomerOtpPurpose } from "@banijjik/contracts/contact";
 import type { ContactId, CustomerAccountId, CustomerSessionId, UserId } from "@banijjik/ids";
 import type { CustomerAccount } from "../../domain/customer-account.entity.js";
@@ -65,7 +66,11 @@ export interface OtpChallengeRepository {
 
 /** The only way a message leaves the system. Drivers: the test inbox now, a real provider later. */
 export interface SmsSender {
-  send(message: { readonly phoneE164: string; readonly text: string }): Promise<void>;
+  send(message: {
+    readonly phoneE164: string;
+    readonly text: string;
+    readonly purpose: SmsPurpose;
+  }): Promise<void>;
 }
 
 /**

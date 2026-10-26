@@ -1,3 +1,4 @@
+import { SMS_PURPOSE } from "@banijjik/contracts/sms";
 import { MODULE_KEY } from "@banijjik/contracts";
 import { CONTACT_EVENT_TYPE } from "@banijjik/contracts/contact";
 import type { EventHandler } from "../../../../kernel/events/index.js";
@@ -35,7 +36,11 @@ export function buildSendCustomerOtpSmsHandler(
       if (challenge?.codeCiphertext === undefined) return;
       const code = openOtpCode(otpSecret, challenge.codeCiphertext);
       const text = await composer.compose(code, challenge.purpose);
-      await sender.send({ phoneE164: challenge.phoneE164, text });
+      await sender.send({
+        phoneE164: challenge.phoneE164,
+        text,
+        purpose: SMS_PURPOSE.CUSTOMER_OTP,
+      });
       await challenges.clearCode(challenge.otpChallengeId);
     },
   };

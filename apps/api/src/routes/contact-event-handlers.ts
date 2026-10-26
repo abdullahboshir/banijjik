@@ -1,3 +1,5 @@
+import type { SmsModuleDependencies } from "../modules/integration/sms/index.js";
+import { buildGatewaySmsSender } from "../modules/integration/sms/index.js";
 import { PREFERRED_LOCALE } from "@banijjik/contracts";
 import { CUSTOMER_OTP_PURPOSE, CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
 import { createTranslator } from "@banijjik/i18n";
@@ -41,9 +43,10 @@ export function buildOtpMessageComposer(): OtpMessageComposer {
 }
 
 /** Registers the handlers that need other modules' adapters. The worker calls it before it starts. */
-export function registerContactHandlers(config: AppConfig): void {
+export function registerContactHandlers(config: AppConfig, sms: SmsModuleDependencies): void {
   registerContactEventHandlers({
     storefront: config.storefront,
+    gatewaySender: buildGatewaySmsSender(sms),
     composer: buildOtpMessageComposer(),
   });
 }

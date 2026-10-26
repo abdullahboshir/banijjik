@@ -34,6 +34,13 @@ const IAM_EXPECTED = {
 };
 
 describe("system role grants (10 section 10)", () => {
+  it("lets managers read SMS gateway settings and logs but not change credentials", () => {
+    const manager = grantedKeysOf(SYSTEM_ROLE_KEY.MANAGER, ALL_KEYS);
+    expect(manager.has(PERMISSION_KEY.SMS_GATEWAY_READ)).toBe(true);
+    expect(manager.has(PERMISSION_KEY.SMS_LOG_READ)).toBe(true);
+    expect(manager.has(PERMISSION_KEY.SMS_CREDENTIAL_UPDATE)).toBe(false);
+  });
+
   it.each(Object.values(SYSTEM_ROLE_KEY))(
     "gives %s exactly the organization and iam keys of the template",
     (roleKey) => {

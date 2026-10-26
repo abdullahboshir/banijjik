@@ -99,9 +99,11 @@ export async function startIamApi(
     readonly redis?: RedisClient;
     /** Where uploaded files go, the file quota and the upload timeout (card 3.0). */
     readonly fileOverrides?: V1Dependencies["fileOverrides"];
+    /** Environment overrides for provider tests; database URLs remain generated per harness. */
+    readonly environmentOverrides?: Record<string, string>;
   } = {},
 ): Promise<IamApiHarness> {
-  const config = createDatabaseTestConfig();
+  const config = createDatabaseTestConfig(undefined, options.environmentOverrides);
   const connections = await connectDatabases(config);
   await initializeModels();
   const logs = createLogCapture();

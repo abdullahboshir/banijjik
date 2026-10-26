@@ -29,10 +29,12 @@ export function createTestDatabaseUrls(): TestDatabaseUrls {
 
 export function createDatabaseTestConfig(
   urls: TestDatabaseUrls = createTestDatabaseUrls(),
+  environmentOverrides: Record<string, string> = {},
 ): AppConfig {
   return createTestConfig({
     DB_PLATFORM_URL: urls.platformUrl,
     DB_TENANT_SHARED_URL: urls.tenantSharedUrl,
+    ...environmentOverrides,
   });
 }
 

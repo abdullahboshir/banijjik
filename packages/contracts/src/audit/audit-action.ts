@@ -131,6 +131,8 @@ export const AUDIT_ACTION = {
   POS_HELD_CART_DELETED: "pos.heldCart.deleted",
   POS_COLLECTION_CREATED: "pos.collection.created",
   ...ENROLLMENT_EVENT_TYPE,
+  SMS_GATEWAY_UPDATED: "sms.gateway.updated",
+  SMS_GATEWAY_TESTED: "sms.gateway.tested",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
@@ -188,6 +190,7 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "posDevice",
   "posSession",
   "posHeldCart",
+  "smsGatewaySetting",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

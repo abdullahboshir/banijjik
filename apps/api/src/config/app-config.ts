@@ -14,12 +14,13 @@ export type StorageConfig =
 export interface StorefrontConfig {
   /** Seals and hashes one-time codes. */
   readonly otpSecret: string;
-  readonly smsDriver: "test-inbox" | "disabled";
+  readonly smsDriver: "test-inbox" | "disabled" | "gateway";
   /** `<slug>.<baseDomain>` is the public host of a business. */
   readonly baseDomain: string;
 }
 
 export interface AppConfig {
+  readonly sms: import("./read-sms-config.js").SmsConfig;
   readonly nodeEnv: "development" | "test" | "production";
   readonly port: number;
   readonly logLevel: "fatal" | "error" | "warn" | "info" | "debug" | "trace";

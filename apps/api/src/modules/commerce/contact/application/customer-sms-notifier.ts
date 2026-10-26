@@ -1,3 +1,4 @@
+import { SMS_PURPOSE } from "@banijjik/contracts/sms";
 import { asId, type CustomerAccountId } from "@banijjik/ids";
 import { getLogger } from "../../../../kernel/logger/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
@@ -40,7 +41,11 @@ export function createCustomerSmsNotifier(
         now: clock.now(),
       });
       if (!isFirstTime) return;
-      await sender.send({ phoneE164: account.phoneE164, text: input.text });
+      await sender.send({
+        phoneE164: account.phoneE164,
+        text: input.text,
+        purpose: SMS_PURPOSE.LISTING_REVIEW_RESULT,
+      });
     },
   };
 }

@@ -1,0 +1,37 @@
+export const SMS_PROVIDER = { ADAREACH: "ADAREACH", BULKSMSBD: "BULKSMSBD" } as const;
+export type SmsProvider = (typeof SMS_PROVIDER)[keyof typeof SMS_PROVIDER];
+export const SMS_PURPOSE = {
+  CUSTOMER_OTP: "CUSTOMER_OTP",
+  LISTING_REVIEW_RESULT: "LISTING_REVIEW_RESULT",
+  GATEWAY_TEST: "GATEWAY_TEST",
+} as const;
+export type SmsPurpose = (typeof SMS_PURPOSE)[keyof typeof SMS_PURPOSE];
+export const SMS_SOURCE = {
+  ORGANIZATION: "ORGANIZATION",
+  PLATFORM: "PLATFORM",
+  NONE: "NONE",
+} as const;
+export type SmsSource = (typeof SMS_SOURCE)[keyof typeof SMS_SOURCE];
+export const SMS_OUTCOME = {
+  SENT: "SENT",
+  REFUSED: "REFUSED",
+  SKIPPED_DAILY_LIMIT: "SKIPPED_DAILY_LIMIT",
+  SKIPPED_MONTHLY_LIMIT: "SKIPPED_MONTHLY_LIMIT",
+  NOT_CONFIGURED: "NOT_CONFIGURED",
+} as const;
+export type SmsOutcome = (typeof SMS_OUTCOME)[keyof typeof SMS_OUTCOME];
+export const SMS_FAILURE_REASON = {
+  AUTH_FAILED: "AUTH_FAILED",
+  SENDER_NOT_ALLOWED: "SENDER_NOT_ALLOWED",
+  BALANCE_LOW: "BALANCE_LOW",
+  INVALID_NUMBER: "INVALID_NUMBER",
+  NOT_ALLOWED: "NOT_ALLOWED",
+  IP_NOT_WHITELISTED: "IP_NOT_WHITELISTED",
+  PROVIDER_REFUSED: "PROVIDER_REFUSED",
+} as const;
+export type SmsFailureReason = (typeof SMS_FAILURE_REASON)[keyof typeof SMS_FAILURE_REASON];
+export const SMS_SETTING_KEY = { DAILY_LIMIT: "sms.dailyLimit" } as const;
+export const SMS_RULE_KEY = {
+  GATEWAY_INCOMPLETE: "SMS_GATEWAY_INCOMPLETE",
+  TEST_LIMIT: "SMS_TEST_LIMIT",
+} as const;

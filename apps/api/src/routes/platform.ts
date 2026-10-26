@@ -1,3 +1,6 @@
+import type { AppConfig } from "../config/index.js";
+import { buildSmsPlatformRouter } from "../modules/integration/sms/index.js";
+import { platformSmsAudit, buildSmsTestMessage } from "./sms-adapters.js";
 import { asId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { Router, type RequestHandler } from "express";
 import type { PlatformAuditRecorder } from "../kernel/audit/index.js";
@@ -81,6 +84,8 @@ export function mountPlatformApi(router: Router, input: PlatformApiInput): void 
     ...buildOperatorLimit(input),
     buildPlatformRouter({
       clock,
+      config: input.dependencies.config,
+      limiter: input.dependencies.rateLimiter,
       registry: input.registry,
       platformAudit: buildPlatformAuditRecorder(clock),
     }),
@@ -100,6 +105,8 @@ function buildOperatorLimit(input: PlatformApiInput): readonly RequestHandler[] 
 }
 
 interface PlatformRouterInput {
+  readonly config: AppConfig;
+  readonly limiter: RateLimiter;
   readonly clock: Clock;
   readonly registry: ModuleRegistry;
   readonly platformAudit: PlatformAuditRecorder;
@@ -223,5 +230,40 @@ function buildPlatformRouter(input: PlatformRouterInput): Router {
   router.use("/dead-outbox-events", operations.deadOutbox);
   router.use(buildPlatformAuditRouter({ permission: platformPermission }));
   router.use(buildIamPlatformMeRouter());
+  mountSmsPlatformRouter({ router, input, clock, platformAudit });
   return router;
+}
+
+function mountSmsPlatformRouter({
+  router,
+  input,
+  clock,
+  platformAudit,
+}: {
+  router: Router;
+  input: PlatformRouterInput;
+  clock: Clock;
+  platformAudit: PlatformAuditRecorder;
+}): void {
+  router.use(
+    buildSmsPlatformRouter({
+      config: input.config.sms,
+      clock,
+      limiter: input.limiter,
+      permission: platformPermission,
+      operatorId: requirePlatformOperatorId,
+      audit: platformSmsAudit(platformAudit),
+      message: buildSmsTestMessage(true),
+      limits: {
+        assertBelow: async () => {
+          throw new Error("platform test does not use tenant limits");
+        },
+      },
+      policy: {
+        read: async () => {
+          throw new Error("platform test does not use tenant policy");
+        },
+      },
+    }),
+  );
 }

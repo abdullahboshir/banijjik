@@ -21,6 +21,8 @@ export const PLATFORM_PERMISSION_KEY = {
   INDUSTRY_WRITE: "platform.industry.write",
   EVENTS_READ: "platform.events.read",
   EVENTS_REPLAY: "platform.events.replay",
+  SMS_READ: "platform.sms.read",
+  SMS_WRITE: "platform.sms.write",
 } as const;
 
 export type PlatformPermissionKey =
@@ -40,6 +42,7 @@ export const PLATFORM_ROLE_PERMISSIONS: Readonly<
   [PLATFORM_ROLE.SUPER_ADMIN]: ALL_PLATFORM_PERMISSIONS,
   [PLATFORM_ROLE.SUPPORT]: [
     PLATFORM_PERMISSION_KEY.TENANT_READ,
+    PLATFORM_PERMISSION_KEY.SMS_READ,
     PLATFORM_PERMISSION_KEY.TENANT_SUSPEND,
     PLATFORM_PERMISSION_KEY.PACKAGE_READ,
     PLATFORM_PERMISSION_KEY.ENTITLEMENT_READ,

@@ -136,6 +136,9 @@ export const PERMISSION_KEY = {
   POS_PRICE_OVERRIDE: "pos.price.override",
   REPORT_HOME_READ: "report.home.read",
   REPORT_DAILY_READ: "report.daily.read",
+  SMS_LOG_READ: "sms.log.read",
+  SMS_GATEWAY_READ: "sms.gateway.read",
+  SMS_CREDENTIAL_UPDATE: "sms.credential.update",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];
@@ -175,6 +178,9 @@ export const PERMISSION_LABEL_MESSAGE_KEYS: readonly string[] = Object.values(PE
  * reports them only when they are held at ALL and the menu never offers what the API refuses.
  */
 export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
+  PERMISSION_KEY.SMS_GATEWAY_READ,
+  PERMISSION_KEY.SMS_CREDENTIAL_UPDATE,
+  PERMISSION_KEY.SMS_LOG_READ,
   PERMISSION_KEY.ORGANIZATION_PROFILE_UPDATE,
   PERMISSION_KEY.AUDIT_LOG_READ,
   PERMISSION_KEY.ORGANIZATION_LOCATION_CREATE,

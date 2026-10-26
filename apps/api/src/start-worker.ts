@@ -1,3 +1,4 @@
+import { buildSmsDependencies } from "./routes/sms-adapters.js";
 import { registerEnrollmentWorkerJobs } from "./routes/enrollment-worker-jobs.js";
 import type { Logger } from "pino";
 import type { AppConfig } from "./config/index.js";
@@ -67,18 +68,13 @@ export function startWorker(
   connections: DatabaseConnections,
 ): readonly ShutdownTask[] {
   const redis = createQueueRedisClient(config.redisUrl);
-  registerContactHandlers(config);
+
   registerAccountingAndExpenseHandlers();
   registerReportEventHandlers(systemClock);
   registerDirectoryEventHandlers({ clock: systemClock, audit: buildAuditRecorder(systemClock) });
   registerDirectoryStatsHandler(buildDirectoryBlockReader());
   const { registry, orgConfig } = buildWorkerOrgConfig();
-  registerDirectoryReviewSmsHandler({
-    clock: systemClock,
-    smsDriver: config.storefront.smsDriver,
-    orgConfig,
-    manifests: registry.all(),
-  });
+  registerSmsHandlers(config, registry, orgConfig);
   registerCommissionHandlers(systemClock, orgConfig);
   registerBookingScheduledJobs({
     clock: systemClock,
@@ -119,4 +115,25 @@ export function startWorker(
     createCloseRedisTask(redis),
     createCloseDatabasesTask(connections),
   ];
+}
+
+function registerSmsHandlers(
+  config: AppConfig,
+  registry: ModuleRegistry,
+  orgConfig: OrgConfigService,
+): void {
+  const sms = buildSmsDependencies({
+    config,
+    clock: systemClock,
+    orgConfig,
+    manifests: registry.all(),
+  });
+  registerContactHandlers(config, sms);
+  registerDirectoryReviewSmsHandler({
+    sms,
+    clock: systemClock,
+    smsDriver: config.storefront.smsDriver,
+    orgConfig,
+    manifests: registry.all(),
+  });
 }

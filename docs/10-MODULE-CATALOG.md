@@ -122,7 +122,7 @@ Inputs: the org's `PlatformSubscription`, its base and add-on `Package`s, its `M
 | `report` | commerce/report | CORE | 3.10 | | | | | daily summaries (projections) |
 | `delivery` | commerce/delivery | CORE | 5.3 | `sales` | | P | | rider assignments (own rider) |
 | `courier` | integration/courier | CORE | 5.2 | `sales` | | P | yes | Consignment, courier credentials |
-| `sms` | integration/sms | CORE | 5.13 | | | | | SMS log (usage-limited by `smsPerMonth`) |
+| `sms` | integration/sms | CORE | 5.13 | | | | | SmsGatewaySetting, PlatformSmsGateway, SmsLog (encrypted credentials; usage-limited by `smsPerMonth`) |
 | `risk` | automation/risk | CORE | 5.15 | `sales` | | P | yes | COD risk scores |
 | `pos` | commerce/pos | OPTIONAL | 3.9 | `sales`, `payment` | | | no | POS devices, shifts, registers, Z-reports |
 | `bookkeeping` | commerce/bookkeeping | OPTIONAL | 3.8b | `accounting` | | | yes | — (owns no data; chart of accounts, journals, approved manual/reversing entries, statements; trial balance moves from Advanced settings into Money when enabled) |
@@ -200,7 +200,7 @@ Permission keys follow `<moduleKey>.<entity>.<action>` (ADR-054). Standard actio
 | `report` | `report.dashboard.read`, `report.sales.read`, `report.stock.read`, `report.profit.read`* | `report.dayCloseTime` | — | — | — | (consumes request, payment, expense, stock events) | — | — |
 | `delivery` | `delivery.assignment.{read,assign}`, `delivery.assignment.complete` (rider), `delivery.cash.handover` | `delivery.codHandoverRequired` | — | — | — | `delivery.assignment.{assigned,delivered,failed}` | — | — |
 | `courier` | `courier.consignment.{read,create,cancel}`, `courier.credential.update`* | `courier.autoBookOnConfirm`, `courier.defaultCourierKey` | — | — | — | `courier.consignment.{created,statusChanged}` (consumes `sales.order.confirmed`) | — | — |
-| `sms` | `sms.log.read` | `sms.senderId` | — | — | — | — (consumes notification requests) | `smsPerMonth` | — |
+| `sms` | `sms.gateway.read`, `sms.credential.update`, `sms.log.read` | `sms.dailyLimit` | — | — | — | — (consumes notification requests) | `smsPerMonth` | — |
 | `risk` | `risk.score.read` | `risk.holdThreshold` | — | — | — | `risk.order.flagged` (consumes `sales.order.created`) | — | — |
 | `pos` | `pos.session.open`, `pos.sale.create`, `pos.register.close`, `pos.device.manage`, `pos.priceOverride`* | `pos.receiptFooter`, `pos.requireShift` | — | — | — | `pos.register.closed` | `posDevices` | `ZREPORT` |
 | `website` | `website.site.{read,update,publish}`, `website.domain.manage` | `website.seo`, `website.checkoutEnabled` | — | — | `hero`, `about`, `faq`, `testimonials`, `rich-text`, `contact-form`, `footer` | `website.site.published` | — | — |

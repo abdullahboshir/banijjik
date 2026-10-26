@@ -1,3 +1,5 @@
+import { ERROR_CODE } from "@banijjik/contracts";
+import { AppError } from "../../../kernel/http/index.js";
 import type { StorefrontConfig } from "../../../config/index.js";
 import { registerEventHandler } from "../../../kernel/events/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
@@ -19,9 +21,17 @@ import { DisabledSmsSender, TestInboxSmsSender } from "./infrastructure/sms-send
 export interface ContactEventHandlerDependencies {
   readonly storefront: Pick<StorefrontConfig, "otpSecret" | "smsDriver">;
   readonly composer: OtpMessageComposer;
+  readonly gatewaySender?: SmsSender;
 }
 
-function buildSmsSender(driver: StorefrontConfig["smsDriver"]): SmsSender {
+function buildSmsSender(
+  driver: StorefrontConfig["smsDriver"],
+  gatewaySender?: SmsSender,
+): SmsSender {
+  if (driver === "gateway") {
+    if (gatewaySender === undefined) throw new AppError({ code: ERROR_CODE.INTERNAL });
+    return gatewaySender;
+  }
   return driver === "test-inbox" ? new TestInboxSmsSender() : new DisabledSmsSender();
 }
 
@@ -34,9 +44,13 @@ export function buildCustomerSmsNotifier(input: {
   readonly smsDriver: StorefrontConfig["smsDriver"];
   readonly clock: Clock;
   readonly sender?: SmsSender;
+  readonly gatewaySender?: SmsSender;
 }): CustomerSmsNotifier {
   const sender =
-    input.sender ?? (input.smsDriver === "disabled" ? undefined : buildSmsSender(input.smsDriver));
+    input.sender ??
+    (input.smsDriver === "disabled"
+      ? undefined
+      : buildSmsSender(input.smsDriver, input.gatewaySender));
   if (sender === undefined) return createDisabledCustomerSmsNotifier();
   return createCustomerSmsNotifier({
     accounts: new MongoCustomerAccountRepository(),
@@ -51,7 +65,7 @@ export function registerContactEventHandlers(dependencies: ContactEventHandlerDe
   registerEventHandler(
     buildSendCustomerOtpSmsHandler({
       challenges: new MongoOtpChallengeRepository(),
-      sender: buildSmsSender(dependencies.storefront.smsDriver),
+      sender: buildSmsSender(dependencies.storefront.smsDriver, dependencies.gatewaySender),
       composer: dependencies.composer,
       otpSecret: dependencies.storefront.otpSecret,
     }),

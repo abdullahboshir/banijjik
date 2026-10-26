@@ -1,3 +1,7 @@
+import {
+  buildGatewaySmsSender,
+  type SmsModuleDependencies,
+} from "../modules/integration/sms/index.js";
 import { PREFERRED_LOCALE, type ModuleManifest, type PreferredLocale } from "@banijjik/contracts";
 import type { OrganizationId } from "@banijjik/ids";
 import { createTranslator } from "@banijjik/i18n";
@@ -72,6 +76,7 @@ async function reasonLabels(query: ReasonLabelQuery): Promise<string> {
 }
 
 export interface DirectoryReviewSmsDependencies {
+  readonly sms: SmsModuleDependencies;
   readonly clock: Clock;
   readonly smsDriver: StorefrontConfig["smsDriver"];
   readonly orgConfig: OrgConfigService;
@@ -85,6 +90,7 @@ export function registerDirectoryReviewSmsHandler(input: DirectoryReviewSmsDepen
   );
   const notifier: CustomerSmsNotifier = buildCustomerSmsNotifier({
     smsDriver: input.smsDriver,
+    gatewaySender: buildGatewaySmsSender(input.sms),
     clock: input.clock,
   });
   registerDirectoryReviewResultHandler({

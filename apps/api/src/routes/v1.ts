@@ -1,3 +1,4 @@
+import { registerSmsModels } from "../modules/integration/sms/index.js";
 import { registerEnrollmentModels } from "../modules/commerce/enrollment/index.js";
 import { SYSTEM_REASON, TOKEN_AUDIENCE, type ModuleManifest } from "@banijjik/contracts";
 import { Router, type RequestHandler } from "express";
@@ -134,6 +135,7 @@ export function registerModuleModels(): void {
   registerWebsiteModels();
   registerPosModels();
   registerReportModels();
+  registerSmsModels();
   registerSettingsModels();
   registerFileModels();
 }
