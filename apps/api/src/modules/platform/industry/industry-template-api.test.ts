@@ -44,6 +44,7 @@ const RETAIL_MODULES = [
   "report",
   "sales",
   "settings",
+  "sms",
   "website",
 ];
 const SALON_MODULES = [
@@ -65,6 +66,7 @@ const SALON_MODULES = [
   "report",
   "sales",
   "settings",
+  "sms",
   "website",
 ];
 

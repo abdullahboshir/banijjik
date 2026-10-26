@@ -37,6 +37,7 @@ const RETAIL_MODULES = [
   "report",
   "sales",
   "settings",
+  "sms",
   "website",
 ];
 const WITH_BOOKING = [
@@ -58,6 +59,7 @@ const WITH_BOOKING = [
   "report",
   "sales",
   "settings",
+  "sms",
   "website",
 ];
 

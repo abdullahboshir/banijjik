@@ -4,7 +4,7 @@ import type { AppConfig } from "../config/index.js";
 import { connectDatabases, type DatabaseConnections } from "../kernel/db/index.js";
 import { createLogger, setRootLogger } from "../kernel/logger/index.js";
 import { createLogCapture, type LogCapture } from "./log-capture.js";
-import { createTestConfig } from "./test-config.js";
+import { createTestConfig, TEST_CREDENTIALS_ENCRYPTION_KEY } from "./test-config.js";
 
 const SUFFIX_LENGTH = 12;
 
@@ -34,6 +34,7 @@ export function createDatabaseTestConfig(
   return createTestConfig({
     DB_PLATFORM_URL: urls.platformUrl,
     DB_TENANT_SHARED_URL: urls.tenantSharedUrl,
+    CREDENTIALS_ENCRYPTION_KEY: TEST_CREDENTIALS_ENCRYPTION_KEY,
     ...environmentOverrides,
   });
 }

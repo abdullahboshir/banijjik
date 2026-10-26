@@ -230,8 +230,11 @@ describe("tenant SMS gateway API", () => {
   });
 
   it("falls back to the platform gateway for another organization without reading A's logs", async () => {
+    const existingTenantGateway = await harness.connections.tenantShared
+      .collection("sms_gateway_settings")
+      .findOne({ organizationId });
     const ownerA = await owner.call("put", `/orgs/${organizationId}/sms/gateway`, {
-      version: 0,
+      version: existingTenantGateway?.["version"] as number,
       enabled: true,
       activeProvider: "BULKSMSBD",
       bulksmsbd: { senderId: "ORG-A", apiKey: "organization-a-key" },
@@ -268,8 +271,11 @@ describe("tenant SMS gateway API", () => {
 
   it("never exposes tenant BulkSMSBD keys or their sealed values", async () => {
     const secret = "tenant-bulksms-private-key";
+    const existing = await harness.connections.tenantShared
+      .collection("sms_gateway_settings")
+      .findOne({ organizationId });
     const saved = await owner.call("put", `/orgs/${organizationId}/sms/gateway`, {
-      version: 2,
+      version: existing?.["version"] as number,
       enabled: true,
       activeProvider: "BULKSMSBD",
       bulksmsbd: { senderId: "MASK", apiKey: secret },
@@ -296,6 +302,9 @@ describe("tenant SMS gateway API", () => {
 
 describe("platform SMS gateway API", () => {
   it("allows support to read without writing and super admins to save without exposing secrets", async () => {
+    const existing = await harness.connections.platform
+      .collection("platform_sms_gateways")
+      .findOne({ scopeKey: "DEFAULT" });
     const forbidden = await support.call("put", "/sms-gateway", {
       version: 0,
       enabled: true,
@@ -303,7 +312,7 @@ describe("platform SMS gateway API", () => {
       bulksmsbd: { senderId: "MASK", apiKey: "platform-secret" },
     });
     const saved = await superAdmin.call("put", "/sms-gateway", {
-      version: 0,
+      version: existing?.["version"] as number,
       enabled: true,
       activeProvider: "BULKSMSBD",
       bulksmsbd: { senderId: "MASK", apiKey: "platform-secret" },
@@ -340,8 +349,11 @@ describe("platform SMS gateway API", () => {
   });
 
   it("answers a platform test send without adding a tenant SMS log", async () => {
+    const existing = await harness.connections.platform
+      .collection("platform_sms_gateways")
+      .findOne({ scopeKey: "DEFAULT" });
     const saved = await superAdmin.call("put", "/sms-gateway", {
-      version: 1,
+      version: existing?.["version"] as number,
       enabled: true,
       activeProvider: "BULKSMSBD",
       bulksmsbd: { senderId: "MASK", apiKey: "platform-key" },

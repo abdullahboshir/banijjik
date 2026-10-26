@@ -367,6 +367,7 @@ describe("GET /orgs/{organizationId}/me/config", () => {
       "report",
       "sales",
       "settings",
+      "sms",
       "website",
       "workflow",
     ]);

@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
 import { redisUrlOrUnreachable } from "./test-redis.js";
-import { TEST_ACCESS_TOKEN_SECRET } from "./test-config.js";
+import { TEST_ACCESS_TOKEN_SECRET, TEST_CREDENTIALS_ENCRYPTION_KEY } from "./test-config.js";
 import type { TestDatabaseUrls } from "./test-databases.js";
 
 const PACKAGE_FOLDER = fileURLToPath(new URL("../..", import.meta.url));
@@ -71,6 +71,7 @@ export function productionEnvironment(
     REDIS_URL: redisUrlOrUnreachable(),
     CORS_ALLOWED_ORIGINS: "http://localhost:3000",
     AUTH_ACCESS_TOKEN_SECRET: TEST_ACCESS_TOKEN_SECRET,
+    CREDENTIALS_ENCRYPTION_KEY: TEST_CREDENTIALS_ENCRYPTION_KEY,
     TRUSTED_PROXY_HOPS: "1",
     // Production needs these customer sign-in settings (card M.1); the values are fake.
     OTP_SECRET: "test-only-otp-secret-0123456789abcdef0123",

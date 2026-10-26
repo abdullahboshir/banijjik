@@ -197,6 +197,7 @@ describe("GET /settings", () => {
       "sales.placedAutoCancelHours",
       "sales.returnWindowDays",
       "sales.usePacking",
+      "sms.dailyLimit",
     ]);
     expect(settingsOf(response)["organization.digitScript"]).toEqual({
       value: "LATIN",
