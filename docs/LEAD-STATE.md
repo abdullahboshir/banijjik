@@ -8,7 +8,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-26 (after midnight) by Opus 5.5 (lead `banijjik-cd`, sole lead) · `main` = `origin/main` = this state commit on top of `00dca308` (3.45 merged; pushed).
+Last updated: 2026-10-26 (after midnight) by Opus 5.5 (lead `banijjik-87`, sole lead) · `main` = `origin/main` = this state commit on top of `a1b4259c` (3.45 merged; pushed).
 
 ## 1. Where the project stands
 - **Phase 3 review: PASS WITH FIXES** (`docs/handoffs/phase-3-review.md`). **Phase 4 code merges only after 3.40 (walk-in services, F1, T1) and 3.41 (day scenarios with report numbers, F2, T2).** 3.40 is planned (`docs/plans/3.40.md`; owner: a walk-in holds no calendar); 3.41–3.43 have no plan yet. 3.42 and 3.43 may run beside Phase 4. **Merged this session:** 3.38 (`024da00d`), M.9 A1 (`619f78e0`, R2 passed with three lead fixes), 3.44 (`578f3d97`). Track M next: M.9 A2 (screens, Amendment A2-1), then Part B (go-live, ops). Sonnet weekly limit until 2026-10-29.
@@ -30,14 +30,14 @@ Last updated: 2026-10-26 (after midnight) by Opus 5.5 (lead `banijjik-cd`, sole 
 - Time-dependent tests follow `05-CONVENTIONS.md` "Testing" (3.26). Run date-sensitive suites between 00:00 and 06:00 Dhaka now and then.
 
 ## 2. Open branches (checked 2026-10-26 late night)
-**Ownership (2026-10-26 after midnight, by message): `banijjik-cd` alone does review, merge, `main` and `banijjik-docs`. `banijjik-fa` (now listed as `banijjik-36`) handed over and stopped; `00`, `b9`, `9e`, `67` stay off. An unknown session (probably `banijjik-87`) pushed the state commit `ff8a9141` and left `banijjik-docs` on `s/docs-state-2026-10-26h`: ask it before using that folder; meanwhile the lead commits from `banijjik`.**
+**Ownership (2026-10-26 after midnight, by message): `banijjik-87` alone does review, merge, `main`, `banijjik-docs` and the background agents. `banijjik-cd` (lead for 3.38, 3.39 A, M.9 A1, 3.44, 3.45) and `banijjik-fa` handed over and stopped; `00`, `36`, `b9`, `9e`, `67` stay off.** Merged local branches to delete in `banijjik` and `banijjik-docs`: `s/3.39-lead-fix`, `s/M.9-lead-fix`, `s/merge-3.45`, `s/3.45-card-check-rebase-info`, `s/merge-3.38`, `s/docs-state-2026-10-26g/h/i`.
 Prompts and logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/` (`rules.md` shared rules; `<card>-task.md`; `*-continue*.md` restart notes). Every final message starts with `STATUS: DONE | QUESTION | BLOCKED`. Never commit or revert `.claude/settings.json` in `banijjik`.
 
 | Card / part | Branch | Folder | Tier | State → next step |
 |---|---|---|---|---|
-| 3.39 B POS devices screen | not started (prompt `17-3.39-B.md`) | `banijjik-3.5a` | T2 | Owner may start now (3.39 A merged `c2a89539`; the folder still sits on the old A branch, the prompt branches from `main`). On DONE: merge check against plan 3.39 Part B; usage reads `GET /pos/devices/usage` (organization-wide count). |
-| M.9 A2 SMS settings screens | `s/M.9-ui-sms-settings` (prompt `14-M.9-A2.md`) | `banijjik-m8a` | T2 | Owner may start now. On DONE: merge check against plan decisions 17–19 **and Amendment A2-1** (menu entry from the `sms` manifest, AUTOMATION topic). |
-| 3.40 A walk-in services (API) | `s/3.40-api-walk-in-services` (prompt `18-3.40-A.md`) | `banijjik-m2` | T1 | Owner may start now. On DONE: strict T1 review (instant path only, effective kind, no stock or slot, `REVENUE_SERVICE` split, commission). Then write `19-3.40-B.md`. |
+| 3.39 B POS devices screen | `s/3.39-ui-pos-devices` (prompt `17-3.39-B.md`) | `banijjik-3.5a` | T2 | **Lead's Haiku agent running** (owner chose, 2026-10-26: T2 screens by lead agents, 3.40 A by the owner's tool). On DONE: `card:check`, merge check against plan 3.39 Part B; usage reads `GET /pos/devices/usage` (organization-wide count). If the agent session ends, restart it with a note naming what is left. |
+| M.9 A2 SMS settings screens | `s/M.9-ui-sms-settings` (prompt `14-M.9-A2.md`) | `banijjik-m8a` | T2 | **Lead's Haiku agent running.** On DONE: merge check against plan decisions 17–19 **and Amendment A2-1** (menu entry from the `sms` manifest, AUTOMATION topic). |
+| 3.40 A walk-in services (API) | `s/3.40-api-walk-in-services` (prompt `18-3.40-A.md`) | `banijjik-m2` | T1 | Owner's tool (Cursor or ChatGPT) may start now. On DONE: strict T1 review (instant path only, effective kind, no stock or slot, `REVENUE_SERVICE` split, commission). Then write `19-3.40-B.md`. |
 
 ### 2a. Launching implementers (owner approved, 2026-10-24)
 - **Qoder:** out of credits since 2026-10-24 evening.
@@ -92,8 +92,8 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-26 after midnight, 2** (Opus 5.5, `banijjik-87`): took over as sole lead from `banijjik-cd` and `banijjik-fa` by message. Owner chose: lead Haiku agents code 3.39 B and M.9 A2 (running), the owner's tool codes 3.40 A.
 - **2026-10-26 after midnight** (Opus 5.5, `banijjik-cd`; the state line was written by another session): owner reconfirmed pushing `main`. 3.39 A merge check R1 passed with one lead fix (device limit and usage count every location, `docs/handoffs/3.39-api-review-R1.md`); CI 40304118597 green; `main` → `c2a89539`. 3.39 B, M.9 A2, 3.40 A are ready for the owner's tools.
 - **2026-10-26 late night** (Opus 5.5, `banijjik-cd`): owner decision ADR-149 (each business website its own design). 3.44 (docs-only pushes skip CI, local tests first) merged; Docker and Redis started. M.9 A1 R2 passed, the lead fixed three items (body timeout, hot file add-only, sealed-value asserts) and merged it; 3.38 merge check passed and merged; M.9 Amendment A2-1; 3.40 planned (owner: no calendar hold); prompts 14 and 18.
 - **2026-10-26 night** (Opus 5.5, `banijjik-fa`): owner reconfirmed pushing `main`. Phase 3 review PASS WITH FIXES (`2a21b89c`): F1 walk-in services cannot be sold (3.40), F2 no test reads reports after a real day (3.41), 3.42/3.43 leftovers; fixed `09 §6` ownership map and the report README. 3.38, 3.39 A, M.9 A1 still on owner tools, CI running.
 - **2026-10-26 evening** (Opus 5.5, `banijjik-fa`): planned 3.38 (time-off 500) and 3.39 (POS device limit, industry standard per owner; found the device list and revoke ignore the caller's locations, and that admin had no device screen); owner-guide prompts 15–17 for Cursor.
-- **2026-10-26 afternoon** (Opus 5.5, `banijjik-fa`): M.9 A1 T1 review R1, changes required (`2054dc49`). Confirmed that every phase 3 card is merged; the phase 3 review is next.
