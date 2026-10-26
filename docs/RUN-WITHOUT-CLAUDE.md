@@ -33,11 +33,12 @@ Order follows the launch track (ADR-099 as amended by ADR-150): pilot with salon
 
 | # | Card | Tier | Plan | Starts when |
 |---|---|---|---|---|
-| 1 | 3.40 A walk-in services (API) | T1 | yes | branch done, review next |
-| 2 | 3.40 B walk-in services (screens) | T2 | yes (decisions 12–14) | 3.40 A merged |
-| 3 | 3.41 day scenarios with report numbers | T2 | **no** | 3.40 A merged; blocks Phase 4 |
-| 4 | 3.43 API correctness leftovers (till cash reversal, cashier contacts, `approverMemberId`, typed payloads, `placeOrder` key) | T1 (proposed: till cash and idempotency) | **no** | now |
-| 5 | 3.42 POS till leftovers (held carts, till returns, price override) | T2 | **no** | after 3.43 if they share files |
+| 1 | 3.40 A walk-in services (API) | T1 | yes | ✅ merged |
+| 2 | 3.40 B walk-in services (screens) | T2 | yes (decisions 12–14) | **now** (`owner-guide/19-3.40-B.md`) |
+| 3 | 3.41 day scenarios with report numbers | T2 | yes | **now** (after this plan lands on `main`; blocks Phase 4) |
+| 4 | 3.43 A API leftovers (till cash reversal, cashier contacts, `approverMemberId`, typed payloads) | T1 | yes | **now** (separate files from 3.40 B) |
+| 5 | 3.42 POS till leftovers (held carts, till returns, price override) | T2 | yes | after 3.40 B (same `apps/admin/src/pos`) |
+| 5b | 3.43 B `placeOrder` idempotency key | T2 | yes (same `3.43.md`) | after 3.40 B (same `apps/admin/src/sales`) |
 | 6 | Phase 3 close: re-check the review findings F1–F4 | review | n/a | 3.40–3.43 merged |
 | 7 | M.9 B owner's matrimony site live (domain, SMS live, backups, pilot) | checklist | yes (`M.9.md`) | owner's accounts ready (P5, P6) |
 | 8 | 4.1 theme engine (tokens, sections with variants, page JSON, lock levels; each site its own design copy, ADR-149) | T1 (proposed: every later website card builds on it) | **no** | Phase 3 closed |
