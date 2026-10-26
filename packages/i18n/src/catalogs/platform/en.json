@@ -436,5 +436,8 @@
   "platform.audit.action.platform.outboxEvent.replayed": "sent an undispatched event again",
   "platform.audit.target.event_dead_letter": "Failed event",
   "platform.audit.target.outbox_event": "Undispatched event",
+  "platform.audit.action.platform.sms_gateway.updated": "Updated SMS gateway settings",
+  "platform.audit.action.platform.sms_gateway.tested": "Sent an SMS gateway test message",
+  "platform.audit.target.sms_gateway": "SMS gateway",
   "platform.module.operations": "Operations"
 }

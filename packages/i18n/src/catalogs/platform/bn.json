@@ -436,5 +436,8 @@
   "platform.audit.action.platform.outboxEvent.replayed": "না-পাঠানো ইভেন্ট আবার পাঠিয়েছেন",
   "platform.audit.target.event_dead_letter": "ব্যর্থ ইভেন্ট",
   "platform.audit.target.outbox_event": "না-পাঠানো ইভেন্ট",
+  "platform.audit.action.platform.sms_gateway.updated": "এসএমএস গেটওয়ের সেটিংস বদলেছেন",
+  "platform.audit.action.platform.sms_gateway.tested": "এসএমএস গেটওয়েতে পরীক্ষামূলক বার্তা পাঠিয়েছেন",
+  "platform.audit.target.sms_gateway": "এসএমএস গেটওয়ে",
   "platform.module.operations": "অপারেশন"
 }
