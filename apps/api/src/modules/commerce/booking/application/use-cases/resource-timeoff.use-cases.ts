@@ -40,6 +40,7 @@ export class CreateResourceTimeOffUseCase {
     private readonly dependencies: {
       readonly resources: ResourceRepository;
       readonly timeOff: ResourceTimeOffRepository;
+      readonly unitOfWork: BookingUnitOfWork;
       readonly audit: AuditRecorder;
       readonly clock: Clock;
     },
@@ -55,31 +56,31 @@ export class CreateResourceTimeOffUseCase {
     if (resource === undefined) throw recordNotFound();
     assertLocationAllowed(resource.locationId, input.allowedLocationIds);
     const now = this.dependencies.clock.now();
-    const startsAt = new Date(input.body.startsAt);
-    const endsAt = new Date(input.body.endsAt);
     const record = {
       resourceTimeOffId: asId<ResourceTimeOffId>(newId()),
       organizationId: resource.organizationId,
       locationId: resource.locationId,
       resourceId: resource.resourceId,
-      startsAt,
-      endsAt,
+      startsAt: new Date(input.body.startsAt),
+      endsAt: new Date(input.body.endsAt),
       reason: input.body.reason ?? null,
       createdAt: now,
       updatedAt: now,
       createdByUserId: input.actorUserId,
       updatedByUserId: input.actorUserId,
     };
-    await this.dependencies.timeOff.insert(record);
-    await this.dependencies.audit.record({
-      action: AUDIT_ACTION.RESOURCE_UPDATED,
-      entityType: "resource",
-      entityId: resource.resourceId,
-      changes: {
-        timeOff: {
-          to: `${input.body.startsAt}/${input.body.endsAt}`,
+    await this.dependencies.unitOfWork.run(async () => {
+      await this.dependencies.timeOff.insert(record);
+      await this.dependencies.audit.record({
+        action: AUDIT_ACTION.RESOURCE_UPDATED,
+        entityType: "resource",
+        entityId: resource.resourceId,
+        changes: {
+          timeOff: {
+            to: `${input.body.startsAt}/${input.body.endsAt}`,
+          },
         },
-      },
+      });
     });
     return toResourceTimeOffResponse(record);
   }
