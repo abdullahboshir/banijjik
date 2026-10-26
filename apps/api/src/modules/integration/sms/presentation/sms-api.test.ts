@@ -249,16 +249,18 @@ describe("tenant SMS gateway API", () => {
       activeProvider: "BULKSMSBD",
       bulksmsbd: { senderId: "PLATFORM", apiKey: "platform-fallback-key" },
     });
+    const aLogsBefore = await harness.connections.tenantShared
+      .collection("sms_logs")
+      .countDocuments({ organizationId, purpose: SMS_PURPOSE.GATEWAY_TEST });
     providerCode = 202;
     const response = await secondOwner.call(
       "post",
       `/orgs/${organizationB.organizationId}/sms/gateway/test`,
       { phoneE164: "+8801712345678" },
     );
-    const aLogs = await harness.connections.tenantShared
+    const aLogsAfter = await harness.connections.tenantShared
       .collection("sms_logs")
-      .find({ organizationId, purpose: SMS_PURPOSE.GATEWAY_TEST })
-      .toArray();
+      .countDocuments({ organizationId, purpose: SMS_PURPOSE.GATEWAY_TEST });
     const sentRequests = smsStub.requests.filter((request) => request.url === "/smsapi");
     const body = new URLSearchParams(sentRequests.at(-1)?.body);
     expect(ownerA.status).toBe(200);
@@ -266,7 +268,7 @@ describe("tenant SMS gateway API", () => {
     expect(response.body.data.source).toBe("PLATFORM");
     expect(body.get("api_key")).toBe("platform-fallback-key");
     expect(body.get("api_key")).not.toBe("organization-a-key");
-    expect(aLogs).toEqual([]);
+    expect(aLogsAfter).toBe(aLogsBefore);
   });
 
   it("never exposes tenant BulkSMSBD keys or their sealed values", async () => {
