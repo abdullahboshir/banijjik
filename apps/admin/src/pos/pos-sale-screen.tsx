@@ -21,6 +21,7 @@ export interface PosSaleScreenProps {
   readonly labels: PosLabels;
   readonly rows: readonly PosCatalogRow[];
   readonly onCloseRegister: () => void;
+  readonly canFindCustomer: boolean;
 }
 
 const TOUCH_TARGET_CLASS = "min-h-14";
@@ -93,7 +94,8 @@ function cartLineOf(
 
 /** Scan or type to find a product, tap to add it, then Pay; the receipt shows after a completed sale. */
 export function PosSaleScreen(props: PosSaleScreenProps): ReactElement {
-  const { organizationId, locationId, currency, locale, labels, rows, onCloseRegister } = props;
+  const { organizationId, locationId, currency, locale, labels, rows } = props;
+  const { onCloseRegister, canFindCustomer } = props;
   const [cart, dispatch] = useReducer(cartReducer, EMPTY_CART);
   const [paying, setPaying] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptModel | null>(null);
@@ -124,6 +126,7 @@ export function PosSaleScreen(props: PosSaleScreenProps): ReactElement {
         locale={locale}
         lines={cart.lines}
         labels={labels}
+        canFindCustomer={canFindCustomer}
         onPaid={handlePaid}
         onBack={() => setPaying(false)}
       />

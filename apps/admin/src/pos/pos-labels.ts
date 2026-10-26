@@ -71,6 +71,21 @@ export interface PosZReportLabels {
   readonly done: string;
 }
 
+export interface PosCustomerLabels {
+  readonly title: string;
+  readonly phone: string;
+  readonly find: string;
+  readonly noMatch: string;
+  readonly failed: string;
+  readonly remove: string;
+  readonly balance: string;
+  readonly creditUse: string;
+  readonly creditApplied: string;
+  readonly toPay: string;
+  readonly creditSale: string;
+  readonly creditSaleHint: string;
+}
+
 export interface PosLabels {
   readonly title: string;
   readonly pairTitle: string;
@@ -103,6 +118,7 @@ export interface PosLabels {
   readonly payLabels: PosPayLabels;
   readonly receiptLabels: PosReceiptLabels;
   readonly closeLabels: PosCloseLabels;
+  readonly customerLabels: PosCustomerLabels;
   readonly zReportLabels: PosZReportLabels;
   readonly closeRegister: string;
   readonly closeBlocked: string;
@@ -185,6 +201,22 @@ function zReportLabelsOf(t: Translator["t"]): PosZReportLabels {
     done: t("pos.z.done"),
   };
 }
+function customerLabelsOf(t: Translator["t"]): PosCustomerLabels {
+  return {
+    title: t("pos.customer.title"),
+    phone: t("pos.customer.phone"),
+    find: t("pos.customer.find"),
+    noMatch: t("pos.customer.noMatch"),
+    failed: t("pos.customer.failed"),
+    remove: t("pos.customer.remove"),
+    balance: t("pos.customer.balance"),
+    creditUse: t("pos.customer.creditUse"),
+    creditApplied: t("pos.customer.creditApplied"),
+    toPay: t("pos.customer.toPay"),
+    creditSale: t("pos.customer.creditSale"),
+    creditSaleHint: t("pos.customer.creditSaleHint"),
+  };
+}
 
 export function posLabelsOf(translator: Translator): PosLabels {
   const { t } = translator;
@@ -220,6 +252,7 @@ export function posLabelsOf(translator: Translator): PosLabels {
     payLabels: payLabelsOf(t),
     receiptLabels: receiptLabelsOf(t),
     closeLabels: closeLabelsOf(t),
+    customerLabels: customerLabelsOf(t),
     zReportLabels: zReportLabelsOf(t),
     closeRegister: t("pos.sale.closeRegister"),
     closeBlocked: t("pos.sale.closeBlocked"),

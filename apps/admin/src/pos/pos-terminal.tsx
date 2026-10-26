@@ -19,6 +19,7 @@ export interface PosTerminalProps {
   readonly currency: CurrencyCode;
   readonly locale: DisplayLocale;
   readonly labels: PosLabels;
+  readonly canFindCustomer: boolean;
 }
 
 /** The device cookie only reaches the API, so the first screen is decided in the browser. */
@@ -32,7 +33,7 @@ type TerminalView =
   | { readonly kind: "closing"; readonly sellingView: SellingView };
 
 export function PosTerminal(props: PosTerminalProps): ReactElement {
-  const { organizationId, currency, locale, labels } = props;
+  const { organizationId, currency, locale, labels, canFindCustomer } = props;
   const [view, setView] = useState<TerminalView>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -80,6 +81,7 @@ export function PosTerminal(props: PosTerminalProps): ReactElement {
       currency={currency}
       locale={locale}
       labels={labels}
+      canFindCustomer={canFindCustomer}
       onRetry={() => setAttempt((count) => count + 1)}
       onPair={handlePair}
       onOpen={handleOpen}
@@ -96,6 +98,7 @@ interface TerminalScreenProps {
   readonly currency: CurrencyCode;
   readonly locale: DisplayLocale;
   readonly labels: PosLabels;
+  readonly canFindCustomer: boolean;
   readonly onRetry: () => void;
   readonly onPair: (pairingCode: string) => Promise<void>;
   readonly onOpen: (openingFloat: Money) => Promise<void>;
@@ -162,6 +165,7 @@ function TerminalScreen(props: TerminalScreenProps): ReactElement {
       currency={currency}
       locale={locale}
       labels={labels}
+      canFindCustomer={props.canFindCustomer}
       rows={view.rows}
       onCloseRegister={() => props.onStartClose(view)}
     />

@@ -25,12 +25,16 @@ export async function PosPage(props: { readonly orgSlug: string }): Promise<Reac
     return <EmptyState kind="noPermission" message={translator.t("state.permissionDenied")} />;
   }
   const currency = await loadCurrency(access);
+  const canFindCustomer =
+    holdsPermission(access.config.permissions, PERMISSION_KEY.CONTACT_CONTACT_READ) &&
+    holdsPermission(access.config.permissions, PERMISSION_KEY.PAYMENT_STORE_CREDIT_READ);
   return (
     <PosTerminal
       organizationId={access.organization.organizationId}
       currency={currency}
       locale={translator.locale}
       labels={posLabelsOf(translator)}
+      canFindCustomer={canFindCustomer}
     />
   );
 }

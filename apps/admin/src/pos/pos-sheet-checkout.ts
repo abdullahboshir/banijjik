@@ -1,3 +1,4 @@
+import type { Money } from "@banijjik/contracts/payment";
 import type { PosSaleResponse } from "@banijjik/contracts/pos";
 import { useRef, useState } from "react";
 import { attemptFor, type CheckoutAttempt } from "./attempt-key";
@@ -6,10 +7,16 @@ import { createSale } from "./pos-api";
 import { buildSaleBody } from "./pos-sale-body";
 import type { TenderPlan } from "./till-payment";
 
+/** Who the sale is for and the store credit it uses; both null for an anonymous cash sale. */
+export interface SaleCustomerInput {
+  readonly contactId: string | null;
+  readonly storeCreditUse: Money | null;
+}
+
 export interface SheetCheckout {
   readonly pending: boolean;
   readonly saleFailed: boolean;
-  readonly confirm: (plan: TenderPlan) => Promise<void>;
+  readonly confirm: (plan: TenderPlan, customer: SaleCustomerInput) => Promise<void>;
 }
 
 /**
@@ -25,9 +32,15 @@ export function useSheetCheckout(
   const [saleFailed, setSaleFailed] = useState(false);
   const attemptRef = useRef<CheckoutAttempt | null>(null);
 
-  async function confirm(plan: TenderPlan): Promise<void> {
+  async function confirm(plan: TenderPlan, customer: SaleCustomerInput): Promise<void> {
     if (!plan.ok) return;
-    const body = buildSaleBody({ lines, payments: plan.payments, cashTendered: plan.cashTendered });
+    const body = buildSaleBody({
+      lines,
+      payments: plan.payments,
+      cashTendered: plan.cashTendered,
+      contactId: customer.contactId,
+      storeCreditUse: customer.storeCreditUse,
+    });
     const attempt = attemptFor(attemptRef.current, JSON.stringify(body));
     attemptRef.current = attempt;
     setPending(true);
