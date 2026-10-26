@@ -16,3 +16,6 @@ Branch `s/M.6c-ui-storefront-account`, rebased by the lead onto `main 069b48a` (
 - Deviation 1: `VALIDATION_ERROR` answers 400 in this codebase (`error-code.ts`). The test name says 400. Accepted.
 - Deviations 2–6 (draft save maps value errors too, client checks required fields only, no upazila flag, `@banijjik/ids` to dependencies, `@banijjik/ui/markdown` subpath). Accepted.
 - Known gaps "clearing an optional field", "rejection reasons as raw keys", "APPROVED listing read-only", "lists refresh on the next visit", "idempotency key per unlock press": accepted as follow-ups. Write each in the STATUS M.6 row. They need API decisions, not code here.
+
+## R2 (lead, 2026-10-26)
+All three items are fixed: both C7 browser tests pass on CI; the CI-measured sizes are in the handoff (storefront 151.0–153.8 KiB of 170, admin `website/pages` 169 KiB of 180 after the lazy preview); the photo upload shows only when the policy allows it (`photo-upload.test.ts`). Lead fix at merge: removed a leftover "publish diagnostics" debug write from `website-pages.browser.test.ts`. **Accepted.**
