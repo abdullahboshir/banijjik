@@ -60,6 +60,13 @@ const ENTRY_DEFINITIONS: readonly EntryDefinition[] = [
     iconKey: "user",
     permission: PLATFORM_PERMISSION_KEY.OPERATOR_READ,
   },
+  {
+    menuKey: "sms",
+    labelKey: "platform.nav.sms",
+    href: "/sms-gateway",
+    iconKey: "bell",
+    permission: PLATFORM_PERMISSION_KEY.SMS_READ,
+  },
 ];
 
 /** The entries this operator may open, in menu order. The permissions come from `GET /platform/me`. */

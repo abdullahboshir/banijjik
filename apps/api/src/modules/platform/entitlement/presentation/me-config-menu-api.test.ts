@@ -44,6 +44,8 @@ const TAX_CLASSES_MENU_KEY = "pricing.taxClasses";
 const SALES_ORDERS_MENU_KEY = "sales.orders";
 // Returns (card 3.5b B) sit right after orders for every role that reads returns.
 const SALES_RETURNS_MENU_KEY = "sales.returns";
+// The SMS gateway settings page sits right after returns for the owner (card M.9 A2).
+const SMS_GATEWAY_MENU_KEY = "sms.gateway";
 const POS_REGISTER_MENU_KEY = "pos.register";
 
 const READ_ONLY_SETTINGS_MENU_KEYS = [
@@ -87,6 +89,7 @@ describe("the settings menu of the organization module", () => {
       REPORT_MENU_KEY,
       SALES_ORDERS_MENU_KEY,
       SALES_RETURNS_MENU_KEY,
+      SMS_GATEWAY_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
@@ -130,6 +133,7 @@ describe("the settings menu of the organization module", () => {
       REPORT_MENU_KEY,
       SALES_ORDERS_MENU_KEY,
       SALES_RETURNS_MENU_KEY,
+      SMS_GATEWAY_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
@@ -157,6 +161,7 @@ describe("the settings menu of the organization module", () => {
       REPORT_MENU_KEY,
       SALES_ORDERS_MENU_KEY,
       SALES_RETURNS_MENU_KEY,
+      SMS_GATEWAY_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
       CATALOG_MENU_KEYS.categories,
       EXPENSE_MENU_KEYS.expenses,
