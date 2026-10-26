@@ -43,6 +43,22 @@ let paymentId: string;
 const SALON_SLUG = "salon-payment";
 const SALON_PATH = `/${SALON_SLUG}`;
 
+/**
+ * Tomorrow 10:00 in Dhaka. "Now + 24 h" landed near Dhaka midnight on evening runs, so the
+ * service ran past the 23:59 closing time and the booking was refused (3.37).
+ */
+function tomorrowMorningInDhaka(): string {
+  const todayInDhaka = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dhaka",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const tomorrow = new Date(`${todayInDhaka}T00:00:00Z`);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  return `${tomorrow.toISOString().slice(0, 10)}T10:00:00+06:00`;
+}
+
 beforeAll(async () => {
   stack = await startBrowserStack();
   await publishTemplate(stack, "SALON");
@@ -159,7 +175,7 @@ beforeAll(async () => {
   contactId = contactData.data.contactId;
 
   // Create booking
-  const startsAt = new Date(Date.now() + 86400000).toISOString();
+  const startsAt = new Date(tomorrowMorningInDhaka()).toISOString();
   const bookingRes = await callApi(`/orgs/${organizationId}/bookings`, {
     cookies: owner.cookies,
     body: {
