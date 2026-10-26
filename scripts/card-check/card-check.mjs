@@ -148,9 +148,12 @@ export function evaluateCard(facts) {
     {
       name: "rebased on origin/main",
       ok: facts.isOnLatestMain,
+      // The lead brings a branch up to date when it merges (guide §10). Sessions that rebased
+      // every time main moved spent hours in CI for nothing (card 3.45), so this never fails.
+      isInfo: true,
       detail: facts.isOnLatestMain
         ? "yes"
-        : "origin/main is not an ancestor: git rebase origin/main",
+        : "main moved since your base: fine, do not rebase only for this; the lead merges it",
     },
     {
       name: "handoff written",
@@ -176,11 +179,14 @@ export function evaluateCard(facts) {
   ];
 }
 
+function labelOf(check) {
+  if (check.ok) return "PASS";
+  return check.isInfo ? "INFO" : "FAIL";
+}
+
 export function formatReport(facts, checks) {
-  const passed = checks.every((check) => check.ok);
-  const lines = checks.map(
-    (check) => `${check.ok ? "PASS" : "FAIL"}  ${check.name}: ${check.detail}`,
-  );
+  const passed = checks.every((check) => check.ok || check.isInfo);
+  const lines = checks.map((check) => `${labelOf(check)}  ${check.name}: ${check.detail}`);
   const verdict = passed
     ? `card:check PASSED for ${facts.branch} at ${facts.headSha.slice(0, 8)}`
     : "card:check FAILED: the card is not done. Fix every FAIL line and run it again.";

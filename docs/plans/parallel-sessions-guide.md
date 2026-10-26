@@ -89,7 +89,7 @@ A session is finished only when all of these hold. "Done" without a green CI run
 1. Every test the plan lists for this part exists. Their names go in the handoff.
 2. **Before the first push, run locally** (card 3.44; Docker and Redis 6380 run on this PC again): the test files you changed or added, lint and typecheck of the workspaces you touched, and, for a screen card, the browser suite of that app (`VITEST_MAX_WORKERS=1 npm run test:browser` in `apps/admin`, `apps/platform` or `apps/storefront`). Each CI run costs about 15 minutes; a failure found locally costs one.
 3. Every change is committed. `git status` shows nothing.
-4. Rebase on the latest main: `git rebase main` (local) or onto `origin/main` (cloud). Resolve conflicts in add-only files by keeping both sides.
+4. Rebase on the latest main **once, before your first push**: `git rebase origin/main`. Resolve conflicts in add-only files by keeping both sides. After that, do not rebase again only because main moved: `card:check` shows it as INFO, and the lead brings the branch up to date when it merges (card 3.45). Rebase again only when the lead asks or when your code needs something new from main.
 5. Push the branch: `git push -u origin <branch>`. Pushing card branches needs no extra permission (owner, 2026-10-22). **Never push `main`.** CI runs on the push. Wait for it: `gh run list --branch <branch>`, then `gh run view <run> --json jobs`. If it fails, read the failed job's log, fix, commit, push again.
 6. Write `docs/handoffs/<card>-<api|ui>.md`:
    - what was built, file by file area

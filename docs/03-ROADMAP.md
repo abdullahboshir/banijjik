@@ -221,6 +221,7 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **3.42 POS till leftovers** (Phase 3 review F3, T2 UI: held carts, till returns and the price-override screen on the till; a browser test of the credit-sale refusal).
 **3.43 API correctness leftovers** (Phase 3 review F4: a reversed till cash payment leaves expected cash; the cashier loses contact create and update; `approverUserId` → `approverMemberId`; typed event payloads instead of `as unknown as`; `placeOrder` keeps one idempotency key across retries).
 **3.44 Docs-only pushes skip CI** (2026-10-26, lead card, T3: `paths-ignore: docs/**`; `card:check` reads the run of the last code commit; local tests before the first push).
+**3.45 card:check does not chase main** (2026-10-26, lead card, T3: the rebase check is INFO; sessions rebase once before the first push, the lead updates branches at merge).
 **3.11 Staff commission** (OPTIONAL `commission`, ADR-100: rules per member or role and per offering, category or kind; performer on booking and order lines; append-only accruals; payouts posted through `accounting`).
 - Phase done: a salon, a gym and a coaching centre from templates take bookings and enrollments, sell services and products at the counter, collect fees and dues, and pay staff commission, with correct numbers in reports; **and** a product seller runs a full day (stock in → POS + online orders → returns → day close), including loose and packed sale from one stock. No industry-specific code.
 

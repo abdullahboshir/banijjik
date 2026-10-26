@@ -46,10 +46,14 @@ describe("card-check", () => {
     expect(failedCheckNames(finishedCard({ remoteSha: null }))).toEqual(["pushed"]);
   });
 
-  it("fails when the branch is not rebased on origin/main", () => {
-    expect(failedCheckNames(finishedCard({ isOnLatestMain: false }))).toEqual([
-      "rebased on origin/main",
-    ]);
+  it("reports a branch behind origin/main as INFO and still passes", () => {
+    const facts = finishedCard({ isOnLatestMain: false });
+
+    const report = formatReport(facts, evaluateCard(facts));
+
+    expect(report.passed).toBe(true);
+    expect(report.text).toContain("INFO  rebased on origin/main: main moved since your base");
+    expect(report.text).not.toContain("FAIL");
   });
 
   it("fails when CI is red, still running, missing or unreadable", () => {
