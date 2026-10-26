@@ -1,17 +1,14 @@
-import { DashboardFrame } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import { getTranslator } from "../../../src/lib/i18n/get-translator";
-import { requireOrgAccess } from "../../../src/shell/org-access";
+import { ReportHomePage } from "../../../src/report/report-home-page";
 
-/** The business home: the greeting and the area where the "today" cards of card 3.10 will appear. */
+/** The business home: the greeting, then the "today" cards the API allows the caller to see (card 3.10). */
 export default async function OrganizationHomePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ orgSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<ReactElement> {
-  const { orgSlug } = await params;
-  const [{ t }, { me }] = await Promise.all([getTranslator(), requireOrgAccess(orgSlug)]);
-  return (
-    <DashboardFrame greeting={t("home.greeting", { name: me.name })} subtitle={t("home.ready")} />
-  );
+  const [{ orgSlug }, query] = await Promise.all([params, searchParams]);
+  return <ReportHomePage orgSlug={orgSlug} searchParams={query} />;
 }
