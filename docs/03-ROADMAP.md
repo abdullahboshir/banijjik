@@ -283,10 +283,10 @@ Before each card here: verify the provider's current docs and rules, then record
 What must be done before the pilot launch (6.6) with salons, gyms and coaching centres:
 - Phase 2 and Phase 3 in full.
 - From Phase 5: **5.1** (integration framework, enough for SMS provider credentials) and **5.13** (SMS notifications: appointment reminders, fee dues, messages to guardians).
-- A simple public **online booking page** per business (card **4.6**, below), instead of the full website of Phase 4.
+- The full tenant website of Phase 4 (4.1–4.5; ADR-150, owner 2026-10-26). Card 4.6 is folded into 4.3 (proposed).
 - Phase 6 in full.
 
-After the pilot: the rest of Phase 4 and Phase 5 (courier, channels, inbox, bot). **Restaurant (second wave):** the kitchen capability of Phase 7 (order tickets to the kitchen, table service, split bills) is built before RESTAURANT is published.
+After the pilot: the rest of Phase 5 (courier, channels, inbox, bot). **Restaurant (second wave):** the kitchen capability of Phase 7 (order tickets to the kitchen, table service, split bills) is built before RESTAURANT is published.
 
 ## Phase 6: SaaS go-live
 **6.1 Signup + onboarding wizard** (package choice: Store / Chat / Shop / Bundle (14-day Bundle trial by default), and industry → defaults → package-specific first steps → first sale; package-aware dashboard home, ADR-032).

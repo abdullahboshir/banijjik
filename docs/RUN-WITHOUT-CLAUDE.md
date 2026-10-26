@@ -29,7 +29,7 @@ Two rules replace the Opus-only rules of `AGENTS.md` "Session types" while no Cl
 - Paste-ready owner prompts (outside the repo): `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/owner-guide/` (one file per card part, with `lead-orchestra/rules.md` appended at the end).
 
 ## 3. Work queue (2026-10-26; the lead keeps it current in LEAD-STATE §4)
-Order follows the launch track (ADR-099): pilot with salons, gyms and coaching centres first, the full website and the bot after the pilot. "Plan" says whether `docs/plans/<card>.md` exists.
+Order follows the launch track (ADR-099 as amended by ADR-150): pilot with salons, gyms and coaching centres, each with its full website; the bot after the pilot. "Plan" says whether `docs/plans/<card>.md` exists.
 
 | # | Card | Tier | Plan | Starts when |
 |---|---|---|---|---|
@@ -40,16 +40,20 @@ Order follows the launch track (ADR-099): pilot with salons, gyms and coaching c
 | 5 | 3.42 POS till leftovers (held carts, till returns, price override) | T2 | **no** | after 3.43 if they share files |
 | 6 | Phase 3 close: re-check the review findings F1–F4 | review | n/a | 3.40–3.43 merged |
 | 7 | M.9 B owner's matrimony site live (domain, SMS live, backups, pilot) | checklist | yes (`M.9.md`) | owner's accounts ready (P5, P6) |
-| 8 | 4.6 simple online booking page | T2 | **no** | Phase 3 closed |
-| 9 | 5.1 integration framework (credentials, webhooks, retries, token health) | T1 | **no** | Phase 3 closed |
-| 10 | 5.13 notifications (SMS reminders, dues, guardians) | T2 | **no** | 5.1 merged |
-| 11 | 6.1 signup and onboarding wizard | T2 | **no** | 4.6 |
-| 12 | 6.2 SaaS billing | T1 | **no** | 6.1 |
-| 13 | 6.3 hardening, 6.4 performance, 6.5 ops | T1 / T2 | **no** | before 6.6 |
-| 14 | 6.6 pilot launch | owner | n/a | everything above |
-| later | Phase 4 rest (4.1–4.5, ADR-149), Phase 5 rest (courier, channels, inbox, bot), Phase 7, Phase 8 | | | after the pilot |
+| 8 | 4.1 theme engine (tokens, sections with variants, page JSON, lock levels; each site its own design copy, ADR-149) | T1 (proposed: every later website card builds on it) | **no** | Phase 3 closed |
+| 9 | 4.2 storefront app (subdomain and custom domain → organization, server rendering, SEO, cache) | T1 (proposed: tenant resolution from the host) | **no** | 4.1 Part A merged |
+| 10 | 4.3 shop and booking flow (all kinds; server-side re-pricing; booking, enrollment and order tracking; takes over 4.6) | T1 | **no** | 4.2 |
+| 11 | 4.4 platform template builder (per industry; design one business's site; same-look warning) | T2 | **no** | 4.1 |
+| 12 | 4.5 tenant website editor (choose template, edit within limits, preview, publish, rollback) | T2 | **no** | 4.1, 4.4 |
+| 13 | 5.1 integration framework (credentials, webhooks, retries, token health) | T1 | **no** | Phase 3 closed; may run beside Phase 4 |
+| 14 | 5.13 notifications (SMS reminders, dues, guardians) | T2 | **no** | 5.1 merged |
+| 15 | 6.1 signup and onboarding wizard | T2 | **no** | 4.5 |
+| 16 | 6.2 SaaS billing | T1 | **no** | 6.1 |
+| 17 | 6.3 hardening, 6.4 performance, 6.5 ops | T1 / T2 | **no** | before 6.6 |
+| 18 | 6.6 pilot launch | owner | n/a | everything above |
+| later | Phase 5 rest (courier, channels, inbox, bot), Phase 7, Phase 8 | | | after the pilot |
 
-**Owner decision needed before #8:** the launch track above (booking page, no full website) or the full website (Phase 4) first. Until the owner answers, plan #3–#7 only.
+**Owner decision (2026-10-26, ADR-150):** the full tenant website (Phase 4) is built before the pilot; 4.6 is folded into 4.3 (proposed). Phase 4 design inputs: `docs/06-AUTOMATION-AND-ACCOUNTS.md` §8, ADR-029, ADR-031, ADR-114, ADR-149, ADR-150, card 3.12 (branding) and the M.6 storefront that already exists in `apps/storefront`. Plan 4.1 before any other Phase 4 card: its token and section model is what 4.2–4.5 consume.
 
 Phase 5 bot cards (5.6–5.9) are the riskiest work left. Before planning them, the planner reads `docs/08-UNIVERSAL-BOT.md` and ADR-035 in full; 5.6 (the eval harness with the D5 golden conversations) comes before any bot code.
 
