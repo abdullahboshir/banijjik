@@ -1,9 +1,9 @@
 # Handoff: card M.6 part c (signed-in storefront pages, admin page editor) · IMPLEMENT · 2026-10-25
 
 - **Branch:** `s/M.6c-ui-storefront-account`, from `origin/main` (`97b16016`, M.6b merged), rebased on `origin/main` (`069b48a6`) before the push.
-- **Model:** Claude Haiku 5.5 (Claude Code). The run was cut off once and resumed from the committed state.
+- **Model:** Claude Haiku 5.5 (Claude Code). Review R1 by the lead, then a fix round (see Review R1 below).
 - **Plan:** `docs/plans/M.6.md`: decisions 15 to 17, the "Refresh M.6c" section (C1 to C8), the M.6c files and test list.
-- **CI:** see the STATUS row (run link added after the green run).
+- **CI:** green on run 40235017118 (head `47067c95`, verify and browser jobs).
 
 ## Done
 
@@ -30,38 +30,48 @@
 
 | Plan test | Where | Status |
 |---|---|---|
-| unit: field renderer (each type, GEO_BD options, required check per step) | `apps/storefront/src/fields/field-rules.test.ts` (7 tests) | ran locally: 7 passed |
-| C2 API test | `directory-api.test.ts` `submitting a listing without a required field answers 400 with the field path` | ran locally: 1 passed (and the whole file: 9 of 9 with the website file, see below) |
-| admin unit: draft validation and save body | `apps/admin/src/website/site-page-draft.test.ts` (3 tests) | ran locally: 3 passed |
-| API: directory, website, menu, entitlement files (after the rebase) | `directory-api.test.ts`, `website-api.test.ts`, `me-config-menu-api.test.ts`, `entitlement-api.test.ts` | ran locally: 23 of 23 (menu and entitlement), 18 of 19 with a 30 s timeout in the website file during a parallel typecheck, then 10 of 10 alone |
-| browser: fill biodata, submit, staff approve, unlock, buy, report, block, export, erase asks for the code | **not written** | see known gaps |
-| browser: admin edit and publish, storefront shows it, stale save shows the conflict, staff read-only | **not written** | see known gaps |
-| budgets: storefront ≤ 170 KiB, admin route ≤ 180 KiB | the CI browser suite measures the storefront routes it already tests (`/`, `/search`, `/listings/<n>`, `/sign-in`) | see measured sizes |
+| unit: field renderer (each type, GEO_BD options, required check per step) | `apps/storefront/src/fields/field-rules.test.ts` (7 tests) | local: 7 passed; CI green |
+| unit: photo upload only when the photo policy allows it | `apps/storefront/src/account/photo-upload.test.ts` | local: 1 passed; CI green |
+| C2 API test | `directory-api.test.ts` `submitting a listing without a required field answers 400 with the field path` | local: passed |
+| admin unit: draft validation and save body | `apps/admin/src/website/site-page-draft.test.ts` (3 tests) | local: 3 passed |
+| API: directory, website, menu, entitlement files | `directory-api.test.ts`, `website-api.test.ts`, `me-config-menu-api.test.ts`, `entitlement-api.test.ts` | local: 23 of 23 (menu and entitlement); website 10 of 10 alone |
+| browser (storefront): fill the biodata steps, save a draft, submit with consents, SUBMITTED; staff approval puts the listing in search; unlock with credits; buy a pack (PENDING); report, block; export downloads JSON; erase asks for the code | `apps/storefront/src/account-pages.browser.test.ts` | CI green (run 40235017118) |
+| browser (admin): edit and publish a page, the storefront read shows it | `apps/admin/src/website/website-pages.browser.test.ts` | CI green |
+| browser (admin): a stale save shows the conflict message | same file | CI green |
+| browser (admin): staff sees the editor read-only | same file (invites a staff member through the UI) | CI green |
+| budgets: storefront routes ≤ 170 KiB | `apps/storefront/src/storefront.browser.test.ts` | CI green |
+| budget: admin `website/pages` ≤ 180 KiB | `apps/admin/src/website/website-pages.browser.test.ts` | CI green |
 
-Local runs: `apps/storefront` `next build` passes; `eslint` (the pre-commit rules) passes for storefront and admin files; `tsc --noEmit` passes for storefront and admin.
+## Measured sizes (CI run 40235017118; KiB gzip of the scripts in the HTML, the same method as M.6b)
 
-## Measured sizes
+- Storefront: `/` 151.0, `/search` 151.0, `/listings/BIO-1` 153.8, `/sign-in` 152.7, `/my/listing` 152.4, `/my/credits` 153.0, `/my/connections` 151.3, `/my/account` 153.0. Budget 170.
+- Admin `/acme/website/pages`: 169 KiB. Budget 180. The Markdown preview loads after the page is drawn (`markdown-preview-lazy.tsx`); before that change the route measured 212.7 KiB.
 
-- Not measured per route. The CI browser budget test (M.6b, gzip of the HTML scripts, 170 KiB) gives the authoritative numbers; it does not cover the new routes `/my/*` yet.
-- Local attempt: with the API unreachable, the HTML of an error shell referenced 6 scripts totalling 167.6 KiB gzip. This shell is not a route; it only shows the shared layout is close to the 170 KiB budget. The M.6b CI run measured 149 KiB for `/`. Watch this number in CI.
-- Admin `website/pages` route: not measured locally (admin build not run).
+## Review R1 (lead merge check R1) and the fix round
+
+The three items of R1 are fixed:
+
+1. **C7 browser tests:** written and green on CI (see the table). Two helpers were fixed on the way: the admin publish switch is confirmed checked before the save (the first CI run saved an unpublished page, so the storefront read was 404), and form values are set through the element's own native setter (`account-pages.browser.test.ts`).
+2. **C8 route sizes:** the four `/my/*` routes are in the storefront budget test (measured with the customer's cookie); the admin `website/pages` route is in the admin browser test. Numbers above.
+3. **Decision 15 photo upload:** `PhotoUploadInput` (`apps/storefront/src/account/photo-upload-input.tsx`) is shown on the last step when the photo policy is not `NONE` and the listing exists (the upload attaches to an existing listing). It posts multipart field `file` to `/my/listing/photos` and reloads the page, because the upload changes the listing version. Unit test: `shows the photo upload only when the photo policy allows it`.
+
+Also in the fix round: the admin test uses the `acme` business (the invitation helper in `browser-helpers.ts` opens `/acme` only). Other jobs: the `payments` admin browser test failed on earlier heads (a booking 409 near midnight); card 3.37 fixed it on main and this branch is rebased on that main.
+
+## Accepted follow-ups (written to the STATUS M.6 row, not built here)
+
+- Clearing an optional field keeps the old value (the draft save merges `customFields`); needs an API decision.
+- Rejection reasons are shown as raw keys (no label read for the owner); needs an API decision.
+- An APPROVED listing is read-only in the storefront (the API sends an edit back to review).
+- The connections list refreshes on the next visit, not after an unlock or block.
+- Each unlock press sends its own `Idempotency-Key` (no reuse across presses).
 
 ## Deviations from the plan (and why)
 
-1. **Error code and status for the field problem.** The plan says `422 VALIDATION_ERROR`. This codebase maps `VALIDATION_ERROR` to 400 (`packages/contracts/src/errors/error-code.ts`), and the request validation uses the same code. The implementation uses the code and its status (400). The lead should confirm.
-2. **Draft save also converts the value error.** The plan names only the submit. The draft save (`UpsertMyListingUseCase`) also parsed with `.parse` and could return a 500 for a wrong value type. It now uses the same mapping. The plan's "the same shape the draft save uses" assumed this already existed.
-3. **Client checks are the required check only.** The plan says the shared value schema for client checks. `buildCustomFieldValuesSchema` needs the full field rule (visibility, sensitivity, search flags), which the public form read does not carry. The storefront checks required fields per step; the API checks everything else and its field problems are shown on their steps.
-4. **Upazila is not drawn.** The plan says upazila "when the field asks for it". No field definition carries such a flag, so GEO_BD shows division and district only.
-5. **`@banijjik/ids` moves to dependencies** (see the lock note above).
-6. **`renderMarkdown` on a subpath** (`@banijjik/ui/markdown`), not the main barrel: the barrel is loaded by every page.
-
-## Known gaps (for review)
-
-- **Browser suites (plan tests) not written.** The CI browser suites for the M.6c flows and the admin editor are missing. The unit and API tests listed above exist and passed locally.
-- **Photo upload is not built.** The plan asks for the upload field when `photoPolicy` is not `NONE`. The default policy is `NONE` (no upload), so nothing is missing at the default. Upload is a follow-up.
-- **Clearing an optional field does not clear it on the server.** The draft save merges the customFields (`{ ...existing, ...parsed }`), and the storefront leaves blank answers out of the payload. A cleared optional value keeps its old value. This needs an API decision (for example, an explicit null) before it is fixed.
-- **Rejection reasons are shown as the raw keys** from `listing.rejection.reasonKeys`. The public form read has no reason labels; the note is shown. Labels need a read the owner may use (an API decision).
-- **Pending confirmation text.** The unlock, block and report buttons show a text after success; they do not refresh the connections list until the next visit.
-- **`/my/listing` status for APPROVED listings is read-only.** An approved listing that the owner changes goes back to review in the API; the storefront does not offer that edit yet.
-- **Idempotency keys:** each unlock press sends its own key (no retry reuse on the listing page); the purchase form keeps one key per draft until success.
-- **Admin editor preview** shows the same rules as the storefront (no raw HTML). Images and links to `http`/`https`/`mailto` only.
+1. **Error code and status for the field problem.** The plan says `422 VALIDATION_ERROR`. This codebase maps `VALIDATION_ERROR` to 400 (`packages/contracts/src/errors/error-code.ts`). Accepted by the lead (R1).
+2. **Draft save also converts the value error.** The plan names only the submit. The draft save also parsed with `.parse` and could return a 500. It now uses the same mapping. Accepted by the lead.
+3. **Client checks are the required check only.** The shared value schema needs the full field rule, which the public form read does not carry; the API's field problems are shown on their steps. Accepted.
+4. **Upazila is not drawn.** No field definition carries an upazila flag; GEO_BD shows division and district. Accepted.
+5. **`@banijjik/ids` moves to dependencies** (the browser code creates Idempotency-Keys); the lock change only mirrors that move and the `markdown-it` move into `packages/ui`. No new external package. Accepted.
+6. **`renderMarkdown` on a subpath** (`@banijjik/ui/markdown`), not the main barrel. Accepted.
+7. **Photo upload waits for the listing** (see item 3 above).
+8. **The admin page preview is lazy-loaded** so the route stays within 180 KiB (see the sizes above).
