@@ -9,6 +9,7 @@ import type {
   PosCaller,
   PosCatalogReader,
   PosCurrencyReader,
+  PosDeviceCounter,
   PosDeviceLimit,
   PosLocationReader,
   PosPaymentPort,
@@ -58,6 +59,7 @@ export type {
   PosCatalogReader,
   PosCollectPaymentInput,
   PosCurrencyReader,
+  PosDeviceCounter,
   PosDeviceLimit,
   PosLocationReader,
   PosPaymentPort,
@@ -89,6 +91,7 @@ export interface PosTenantDependencies {
   readonly catalog: PosCatalogReader;
   readonly rateLimit: PosRateLimit;
   readonly deviceLimit: PosDeviceLimit;
+  readonly deviceCounter: PosDeviceCounter;
   /** Keys the pairing-code HMAC (`OTP_SECRET`). Never logged. */
   readonly pairingSecret: string;
   readonly isSecureCookies: boolean;
@@ -117,7 +120,7 @@ function buildSessionAndDeviceUseCases(input: {
     }),
     revokeDevice: new RevokePosDeviceUseCase(deviceWrite),
     listDevices: new ListPosDevicesUseCase({ devices, clock }),
-    getDeviceUsage: new GetPosDeviceUsageUseCase({ devices }),
+    getDeviceUsage: new GetPosDeviceUsageUseCase({ counter: dependencies.deviceCounter }),
     openSession: new OpenPosSessionUseCase({
       sessions,
       caller: dependencies.caller,
@@ -197,4 +200,13 @@ export function buildPosRouter(dependencies: PosTenantDependencies): Router {
     idempotency: dependencies.idempotency,
     requireDevice: requirePosDevice({ devices, clock }),
   });
+}
+
+/**
+ * ACTIVE devices within the current request's scope. routes/pos-adapters.ts runs it with every
+ * location of the organization to build the `PosDeviceCounter` the limit and the usage read use.
+ */
+export function buildPosDeviceCountReader(): { countActive(): Promise<number> } {
+  const devices = new MongoPosDeviceRepository();
+  return { countActive: () => devices.countActive() };
 }

@@ -31,6 +31,7 @@ import {
 } from "../pairing-secrets.js";
 import type {
   Page,
+  PosDeviceCounter,
   PosDeviceLimit,
   PosDeviceRepository,
   PosLocationReader,
@@ -108,7 +109,7 @@ export class CreatePosDeviceUseCase {
       now,
     });
     await unitOfWork.run(async () => {
-      await deviceLimit.assertCanAdd(input.organizationId, () => devices.countActive());
+      await deviceLimit.assertCanAdd(input.organizationId);
       await devices.insert(device);
       await audit.record({
         action: AUDIT_ACTION.POS_DEVICE_CREATED,
@@ -247,9 +248,9 @@ export class ListPosDevicesUseCase {
 
 /** `GET /pos/devices/usage`: ACTIVE devices of the whole organization (the number the limit counts). */
 export class GetPosDeviceUsageUseCase {
-  constructor(private readonly dependencies: Pick<DeviceWriteDependencies, "devices">) {}
+  constructor(private readonly dependencies: { readonly counter: PosDeviceCounter }) {}
 
-  async execute(): Promise<PosDeviceUsageResponse> {
-    return { activeDeviceCount: await this.dependencies.devices.countActive() };
+  async execute(organizationId: OrganizationId): Promise<PosDeviceUsageResponse> {
+    return { activeDeviceCount: await this.dependencies.counter.countActive(organizationId) };
   }
 }

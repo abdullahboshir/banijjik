@@ -139,7 +139,8 @@ export class PosController {
   };
 
   readonly getDeviceUsage: RequestHandler = async (_request, response) => {
-    sendData(response, await this.dependencies.getDeviceUsage.execute());
+    const { organizationId } = readTenantCaller();
+    sendData(response, await this.dependencies.getDeviceUsage.execute(organizationId));
   };
 
   readonly openSession: RequestHandler = async (request, response) => {

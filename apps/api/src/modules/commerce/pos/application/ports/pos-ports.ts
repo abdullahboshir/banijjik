@@ -28,7 +28,15 @@ export interface Page<T> {
 
 export interface PosDeviceLimit {
   /** Inside the caller's transaction: lock, count, refuse with LIMIT_REACHED at the package limit. */
-  assertCanAdd(organizationId: OrganizationId, countActive: () => Promise<number>): Promise<void>;
+  assertCanAdd(organizationId: OrganizationId): Promise<void>;
+}
+
+/**
+ * ACTIVE devices at every location of the organization, whatever locations the caller manages:
+ * the package limit counts them all (plan 3.39 decisions 1 and 4).
+ */
+export interface PosDeviceCounter {
+  countActive(organizationId: OrganizationId): Promise<number>;
 }
 
 export interface PosDeviceRepository {
@@ -43,6 +51,7 @@ export interface PosDeviceRepository {
     readonly page: number;
     readonly limit: number;
   }): Promise<Page<PosDevice>>;
+  /** Within the caller's location scope; `PosDeviceCounter` is the organization-wide count. */
   countActive(): Promise<number>;
   /** Stores the secret and clears the code in one conditional write; false when the code was used or has expired. */
   claimPairing(input: {

@@ -61,6 +61,19 @@ async function asShop(world: TwoOrganizations): Promise<void> {
   await setOrgPackages(world.organizationA, PACKAGE_KEY.SHOP);
 }
 
+/** A MANAGER assigned only at `locationId`: the location plugin hides every other location from them. */
+async function managerAt(world: TwoOrganizations, locationId: string) {
+  const roleId = await findSystemRoleId(
+    harness.connections,
+    world.organizationA,
+    SYSTEM_ROLE_KEY.MANAGER,
+  );
+  const member = await addMemberWithAssignments(harness.app, world.organizationA, [
+    { locationId, roleId },
+  ]);
+  return member.actor;
+}
+
 async function activeDeviceCount(organizationId: string): Promise<number> {
   return harness.connections.tenantShared
     .collection("pos_devices")
@@ -81,6 +94,28 @@ describe("POS device package limit", () => {
       code: "LIMIT_REACHED",
       details: { limitKey: "posDevices", limit: 1 },
     });
+  });
+
+  it("a manager of one location cannot pass the organization's limit with devices at another location", async () => {
+    const world = await aWorld();
+    await asShop(world);
+    const first = await addDevice(world, world.locationA1, "Counter");
+    const manager = await managerAt(world, world.locationA2);
+
+    const second = await manager.call("post", posPath(world.organizationA, "/devices"), {
+      locationId: world.locationA2,
+      name: "Back",
+    });
+    const usage = await manager.call("get", posPath(world.organizationA, "/devices/usage"));
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(422);
+    expect(second.body.error).toMatchObject({
+      code: "LIMIT_REACHED",
+      details: { limitKey: "posDevices", limit: 1 },
+    });
+    expect(usage.body.data).toEqual({ activeDeviceCount: 1 });
+    expect(await activeDeviceCount(world.organizationA)).toBe(1);
   });
 
   it("a revoked device frees its slot for a new one", async () => {
