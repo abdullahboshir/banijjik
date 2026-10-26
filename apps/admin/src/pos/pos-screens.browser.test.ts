@@ -1,4 +1,8 @@
-import type { PosSessionListResponse, PosZReport } from "@banijjik/contracts/pos";
+import {
+  POS_SESSION_STATUS,
+  type PosSessionListResponse,
+  type PosZReport,
+} from "@banijjik/contracts/pos";
 import type { ElementHandle, Page } from "puppeteer-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bodyText, gotoWhenHydrated, message, waitForText } from "../test-support/browser-helpers";
@@ -193,10 +197,12 @@ async function closeRegister(page: Page): Promise<void> {
 /** The closed register of this till: the newest CLOSED session at this location. */
 async function closedSessionId(): Promise<string> {
   const listed = await apiGet<{ data: PosSessionListResponse }>(
-    `/orgs/${organizationId}/pos/sessions?locationId=${locationId}&status=CLOSED&limit=5`,
+    `/orgs/${organizationId}/pos/sessions?locationId=${locationId}&limit=20`,
   );
-  const session = listed.data.items[0];
-  if (session === undefined) throw new Error("no closed register at the shop");
+  const session = listed.data.items.find((item) => item.status === POS_SESSION_STATUS.CLOSED);
+  if (session === undefined) {
+    throw new Error(`no closed register at the shop: ${JSON.stringify(listed).slice(0, 400)}`);
+  }
   return session.posSessionId;
 }
 
