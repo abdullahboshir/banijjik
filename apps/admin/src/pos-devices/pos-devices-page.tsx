@@ -94,7 +94,7 @@ function PosDevicesBody(props: BodyProps): ReactElement {
   const rows = toDeviceRows(data.devices.data, {
     locationNames: locationNamesOf(data.locations),
     t,
-    locale,
+    format: { locale, timeZone: access.timeZone },
   });
   const canManage = access.canWrite;
   return (

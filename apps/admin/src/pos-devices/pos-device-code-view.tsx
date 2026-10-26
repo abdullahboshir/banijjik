@@ -24,7 +24,11 @@ export function PosDeviceCodeView({
 }: PosDeviceCodeViewProps): ReactElement {
   const { t, locale } = useTranslator();
   const expiresText = t("posDevices.code.expires", {
-    time: deviceTimeTextOf(created.pairingExpiresAt, locale),
+    // A client view: the person reads the expiry on the screen in front of them.
+    time: deviceTimeTextOf(created.pairingExpiresAt, {
+      locale,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }),
   });
   return (
     <div className="flex flex-col gap-4">

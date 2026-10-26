@@ -27,33 +27,47 @@ export function usageTextOf(used: number, limit: number | null, t: Translate): s
   return t("posDevices.usage", { used, limit });
 }
 
-/** A time of the device, in the user's language and the browser's time zone. */
-export function deviceTimeTextOf(isoTime: string, locale: Locale): string {
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(isoTime),
-  );
+/**
+ * How a device time is written. The list renders on the server, whose zone is not the business's,
+ * so the zone is always given: the business zone for the list, the browser's for the client sheet.
+ */
+export interface DeviceTimeFormat {
+  readonly locale: Locale;
+  readonly timeZone: string;
+}
+
+export function deviceTimeTextOf(isoTime: string, format: DeviceTimeFormat): string {
+  return new Intl.DateTimeFormat(format.locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: format.timeZone,
+  }).format(new Date(isoTime));
 }
 
 /**
  * The state of one device. A paired device stays paired; a waiting one still has its code; an
  * active device with no code and no pairing has an expired code and can only be revoked.
  */
-export function deviceStateTextOf(device: PosDeviceResponse, t: Translate, locale: Locale): string {
+export function deviceStateTextOf(
+  device: PosDeviceResponse,
+  t: Translate,
+  format: DeviceTimeFormat,
+): string {
   if (device.status === POS_DEVICE_STATUS.REVOKED) return t("posDevices.state.revoked");
-  if (device.pairedAt !== null) return pairedTextOf(device, t, locale);
+  if (device.pairedAt !== null) return pairedTextOf(device, t, format);
   if (device.isAwaitingPairing) return t("posDevices.state.waiting");
   return t("posDevices.state.codeExpired");
 }
 
-function pairedTextOf(device: PosDeviceResponse, t: Translate, locale: Locale): string {
+function pairedTextOf(device: PosDeviceResponse, t: Translate, format: DeviceTimeFormat): string {
   if (device.lastSeenAt === null) return t("posDevices.state.paired");
-  return t("posDevices.state.pairedSeen", { time: deviceTimeTextOf(device.lastSeenAt, locale) });
+  return t("posDevices.state.pairedSeen", { time: deviceTimeTextOf(device.lastSeenAt, format) });
 }
 
 export interface DeviceRowContext {
   readonly locationNames: ReadonlyMap<string, string>;
   readonly t: Translate;
-  readonly locale: Locale;
+  readonly format: DeviceTimeFormat;
 }
 
 /**
@@ -69,7 +83,7 @@ export function toDeviceRows(
     version: device.version,
     name: device.name,
     locationName: context.locationNames.get(device.locationId) ?? device.locationId,
-    stateText: deviceStateTextOf(device, context.t, context.locale),
+    stateText: deviceStateTextOf(device, context.t, context.format),
     canRevoke: device.status !== POS_DEVICE_STATUS.REVOKED,
   }));
 }

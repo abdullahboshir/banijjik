@@ -8,6 +8,7 @@ const OTHER_LOCATION_ID = "0190a6a0-0000-7000-8000-000000000002";
 const LAST_SEEN = "2026-10-26T04:30:00.000Z";
 
 const t = createTranslator({ locale: "en", brandName: "Example", catalogs: SCREEN_CATALOGS }).t;
+const DHAKA_EN = { locale: "en", timeZone: "Asia/Dhaka" } as const;
 
 function deviceOf(overrides: Partial<PosDeviceResponse>): PosDeviceResponse {
   return {
@@ -50,28 +51,39 @@ describe("the state of a device", () => {
     const text = deviceStateTextOf(
       deviceOf({ pairedAt: LAST_SEEN, lastSeenAt: LAST_SEEN }),
       t,
-      "en",
+      DHAKA_EN,
     );
     expect(text.startsWith("Paired, last seen ")).toBe(true);
   });
 
+  it("writes the last-seen time in the business time zone, not the server's", () => {
+    // 20:30 UTC on 26 October is 02:30 on 27 October in Dhaka.
+    const lateEvening = "2026-10-26T20:30:00.000Z";
+    const text = deviceStateTextOf(
+      deviceOf({ pairedAt: lateEvening, lastSeenAt: lateEvening }),
+      t,
+      DHAKA_EN,
+    );
+    expect(text).toContain("Oct 27, 2026");
+  });
+
   it("says a paired device that was never seen is only paired", () => {
-    expect(deviceStateTextOf(deviceOf({ pairedAt: LAST_SEEN }), t, "en")).toBe("Paired");
+    expect(deviceStateTextOf(deviceOf({ pairedAt: LAST_SEEN }), t, DHAKA_EN)).toBe("Paired");
   });
 
   it("says an active device with a live code is waiting for pairing", () => {
-    expect(deviceStateTextOf(deviceOf({ isAwaitingPairing: true }), t, "en")).toBe(
+    expect(deviceStateTextOf(deviceOf({ isAwaitingPairing: true }), t, DHAKA_EN)).toBe(
       "Waiting for pairing",
     );
   });
 
   it("says an active device with no code and no pairing has an expired code", () => {
-    expect(deviceStateTextOf(deviceOf({}), t, "en")).toBe("Code expired");
+    expect(deviceStateTextOf(deviceOf({}), t, DHAKA_EN)).toBe("Code expired");
   });
 
   it("says a revoked device is revoked, even when it was paired", () => {
     const revoked = deviceOf({ status: POS_DEVICE_STATUS.REVOKED, pairedAt: LAST_SEEN });
-    expect(deviceStateTextOf(revoked, t, "en")).toBe("Revoked");
+    expect(deviceStateTextOf(revoked, t, DHAKA_EN)).toBe("Revoked");
   });
 });
 
@@ -79,7 +91,7 @@ describe("the device rows", () => {
   it("offers Revoke on an active device and never on a revoked one", () => {
     const rows = toDeviceRows(
       [deviceOf({}), deviceOf({ posDeviceId: "b", status: POS_DEVICE_STATUS.REVOKED })],
-      { locationNames: new Map([[LOCATION_ID, "Main store"]]), t, locale: "en" },
+      { locationNames: new Map([[LOCATION_ID, "Main store"]]), t, format: DHAKA_EN },
     );
     expect(rows.map((row) => row.canRevoke)).toEqual([true, false]);
   });
@@ -87,7 +99,7 @@ describe("the device rows", () => {
   it("names the location of each device, or shows its id when the caller cannot see it", () => {
     const rows = toDeviceRows(
       [deviceOf({ locationId: LOCATION_ID }), deviceOf({ locationId: OTHER_LOCATION_ID })],
-      { locationNames: new Map([[LOCATION_ID, "Main store"]]), t, locale: "en" },
+      { locationNames: new Map([[LOCATION_ID, "Main store"]]), t, format: DHAKA_EN },
     );
     expect(rows.map((row) => row.locationName)).toEqual(["Main store", OTHER_LOCATION_ID]);
   });
