@@ -12,6 +12,8 @@ import { LazyOrderApprovalDialog } from "./lazy-order-approval-dialog";
 import { LazyOrderCancelSheet } from "./lazy-order-cancel-sheet";
 import { LazyOrderDeleteDialog } from "./lazy-order-delete-dialog";
 import { LazyOrderEditSheet } from "./lazy-order-edit-sheet";
+import { canOfferExchange } from "./exchange-model";
+import { LazyExchangeSheet } from "./lazy-exchange-sheet";
 import { LazyReturnSheet } from "./lazy-return-sheet";
 import type { ReturnLabels } from "./return-labels";
 import { OrderActionBar } from "./order-action-bar";
@@ -49,7 +51,7 @@ export interface OrderDetailClientProps {
   readonly returnLabels: ReturnLabels;
 }
 
-type DialogKey = "cancel" | "delete" | "edit" | "pay" | "return";
+type DialogKey = "cancel" | "delete" | "edit" | "pay" | "return" | "exchange";
 
 /** The cancel sheet of an order; the paid amount note and the contact way out live inside it. */
 function OrderCancelSlot(props: {
@@ -98,19 +100,106 @@ function OrderReturnSheetSlot(props: {
   );
 }
 
+/** The exchange sheet of a completed order with a customer (plan 3.5b B2), loaded when the staff member opens it. */
+function OrderExchangeSheetSlot(props: {
+  readonly props: OrderDetailClientProps;
+  readonly onOpenChange: (open: boolean) => void;
+}): ReactElement {
+  const { props: detail } = props;
+  return (
+    <LazyExchangeSheet
+      open
+      onOpenChange={props.onOpenChange}
+      orgSlug={detail.orgSlug}
+      organizationId={detail.organizationId}
+      order={detail.order}
+      allowedMethods={detail.allowedMethods}
+      methodLabels={detail.paymentLabels.method}
+      locale={detail.locale}
+      currency={detail.currency}
+      labels={detail.returnLabels}
+      orderLabels={detail.labels}
+      modifierGroups={detail.modifierGroups}
+      unitLabels={detail.unitLabels}
+      performersEnabled={detail.performersEnabled}
+    />
+  );
+}
+
+/** The receive-payment sheet; a payment taken closes it and reloads the order. */
+function OrderPaySlot(props: {
+  readonly props: OrderDetailClientProps;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+}): ReactElement {
+  const router = useRouter();
+  const { props: detail } = props;
+  return (
+    <OrderPaySheet
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      organizationId={detail.organizationId}
+      order={detail.order}
+      locationName={detail.locationName}
+      remainingDueMinor={detail.remainingDueMinor}
+      currency={detail.currency}
+      currencySymbol={detail.currencySymbol}
+      allowedMethods={detail.allowedMethods}
+      paymentLabels={detail.paymentLabels}
+      onPaid={() => {
+        props.onOpenChange(false);
+        router.refresh();
+      }}
+    />
+  );
+}
+
+/** The edit sheet of a draft or an open order; a save reloads the order. */
+function OrderEditSlot(props: {
+  readonly props: OrderDetailClientProps;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+}): ReactElement {
+  const router = useRouter();
+  const { props: detail } = props;
+  return (
+    <LazyOrderEditSheet
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      organizationId={detail.organizationId}
+      order={detail.order}
+      contactName={detail.contactName}
+      modifierGroups={detail.modifierGroups}
+      unitLabels={detail.unitLabels}
+      currency={detail.currency}
+      locale={detail.locale}
+      labels={detail.labels}
+      performersEnabled={detail.performersEnabled}
+      onSaved={() => router.refresh()}
+    />
+  );
+}
+
 function OrderDetailSheets(
   props: OrderDetailClientProps & {
     readonly openDialog: DialogKey | undefined;
     readonly setOpenDialog: (key: DialogKey | undefined) => void;
     readonly canEdit: boolean;
     readonly reportFailure: (error: unknown) => void;
+    readonly onConfirmDelete: () => void;
   },
 ): ReactElement {
-  const router = useRouter();
-  const { order, labels, openDialog, setOpenDialog } = props;
+  const { labels, openDialog, setOpenDialog } = props;
   const toggle = (key: DialogKey) => (open: boolean) => setOpenDialog(open ? key : undefined);
   return (
     <>
+      {openDialog === "delete" ? (
+        <OrderDeleteSlot
+          labels={labels}
+          onClose={() => setOpenDialog(undefined)}
+          onConfirm={props.onConfirmDelete}
+        />
+      ) : null}
       {openDialog === "cancel" ? (
         <OrderCancelSlot
           props={props}
@@ -118,39 +207,14 @@ function OrderDetailSheets(
           onPickContact={() => setOpenDialog("edit")}
         />
       ) : null}
-      <OrderPaySheet
-        open={openDialog === "pay"}
-        onOpenChange={toggle("pay")}
-        organizationId={props.organizationId}
-        order={order}
-        locationName={props.locationName}
-        remainingDueMinor={props.remainingDueMinor}
-        currency={props.currency}
-        currencySymbol={props.currencySymbol}
-        allowedMethods={props.allowedMethods}
-        paymentLabels={props.paymentLabels}
-        onPaid={() => {
-          setOpenDialog(undefined);
-          router.refresh();
-        }}
-      />
+      <OrderPaySlot props={props} open={openDialog === "pay"} onOpenChange={toggle("pay")} />
       {openDialog === "return" ? (
         <OrderReturnSheetSlot props={props} onOpenChange={toggle("return")} />
       ) : null}
-      <LazyOrderEditSheet
-        open={openDialog === "edit"}
-        onOpenChange={toggle("edit")}
-        organizationId={props.organizationId}
-        order={order}
-        contactName={props.contactName}
-        modifierGroups={props.modifierGroups}
-        unitLabels={props.unitLabels}
-        currency={props.currency}
-        locale={props.locale}
-        labels={labels}
-        performersEnabled={props.performersEnabled}
-        onSaved={() => router.refresh()}
-      />
+      {openDialog === "exchange" ? (
+        <OrderExchangeSheetSlot props={props} onOpenChange={toggle("exchange")} />
+      ) : null}
+      <OrderEditSlot props={props} open={openDialog === "edit"} onOpenChange={toggle("edit")} />
     </>
   );
 }
@@ -187,6 +251,8 @@ export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
   const flags = orderActionFlagsOf(order.status, permissions, props.usePacking);
   const hasDue = props.remainingDueMinor > 0;
   const returnAvailable = permissions.canReturn && canOfferReturn(order, props.returnWindowOpen);
+  const exchangeAvailable =
+    permissions.canExchange && canOfferExchange(order, props.returnWindowOpen);
 
   return (
     <>
@@ -203,6 +269,9 @@ export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
         returnAvailable={returnAvailable}
         returnLabel={props.returnLabels.sheet.open}
         onReturn={() => setOpenDialog("return")}
+        exchangeAvailable={exchangeAvailable}
+        exchangeLabel={props.returnLabels.exchangeOpen}
+        onExchange={() => setOpenDialog("exchange")}
       />
       <OrderPaymentSection
         order={order}
@@ -213,19 +282,13 @@ export function OrderDetailClient(props: OrderDetailClientProps): ReactElement {
         showPayButton={permissions.canReceive && hasDue}
         onReceivePayment={() => setOpenDialog("pay")}
       />
-      {openDialog === "delete" ? (
-        <OrderDeleteSlot
-          labels={labels}
-          onClose={() => setOpenDialog(undefined)}
-          onConfirm={() => void actions.remove()}
-        />
-      ) : null}
       <OrderDetailSheets
         {...props}
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}
         canEdit={flags.canEdit}
         reportFailure={actions.reportFailure}
+        onConfirmDelete={() => void actions.remove()}
       />
       {actions.approval.isOpen ? (
         <LazyOrderApprovalDialog flow={actions.approval} labels={labels.approval} />

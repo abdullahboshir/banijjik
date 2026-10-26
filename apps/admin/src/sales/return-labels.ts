@@ -124,6 +124,8 @@ export interface ReturnLabels {
   readonly statuses: Readonly<Record<SalesReturnStatus, string>>;
   readonly orderReturnStatus: Readonly<Record<OrderReturnStatus, string>>;
   readonly orderLink: string;
+  /** The "Exchange items" action of a completed order with a customer (plan 3.5b B2). */
+  readonly exchangeOpen: string;
 }
 
 function listLabelsOf(t: T): ReturnListLabels {
@@ -238,5 +240,6 @@ export function returnLabelsOf(t: T): ReturnLabels {
     statuses: recordOf(SALES_RETURN_STATUS, (key) => t(`returns.status.${key}`)),
     orderReturnStatus: recordOf(ORDER_RETURN_STATUS, (key) => t(`orders.returnStatus.${key}`)),
     orderLink: t("orders.returns.link"),
+    exchangeOpen: t("returns.exchange.open"),
   };
 }
