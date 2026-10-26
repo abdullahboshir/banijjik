@@ -241,10 +241,10 @@ The owner's own matrimony website first, sellable to other bureaus later. Runs i
 ---
 
 ## Phase 4: Tenant website (design: `06-AUTOMATION-AND-ACCOUNTS.md §8`)
-**4.1 Theme engine** (design tokens, theme model, section library with variants, page JSON schema, region lock levels; sections declared in manifests). A business's theme starts from its branding (3.12: logo and colours), so every business's website looks like that business; industry templates (`websiteTemplateKeys`) give the layout and sections.
+**4.1 Theme engine** (design tokens, theme model, section library with variants, page JSON schema, region lock levels; sections declared in manifests). A business's theme starts from its branding (3.12: logo and colours), so every business's website looks like that business; industry templates (`websiteTemplateKeys`) give the layout and sections. Each site keeps its own design copied from the template (ADR-149): token groups (colour, type, shape, spacing, size) and a variant per section, including how offering cards look.
 **4.2 Storefront app** (subdomain + custom domain via edge custom hostnames → org (ADR-031), render page JSON + tokens server-side, SEO, CDN cache). M: `modules/storefront`, guide 38
 **4.3 Shop & booking flow** (browse offerings of all kinds, cart/checkout COD for products, slot booking for services/rentals, plan enrollment, server-side re-pricing, order/booking tracking).
-**4.4 Platform template builder** (`apps/platform`: build/publish templates per industry, set lock levels).
+**4.4 Platform template builder** (`apps/platform`: build/publish templates per industry, set lock levels; design any one business's site and set what that business may change; warn when a new site looks the same as another business of the same industry (ADR-149)).
 **4.6 Simple online booking page** (launch track, ADR-099: one public page per business with its services or plans, free slots and a booking or enrollment request; uses the 3.6/3.7 APIs; no theme engine needed).
 **4.5 Tenant website editor** (`apps/admin`: choose template, edit within limits, mobile/desktop preview, publish, version rollback).
 
