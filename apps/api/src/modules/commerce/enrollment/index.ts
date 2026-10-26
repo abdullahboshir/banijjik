@@ -82,3 +82,13 @@ export function buildEnrollmentPeriodSnapshotReader(): EnrollmentPeriodSnapshotR
 }
 
 export type { EnrollmentDependencies } from "./application/dependencies.js";
+
+/** The location of an enrollment, for the report's enrollment and check-in counts (plan 3.10 decision 5). */
+export function buildEnrollmentLocationReader(): {
+  readLocationId(enrollmentId: string): Promise<string | undefined>;
+} {
+  const repository = new MongoEnrollmentRepository();
+  return {
+    readLocationId: async (enrollmentId) => (await repository.find(enrollmentId))?.locationId,
+  };
+}

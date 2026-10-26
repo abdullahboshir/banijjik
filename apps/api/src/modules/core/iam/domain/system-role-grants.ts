@@ -6,7 +6,10 @@ import {
   type PermissionKey,
   type SystemRoleKey,
 } from "@banijjik/contracts";
+import { PAYMENT_ROLE_GRANTS } from "./payment-role-grants.js";
 import { POS_ROLE_GRANTS } from "./pos-role-grants.js";
+import { REPORT_ROLE_GRANTS } from "./report-role-grants.js";
+import { SALES_ROLE_GRANTS } from "./sales-role-grants.js";
 
 /**
  * What a system role gets from one module (10-MODULE-CATALOG section 10).
@@ -212,29 +215,9 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
     [SYSTEM_ROLE_KEY.RIDER]: "NONE",
     [SYSTEM_ROLE_KEY.VIEWER]: "NONE",
   },
-  payment: {
-    [SYSTEM_ROLE_KEY.OWNER]: "ALL",
-    [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
-    [SYSTEM_ROLE_KEY.CASHIER]: {
-      only: [
-        PERMISSION_KEY.PAYMENT_PAYMENT_READ,
-        PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE,
-        PERMISSION_KEY.PAYMENT_DUE_READ,
-        PERMISSION_KEY.PAYMENT_STORE_CREDIT_READ,
-      ],
-    },
-    [SYSTEM_ROLE_KEY.STAFF]: {
-      only: [
-        PERMISSION_KEY.PAYMENT_PAYMENT_READ,
-        PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE,
-        PERMISSION_KEY.PAYMENT_DUE_READ,
-        PERMISSION_KEY.PAYMENT_STORE_CREDIT_READ,
-      ],
-    },
-    [SYSTEM_ROLE_KEY.RIDER]: "NONE",
-    [SYSTEM_ROLE_KEY.VIEWER]: "READ",
-  },
+  payment: PAYMENT_ROLE_GRANTS,
   pos: POS_ROLE_GRANTS,
+  report: REPORT_ROLE_GRANTS,
   commission: {
     [SYSTEM_ROLE_KEY.OWNER]: "ALL",
     [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
@@ -244,33 +227,7 @@ export const SYSTEM_ROLE_GRANTS: Readonly<Record<string, ModuleGrants>> = {
     [SYSTEM_ROLE_KEY.RIDER]: { only: [PERMISSION_KEY.COMMISSION_ENTRY_READ_OWN] },
     [SYSTEM_ROLE_KEY.VIEWER]: "NONE",
   },
-  sales: {
-    [SYSTEM_ROLE_KEY.OWNER]: "ALL",
-    [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
-    [SYSTEM_ROLE_KEY.CASHIER]: {
-      only: [
-        PERMISSION_KEY.SALES_ORDER_READ,
-        PERMISSION_KEY.SALES_ORDER_CREATE,
-        PERMISSION_KEY.SALES_ORDER_UPDATE,
-        PERMISSION_KEY.SALES_ORDER_CONFIRM,
-        PERMISSION_KEY.SALES_ORDER_CANCEL,
-        PERMISSION_KEY.SALES_RETURN_READ,
-        PERMISSION_KEY.SALES_RETURN_CREATE,
-      ],
-    },
-    [SYSTEM_ROLE_KEY.STAFF]: {
-      only: [
-        PERMISSION_KEY.SALES_ORDER_READ,
-        PERMISSION_KEY.SALES_ORDER_CREATE,
-        PERMISSION_KEY.SALES_ORDER_UPDATE,
-        PERMISSION_KEY.SALES_ORDER_CONFIRM,
-        PERMISSION_KEY.SALES_ORDER_CANCEL,
-        PERMISSION_KEY.SALES_RETURN_READ,
-      ],
-    },
-    [SYSTEM_ROLE_KEY.RIDER]: { only: [PERMISSION_KEY.SALES_ORDER_READ] },
-    [SYSTEM_ROLE_KEY.VIEWER]: { only: [PERMISSION_KEY.SALES_ORDER_READ] },
-  },
+  sales: SALES_ROLE_GRANTS,
   settings: {
     [SYSTEM_ROLE_KEY.OWNER]: "ALL",
     [SYSTEM_ROLE_KEY.MANAGER]: "ALL",

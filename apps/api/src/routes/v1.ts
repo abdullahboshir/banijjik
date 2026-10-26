@@ -47,6 +47,7 @@ import { registerPaymentModels } from "../modules/commerce/payment/index.js";
 import { registerCommissionModels } from "../modules/commerce/commission/index.js";
 import { registerSalesModels } from "../modules/commerce/sales/index.js";
 import { registerPosModels } from "../modules/commerce/pos/index.js";
+import { registerReportModels } from "../modules/commerce/report/index.js";
 import { buildStorefrontRouter } from "./storefront.js";
 import { registerSettingsModels } from "../modules/core/settings/index.js";
 import {
@@ -132,6 +133,7 @@ export function registerModuleModels(): void {
   registerEnrollmentModels();
   registerWebsiteModels();
   registerPosModels();
+  registerReportModels();
   registerSettingsModels();
   registerFileModels();
 }

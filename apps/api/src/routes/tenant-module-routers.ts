@@ -47,6 +47,7 @@ function laterModuleRouters(
     coreRouters.enrollmentRouter,
     coreRouters.websiteRouter,
     coreRouters.posRouter,
+    coreRouters.reportRouter,
     ...probeRouters,
   ];
 }

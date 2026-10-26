@@ -1,0 +1,31 @@
+import { PERMISSION_KEY, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import type { ModuleGrants } from "./system-role-grants.js";
+
+/** What each system role gets from the sales module (card 3.10 extraction, moved unchanged from system-role-grants.ts). */
+export const SALES_ROLE_GRANTS: ModuleGrants = {
+  [SYSTEM_ROLE_KEY.OWNER]: "ALL",
+  [SYSTEM_ROLE_KEY.MANAGER]: "ALL",
+  [SYSTEM_ROLE_KEY.CASHIER]: {
+    only: [
+      PERMISSION_KEY.SALES_ORDER_READ,
+      PERMISSION_KEY.SALES_ORDER_CREATE,
+      PERMISSION_KEY.SALES_ORDER_UPDATE,
+      PERMISSION_KEY.SALES_ORDER_CONFIRM,
+      PERMISSION_KEY.SALES_ORDER_CANCEL,
+      PERMISSION_KEY.SALES_RETURN_READ,
+      PERMISSION_KEY.SALES_RETURN_CREATE,
+    ],
+  },
+  [SYSTEM_ROLE_KEY.STAFF]: {
+    only: [
+      PERMISSION_KEY.SALES_ORDER_READ,
+      PERMISSION_KEY.SALES_ORDER_CREATE,
+      PERMISSION_KEY.SALES_ORDER_UPDATE,
+      PERMISSION_KEY.SALES_ORDER_CONFIRM,
+      PERMISSION_KEY.SALES_ORDER_CANCEL,
+      PERMISSION_KEY.SALES_RETURN_READ,
+    ],
+  },
+  [SYSTEM_ROLE_KEY.RIDER]: { only: [PERMISSION_KEY.SALES_ORDER_READ] },
+  [SYSTEM_ROLE_KEY.VIEWER]: { only: [PERMISSION_KEY.SALES_ORDER_READ] },
+};

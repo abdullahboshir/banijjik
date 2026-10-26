@@ -14,6 +14,7 @@ import { buildSalesJobPortsForWorker } from "./routes/sales-tenant-router.js";
 import { buildAuditRecorder } from "./modules/core/audit/index.js";
 import { startScheduledJobs } from "./kernel/jobs/index.js";
 import { registerAccountingAndExpenseHandlers } from "./routes/accounting-event-handlers.js";
+import { registerReportEventHandlers } from "./routes/report-event-handlers.js";
 import { registerCommissionHandlers } from "./routes/commission-adapters.js";
 import { registerContactHandlers } from "./routes/contact-event-handlers.js";
 import { registerDirectoryReviewSmsHandler } from "./routes/directory-event-handlers.js";
@@ -68,6 +69,7 @@ export function startWorker(
   const redis = createQueueRedisClient(config.redisUrl);
   registerContactHandlers(config);
   registerAccountingAndExpenseHandlers();
+  registerReportEventHandlers(systemClock);
   registerDirectoryEventHandlers({ clock: systemClock, audit: buildAuditRecorder(systemClock) });
   registerDirectoryStatsHandler(buildDirectoryBlockReader());
   const { registry, orgConfig } = buildWorkerOrgConfig();
