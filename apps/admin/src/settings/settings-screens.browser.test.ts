@@ -168,6 +168,7 @@ describe("the settings home", () => {
       message("settings.topic.TEAM.title"),
       message("settings.topic.WEBSITE.title"),
       message("settings.topic.SALES.title"),
+      message("settings.topic.AUTOMATION.title"),
       message("settings.topic.ADVANCED.title"),
     ]);
     expect(pagePaths).toEqual(
