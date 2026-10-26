@@ -47,6 +47,8 @@ const PACK_PRICE_MINOR = 4000;
 const SOLD_QUANTITY = 2;
 const APPROVAL_PIN = "1234";
 const ORDER_TOTAL_MINOR = PACK_PRICE_MINOR * SOLD_QUANTITY;
+const REVERSE_WAIT_MS = 30_000;
+const REVERSE_POLL_MS = 500;
 const RETURN_PATH_PATTERN = "^/[a-z0-9-]+/returns/[0-9a-f-]{36}$";
 
 let stack: BrowserStack;
@@ -212,6 +214,16 @@ async function apiGetReturn(salesReturnId: string): Promise<SalesReturnResponse>
   return body.data;
 }
 
+/** The reverse runs on the server; the page text is no proof (the button text contains the same word). */
+async function waitForReversed(salesReturnId: string): Promise<void> {
+  const deadline = Date.now() + REVERSE_WAIT_MS;
+  while (Date.now() < deadline) {
+    if ((await apiGetReturn(salesReturnId)).status === SALES_RETURN_STATUS.REVERSED) return;
+    await new Promise((resolve) => setTimeout(resolve, REVERSE_POLL_MS));
+  }
+  throw new Error(`return ${salesReturnId} was not reversed in time`);
+}
+
 async function apiGetOrder(): Promise<OrderResponse> {
   const body = await apiGet<{ data: OrderResponse }>(`/orgs/${organizationId}/orders/${orderId}`);
   return body.data;
@@ -274,7 +286,7 @@ describe("returns at a retail shop", () => {
     expect(await bodyText(page)).toContain(message("returns.detail.refund"));
 
     await reverseReturnWithPayback(page);
-    await waitForText(page, message("returns.status.REVERSED"));
+    await waitForReversed(salesReturnId);
 
     const reversed = await apiGetReturn(salesReturnId);
     expect(reversed.status).toBe(SALES_RETURN_STATUS.REVERSED);
