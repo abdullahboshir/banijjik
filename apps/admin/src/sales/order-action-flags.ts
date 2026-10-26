@@ -11,6 +11,8 @@ export interface OrderDetailPermissions {
   readonly canCancel: boolean;
   readonly canReceive: boolean;
   readonly canReturn: boolean;
+  /** Exchange needs the return and the order permission together (plan 3.5b B2). */
+  readonly canExchange: boolean;
 }
 
 export interface OrderActionFlags {

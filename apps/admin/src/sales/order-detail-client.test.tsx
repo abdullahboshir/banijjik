@@ -97,18 +97,21 @@ function renderClient(
   overrides: {
     readonly usePacking?: boolean;
     readonly remainingDueMinor?: number;
+    readonly returnWindowOpen?: boolean;
     readonly permissions?: Partial<{
       canUpdate: boolean;
       canConfirm: boolean;
       canCancel: boolean;
       canReceive: boolean;
+      canReturn: boolean;
+      canExchange: boolean;
     }>;
   } = {},
 ): void {
   renderInBangla(
     <OrderDetailClient
       performersEnabled={false}
-      returnWindowOpen={false}
+      returnWindowOpen={overrides.returnWindowOpen ?? false}
       returnLabels={returnLabelsOf(banglaTranslator().t)}
       orgSlug="acme"
       organizationId="org-1"
@@ -126,6 +129,7 @@ function renderClient(
         canCancel: true,
         canReceive: true,
         canReturn: false,
+        canExchange: false,
         ...overrides.permissions,
       }}
       usePacking={overrides.usePacking ?? false}
@@ -205,6 +209,24 @@ describe("OrderDetailClient status actions", () => {
     renderClient("CONFIRMED", { usePacking: false });
     expect(buttonNamed(labels.actions.pack)).toBeNull();
     expect(buttonNamed(labels.actions.complete)).not.toBeNull();
+  });
+
+  it("offers exchange beside return only to a caller with both permissions, inside the window", () => {
+    renderClient("COMPLETED", {
+      returnWindowOpen: true,
+      permissions: { canReturn: true, canExchange: true },
+    });
+    expect(buttonNamed(returnLabelsOf(banglaTranslator().t).exchangeOpen)).not.toBeNull();
+    expect(buttonNamed(returnLabelsOf(banglaTranslator().t).sheet.open)).not.toBeNull();
+  });
+
+  it("hides exchange from a caller without the order permission", () => {
+    renderClient("COMPLETED", {
+      returnWindowOpen: true,
+      permissions: { canReturn: true, canExchange: false },
+    });
+    expect(buttonNamed(returnLabelsOf(banglaTranslator().t).exchangeOpen)).toBeNull();
+    expect(buttonNamed(returnLabelsOf(banglaTranslator().t).sheet.open)).not.toBeNull();
   });
 
   it("offers no actions once the order is completed", () => {

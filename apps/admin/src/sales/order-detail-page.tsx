@@ -94,6 +94,9 @@ function resolvePermissions(
     canCancel: atLocation(PERMISSION_KEY.SALES_ORDER_CANCEL),
     canReceive: atLocation(PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE),
     canReturn: atLocation(PERMISSION_KEY.SALES_RETURN_CREATE),
+    canExchange:
+      atLocation(PERMISSION_KEY.SALES_RETURN_CREATE) &&
+      atLocation(PERMISSION_KEY.SALES_ORDER_CREATE),
   };
 }
 
