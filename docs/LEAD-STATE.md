@@ -8,7 +8,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-26 (morning) by Sonnet 5.5 (lead `banijjik-fa`, sole lead from now on) · `main` = `origin/main` = this state commit on top of `c2bde283` (pushed).
+Last updated: 2026-10-26 (midday) by Sonnet 5.5 (lead `banijjik-fa`, sole lead) · `main` = `origin/main` = this state commit on top of `b2e0ff29` (pushed).
 
 ## 1. Where the project stands
 - Phase 3: 42 numbered cards. **Merged:** 3.0–3.8 (all parts), 3.8a/b/c, 3.11 (all parts), 3.12–3.37, **3.5b all parts** (B2 `37ca04f`), 3.9 A1/A2, 3.32 A + B, **3.10 A** (`87a8218`). Track M: **M.6 done (M.6c `3a3fb61`)**. Open: 3.10 B, 3.9 B (peer chat's agents, §2). Not started: M.9 A1 (`banijjik-m8a` free), then 3.10 B (peer agent may take it after 3.10 A), M.9 A2. Haiku session limit hit 2026-10-26 ~01:00 Dhaka (resets later that day); Sonnet weekly limit until 2026-10-29.
@@ -31,8 +31,6 @@ Prompts and logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/
 
 | Card / part | Branch | Folder | Tier | State → next step |
 |---|---|---|---|---|
-| 3.10 B home and reports page | prompt `10-3.10-B.md` | `banijjik-3.6b-a3` | T2 | Peer chat `banijjik-67` agent (3.10 A merged `87a8218`, review R1 + R2). Next: merge check on DONE. |
-| 3.9 B POS screens | owner-guide 09 | `banijjik-3.5a` | T2 | Haiku agents of the peer lead chat `banijjik-67` (owner asked it). It pushes card branches only and sends `banijjik-fa` each DONE branch; `banijjik-b9` reviews and merges. Do not start agents in these folders. |
 
 ### 2a. Launching implementers (owner approved, 2026-10-24)
 - **Qoder:** out of credits since 2026-10-24 evening.
@@ -100,6 +98,7 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-26 midday** (Sonnet 5.5, `banijjik-fa`): merge checks passed, 3.9 B (`6d316a5e`) and 3.10 B (`b2e0ff29`) merged and pushed. Open follow-ups: small card to remove `contact.contact.create`/`update` from the cashier (`CONTACT_DAILY_KEYS`, plus a denied test); fix 3.10 B gaps are in its handoff. Local dev stack runs from `banijjik` (Mongo rs0 on 27018 in `C:/banijjik-dev`; Redis 5 exe not started: blocked by the classifier, owner starts it). Only M.9 A1 (owner ChatGPT) is open; next: its T1 review, then M.9 A2 prompt, then the phase 3 review.
 - **2026-10-26 morning** (Sonnet 5.5, `banijjik-fa`): `/lead` checks; agreed with b9, 9e, 00, 67 that fa is the sole lead; added the Bangla SMS check as M.9 Part B item 13 (`c2bde283`). No merges; 3.9 B (CI 40268691537) and 3.10 B (CI 40269535363) wait for DONE from 67.
 - **2026-10-25 late evening** (Sonnet 5.5, lead in `banijjik`): `/lead` check only. Fixed the M.6c lint failure (`26684d19`). Found the 3.5b A3 Haiku agent still active in `banijjik-lead`; left it alone. No merges.
 - **2026-10-26 early morning** (Opus 5.5, `banijjik-b9`): merged 3.5b B (peer agent; merge check) and M.6c (R2: lead removed a debug write; CI infra flake rerun green); wrote `owner-guide/13-3.5b-B2.md` (peer agent took it); 3.10 A review R1 sent back (real-Mongo exactly-once tests, unused enum); fixed the 3.10 plan wording (ADR-148, 400).
