@@ -7,8 +7,14 @@ import {
 } from "@banijjik/contracts";
 import { SMS_SETTING_KEY } from "@banijjik/contracts/sms";
 import { createTranslator } from "@banijjik/i18n";
-import { organizationId as smsOrganizationId } from "../modules/integration/sms/index.js";
+import type { Router } from "express";
+import {
+  buildSmsTenantRouter,
+  organizationId as smsOrganizationId,
+} from "../modules/integration/sms/index.js";
 import type { AppConfig } from "../config/index.js";
+import type { PermissionMiddlewareFactory } from "../kernel/access/index.js";
+import type { RateLimiter } from "../kernel/rate-limit/index.js";
 import type { AuditRecorder, PlatformAuditRecorder } from "../kernel/audit/index.js";
 import { AppError } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
@@ -86,4 +92,23 @@ export function buildSmsTestMessage(platform: boolean): () => Promise<string> {
       brandName: businessName,
     }).t("sms.test_message", { businessName });
   };
+}
+
+/** The tenant SMS gateway router (card M.9), built beside the other module routers. */
+export function buildSmsTenantModuleRouter(input: {
+  config: AppConfig;
+  clock: Clock;
+  orgConfig: OrgConfigService;
+  manifests: readonly ModuleManifest[];
+  permission: PermissionMiddlewareFactory;
+  rateLimiter: RateLimiter;
+  audit: AuditRecorder;
+}): Router {
+  return buildSmsTenantRouter({
+    ...buildSmsDependencies(input),
+    permission: input.permission,
+    limiter: input.rateLimiter,
+    audit: tenantSmsAudit(input.audit),
+    message: buildSmsTestMessage(false),
+  });
 }

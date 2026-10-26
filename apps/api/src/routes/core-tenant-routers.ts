@@ -1,6 +1,8 @@
 import { buildEnrollmentTenantRouter } from "./enrollment-tenant-router.js";
 import { buildWebsiteAdminRouter } from "../modules/commerce/website/index.js";
+import { buildSmsTenantModuleRouter } from "./sms-adapters.js";
 import type { ModuleManifest } from "@banijjik/contracts";
+import type { AppConfig } from "../config/index.js";
 import type { StorageConfig } from "../config/index.js";
 import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
@@ -54,6 +56,8 @@ export interface CoreTenantRouterInput {
   readonly storage: StorageConfig;
   /** The POS pairing secret and cookie flag, read from the config in routes/v1.ts. */
   readonly pos: PosRouterInput["pos"];
+  /** The SMS router reads its encryption key and provider base URLs from the config (card M.9). */
+  readonly config: AppConfig;
   /** Tests lower the quota, shorten the upload timeout or swap the storage. Production passes none. */
   readonly fileOverrides?: FileModuleDependencies["overrides"];
 }
@@ -81,6 +85,7 @@ export interface CoreTenantRouters {
   readonly websiteRouter: Router;
   readonly posRouter: Router;
   readonly reportRouter: Router;
+  readonly smsRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -190,11 +195,29 @@ function buildCommerceTenantRouters(
   };
 }
 
+/** Routers of the `integration/*` modules (card M.9 on). */
+function buildIntegrationTenantRouters(
+  input: CoreTenantRouterInput,
+): Pick<CoreTenantRouters, "smsRouter"> {
+  return {
+    smsRouter: buildSmsTenantModuleRouter({
+      config: input.config,
+      clock: input.clock,
+      orgConfig: input.orgConfig,
+      manifests: input.manifests,
+      permission: input.permission,
+      rateLimiter: input.rateLimiter,
+      audit: input.audit,
+    }),
+  };
+}
+
 /** Custom-field, settings, file and commerce routers (cards 2.3–3.8c). */
 export function buildCoreTenantRouters(input: CoreTenantRouterInput): CoreTenantRouters {
   return {
     ...buildPlatformCoreRouters(input),
     ...buildCommerceTenantRouters(input),
+    ...buildIntegrationTenantRouters(input),
   };
 }
 

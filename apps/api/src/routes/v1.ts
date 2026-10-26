@@ -251,6 +251,7 @@ function buildCoreRouters(input: {
     manifests: registry.all(),
     rateLimiter: dependencies.rateLimiter,
     storage: dependencies.config.storage,
+    config: dependencies.config,
     pos: {
       pairingSecret: dependencies.config.storefront.otpSecret,
       isSecureCookies: dependencies.config.nodeEnv === "production",

@@ -10,26 +10,33 @@ export async function smsPost(
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  let response: Response;
   try {
-    response = await fetch(url, {
-      ...input,
-      method: "POST",
-      redirect: "error",
-      signal: controller.signal,
-    });
-  } catch {
-    throw new SmsTransientError();
+    const response = await sendRequest(url, input, controller.signal);
+    if (response.status >= 500 || response.status === 429) throw new SmsTransientError();
+    return { status: response.status, body: await readBody(response) };
   } finally {
     clearTimeout(timeout);
   }
+}
 
-  if (response.status >= 500 || response.status === 429) throw new SmsTransientError();
+async function sendRequest(url: string, input: RequestInit, signal: AbortSignal) {
   try {
-    return { status: response.status, body: parseBody(await response.text()) };
+    return await fetch(url, { ...input, method: "POST", redirect: "error", signal });
+  } catch {
+    throw new SmsTransientError();
+  }
+}
+
+/**
+ * A body that cannot be read (timeout, broken stream) is transient below 400. From 400 on the
+ * status already says the provider refused, so an unreadable body stays a permanent refusal.
+ */
+async function readBody(response: Response): Promise<Record<string, unknown>> {
+  try {
+    return parseBody(await response.text());
   } catch {
     if (response.status < 400) throw new SmsTransientError();
-    return { status: response.status, body: {} };
+    return {};
   }
 }
 

@@ -77,6 +77,8 @@ describe("tenant SMS gateway API", () => {
       .findOne({ organizationId });
     const sealedPassword = (stored?.["adareach"] as { passwordSealed?: string } | undefined)
       ?.passwordSealed;
+    // A missing sealed value would make every "not.toContain" below pass on "undefined".
+    expect(sealedPassword).toEqual(expect.stringMatching(/.{16,}/));
 
     const errorLines = harness.logs
       .lines()
@@ -292,6 +294,7 @@ describe("tenant SMS gateway API", () => {
       .toArray();
     const sealedKey = (stored?.["bulksmsbd"] as { apiKeySealed?: string } | undefined)
       ?.apiKeySealed;
+    expect(sealedKey).toEqual(expect.stringMatching(/.{16,}/));
     const externallyVisible = JSON.stringify({ saved: saved.body, read: read.body, audits });
     expect(saved.status).toBe(200);
     expect(read.body.data.bulksmsbd).toEqual({ senderId: "MASK", hasApiKey: true });
@@ -329,6 +332,7 @@ describe("platform SMS gateway API", () => {
       .toArray();
     const sealedKey = (stored?.["bulksmsbd"] as { apiKeySealed?: string } | undefined)
       ?.apiKeySealed;
+    expect(sealedKey).toEqual(expect.stringMatching(/.{16,}/));
 
     expect(forbidden.status).toBe(403);
     expect(saved.status).toBe(200);
@@ -375,6 +379,7 @@ describe("platform SMS gateway API", () => {
       .toArray();
     const sealedKey = (stored?.["bulksmsbd"] as { apiKeySealed?: string } | undefined)
       ?.apiKeySealed;
+    expect(sealedKey).toEqual(expect.stringMatching(/.{16,}/));
     expect(saved.status).toBe(200);
     expect(response.body.data).toMatchObject({ source: "PLATFORM", outcome: "SENT" });
     expect(after).toBe(before);

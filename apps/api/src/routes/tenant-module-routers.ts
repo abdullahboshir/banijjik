@@ -1,6 +1,3 @@
-import type { AppConfig } from "../config/index.js";
-import { buildSmsTenantRouter } from "../modules/integration/sms/index.js";
-import { buildSmsDependencies, tenantSmsAudit, buildSmsTestMessage } from "./sms-adapters.js";
 import { buildEventSessionRouter } from "../modules/commerce/booking/index.js";
 import { Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
@@ -26,7 +23,6 @@ export interface AccessParts {
 
 export interface TenantRoutersInput {
   readonly dependencies: {
-    readonly config: AppConfig;
     readonly clock: Clock;
     readonly rateLimiter: RateLimiter;
     readonly tenantRouters?: readonly Router[];
@@ -52,6 +48,7 @@ function laterModuleRouters(
     coreRouters.websiteRouter,
     coreRouters.posRouter,
     coreRouters.reportRouter,
+    coreRouters.smsRouter,
     ...probeRouters,
   ];
 }
@@ -62,8 +59,8 @@ function laterModuleRouters(
  */
 export function buildTenantRouters(input: TenantRoutersInput): readonly Router[] {
   const { dependencies, audit, orgConfig, access } = input;
+  const { catalog, permissionGate, permission } = access;
   const { clock, tenantRouters = [], tenantRouterFactories = [] } = dependencies;
-
   const iamRouter = buildIamTenantRouterFor({
     access,
     clock,
@@ -92,13 +89,12 @@ export function buildTenantRouters(input: TenantRoutersInput): readonly Router[]
   } = input.coreRouters;
   return [
     iamRouter,
-    buildSmsTenantModuleRouter(input, access.permission),
     input.organizationRouter,
-    buildAuditTenantRouter({ permission: access.permission }),
+    buildAuditTenantRouter({ permission }),
     buildEntitlementTenantRouter({
       orgConfig,
-      permissions: access.permissionGate,
-      permissionDefinitions: access.catalog.all(),
+      permissions: permissionGate,
+      permissionDefinitions: catalog.all(),
     }),
     customFieldRouter,
     settingsRouter,
@@ -111,35 +107,15 @@ export function buildTenantRouters(input: TenantRoutersInput): readonly Router[]
     inventoryRouter,
     directoryRouter,
     expenseRouter,
-    buildEventSessionRouter({ clock, permission: access.permission, audit }),
+    buildEventSessionRouter({ clock, permission, audit }),
     bookingRouter,
     creditRouter,
     paymentRouter,
     commissionRouter,
     salesRouter,
     ...laterModuleRouters(input.coreRouters, tenantRouters),
-    ...tenantRouterFactories.map((build) => build(access.permission)),
+    ...tenantRouterFactories.map((build) => build(permission)),
   ];
-}
-
-function buildSmsTenantModuleRouter(
-  input: TenantRoutersInput,
-  permission: PermissionMiddlewareFactory,
-): Router {
-  const { dependencies, orgConfig, registry, audit } = input;
-  const { clock } = dependencies;
-  return buildSmsTenantRouter({
-    ...buildSmsDependencies({
-      config: dependencies.config,
-      clock,
-      orgConfig,
-      manifests: registry.all(),
-    }),
-    permission,
-    limiter: dependencies.rateLimiter,
-    audit: tenantSmsAudit(audit),
-    message: buildSmsTestMessage(false),
-  });
 }
 
 export function buildTenantRouter(tenantRouters: readonly Router[]): Router {
