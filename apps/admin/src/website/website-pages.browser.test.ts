@@ -158,7 +158,10 @@ describe("the website page editor", () => {
     await page.type("#page-title-ABOUT-en", ABOUT_TITLE);
     await page.type("#page-body-ABOUT-en", ABOUT_BODY);
     await waitForHydration(page, "#page-publish-ABOUT");
-    await page.click("#page-publish-ABOUT");
+    await page.$eval("#page-publish-ABOUT", (element) => (element as HTMLInputElement).click());
+    process.stdout
+      .write(`publish diagnostics: ${await page.evaluate(() => JSON.stringify({ title: (document.getElementById("page-title-ABOUT-en") as HTMLInputElement | null)?.value, body: (document.getElementById("page-body-ABOUT-en") as HTMLTextAreaElement | null)?.value, checked: (document.getElementById("page-publish-ABOUT") as HTMLInputElement | null)?.checked, disabled: (document.getElementById("page-publish-ABOUT") as HTMLInputElement | null)?.disabled }))}
+`);
     // The save must carry the published state: confirm the switch took it before saving.
     await page.waitForFunction(
       () =>
