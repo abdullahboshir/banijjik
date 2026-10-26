@@ -214,6 +214,8 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **3.24 Order and stock posting** (2026-10-23: the order, stock-commit, stock purchase, opening, adjustment and write-off rows of `11 §10` that 3.3 and 3.5a left out; ADR-138).
 **3.25 Local posting dates and held advances** (2026-10-23: booking and credit postings on the organization's local date; bookings settle the advance actually paid).
 **3.26 Stable kernel tests** (2026-10-23: three time-dependent kernel tests without sleeps).
+**3.38 Resource time-off without a server error** (2026-10-26: the time-off write and its audit in one transaction; API tests for the endpoint).
+**3.39 POS device limit and devices screen** (2026-10-26: `posDevices` enforced, `ADDON_POS` +1 device and a `PACK_POS_DEVICE` pack, device list and revoke inside the caller's locations, Settings → Sales → POS devices).
 **3.11 Staff commission** (OPTIONAL `commission`, ADR-100: rules per member or role and per offering, category or kind; performer on booking and order lines; append-only accruals; payouts posted through `accounting`).
 - Phase done: a salon, a gym and a coaching centre from templates take bookings and enrollments, sell services and products at the counter, collect fees and dues, and pay staff commission, with correct numbers in reports; **and** a product seller runs a full day (stock in → POS + online orders → returns → day close), including loose and packed sale from one stock. No industry-specific code.
 
