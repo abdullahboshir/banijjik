@@ -21,6 +21,7 @@ const ORGANIZATION_MENU_KEYS = {
 /** Settings and fields entries every member who may read them sees (card 2.7b). */
 // The owner and staff hold contact.contact.read, so the contacts entry leads their menu.
 const CONTACTS_MENU_KEY = "contact.contacts";
+const REPORT_MENU_KEY = "report.daily";
 // Every role reads the catalog (card 3.2a), so its three entries sit in every menu.
 // Promotions need pricing.promotion.read (OWNER/MANAGER/CASHIER/STAFF/VIEWER).
 const CATALOG_MENU_KEYS = {
@@ -83,6 +84,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      REPORT_MENU_KEY,
       SALES_ORDERS_MENU_KEY,
       SALES_RETURNS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
@@ -125,6 +127,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      REPORT_MENU_KEY,
       SALES_ORDERS_MENU_KEY,
       SALES_RETURNS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
@@ -151,6 +154,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.offerings,
       CONTACTS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.profile,
+      REPORT_MENU_KEY,
       SALES_ORDERS_MENU_KEY,
       SALES_RETURNS_MENU_KEY,
       ORGANIZATION_MENU_KEYS.branding,
