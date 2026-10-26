@@ -87,10 +87,10 @@ Do **not** run the whole suite locally. CI runs it on every push (section 8). Th
 ## 8. Finish checklist (every step, in this order)
 A session is finished only when all of these hold. "Done" without a green CI run is not done.
 1. Every test the plan lists for this part exists. Their names go in the handoff.
-2. Every change is committed. `git status` shows nothing.
-3. Rebase on the latest main: `git rebase main` (local) or onto `origin/main` (cloud). Resolve conflicts in add-only files by keeping both sides.
-4. Push the branch: `git push -u origin <branch>`. Pushing card branches needs no extra permission (owner, 2026-10-22). **Never push `main`.**
-5. CI runs on the push. Wait for it: `gh run watch` or `gh run list --branch <branch>`. If it fails, read `gh run view <run> --log-failed`, fix, commit, push again.
+2. **Before the first push, run locally** (card 3.44; Docker and Redis 6380 run on this PC again): the test files you changed or added, lint and typecheck of the workspaces you touched, and, for a screen card, the browser suite of that app (`VITEST_MAX_WORKERS=1 npm run test:browser` in `apps/admin`, `apps/platform` or `apps/storefront`). Each CI run costs about 15 minutes; a failure found locally costs one.
+3. Every change is committed. `git status` shows nothing.
+4. Rebase on the latest main: `git rebase main` (local) or onto `origin/main` (cloud). Resolve conflicts in add-only files by keeping both sides.
+5. Push the branch: `git push -u origin <branch>`. Pushing card branches needs no extra permission (owner, 2026-10-22). **Never push `main`.** CI runs on the push. Wait for it: `gh run list --branch <branch>`, then `gh run view <run> --json jobs`. If it fails, read the failed job's log, fix, commit, push again.
 6. Write `docs/handoffs/<card>-<api|ui>.md`:
    - what was built, file by file area
    - deviations from the plan, with the reason (or "none")
@@ -99,8 +99,8 @@ A session is finished only when all of these hold. "Done" without a green CI run
    - known gaps (they also go in the STATUS note)
    - T1 only: the section 11 table (item → test name or file, or "n/a" with a reason)
 7. Update your own STATUS row: `implemented (awaiting review), part <A|B>, CI <run link>`.
-8. Commit and push the handoff and STATUS. CI must be green on this last push too.
-9. Run `npm run card:check` after that CI run is green. Every line must say PASS. Paste the whole output into the "done" message. A "done" without this output is not done, and the lead does not start a review.
+8. Commit and push the handoff and STATUS. A push that changes only `docs/` runs no CI (card 3.44), so you do not wait again: `card:check` reads the green run of your last code commit. If you change code after that, push it and wait for green CI again.
+9. Run `npm run card:check`. Every line must say PASS. Paste the whole output into the "done" message. A "done" without this output is not done, and the lead does not start a review.
 
 ## 9. Ready board (2026-10-24 afternoon)
 | Card / part | Ready? | Waits for | Tier | Folder |

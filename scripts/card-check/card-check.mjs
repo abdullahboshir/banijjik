@@ -12,6 +12,8 @@ const HANDOFF_PATH = /^docs\/handoffs\/(?!.*-review-R\d+\.md$).+\.md$/;
 const CONFLICT_MARKER = "^(<{7}|>{7})( |$)";
 const FOCUSED_TEST = /\b(it|describe|test)\.only\(/;
 const SCRIPT_SOURCE = /\.(ts|tsx|mjs|js)$/;
+// CI skips pushes that change only this folder (ci.yml paths-ignore, card 3.44).
+const DOCS_ONLY_PATHSPEC = ":(exclude)docs";
 
 function run(command, args) {
   return execFileSync(command, args, {
@@ -48,6 +50,28 @@ function readLatestPushRun(branch, headSha) {
   return latest ?? null;
 }
 
+/**
+ * The CI run that proves the code at HEAD: the run of HEAD itself, or, when HEAD was a docs-only
+ * push that CI skipped, the run of the last commit that changed anything outside docs/.
+ */
+function readCiRunForCode(branch, headSha) {
+  const headRun = readLatestPushRun(branch, headSha);
+  if (headRun !== null) return { ciCommitSha: headSha, ciRun: headRun };
+  const lastCode = tryRun("git", [
+    "log",
+    "-1",
+    "--format=%H",
+    "HEAD",
+    "--",
+    ".",
+    DOCS_ONLY_PATHSPEC,
+  ]);
+  if (!lastCode.ok || lastCode.output === "" || lastCode.output === headSha) {
+    return { ciCommitSha: headSha, ciRun: null };
+  }
+  return { ciCommitSha: lastCode.output, ciRun: readLatestPushRun(branch, lastCode.output) };
+}
+
 function addedLinesWithFocusedTests(changedPaths) {
   const sources = changedPaths.filter((path) => SCRIPT_SOURCE.test(path));
   if (sources.length === 0) return [];
@@ -57,7 +81,7 @@ function addedLinesWithFocusedTests(changedPaths) {
     .filter((line) => line.startsWith("+") && !line.startsWith("+++") && FOCUSED_TEST.test(line));
 }
 
-/** Reads every fact the gate needs from git and gh. Network: one fetch and one gh call. */
+/** Reads every fact the gate needs from git and gh. Network: one fetch and one or two gh calls. */
 export function collectFacts() {
   const branch = run("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
   tryRun("git", ["fetch", "--quiet", "origin"]);
@@ -76,7 +100,7 @@ export function collectFacts() {
     changedPaths,
     conflictMarkerFiles: markerFiles.ok ? markerFiles.output.split("\n").filter(Boolean) : [],
     focusedTestLines: addedLinesWithFocusedTests(changedPaths),
-    ciRun: readLatestPushRun(branch, headSha),
+    ...readCiRunForCode(branch, headSha),
   };
 }
 
@@ -87,6 +111,19 @@ function describeCiRun(ciRun) {
   if (ciRun.status !== "completed")
     return { ok: false, detail: `still ${ciRun.status}: ${ciRun.url}` };
   return { ok: ciRun.conclusion === "success", detail: `${ciRun.conclusion}: ${ciRun.url}` };
+}
+
+function describeCiCheck(facts) {
+  const ciCommitSha = facts.ciCommitSha ?? facts.headSha;
+  const { ok, detail } = describeCiRun(facts.ciRun);
+  const provenByEarlierCommit = ciCommitSha !== facts.headSha;
+  return {
+    name: `CI green on ${ciCommitSha.slice(0, 8)}`,
+    ok,
+    detail: provenByEarlierCommit
+      ? `${detail} (last code commit; later commits change docs/ only)`
+      : detail,
+  };
 }
 
 /** Pure: turns the facts into named checks, so the rules are testable without git. */
@@ -135,7 +172,7 @@ export function evaluateCard(facts) {
       ok: facts.focusedTestLines.length === 0,
       detail: facts.focusedTestLines.join(" | ") || "none",
     },
-    { name: `CI green on ${shortSha}`, ...describeCiRun(facts.ciRun) },
+    describeCiCheck(facts),
   ];
 }
 

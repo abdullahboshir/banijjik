@@ -61,6 +61,29 @@ describe("card-check", () => {
     }
   });
 
+  it("accepts the green run of the last code commit when later commits change docs only", () => {
+    const codeSha = "2e835e3d9524898c3a6f3d32605821ce6a49ba7c";
+    const facts = finishedCard({ ciCommitSha: codeSha });
+
+    const [ciCheck] = evaluateCard(facts).filter((check) => check.name.startsWith("CI green"));
+
+    expect(failedCheckNames(facts)).toEqual([]);
+    expect(ciCheck.name).toBe("CI green on 2e835e3d");
+    expect(ciCheck.detail).toContain("later commits change docs/ only");
+  });
+
+  it("fails when the last code commit has no green run either", () => {
+    const codeSha = "2e835e3d9524898c3a6f3d32605821ce6a49ba7c";
+    const red = { status: "completed", conclusion: "failure", url: "https://ci/run/4" };
+
+    expect(failedCheckNames(finishedCard({ ciCommitSha: codeSha, ciRun: red }))).toEqual([
+      "CI green on 2e835e3d",
+    ]);
+    expect(failedCheckNames(finishedCard({ ciCommitSha: codeSha, ciRun: null }))).toEqual([
+      "CI green on 2e835e3d",
+    ]);
+  });
+
   it("does not count a review file as the session's handoff", () => {
     const facts = finishedCard({
       changedPaths: ["docs/handoffs/M.5-api-review-R1.md", "docs/STATUS.md"],
