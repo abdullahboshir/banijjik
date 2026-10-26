@@ -164,7 +164,7 @@ async function completeInstantSale(): Promise<string> {
     body: {
       locationId,
       contactId,
-      fulfillmentMethod: "PICKUP",
+      fulfillmentMethod: "INSTANT",
       lines: [
         {
           offeringId: productOfferingId,
