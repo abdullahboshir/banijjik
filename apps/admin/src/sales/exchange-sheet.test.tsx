@@ -158,7 +158,7 @@ describe("exchange sheet, the return step", () => {
   it("keeps the next step closed until a returned line and a reason are chosen", async () => {
     const user = userEvent.setup();
     renderSheet();
-    const next = screen.getByRole("button", { name: exchangeLabels.next });
+    const next = await screen.findByRole("button", { name: exchangeLabels.next });
     expect(next).toHaveProperty("disabled", true);
 
     await user.click(screen.getByRole("button", { name: returnLabels.sheet.increase }));

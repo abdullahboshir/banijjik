@@ -260,11 +260,28 @@ async function payOrderInCash(page: Page): Promise<void> {
   await waitForBadge(page, message("payments.status.PAID"));
 }
 
+/** Picks one unit of the first line and waits until the count reads 1; the click is retried once the sheet has settled. */
+async function pickOneReturnLine(page: Page): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await clickByName(page, message("returns.sheet.increase"));
+    const picked = await page
+      .waitForFunction(
+        () =>
+          document.querySelector("[role=dialog] span[aria-live=polite]")?.textContent?.trim() ===
+          "1",
+        { timeout: 3_000 },
+      )
+      .catch(() => null);
+    if (picked !== null) return;
+  }
+  throw new Error("the return line did not take the pick");
+}
+
 /** Returns the expensive pack and takes the cheaper one in its place: the difference stays as store credit. */
 async function exchangeForCheaperPack(page: Page): Promise<void> {
   await clickByName(page, message("returns.exchange.open"));
   await waitForDialogSettled(page);
-  await clickByName(page, message("returns.sheet.increase"));
+  await pickOneReturnLine(page);
   await page.waitForSelector("#exchange-return-reason", { visible: true });
   await page.select("#exchange-return-reason", "CHANGED_MIND");
   await clickEnabledDialogButton(page, message("returns.exchange.next"));
