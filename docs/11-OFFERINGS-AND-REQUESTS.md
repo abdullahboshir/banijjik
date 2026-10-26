@@ -157,6 +157,8 @@ HELD ──request──► REQUESTED ──confirm──► CONFIRMED ──che
 ### 5.3 Walk-in services
 A SERVICE sold on the spot without a slot (`bookingMode: WALK_IN_ONLY`, or a stylist's free walk-in) is an **Order line** (ADR-044), with `performedByMemberId`. No booking.
 
+Implementation (card 3.40): PRODUCT and effective SERVICE lines are accepted in instant admin sales, POS sales and the new order of an exchange only. A walk-in service holds no performer calendar or resource and writes no stock movement; draft, placed and updated orders remain product-only.
+
 ### 5.4 Deposits and cancellation policy (settings, per org, overridable per offering via `depositRule`)
 - `booking.deposit.required` (`NONE` default \| `FIXED` \| `PERCENT` \| `FULL`), `booking.deposit.value`
 - `booking.freeCancelHours` (default 24)

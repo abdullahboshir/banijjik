@@ -129,7 +129,7 @@ function callCancel(shop: SalesShop, order: OrderRef, reason: string): Promise<R
 }
 
 describe("the sales refusals", () => {
-  it("declines a SERVICE or PLAN line because it belongs to bookings", async () => {
+  it("declines a SERVICE in a draft and a PLAN in both draft and instant orders", async () => {
     const shop = shopOf(await worldFor(harness, RETAIL, GYM));
     const service = await publishOffering(shop, {
       kind: "SERVICE",
@@ -152,6 +152,10 @@ describe("the sales refusals", () => {
     });
     const refusedPlan = await callDraft(shop, bodyOf(shop, plan));
     expectRefused(refusedPlan, 422, "BUSINESS_RULE", {
+      ruleKey: SALES_RULE_KEY.KIND_NEEDS_BOOKING,
+      kind: "PLAN",
+    });
+    expectRefused(await callInstant(shop, bodyOf(shop, plan)), 422, "BUSINESS_RULE", {
       ruleKey: SALES_RULE_KEY.KIND_NEEDS_BOOKING,
       kind: "PLAN",
     });

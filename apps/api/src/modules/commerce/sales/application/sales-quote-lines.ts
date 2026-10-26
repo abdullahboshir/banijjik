@@ -4,12 +4,7 @@ import { asId, type OfferingId, type OrganizationId } from "@banijjik/ids";
 import { performerNotAtLocation } from "../domain/errors.js";
 import type { PreparedLines, OrderLineInput } from "./sales-line-preparation.js";
 import { prepareOrderLines } from "./sales-line-preparation.js";
-import type {
-  SalesCatalogReader,
-  SalesKindReader,
-  SalesPerformerReader,
-  SalesQuoter,
-} from "./ports/sales-ports.js";
+import type { SalesCatalogReader, SalesPerformerReader, SalesQuoter } from "./ports/sales-ports.js";
 
 function namedPerformers(lines: readonly OrderLineInput[]): string[] {
   const named = lines.flatMap((line) =>
@@ -43,7 +38,6 @@ export async function quoteAndPrepare(
     readonly quoter: SalesQuoter;
     readonly catalog: SalesCatalogReader;
     readonly performers: SalesPerformerReader;
-    readonly kinds: SalesKindReader;
   },
   input: {
     readonly allowedKinds: readonly OfferingKind[];
@@ -79,7 +73,10 @@ export async function quoteAndPrepare(
       modifierOptionIds: line.modifierOptionIds,
     })),
   });
-  const effectiveKinds = await ports.kinds.effectiveKinds(input.organizationId);
-  const allowedKinds = input.allowedKinds.filter((kind) => effectiveKinds.includes(kind));
-  return prepareOrderLines({ quote, catalogLines, lineInputs: input.lines, allowedKinds });
+  return prepareOrderLines({
+    quote,
+    catalogLines,
+    lineInputs: input.lines,
+    allowedKinds: input.allowedKinds,
+  });
 }

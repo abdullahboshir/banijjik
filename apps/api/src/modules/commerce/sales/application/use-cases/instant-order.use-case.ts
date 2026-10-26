@@ -97,8 +97,12 @@ export class InstantOrderUseCase {
     const settings = await this.dependencies.settings.read(input.organizationId);
     const timeZone = await this.dependencies.timeZone.read(input.organizationId);
     const now = this.dependencies.clock.now();
+    const effectiveKinds = await this.dependencies.kinds.effectiveKinds(input.organizationId);
+    const allowedKinds = [OFFERING_KIND.PRODUCT, OFFERING_KIND.SERVICE].filter((kind) =>
+      effectiveKinds.includes(kind),
+    );
     const prepared = await quoteAndPrepare(this.dependencies, {
-      allowedKinds: [OFFERING_KIND.PRODUCT, OFFERING_KIND.SERVICE],
+      allowedKinds,
       organizationId: input.organizationId,
       locationId: input.body.locationId,
       lines: input.body.lines,

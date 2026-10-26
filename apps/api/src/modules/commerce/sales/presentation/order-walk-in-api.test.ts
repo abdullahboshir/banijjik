@@ -146,7 +146,7 @@ describe("walk-in service orders", () => {
     expect(response.status).toBe(400);
     expect(response.body.error.details.fields).toContainEqual({
       path: "lines.0.quantity",
-      messageKey: "validation.integer_required",
+      messageKey: "validation.invalid_type",
     });
     expect(await listOrders(shop)).toEqual([]);
   });

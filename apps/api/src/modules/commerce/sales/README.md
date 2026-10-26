@@ -12,7 +12,10 @@ Totals come from the pricing quoter; stock effects from the inventory `StockLedg
 
 ## Rules worth knowing
 
-- Lines are PRODUCT offerings only; prices never come from the client.
+- Draft, placed and updated orders accept PRODUCT lines only; prices never come from the client.
+- Instant admin/POS sales and exchange new orders also accept effective ACTIVE SERVICE lines (card 3.40), including SLOT and WALK_IN_ONLY. A performer is optional and must be assignable at the sale location.
+- Walk-in services hold no calendar or resource and never draw stock, even with legacy stock components. Returns refund their value without stock or COGS reversal; SERVICE commission rules accrue and reconcile by returned units.
+- One order revenue journal splits goods between REVENUE_SERVICE and REVENUE_PRODUCT; discounts, tax and rounding keep their existing posting rules.
 - ORDER number is assigned at place; INVOICE number at completion; drafts have neither.
 - Stock reservations are keyed `(ORDER, orderId)` inside the transaction.
 - Monthly limits count placed and instant orders; cancellation gives nothing back.
