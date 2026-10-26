@@ -216,6 +216,10 @@ Each card ports logic and tests (`01-ARCHITECTURE.md §8`) and builds both API a
 **3.26 Stable kernel tests** (2026-10-23: three time-dependent kernel tests without sleeps).
 **3.38 Resource time-off without a server error** (2026-10-26: the time-off write and its audit in one transaction; API tests for the endpoint).
 **3.39 POS device limit and devices screen** (2026-10-26: `posDevices` enforced, `ADDON_POS` +1 device and a `PACK_POS_DEVICE` pack, device list and revoke inside the caller's locations, Settings → Sales → POS devices).
+**3.40 Walk-in services as order lines** (Phase 3 review F1, T1: a SERVICE line with a performer in admin instant orders and POS sales, no stock and no booking (`11 §5.3`); posted to `REVENUE_SERVICE`; returns without stock). Blocks Phase 4.
+**3.41 Day scenarios with report numbers** (Phase 3 review F2, T2: one API scenario per SALON, GYM, COACHING and RETAIL world through the real outbox and worker; asserts report home and daily figures, the Z-report, a balanced trial balance and the commission payable). After 3.40; blocks Phase 4.
+**3.42 POS till leftovers** (Phase 3 review F3, T2 UI: held carts, till returns and the price-override screen on the till; a browser test of the credit-sale refusal).
+**3.43 API correctness leftovers** (Phase 3 review F4: a reversed till cash payment leaves expected cash; the cashier loses contact create and update; `approverUserId` → `approverMemberId`; typed event payloads instead of `as unknown as`; `placeOrder` keeps one idempotency key across retries).
 **3.11 Staff commission** (OPTIONAL `commission`, ADR-100: rules per member or role and per offering, category or kind; performer on booking and order lines; append-only accruals; payouts posted through `accounting`).
 - Phase done: a salon, a gym and a coaching centre from templates take bookings and enrollments, sell services and products at the counter, collect fees and dues, and pay staff commission, with correct numbers in reports; **and** a product seller runs a full day (stock in → POS + online orders → returns → day close), including loose and packed sale from one stock. No industry-specific code.
 

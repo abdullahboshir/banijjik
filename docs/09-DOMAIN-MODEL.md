@@ -536,7 +536,7 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 
 | Module (path) | Entities it owns (only it writes them) |
 |---|---|
-| `core/iam` | User, RefreshSession, PlatformOperator, Role |
+| `core/iam` | User, RefreshSession, PlatformOperator, Role, ApprovalToken (ADR-121) |
 | `core/organization` | Organization, OrganizationSlugHistory, Location, Member, Invitation |
 | `core/custom-field` | CustomFieldDefinition |
 | `core/settings` | SettingValue, TermOverride |
@@ -549,16 +549,22 @@ Details belong to cards 3.3, 3.5 and 3.8; the shape is fixed here.
 | `commerce/contact` | Contact, CustomerAccount, CustomerSession |
 | `commerce/catalog` | Offering, OfferingLocation, Category, ModifierGroup, SearchSynonym, OfferingSocialLink |
 | `commerce/inventory` | InventoryItem, StockMovement, InventoryLevel, StockReservation |
-| `commerce/sales` | Order, SalesReturn |
-| `commerce/booking` | Resource, ResourceTimeOff, Booking, EventSession |
+| `commerce/pricing` | TaxClass, Promotion (ADR-120) |
+| `commerce/sales` | Order, SalesReturn, OrderCounter (per-month counts for package limits) |
+| `commerce/booking` | Resource, ResourceTimeOff, ResourceSlotUsage, Booking, EventSession |
 | `commerce/enrollment` | Enrollment, EnrollmentPeriod, CheckIn |
 | `commerce/payment` | Payment, StoreCreditEntry, PaymentSummary |
+| `commerce/pos` | PosDevice, PosSession (with its Z-report), PosHeldCart (ADR-146) |
+| `commerce/commission` | CommissionRule, CommissionEntry, CommissionPayout, CommissionSourceMark (ADR-135) |
+| `commerce/report` | DailySummary, ReportEventApplied (ADR-148) |
 | `commerce/accounting` | Account, JournalEntry |
 | `commerce/expense` | Expense, ExpenseCategory |
+| `commerce/credit` | CreditPack, CreditEntry, CreditBalance, CreditPurchase, ListingUnlock (track M) |
+| `commerce/directory` | Listing, ListingStats, ListingBlock, ListingReport (track M) |
 | `commerce/delivery` | rider delivery assignments (card 5.3), RiderCashHandover |
 | `channel/messaging` | Channel, Conversation, Message |
 | `channel/bot` | KnowledgeEntry |
-| `channel/website` | Site, Page, Theme, Domain, WebsiteTemplate (cards 4.1–4.5) |
+| `commerce/website` | SitePage (M.6a); Site, Theme, Domain, WebsiteTemplate come with cards 4.1–4.5 |
 | `integration/courier` | Consignment, CourierSettlement |
 
 Full module list, classes and manifests: `10-MODULE-CATALOG.md`.

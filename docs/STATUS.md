@@ -144,7 +144,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.37 payment browser test booking time | merged (2026-10-25, lead card (Opus 5.5), CI 40231839794; handoff `docs/handoffs/3.37.md`) | the payment screens browser test booked "now + 24 h"; on runs between about 17:30 and 18:00 UTC the service ran past the 23:59 closing time (`409 SLOT_UNAVAILABLE`, CI 40216646977 and 40217669280). It now books tomorrow 10:00 Dhaka |
 | 3.38 resource time-off saves without a server error | planned (2026-10-26, `docs/plans/3.38.md`, T2, one part `s/3.38-api-time-off-transaction`) | `POST …/resources/:resourceId/time-off` answered 500: the audit ran outside a transaction (found in the 3.33 review) |
 | 3.39 POS device limit and devices screen | planned (2026-10-26, `docs/plans/3.39.md`; A API T2 now, B screen T2 after A) | `posDevices` enforced with the organization limit lock; `ADDON_POS` +1 device, new `PACK_POS_DEVICE`; device list and revoke kept inside the caller's locations (defect found while planning); Settings → Sales → POS devices page |
-| Phase 3 review | todo | |
+| Phase 3 review | PASS WITH FIXES (2026-10-26, `docs/handoffs/phase-3-review.md`) | Phase 4 code merges after 3.40 (walk-in services, F1) and 3.41 (day scenarios with report numbers, F2). 3.42 (POS till leftovers) and 3.43 (API leftovers) may run beside Phase 4. Doc drift fixed: `09 §6` ownership map, report README |
 
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
 | Card | Status | Note |

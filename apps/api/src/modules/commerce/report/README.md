@@ -15,5 +15,6 @@ day (`DailySummary`) and serves the home and the reports from those rows. No req
   money in net) are computed in `domain/summary-counters.ts` and never stored.
 - **Sections:** the home lists only the sections whose source modules are effective (ADR-033).
 
-Not done yet: the rebuild command (plan decision 6) and the grants for owner and manager (see the
-handoff `docs/handoffs/3.10-api.md`).
+Grants: owner and manager read both reports (`report-role-grants.ts`); other roles do not.
+
+Not done yet: the rebuild command (plan decision 6, see the handoff `docs/handoffs/3.10-api.md`).
