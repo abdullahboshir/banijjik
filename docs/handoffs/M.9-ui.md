@@ -20,7 +20,8 @@ Branch `s/M.9-ui-sms-settings` (from `origin/main`, A1 merged). Plan `docs/plans
 2. **Platform form duplicates the admin form's pure state helpers** (`apps/platform/src/sms-gateway/sms-gateway-state.ts` mirrors `apps/admin/src/sms/sms-state.ts`). Reason: there is no shared UI package for SMS, and the app-to-app share would need a new package, which the card does not ask for. The platform form is smaller (no source line, no log list).
 3. **Response types** (`SmsGatewayView`, `SmsTestResult`, `SmsLogPage`, `PlatformSmsGatewayView`) live in the two apps. The API does not export response types either, so there was no contracts type to reuse. Not an enum or status, so no contracts change.
 4. **Menu-count tests in apps/api** (`me-config-menu-api.test.ts`, `entitlement-api.test.ts`): the owner's expected menu lists gained `sms.gateway` and `sms.gateway.read` after `sales.returns`. Staff and viewer lists are unchanged (they do not hold the permission). `packages/contracts` tests needed no change.
-5. The Amendment asked for `menuKey`, `surface`, `groupKey`, `path`, `permissionKey`, `settingsTopicKey`, `order` and `labelTermKey`; the icon key (`bell`) and the order (`10`) were my choice.
+5. **Settings-home browser test:** `apps/admin/src/settings/settings-screens.browser.test.ts` expected the owner's topic list without Automation; the SMS menu entry adds the topic, so the expected list gained `settings.topic.AUTOMATION.title` between Sales and Advanced (expected list only, no check changed).
+6. The Amendment asked for `menuKey`, `surface`, `groupKey`, `path`, `permissionKey`, `settingsTopicKey`, `order` and `labelTermKey`; the icon key (`bell`) and the order (`10`) were my choice.
 
 ## Tests (names as in the plan)
 Unit (admin, `apps/admin/src/sms/`):
@@ -46,7 +47,7 @@ Note: the plan's wording "shows the outcome, the log list and the saved state" i
 - API (`--config src/test-support/vitest.config.ts`): the menu-related files and the module-contract checks, 10 files, 116 tests: all pass after the owner-menu expectation update (the 4 failures before the update were exactly those expectations).
 - `next build` of the admin app: exit 0 (new route `/[orgSlug]/settings/sms` is in the build output).
 - `turbo build` of the shared packages and `@banijjik/api`: exit 0.
-- **Browser suites not run locally.** The browser stack starts its API on port 4000, which is held by another node process (PID 964) on this PC. A retry after about 3.5 minutes failed the same way (`POST /auth/register` answered `errors.origin_not_allowed`, because the other process has other CORS origins). Per rule 6, the browser suites are judged on CI.
+- **Browser suites not run locally (port 4000 held by another process).** The browser stack starts its API on port 4000, which is held by another node process (PID 964) on this PC. A retry after about 3.5 minutes failed the same way (`POST /auth/register` answered `errors.origin_not_allowed`, because the other process has other CORS origins). Per rule 6, the browser suites are judged on CI.
 
 ## Known gaps (also in STATUS)
 - **Phone navigation:** the platform bottom navigation shows only the first five entries (`MAX_BOTTOM_NAV_SLOTS = 5`). The platform super admin already had six entries, so `Operators` was already hidden on a phone; the new SMS entry is last, so it is hidden on a phone too. A menu order or shell decision for the lead.
@@ -56,4 +57,6 @@ Note: the plan's wording "shows the outcome, the log list and the saved state" i
 - **Payload types** in the apps (deviation 3).
 
 ## CI
-Pending. Link to be added after the push.
+Green: https://github.com/abdullahboshir/banijjik/actions/runs/40314958204 (last code commit `a782f003`; attempt 2). Admin, platform and storefront browser suites all succeeded on that run.
+
+Attempt 1 of the same commit failed in `src/website/website-pages.browser.test.ts` ("edits and publishes a page, and the storefront read shows it", the storefront read stayed 404 for 30 s). The same code passed that test in the run before, so it was rerun once as a timing flake (not in the known list; no code in this card touches the website module). Attempt 1 of `a782f003`-1 (`40314958204` before the rerun) also showed the settings-home test expectation, fixed in `a782f003`.
