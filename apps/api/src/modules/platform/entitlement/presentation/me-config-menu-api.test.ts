@@ -45,6 +45,7 @@ const SALES_ORDERS_MENU_KEY = "sales.orders";
 // Returns (card 3.5b B) sit right after orders for every role that reads returns.
 const SALES_RETURNS_MENU_KEY = "sales.returns";
 const POS_REGISTER_MENU_KEY = "pos.register";
+const POS_DEVICES_MENU_KEY = "pos.devices";
 
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
@@ -101,6 +102,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
       TAX_CLASSES_MENU_KEY,
+      POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
@@ -145,6 +147,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
       TAX_CLASSES_MENU_KEY,
+      POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
@@ -171,6 +174,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
       TAX_CLASSES_MENU_KEY,
+      POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
