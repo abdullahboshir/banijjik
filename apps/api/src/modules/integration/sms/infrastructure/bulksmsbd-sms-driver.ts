@@ -1,6 +1,6 @@
 import { SMS_FAILURE_REASON, SMS_OUTCOME, type SmsFailureReason } from "@banijjik/contracts/sms";
 import type { SmsDriver, SmsDriverResult } from "../application/ports.js";
-import { containsUnicode, numericCode, smsPost } from "./sms-http.js";
+import { containsUnicode, numericCode, smsPost, SMS_HTTP_TIMEOUT_MS } from "./sms-http.js";
 
 // Live-provider verification is required in the M.9 B Bangla pilot before launch.
 const UNICODE_FLAG = "unicode";
@@ -20,6 +20,7 @@ const FAILURE_REASONS: Readonly<Record<number, SmsFailureReason>> = {
 export class BulkSmsBdSmsDriver implements SmsDriver {
   constructor(
     private readonly credentials: { baseUrl: string; apiKey: string; senderId: string },
+    private readonly timeoutMs = SMS_HTTP_TIMEOUT_MS,
   ) {}
 
   async send(input: { msisdn: string; text: string }): Promise<SmsDriverResult> {
@@ -30,10 +31,14 @@ export class BulkSmsBdSmsDriver implements SmsDriver {
       senderid: this.credentials.senderId,
       message: input.text,
     });
-    const response = await smsPost(`${this.credentials.baseUrl}/smsapi`, {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-    });
+    const response = await smsPost(
+      `${this.credentials.baseUrl}/smsapi`,
+      {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      },
+      this.timeoutMs,
+    );
     const code = numericCode(response.body["response_code"]);
     if (response.status < 400 && code === 202) {
       return { outcome: SMS_OUTCOME.SENT, parts: null, providerMessageId: null };

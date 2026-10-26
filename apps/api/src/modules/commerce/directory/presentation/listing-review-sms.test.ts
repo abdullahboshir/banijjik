@@ -34,6 +34,11 @@ import {
   type TwoOrganizations,
 } from "../../../../test-support/two-organizations.js";
 import { buildCustomerSmsNotifier } from "../../../commerce/contact/index.js";
+import { SMS_PURPOSE } from "@banijjik/contracts/sms";
+import { buildGatewaySmsSender } from "../../../integration/sms/index.js";
+import { startSmsStub } from "../../../../test-support/sms-http-stub.js";
+import { createPlatformActor } from "../../../../test-support/platform-world.js";
+import { PLATFORM_ROLE } from "@banijjik/contracts";
 import {
   buildNotifyReviewResultHandler,
   directorySettingsFromResolver,
@@ -44,14 +49,27 @@ registerIamApiModels();
 
 const templateReader = new ContractTemplateReader();
 let harness: IamApiHarness;
+let smsStub: Awaited<ReturnType<typeof startSmsStub>>;
 
 beforeAll(async () => {
+  smsStub = await startSmsStub((request) => {
+    if (request.url === "/auth/tokens") return { body: { token: "review-gateway-token" } };
+    return { body: { response_code: 202 } };
+  });
   // `tenantRouters: []` makes the harness build the real v1 router with this permissive template.
-  harness = await startIamApi({ templateReader, tenantRouters: [] });
+  harness = await startIamApi({
+    templateReader,
+    tenantRouters: [],
+    environmentOverrides: {
+      SMS_ADAREACH_BASE_URL: smsStub.baseUrl,
+      SMS_BULKSMSBD_BASE_URL: smsStub.baseUrl,
+    },
+  });
 });
 
 afterAll(async () => {
   await harness.dispose();
+  await smsStub.close();
 });
 
 const DIRECTORY_BLOCK = {
@@ -174,8 +192,15 @@ async function newestReviewEvent(organizationId: string, eventType: string): Pro
 /** The production handler over the real settings and contact adapters. */
 function reviewRegistry(
   options: {
-    readonly smsDriver?: "test-inbox" | "disabled";
+    readonly smsDriver?: "test-inbox" | "disabled" | "gateway";
     readonly sender?: { send(message: { phoneE164: string; text: string }): Promise<void> };
+    readonly gatewaySender?: {
+      send(message: {
+        phoneE164: string;
+        text: string;
+        purpose: typeof SMS_PURPOSE.LISTING_REVIEW_RESULT;
+      }): Promise<void>;
+    };
   } = {},
 ): EventHandlerRegistry {
   const modules = buildModuleRegistry();
@@ -197,6 +222,9 @@ function reviewRegistry(
       notifier: buildCustomerSmsNotifier({
         smsDriver: options.smsDriver ?? "test-inbox",
         clock: harness.clock,
+        ...(options.gatewaySender === undefined
+          ? {}
+          : { sender: { send: options.gatewaySender.send.bind(options.gatewaySender) } }),
         ...(options.sender === undefined ? {} : { sender: options.sender }),
       }),
       composer: buildReviewResultMessageComposer(buildDirectoryBlockReader()),
@@ -341,6 +369,54 @@ describe("review-result SMS", () => {
     ).toBe("HANDLED");
     expect(await reviewTexts(world.organizationA, subject)).toHaveLength(0);
     expect(await sentRecords(world.organizationA)).toBe(0);
+  });
+
+  it("sends the review result through the configured gateway and records its SMS purpose", async () => {
+    const world = await aDirectoryWorld();
+    const subject = await reviewedListing(world, "APPROVED");
+    const superAdmin = await createPlatformActor(harness.app, harness.connections, [
+      PLATFORM_ROLE.SUPER_ADMIN,
+    ]);
+    const gateway = await superAdmin.call("put", "/sms-gateway", {
+      version: 0,
+      enabled: true,
+      activeProvider: "BULKSMSBD",
+      bulksmsbd: { senderId: "REVIEW", apiKey: "review-platform-key" },
+    });
+    expect(gateway.status).toBe(200);
+    const gatewaySender = buildGatewaySmsSender({
+      config: harness.config.sms,
+      clock: harness.clock,
+      limits: { async assertBelow() {} },
+      policy: {
+        async read() {
+          return { dailyLimit: 100, timeZone: "Asia/Dhaka" };
+        },
+      },
+    });
+    const registry = reviewRegistry({
+      smsDriver: "gateway",
+      gatewaySender,
+    });
+
+    const result = await runReview(
+      registry,
+      world.organizationA,
+      DIRECTORY_EVENT_TYPE.LISTING_APPROVED,
+    );
+
+    expect(result).toBe("HANDLED");
+    expect(smsStub.requests.some((request) => request.url === "/smsapi")).toBe(true);
+    const logs = await harness.connections.tenantShared
+      .collection("sms_logs")
+      .find({
+        organizationId: world.organizationA,
+        purpose: SMS_PURPOSE.LISTING_REVIEW_RESULT,
+        outcome: "SENT",
+      })
+      .toArray();
+    expect(logs).toHaveLength(1);
+    expect(logs[0]?.["phoneLastDigits"]).toBe(subject.phone.slice(-3));
   });
 
   it("does nothing and does not fail while the SMS driver is disabled", async () => {

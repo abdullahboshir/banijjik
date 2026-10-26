@@ -3,14 +3,16 @@
 Branch: `s/M.9-api-sms-gateways`  
 Plan: [docs/plans/M.9.md](../plans/M.9.md)  
 Tier: T1  
-CI: [run 40273274915](https://github.com/abdullahboshir/banijjik/actions/runs/40273274915) — still in progress; verify is in “Build workspace packages” and browser is in “Build,” both since 05:16 UTC. GitHub does not expose logs until each job completes.
+CI: pending final rebased commit; record the branch-head push run after it completes.
 
 ## What changed
 
 - Added `integration/sms` with tenant and platform gateway settings, encrypted write-only credentials, audit actions, guarded explicit test sends, privacy-preserving SMS logs, Dhaka business-date daily limits, platform-paid monthly limits, and configured adaReach/BulkSMSBD drivers.
 - Added worker wiring for customer OTP and directory review notifications. Permanent refusals resolve and transient provider errors retry the outbox event.
+- Applied R1: production always requires the credential encryption key; platform gateway testing no longer wires unused throwing dependencies; non-JSON 4xx responses resolve as permanent refusals; timeout tests use short injected limits; the tenant router hot file retains its pre-existing lines unchanged.
+- Added real-driver HTTP-stub integration coverage for OTP sent/refused/transient outcomes and M.8b review-result SMS. Expanded secret checks to tenant and platform keys and sealed values, and tested cross-organization platform fallback without using organization A's gateway.
 - Added permissions, platform role grants, validation schemas, BN/EN messages, production encryption-key validation, and SMS configuration. Updated the SMS module catalog row.
-- Tenant first-save now creates a tenant-scoped document so the tenancy plugin supplies/enforces the organization. Subsequent saves use version-checked updates. A first attempt using update-upsert was rejected by the tenant safety hook; this corrected path is covered by the API test.
+- Tenant first-save now creates a tenant-scoped document so the tenancy plugin supplies/enforces the organization. Subsequent saves use version-checked updates. Audit entity IDs use the gateway row's `smsGatewaySettingId`.
 
 ## BulkSMSBD owner decision
 
@@ -26,7 +28,7 @@ BulkSMSBD Unicode flag is unverified against the live provider; the owner sends 
 - Secrets/config: same-binding open, wrong owner/field and tamper rejection; production gateway requires the encryption key.
 - OTP event: required purpose, clear-after-resolved send/refusal, preserve sealed code on a transient error.
 - Tenant/platform API on real Mongo: secret-free settings views and logs/audit, omitted-secret preservation, incomplete/stale writes, provider refusal and sixth-send rate limit, log filter/pagination, cross-organization isolation, manager read-only/cashier denied, support read-only, platform test with no tenant log.
-- Local focused run: **7 files, 144 tests passed**. Contract suite: **18 files, 76 tests passed**. SMS role grants: **1 file, 21 tests passed**. Runtime uses installed MongoDB 8.2.5 because the sandbox could not download pinned 8.0.13; CI remains the pinned-version verification.
+- Typecheck and lint passed locally. Prettier passed locally. API integration tests cannot run locally because this Windows sandbox denies MongoDB's loopback connection (`connect EACCES 127.0.0.1`) and Vitest's temporary transform files fail with `ENOENT`; the contract suite has the same sandbox temp-file issue. CI remains the authoritative integration verification.
 
 ## Verification and deviations
 
@@ -55,17 +57,17 @@ BulkSMSBD Unicode flag is unverified against the live provider; the owner sends 
 | 13 | Organization-local date | `uses the organization's local business date across Dhaka midnight`; `skips at the daily cap and logs the organization local date`. |
 | 14 | Fixed/date-boundary tests | `NOW` is 2026-10-25 19:00 UTC (01:00 Dhaka on 2026-10-26); both business-date tests use this fixed clock. |
 | 15 | User regex safety | n/a — no user-controlled regex search. |
-| 16 | Secret storage/logging/response | secret-box tests; tenant/platform API response, audit and captured-log assertions; ciphertext is owner/field bound. |
+| 16 | Secret storage/logging/response | secret-box tests; tenant password and API key plus platform API key and sealed values checked against responses, audits and captured logs; ciphertext is owner/field bound. |
 | 17 | Permission keys | Tenant and platform API tests cover owner/manager/cashier and super-admin/support; middleware uses contract permission keys. |
 | 18 | Location tenancy/cross-location | n/a — gateway settings are organization-wide and use `requireAllLocations`; cross-organization isolation is tested. No location-owned SMS rows exist. |
-| 19 | Unsafe casts in production | No `as unknown as` was added in production code; sender ports are required dependencies. |
+| 19 | Unsafe casts in production | No `as unknown as` was added in production code; platform and tenant gateway testers are required dependencies. |
 | 20 | Optional behavior-changing dependency | Driver, limits, policy, audit, message and sender dependencies are required. |
 | 21 | Contract vocabulary | SMS outcomes, permissions, settings, audit actions and OTP purpose use contracts. |
 | 22 | Schema/version/index/validation | Gateway schemas include version/audit fields and unique organization/scope indexes; log indexes start with `organizationId`; validation lives in `packages/validation`. |
 | 23 | Module boundaries/index exports | SMS consumers import through `integration/sms/index.ts`; index exports no infrastructure class. |
-| 24 | Plan tests/docs match | Driver, secret/config, selection/limits, OTP and tenant/platform API test cases listed above; BulkSMSBD follow-up wording matches the owner decision and remains unverified. |
+| 24 | Plan tests/docs match | Driver, secret/config, selection/limits, real-driver OTP and M.8b gateway tests, and tenant/platform API cases listed above; BulkSMSBD follow-up wording matches the owner decision and remains unverified. |
 
 ## Known gaps
 
-- CI and card gate remain open until this run and the final handoff/STATUS push are green.
+- CI and card gate remain open until the rebased final commit's run and final handoff/STATUS push are green.
 - Live BulkSMSBD Unicode behavior remains unverified as stated above; owner action is scheduled for the M.9 B pilot.

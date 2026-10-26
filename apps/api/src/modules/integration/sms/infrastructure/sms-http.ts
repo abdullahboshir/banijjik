@@ -1,29 +1,44 @@
 import { SmsTransientError } from "../application/ports.js";
 
-const REQUEST_TIMEOUT_MS = 10_000;
+export const SMS_HTTP_TIMEOUT_MS = 10_000;
 
 /** The timeout covers the body too. Never propagate fetch errors that might contain credentials. */
 export async function smsPost(
   url: string,
   input: RequestInit,
+  timeoutMs = SMS_HTTP_TIMEOUT_MS,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response;
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       ...input,
       method: "POST",
       redirect: "error",
       signal: controller.signal,
     });
-    if (response.status >= 500 || response.status === 429) throw new SmsTransientError();
-    const payload: unknown = await response.json();
-    const body = isRecord(payload) ? payload : {};
-    return { status: response.status, body };
   } catch {
     throw new SmsTransientError();
   } finally {
     clearTimeout(timeout);
+  }
+
+  if (response.status >= 500 || response.status === 429) throw new SmsTransientError();
+  try {
+    return { status: response.status, body: parseBody(await response.text()) };
+  } catch {
+    if (response.status < 400) throw new SmsTransientError();
+    return { status: response.status, body: {} };
+  }
+}
+
+function parseBody(text: string): Record<string, unknown> {
+  try {
+    const payload: unknown = JSON.parse(text);
+    return isRecord(payload) ? payload : {};
+  } catch {
+    return {};
   }
 }
 

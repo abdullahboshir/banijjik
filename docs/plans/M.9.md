@@ -118,13 +118,14 @@ export function buildGatewaySmsSender(dependencies: SmsModuleDependencies): {
 12. **Monitoring:** error capture and the dead-letter list watched daily during the pilot; the SMS log checked for REFUSED rows; the providers' balance alerts set in their portals.
 13. **Bangla SMS check:** before launch, send a real Bangla test SMS through BulkSMSBD and confirm it arrives readable. The `type` value (`unicode` vs `text`) in the BulkSMSBD adapter is unverified: the official docs page returned 404, and manoxen's adapter always sent `type=text`. The A1 T1 review checks the adapter against this item.
 
-## Out of scope
-
 ### Follow-up — owner/lead decision, 2026-10-26
 
 Proceed with HTTPS POST, API key in the form body, and `type=unicode` for Bangla. Keep the Unicode flag value in one named constant inside the BulkSMSBD adapter; tests assert exact Bangla and English request bodies. Official developer examples confirm HTTPS POST but do not document `type=unicode`.
 
 BulkSMSBD Unicode flag is unverified against the live provider; the owner sends a real Bangla test SMS during the M.9 B pilot before launch.
+
+## Out of scope
+
 Automatic failover between providers; provider balance reads; delivery reports (DLR); bulk or campaign SMS; notifying the owner when a limit skips a message (5.13); email and WhatsApp; a key-rotation tool (the `v1.` prefix leaves room for it).
 
 ## Risks & checks

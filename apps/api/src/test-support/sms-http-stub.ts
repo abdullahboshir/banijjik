@@ -10,6 +10,8 @@ export interface SmsStubRequest {
 export interface SmsStubReply {
   readonly status?: number;
   readonly body?: object;
+  readonly rawBody?: string;
+  readonly contentType?: string;
   readonly delayMs?: number;
 }
 export interface SmsStub {
@@ -38,8 +40,10 @@ export async function startSmsStub(
     requests.push(received);
     const result = reply(received);
     const send = () => {
-      response.writeHead(result.status ?? 200, { "Content-Type": "application/json" });
-      response.end(JSON.stringify(result.body ?? {}));
+      response.writeHead(result.status ?? 200, {
+        "Content-Type": result.contentType ?? "application/json",
+      });
+      response.end(result.rawBody ?? JSON.stringify(result.body ?? {}));
     };
     if (result.delayMs === undefined) send();
     else setTimeout(send, result.delayMs).unref();

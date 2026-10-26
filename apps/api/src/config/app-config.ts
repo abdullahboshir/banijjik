@@ -1,3 +1,5 @@
+import type { SmsConfig } from "./read-sms-config.js";
+
 /** Where uploaded files are stored (ADR-109). Credentials are never logged. */
 export type StorageConfig =
   | { readonly driver: "local"; readonly localRoot: string }
@@ -20,7 +22,7 @@ export interface StorefrontConfig {
 }
 
 export interface AppConfig {
-  readonly sms: import("./read-sms-config.js").SmsConfig;
+  readonly sms: SmsConfig;
   readonly nodeEnv: "development" | "test" | "production";
   readonly port: number;
   readonly logLevel: "fatal" | "error" | "warn" | "info" | "debug" | "trace";

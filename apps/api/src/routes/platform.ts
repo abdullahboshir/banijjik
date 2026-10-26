@@ -254,16 +254,6 @@ function mountSmsPlatformRouter({
       operatorId: requirePlatformOperatorId,
       audit: platformSmsAudit(platformAudit),
       message: buildSmsTestMessage(true),
-      limits: {
-        assertBelow: async () => {
-          throw new Error("platform test does not use tenant limits");
-        },
-      },
-      policy: {
-        read: async () => {
-          throw new Error("platform test does not use tenant policy");
-        },
-      },
     }),
   );
 }

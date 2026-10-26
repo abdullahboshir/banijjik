@@ -53,7 +53,11 @@ export class MongoSmsRepository implements SmsRepository {
     return row ?? emptyGateway();
   }
 
-  async save(input: SmsGatewayInput, platform: boolean, now: Date): Promise<Gateway> {
+  async save(
+    input: SmsGatewayInput,
+    platform: boolean,
+    now: Date,
+  ): Promise<{ readonly gateway: Gateway; readonly entityId: string }> {
     const previous = await this.gateway(platform);
     if (previous.version !== input.version) throw conflict({});
     const context = getRequestContext();
@@ -63,13 +67,15 @@ export class MongoSmsRepository implements SmsRepository {
       platform ? "PlatformSmsGateway" : "SmsGatewaySetting",
     );
     const actor = context.userId ?? null;
+    let entityId: string;
     if (input.version === 0) {
-      await createGateway({ model, ownerId, merged, actor, platform });
-      return merged;
+      entityId = await createGateway({ model, ownerId, merged, actor, platform });
+      return { gateway: merged, entityId };
     }
     const result = await writeGateway({ model, version: input.version, merged, actor, platform });
     if (result.matchedCount === 0) throw conflict({});
-    return merged;
+    entityId = await savedEntityId(model, platform);
+    return { gateway: merged, entityId };
   }
 
   async append(entry: SmsLogEntry): Promise<void> {
@@ -139,11 +145,12 @@ async function createGateway({
   merged: Gateway;
   actor: string | null;
   platform: boolean;
-}): Promise<void> {
+}): Promise<string> {
   try {
+    const entityId = newId();
     const identity = platform
-      ? { scopeKey: "DEFAULT", platformSmsGatewayId: newId() }
-      : { organizationId: ownerId, smsGatewaySettingId: newId() };
+      ? { scopeKey: "DEFAULT", platformSmsGatewayId: entityId }
+      : { organizationId: ownerId, smsGatewaySettingId: entityId };
     await model.create(
       [
         {
@@ -155,10 +162,24 @@ async function createGateway({
       ],
       sessionOption(getActiveSession()),
     );
+    return entityId;
   } catch (error) {
     if (isDuplicateKeyError(error)) throw conflict({});
     throw error;
   }
+}
+
+async function savedEntityId(model: Model<GatewayDocument>, platform: boolean): Promise<string> {
+  const projection = platform
+    ? { _id: 0, platformSmsGatewayId: 1 }
+    : { _id: 0, smsGatewaySettingId: 1 };
+  const row = await model
+    .findOne(platform ? { scopeKey: "DEFAULT" } : {}, projection)
+    .session(getActiveSession() ?? null)
+    .lean<{ platformSmsGatewayId?: string; smsGatewaySettingId?: string }>();
+  const entityId = platform ? row?.platformSmsGatewayId : row?.smsGatewaySettingId;
+  if (entityId === undefined) throw new AppError({ code: ERROR_CODE.INTERNAL });
+  return entityId;
 }
 
 async function writeGateway({

@@ -7,13 +7,16 @@ let stub: Awaited<ReturnType<typeof startSmsStub>> | undefined;
 afterEach(async () => {
   await stub?.close();
 });
-function driver(baseUrl: string) {
-  return new AdaReachSmsDriver({
-    baseUrl,
-    username: "test-user",
-    password: "fake-password",
-    senderId: "TEST",
-  });
+function driver(baseUrl: string, timeoutMs?: number) {
+  return new AdaReachSmsDriver(
+    {
+      baseUrl,
+      username: "test-user",
+      password: "fake-password",
+      senderId: "TEST",
+    },
+    timeoutMs,
+  );
 }
 const message = { msisdn: "8801712345678", text: "Hello" };
 const success = { status: "SUCCESS", errorCode: 0, msgCount: 2, messageId: 123 };
@@ -67,6 +70,32 @@ describe("adaReach", () => {
     expect(stub.requests.filter(authentication)).toHaveLength(2);
   });
 
+  it("treats a 403 HTML page as a permanent refusal", async () => {
+    stub = await startSmsStub((request) =>
+      authentication(request)
+        ? { body: { token: "fake-token" } }
+        : { status: 403, contentType: "text/html", rawBody: "<h1>IP blocked</h1>" },
+    );
+    await expect(driver(stub.baseUrl).send(message)).resolves.toMatchObject({
+      outcome: "REFUSED",
+      failureReason: "PROVIDER_REFUSED",
+    });
+    expect(stub.requests.filter(authentication)).toHaveLength(1);
+  });
+
+  it("re-logs in once on a 401 without a JSON body", async () => {
+    let sends = 0;
+    stub = await startSmsStub((request) => {
+      if (authentication(request)) return { body: { token: "fake-token" } };
+      sends += 1;
+      if (sends === 1)
+        return { status: 401, contentType: "text/html", rawBody: "<h1>Expired</h1>" };
+      return { body: success };
+    });
+    await expect(driver(stub.baseUrl).send(message)).resolves.toMatchObject({ outcome: "SENT" });
+    expect(stub.requests.filter(authentication)).toHaveLength(2);
+  });
+
   it("maps 1506 to BALANCE_LOW and 1503 to SENDER_NOT_ALLOWED without throwing", async () => {
     let code = 1506;
     stub = await startSmsStub((request) => ({
@@ -85,14 +114,14 @@ describe("adaReach", () => {
     stub = await startSmsStub((request) => {
       if (authentication(request)) return { body: { token: "fake-token" } };
       if (mode === "server") return { status: 503 };
-      if (mode === "timeout") return { delayMs: 11000 };
+      if (mode === "timeout") return { delayMs: 100 };
       return { body: { errorCode: 1502 } };
     });
-    const sender = driver(stub.baseUrl);
+    const sender = driver(stub.baseUrl, 20);
     await expect(sender.send(message)).rejects.toBeInstanceOf(SmsTransientError);
     mode = "throttle";
     await expect(sender.send(message)).rejects.toBeInstanceOf(SmsTransientError);
     mode = "timeout";
     await expect(sender.send(message)).rejects.toBeInstanceOf(SmsTransientError);
-  }, 15000);
+  });
 });

@@ -15,7 +15,7 @@ import type { LimitGuard } from "../../../../kernel/access/index.js";
 import { AppError } from "../../../../kernel/http/index.js";
 import { getLogger } from "../../../../kernel/logger/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
-import { isComplete, type Gateway } from "../domain/gateway.js";
+import { isBangladeshMobile, isComplete, type Gateway } from "../domain/gateway.js";
 import type { SmsDriver } from "./ports.js";
 
 export interface SmsResult {
@@ -119,7 +119,7 @@ export class SmsService {
   }
 
   private invalidNumber(message: Message, base: SmsResult): SmsResult | undefined {
-    if (/^\+8801[3-9]\d{8}$/.test(message.phoneE164)) return undefined;
+    if (isBangladeshMobile(message.phoneE164)) return undefined;
     return {
       ...base,
       outcome: SMS_OUTCOME.REFUSED,

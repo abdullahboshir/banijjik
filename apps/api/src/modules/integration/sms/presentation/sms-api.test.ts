@@ -72,6 +72,11 @@ describe("tenant SMS gateway API", () => {
       .collection("audit_logs")
       .find({ organizationId, entityType: "smsGatewaySetting" })
       .toArray();
+    const stored = await harness.connections.tenantShared
+      .collection("sms_gateway_settings")
+      .findOne({ organizationId });
+    const sealedPassword = (stored?.["adareach"] as { passwordSealed?: string } | undefined)
+      ?.passwordSealed;
 
     const errorLines = harness.logs
       .lines()
@@ -88,6 +93,12 @@ describe("tenant SMS gateway API", () => {
       fields: { to: expect.arrayContaining(["adareach.password"]) },
     });
     expect(JSON.stringify(audits)).not.toContain("private-password");
+    expect(stored?.["smsGatewaySettingId"]).toBeTruthy();
+    expect(audits[0]?.["entityId"]).toBe(stored?.["smsGatewaySettingId"]);
+    expect(JSON.stringify(audits)).not.toContain(JSON.stringify(stored?.["adareach"]));
+    expect(JSON.stringify({ saved: saved.body, read: read.body, audits })).not.toContain(
+      sealedPassword,
+    );
 
     const kept = await owner.call("put", `/orgs/${organizationId}/sms/gateway`, {
       version: 1,
@@ -217,6 +228,70 @@ describe("tenant SMS gateway API", () => {
       ).status,
     ).toBe(403);
   });
+
+  it("falls back to the platform gateway for another organization without reading A's logs", async () => {
+    const ownerA = await owner.call("put", `/orgs/${organizationId}/sms/gateway`, {
+      version: 0,
+      enabled: true,
+      activeProvider: "BULKSMSBD",
+      bulksmsbd: { senderId: "ORG-A", apiKey: "organization-a-key" },
+    });
+    const secondOwner = await newActor(harness.app);
+    const organizationB = await createOrganizationAs(secondOwner, harness.connections, {
+      industryTemplateKey: "RETAIL",
+    });
+    const platformGateway = await superAdmin.call("put", "/sms-gateway", {
+      version: 0,
+      enabled: true,
+      activeProvider: "BULKSMSBD",
+      bulksmsbd: { senderId: "PLATFORM", apiKey: "platform-fallback-key" },
+    });
+    providerCode = 202;
+    const response = await secondOwner.call(
+      "post",
+      `/orgs/${organizationB.organizationId}/sms/gateway/test`,
+      { phoneE164: "+8801712345678" },
+    );
+    const aLogs = await harness.connections.tenantShared
+      .collection("sms_logs")
+      .find({ organizationId, purpose: SMS_PURPOSE.GATEWAY_TEST })
+      .toArray();
+    const sentRequests = smsStub.requests.filter((request) => request.url === "/smsapi");
+    const body = new URLSearchParams(sentRequests.at(-1)?.body);
+    expect(ownerA.status).toBe(200);
+    expect(platformGateway.status).toBe(200);
+    expect(response.body.data.source).toBe("PLATFORM");
+    expect(body.get("api_key")).toBe("platform-fallback-key");
+    expect(body.get("api_key")).not.toBe("organization-a-key");
+    expect(aLogs).toEqual([]);
+  });
+
+  it("never exposes tenant BulkSMSBD keys or their sealed values", async () => {
+    const secret = "tenant-bulksms-private-key";
+    const saved = await owner.call("put", `/orgs/${organizationId}/sms/gateway`, {
+      version: 2,
+      enabled: true,
+      activeProvider: "BULKSMSBD",
+      bulksmsbd: { senderId: "MASK", apiKey: secret },
+    });
+    const read = await owner.call("get", `/orgs/${organizationId}/sms/gateway`);
+    const stored = await harness.connections.tenantShared
+      .collection("sms_gateway_settings")
+      .findOne({ organizationId });
+    const audits = await harness.connections.tenantShared
+      .collection("audit_logs")
+      .find({ organizationId, entityType: "smsGatewaySetting" })
+      .toArray();
+    const sealedKey = (stored?.["bulksmsbd"] as { apiKeySealed?: string } | undefined)
+      ?.apiKeySealed;
+    const externallyVisible = JSON.stringify({ saved: saved.body, read: read.body, audits });
+    expect(saved.status).toBe(200);
+    expect(read.body.data.bulksmsbd).toEqual({ senderId: "MASK", hasApiKey: true });
+    expect(externallyVisible).not.toContain(secret);
+    expect(externallyVisible).not.toContain(sealedKey);
+    expect(harness.logs.text()).not.toContain(secret);
+    expect(harness.logs.text()).not.toContain(sealedKey);
+  });
 });
 
 describe("platform SMS gateway API", () => {
@@ -234,11 +309,34 @@ describe("platform SMS gateway API", () => {
       bulksmsbd: { senderId: "MASK", apiKey: "platform-secret" },
     });
     const read = await support.call("get", "/sms-gateway");
+    const stored = await harness.connections.platform
+      .collection("platform_sms_gateways")
+      .findOne({ scopeKey: "DEFAULT" });
+    const audits = await harness.connections.platform
+      .collection("platform_audit_logs")
+      .find({ targetType: "sms_gateway" })
+      .toArray();
+    const sealedKey = (stored?.["bulksmsbd"] as { apiKeySealed?: string } | undefined)
+      ?.apiKeySealed;
 
     expect(forbidden.status).toBe(403);
     expect(saved.status).toBe(200);
     expect(read.body.data.bulksmsbd).toEqual({ senderId: "MASK", hasApiKey: true });
     expect(JSON.stringify(read.body)).not.toContain("platform-secret");
+    expect(
+      JSON.stringify({ forbidden: forbidden.body, saved: saved.body, read: read.body, audits }),
+    ).not.toContain("platform-secret");
+    expect(
+      JSON.stringify({ forbidden: forbidden.body, saved: saved.body, read: read.body, audits }),
+    ).not.toContain(sealedKey);
+    expect(harness.logs.text()).not.toContain("platform-secret");
+    expect(
+      JSON.stringify(
+        await harness.connections.tenantShared.collection("audit_logs").find({}).toArray(),
+      ),
+    ).not.toContain("platform-secret");
+    expect(JSON.stringify(audits)).not.toContain(sealedKey);
+    expect(harness.logs.text()).not.toContain(sealedKey);
   });
 
   it("answers a platform test send without adding a tenant SMS log", async () => {
@@ -254,8 +352,26 @@ describe("platform SMS gateway API", () => {
       phoneE164: "+8801712345678",
     });
     const after = await harness.connections.tenantShared.collection("sms_logs").countDocuments({});
+    const stored = await harness.connections.platform
+      .collection("platform_sms_gateways")
+      .findOne({ scopeKey: "DEFAULT" });
+    const audits = await harness.connections.platform
+      .collection("platform_audit_logs")
+      .find({ targetType: "sms_gateway" })
+      .toArray();
+    const sealedKey = (stored?.["bulksmsbd"] as { apiKeySealed?: string } | undefined)
+      ?.apiKeySealed;
     expect(saved.status).toBe(200);
     expect(response.body.data).toMatchObject({ source: "PLATFORM", outcome: "SENT" });
     expect(after).toBe(before);
+    expect(JSON.stringify({ saved: saved.body, response: response.body, audits })).not.toContain(
+      "platform-key",
+    );
+    expect(JSON.stringify({ saved: saved.body, response: response.body, audits })).not.toContain(
+      sealedKey,
+    );
+    expect(harness.logs.text()).not.toContain("platform-key");
+    expect(JSON.stringify(audits)).not.toContain(sealedKey);
+    expect(harness.logs.text()).not.toContain(sealedKey);
   });
 });

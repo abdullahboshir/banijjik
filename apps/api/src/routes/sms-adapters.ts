@@ -7,9 +7,9 @@ import {
 } from "@banijjik/contracts";
 import { SMS_SETTING_KEY } from "@banijjik/contracts/sms";
 import { createTranslator } from "@banijjik/i18n";
+import { organizationId as smsOrganizationId } from "../modules/integration/sms/index.js";
 import type { AppConfig } from "../config/index.js";
 import type { AuditRecorder, PlatformAuditRecorder } from "../kernel/audit/index.js";
-import { getRequestContext } from "../kernel/context/index.js";
 import { AppError } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
@@ -19,12 +19,6 @@ import {
 import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import { buildLimitGuard, type OrgConfigService } from "../modules/platform/entitlement/index.js";
 import type { SmsModuleDependencies } from "../modules/integration/sms/index.js";
-
-export function smsOrganizationId(): string {
-  const value = getRequestContext().organizationId;
-  if (value === undefined) throw new AppError({ code: ERROR_CODE.INTERNAL });
-  return value;
-}
 
 export function buildSmsDependencies(input: {
   config: AppConfig;
@@ -56,12 +50,12 @@ export function buildSmsDependencies(input: {
 
 export function tenantSmsAudit(
   audit: AuditRecorder,
-): (tested: boolean, fields: readonly string[]) => Promise<void> {
-  return (tested: boolean, fields: readonly string[]) =>
+): (tested: boolean, fields: readonly string[], entityId?: string) => Promise<void> {
+  return (tested: boolean, fields: readonly string[], entityId?: string) =>
     audit.record({
       action: tested ? AUDIT_ACTION.SMS_GATEWAY_TESTED : AUDIT_ACTION.SMS_GATEWAY_UPDATED,
       entityType: "smsGatewaySetting",
-      entityId: smsOrganizationId(),
+      entityId: entityId ?? smsOrganizationId(),
       changes: { fields: { to: fields } },
     });
 }

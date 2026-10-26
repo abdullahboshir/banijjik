@@ -655,6 +655,16 @@ describe("loadConfig customer sign-in (card M.1)", () => {
     );
   });
 
+  it("requires the credentials key in production when SMS is disabled", () => {
+    const missingKey = Object.fromEntries(
+      Object.entries(productionEnv).filter(([key]) => key !== "CREDENTIALS_ENCRYPTION_KEY"),
+    );
+    const error = catchConfigError({ ...missingKey, SMS_DRIVER: "disabled" });
+    expect(error.issues).toContainEqual(
+      expect.objectContaining({ key: "CREDENTIALS_ENCRYPTION_KEY", problem: "MISSING" }),
+    );
+  });
+
   it("refuses a missing, a short and a placeholder OTP_SECRET in production, and never prints it", () => {
     const withoutSecret = Object.fromEntries(
       Object.entries(productionEnv).filter(([key]) => key !== "OTP_SECRET"),

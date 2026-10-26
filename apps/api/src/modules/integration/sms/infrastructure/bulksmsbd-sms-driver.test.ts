@@ -8,8 +8,8 @@ afterEach(async () => {
   await stub?.close();
 });
 
-function driver(baseUrl: string) {
-  return new BulkSmsBdSmsDriver({ baseUrl, apiKey: "fake-api-key", senderId: "TEST" });
+function driver(baseUrl: string, timeoutMs?: number) {
+  return new BulkSmsBdSmsDriver({ baseUrl, apiKey: "fake-api-key", senderId: "TEST" }, timeoutMs);
 }
 const message = { msisdn: "8801712345678", text: "Hello" };
 
@@ -57,12 +57,24 @@ describe("BulkSMSBD", () => {
     });
   });
 
+  it("treats a 403 HTML page as a permanent refusal, not a retry", async () => {
+    stub = await startSmsStub(() => ({
+      status: 403,
+      contentType: "text/html",
+      rawBody: "<h1>IP blocked</h1>",
+    }));
+    await expect(driver(stub.baseUrl).send(message)).resolves.toMatchObject({
+      outcome: "REFUSED",
+      failureReason: "PROVIDER_REFUSED",
+    });
+  });
+
   it("throws a transient error on 5xx and timeout", async () => {
     let timeout = false;
-    stub = await startSmsStub(() => (timeout ? { delayMs: 11000 } : { status: 503 }));
-    const sender = driver(stub.baseUrl);
+    stub = await startSmsStub(() => (timeout ? { delayMs: 100 } : { status: 503 }));
+    const sender = driver(stub.baseUrl, 20);
     await expect(sender.send(message)).rejects.toBeInstanceOf(SmsTransientError);
     timeout = true;
     await expect(sender.send(message)).rejects.toBeInstanceOf(SmsTransientError);
-  }, 15000);
+  });
 });

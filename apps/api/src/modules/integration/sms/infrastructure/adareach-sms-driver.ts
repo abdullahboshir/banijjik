@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { SMS_FAILURE_REASON, SMS_OUTCOME, type SmsFailureReason } from "@banijjik/contracts/sms";
 import { SmsTransientError, type SmsDriver, type SmsDriverResult } from "../application/ports.js";
-import { containsUnicode, numericCode, smsPost } from "./sms-http.js";
+import { containsUnicode, numericCode, smsPost, SMS_HTTP_TIMEOUT_MS } from "./sms-http.js";
 
 const TOKEN_TTL_MS = 55 * 60 * 1000;
 const TRANSIENT_CODES = new Set([1502, 1510, 1512, 1002]);
@@ -30,7 +30,10 @@ interface Token {
 
 export class AdaReachSmsDriver implements SmsDriver {
   private readonly tokens = new Map<string, Token>();
-  constructor(private readonly credentials: Credentials) {}
+  constructor(
+    private readonly credentials: Credentials,
+    private readonly timeoutMs = SMS_HTTP_TIMEOUT_MS,
+  ) {}
 
   private cacheKey(): string {
     return createHash("sha256")
@@ -41,13 +44,17 @@ export class AdaReachSmsDriver implements SmsDriver {
   private async login(): Promise<string | SmsDriverResult> {
     const cached = this.tokens.get(this.cacheKey());
     if (cached !== undefined && cached.expiresAt > Date.now()) return cached.value;
-    const response = await smsPost(`${this.credentials.baseUrl}/auth/tokens`, {
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: this.credentials.username,
-        password: this.credentials.password,
-      }),
-    });
+    const response = await smsPost(
+      `${this.credentials.baseUrl}/auth/tokens`,
+      {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: this.credentials.username,
+          password: this.credentials.password,
+        }),
+      },
+      this.timeoutMs,
+    );
     const code = numericCode(response.body["errorCode"]);
     if (code !== null && TRANSIENT_CODES.has(code)) throw new SmsTransientError();
     const token = response.body["token"];
@@ -63,17 +70,21 @@ export class AdaReachSmsDriver implements SmsDriver {
   }
 
   private async sendOnce(input: { msisdn: string; text: string }, token: string) {
-    return smsPost(`${this.credentials.baseUrl}/sms/send`, {
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        sender: this.credentials.senderId,
-        receiver: [input.msisdn],
-        content: input.text,
-        msgType: "T",
-        requestType: "S",
-        contentType: containsUnicode(input.text) ? 2 : 1,
-      }),
-    });
+    return smsPost(
+      `${this.credentials.baseUrl}/sms/send`,
+      {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          sender: this.credentials.senderId,
+          receiver: [input.msisdn],
+          content: input.text,
+          msgType: "T",
+          requestType: "S",
+          contentType: containsUnicode(input.text) ? 2 : 1,
+        }),
+      },
+      this.timeoutMs,
+    );
   }
 
   async send(input: { msisdn: string; text: string }): Promise<SmsDriverResult> {

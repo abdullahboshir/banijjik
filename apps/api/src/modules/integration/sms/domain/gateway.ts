@@ -1,5 +1,11 @@
 import type { SmsProvider } from "@banijjik/contracts/sms";
 
+const BANGLADESH_MOBILE_PATTERN = /^\+8801[3-9]\d{8}$/;
+
+export function isBangladeshMobile(phoneE164: string): boolean {
+  return BANGLADESH_MOBILE_PATTERN.test(phoneE164);
+}
+
 export interface Gateway {
   readonly enabled: boolean;
   readonly activeProvider: SmsProvider | null;

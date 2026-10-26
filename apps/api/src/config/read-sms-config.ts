@@ -33,7 +33,7 @@ function baseUrlSchema(isProduction: boolean) {
 }
 
 export function readSmsConfig(env: Environment, isProduction: boolean): ConfigSection<SmsConfig> {
-  const requiresKey = isProduction && env["SMS_DRIVER"]?.trim() === "gateway";
+  const requiresKey = isProduction;
   const key = readField(env, {
     key: "CREDENTIALS_ENCRYPTION_KEY",
     hint: "must be base64 encoding of exactly 32 bytes",
