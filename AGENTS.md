@@ -1,6 +1,6 @@
 # AGENTS.md: rules for every AI session (Claude Code, Cursor, others)
 
-banijjik = multi-tenant, multi-industry business SaaS (clean successor of manoxen). Vision: `docs/00-VISION.md`. Target design: `docs/01-ARCHITECTURE.md`. Decisions: `docs/04-DECISIONS.md`. Conventions: `docs/05-CONVENTIONS.md`. Accounts, tenancy modes, channels, chatbot, product source, courier/rider, website design control: `docs/06-AUTOMATION-AND-ACCOUNTS.md`. Modules/packages/industries/offering kinds: `docs/07-CAPABILITY-MODEL.md`. Chatbot: `docs/08-UNIVERSAL-BOT.md`. Phase D design docs (`09`–`15`) are binding once approved. Matrimony track (directory, credits, customer accounts): `docs/16-MATRIMONY-TRACK.md`.
+banijjik = multi-tenant, multi-industry business SaaS (clean successor of manoxen). Vision: `docs/00-VISION.md`. Target design: `docs/01-ARCHITECTURE.md`. Decisions: `docs/04-DECISIONS.md`. Conventions: `docs/05-CONVENTIONS.md`. Accounts, tenancy modes, channels, chatbot, product source, courier/rider, website design control: `docs/06-AUTOMATION-AND-ACCOUNTS.md`. Modules/packages/industries/offering kinds: `docs/07-CAPABILITY-MODEL.md`. Chatbot: `docs/08-UNIVERSAL-BOT.md`. Phase D design docs (`09`–`15`) are binding once approved. Matrimony track (directory, credits, customer accounts): `docs/16-MATRIMONY-TRACK.md`. Running without a lead session: `docs/RUN-WITHOUT-CLAUDE.md`.
 
 ## Session protocol (mandatory)
 1. **Read first:** this file, `docs/STATUS.md`, your card in `docs/03-ROADMAP.md`, and only the doc sections the card needs.
