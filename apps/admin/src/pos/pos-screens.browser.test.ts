@@ -120,8 +120,16 @@ async function tillPage(): Promise<Page> {
   return page;
 }
 
-/** Types into the input that sits under a label whose text contains the wanted words. */
+/** The input under a label that contains the wanted words; waits until the sheet has rendered it. */
 async function typeInLabel(page: Page, labelText: string, value: string): Promise<void> {
+  await page.waitForFunction(
+    (wanted) =>
+      Array.from(document.querySelectorAll("label")).some(
+        (item) => (item.textContent ?? "").includes(wanted) && item.querySelector("input") !== null,
+      ),
+    { timeout: 20_000 },
+    labelText,
+  );
   const handle = await page.evaluateHandle((wanted) => {
     const label = Array.from(document.querySelectorAll("label")).find((item) =>
       (item.textContent ?? "").includes(wanted),
