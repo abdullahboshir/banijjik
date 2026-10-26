@@ -2,6 +2,8 @@ import {
   MODULE_CLASS,
   MODULE_KEY,
   PERMISSION_KEY,
+  SETTINGS_TOPIC,
+  SURFACE,
   permissionDefinition,
   LIMIT_KEY,
 } from "@banijjik/contracts";
@@ -29,7 +31,19 @@ export const smsManifest = defineModule({
     ],
     platform: ["/platform/sms-gateway", "/platform/sms-gateway/test"],
   },
-  menu: [],
+  menu: [
+    {
+      menuKey: "sms.gateway",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.sms.gateway",
+      path: "settings/sms",
+      iconKey: "bell",
+      permissionKey: PERMISSION_KEY.SMS_GATEWAY_READ,
+      order: 10,
+      settingsTopicKey: SETTINGS_TOPIC.AUTOMATION,
+    },
+  ],
   settings: [
     {
       settingKey: SMS_SETTING_KEY.DAILY_LIMIT,

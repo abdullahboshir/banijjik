@@ -18,11 +18,17 @@ describe("navigationEntriesFor", () => {
       "/audit",
       "/failed-events",
       "/operators",
+      "/sms-gateway",
     ]);
   });
 
   it("hides the audit log from support and billing, who lack platform.audit.read", () => {
-    expect(hrefsFor(SUPPORT)).toEqual(["/tenants", "/packages", "/industry-templates"]);
+    expect(hrefsFor(SUPPORT)).toEqual([
+      "/tenants",
+      "/packages",
+      "/industry-templates",
+      "/sms-gateway",
+    ]);
     expect(hrefsFor(BILLING)).toEqual(["/tenants", "/packages", "/industry-templates"]);
   });
 
@@ -44,6 +50,7 @@ describe("navigationEntriesFor", () => {
       "অডিট লগ",
       "ব্যর্থ ইভেন্ট",
       "অপারেটর",
+      "এসএমএস",
     ]);
   });
 });

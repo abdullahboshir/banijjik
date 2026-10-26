@@ -585,5 +585,6 @@
   "sms.failure.NOT_ALLOWED": "Message is not allowed",
   "sms.failure.IP_NOT_WHITELISTED": "Server IP is not approved",
   "sms.failure.PROVIDER_REFUSED": "Provider refused the message",
-  "package.PACK_POS_DEVICE.name": "Extra POS device"
+  "package.PACK_POS_DEVICE.name": "Extra POS device",
+  "menu.sms.gateway": "SMS"
 }

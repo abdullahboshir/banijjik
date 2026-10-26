@@ -5,6 +5,8 @@ alwaysApply: true
 
 Follow @AGENTS.md exactly. It is the only rule file for this repo; do not apply rules from `.agent/` or the `archive/v0` branch.
 
+Then read @docs/RUN-WITHOUT-CLAUDE.md: the section for your role (lead, planner, implementer, reviewer) says how the work runs without a Claude lead.
+
 Before coding: read docs/STATUS.md and the assigned card in docs/03-ROADMAP.md. One card per session. Plan first, ask when ambiguous, verify with real command output, update docs/STATUS.md at the end.
 
 Reply to the owner in Bengali script; code, comments and docs in English.
