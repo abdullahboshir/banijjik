@@ -3,6 +3,7 @@ import {
   MODULE_KEY,
   PERMISSION_KEY,
   SEQUENCE_KEY,
+  SETTINGS_TOPIC,
   SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
@@ -54,6 +55,18 @@ export const posManifest = defineModule({
       iconKey: "receipt",
       permissionKey: PERMISSION_KEY.POS_SESSION_OPEN,
       order: 20,
+    },
+    {
+      menuKey: "pos.devices",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.pos.devices",
+      path: "settings/pos-devices",
+      iconKey: "receipt",
+      permissionKey: PERMISSION_KEY.POS_DEVICE_MANAGE,
+      // After the tax classes (55); terms is 60.
+      order: 58,
+      settingsTopicKey: SETTINGS_TOPIC.SALES,
     },
   ],
   settings: [

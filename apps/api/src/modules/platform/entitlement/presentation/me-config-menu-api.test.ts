@@ -47,6 +47,7 @@ const SALES_RETURNS_MENU_KEY = "sales.returns";
 // The SMS gateway settings page sits right after returns for the owner (card M.9 A2).
 const SMS_GATEWAY_MENU_KEY = "sms.gateway";
 const POS_REGISTER_MENU_KEY = "pos.register";
+const POS_DEVICES_MENU_KEY = "pos.devices";
 
 const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.general",
@@ -104,6 +105,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
       TAX_CLASSES_MENU_KEY,
+      POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
@@ -149,6 +151,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
       TAX_CLASSES_MENU_KEY,
+      POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
@@ -176,6 +179,7 @@ describe("the settings menu of the organization module", () => {
       CATALOG_MENU_KEYS.transfers,
       READ_ONLY_SETTINGS_MENU_KEYS[0],
       TAX_CLASSES_MENU_KEY,
+      POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
       ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
