@@ -191,6 +191,31 @@ describe("promotions and quotes", () => {
     expect(quote.body.data.lines[0].promotionIds).toEqual([promotion.body.data.promotionId]);
   });
 
+  it("quotes a line at unitPriceOverride instead of the catalog price", async () => {
+    const world = await worldFor(harness, RETAIL, RETAIL);
+    const offering = await publishOffering(world.alice, world.organizationA, {
+      kind: "PRODUCT",
+      name: "Cup",
+      kindDetails: { requiresShipping: true },
+      variants: [{ name: "Default", price: money(4000), unitKey: "PIECE" }],
+    });
+    const quote = await world.alice.call("post", `/orgs/${world.organizationA}/quotes`, {
+      locationId: world.locationA1,
+      lines: [
+        {
+          offeringId: offering.offeringId,
+          variantId: firstVariantId(offering),
+          quantity: 1,
+          unitPriceOverride: money(2000),
+        },
+      ],
+    });
+    expect(quote.status).toBe(200);
+    expect(quote.body.data.lines[0].listUnitPrice.amount).toBe(4000);
+    expect(quote.body.data.lines[0].unitPrice.amount).toBe(2000);
+    expect(quote.body.data.totals.grandTotal.amount).toBe(2000);
+  });
+
   it("refuses an unknown default tax class on quote", async () => {
     const world = await worldFor(harness, RETAIL, RETAIL);
     const offering = await publishOffering(world.alice, world.organizationA, {

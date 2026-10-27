@@ -58,6 +58,21 @@ describe("quoteRequestSchema", () => {
     ).toBe(false);
   });
 
+  it("accepts a unitPriceOverride on a line", () => {
+    const body = quoteRequestSchema.parse({
+      locationId: newId(),
+      lines: [
+        {
+          offeringId: newId(),
+          variantId: newId(),
+          quantity: 1,
+          unitPriceOverride: { amount: 2000, currency: "BDT" },
+        },
+      ],
+    });
+    expect(body.lines[0]?.unitPriceOverride).toEqual({ amount: 2000, currency: "BDT" });
+  });
+
   it("accepts a cash flag and a reserved delivery charge", () => {
     const offeringId = newId();
     const body = quoteRequestSchema.parse({

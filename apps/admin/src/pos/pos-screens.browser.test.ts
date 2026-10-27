@@ -5,6 +5,7 @@ import {
   type PosSessionListResponse,
   type PosZReport,
 } from "@banijjik/contracts/pos";
+import { formatMoney } from "@banijjik/ui";
 import type { ElementHandle, Page } from "puppeteer-core";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -42,6 +43,12 @@ const BUSINESS_NAME = "কাউন্টার সেলুন";
 const PRODUCT_NAME = "চায়ের কাপ";
 const SERVICE_NAME = "হেয়ারকাট";
 const PRODUCT_PRICE_MINOR = 4000;
+const OVERRIDE_PRICE_MINOR = 2000;
+/** Same string the receipt prints (`formatMoney` + bn locale): ৳ plus a thin space, Western digits. */
+const OVERRIDE_RECEIPT_PRICE = formatMoney(
+  { amount: OVERRIDE_PRICE_MINOR, currency: "BDT" },
+  { locale: "bn" },
+);
 const SERVICE_PRICE_MINOR = 3000;
 /** One haircut at ৳30 and one cup at ৳40: the bill is ৳70, paid with ৳100, so the change is ৳30. */
 const BILL_MINOR = SERVICE_PRICE_MINOR + PRODUCT_PRICE_MINOR;
@@ -575,7 +582,7 @@ describe("the till at a shop", () => {
       await waitForDialogClosed(page);
     }
     await paySaleInCash(page);
-    await waitForTextIn(page, "article", "৳২০");
+    await waitForTextIn(page, "article", OVERRIDE_RECEIPT_PRICE);
     await clickReceiptNewSale(page);
     await closeRegister(page, "20");
     await closePage(page);
