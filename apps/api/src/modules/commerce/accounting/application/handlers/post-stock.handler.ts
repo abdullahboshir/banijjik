@@ -23,10 +23,7 @@ export function buildPostStockHandler(input: {
     eventType: INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED,
     ordering: "UNORDERED",
     async handle(envelope) {
-      await handleStockSourceRecorded(
-        input,
-        envelope as unknown as EventEnvelope<InventoryStockSourceRecordedPayload>,
-      );
+      await handleStockSourceRecorded(input, envelope);
     },
   };
 }

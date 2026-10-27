@@ -114,7 +114,7 @@ export interface PaymentWriteOff {
 
 export interface PaymentApprovalSnapshot {
   readonly approvalId: string;
-  readonly approverUserId: string;
+  readonly approverMemberId: string;
   readonly approvedAt: string;
 }
 

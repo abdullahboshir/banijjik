@@ -34,7 +34,7 @@ export interface PaymentWriteOffSubdocument {
 
 export interface PaymentApprovalSubdocument {
   approvalId: string;
-  approverUserId: string;
+  approverMemberId: string;
   approvedAt: string;
 }
 
@@ -107,7 +107,7 @@ const writeOffSchema = new Schema<PaymentWriteOffSubdocument>(
 const approvalSchema = new Schema<PaymentApprovalSubdocument>(
   {
     approvalId: { type: String, required: true },
-    approverUserId: { type: String, required: true },
+    approverMemberId: { type: String, required: true },
     approvedAt: { type: String, required: true },
   },
   { _id: false },

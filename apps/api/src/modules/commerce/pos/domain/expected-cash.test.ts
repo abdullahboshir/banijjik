@@ -16,12 +16,13 @@ function row(
 }
 
 describe("expectedCash", () => {
-  it("expected cash counts only cash in and cash refunds of the session", () => {
+  it("expected cash subtracts a cash reversal of the session", () => {
     const expected = expectedCash({
       openingFloat: FLOAT,
       methodTotals: [
         row(PAYMENT_METHOD.CASH, PAYMENT_DIRECTION.IN, 12_000),
         row(PAYMENT_METHOD.CASH, PAYMENT_DIRECTION.REFUND, 2_000),
+        row(PAYMENT_METHOD.CASH, PAYMENT_DIRECTION.REVERSAL, 1_000),
         row(PAYMENT_METHOD.CARD, PAYMENT_DIRECTION.IN, 9_000),
         row(PAYMENT_METHOD.BKASH, PAYMENT_DIRECTION.IN, 3_000),
         row(PAYMENT_METHOD.NAGAD, PAYMENT_DIRECTION.IN, 1_000),
@@ -30,7 +31,7 @@ describe("expectedCash", () => {
       ],
     });
 
-    expect(expected).toEqual({ amount: 15_000, currency: "BDT" });
+    expect(expected).toEqual({ amount: 14_000, currency: "BDT" });
   });
 
   it("is the opening float when nothing was sold", () => {

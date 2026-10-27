@@ -19,7 +19,7 @@ export function buildPostExpensesHandler(input: {
     ordering: "ORDERED",
     streamPrefixes: ["expenseAccount:"],
     async handle(envelope) {
-      await handleExpenseEvent(input, envelope as unknown as EventEnvelope<{ expenseId: string }>);
+      await handleExpenseEvent(input, envelope);
     },
   };
 }
@@ -31,6 +31,9 @@ async function handleExpenseEvent(
   },
   envelope: EventEnvelope<{ expenseId: string }>,
 ): Promise<void> {
+  if (envelope.type !== EVENT_TYPE.EXPENSE_POSTED && envelope.type !== EVENT_TYPE.EXPENSE_VOIDED) {
+    return;
+  }
   if (envelope.organizationId === null) throw postingSourceMissing("organization");
   const organizationId = asId<OrganizationId>(envelope.organizationId);
   const actorUserId = envelope.actorUserId === null ? null : asId<UserId>(envelope.actorUserId);

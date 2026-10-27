@@ -96,7 +96,7 @@ describe("orders as payment requests", () => {
         amount: money(100),
         approvalSnapshot: {
           approvalId: newId(),
-          approverUserId: newId(),
+          approverMemberId: newId(),
           approvedAt: new Date().toISOString(),
         },
         allocations: [{ requestType: "ORDER", requestId: order.orderId, amount: money(100) }],

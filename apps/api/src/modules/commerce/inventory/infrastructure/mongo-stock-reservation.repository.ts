@@ -25,8 +25,8 @@ export class MongoStockReservationRepository implements StockReservationReposito
       },
       { _id: 0 },
       sessionOption(getActiveSession()),
-    ).lean();
-    return document === null ? undefined : (document as unknown as StockReservationRecord);
+    ).lean<StockReservationRecord>();
+    return document === null ? undefined : document;
   }
 
   async upsert(document: StockReservationRecord): Promise<void> {
@@ -42,7 +42,23 @@ export class MongoStockReservationRepository implements StockReservationReposito
     const Model = models({ organizationId: document.organizationId }).get<StockReservationDocument>(
       STOCK_RESERVATION_MODEL_NAME,
     );
-    await Model.create([document as unknown as StockReservationDocument], sessionOption(session));
+    await Model.create(
+      [
+        {
+          stockReservationId: document.stockReservationId,
+          organizationId: document.organizationId,
+          locationId: document.locationId,
+          sourceType: document.sourceType,
+          sourceId: document.sourceId,
+          lines: document.lines.map((line) => ({
+            inventoryItemId: line.inventoryItemId,
+            quantity: line.quantity,
+          })),
+          createdAt: document.createdAt,
+        } satisfies StockReservationDocument,
+      ],
+      sessionOption(session),
+    );
   }
 
   async deleteBySource(input: {

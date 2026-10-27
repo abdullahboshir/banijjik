@@ -20,6 +20,7 @@ export function expectedCash(input: {
     }
     if (row.direction === PAYMENT_DIRECTION.IN) amount += row.totalMinor;
     if (row.direction === PAYMENT_DIRECTION.REFUND) amount -= row.totalMinor;
+    if (row.direction === PAYMENT_DIRECTION.REVERSAL) amount -= row.totalMinor;
   }
   return { amount, currency: openingFloat.currency };
 }

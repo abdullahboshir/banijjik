@@ -367,6 +367,63 @@ describe("PATCH, archive and anonymize", () => {
 });
 
 describe("sensitive custom fields and permissions", () => {
+  it("a cashier cannot create a contact", async () => {
+    const world = await aWorld();
+    const roleId = await findSystemRoleId(
+      harness.connections,
+      world.organizationA,
+      SYSTEM_ROLE_KEY.CASHIER,
+    );
+    const cashier = await addMemberWithAssignments(harness.app, world.organizationA, [
+      { locationId: "ALL", roleId },
+    ]);
+
+    expect((await createContact(world, { name: "Cashier create" }, cashier.actor)).status).toBe(
+      403,
+    );
+  });
+
+  it("a cashier cannot update a contact", async () => {
+    const world = await aWorld();
+    const created = await createContact(world, { name: "Cashier update" });
+    const roleId = await findSystemRoleId(
+      harness.connections,
+      world.organizationA,
+      SYSTEM_ROLE_KEY.CASHIER,
+    );
+    const cashier = await addMemberWithAssignments(harness.app, world.organizationA, [
+      { locationId: "ALL", roleId },
+    ]);
+
+    const response = await cashier.actor.call(
+      "patch",
+      contactsPath(world.organizationA, `/${created.body.data.contactId}`),
+      { name: "Changed", version: 1 },
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it("a cashier can still read a contact", async () => {
+    const world = await aWorld();
+    const created = await createContact(world, { name: "Cashier read" });
+    const roleId = await findSystemRoleId(
+      harness.connections,
+      world.organizationA,
+      SYSTEM_ROLE_KEY.CASHIER,
+    );
+    const cashier = await addMemberWithAssignments(harness.app, world.organizationA, [
+      { locationId: "ALL", roleId },
+    ]);
+
+    const response = await cashier.actor.call(
+      "get",
+      contactsPath(world.organizationA, `/${created.body.data.contactId}`),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
   it("redacts a sensitive value without readSensitive and refuses to write it with 403", async () => {
     const world = await aWorld();
     await defineContactField(world, { fieldKey: "nid", fieldType: "TEXT", isSensitive: true });

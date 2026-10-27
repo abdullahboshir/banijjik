@@ -28,8 +28,8 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
       },
       { _id: 0 },
       sessionOption(getActiveSession()),
-    ).lean();
-    return document === null ? undefined : (document as unknown as InventoryLevelRecord);
+    ).lean<InventoryLevelRecord>();
+    return document === null ? undefined : document;
   }
 
   async saveExpectedVersion(
@@ -41,7 +41,20 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
       INVENTORY_LEVEL_MODEL_NAME,
     );
     if (expectedVersion === 0) {
-      const toInsert = { ...document, version: 1 } as InventoryLevelDocument;
+      const toInsert: InventoryLevelDocument = {
+        inventoryLevelId: document.inventoryLevelId,
+        organizationId: document.organizationId,
+        locationId: document.locationId,
+        inventoryItemId: document.inventoryItemId,
+        onHand: document.onHand,
+        reserved: document.reserved,
+        damaged: document.damaged,
+        averageUnitCostMicros: document.averageUnitCostMicros,
+        averageUnitCostCurrency: document.averageUnitCostCurrency,
+        lowStockActive: document.lowStockActive,
+        version: 1,
+        updatedAt: document.updatedAt,
+      };
       await Model.create([toInsert], sessionOption(session));
       return { ...document, version: 1 };
     }
@@ -148,8 +161,10 @@ export class MongoInventoryLevelRepository implements InventoryLevelRepository {
     const Model = models({ organizationId }).get<InventoryLevelDocument>(
       INVENTORY_LEVEL_MODEL_NAME,
     );
-    const rows = await Model.find(filter, { _id: 0 }, sessionOption(getActiveSession())).lean();
-    return rows as unknown as InventoryLevelRecord[];
+    const rows = await Model.find(filter, { _id: 0 }, sessionOption(getActiveSession())).lean<
+      InventoryLevelRecord[]
+    >();
+    return rows;
   }
 
   async aggregateOnHandByItem(

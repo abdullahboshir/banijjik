@@ -17,7 +17,7 @@ export function buildPostOrdersHandler(input: {
     ordering: "ORDERED",
     streamPrefixes: ["order:"],
     async handle(envelope) {
-      await handleOrderCompleted(input, envelope as unknown as EventEnvelope<{ orderId: string }>);
+      await handleOrderCompleted(input, envelope);
     },
   };
 }
@@ -29,6 +29,7 @@ async function handleOrderCompleted(
   },
   envelope: EventEnvelope<{ orderId: string }>,
 ): Promise<void> {
+  if (envelope.type !== EVENT_TYPE.ORDER_COMPLETED) return;
   if (envelope.organizationId === null) throw postingSourceMissing("organization");
   const organizationId = asId<OrganizationId>(envelope.organizationId);
   const actorUserId = envelope.actorUserId === null ? null : asId<UserId>(envelope.actorUserId);

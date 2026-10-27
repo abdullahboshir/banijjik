@@ -43,6 +43,14 @@ function readPerformersQuery(response: Response): SalesPerformersQuery {
   return response.locals["validated"].query as SalesPerformersQuery;
 }
 
+function readOrderDeleteQuery(response: Response): OrderDeleteQuery {
+  return response.locals["validated"].query as OrderDeleteQuery;
+}
+
+function readOrderListQuery(response: Response): OrderListQuery {
+  return response.locals["validated"].query as OrderListQuery;
+}
+
 function orderIdOf(request: Parameters<RequestHandler>[0]): OrderId {
   return asId<OrderId>(String(request.params.orderId));
 }
@@ -94,7 +102,7 @@ export class OrderController {
 
   readonly deleteDraft: RequestHandler = async (request, response) => {
     const { allowedLocationIds } = readTenantCaller();
-    const query = request.query as unknown as OrderDeleteQuery;
+    const query = readOrderDeleteQuery(response);
     await this.useCases.deleteDraft.execute({
       orderId: orderIdOf(request),
       version: query.version,
@@ -175,7 +183,7 @@ export class OrderController {
 
   readonly list: RequestHandler = async (request, response) => {
     const caller = callerOf();
-    const query = request.query as unknown as OrderListQuery;
+    const query = readOrderListQuery(response);
     const page = await this.useCases.listOrders.execute({ ...caller, query });
     sendData(response, page.items, {
       meta: { page: query.page, limit: query.limit, hasNext: page.hasNext },

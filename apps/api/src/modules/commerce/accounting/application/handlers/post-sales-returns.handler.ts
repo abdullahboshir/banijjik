@@ -24,10 +24,7 @@ export function buildPostSalesReturnsHandler(input: {
     ordering: "ORDERED",
     streamPrefixes: ["order:"],
     async handle(envelope) {
-      await handleSalesReturnEvent(
-        input,
-        envelope as unknown as EventEnvelope<{ salesReturnId: string; orderId: string }>,
-      );
+      await handleSalesReturnEvent(input, envelope);
     },
   };
 }
@@ -39,6 +36,7 @@ async function handleSalesReturnEvent(
   },
   envelope: EventEnvelope<{ salesReturnId: string; orderId: string }>,
 ): Promise<void> {
+  if (!isSalesReturnEvent(envelope.type)) return;
   if (envelope.organizationId === null) throw postingSourceMissing("organization");
   const organizationId = asId<OrganizationId>(envelope.organizationId);
   const actorUserId = envelope.actorUserId === null ? null : asId<UserId>(envelope.actorUserId);
@@ -71,6 +69,12 @@ async function handleSalesReturnEvent(
   for (const draft of draftSalesReturn(snapshot)) {
     await postJournalEntry(input.posting, { organizationId, actorUserId, draft });
   }
+}
+
+function isSalesReturnEvent(eventType: string): boolean {
+  return (
+    eventType === EVENT_TYPE.SALES_RETURN_CREATED || eventType === EVENT_TYPE.SALES_RETURN_REVERSED
+  );
 }
 
 function envelopeTypeIsReversal(
