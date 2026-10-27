@@ -20,6 +20,7 @@ import {
   openPage,
   PHONE_VIEWPORT,
   signInWithCookies,
+  waitForDialogSettled,
 } from "../test-support/browser-page";
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
 import { publishTemplate } from "../test-support/browser-seed";
@@ -345,6 +346,24 @@ async function clickReceiptNewSale(page: Page): Promise<void> {
   await tapByName(page, message("pos.receipt.newSale"));
 }
 
+async function waitForDialogClosed(page: Page): Promise<void> {
+  await page.waitForFunction(() => document.querySelector("[role=dialog]") === null);
+}
+
+/** Phone layout shows the PIN keypad (`sm:hidden` on desktop). Digit buttons update React state. */
+async function enterApprovalPin(page: Page, pin: string): Promise<void> {
+  await page.waitForSelector("[data-testid=approval-keypad]");
+  for (const digit of pin) {
+    await page.evaluate((wanted) => {
+      const keypad = document.querySelector("[data-testid=approval-keypad]");
+      const button = Array.from(keypad?.querySelectorAll("button") ?? []).find(
+        (item) => item.textContent?.trim() === wanted,
+      );
+      (button as HTMLButtonElement | undefined)?.click();
+    }, digit);
+  }
+}
+
 async function clickDialogButton(page: Page, text: string): Promise<void> {
   await page.waitForFunction(
     (wanted) => {
@@ -515,12 +534,16 @@ describe("the till at a shop", () => {
     await clickByName(page, "তিল বিক্রির গ্রাহক");
     await clickByName(page, message("pos.pay.back"));
     await clickByName(page, message("pos.till.hold"));
+    await waitForDialogSettled(page);
     await typeInLabel(page, message("pos.till.holdLabel"), "চা");
     await tapByName(page, message("pos.till.holdSubmit"));
+    await waitForDialogClosed(page);
     await addOffering(page, SERVICE_NAME);
     await clickByName(page, message("pos.till.held"));
+    await waitForDialogSettled(page);
     await tapByName(page, message("pos.till.resume"));
-    await clickDialogButton(page, message("pos.till.replaceConfirm"));
+    await clickDialogButton(page, message("pos.till.resume"));
+    await waitForDialogClosed(page);
     await clickByName(page, message("pos.sale.pay"));
     await waitForText(page, "তিল বিক্রির গ্রাহক");
     await typeInLabel(page, message("pos.pay.received"), CASH_RECEIVED_TEXT);
@@ -537,16 +560,13 @@ describe("the till at a shop", () => {
     const page = await openSellingTill();
     await addOffering(page, PRODUCT_NAME);
     await clickByName(page, `${message("pos.till.price")} ${PRODUCT_NAME}`);
+    await waitForDialogSettled(page);
     await typeInLabel(page, message("pos.till.unitPrice"), "20");
     await tapByName(page, message("pos.till.applyPrice"));
-    await page.waitForSelector("#approval-pin", { visible: true });
-    await page.$eval("#approval-pin", (element) => {
-      const input = element as HTMLInputElement;
-      input.focus();
-      input.select();
-    });
-    await page.keyboard.type("1234");
+    await waitForDialogSettled(page);
+    await enterApprovalPin(page, "1234");
     await tapByName(page, message("pos.till.approvalSubmit"));
+    await waitForDialogClosed(page);
     await paySaleInCash(page);
     await waitForTextIn(page, "article", "৳২০");
     await clickReceiptNewSale(page);
@@ -561,6 +581,7 @@ describe("the till at a shop", () => {
     await waitForTextIn(page, "article", PRODUCT_NAME);
     await clickReceiptNewSale(page);
     await clickByName(page, message("pos.till.return"));
+    await waitForDialogSettled(page);
     await tapByName(page, message("pos.till.findOrder"));
     await page.waitForSelector("ul button", { visible: true });
     await page.evaluate(() => {
@@ -569,8 +590,9 @@ describe("the till at a shop", () => {
     });
     await typeInLabel(page, message("pos.till.returnQuantity"), "1");
     await tapByName(page, message("pos.till.returnSubmit"));
-    await waitForText(page, message("pos.till.returnSuccess"));
+    await waitForTextIn(page, "[role=dialog]", message("pos.till.returnSuccess"));
     await tapByName(page, message("pos.till.approvalClose"));
+    await waitForDialogClosed(page);
     await closeRegister(page, "0");
     const report = await zReportOf(await closedSessionId());
     expect(report.expectedCash).toEqual({ amount: 0, currency: "BDT" });
