@@ -1,9 +1,9 @@
 "use client";
 
-import { OFFERING_KIND, type CurrencyCode } from "@banijjik/contracts";
-import type { PosCatalogRow, PosSaleResponse } from "@banijjik/contracts/pos";
-import { Button, TextInput, type DisplayLocale } from "@banijjik/ui";
-import { useMemo, useReducer, useState, type Dispatch, type ReactElement } from "react";
+import type { CurrencyCode } from "@banijjik/contracts";
+import type { PosCatalogRow, PosSaleResponse, PosSessionResponse } from "@banijjik/contracts/pos";
+import type { DisplayLocale } from "@banijjik/ui";
+import { useReducer, useState, type Dispatch, type ReactElement } from "react";
 import {
   cartItemCount,
   cartReducer,
@@ -11,14 +11,21 @@ import {
   performerNamesOf,
   type CartAction,
   type CartLine,
+  type CartState,
 } from "./cart";
-import { searchCatalog } from "./catalog-search";
-import { PosCartPanel } from "./pos-cart-panel";
-import { PosPaymentSheetLazy } from "./pos-payment-sheet-lazy";
-import { PosReceiptLazy } from "./pos-receipt-lazy";
+import type { HeldCartMode } from "./pos-held-carts-lazy";
+import { PosReturnLazy } from "./pos-return-lazy";
 import type { PosLabels } from "./pos-labels";
+import { SaleMain, type SaleMainProps } from "./pos-sale-main";
+import {
+  HeldCartOverlay,
+  PaymentOverlay,
+  PriceOverrideOverlay,
+  ReceiptOverlay,
+} from "./pos-sale-screen-overlays";
 import { buildReceiptModel, type ReceiptModel } from "./receipt-model";
 import { useOnlineStatus } from "./use-online-status";
+import type { TillCustomer } from "./till-customer";
 
 export interface PosSaleScreenProps {
   readonly organizationId: string;
@@ -29,65 +36,8 @@ export interface PosSaleScreenProps {
   readonly rows: readonly PosCatalogRow[];
   readonly onCloseRegister: () => void;
   readonly canFindCustomer: boolean;
-}
-
-const TOUCH_TARGET_CLASS = "min-h-14";
-
-function ResultRow(props: {
-  readonly row: PosCatalogRow;
-  readonly labels: PosLabels;
-  readonly onAdd: (row: PosCatalogRow) => void;
-}): ReactElement {
-  const { row, labels, onAdd } = props;
-  return (
-    <li>
-      <Button
-        variant="secondary"
-        className={`${TOUCH_TARGET_CLASS} w-full justify-between`}
-        aria-label={`${labels.add} ${row.offeringName} ${row.variantName}`}
-        onClick={() => onAdd(row)}
-      >
-        <span className="truncate text-start">
-          {row.offeringName}
-          <span className="text-secondary"> · {row.variantName}</span>
-          {row.kind === OFFERING_KIND.SERVICE ? (
-            <span className="ms-2 text-small text-secondary">{labels.kindService}</span>
-          ) : null}
-        </span>
-        <span aria-hidden="true">+</span>
-      </Button>
-    </li>
-  );
-}
-
-function SaleSearch(props: {
-  readonly labels: PosLabels;
-  readonly query: string;
-  readonly onQueryChange: (query: string) => void;
-  readonly results: readonly PosCatalogRow[];
-  readonly onAdd: (row: PosCatalogRow) => void;
-}): ReactElement {
-  const { labels, query, onQueryChange, results, onAdd } = props;
-  return (
-    <>
-      <TextInput
-        type="search"
-        autoFocus
-        placeholder={labels.searchPlaceholder}
-        value={query}
-        onChange={(event) => onQueryChange(event.target.value)}
-        className="min-h-14 text-h3"
-      />
-      {query.trim() && results.length === 0 ? (
-        <p className="text-body text-secondary">{labels.noResults}</p>
-      ) : null}
-      <ul className="flex flex-col gap-2">
-        {results.map((row) => (
-          <ResultRow key={row.variantId} row={row} labels={labels} onAdd={onAdd} />
-        ))}
-      </ul>
-    </>
-  );
+  readonly canOverridePrice: boolean;
+  readonly session: PosSessionResponse;
 }
 
 /** The line the cart keeps for a scanned or tapped row; the price stays with the server's quote. */
@@ -98,6 +48,8 @@ function cartLineOf(row: PosCatalogRow): Omit<CartLine, "lineKey" | "quantity"> 
     kind: row.kind,
     offeringName: row.offeringName,
     variantName: row.variantName,
+    listPrice: row.price,
+    unitPriceOverride: null,
     performedByMemberId: null,
     performerName: null,
   };
@@ -112,146 +64,242 @@ function finishPaidSale(input: {
   readonly lines: readonly CartLine[];
   readonly dispatch: Dispatch<CartAction>;
   readonly setPaying: (paying: boolean) => void;
+  readonly setCustomer: (customer: TillCustomer | null) => void;
   readonly setReceipt: (model: ReceiptModel) => void;
 }): void {
   input.setPaying(false);
+  input.setCustomer(null);
   input.setReceipt(receiptOfPaidSale(input.sale, input.lines));
   input.dispatch({ type: "clear" });
 }
 
 function cartHandlers(
-  dispatch: Dispatch<CartAction>,
+  updateCart: (action: CartAction) => void,
 ): Pick<SaleMainProps, "onAdd" | "onQuantity" | "onPerformer" | "onRemove" | "onClear"> {
   return {
-    onAdd: (row) => dispatch({ type: "add", line: cartLineOf(row) }),
-    onQuantity: (lineKey, quantity) => dispatch({ type: "setQuantity", lineKey, quantity }),
+    onAdd: (row) => updateCart({ type: "add", line: cartLineOf(row) }),
+    onQuantity: (lineKey, quantity) => updateCart({ type: "setQuantity", lineKey, quantity }),
     onPerformer: (lineKey, performedByMemberId, performerName) =>
-      dispatch({ type: "setPerformer", lineKey, performedByMemberId, performerName }),
-    onRemove: (lineKey) => dispatch({ type: "remove", lineKey }),
-    onClear: () => dispatch({ type: "clear" }),
+      updateCart({ type: "setPerformer", lineKey, performedByMemberId, performerName }),
+    onRemove: (lineKey) => updateCart({ type: "remove", lineKey }),
+    onClear: () => updateCart({ type: "clear" }),
   };
 }
 
-/** Scan or type to find a product, tap to add it, then Pay; the receipt shows after a completed sale. */
-export function PosSaleScreen(props: PosSaleScreenProps): ReactElement {
-  const { organizationId, locationId, currency, locale, labels, rows } = props;
-  const [cart, dispatch] = useReducer(cartReducer, EMPTY_CART);
-  const [paying, setPaying] = useState(false);
-  const [receipt, setReceipt] = useState<ReceiptModel | null>(null);
-  const isOnline = useOnlineStatus();
+function saleMainPropsOf(input: {
+  readonly screen: PosSaleScreenProps;
+  readonly cartLines: readonly CartLine[];
+  readonly cartCount: number;
+  readonly isOnline: boolean;
+  readonly updateCart: (action: CartAction) => void;
+  readonly onEditPrice: (line: CartLine) => void;
+  readonly onHold: () => void;
+  readonly onShowHeld: () => void;
+  readonly onReturn: () => void;
+  readonly onPay: () => void;
+}): SaleMainProps {
+  return {
+    organizationId: input.screen.organizationId,
+    locationId: input.screen.locationId,
+    locale: input.screen.locale,
+    labels: input.screen.labels,
+    isOnline: input.isOnline,
+    rows: input.screen.rows,
+    cartLines: input.cartLines,
+    cartCount: input.cartCount,
+    ...cartHandlers(input.updateCart),
+    canOverridePrice: input.screen.canOverridePrice,
+    session: input.screen.session,
+    onEditPrice: input.onEditPrice,
+    onHold: input.onHold,
+    onShowHeld: input.onShowHeld,
+    onReturn: input.onReturn,
+    onPay: input.onPay,
+    onCloseRegister: input.screen.onCloseRegister,
+  };
+}
 
-  if (receipt !== null) {
+interface SaleScreenContentProps {
+  readonly screen: PosSaleScreenProps;
+  readonly cart: CartState;
+  readonly dispatch: Dispatch<CartAction>;
+  readonly paying: boolean;
+  readonly setPaying: (paying: boolean) => void;
+  readonly receipt: ReceiptModel | null;
+  readonly setReceipt: (receipt: ReceiptModel | null) => void;
+  readonly heldMode: HeldCartMode | null;
+  readonly setHeldMode: (mode: HeldCartMode | null) => void;
+  readonly editingLine: CartLine | null;
+  readonly setEditingLine: (line: CartLine | null) => void;
+  readonly returnOpen: boolean;
+  readonly setReturnOpen: (open: boolean) => void;
+  readonly priceOverrideToken: string | null;
+  readonly setPriceOverrideToken: (token: string | null) => void;
+  readonly isOnline: boolean;
+  readonly updateCart: (action: CartAction) => void;
+  readonly customer: TillCustomer | null;
+  readonly setCustomer: (customer: TillCustomer | null) => void;
+}
+
+function secondaryOverlayOf(props: SaleScreenContentProps): ReactElement | null {
+  const { screen, cart, dispatch, paying, returnOpen, priceOverrideToken } = props;
+  if (returnOpen) {
     return (
-      <PosReceiptLazy
-        labels={labels}
-        locale={locale}
-        model={receipt}
-        onNewSale={() => setReceipt(null)}
+      <PosReturnLazy
+        organizationId={screen.organizationId}
+        locationId={screen.locationId}
+        posSessionId={screen.session.posSessionId}
+        locale={screen.locale}
+        labels={screen.labels}
+        onClose={() => props.setReturnOpen(false)}
       />
     );
   }
-  if (paying) {
-    return (
-      <PosPaymentSheetLazy
-        organizationId={organizationId}
-        locationId={locationId}
-        currency={currency}
-        locale={locale}
-        lines={cart.lines}
-        labels={labels}
-        canFindCustomer={props.canFindCustomer}
-        onPaid={(sale) =>
-          finishPaidSale({ sale, lines: cart.lines, dispatch, setPaying, setReceipt })
-        }
-        onBack={() => setPaying(false)}
-      />
-    );
-  }
-
+  if (!paying) return null;
   return (
-    <SaleMain
-      organizationId={organizationId}
-      locationId={locationId}
-      labels={labels}
-      isOnline={isOnline}
-      rows={rows}
-      cartLines={cart.lines}
-      cartCount={cartItemCount(cart)}
-      {...cartHandlers(dispatch)}
-      onPay={() => setPaying(true)}
-      onCloseRegister={props.onCloseRegister}
+    <PaymentOverlay
+      screen={screen}
+      lines={cart.lines}
+      priceOverrideToken={priceOverrideToken}
+      customer={props.customer}
+      onCustomerChange={props.setCustomer}
+      onPaid={(sale) =>
+        finishPaidSale({
+          sale,
+          lines: cart.lines,
+          dispatch,
+          setPaying: props.setPaying,
+          setCustomer: props.setCustomer,
+          setReceipt: props.setReceipt,
+        })
+      }
+      onBack={() => props.setPaying(false)}
     />
   );
 }
 
-interface SaleMainProps {
-  readonly organizationId: string;
-  readonly locationId: string;
-  readonly labels: PosLabels;
-  readonly isOnline: boolean;
-  readonly rows: readonly PosCatalogRow[];
-  readonly cartLines: readonly CartLine[];
-  readonly cartCount: number;
-  readonly onAdd: (row: PosCatalogRow) => void;
-  readonly onQuantity: (lineKey: string, quantity: number) => void;
-  readonly onPerformer: (lineKey: string, memberId: string | null, name: string | null) => void;
-  readonly onRemove: (lineKey: string) => void;
-  readonly onClear: () => void;
-  readonly onPay: () => void;
-  readonly onCloseRegister: () => void;
+function heldCartOverlayOf(props: SaleScreenContentProps, mode: HeldCartMode): ReactElement {
+  return (
+    <HeldCartOverlay
+      organizationId={props.screen.organizationId}
+      locationId={props.screen.locationId}
+      labels={props.screen.labels}
+      mode={mode}
+      lines={props.cart.lines}
+      contactId={props.customer?.contactId ?? null}
+      rows={props.screen.rows}
+      onHeld={() => {
+        props.updateCart({ type: "clear" });
+        props.setCustomer(null);
+        props.setHeldMode(null);
+      }}
+      onResume={(lines, customer) => {
+        props.dispatch({ type: "replaceLines", lines });
+        props.setCustomer(customer);
+        props.setPriceOverrideToken(null);
+        props.setHeldMode(null);
+      }}
+      onClose={() => props.setHeldMode(null)}
+    />
+  );
 }
 
-/** The sale itself: search, cart and the Pay button. Pay is off offline and for an empty cart. */
-function SaleMain(props: SaleMainProps): ReactElement {
-  const { labels, isOnline, rows, cartLines, cartCount, onAdd, onQuantity, onRemove } = props;
-  const [query, setQuery] = useState("");
-  const results = useMemo(() => searchCatalog(rows, query), [rows, query]);
-
-  function handleAdd(row: PosCatalogRow): void {
-    onAdd(row);
-    setQuery("");
-  }
-
+function priceOverrideOverlayOf(props: SaleScreenContentProps, line: CartLine): ReactElement {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
-      {isOnline ? null : (
-        <p role="status" className="rounded-md bg-warning/10 p-3 text-body text-warning">
-          {labels.offline}
-        </p>
-      )}
-      <SaleSearch
+    <PriceOverrideOverlay
+      organizationId={props.screen.organizationId}
+      locationId={props.screen.locationId}
+      currency={props.screen.currency}
+      locale={props.screen.locale}
+      labels={props.screen.labels}
+      line={line}
+      lines={props.cart.lines}
+      onApply={(lineKey, money, token) => {
+        props.dispatch({ type: "setPriceOverride", lineKey, money });
+        const hasDiscountedLine = props.cart.lines.some((cartLine) => {
+          const nextPrice = cartLine.lineKey === lineKey ? money : cartLine.unitPriceOverride;
+          return nextPrice !== null && nextPrice.amount < cartLine.listPrice.amount;
+        });
+        props.setPriceOverrideToken(hasDiscountedLine ? (token ?? props.priceOverrideToken) : null);
+        props.setEditingLine(null);
+      }}
+      onClose={() => props.setEditingLine(null)}
+    />
+  );
+}
+
+function SaleScreenContent(props: SaleScreenContentProps): ReactElement {
+  const { screen, cart, receipt, heldMode, editingLine, isOnline } = props;
+  const { locale, labels } = screen;
+  if (receipt !== null)
+    return (
+      <ReceiptOverlay
         labels={labels}
-        query={query}
-        onQueryChange={setQuery}
-        results={results}
-        onAdd={handleAdd}
+        locale={locale}
+        model={receipt}
+        onNewSale={() => props.setReceipt(null)}
       />
-      <PosCartPanel
-        organizationId={props.organizationId}
-        locationId={props.locationId}
-        labels={labels}
-        lines={cartLines}
-        onQuantity={onQuantity}
-        onPerformer={props.onPerformer}
-        onRemove={onRemove}
-        onClear={props.onClear}
-      />
-      <Button
-        className={`${TOUCH_TARGET_CLASS} w-full`}
-        disabled={!isOnline || cartCount === 0}
-        onClick={props.onPay}
-      >
-        {labels.pay}
-      </Button>
-      {cartCount > 0 ? <p className="text-small text-secondary">{labels.closeBlocked}</p> : null}
-      <Button
-        variant="secondary"
-        className={`${TOUCH_TARGET_CLASS} w-full`}
-        disabled={cartCount > 0}
-        onClick={props.onCloseRegister}
-      >
-        {labels.closeRegister}
-      </Button>
-    </div>
+    );
+  if (heldMode !== null) {
+    return heldCartOverlayOf(props, heldMode);
+  }
+  if (editingLine !== null) return priceOverrideOverlayOf(props, editingLine);
+  const overlay = secondaryOverlayOf(props);
+  if (overlay !== null) return overlay;
+  return (
+    <SaleMain
+      {...saleMainPropsOf({
+        screen,
+        cartLines: cart.lines,
+        cartCount: cartItemCount(cart),
+        isOnline,
+        updateCart: props.updateCart,
+        onEditPrice: props.setEditingLine,
+        onHold: () => props.setHeldMode("hold"),
+        onShowHeld: () => props.setHeldMode("list"),
+        onReturn: () => props.setReturnOpen(true),
+        onPay: () => props.setPaying(true),
+      })}
+    />
+  );
+}
+
+/** Scan or type to find a product, tap to add it, then Pay; the receipt shows after a completed sale. */
+export function PosSaleScreen(props: PosSaleScreenProps): ReactElement {
+  const [cart, dispatch] = useReducer(cartReducer, EMPTY_CART);
+  const [paying, setPaying] = useState(false);
+  const [receipt, setReceipt] = useState<ReceiptModel | null>(null);
+  const [heldMode, setHeldMode] = useState<HeldCartMode | null>(null);
+  const [editingLine, setEditingLine] = useState<CartLine | null>(null);
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [priceOverrideToken, setPriceOverrideToken] = useState<string | null>(null);
+  const [customer, setCustomer] = useState<TillCustomer | null>(null);
+  const isOnline = useOnlineStatus();
+  function updateCart(action: CartAction): void {
+    dispatch(action);
+    setPriceOverrideToken(null);
+  }
+  return (
+    <SaleScreenContent
+      screen={props}
+      cart={cart}
+      dispatch={dispatch}
+      paying={paying}
+      setPaying={setPaying}
+      receipt={receipt}
+      setReceipt={setReceipt}
+      heldMode={heldMode}
+      setHeldMode={setHeldMode}
+      editingLine={editingLine}
+      setEditingLine={setEditingLine}
+      returnOpen={returnOpen}
+      setReturnOpen={setReturnOpen}
+      priceOverrideToken={priceOverrideToken}
+      setPriceOverrideToken={setPriceOverrideToken}
+      isOnline={isOnline}
+      updateCart={updateCart}
+      customer={customer}
+      setCustomer={setCustomer}
+    />
   );
 }

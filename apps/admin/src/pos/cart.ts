@@ -3,6 +3,9 @@
  * sale (plan 3.9 decision 14), so the total on screen is only a preview until the server answers.
  */
 import { OFFERING_KIND } from "@banijjik/contracts";
+import type { Money } from "@banijjik/contracts/payment";
+import type { PosCatalogRow, PosHeldCartPayload } from "@banijjik/contracts/pos";
+import type { SalesPerformerResponse } from "@banijjik/contracts/sales";
 
 export interface CartLine {
   readonly lineKey: string;
@@ -11,11 +14,14 @@ export interface CartLine {
   readonly kind: string;
   readonly offeringName: string;
   readonly variantName: string;
+  readonly listPrice: Money;
   readonly quantity: number;
   /** Who performed a service line; null on products and when the cashier leaves it blank. */
   readonly performedByMemberId: string | null;
   /** Display name of that member, kept so the receipt can print it without another round trip. */
   readonly performerName: string | null;
+  /** Approved till price, or null to quote the current catalog price. */
+  readonly unitPriceOverride: Money | null;
 }
 
 export interface CartState {
@@ -37,6 +43,8 @@ export type CartAction =
       readonly performedByMemberId: string | null;
       readonly performerName: string | null;
     }
+  | { readonly type: "setPriceOverride"; readonly lineKey: string; readonly money: Money | null }
+  | { readonly type: "replaceLines"; readonly lines: readonly CartLine[] }
   | { readonly type: "remove"; readonly lineKey: string }
   | { readonly type: "clear" };
 
@@ -113,6 +121,17 @@ function setPerformer(
   };
 }
 
+function setPriceOverride(
+  state: CartState,
+  action: Extract<CartAction, { type: "setPriceOverride" }>,
+): CartState {
+  return {
+    lines: state.lines.map((line) =>
+      line.lineKey === action.lineKey ? { ...line, unitPriceOverride: action.money } : line,
+    ),
+  };
+}
+
 function removeLine(state: CartState, lineKey: string): CartState {
   return { lines: state.lines.filter((line) => line.lineKey !== lineKey) };
 }
@@ -125,6 +144,10 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       return setLineQuantity(state, action);
     case "setPerformer":
       return setPerformer(state, action);
+    case "setPriceOverride":
+      return setPriceOverride(state, action);
+    case "replaceLines":
+      return { lines: [...action.lines] };
     case "remove":
       return removeLine(state, action.lineKey);
     case "clear":
@@ -145,4 +168,52 @@ export function performerNamesOf(lines: readonly CartLine[]): Readonly<Record<st
     names[line.performedByMemberId] = line.performerName;
   }
   return names;
+}
+
+/** Held carts keep lines and service performers, never a price or approval token. */
+export function heldCartPayloadOf(
+  lines: readonly CartLine[],
+  contactId: string | null = null,
+): PosHeldCartPayload {
+  return {
+    contactId,
+    lines: lines.map((line) => ({
+      offeringId: line.offeringId,
+      variantId: line.variantId,
+      quantity: line.quantity,
+      modifierOptionIds: [],
+      ...(line.performedByMemberId === null
+        ? {}
+        : { performedByMemberId: line.performedByMemberId }),
+    })),
+  };
+}
+
+/** Restore a held cart from its unpriced payload and the current catalog snapshot. */
+export function cartLinesFromHeldPayload(
+  payload: PosHeldCartPayload,
+  rows: readonly PosCatalogRow[],
+  performers: readonly SalesPerformerResponse[] = [],
+): readonly CartLine[] | null {
+  const lines: (CartLine | null)[] = payload.lines.map((heldLine): CartLine | null => {
+    const row = rows.find((candidate) => candidate.variantId === heldLine.variantId);
+    if (row === undefined) return null;
+    return {
+      lineKey: `variant:${row.variantId}`,
+      offeringId: row.offeringId,
+      variantId: row.variantId,
+      kind: row.kind,
+      offeringName: row.offeringName,
+      variantName: row.variantName,
+      listPrice: row.price,
+      unitPriceOverride: null,
+      quantity: heldLine.quantity,
+      performedByMemberId: heldLine.performedByMemberId ?? null,
+      performerName:
+        performers.find((performer) => performer.memberId === heldLine.performedByMemberId)?.name ??
+        null,
+    };
+  });
+  if (lines.some((line) => line === null)) return null;
+  return lines.filter((line): line is CartLine => line !== null);
 }

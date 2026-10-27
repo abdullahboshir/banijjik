@@ -2,8 +2,10 @@ import { OFFERING_KIND } from "@banijjik/contracts";
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_CART,
+  heldCartPayloadOf,
   cartItemCount,
   cartReducer,
+  cartLinesFromHeldPayload,
   lineKeyOf,
   quantityControlOf,
   usesWeightKeypad,
@@ -16,6 +18,8 @@ const BEVERAGE = {
   kind: OFFERING_KIND.PRODUCT,
   offeringName: "Milk tea",
   variantName: "Large",
+  listPrice: { amount: 4000, currency: "BDT" as const },
+  unitPriceOverride: null,
   performedByMemberId: null,
   performerName: null,
 };
@@ -25,6 +29,8 @@ const SANDWICH = {
   kind: OFFERING_KIND.PRODUCT,
   offeringName: "Sandwich",
   variantName: "Regular",
+  listPrice: { amount: 5000, currency: "BDT" as const },
+  unitPriceOverride: null,
   performedByMemberId: null,
   performerName: null,
 };
@@ -34,6 +40,8 @@ const HAIRCUT = {
   kind: OFFERING_KIND.SERVICE,
   offeringName: "Haircut",
   variantName: "Default",
+  listPrice: { amount: 3000, currency: "BDT" as const },
+  unitPriceOverride: null,
   performedByMemberId: null,
   performerName: null,
 };
@@ -132,5 +140,60 @@ describe("cart reducer", () => {
     expect(scannedAgain.lines[0]?.quantity).toBe(2);
     expect(scannedAgain.lines[0]?.performedByMemberId).toBe(STYLIST_MEMBER_ID);
     expect(scannedAgain.lines[0]?.performerName).toBe("Mim");
+  });
+
+  it("holding a cart stores lines and contact without prices and restores them", () => {
+    const withService = cartReducer(EMPTY_CART, { type: "add", line: HAIRCUT });
+    const named = cartReducer(withService, {
+      type: "setPerformer",
+      lineKey: lineKeyOf(HAIRCUT.variantId),
+      performedByMemberId: STYLIST_MEMBER_ID,
+      performerName: "Mim",
+    });
+
+    const payload = heldCartPayloadOf(named.lines, "0190a000-0000-7000-8000-0000000000c1");
+    expect(payload).toEqual({
+      contactId: "0190a000-0000-7000-8000-0000000000c1",
+      lines: [
+        {
+          offeringId: HAIRCUT.offeringId,
+          variantId: HAIRCUT.variantId,
+          quantity: 1,
+          modifierOptionIds: [],
+          performedByMemberId: STYLIST_MEMBER_ID,
+        },
+      ],
+    });
+    expect(JSON.stringify(payload)).not.toContain("price");
+    expect(
+      cartLinesFromHeldPayload(
+        payload,
+        [
+          {
+            offeringId: HAIRCUT.offeringId,
+            variantId: HAIRCUT.variantId,
+            kind: HAIRCUT.kind,
+            offeringName: HAIRCUT.offeringName,
+            variantName: HAIRCUT.variantName,
+            price: HAIRCUT.listPrice,
+            unitKey: "SESSION",
+            precision: 1,
+            sku: null,
+            barcode: null,
+            updatedAt: "2026-10-27T00:00:00.000Z",
+          },
+        ],
+        [{ memberId: STYLIST_MEMBER_ID, name: "Mim" }],
+      ),
+    ).toMatchObject([
+      {
+        variantId: HAIRCUT.variantId,
+        quantity: 1,
+        performedByMemberId: STYLIST_MEMBER_ID,
+        performerName: "Mim",
+        listPrice: HAIRCUT.listPrice,
+        unitPriceOverride: null,
+      },
+    ]);
   });
 });

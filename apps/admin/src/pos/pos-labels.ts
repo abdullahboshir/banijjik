@@ -1,4 +1,6 @@
 import type { Translator } from "@banijjik/i18n";
+import { tillLabelsOf, type PosTillLabels } from "./pos-till-labels";
+export type { PosTillLabels } from "./pos-till-labels";
 
 export interface PosPayLabels {
   readonly title: string;
@@ -127,6 +129,7 @@ export interface PosLabels {
   readonly performerNone: string;
   readonly performerLoadFailed: string;
   readonly performerUnknown: string;
+  readonly till: PosTillLabels;
 }
 
 function payLabelsOf(t: Translator["t"]): PosPayLabels {
@@ -266,5 +269,6 @@ export function posLabelsOf(translator: Translator): PosLabels {
     performerNone: t("pos.sale.performerNone"),
     performerLoadFailed: t("pos.sale.performerLoadFailed"),
     performerUnknown: t("pos.sale.performerUnknown"),
+    till: tillLabelsOf(t),
   };
 }

@@ -1,10 +1,12 @@
 import {
+  POS_ALLOW_CREDIT_SALE_SETTING_KEY,
   POS_SESSION_STATUS,
+  type PosDeviceResponse,
   type PosSessionListResponse,
   type PosZReport,
 } from "@banijjik/contracts/pos";
 import type { ElementHandle, Page } from "puppeteer-core";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   bodyText,
   gotoWhenHydrated,
@@ -55,6 +57,7 @@ let owner: SeededPerson;
 let organizationId: string;
 let locationId: string;
 let pairingCode = "";
+let currentDeviceId: string | null = null;
 
 beforeAll(async () => {
   stack = await startBrowserStack();
@@ -69,8 +72,27 @@ beforeAll(async () => {
   locationId = await firstLocationId();
   await seedProduct();
   await seedWalkInService();
-  pairingCode = await createTillDevice();
+  await seedCustomer();
+  await setApprovalPin();
+  const device = await createTillDevice();
+  pairingCode = device.pairingCode;
+  currentDeviceId = device.posDeviceId;
 }, 240_000);
+
+afterEach(async () => {
+  if (currentDeviceId === null) return;
+  const devices = await apiGet<{ data: PosDeviceResponse[] }>(
+    `/orgs/${organizationId}/pos/devices?locationId=${locationId}&limit=100&page=1`,
+  );
+  const device = devices.data.find((item) => item.posDeviceId === currentDeviceId);
+  if (device !== undefined && device.status === "ACTIVE") {
+    await callApi(`/orgs/${organizationId}/pos/devices/${device.posDeviceId}/revoke`, {
+      cookies: owner.cookies,
+      body: { version: device.version },
+    });
+  }
+  currentDeviceId = null;
+});
 
 afterAll(async () => {
   await stack?.stop();
@@ -155,13 +177,56 @@ async function seedWalkInService(): Promise<void> {
 }
 
 /** The owner registers a till at the shop and gets the one-time pairing code for the browser. */
-async function createTillDevice(): Promise<string> {
+async function createTillDevice(): Promise<{
+  readonly posDeviceId: string;
+  readonly pairingCode: string;
+}> {
   const created = await callApi(`/orgs/${organizationId}/pos/devices`, {
     cookies: owner.cookies,
     body: { locationId, name: "কাউন্টার ১" },
   });
-  const body = (await created.json()) as { data: { pairingCode: string } };
-  return body.data.pairingCode;
+  const body = (await created.json()) as { data: { posDeviceId: string; pairingCode: string } };
+  return body.data;
+}
+
+async function seedCustomer(): Promise<string> {
+  const response = await callApi(`/orgs/${organizationId}/contacts`, {
+    cookies: owner.cookies,
+    body: {
+      contactType: "PERSON",
+      name: "তিল বিক্রির গ্রাহক",
+      phoneE164: "+8801712345678",
+      contactRoles: ["CUSTOMER"],
+    },
+  });
+  const body = (await response.json()) as { data: { contactId: string } };
+  return body.data.contactId;
+}
+
+async function setApprovalPin(): Promise<void> {
+  const response = await fetch(
+    `http://localhost:${API_PORT}/api/v1/orgs/${organizationId}/me/approval-pin`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Cookie: ownerCookies(), Origin: ADMIN_ORIGIN },
+      body: JSON.stringify({ currentPassword: owner.password, pin: "1234" }),
+    },
+  );
+  if (!response.ok) throw new Error(`approval PIN answered ${response.status}`);
+}
+
+async function setCreditSaleAllowed(allowed: boolean): Promise<void> {
+  const response = await fetch(
+    `http://localhost:${API_PORT}/api/v1/orgs/${organizationId}/settings`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Cookie: ownerCookies(), Origin: ADMIN_ORIGIN },
+      body: JSON.stringify({
+        items: [{ settingKey: POS_ALLOW_CREDIT_SALE_SETTING_KEY, value: allowed }],
+      }),
+    },
+  );
+  if (!response.ok) throw new Error(`setting pos.allowCreditSale answered ${response.status}`);
 }
 
 async function tillPage(): Promise<Page> {
@@ -196,6 +261,40 @@ async function pairTill(page: Page): Promise<void> {
   await waitForText(page, message("pos.pair.title"));
   await typeInLabel(page, message("pos.pair.code"), pairingCode);
   await clickByName(page, message("pos.pair.submit"));
+}
+
+async function pairNewTill(page: Page): Promise<void> {
+  await waitForText(page, message("pos.pair.title"));
+  const device = await createTillDevice();
+  currentDeviceId = device.posDeviceId;
+  await typeInLabel(page, message("pos.pair.code"), device.pairingCode);
+  await clickByName(page, message("pos.pair.submit"));
+}
+
+async function openSellingTill(): Promise<Page> {
+  const page = await tillPage();
+  await gotoWhenHydrated(page, `/${ORG_SLUG}/pos`, "main");
+  await pairNewTill(page);
+  await openRegister(page);
+  return page;
+}
+
+async function clickDialogButton(page: Page, text: string): Promise<void> {
+  await page.waitForFunction(
+    (wanted) => {
+      const dialog = document.querySelector('[role="alertdialog"]');
+      return dialog?.textContent?.includes(wanted) ?? false;
+    },
+    {},
+    text,
+  );
+  await page.evaluate((wanted) => {
+    const dialog = document.querySelector('[role="alertdialog"]');
+    const button = Array.from(dialog?.querySelectorAll("button") ?? []).find(
+      (item) => item.textContent?.trim() === wanted,
+    );
+    (button as HTMLButtonElement | undefined)?.click();
+  }, text);
 }
 
 async function openRegister(page: Page): Promise<void> {
@@ -252,10 +351,10 @@ async function paySaleInCash(page: Page): Promise<void> {
   await waitForTextIn(page, "article", message("pos.receipt.title"));
 }
 
-async function closeRegister(page: Page): Promise<void> {
+async function closeRegister(page: Page, countedCash = COUNTED_CASH_TEXT): Promise<void> {
   await clickByName(page, message("pos.sale.closeRegister"));
   await waitForText(page, message("pos.close.title"));
-  await typeInLabel(page, message("pos.close.counted"), COUNTED_CASH_TEXT);
+  await typeInLabel(page, message("pos.close.counted"), countedCash);
   await clickByName(page, message("pos.close.submit"));
   // The Z-report title also sits inside the submit button, so wait for the report-only print button.
   await waitForText(page, message("pos.z.print"));
@@ -271,7 +370,9 @@ async function closedSessionId(): Promise<string> {
       `/orgs/${organizationId}/pos/sessions?locationId=${locationId}&limit=20`,
     );
     lastListing = JSON.stringify(listed).slice(0, 400);
-    const session = listed.data.items.find((item) => item.status === POS_SESSION_STATUS.CLOSED);
+    const session = listed.data.items
+      .filter((item) => item.status === POS_SESSION_STATUS.CLOSED)
+      .sort((left, right) => (right.closedAt ?? "").localeCompare(left.closedAt ?? ""))[0];
     if (session !== undefined) return session.posSessionId;
     await new Promise((resolve) => setTimeout(resolve, CLOSE_POLL_MS));
   }
@@ -334,5 +435,89 @@ describe("the till at a shop", () => {
     process.stdout.write(`initial JS pos: ${toKiB(size.gzipBytes)} KiB\n`);
     await closePage(page);
     expect(toKiB(size.gzipBytes)).toBeLessThanOrEqual(POS_BUDGET_KIB);
+  }, 120_000);
+
+  it("the cashier holds a cart, starts another sale, then resumes the held cart and pays", async () => {
+    const page = await openSellingTill();
+    await addOffering(page, SERVICE_NAME);
+    await pickPerformer(page, owner.name);
+    await addOffering(page, PRODUCT_NAME);
+    await clickByName(page, message("pos.sale.pay"));
+    await waitForText(page, message("pos.pay.title"));
+    await typeInLabel(page, message("pos.customer.phone"), "+8801712345678");
+    await clickByName(page, message("pos.customer.find"));
+    await clickByName(page, "তিল বিক্রির গ্রাহক");
+    await clickByName(page, message("pos.pay.back"));
+    await clickByName(page, message("pos.till.hold"));
+    await typeInLabel(page, message("pos.till.holdLabel"), "চা");
+    await clickByName(page, message("pos.till.holdSubmit"));
+    await addOffering(page, SERVICE_NAME);
+    await clickByName(page, message("pos.till.held"));
+    await clickByName(page, message("pos.till.resume"));
+    await clickDialogButton(page, message("pos.till.replaceConfirm"));
+    await clickByName(page, message("pos.sale.pay"));
+    await waitForText(page, "তিল বিক্রির গ্রাহক");
+    await typeInLabel(page, message("pos.pay.received"), CASH_RECEIVED_TEXT);
+    await clickByName(page, message("pos.pay.confirm"));
+    await waitForTextIn(page, "article", message("pos.receipt.title"));
+    await waitForTextIn(page, "article", PRODUCT_NAME);
+    await waitForTextIn(page, "article", owner.name);
+    await clickByName(page, message("pos.receipt.newSale"));
+    await closeRegister(page, "40");
+    await closePage(page);
+  }, 120_000);
+
+  it("a price below list asks for a manager PIN and the receipt shows the overridden price", async () => {
+    const page = await openSellingTill();
+    await addOffering(page, PRODUCT_NAME);
+    await clickByName(page, `${message("pos.till.price")} ${PRODUCT_NAME}`);
+    await typeInLabel(page, message("pos.till.unitPrice"), "20");
+    await clickByName(page, message("pos.till.applyPrice"));
+    await page.waitForSelector("#approval-pin", { visible: true });
+    await page.type("#approval-pin", "1234");
+    await clickByName(page, message("pos.till.approvalSubmit"));
+    await paySaleInCash(page);
+    await waitForTextIn(page, "article", "৳২০");
+    await clickByName(page, message("pos.receipt.newSale"));
+    await closeRegister(page, "20");
+    await closePage(page);
+  }, 120_000);
+
+  it("a till return of a cash sale lowers expected cash on the Z-report", async () => {
+    const page = await openSellingTill();
+    await addOffering(page, PRODUCT_NAME);
+    await paySaleInCash(page);
+    await clickByName(page, message("pos.receipt.newSale"));
+    await clickByName(page, message("pos.till.return"));
+    await clickByName(page, message("pos.till.findOrder"));
+    await page.waitForSelector("ul button", { visible: true });
+    await page.click("ul button");
+    await typeInLabel(page, message("pos.till.returnQuantity"), "1");
+    await clickByName(page, message("pos.till.returnSubmit"));
+    await waitForText(page, message("pos.till.returnSuccess"));
+    await clickByName(page, message("pos.till.approvalClose"));
+    await closeRegister(page, "0");
+    const report = await zReportOf(await closedSessionId());
+    expect(report.expectedCash).toEqual({ amount: 0, currency: "BDT" });
+    await closePage(page);
+  }, 120_000);
+
+  it("a credit sale is refused when the setting is off", async () => {
+    await setCreditSaleAllowed(false);
+    const page = await openSellingTill();
+    await addOffering(page, PRODUCT_NAME);
+    await clickByName(page, message("pos.sale.pay"));
+    await waitForText(page, message("pos.pay.title"));
+    await typeInLabel(page, message("pos.customer.phone"), "+8801712345678");
+    await clickByName(page, message("pos.customer.find"));
+    await clickByName(page, "তিল বিক্রির গ্রাহক");
+    const creditCheckbox = await page.waitForSelector('input[type="checkbox"]', { visible: true });
+    await creditCheckbox?.click();
+    await clickByName(page, message("pos.pay.confirm"));
+    await waitForText(page, message("errors.pos_tender_required"));
+    await clickByName(page, message("pos.pay.back"));
+    await clickByName(page, message("pos.sale.clear"));
+    await closeRegister(page, "0");
+    await closePage(page);
   }, 120_000);
 });

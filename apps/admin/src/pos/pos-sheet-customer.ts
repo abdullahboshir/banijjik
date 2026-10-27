@@ -31,17 +31,23 @@ export interface SheetCustomerState {
  * The customer on the sale and the store credit they apply. The credit is capped by the balance and
  * the bill here only so the till shows the right figure; the server applies the same cap.
  */
-export function useSheetCustomer(totalMinor: number, currency: CurrencyCode): SheetCustomerState {
-  const [customer, setCustomer] = useState<TillCustomer | null>(null);
+export function useSheetCustomer(input: {
+  readonly totalMinor: number;
+  readonly currency: CurrencyCode;
+  readonly initialCustomer: TillCustomer | null;
+  readonly onCustomerChange: (customer: TillCustomer | null) => void;
+}): SheetCustomerState {
+  const [customer, setCustomer] = useState<TillCustomer | null>(input.initialCustomer);
   const [creditText, setCreditText] = useState("");
   const [creditSale, setCreditSale] = useState(false);
-  const typedMinor = moneyFromInput(creditText, currency)?.amount ?? 0;
+  const typedMinor = moneyFromInput(creditText, input.currency)?.amount ?? 0;
   const creditUseMinor = customer
-    ? storeCreditUseMinor(typedMinor, customer.balanceMinor, totalMinor)
+    ? storeCreditUseMinor(typedMinor, customer.balanceMinor, input.totalMinor)
     : 0;
 
   function chooseCustomer(next: TillCustomer | null): void {
     setCustomer(next);
+    input.onCustomerChange(next);
     if (next === null) setCreditSale(false);
   }
 
@@ -53,10 +59,11 @@ export function useSheetCustomer(totalMinor: number, currency: CurrencyCode): Sh
     creditSale: customer !== null && creditSale,
     setCreditSale,
     creditUseMinor,
-    payableMinor: totalMinor - creditUseMinor,
+    payableMinor: input.totalMinor - creditUseMinor,
     saleCustomer: {
       contactId: customer?.contactId ?? null,
-      storeCreditUse: creditUseMinor > 0 ? { amount: creditUseMinor, currency } : null,
+      storeCreditUse:
+        creditUseMinor > 0 ? { amount: creditUseMinor, currency: input.currency } : null,
     },
   };
 }

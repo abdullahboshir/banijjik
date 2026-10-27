@@ -1,6 +1,7 @@
-import type { ContactListItem } from "@banijjik/contracts/contact";
+import type { ContactListItem, ContactResponse } from "@banijjik/contracts/contact";
 import type { StoreCreditEntryResponse } from "@banijjik/contracts/payment";
 import { apiFetch } from "../lib/api/api-client";
+import type { TillCustomer } from "./till-customer";
 
 /** A short list: the cashier picks one customer from the first few matches. */
 const CUSTOMER_SEARCH_LIMIT = 5;
@@ -28,4 +29,17 @@ export async function fetchStoreCreditBalanceMinor(
     `/orgs/${organizationId}/store-credit?${search}`,
   );
   return result.data[0]?.balanceAfterMinor ?? 0;
+}
+
+export async function getTillCustomer(
+  organizationId: string,
+  contactId: string,
+): Promise<TillCustomer> {
+  const contact = await apiFetch<ContactResponse>(`/orgs/${organizationId}/contacts/${contactId}`);
+  const balanceMinor = await fetchStoreCreditBalanceMinor(organizationId, contactId);
+  return {
+    contactId,
+    name: contact.data.name ?? contact.data.phoneE164 ?? contactId,
+    balanceMinor,
+  };
 }

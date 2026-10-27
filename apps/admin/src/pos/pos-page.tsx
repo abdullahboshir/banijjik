@@ -28,6 +28,10 @@ export async function PosPage(props: { readonly orgSlug: string }): Promise<Reac
   const canFindCustomer =
     holdsPermission(access.config.permissions, PERMISSION_KEY.CONTACT_CONTACT_READ) &&
     holdsPermission(access.config.permissions, PERMISSION_KEY.PAYMENT_STORE_CREDIT_READ);
+  const canOverridePrice = holdsPermission(
+    access.config.permissions,
+    PERMISSION_KEY.POS_PRICE_OVERRIDE,
+  );
   return (
     <PosTerminal
       organizationId={access.organization.organizationId}
@@ -35,6 +39,7 @@ export async function PosPage(props: { readonly orgSlug: string }): Promise<Reac
       locale={translator.locale}
       labels={posLabelsOf(translator)}
       canFindCustomer={canFindCustomer}
+      canOverridePrice={canOverridePrice}
     />
   );
 }

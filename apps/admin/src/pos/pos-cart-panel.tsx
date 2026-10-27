@@ -1,7 +1,8 @@
 "use client";
 
 import { OFFERING_KIND } from "@banijjik/contracts";
-import { Button } from "@banijjik/ui";
+import type { Money } from "@banijjik/contracts/payment";
+import { Button, formatMoney, type DisplayLocale } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { quantityControlOf, type CartLine } from "./cart";
 import type { PosLabels } from "./pos-labels";
@@ -11,11 +12,14 @@ export interface PosCartPanelProps {
   readonly organizationId: string;
   readonly locationId: string;
   readonly labels: PosLabels;
+  readonly locale: DisplayLocale;
+  readonly canOverridePrice: boolean;
   readonly lines: readonly CartLine[];
   readonly onQuantity: (lineKey: string, quantity: number) => void;
   readonly onPerformer: (lineKey: string, memberId: string | null, name: string | null) => void;
   readonly onRemove: (lineKey: string) => void;
   readonly onClear: () => void;
+  readonly onEditPrice: (line: CartLine) => void;
 }
 
 const TOUCH_TARGET_CLASS = "min-h-14 min-w-14";
@@ -77,6 +81,10 @@ function CartLineRow(props: {
   readonly onQuantity: (lineKey: string, quantity: number) => void;
   readonly onPerformer: PosCartPanelProps["onPerformer"];
   readonly onRemove: (lineKey: string) => void;
+  readonly canOverridePrice: boolean;
+  readonly locale: DisplayLocale;
+  readonly listPrice: Money;
+  readonly onEditPrice: (line: CartLine) => void;
 }): ReactElement {
   const { line, labels, onQuantity, onRemove } = props;
   return (
@@ -97,6 +105,17 @@ function CartLineRow(props: {
       />
       <div className="flex items-center justify-between gap-2">
         <QuantityStepper line={line} onQuantity={onQuantity} />
+        {props.canOverridePrice ? (
+          <Button
+            variant="secondary"
+            className={TOUCH_TARGET_CLASS}
+            aria-label={`${labels.till.price} ${line.offeringName}`}
+            onClick={() => props.onEditPrice(line)}
+          >
+            {labels.till.price}:{" "}
+            {formatMoney(line.unitPriceOverride ?? props.listPrice, { locale: props.locale })}
+          </Button>
+        ) : null}
         <Button variant="ghost" className="min-h-14" onClick={() => onRemove(line.lineKey)}>
           {labels.remove}
         </Button>
@@ -121,6 +140,10 @@ export function PosCartPanel(props: PosCartPanelProps): ReactElement {
             organizationId={props.organizationId}
             locationId={props.locationId}
             labels={labels}
+            locale={props.locale}
+            canOverridePrice={props.canOverridePrice}
+            listPrice={line.listPrice}
+            onEditPrice={props.onEditPrice}
             onQuantity={onQuantity}
             onPerformer={props.onPerformer}
             onRemove={onRemove}
