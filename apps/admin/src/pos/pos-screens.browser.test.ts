@@ -5,7 +5,13 @@ import {
 } from "@banijjik/contracts/pos";
 import type { ElementHandle, Page } from "puppeteer-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { bodyText, gotoWhenHydrated, message, waitForText } from "../test-support/browser-helpers";
+import {
+  bodyText,
+  gotoWhenHydrated,
+  message,
+  waitForText,
+  waitForTextIn,
+} from "../test-support/browser-helpers";
 import {
   clickByName,
   closePage,
@@ -242,7 +248,8 @@ async function paySaleInCash(page: Page): Promise<void> {
   await waitForText(page, message("pos.pay.title"));
   await typeInLabel(page, message("pos.pay.received"), CASH_RECEIVED_TEXT);
   await clickByName(page, message("pos.pay.confirm"));
-  await waitForText(page, message("pos.receipt.title"));
+  // The title also lives in the bundled catalog (script tags), so wait on the paper.
+  await waitForTextIn(page, "article", message("pos.receipt.title"));
 }
 
 async function closeRegister(page: Page): Promise<void> {
@@ -308,11 +315,10 @@ describe("the till at a shop", () => {
     expect(layout.overflowsX).toBe(false);
     expect(layout.shortButtons).toBe(0);
     await paySaleInCash(page);
-    const receipt = await bodyText(page);
-    expect(receipt).toContain(SERVICE_NAME);
-    expect(receipt).toContain(PRODUCT_NAME);
-    expect(receipt).toContain(owner.name);
-    expect(receipt).toContain(message("pos.pay.change"));
+    await waitForTextIn(page, "article", SERVICE_NAME);
+    await waitForTextIn(page, "article", PRODUCT_NAME);
+    await waitForTextIn(page, "article", owner.name);
+    await waitForTextIn(page, "article", message("pos.pay.change"));
     await clickByName(page, message("pos.receipt.newSale"));
     await closeRegister(page);
     const report = await zReportOf(await closedSessionId());
