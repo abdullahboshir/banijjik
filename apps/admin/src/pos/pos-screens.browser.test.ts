@@ -235,21 +235,47 @@ async function tillPage(): Promise<Page> {
   return page;
 }
 
-/** The input under a label that contains the wanted words; waits until the sheet has rendered it. */
+/**
+ * Types into the field for `labelText`. Matches a wrapping `<label>`, a FormField `htmlFor`, or an
+ * input whose aria-label / placeholder contains the words (the customer phone field).
+ */
 async function typeInLabel(page: Page, labelText: string, value: string): Promise<void> {
   await page.waitForFunction(
-    (wanted) =>
-      Array.from(document.querySelectorAll("label")).some(
-        (item) => (item.textContent ?? "").includes(wanted) && item.querySelector("input") !== null,
-      ),
+    (wanted) => {
+      for (const label of Array.from(document.querySelectorAll("label"))) {
+        if (!(label.textContent ?? "").includes(wanted)) continue;
+        if (label.querySelector("input") !== null) return true;
+        const htmlFor = label.getAttribute("for");
+        if (htmlFor !== null && document.getElementById(htmlFor) instanceof HTMLInputElement) {
+          return true;
+        }
+      }
+      return Array.from(document.querySelectorAll("input")).some((input) => {
+        const aria = input.getAttribute("aria-label") ?? "";
+        const placeholder = input.getAttribute("placeholder") ?? "";
+        return aria.includes(wanted) || placeholder.includes(wanted);
+      });
+    },
     { timeout: 20_000 },
     labelText,
   );
   const handle = await page.evaluateHandle((wanted) => {
-    const label = Array.from(document.querySelectorAll("label")).find((item) =>
-      (item.textContent ?? "").includes(wanted),
+    for (const label of Array.from(document.querySelectorAll("label"))) {
+      if (!(label.textContent ?? "").includes(wanted)) continue;
+      const nested = label.querySelector("input");
+      if (nested instanceof HTMLInputElement) return nested;
+      const htmlFor = label.getAttribute("for");
+      if (htmlFor === null) continue;
+      const byId = document.getElementById(htmlFor);
+      if (byId instanceof HTMLInputElement) return byId;
+    }
+    return (
+      Array.from(document.querySelectorAll("input")).find((input) => {
+        const aria = input.getAttribute("aria-label") ?? "";
+        const placeholder = input.getAttribute("placeholder") ?? "";
+        return aria.includes(wanted) || placeholder.includes(wanted);
+      }) ?? null
     );
-    return label?.querySelector("input") ?? null;
   }, labelText);
   const input = handle.asElement() as ElementHandle<HTMLInputElement> | null;
   if (input === null) throw new Error(`no input under the label "${labelText}"`);
@@ -277,6 +303,26 @@ async function openSellingTill(): Promise<Page> {
   await pairNewTill(page);
   await openRegister(page);
   return page;
+}
+
+/** The receipt toolbar wraps on a phone; a real click misses when New sale sits off-centre. */
+async function clickReceiptNewSale(page: Page): Promise<void> {
+  const wanted = message("pos.receipt.newSale");
+  await page.waitForFunction(
+    (name) =>
+      Array.from(document.querySelectorAll("button")).some(
+        (item) => item.textContent?.trim() === name,
+      ),
+    {},
+    wanted,
+  );
+  await page.evaluate((name) => {
+    const button = Array.from(document.querySelectorAll("button")).find(
+      (item) => item.textContent?.trim() === name,
+    );
+    button?.scrollIntoView({ block: "center" });
+    (button as HTMLButtonElement | undefined)?.click();
+  }, wanted);
 }
 
 async function clickDialogButton(page: Page, text: string): Promise<void> {
@@ -462,7 +508,7 @@ describe("the till at a shop", () => {
     await waitForTextIn(page, "article", message("pos.receipt.title"));
     await waitForTextIn(page, "article", PRODUCT_NAME);
     await waitForTextIn(page, "article", owner.name);
-    await clickByName(page, message("pos.receipt.newSale"));
+    await clickReceiptNewSale(page);
     await closeRegister(page, "40");
     await closePage(page);
   }, 120_000);
@@ -478,7 +524,7 @@ describe("the till at a shop", () => {
     await clickByName(page, message("pos.till.approvalSubmit"));
     await paySaleInCash(page);
     await waitForTextIn(page, "article", "৳২০");
-    await clickByName(page, message("pos.receipt.newSale"));
+    await clickReceiptNewSale(page);
     await closeRegister(page, "20");
     await closePage(page);
   }, 120_000);
@@ -487,7 +533,8 @@ describe("the till at a shop", () => {
     const page = await openSellingTill();
     await addOffering(page, PRODUCT_NAME);
     await paySaleInCash(page);
-    await clickByName(page, message("pos.receipt.newSale"));
+    await waitForTextIn(page, "article", PRODUCT_NAME);
+    await clickReceiptNewSale(page);
     await clickByName(page, message("pos.till.return"));
     await clickByName(page, message("pos.till.findOrder"));
     await page.waitForSelector("ul button", { visible: true });
