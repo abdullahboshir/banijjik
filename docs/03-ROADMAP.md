@@ -243,11 +243,14 @@ The owner's own matrimony website first, sellable to other bureaus later. Runs i
 ---
 
 ## Phase 4: Tenant website (design: `06-AUTOMATION-AND-ACCOUNTS.md §8`)
+Planning package (Codex, owner request 2026-10-27): `docs/plans/phase-4-lanes.md`, individual `4.1.md`–`4.6.md` and `4.3-COD.md`. All are planned, not implemented or independently approved. Dependency refresh and T1 plan checks remain required; no new parallel lanes are authorized by these plans.
+
 **4.1 Theme engine** (design tokens, theme model, section library with variants, page JSON schema, region lock levels; sections declared in manifests). A business's theme starts from its branding (3.12: logo and colours), so every business's website looks like that business; industry templates (`websiteTemplateKeys`) give the layout and sections. Each site keeps its own design copied from the template (ADR-149): token groups (colour, type, shape, spacing, size) and a variant per section, including how offering cards look.
 **4.2 Storefront app** (subdomain + custom domain via edge custom hostnames → org (ADR-031), render page JSON + tokens server-side, SEO, CDN cache). M: `modules/storefront`, guide 38
 **4.3 Shop & booking flow** (browse offerings of all kinds, cart/checkout COD for products, slot booking for services/rentals, plan enrollment, server-side re-pricing, order/booking tracking).
+  - Owner decision 2026-10-27: guest checkout alongside OTP accounts; **full COD lifecycle in Phase 4**. The prerequisite parts in `4.3-COD.md` cover manual courier/rider dispatch, failure, redelivery, return-to-sender, collection, settlement/handover, accounting and staff screens. Phase 5 adds provider automation and rider mobile workflows on the same lifecycle. 4.3 is not complete before these prerequisites pass.
 **4.4 Platform template builder** (`apps/platform`: build/publish templates per industry, set lock levels; design any one business's site and set what that business may change; warn when a new site looks the same as another business of the same industry (ADR-149)).
-**4.6 Simple online booking page** (launch track, ADR-099: one public page per business with its services or plans, free slots and a booking or enrollment request; uses the 3.6/3.7 APIs; no theme engine needed).
+**4.6 Simple online booking page — folded into 4.3** (owner confirmed 2026-10-27; supersedes the earlier stopgap proposal). Its branded service/plan page, free slots and booking/enrollment request journey are explicit acceptance tests in `docs/plans/4.6.md`; no separate app, theme or implementation card.
 **4.5 Tenant website editor** (`apps/admin`: choose template, edit within limits, mobile/desktop preview, publish, version rollback).
 
 ---
@@ -283,7 +286,7 @@ Before each card here: verify the provider's current docs and rules, then record
 What must be done before the pilot launch (6.6) with salons, gyms and coaching centres:
 - Phase 2 and Phase 3 in full.
 - From Phase 5: **5.1** (integration framework, enough for SMS provider credentials) and **5.13** (SMS notifications: appointment reminders, fee dues, messages to guardians).
-- The full tenant website of Phase 4 (4.1–4.5; ADR-150, owner 2026-10-26). Card 4.6 is folded into 4.3 (proposed).
+- The full tenant website of Phase 4 (4.1–4.5; ADR-150, owner 2026-10-26), including full COD lifecycle prerequisites (owner 2026-10-27). Card 4.6 is folded into 4.3 (owner confirmed 2026-10-27).
 - Phase 6 in full.
 
 After the pilot: the rest of Phase 5 (courier, channels, inbox, bot). **Restaurant (second wave):** the kitchen capability of Phase 7 (order tickets to the kitchen, table service, split bills) is built before RESTAURANT is published.
