@@ -18,6 +18,18 @@ import { newId } from "@banijjik/ids";
 import { apiFetch } from "../lib/api/api-client";
 import { mergeOfferingSearchByName, offeringSearchKinds } from "./search-offerings";
 
+interface OrderAttempt {
+  readonly bodyText: string;
+  readonly idempotencyKey: string;
+}
+
+function attemptFor(previous: OrderAttempt | null, bodyText: string): OrderAttempt {
+  if (previous?.bodyText === bodyText) return previous;
+  return { bodyText, idempotencyKey: newId() };
+}
+
+const orderAttempts = new Map<string, OrderAttempt>();
+
 export interface OrderListPage {
   readonly items: readonly OrderListItem[];
   readonly page: number;
@@ -97,11 +109,14 @@ export async function placeOrder(
   orderId: string,
   body: OrderPlaceBody,
 ): Promise<OrderResponse> {
-  const idempotencyKey = newId();
+  const attemptKey = `${organizationId}:${orderId}`;
+  const bodyText = JSON.stringify(body);
+  const attempt = attemptFor(orderAttempts.get(attemptKey) ?? null, bodyText);
+  orderAttempts.set(attemptKey, attempt);
   const result = await apiFetch<OrderResponse>(`${ordersBase(organizationId)}/${orderId}/place`, {
     method: "POST",
     body,
-    idempotencyKey,
+    idempotencyKey: attempt.idempotencyKey,
   });
   return result.data;
 }
