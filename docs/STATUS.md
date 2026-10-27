@@ -149,6 +149,19 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.45 card:check does not fail on a branch behind main | merged (2026-10-26, lead card (Opus 5.5), T3; CI 40305346610 green) | "rebased on origin/main" prints INFO and never fails; guide §8 step 4: rebase once before the first push. Cause: 3.39 A spent about 3 hours rebasing and waiting for CI each time main moved |
 | Phase 3 review | PASS WITH FIXES (2026-10-26, `docs/handoffs/phase-3-review.md`) | Phase 4 code merges after 3.40 (walk-in services, F1) and 3.41 (day scenarios with report numbers, F2). 3.42 (POS till leftovers) and 3.43 (API leftovers) may run beside Phase 4. Doc drift fixed: `09 §6` ownership map, report README |
 
+## Phase 4 planning (2026-10-27)
+
+Owner requested every Phase 4 plan together. Planning-only exception to rolling-wave; implementation still waits for dependency refresh, the Phase 3 gate and independent T1 checks. Map: `docs/plans/phase-4-lanes.md`. Planning handoff: `docs/handoffs/phase-4-planning.md`. No runtime verification or implementation completion is claimed.
+
+| Card | Status | Note |
+|---|---|---|
+| 4.1 theme engine | planned (Codex, 2026-10-27) | `docs/plans/4.1.md`; snapshots, lock evaluator, publication, renderer, manifest integration; T1 check pending |
+| 4.2 storefront domains/runtime | planned (Codex, 2026-10-27) | `docs/plans/4.2.md`; Cloudflare for SaaS selected under owner delegation; provider docs checked 2026-10-27, links in plan; real account/DNS/TLS smoke test is an implementation gate |
+| 4.3 shop/booking/guest checkout | planned (Codex, 2026-10-27) | `docs/plans/4.3.md` + `4.3-COD.md`; owner requires guest checkout and full COD in Phase 4; manual courier/rider lifecycle and settlement prerequisites; T1 checks pending |
+| 4.4 platform template/site builder | planned (Codex, 2026-10-27) | `docs/plans/4.4.md`; independent designs, policy controls, industry-safe same-look warning; T1 API / T2 screens |
+| 4.5 tenant editor | planned (Codex, 2026-10-27) | `docs/plans/4.5.md`; adoption, authenticated preview, policy-safe publish/restore; refresh after 4.1/4.4 |
+| 4.6 simple booking page | folded into 4.3 (owner confirmed 2026-10-27) | `docs/plans/4.6.md` preserves its acceptance tests; folded does not mean implemented |
+
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
 | Card | Status | Note |
 |---|---|---|
