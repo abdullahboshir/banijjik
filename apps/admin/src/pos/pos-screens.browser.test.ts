@@ -414,10 +414,9 @@ async function pickPerformer(page: Page, performerName: string): Promise<void> {
 }
 
 async function paySaleInCash(page: Page): Promise<void> {
-  await clickByName(page, message("pos.sale.pay"));
-  await waitForText(page, message("pos.pay.title"));
+  await tapByName(page, message("pos.sale.pay"));
   await typeInLabel(page, message("pos.pay.received"), CASH_RECEIVED_TEXT);
-  await clickByName(page, message("pos.pay.confirm"));
+  await tapByName(page, message("pos.pay.confirm"));
   // The title also lives in the bundled catalog (script tags), so wait on the paper.
   await waitForTextIn(page, "article", message("pos.receipt.title"));
 }
@@ -568,6 +567,13 @@ describe("the till at a shop", () => {
     await pinField?.type("1234");
     await tapByName(page, message("pos.till.approvalSubmit"));
     await page.waitForFunction(() => document.querySelector("#approval-pin") === null);
+    const sheetStillOpen = await page.evaluate(
+      () => document.querySelector("[role=dialog]") !== null,
+    );
+    if (sheetStillOpen) {
+      await tapByName(page, message("pos.till.approvalClose"));
+      await waitForDialogClosed(page);
+    }
     await paySaleInCash(page);
     await waitForTextIn(page, "article", "৳২০");
     await clickReceiptNewSale(page);
