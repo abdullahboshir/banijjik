@@ -8,12 +8,12 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - No secrets, passwords or `.env` values.
 
 
-Last updated: 2026-10-27 (late morning) by Cursor (lead, `banijjik-3.5a`) · 3.41, 3.40 B and 3.43 A merged on `main`.
+Last updated: 2026-10-27 (afternoon) by Cursor (lead, `banijjik-lead`) · 3.43 B merged on `main`.
 
 ## 1. Where the project stands
 - **The owner's Claude plan ends on 2026-10-29 and will not be renewed.** From then on the owner's tools (Cursor, ChatGPT/Codex, Qoder, Antigravity) do every role by `docs/RUN-WITHOUT-CLAUDE.md` (`af8d1d6e`: roles, work queue, plan rules, reviewer and lead prompts, merge steps; `AGENTS.md` and `.cursor/rules/project.mdc` point to it). Owner summary in Bengali: `lead-orchestra/owner-guide/00-CLAUDE-CHARA.md`. Until then, the lead spends its remaining budget on the hardest plans: **3.41, 4.1, 4.2**, then 3.43.
 - **Owner decision (2026-10-26), ADR-150 (`843f9883`): the full tenant website (Phase 4: 4.1–4.5) is built before the pilot**; 4.6 is folded into 4.3 (proposed). Roadmap "Launch track" and the guide's §3 queue updated.
-- **Phase 3 review: PASS WITH FIXES** (`docs/handoffs/phase-3-review.md`). **F1 (3.40) and F2 (3.41) merged.** **3.43 A T1 review R1 PASS** (till cash reversal, cashier contacts, `approverMemberId`, typed payloads). **3.42 and 3.43 B** remain. Phase 4 (4.1) may be planned. Track M: M.9 A2 merged; next M.9 B.
+- **Phase 3 review: PASS WITH FIXES** (`docs/handoffs/phase-3-review.md`). **F1, F2 and F4 merged.** **3.42 (F3)** remains (`banijjik-m2`, Amendment 1). Phase 4 (4.1) may be planned. Track M: M.9 A2 merged; next M.9 B.
 - **Faster delivery (owner, 2026-10-26: "what is best and fast"):** 3.44 merged: a push that changes only `docs/` runs no CI, `card:check` reads the green run of the last code commit (proved on 3.44 itself); guide §8 step 2 and the owner-guide rules require local tests (and the app's browser suite for screens) before the first push. **Docker Desktop and Redis 6380 run on this PC again** (virtualization was already on in BIOS; `banijjik-redis-1`, restart `unless-stopped`; the compose Mongo stays stopped because a local Mongo holds 27018).
 - **Force-push is blocked by the auto-mode classifier.** Bring a card branch up to date with `git merge origin/main` (no history rewrite), or stack an `s/merge-<card>` branch. **3.45 merged** (`00dca308`): `card:check` reports a branch behind main as INFO; sessions rebase once before the first push.
 - **Owner (2026-10-26 night, asked at session start): the lead may still fast-forward and push `main` after green CI.**
@@ -37,8 +37,7 @@ Prompts and logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/
 
 | Card / part | Branch | Folder | Tier | State → next step |
 |---|---|---|---|---|
-| 3.42 till leftovers | `s/3.42-ui-pos-till-leftovers` (prompt `22-3.42.md`) | `banijjik-m2` | T2 | Ready now. Same `pos/` folder. |
-| 3.43 B placeOrder key | `s/3.43-ui-place-idempotency` (prompt `23-3.43-B.md`) | `banijjik-lead` | T2 | Ready now. May run beside 3.42. |
+| 3.42 till leftovers | `s/3.42-ui-pos-till-leftovers` (prompt `22-3.42.md` + `22-3.42-continue.md`) | `banijjik-m2` | T2 | Implementing. Amendment 1 is on `main`. |
 
 ### 2a. Launching implementers (owner approved, 2026-10-24)
 - **Qoder:** out of credits since 2026-10-24 evening.
@@ -71,7 +70,7 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 **Owner (2026-10-25 09:30): the owner implements the remaining cards in ChatGPT and Qoder; the lead planned all of them** (on main: `3.32.md` Refresh 1, `3.5b.md` Refresh 2, `3.9.md` A2/B detail, `M.6.md` Refresh M.6c, `M.8b.md`, `3.10.md`, `M.9.md`). Owner (2026-10-25 evening): the lead's Haiku agents finish the partly done cards (3.5b A3, M.6c); the owner's tools (Qoder/ChatGPT) take the rest from the owner guide: **3.9 B** (`banijjik-3.5a`), **3.10 A** (`banijjik-3.6b-a3`), **3.5b B** (`banijjik-3.11`), **M.9 A1** (`banijjik-m8a`, one `npm ci` first). The README table and prompts 05/08/09/10/12 were updated for the reinstalled PC (no Docker, gh path). The lead reviews every branch (T1 strict) and merges.
 **Paste-ready prompts for the owner (2026-10-25 10:50):** `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/owner-guide/` (`00-README.md` in Bengali: order, folder, start condition; `01`–`10` one file per card part with the shared rules appended: 3.32 A → `banijjik-m2`, 3.5b A2 → `banijjik-3.11`, M.8b → `banijjik-lead`, 3.9 A2 → `banijjik-3.5a`, 3.10 A → `banijjik-3.6b-a3`, M.6c → `banijjik-1.7b`, then the B parts in their A folders; `11-3.5b-A3.md` → `banijjik-lead`; `12-M.9-A1.md` → `banijjik-m8a`; rows 1–3 are marked merged). Not written yet: 3.5b B2 (after A3 and B merge; plan in Refresh 3), M.9 A2 (after A1 merges). When a branch arrives, run `card:check` in its folder before reviewing. Update a prompt there when a plan changes (the 3.9 A2 prompt already names Amendment 1; if the A2 review renames `receiveReturnPayback`, A3 E8 already says "use the merged name").
 1. **Plan 4.1** theme engine (ADR-149, ADR-150), then 4.2 storefront domains.
-2. Owner tools: **3.42** on `banijjik-m2`; **3.43 B** on `banijjik-lead` beside 3.42.
+2. Owner tools: **3.42** on `banijjik-m2` (`22-3.42-continue.md`).
 3. M.9 A2 follow-ups (platform phone nav "More" button, 502 test-send detail) go into a small card. Note from 3.39 R1: a package limit on a location-scoped model counts through `runInOrganizationContext`; check it in every limit review.
 4. A3 lead decision to confirm with the owner when convenient: an exchange's store-credit refund needs the same REFUND approval as a return (exempt callers skip it).
 5. Other follow-ups (not blocking; full list in `phase-3-review.md` "Open items carried forward"): M.6a review follow-ups (`docs/handoffs/M.6a-api-review-R1.md`); M.7 B report detail needs `directory.listing.read`; 3.5b A2 return response lacks `reversal.businessDate`; refund dialog has no client maximum (3.30); replayer safety across worker processes (3.16); supplier payments clearing `ACCOUNTS_PAYABLE`; 3.23 review follow-ups; flaky/slow spawn tests (`sync-indexes`, `main.test`, `ordered-event-worker`, admin `auth-flow`).
@@ -92,8 +91,8 @@ Stash `stash@{5}` ("owner-edits-AGENTS-and-05-CONVENTIONS") holds the owner's ed
 - **Token cost:** keep sessions short: one task, then `/save-state`, then a new session with `/lead`.
 
 ## 6. Session log (last five)
+- **2026-10-27 afternoon** (Cursor lead): T2 review R1 PASS for 3.43 B; merging onto main. 3.42 Amendment 1 already on main.
 - **2026-10-27 late morning, 2** (Cursor lead): T1 review R1 PASS for 3.43 A; merging onto main.
 - **2026-10-27 late morning** (Cursor lead): T2 merge-checked 3.41 and 3.40 B (not blind: plan, tests, CI, `/pos` 167.4 KiB). Both on `main`.
 - **2026-10-27 morning** (Composer, `banijjik-3.6b-a3`): owner asked to finish 3.41 and hold Phase 4. Wrote `docs/plans/3.41.md`; implementing next on `s/3.41-api-day-scenarios`.
 - **2026-10-26 day** (Opus 5.5, `banijjik-bd`): took over from `banijjik-87`. Owner: Claude ends 2026-10-29, so wrote `docs/RUN-WITHOUT-CLAUDE.md` and the Bengali owner summary. Owner decision ADR-150. 3.40 A T1 review R1 PASS, merged (`c328eac1`); prompt `19-3.40-B.md`.
-- **2026-10-26 after midnight, 2** (Opus 5.5, `banijjik-87`): sole lead from `banijjik-cd`/`banijjik-fa`. 3.39 B merged (`2028d405`). M.9 A2 agent DONE.
