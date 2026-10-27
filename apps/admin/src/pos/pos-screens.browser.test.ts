@@ -279,7 +279,12 @@ async function typeInLabel(page: Page, labelText: string, value: string): Promis
   }, labelText);
   const input = handle.asElement() as ElementHandle<HTMLInputElement> | null;
   if (input === null) throw new Error(`no input under the label "${labelText}"`);
-  await input.click({ clickCount: 3 });
+  // Sheet overlays intercept a real click; focus and select in the page instead.
+  await input.evaluate((element) => {
+    element.scrollIntoView({ block: "center" });
+    element.focus();
+    element.select();
+  });
   await input.type(value);
 }
 
@@ -305,24 +310,39 @@ async function openSellingTill(): Promise<Page> {
   return page;
 }
 
-/** The receipt toolbar wraps on a phone; a real click misses when New sale sits off-centre. */
-async function clickReceiptNewSale(page: Page): Promise<void> {
-  const wanted = message("pos.receipt.newSale");
+/**
+ * Taps a visible button or link in-page. A Puppeteer mouse click misses controls inside a Sheet
+ * overlay (the dialog layer eats the hit-test).
+ */
+async function tapByName(page: Page, name: string): Promise<void> {
   await page.waitForFunction(
-    (name) =>
-      Array.from(document.querySelectorAll("button")).some(
-        (item) => item.textContent?.trim() === name,
+    (wanted) =>
+      Array.from(document.querySelectorAll("button, a")).some(
+        (element) =>
+          (element.textContent?.trim() === wanted ||
+            element.getAttribute("aria-label") === wanted) &&
+          element.getClientRects().length > 0,
       ),
     {},
-    wanted,
+    name,
   );
-  await page.evaluate((name) => {
-    const button = Array.from(document.querySelectorAll("button")).find(
-      (item) => item.textContent?.trim() === name,
+  const clicked = await page.evaluate((wanted) => {
+    const target = Array.from(document.querySelectorAll("button, a")).find(
+      (element) =>
+        (element.textContent?.trim() === wanted || element.getAttribute("aria-label") === wanted) &&
+        element.getClientRects().length > 0,
     );
-    button?.scrollIntoView({ block: "center" });
-    (button as HTMLButtonElement | undefined)?.click();
-  }, wanted);
+    if (target === undefined) return false;
+    target.scrollIntoView({ block: "center" });
+    (target as HTMLElement).click();
+    return true;
+  }, name);
+  if (!clicked) throw new Error(`no visible control named "${name}"`);
+}
+
+/** The receipt toolbar wraps on a phone; a real click misses when New sale sits off-centre. */
+async function clickReceiptNewSale(page: Page): Promise<void> {
+  await tapByName(page, message("pos.receipt.newSale"));
 }
 
 async function clickDialogButton(page: Page, text: string): Promise<void> {
@@ -496,10 +516,10 @@ describe("the till at a shop", () => {
     await clickByName(page, message("pos.pay.back"));
     await clickByName(page, message("pos.till.hold"));
     await typeInLabel(page, message("pos.till.holdLabel"), "চা");
-    await clickByName(page, message("pos.till.holdSubmit"));
+    await tapByName(page, message("pos.till.holdSubmit"));
     await addOffering(page, SERVICE_NAME);
     await clickByName(page, message("pos.till.held"));
-    await clickByName(page, message("pos.till.resume"));
+    await tapByName(page, message("pos.till.resume"));
     await clickDialogButton(page, message("pos.till.replaceConfirm"));
     await clickByName(page, message("pos.sale.pay"));
     await waitForText(page, "তিল বিক্রির গ্রাহক");
@@ -518,10 +538,15 @@ describe("the till at a shop", () => {
     await addOffering(page, PRODUCT_NAME);
     await clickByName(page, `${message("pos.till.price")} ${PRODUCT_NAME}`);
     await typeInLabel(page, message("pos.till.unitPrice"), "20");
-    await clickByName(page, message("pos.till.applyPrice"));
+    await tapByName(page, message("pos.till.applyPrice"));
     await page.waitForSelector("#approval-pin", { visible: true });
-    await page.type("#approval-pin", "1234");
-    await clickByName(page, message("pos.till.approvalSubmit"));
+    await page.$eval("#approval-pin", (element) => {
+      const input = element as HTMLInputElement;
+      input.focus();
+      input.select();
+    });
+    await page.keyboard.type("1234");
+    await tapByName(page, message("pos.till.approvalSubmit"));
     await paySaleInCash(page);
     await waitForTextIn(page, "article", "৳২০");
     await clickReceiptNewSale(page);
@@ -536,13 +561,16 @@ describe("the till at a shop", () => {
     await waitForTextIn(page, "article", PRODUCT_NAME);
     await clickReceiptNewSale(page);
     await clickByName(page, message("pos.till.return"));
-    await clickByName(page, message("pos.till.findOrder"));
+    await tapByName(page, message("pos.till.findOrder"));
     await page.waitForSelector("ul button", { visible: true });
-    await page.click("ul button");
+    await page.evaluate(() => {
+      const button = document.querySelector("ul button");
+      (button as HTMLButtonElement | null)?.click();
+    });
     await typeInLabel(page, message("pos.till.returnQuantity"), "1");
-    await clickByName(page, message("pos.till.returnSubmit"));
+    await tapByName(page, message("pos.till.returnSubmit"));
     await waitForText(page, message("pos.till.returnSuccess"));
-    await clickByName(page, message("pos.till.approvalClose"));
+    await tapByName(page, message("pos.till.approvalClose"));
     await closeRegister(page, "0");
     const report = await zReportOf(await closedSessionId());
     expect(report.expectedCash).toEqual({ amount: 0, currency: "BDT" });
