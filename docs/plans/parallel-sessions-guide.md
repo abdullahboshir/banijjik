@@ -82,7 +82,7 @@ Run these often; each takes seconds to a few minutes:
   - admin unit: `npm test -w @banijjik/admin -- src/<folder>`
 - one browser test file, only for Part B and only in a local folder: `npm run test:browser -w @banijjik/admin -- src/<folder>/<file>.browser.test.ts`
 
-Do **not** run the whole suite locally. CI runs it on every push (section 8). The one exception is the lead's integration check of several branches together, which needs the lead's "go" (one heavy run at a time on this machine).
+Do **not** run the whole suite locally. CI runs it on every push (section 8). **CI is not a debugger:** after a red job, run the failing file locally, then one push. The one exception is the lead's integration check of several branches together, which needs the lead's "go" (one heavy run at a time on this machine).
 
 ## 8. Finish checklist (every step, in this order)
 A session is finished only when all of these hold. "Done" without a green CI run is not done.
@@ -90,7 +90,7 @@ A session is finished only when all of these hold. "Done" without a green CI run
 2. **Before the first push, run locally** (card 3.44; Docker and Redis 6380 run on this PC again): the test files you changed or added, lint and typecheck of the workspaces you touched, and, for a screen card, the browser suite of that app (`VITEST_MAX_WORKERS=1 npm run test:browser` in `apps/admin`, `apps/platform` or `apps/storefront`). Each CI run costs about 15 minutes; a failure found locally costs one.
 3. Every change is committed. `git status` shows nothing.
 4. Rebase on the latest main **once, before your first push**: `git rebase origin/main`. Resolve conflicts in add-only files by keeping both sides. After that, do not rebase again only because main moved: `card:check` shows it as INFO, and the lead brings the branch up to date when it merges (card 3.45). Rebase again only when the lead asks or when your code needs something new from main.
-5. Push the branch: `git push -u origin <branch>`. Pushing card branches needs no extra permission (owner, 2026-10-22). **Never push `main`.** CI runs on the push. Wait for it: `gh run list --branch <branch>`, then `gh run view <run> --json jobs`. If it fails, read the failed job's log, fix, commit, push again.
+5. Push the branch: `git push -u origin <branch>`. Pushing card branches needs no extra permission (owner, 2026-10-22). **Never push `main`.** CI runs on the push. Wait for it: `gh run list --branch <branch>`, then `gh run view <run> --json jobs`. If it fails, **CI is not a debugger:** run the failing file locally, fix, then one push. Do not guess-and-push.
 6. Write `docs/handoffs/<card>-<api|ui>.md`:
    - what was built, file by file area
    - deviations from the plan, with the reason (or "none")

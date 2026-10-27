@@ -1,0 +1,35 @@
+---
+description: Speed rules — local cheap tests, one CI wait; never use CI as a debugger
+alwaysApply: true
+---
+
+# Speed rules (owner 2026-10-26; cards 3.44 / 3.45)
+
+Full text: `docs/plans/parallel-sessions-guide.md` §7–§8. Binding for implementer, reviewer and lead. These override AGENTS.md session protocol step 4 (do not run the Phase 0.2 full lifecycle locally).
+
+## Never
+
+- Root `npm run lint` / `typecheck` / `test` / `build`. CI does that.
+- Push to learn if a test fails. **CI is not a debugger.** A red run costs ~15 minutes and subscription tokens.
+- A second rebase only because main moved (`card:check` INFO is enough).
+- `--no-verify`.
+
+## Before every code push (report real output; no pass you did not see)
+
+1. Only the test files you changed or added.
+2. `npx turbo run lint typecheck --filter=<touched workspace>` — not the whole repo.
+3. `npx prettier --check` on files you changed.
+4. **Screen or `*.browser.test.ts` change:** that app's browser suite must pass locally first (`VITEST_MAX_WORKERS=1 npm run test:browser` in `apps/admin`, `apps/platform` or `apps/storefront`). While iterating, one file is enough: `npm run test:browser -w @banijjik/admin -- src/<path>.browser.test.ts`. Then the app suite before the first push of those changes.
+
+## After a red CI job
+
+Run the failing file locally, fix, then **one** push. Do not guess-and-push.
+
+## Docs-only
+
+A commit that changes only `docs/` starts no CI. Do not wait. `card:check` uses the last code commit's green run.
+
+```text
+❌ BAD: push → wait 15 min → read log → tiny edit → push again
+✅ GOOD: local failing file → fix → one push → one CI wait
+```
