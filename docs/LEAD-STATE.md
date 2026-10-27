@@ -13,7 +13,7 @@ Last updated: 2026-10-27 (morning) by Composer (Cursor, `banijjik-3.6b-a3`) · `
 ## 1. Where the project stands
 - **The owner's Claude plan ends on 2026-10-29 and will not be renewed.** From then on the owner's tools (Cursor, ChatGPT/Codex, Qoder, Antigravity) do every role by `docs/RUN-WITHOUT-CLAUDE.md` (`af8d1d6e`: roles, work queue, plan rules, reviewer and lead prompts, merge steps; `AGENTS.md` and `.cursor/rules/project.mdc` point to it). Owner summary in Bengali: `lead-orchestra/owner-guide/00-CLAUDE-CHARA.md`. Until then, the lead spends its remaining budget on the hardest plans: **3.41, 4.1, 4.2**, then 3.43.
 - **Owner decision (2026-10-26), ADR-150 (`843f9883`): the full tenant website (Phase 4: 4.1–4.5) is built before the pilot**; 4.6 is folded into 4.3 (proposed). Roadmap "Launch track" and the guide's §3 queue updated.
-- **Phase 3 review: PASS WITH FIXES** (`docs/handoffs/phase-3-review.md`). **Phase 4 stays held until 3.41 merges.** **3.40 A merged** (`c328eac1`); 3.40 B is ready (`owner-guide/19-3.40-B.md`). **3.41 planned** (`docs/plans/3.41.md`); implementing in `banijjik-3.6b-a3` on `s/3.41-api-day-scenarios`. 3.42 and 3.43 still have no plan and may run beside Phase 4. Track M: M.9 A2 merged (`71456b68`); next M.9 B.
+- **Phase 3 review: PASS WITH FIXES** (`docs/handoffs/phase-3-review.md`). **Phase 4 stays held until 3.41 merges.** **3.40 A merged** (`c328eac1`); 3.40 B is on `s/3.40-ui-walk-in-services`. **3.41 planned** and implementing in `banijjik-3.6b-a3`. **3.42 and 3.43 planned** (`docs/plans/3.42.md`, `docs/plans/3.43.md`). 3.43 A starts in `banijjik-3.5a`. Track M: M.9 A2 merged; next M.9 B.
 - **Faster delivery (owner, 2026-10-26: "what is best and fast"):** 3.44 merged: a push that changes only `docs/` runs no CI, `card:check` reads the green run of the last code commit (proved on 3.44 itself); guide §8 step 2 and the owner-guide rules require local tests (and the app's browser suite for screens) before the first push. **Docker Desktop and Redis 6380 run on this PC again** (virtualization was already on in BIOS; `banijjik-redis-1`, restart `unless-stopped`; the compose Mongo stays stopped because a local Mongo holds 27018).
 - **Force-push is blocked by the auto-mode classifier.** Bring a card branch up to date with `git merge origin/main` (no history rewrite), or stack an `s/merge-<card>` branch. **3.45 merged** (`00dca308`): `card:check` reports a branch behind main as INFO; sessions rebase once before the first push.
 - **Owner (2026-10-26 night, asked at session start): the lead may still fast-forward and push `main` after green CI.**
@@ -38,7 +38,9 @@ Prompts and logs: `E:/WEB-DEVELOPMENT/PROJECTS/business-platform/lead-orchestra/
 | Card / part | Branch | Folder | Tier | State → next step |
 |---|---|---|---|---|
 | 3.41 day scenarios (API + one browser case) | `s/3.41-api-day-scenarios` (prompt `20-3.41.md`) | `banijjik-3.6b-a3` | T2 | Plan on main. Implementing. On DONE: merge check against `docs/plans/3.41.md`. |
-| 3.40 B walk-in services (screens) | `s/3.40-ui-walk-in-services` (prompt `19-3.40-B.md`) | `banijjik-m2` | T2 | Ready for an owner tool. On DONE: merge check against plan decisions 12–14 and the `/pos` route budget. |
+| 3.40 B walk-in services (screens) | `s/3.40-ui-walk-in-services` (prompt `19-3.40-B.md`) | `banijjik-m2` | T2 | Implementing. On DONE: merge check against plan decisions 12–14 and the `/pos` route budget. |
+| 3.43 A API leftovers | `s/3.43-api-correctness` (prompt `21-3.43-A.md`) | `banijjik-3.5a` | T1 | Plan on main. Ready for ChatGPT. On DONE: strict T1 review. |
+| 3.42 till leftovers | `s/3.42-ui-pos-till-leftovers` | `banijjik-m2` | T2 | After 3.40 B. |
 
 ### 2a. Launching implementers (owner approved, 2026-10-24)
 - **Qoder:** out of credits since 2026-10-24 evening.
