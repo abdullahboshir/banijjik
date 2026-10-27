@@ -25,6 +25,8 @@ export interface OrderLinesEditorProps {
   readonly locale: DisplayLocale;
   readonly labels: OrderLineLabels;
   readonly disabled: boolean;
+  /** Instant sales search services; draft and placed orders stay product-only (plan 3.40). */
+  readonly includeServices?: boolean;
   readonly onChange: (lines: readonly OrderLineDraft[]) => void;
 }
 

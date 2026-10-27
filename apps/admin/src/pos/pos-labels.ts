@@ -122,6 +122,11 @@ export interface PosLabels {
   readonly zReportLabels: PosZReportLabels;
   readonly closeRegister: string;
   readonly closeBlocked: string;
+  readonly kindService: string;
+  readonly performedBy: string;
+  readonly performerNone: string;
+  readonly performerLoadFailed: string;
+  readonly performerUnknown: string;
 }
 
 function payLabelsOf(t: Translator["t"]): PosPayLabels {
@@ -256,5 +261,10 @@ export function posLabelsOf(translator: Translator): PosLabels {
     zReportLabels: zReportLabelsOf(t),
     closeRegister: t("pos.sale.closeRegister"),
     closeBlocked: t("pos.sale.closeBlocked"),
+    kindService: t("pos.sale.kindService"),
+    performedBy: t("pos.sale.performedBy"),
+    performerNone: t("pos.sale.performerNone"),
+    performerLoadFailed: t("pos.sale.performerLoadFailed"),
+    performerUnknown: t("pos.sale.performerUnknown"),
   };
 }
