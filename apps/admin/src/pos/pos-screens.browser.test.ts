@@ -350,20 +350,6 @@ async function waitForDialogClosed(page: Page): Promise<void> {
   await page.waitForFunction(() => document.querySelector("[role=dialog]") === null);
 }
 
-/** Phone layout shows the PIN keypad (`sm:hidden` on desktop). Digit buttons update React state. */
-async function enterApprovalPin(page: Page, pin: string): Promise<void> {
-  await page.waitForSelector("[data-testid=approval-keypad]");
-  for (const digit of pin) {
-    await page.evaluate((wanted) => {
-      const keypad = document.querySelector("[data-testid=approval-keypad]");
-      const button = Array.from(keypad?.querySelectorAll("button") ?? []).find(
-        (item) => item.textContent?.trim() === wanted,
-      );
-      (button as HTMLButtonElement | undefined)?.click();
-    }, digit);
-  }
-}
-
 async function clickDialogButton(page: Page, text: string): Promise<void> {
   await page.waitForFunction(
     (wanted) => {
@@ -447,7 +433,19 @@ async function closeRegister(page: Page, countedCash = COUNTED_CASH_TEXT): Promi
 
 /** The closed register of this till: the newest CLOSED session at this location. */
 /** Polls the session list until this till's register reads CLOSED: the close answer can land a moment later. */
-async function closedSessionId(): Promise<string> {
+async function newestClosedAt(): Promise<string> {
+  const listed = await apiGet<{ data: PosSessionListResponse }>(
+    `/orgs/${organizationId}/pos/sessions?locationId=${locationId}&limit=20`,
+  );
+  return (
+    listed.data.items
+      .filter((item) => item.status === POS_SESSION_STATUS.CLOSED)
+      .sort((left, right) => (right.closedAt ?? "").localeCompare(left.closedAt ?? ""))[0]
+      ?.closedAt ?? ""
+  );
+}
+
+async function closedSessionId(notBeforeClosedAt = ""): Promise<string> {
   const deadline = Date.now() + CLOSE_WAIT_MS;
   let lastListing = "";
   while (Date.now() < deadline) {
@@ -458,7 +456,9 @@ async function closedSessionId(): Promise<string> {
     const session = listed.data.items
       .filter((item) => item.status === POS_SESSION_STATUS.CLOSED)
       .sort((left, right) => (right.closedAt ?? "").localeCompare(left.closedAt ?? ""))[0];
-    if (session !== undefined) return session.posSessionId;
+    if (session !== undefined && (session.closedAt ?? "") > notBeforeClosedAt) {
+      return session.posSessionId;
+    }
     await new Promise((resolve) => setTimeout(resolve, CLOSE_POLL_MS));
   }
   throw new Error(`no closed register at the shop: ${lastListing}`);
@@ -564,9 +564,10 @@ describe("the till at a shop", () => {
     await typeInLabel(page, message("pos.till.unitPrice"), "20");
     await tapByName(page, message("pos.till.applyPrice"));
     await waitForDialogSettled(page);
-    await enterApprovalPin(page, "1234");
+    const pinField = await page.waitForSelector("#approval-pin", { visible: true });
+    await pinField?.type("1234");
     await tapByName(page, message("pos.till.approvalSubmit"));
-    await waitForDialogClosed(page);
+    await page.waitForFunction(() => document.querySelector("#approval-pin") === null);
     await paySaleInCash(page);
     await waitForTextIn(page, "article", "৳২০");
     await clickReceiptNewSale(page);
@@ -593,8 +594,9 @@ describe("the till at a shop", () => {
     await waitForTextIn(page, "[role=dialog]", message("pos.till.returnSuccess"));
     await tapByName(page, message("pos.till.approvalClose"));
     await waitForDialogClosed(page);
+    const previousClosedAt = await newestClosedAt();
     await closeRegister(page, "0");
-    const report = await zReportOf(await closedSessionId());
+    const report = await zReportOf(await closedSessionId(previousClosedAt));
     expect(report.expectedCash).toEqual({ amount: 0, currency: "BDT" });
     await closePage(page);
   }, 120_000);

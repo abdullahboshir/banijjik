@@ -51,6 +51,7 @@ export function OverrideApproval(props: {
   const { approval, labels } = props;
   return (
     <ApprovalPinDialog
+      key={approval.dialogState.approvers[0]?.memberId ?? "price-override"}
       open={approval.dialogState.open}
       onOpenChange={(open) => {
         if (!open) approval.closeApproval();
