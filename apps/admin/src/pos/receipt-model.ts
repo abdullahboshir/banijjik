@@ -5,6 +5,8 @@ export interface ReceiptLine {
   readonly name: string;
   readonly quantity: number;
   readonly lineNetTotal: Money;
+  /** Printed under the line when the cashier named who performed a walk-in service. */
+  readonly performerName: string | null;
 }
 
 export interface ReceiptPayment {
@@ -31,11 +33,23 @@ function documentNumberOf(sale: PosSaleResponse): string {
   return invoiceNumber ?? orderNumber ?? orderId;
 }
 
-function receiptLinesOf(sale: PosSaleResponse): readonly ReceiptLine[] {
+function performerNameOf(
+  memberId: string | null,
+  performerNames: Readonly<Record<string, string>>,
+): string | null {
+  if (memberId === null) return null;
+  return performerNames[memberId] ?? null;
+}
+
+function receiptLinesOf(
+  sale: PosSaleResponse,
+  performerNames: Readonly<Record<string, string>>,
+): readonly ReceiptLine[] {
   return sale.order.lines.map((line) => ({
     name: line.nameSnapshot,
     quantity: line.quantity,
     lineNetTotal: line.lineNetTotal,
+    performerName: performerNameOf(line.performedByMemberId, performerNames),
   }));
 }
 
@@ -43,11 +57,14 @@ function receiptPaymentsOf(sale: PosSaleResponse): readonly ReceiptPayment[] {
   return sale.payments.map((payment) => ({ method: payment.method, amount: payment.amount }));
 }
 
-export function buildReceiptModel(sale: PosSaleResponse): ReceiptModel {
+export function buildReceiptModel(
+  sale: PosSaleResponse,
+  performerNames: Readonly<Record<string, string>> = {},
+): ReceiptModel {
   return {
     documentNumber: documentNumberOf(sale),
     businessDate: sale.order.businessDate,
-    lines: receiptLinesOf(sale),
+    lines: receiptLinesOf(sale, performerNames),
     grandTotal: sale.order.totals.grandTotal,
     discountTotal: sale.order.totals.discountTotal,
     payments: receiptPaymentsOf(sale),

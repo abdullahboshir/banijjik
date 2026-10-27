@@ -1,24 +1,81 @@
 "use client";
 
+import { OFFERING_KIND } from "@banijjik/contracts";
 import { Button } from "@banijjik/ui";
 import type { ReactElement } from "react";
-import type { CartLine } from "./cart";
+import { quantityControlOf, type CartLine } from "./cart";
 import type { PosLabels } from "./pos-labels";
+import { PosPerformerSelectLazy } from "./pos-performer-select-lazy";
 
 export interface PosCartPanelProps {
+  readonly organizationId: string;
+  readonly locationId: string;
   readonly labels: PosLabels;
   readonly lines: readonly CartLine[];
   readonly onQuantity: (lineKey: string, quantity: number) => void;
+  readonly onPerformer: (lineKey: string, memberId: string | null, name: string | null) => void;
   readonly onRemove: (lineKey: string) => void;
   readonly onClear: () => void;
 }
 
 const TOUCH_TARGET_CLASS = "min-h-14 min-w-14";
 
+function QuantityStepper(props: {
+  readonly line: CartLine;
+  readonly onQuantity: (lineKey: string, quantity: number) => void;
+}): ReactElement {
+  const { line, onQuantity } = props;
+  return (
+    <div className="flex items-center gap-2" data-quantity-control={quantityControlOf(line)}>
+      <Button
+        variant="secondary"
+        className={TOUCH_TARGET_CLASS}
+        aria-label={`-1 ${line.offeringName}`}
+        onClick={() => onQuantity(line.lineKey, line.quantity - 1)}
+      >
+        −
+      </Button>
+      <span className="min-w-10 text-center text-h3 font-semibold">{line.quantity}</span>
+      <Button
+        variant="secondary"
+        className={TOUCH_TARGET_CLASS}
+        aria-label={`+1 ${line.offeringName}`}
+        onClick={() => onQuantity(line.lineKey, line.quantity + 1)}
+      >
+        +
+      </Button>
+    </div>
+  );
+}
+
+function ServicePerformer(props: {
+  readonly line: CartLine;
+  readonly organizationId: string;
+  readonly locationId: string;
+  readonly labels: PosLabels;
+  readonly onPerformer: PosCartPanelProps["onPerformer"];
+}): ReactElement | null {
+  const { line } = props;
+  if (line.kind !== OFFERING_KIND.SERVICE) return null;
+  return (
+    <PosPerformerSelectLazy
+      organizationId={props.organizationId}
+      locationId={props.locationId}
+      id={`pos-performer-${line.lineKey}`}
+      value={line.performedByMemberId}
+      labels={props.labels}
+      onChange={(memberId, name) => props.onPerformer(line.lineKey, memberId, name)}
+    />
+  );
+}
+
 function CartLineRow(props: {
   readonly line: CartLine;
+  readonly organizationId: string;
+  readonly locationId: string;
   readonly labels: PosLabels;
   readonly onQuantity: (lineKey: string, quantity: number) => void;
+  readonly onPerformer: PosCartPanelProps["onPerformer"];
   readonly onRemove: (lineKey: string) => void;
 }): ReactElement {
   const { line, labels, onQuantity, onRemove } = props;
@@ -27,27 +84,19 @@ function CartLineRow(props: {
       <div className="text-body font-semibold text-primary">
         {line.offeringName}
         <span className="text-secondary"> · {line.variantName}</span>
+        {line.kind === OFFERING_KIND.SERVICE ? (
+          <span className="ms-2 text-small font-normal text-secondary">{labels.kindService}</span>
+        ) : null}
       </div>
+      <ServicePerformer
+        line={line}
+        organizationId={props.organizationId}
+        locationId={props.locationId}
+        labels={labels}
+        onPerformer={props.onPerformer}
+      />
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            className={TOUCH_TARGET_CLASS}
-            aria-label={`-1 ${line.offeringName}`}
-            onClick={() => onQuantity(line.lineKey, line.quantity - 1)}
-          >
-            −
-          </Button>
-          <span className="min-w-10 text-center text-h3 font-semibold">{line.quantity}</span>
-          <Button
-            variant="secondary"
-            className={TOUCH_TARGET_CLASS}
-            aria-label={`+1 ${line.offeringName}`}
-            onClick={() => onQuantity(line.lineKey, line.quantity + 1)}
-          >
-            +
-          </Button>
-        </div>
+        <QuantityStepper line={line} onQuantity={onQuantity} />
         <Button variant="ghost" className="min-h-14" onClick={() => onRemove(line.lineKey)}>
           {labels.remove}
         </Button>
@@ -69,8 +118,11 @@ export function PosCartPanel(props: PosCartPanelProps): ReactElement {
           <CartLineRow
             key={line.lineKey}
             line={line}
+            organizationId={props.organizationId}
+            locationId={props.locationId}
             labels={labels}
             onQuantity={onQuantity}
+            onPerformer={props.onPerformer}
             onRemove={onRemove}
           />
         ))}

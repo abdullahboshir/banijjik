@@ -28,6 +28,23 @@ describe("catalog search on the till", () => {
     expect(found.map((item) => item.offeringName)).toEqual(["Milk tea"]);
   });
 
+  it("finds a service by name next to products", () => {
+    const rows = [
+      row({}),
+      row({
+        offeringId: "0190a000-0000-7000-8000-000000000002",
+        variantId: "0190a000-0000-7000-8000-000000000022",
+        kind: "SERVICE",
+        offeringName: "Haircut",
+        variantName: "Default",
+        barcode: null,
+        sku: null,
+      }),
+    ];
+
+    expect(searchCatalog(rows, "hair").map((item) => item.kind)).toEqual(["SERVICE"]);
+  });
+
   it("matches a typed part of the product or variant name", () => {
     const rows = [
       row({}),

@@ -185,6 +185,7 @@ function ExchangeLinesFields(props: {
         locale={props.locale}
         labels={props.orderLabels.line}
         disabled={false}
+        includeServices
         onChange={props.actions.setLines}
       />
     </>

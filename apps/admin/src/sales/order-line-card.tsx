@@ -205,6 +205,7 @@ export function OrderLineCard(props: LineCardProps): ReactElement {
         labels={editor.labels}
         locale={editor.locale}
         disabled={editor.disabled}
+        includeServices={editor.includeServices === true}
         onChange={(offering) =>
           props.onChange({
             offering,

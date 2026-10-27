@@ -5,6 +5,7 @@ import type {
   PosSessionResponse,
   PosZReport,
 } from "@banijjik/contracts/pos";
+import type { SalesPerformerResponse } from "@banijjik/contracts/sales";
 import type { QuoteRequest, QuoteResponse } from "@banijjik/contracts/pricing";
 import type { PosSaleBody, PosSessionCloseBody } from "@banijjik/validation/pos";
 import { apiFetch } from "../lib/api/api-client";
@@ -104,6 +105,17 @@ export async function closeSession(
   const result = await apiFetch<PosSessionResponse>(
     `${posBase(organizationId)}/sessions/${posSessionId}/close`,
     { method: "POST", body: request.body, idempotencyKey: request.idempotencyKey },
+  );
+  return result.data;
+}
+
+/** Members who may be named on a walk-in service at this till's location. */
+export async function listSalePerformers(
+  organizationId: string,
+  locationId: string,
+): Promise<readonly SalesPerformerResponse[]> {
+  const result = await apiFetch<SalesPerformerResponse[]>(
+    `/orgs/${organizationId}/sales/performers?${new URLSearchParams({ locationId }).toString()}`,
   );
   return result.data;
 }

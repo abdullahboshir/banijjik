@@ -1,3 +1,4 @@
+import type { OfferingKind } from "@banijjik/contracts";
 import type { OfferingListItem, OfferingResponse } from "@banijjik/contracts/catalog";
 import type { QuoteRequest, QuoteResponse } from "@banijjik/contracts/pricing";
 import type {
@@ -15,6 +16,7 @@ import type {
 } from "@banijjik/validation/sales";
 import { newId } from "@banijjik/ids";
 import { apiFetch } from "../lib/api/api-client";
+import { mergeOfferingSearchByName, offeringSearchKinds } from "./search-offerings";
 
 export interface OrderListPage {
   readonly items: readonly OrderListItem[];
@@ -186,13 +188,14 @@ export async function getOffering(
   return result.data;
 }
 
-export async function searchProducts(
+async function searchOfferingsOfKind(
   organizationId: string,
   text: string,
+  kind: OfferingKind,
 ): Promise<OfferingListItem[]> {
   const params = new URLSearchParams({
     q: text,
-    kind: "PRODUCT",
+    kind,
     status: "ACTIVE",
     limit: "8",
   });
@@ -200,4 +203,18 @@ export async function searchProducts(
     `/orgs/${organizationId}/offerings?${params.toString()}`,
   );
   return result.data;
+}
+
+/** Active offerings by name, SKU or barcode. Instant sales also search services (plan 3.40). */
+export async function searchProducts(
+  organizationId: string,
+  text: string,
+  includeServices = false,
+): Promise<OfferingListItem[]> {
+  const groups = await Promise.all(
+    offeringSearchKinds(includeServices).map((kind) =>
+      searchOfferingsOfKind(organizationId, text, kind),
+    ),
+  );
+  return mergeOfferingSearchByName(groups);
 }

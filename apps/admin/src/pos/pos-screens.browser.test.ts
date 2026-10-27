@@ -14,27 +14,30 @@ import {
   signInWithCookies,
 } from "../test-support/browser-page";
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
+import { publishTemplate } from "../test-support/browser-seed";
 import {
   API_PORT,
   ADMIN_ORIGIN,
   callApi,
   organizationIdOf,
-  seedOrganization,
+  seedOrganizationWithBody,
   seedPerson,
   startBrowserStack,
   type BrowserStack,
   type SeededPerson,
 } from "../test-support/browser-stack";
+import salonFixture from "../test-support/salon-industry-fixture.json" with { type: "json" };
 
 const ORG_SLUG = "till-shop";
-const BUSINESS_NAME = "কাউন্টার স্টোর";
+const BUSINESS_NAME = "কাউন্টার সেলুন";
 const PRODUCT_NAME = "চায়ের কাপ";
+const SERVICE_NAME = "হেয়ারকাট";
 const PRODUCT_PRICE_MINOR = 4000;
-/** Two cups at ৳40 each: the bill is ৳80, paid with ৳100 in cash, so the change is ৳20. */
-const CUPS_SOLD = 2;
-const BILL_MINOR = PRODUCT_PRICE_MINOR * CUPS_SOLD;
+const SERVICE_PRICE_MINOR = 3000;
+/** One haircut at ৳30 and one cup at ৳40: the bill is ৳70, paid with ৳100, so the change is ৳30. */
+const BILL_MINOR = SERVICE_PRICE_MINOR + PRODUCT_PRICE_MINOR;
 const CASH_RECEIVED_TEXT = "100";
-const COUNTED_CASH_TEXT = "80";
+const COUNTED_CASH_TEXT = "70";
 /** The same budget as the other admin screens; the sheets, the close screen and the receipt load lazily. */
 const POS_BUDGET_KIB = INITIAL_JS_BUDGET_KIB;
 const TOUCH_TARGET_PX = 56;
@@ -49,11 +52,17 @@ let pairingCode = "";
 
 beforeAll(async () => {
   stack = await startBrowserStack();
+  await publishTemplate(stack, "SALON");
   owner = await seedPerson("রফিক ক্যাশিয়ার");
-  await seedOrganization(owner, ORG_SLUG, BUSINESS_NAME);
+  await seedOrganizationWithBody(owner, {
+    name: BUSINESS_NAME,
+    slug: ORG_SLUG,
+    ...salonFixture,
+  });
   organizationId = await organizationIdOf(owner, ORG_SLUG);
   locationId = await firstLocationId();
   await seedProduct();
+  await seedWalkInService();
   pairingCode = await createTillDevice();
 }, 240_000);
 
@@ -97,6 +106,35 @@ async function seedProduct(): Promise<void> {
           name: "Default",
           price: { amount: PRODUCT_PRICE_MINOR, currency: "BDT" },
           unitKey: "PIECE",
+        },
+      ],
+    },
+  });
+  const offering = (await created.json()) as {
+    data: { offeringId: string; version: number };
+  };
+  await callApi(`/orgs/${organizationId}/offerings/${offering.data.offeringId}/publish`, {
+    cookies: owner.cookies,
+    body: { version: offering.data.version },
+  });
+}
+
+async function seedWalkInService(): Promise<void> {
+  const created = await callApi(`/orgs/${organizationId}/offerings`, {
+    cookies: owner.cookies,
+    body: {
+      kind: "SERVICE",
+      name: SERVICE_NAME,
+      kindDetails: {
+        durationMinutes: 30,
+        requiresResource: false,
+        bookingMode: "WALK_IN_ONLY",
+      },
+      variants: [
+        {
+          name: "Default",
+          price: { amount: SERVICE_PRICE_MINOR, currency: "BDT" },
+          unitKey: "SESSION",
         },
       ],
     },
@@ -159,25 +197,44 @@ async function openRegister(page: Page): Promise<void> {
   await clickByName(page, message("pos.session.open"));
 }
 
-/** Searches the catalog and taps the product row: each tap adds one cup. */
-async function addCup(page: Page): Promise<void> {
+/** Searches the catalog and taps the named row. */
+async function addOffering(page: Page, name: string): Promise<void> {
   const search = await page.waitForSelector(`input[type="search"]`, { visible: true });
   await search?.click({ clickCount: 3 });
-  await search?.type(PRODUCT_NAME);
+  await search?.type(name);
   await page.waitForFunction(
-    (name) =>
+    (wanted) =>
       Array.from(document.querySelectorAll("button[aria-label]")).some((button) =>
-        (button.getAttribute("aria-label") ?? "").includes(name),
+        (button.getAttribute("aria-label") ?? "").includes(wanted),
       ),
     {},
-    PRODUCT_NAME,
+    name,
   );
-  await page.evaluate((name) => {
+  await page.evaluate((wanted) => {
     const button = Array.from(document.querySelectorAll("button[aria-label]")).find((item) =>
-      (item.getAttribute("aria-label") ?? "").includes(name),
+      (item.getAttribute("aria-label") ?? "").includes(wanted),
     );
     (button as HTMLButtonElement | undefined)?.click();
-  }, PRODUCT_NAME);
+  }, name);
+}
+
+async function pickPerformer(page: Page, performerName: string): Promise<void> {
+  await page.waitForFunction(
+    (wanted) =>
+      Array.from(document.querySelectorAll("select option")).some(
+        (option) => option.textContent === wanted,
+      ),
+    {},
+    performerName,
+  );
+  await page.evaluate((wanted) => {
+    const select = document.querySelector("select");
+    if (select === null) return;
+    const option = Array.from(select.options).find((item) => item.textContent === wanted);
+    if (option === undefined) return;
+    select.value = option.value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }, performerName);
 }
 
 async function paySaleInCash(page: Page): Promise<void> {
@@ -238,19 +295,24 @@ async function layoutOfSaleScreen(
 }
 
 describe("the till at a shop", () => {
-  it("pairs the browser, opens the register, sells two cups for cash, prints the receipt and closes with the Z-report numbers", async () => {
+  it("pairs the browser, opens the register, sells a service with a performer and a product for cash, prints both on the receipt and closes with the Z-report numbers", async () => {
     const page = await tillPage();
     await gotoWhenHydrated(page, `/${ORG_SLUG}/pos`, "main");
     await pairTill(page);
     await openRegister(page);
-    await addCup(page);
-    await addCup(page);
+    await addOffering(page, SERVICE_NAME);
+    await pickPerformer(page, owner.name);
+    await addOffering(page, PRODUCT_NAME);
     expect(await bodyText(page)).toContain(message("pos.sale.total"));
     const layout = await layoutOfSaleScreen(page);
     expect(layout.overflowsX).toBe(false);
     expect(layout.shortButtons).toBe(0);
     await paySaleInCash(page);
-    expect(await bodyText(page)).toContain(message("pos.pay.change"));
+    const receipt = await bodyText(page);
+    expect(receipt).toContain(SERVICE_NAME);
+    expect(receipt).toContain(PRODUCT_NAME);
+    expect(receipt).toContain(owner.name);
+    expect(receipt).toContain(message("pos.pay.change"));
     await clickByName(page, message("pos.receipt.newSale"));
     await closeRegister(page);
     const report = await zReportOf(await closedSessionId());

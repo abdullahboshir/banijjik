@@ -28,6 +28,9 @@ export function buildSaleBody(input: SaleBodyInput): PosSaleBody {
       variantId: line.variantId,
       quantity: line.quantity,
       modifierOptionIds: [],
+      ...(line.performedByMemberId === null
+        ? {}
+        : { performedByMemberId: line.performedByMemberId }),
     })),
     payments: input.payments.map((payment) => ({ method: payment.method, amount: payment.amount })),
   };

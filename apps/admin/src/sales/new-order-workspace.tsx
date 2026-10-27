@@ -133,6 +133,7 @@ function LinesAndDiscount(props: SectionProps): ReactElement {
         locale={props.locale}
         labels={labels.line}
         disabled={form.isSaving}
+        includeServices={form.isInstant}
         onChange={(lines) => form.setValues({ lines })}
       />
       <OrderDiscountFields
