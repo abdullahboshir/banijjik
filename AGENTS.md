@@ -6,7 +6,7 @@ banijjik = multi-tenant, multi-industry business SaaS (clean successor of manoxe
 1. **Read first:** this file, `docs/STATUS.md`, your card in `docs/03-ROADMAP.md`, and only the doc sections the card needs.
 2. **One card per session.** Do not start, "quickly fix" or refactor anything outside the card. Write unrelated problems you notice into the STATUS.md handoff instead.
 3. **Plan before code.** Post a short plan (files to create/change, tests). If the card is ambiguous, conflicts with a doc, or needs a product decision: **stop and ask**. Never guess.
-4. **Verify:** run typecheck, lint, test and build (the commands defined in Phase 0.2). Report real output. Never claim a pass you did not see.
+4. **Verify (speed rules):** do **not** run the whole monorepo suite (Phase 0.2 full lint/test/build is CI). Before a code push: the tests you changed, lint/typecheck of the workspaces you touched, and for screens that app's browser suite (`docs/plans/parallel-sessions-guide.md` §7–§8, `.cursor/rules/speed.mdc`). **CI is not a debugger:** a red job is reproduced locally, then one push. Report real output. Never claim a pass you did not see.
 5. **Finish:** write `docs/handoffs/<card>.md`, update only your card row in `docs/STATUS.md`, and commit on branch `s/<card-id>-<slug>`. An architectural choice not covered by an ADR → add an ADR, marked "Accepted (proposed)", and tell the owner.
 6. If context is running low, stop at a clean point and write the handoff. Do not leave half-written files.
 
@@ -18,7 +18,7 @@ Each card has a tier in `docs/03-ROADMAP.md` (T1 = risky core, T2 = standard, T3
 | **PLAN** | Opus for T1/T2; Sonnet allowed for T3 | `docs/plans/<card>.md` from `docs/plans/_TEMPLATE.md`. No application code. |
 | **IMPLEMENT** | Sonnet | Code + tests exactly as the plan says, then a STATUS.md handoff |
 | **REVIEW** | Opus, mandatory for T1 | Review of the branch against plan, AGENTS.md and DoD; findings fixed before merge |
-| **MERGE CHECK** | The planner or the owner, every T2/T3 card | Before merge: rerun typecheck/lint/test/build without cache, read the diff against the plan, check deviations in the handoff |
+| **MERGE CHECK** | The planner or the owner, every T2/T3 card | Green CI on the branch head is the gate (guide §10). Do not rerun the full local suite. Read the diff against the plan; check deviations in the handoff |
 | **PHASE REVIEW** | Opus, at the end of every phase | Whole-phase review: cross-card consistency (names, contracts, ports), the roadmap "Phase done" criteria, doc vs code drift, open gaps in STATUS.md. The next phase starts only after it passes. Written to `docs/handoffs/phase-<n>-review.md` |
 
 - Plans are written **just in time** (rolling wave): only for the next few cards, based on the code as it is now. Never plan a whole phase in advance.
