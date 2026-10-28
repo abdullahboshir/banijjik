@@ -1,6 +1,8 @@
 /** Events of the website module (`<module>.<entity>.<pastTenseVerb>`, ADR-144). */
 export const WEBSITE_EVENT_TYPE = Object.freeze({
   PAGE_UPDATED: "website.page.updated",
+  SITE_PUBLISHED: "website.site.published",
+  SITE_UNPUBLISHED: "website.site.unpublished",
 } as const);
 
 export type WebsiteEventType = (typeof WEBSITE_EVENT_TYPE)[keyof typeof WEBSITE_EVENT_TYPE];

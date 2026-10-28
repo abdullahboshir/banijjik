@@ -3,3 +3,5 @@
  * Kept off the root index so that file stays within the line limit.
  */
 export { sitePageKeyParamsSchema, sitePageUpsertRequestSchema } from "./website-schemas.js";
+export { saveSiteDraftRequestSchema, siteDesignSchema } from "./site-design.schema.js";
+export { siteEditPolicySchema } from "./site-policy.schema.js";

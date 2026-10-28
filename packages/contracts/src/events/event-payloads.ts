@@ -64,7 +64,11 @@ import type {
 } from "../settings/settings-contracts.js";
 import type { OrderEventPayload, SalesReturnEventPayload } from "../sales/sales-event-type.js";
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
-import { WEBSITE_EVENT_TYPE, type SitePageUpdatedPayload } from "../website/index.js";
+import {
+  WEBSITE_EVENT_TYPE,
+  type SitePageUpdatedPayload,
+  type SitePublicationPayload,
+} from "../website/index.js";
 import { POS_EVENT_TYPE, type PosRegisterClosedPayload } from "../pos/pos-event-type.js";
 
 export interface JournalPostedPayload {
@@ -217,5 +221,7 @@ export interface EventPayloadMap {
   readonly [SALES_EVENT_TYPE.SALES_RETURN_CREATED]: SalesReturnEventPayload;
   readonly [SALES_EVENT_TYPE.SALES_RETURN_REVERSED]: SalesReturnEventPayload;
   readonly [WEBSITE_EVENT_TYPE.PAGE_UPDATED]: SitePageUpdatedPayload;
+  readonly [WEBSITE_EVENT_TYPE.SITE_PUBLISHED]: SitePublicationPayload;
+  readonly [WEBSITE_EVENT_TYPE.SITE_UNPUBLISHED]: SitePublicationPayload;
   readonly [POS_EVENT_TYPE.REGISTER_CLOSED]: PosRegisterClosedPayload;
 }

@@ -128,6 +128,9 @@ export const PERMISSION_KEY = {
   ENROLLMENT_CHECK_IN_CREATE: "enrollment.checkIn.create",
   WEBSITE_PAGE_READ: "website.page.read",
   WEBSITE_PAGE_UPDATE: "website.page.update",
+  WEBSITE_SITE_READ: "website.site.read",
+  WEBSITE_SITE_UPDATE: "website.site.update",
+  WEBSITE_SITE_PUBLISH: "website.site.publish",
   POS_DEVICE_MANAGE: "pos.device.manage",
   POS_SESSION_OPEN: "pos.session.open",
   POS_SALE_CREATE: "pos.sale.create",
@@ -197,4 +200,6 @@ export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
   PERMISSION_KEY.SETTINGS_MODULE_UPDATE,
   // Trial balance and journal list are organization-wide (card 3.8c).
   PERMISSION_KEY.ACCOUNTING_LEDGER_READ,
+  PERMISSION_KEY.WEBSITE_SITE_UPDATE,
+  PERMISSION_KEY.WEBSITE_SITE_PUBLISH,
 ];
