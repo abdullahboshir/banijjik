@@ -158,7 +158,7 @@ Owner requested every Phase 4 plan together. Planning-only exception to rolling-
 
 | Card | Status | Note |
 |---|---|---|
-| 4.1 theme engine | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.1.md`; snapshots, complete lock policy, safe legacy migration, website-image purpose, renderer; T1 check pending |
+| 4.1 theme engine | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.1.md`; snapshots, complete lock policy, safe legacy migration, website-image purpose, renderer; T1 check pending. Planning branch card:check fails inherited-CI branch lookup; actual baseline CI is green; evidence and newer-main refresh gate in audit R1 |
 | 4.2 storefront domains/runtime | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.2.md`; Cloudflare for SaaS selected under owner delegation; provider docs checked 2026-10-27, links in plan; real account/DNS/TLS smoke test is an implementation gate |
 | 4.3 shop/booking/guest checkout | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.3.md` + `4.3-COD.md`; owner requires guest checkout and full COD in Phase 4; principal-safe replay, payment/expiry fencing, claim/privacy, manual courier/rider settlement and owner-approved loss/recovery; T1 checks pending |
 | 4.4 platform template/site builder | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.4.md`; independent designs, policy controls, bounded industry-safe similarity projection; T1 API / T2 screens |
