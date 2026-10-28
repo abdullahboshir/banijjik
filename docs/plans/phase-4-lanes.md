@@ -95,6 +95,16 @@ Read [phase-4-assurance.md](phase-4-assurance.md) for common no-damage, replay, 
 
 These are reviewed-by-author design blueprints, not implementation-ready file lists. The JIT planner must freeze exact files, vocabulary, exported signatures, index rollout and tests for each part after dependencies merge. Split cross-module work into owner-specific parts and route-only composition; no implementer invents missing contracts or expands a wildcard. Independent T1 checking and Phase 3 closure remain mandatory.
 
+## First JIT freeze: 4.4 part A1 (2026-10-28, Qoder)
+
+[4.4.md](4.4.md) now carries **Refresh A1-1**, the first exact-file freeze under the rule above. It does not make 4.4 implementation-ready on its own: the refresh states its own prerequisites (4.1-A1 merged, an independent T1 check by a tool that is neither Codex nor Qoder, ADR-P4-A and the new ADR-P4-F accepted).
+
+Owner answers in that session (2026-10-28): platform template publish is replay-guarded by version CAS plus a unique revision index instead of `Idempotency-Key` (the kernel middleware has no platform scope; ADR-P4-F); an implementation branch opens from `origin/main` only after 4.1-A1 merges, never stacked on an unreviewed foundation; the seed templates of plan Data move out of A1 into their own small data part.
+
+The freeze also supersedes the 4.4 row of the table above for part A1 only: measured against the real `platform/industry` layout, A1 is 39 production files, so it splits into **A1** contracts and validation, **A1D** entity and persistence, **A1A** use cases, router and mount, **A1S** seed data — each within the 15-file T1 cap, merged in that order. Parts A2, A3, A3I, B1 and B2 are still un-frozen blueprints.
+
+Gate status checked while freezing (not assumed): the Phase 3 blocking gate in the table above is **closed** — `docs/STATUS.md` records 3.40 A+B, 3.41, 3.42 and 3.43 A+B merged on 2026-10-27, so F1 and F2 are done and Phase 4 code may merge. Two doc-drift items are left for the lead, not fixed here: the Phase 3 review row still says "3.42 (F3) remains", and the "Source docs disagree on Phase 3 gate" line above predates those merges. The real remaining Phase 4 dependencies are per-card (4.1 before 4.2/4.4/4.5), not the phase gate.
+
 ## Follow-up input, not an invented approval
 
 No further product choice is required for the drafted scope. Before implementation: independent T1 check and architecture proposal acceptance through the normal lead process; refresh against Phase 3 closure. Before live custom domains: owner supplies the Cloudflare zone, account capability, target hostname and credentials through validated configuration. No provider account was created or charged by this planning session.
