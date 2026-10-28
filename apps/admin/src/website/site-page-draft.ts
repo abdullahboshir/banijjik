@@ -46,12 +46,21 @@ export function draftProblemKeys(draft: SitePageDraft): readonly string[] {
   return problems;
 }
 
-/** The save body: the stored version, so a stale editor gets a 409 instead of overwriting. */
-export function upsertBodyOf(draft: SitePageDraft, version: number): SitePageUpsertRequest {
-  return {
+/**
+ * The save body. `version` is the legacy page CAS token. When a Site exists, `siteVersion` is the
+ * Site CAS token and must not be omitted (card 4.1 C1).
+ */
+export function upsertBodyOf(
+  draft: SitePageDraft,
+  version: number,
+  siteVersion: number | null = null,
+): SitePageUpsertRequest {
+  const body = {
     title: { bn: draft.title.bn.trim(), en: draft.title.en.trim() },
     body: draft.body,
     isPublished: draft.isPublished,
     version,
   };
+  if (siteVersion === null) return body;
+  return { ...body, siteVersion };
 }

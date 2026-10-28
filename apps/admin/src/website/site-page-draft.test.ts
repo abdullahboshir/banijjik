@@ -46,11 +46,31 @@ describe("site page draft", () => {
       publicationState: "LEGACY",
       siteVersion: null,
     };
-    expect(upsertBodyOf(draftOf(page), page.version)).toEqual({
+    expect(upsertBodyOf(draftOf(page), page.version, page.siteVersion)).toEqual({
       title: { bn: "পরিচিতি", en: "About" },
       body: { bn: "", en: "Hello" },
       isPublished: true,
       version: 4,
+    });
+  });
+
+  it("sends siteVersion when the page already belongs to a Site", () => {
+    const page: SitePageResponse = {
+      pageKey: "ABOUT",
+      title: { bn: "", en: "About" },
+      body: { bn: "", en: "Hello" },
+      isPublished: false,
+      version: 0,
+      updatedAt: "2026-10-28T00:00:00.000Z",
+      publicationState: "DRAFT",
+      siteVersion: 3,
+    };
+    expect(upsertBodyOf(draftOf(page), page.version, page.siteVersion)).toEqual({
+      title: { bn: "", en: "About" },
+      body: { bn: "", en: "Hello" },
+      isPublished: false,
+      version: 0,
+      siteVersion: 3,
     });
   });
 });
