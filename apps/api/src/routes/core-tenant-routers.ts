@@ -123,6 +123,7 @@ function buildPlatformCoreRouters(
   const files = buildFileModule({
     clock,
     permission,
+    websiteEdit: input.permissions,
     storage: input.storage,
     ...(input.fileOverrides === undefined ? {} : { overrides: input.fileOverrides }),
   });

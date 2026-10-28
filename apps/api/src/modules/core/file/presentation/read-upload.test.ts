@@ -89,6 +89,19 @@ describe("readUpload", () => {
     expect(upload.purpose).toBe("ATTACHMENT");
   });
 
+  it("returns WEBSITE_IMAGE as the purpose field without interpreting visibility", async () => {
+    const image = await pngImage(40, 40);
+    const upload = await readUpload(
+      multipartSource([
+        { name: "purpose", content: "WEBSITE_IMAGE" },
+        { name: "file", filename: "hero.png", content: image },
+      ]),
+    );
+
+    expect(upload.purpose).toBe("WEBSITE_IMAGE");
+    expect(upload.bytes.equals(image)).toBe(true);
+  });
+
   it("refuses a second file with a validation error", async () => {
     const image = await pngImage(10, 10);
     await expect(

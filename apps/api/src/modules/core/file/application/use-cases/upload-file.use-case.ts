@@ -1,7 +1,10 @@
+import { PERMISSION_KEY } from "@banijjik/contracts";
 import { FILE_VARIANT, type FilePurpose, type FileAssetResponse } from "@banijjik/contracts/file";
 import type { OrganizationId, UserId } from "@banijjik/ids";
-import type { Clock } from "../../../../../kernel/time/index.js";
+import type { PermissionGate } from "../../../../../kernel/access/index.js";
+import { forbidden } from "../../../../../kernel/http/index.js";
 import { reportError } from "../../../../../kernel/observability/report-error.js";
+import type { Clock } from "../../../../../kernel/time/index.js";
 import { fileQuotaExceeded, fileTooLarge, fileTypeNotAllowed } from "../../domain/errors.js";
 import {
   FileAsset,
@@ -10,7 +13,11 @@ import {
   type StoredVariant,
 } from "../../domain/file-asset.entity.js";
 import { detectFileType, FILE_TYPE_GROUP, type DetectedFileType } from "../../domain/file-types.js";
-import { purposeAcceptsGroup, sizeLimitOfGroup } from "../../domain/purpose-rules.js";
+import {
+  purposeAcceptsGroup,
+  purposeRequiresWebsiteEdit,
+  sizeLimitOfGroup,
+} from "../../domain/purpose-rules.js";
 import { viewFileAsset } from "../file-asset-view.js";
 import type {
   FileAssetRepository,
@@ -32,6 +39,11 @@ export interface UploadFileDependencies {
   readonly clock: Clock;
   /** The per-organization ceiling in bytes (ADR-109). Tests lower it to reach the edge. */
   readonly quotaBytes: number;
+  /**
+   * Tenant uploads pass the permission gate so WEBSITE_IMAGE can require website.site.update.
+   * The listing-photo path omits it; that purpose never needs website edit.
+   */
+  readonly websiteEdit?: Pick<PermissionGate, "locationsWith">;
 }
 
 export interface UploadFileInput {
@@ -73,6 +85,7 @@ export class UploadFileUseCase {
 
   async execute(input: UploadFileInput): Promise<FileAssetResponse> {
     const { usage, quotaBytes } = this.dependencies;
+    await this.assertWebsiteEditIfRequired(input.purpose);
     const detected = requireAcceptedType(input);
     const processed = await this.processedVariants(input.bytes, detected);
     const totalBytes = processed.reduce((total, variant) => total + variant.bytes.length, 0);
@@ -99,6 +112,15 @@ export class UploadFileUseCase {
       throw error;
     }
     return viewFileAsset(asset);
+  }
+
+  /** WEBSITE_SITE_UPDATE is organization-wide: a location-only grant is not enough. */
+  private async assertWebsiteEditIfRequired(purpose: FilePurpose): Promise<void> {
+    if (!purposeRequiresWebsiteEdit(purpose)) return;
+    const granted = await this.dependencies.websiteEdit?.locationsWith(
+      PERMISSION_KEY.WEBSITE_SITE_UPDATE,
+    );
+    if (granted !== "ALL") throw forbidden();
   }
 
   private async processedVariants(
