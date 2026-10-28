@@ -213,7 +213,7 @@ describe("SaveSiteDraftUseCase", () => {
         effectiveSectionKeys: Object.values(SECTION_KEY),
         body: { expectedVersion: 1, design: next },
       }),
-    ).rejects.toMatchObject({ code: ERROR_CODE.BUSINESS_RULE });
+    ).rejects.toMatchObject({ code: ERROR_CODE.WEBSITE_POLICY_DENIED });
     expect(sites.site?.draftDesign.header.variantKey).toBe("SIMPLE");
   });
 

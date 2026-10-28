@@ -159,7 +159,7 @@ function siteSectionUnionSchema() {
 
 const siteSectionSchema = siteSectionUnionSchema();
 
-const siteTokensSchema = z
+export const siteTokensSchema = z
   .strictObject({
     color: z.strictObject({
       primary: hexColorSchema,
@@ -210,7 +210,7 @@ const pagePathSchema = publicHrefSchema().refine(
   (path) => path.startsWith("/") && !path.startsWith("//") && !isReservedPublicPath(path),
 );
 
-const sitePageSchema = z.strictObject({
+export const sitePageSchema = z.strictObject({
   pageId: uuidV7Schema,
   path: pagePathSchema,
   title: localizedTextSchema(SITE_PAGE_TITLE_MAX_LENGTH),
@@ -221,7 +221,7 @@ const sitePageSchema = z.strictObject({
   sections: z.array(siteSectionSchema).max(maxSectionsPerPage),
 });
 
-const staticPageDraftSchema = z.strictObject({
+export const staticPageDraftSchema = z.strictObject({
   pageKey: z.enum(SITE_PAGE_KEY),
   title: localizedTextSchema(SITE_PAGE_TITLE_MAX_LENGTH),
   body: localizedTextSchema(SITE_PAGE_BODY_MAX_LENGTH),

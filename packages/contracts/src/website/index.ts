@@ -68,9 +68,12 @@ export {
   type SiteColorTokenName,
   type SiteDesign,
   type SiteDraftResponse,
+  type SiteLayoutPageRequest,
+  type SiteLayoutResponse,
   type SitePage,
   type SitePublicationPayload,
   type SiteSection,
+  type SiteThemeUpdateRequest,
   type SiteTokens,
   type StaticPageDraft,
   type TypeScale,
@@ -89,3 +92,9 @@ export {
   type SitePolicyEvaluator,
   type TokenGroup,
 } from "./site-policy.js";
+export {
+  SUPPORTED_SITE_SCHEMA_VERSIONS,
+  isSupportedSiteSchemaVersion,
+  type SiteVersionListResponse,
+  type SiteVersionMetadata,
+} from "./site-version.js";

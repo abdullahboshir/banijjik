@@ -141,4 +141,35 @@ export class Site {
       updatedByUserId: input.actorUserId,
     });
   }
+
+  /**
+   * A publish consumes one revision and moves the public pointer in the same CAS step. `hasPublishedOnce`
+   * is one-way: after the first site publish the legacy static-page fallback never returns (4.1 audit).
+   */
+  markPublished(input: {
+    readonly websiteVersionId: WebsiteVersionId;
+    readonly now: Date;
+    readonly actorUserId: UserId | null;
+  }): Site {
+    return new Site({
+      ...this.props,
+      publishedWebsiteVersionId: input.websiteVersionId,
+      hasPublishedOnce: true,
+      nextRevision: this.props.nextRevision + 1,
+      version: this.props.version + 1,
+      updatedAt: input.now,
+      updatedByUserId: input.actorUserId,
+    });
+  }
+
+  /** Unpublish clears the pointer only. History, the next revision and the one-way flag stay. */
+  markUnpublished(input: { readonly now: Date; readonly actorUserId: UserId | null }): Site {
+    return new Site({
+      ...this.props,
+      publishedWebsiteVersionId: null,
+      version: this.props.version + 1,
+      updatedAt: input.now,
+      updatedByUserId: input.actorUserId,
+    });
+  }
 }

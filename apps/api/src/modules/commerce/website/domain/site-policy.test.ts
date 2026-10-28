@@ -352,7 +352,7 @@ describe("sitePolicyEvaluator", () => {
     expect(reasonOf(() => assertAllowed(next, previous))).toBe("locked_static_content");
   });
 
-  it("uses BUSINESS_RULE for a denial", () => {
+  it("uses WEBSITE_POLICY_DENIED for a denial", () => {
     const base = sampleDesign();
     const next: SiteDesign = {
       ...base,
@@ -362,7 +362,7 @@ describe("sitePolicyEvaluator", () => {
       assertAllowed(next);
       throw new Error("expected denial");
     } catch (error) {
-      expect(error).toMatchObject({ code: ERROR_CODE.BUSINESS_RULE });
+      expect(error).toMatchObject({ code: ERROR_CODE.WEBSITE_POLICY_DENIED });
     }
   });
 });

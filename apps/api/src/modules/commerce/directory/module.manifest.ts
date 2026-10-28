@@ -15,6 +15,7 @@ import {
   DIRECTORY_REVIEW_EDITS_SETTING_KEY,
 } from "@banijjik/contracts/directory";
 import { CONTACT_EVENT_TYPE } from "@banijjik/contracts/contact";
+import { SECTION_KEY } from "@banijjik/contracts/website";
 import { defineModule } from "../../../kernel/modules/index.js";
 
 /** The directory manifest (doc 16 §3.1, ADR-127). */
@@ -111,7 +112,7 @@ export const directoryManifest = defineModule({
   ],
   customFieldEntities: ["listing"],
   botTools: [],
-  storefrontSections: [],
+  storefrontSections: [SECTION_KEY["directory-search"], SECTION_KEY["directory-list"]],
   events: {
     emits: [
       DIRECTORY_EVENT_TYPE.LISTING_SUBMITTED,

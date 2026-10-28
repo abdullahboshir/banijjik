@@ -18,7 +18,10 @@ import {
 type EvaluatorInput = Parameters<SitePolicyEvaluator["assertAllowed"]>[0];
 
 function deny(reason: string): never {
-  throw new DomainRuleError({ code: ERROR_CODE.BUSINESS_RULE, details: { reason } });
+  throw new DomainRuleError({
+    code: ERROR_CODE.WEBSITE_POLICY_DENIED,
+    details: { reason },
+  });
 }
 
 function sameJson(left: unknown, right: unknown): boolean {

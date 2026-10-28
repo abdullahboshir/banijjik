@@ -95,6 +95,9 @@ export class MongoSiteRepository implements SiteRepository {
       update: {
         $set: {
           draftDesign: site.draftDesign,
+          publishedWebsiteVersionId: site.publishedWebsiteVersionId,
+          nextRevision: site.nextRevision,
+          hasPublishedOnce: site.hasPublishedOnce,
           updatedAt: site.updatedAt,
           updatedByUserId: site.updatedByUserId,
         },

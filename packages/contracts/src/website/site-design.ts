@@ -226,6 +226,28 @@ export interface SitePublicationPayload {
   readonly revision: number;
 }
 
+/** `PUT /theme` carries the whole token block: a partial token set cannot be validated (decision 9). */
+export interface SiteThemeUpdateRequest {
+  readonly expectedVersion: number;
+  readonly tokens: SiteTokens;
+}
+
+/**
+ * One page without its id: a new page takes its id from `newId()`, an edited page takes it from the
+ * path, so a body can never aim at another page.
+ */
+export interface SiteLayoutPageRequest {
+  readonly expectedVersion: number;
+  readonly page: Omit<SitePage, "pageId">;
+}
+
+/** `GET /layout-pages`: the page list of the draft with the version the editor holds. */
+export interface SiteLayoutResponse {
+  readonly siteId: string;
+  readonly version: number;
+  readonly pages: readonly SitePage[];
+}
+
 /**
  * Application routes the public CMS must not shadow. A path equals a prefix or continues with `/`.
  * Directory and static-page URLs stay reserved so Track M and M.6 pages keep working.

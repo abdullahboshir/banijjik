@@ -1,4 +1,9 @@
-import { MODULE_KEY, MODULE_OVERRIDE_EFFECT } from "@banijjik/contracts";
+import {
+  ERROR_CODE,
+  MODULE_KEY,
+  MODULE_OVERRIDE_EFFECT,
+  SYSTEM_ROLE_KEY,
+} from "@banijjik/contracts";
 import {
   CONSERVATIVE_PAGE_RULES,
   SITE_PAGE_KEY,
@@ -22,6 +27,7 @@ import {
   type IamApiHarness,
 } from "../../../test-support/iam-api-harness.js";
 import { withOrganizationContext } from "../../../test-support/organization-context.js";
+import { addMemberWithAssignments, findSystemRoleId } from "../../../test-support/rbac-world.js";
 import { callStorefront } from "../../../test-support/storefront-world.js";
 import { createTwoOrganizations } from "../../../test-support/two-organizations.js";
 import { Site } from "./domain/site.entity.js";
@@ -604,6 +610,86 @@ describe("website pages API after a Site exists", () => {
       pagePath(organizationA),
       pageBody({ siteVersion: 1, title: { bn: "", en: "Blocked" } }),
     );
-    expect(denied.status).toBe(422);
+    expect(denied.status).toBe(403);
+    expect(denied.body.error.code).toBe(ERROR_CODE.WEBSITE_POLICY_DENIED);
+  });
+});
+
+describe("website site publication API", () => {
+  it("publishes a snapshot, then serves it on the public published-site route", async () => {
+    const world = await aWorld();
+    const site = await insertDraftSite(world.organizationA, world.alice.userId);
+    const key = newId();
+    const published = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/website/publish`,
+      body: { expectedVersion: site.version },
+      idempotencyKey: key,
+    });
+    expect(published.status).toBe(200);
+    expect(published.body.data.revision).toBe(1);
+
+    const replay = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/website/publish`,
+      body: { expectedVersion: site.version },
+      idempotencyKey: key,
+    });
+    expect(replay.status).toBe(200);
+    expect(replay.body.data.websiteVersionId).toBe(published.body.data.websiteVersionId);
+
+    const stale = await world.alice.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/website/publish`,
+      body: { expectedVersion: site.version },
+      idempotencyKey: newId(),
+    });
+    expect(stale.status).toBe(409);
+
+    const publicSite = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/published-site",
+    });
+    expect(publicSite.status).toBe(200);
+    expect(publicSite.body.data.revision).toBe(1);
+  });
+
+  it("answers the same 404 for an unpublished site and for a business with no site", async () => {
+    const world = await aWorld();
+    await insertDraftSite(world.organizationA, world.alice.userId);
+    const unpublished = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/published-site",
+    });
+    expect(unpublished.status).toBe(404);
+
+    const missing = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationB,
+      suffix: "/published-site",
+    });
+    expect(missing.status).toBe(404);
+  });
+
+  it("refuses a member who holds publish at one location only", async () => {
+    const world = await aWorld();
+    const site = await insertDraftSite(world.organizationA, world.alice.userId);
+    const ownerRoleId = await findSystemRoleId(
+      harness.connections,
+      world.organizationA,
+      SYSTEM_ROLE_KEY.OWNER,
+    );
+    const { actor } = await addMemberWithAssignments(harness.app, world.organizationA, [
+      { locationId: world.locationA1, roleId: ownerRoleId },
+    ]);
+    const refused = await actor.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationA}/website/publish`,
+      body: { expectedVersion: site.version },
+      idempotencyKey: newId(),
+    });
+    expect(refused.status).toBe(403);
   });
 });
