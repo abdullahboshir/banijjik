@@ -1,3 +1,4 @@
+import type { SiteDesign, SiteEditPolicy } from "@banijjik/contracts/website";
 import {
   asId,
   type OrganizationId,
@@ -30,8 +31,9 @@ function toSite(row: SiteDocument): Site {
   return Site.rehydrate({
     siteId: asId<SiteId>(row.siteId),
     organizationId: asId<OrganizationId>(row.organizationId),
-    draftDesign: siteDesignSchema.parse(row.draftDesign),
-    editPolicy: siteEditPolicySchema.parse(row.editPolicy),
+    // Zod optional fields are `T | undefined`; SiteDesign uses exactOptionalPropertyTypes.
+    draftDesign: siteDesignSchema.parse(row.draftDesign) as SiteDesign,
+    editPolicy: siteEditPolicySchema.parse(row.editPolicy) as SiteEditPolicy,
     sourceTemplateKey: row.sourceTemplateKey,
     sourceTemplateRevision: row.sourceTemplateRevision,
     publishedWebsiteVersionId: publishedVersionId(row.publishedWebsiteVersionId),

@@ -169,7 +169,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 ## Phase 4
 | Card | Status | Note |
 |---|---|---|
-| 4.1 theme engine | implemented (awaiting review), part A2 | branch `s/4.1-a2-site-design` (from A1 `s/4.1-a1-theme-contracts`); handoff `docs/handoffs/4.1-a2.md`; Site + WebsiteVersion models, full-document lock evaluator, versioned save-draft. A1 still needs review/merge. Parts A3–C2 todo |
+| 4.1 theme engine | implemented (awaiting review), part C1 | branch `s/4.1-c1-pages-api` (from A2 `s/4.1-a2-site-design`); handoff `docs/handoffs/4.1-c1.md`. Legacy `/website/pages` adapts into `Site.draftDesign.staticContent` when a Site exists; public reads stay on frozen legacy rows until `hasPublishedOnce`, then `WebsiteVersion`. A2 typecheck fixed on this branch. A1/A2 still need review/merge. Parts A3–A3I, F, B, C2 todo |
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.

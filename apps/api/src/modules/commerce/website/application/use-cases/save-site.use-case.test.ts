@@ -165,10 +165,12 @@ describe("SaveSiteDraftUseCase", () => {
     const sites = new InMemorySiteRepository();
     const existing = seedSite(sites);
     const useCase = new SaveSiteDraftUseCase({ sites, clock: new MutableClock() });
-    const next = structuredClone(existing.draftDesign);
-    const page = next.pages[0];
+    const page = existing.draftDesign.pages[0];
     if (page?.sections[0] === undefined) throw new Error("fixture hero missing");
-    page.sections = [{ ...page.sections[0], variantKey: "CENTERED" }];
+    const next: SiteDesign = {
+      ...existing.draftDesign,
+      pages: [{ ...page, sections: [{ ...page.sections[0], variantKey: "CENTERED" }] }],
+    };
 
     const saved = await useCase.execute({
       actorUserId: asId<UserId>(newId()),
@@ -200,8 +202,10 @@ describe("SaveSiteDraftUseCase", () => {
     const sites = new InMemorySiteRepository();
     const existing = seedSite(sites);
     const useCase = new SaveSiteDraftUseCase({ sites, clock: new MutableClock() });
-    const next = structuredClone(existing.draftDesign);
-    next.header = { ...next.header, variantKey: "CENTERED" };
+    const next: SiteDesign = {
+      ...existing.draftDesign,
+      header: { ...existing.draftDesign.header, variantKey: "CENTERED" },
+    };
 
     await expect(
       useCase.execute({

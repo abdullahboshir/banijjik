@@ -108,10 +108,12 @@ describe("Site", () => {
     const template = sampleDesign();
     const first = createSite(template);
     const second = createSite(template);
-    const edited = structuredClone(first.draftDesign);
-    const home = edited.pages[0];
+    const home = first.draftDesign.pages[0];
     if (home === undefined) throw new Error("fixture page missing");
-    home.title = { bn: "নতুন", en: "New" };
+    const edited: SiteDesign = {
+      ...first.draftDesign,
+      pages: [{ ...home, title: { bn: "নতুন", en: "New" } }],
+    };
 
     const savedFirst = first.replaceDraft({
       draftDesign: edited,

@@ -49,15 +49,25 @@ function tokens() {
   };
 }
 
-function chrome(sectionKey: "header" | "footer", sectionId: string): SiteSection {
+function chrome<Key extends "header" | "footer">(sectionKey: Key, sectionId: string) {
   return {
     sectionId,
     sectionKey,
-    variantKey: "SIMPLE",
+    variantKey: "SIMPLE" as const,
     regionKey: sectionKey,
     binding: null,
     content: { links: [{ label: TEXT, path: "/home" }] },
   };
+}
+
+function requireKey<Key extends SiteSection["sectionKey"]>(
+  section: SiteSection | undefined,
+  sectionKey: Key,
+): Extract<SiteSection, { sectionKey: Key }> {
+  if (section === undefined || section.sectionKey !== sectionKey) {
+    throw new Error(`fixture ${sectionKey} missing`);
+  }
+  return section as Extract<SiteSection, { sectionKey: Key }>;
 }
 
 function sampleDesign(): SiteDesign {
@@ -157,124 +167,149 @@ function reasonOf(run: () => void): string {
   }
 }
 
+function withHomeSections(sections: SiteDesign["pages"][number]["sections"]): SiteDesign {
+  const base = sampleDesign();
+  const page = base.pages[0];
+  if (page === undefined) throw new Error("fixture page missing");
+  return { ...base, pages: [{ ...page, sections }] };
+}
+
 describe("sitePolicyEvaluator", () => {
   it("allows an unchanged document", () => {
     expect(() => assertAllowed(sampleDesign())).not.toThrow();
   });
 
   it("refuses a locked header content change", () => {
-    const next = sampleDesign();
-    next.header = {
-      ...next.header,
-      content: { links: [{ label: TEXT, path: "/about" }] },
+    const base = sampleDesign();
+    const header = requireKey(base.header, "header");
+    const next: SiteDesign = {
+      ...base,
+      header: { ...header, content: { links: [{ label: TEXT, path: "/about" }] } },
     };
     expect(reasonOf(() => assertAllowed(next))).toBe("locked_section");
   });
 
   it("refuses a locked token group change", () => {
-    const next = sampleDesign();
-    next.tokens = { ...next.tokens, type: { ...next.tokens.type, scale: "LARGE" } };
+    const base = sampleDesign();
+    const next: SiteDesign = {
+      ...base,
+      tokens: { ...base.tokens, type: { ...base.tokens.type, scale: "LARGE" } },
+    };
     expect(reasonOf(() => assertAllowed(next))).toBe("locked_token_group:type");
   });
 
   it("allows a content-only footer link change and refuses a variant change", () => {
-    const next = sampleDesign();
-    next.footer = {
-      ...next.footer,
-      content: { links: [{ label: TEXT, path: "/contact" }] },
+    const base = sampleDesign();
+    const footer = requireKey(base.footer, "footer");
+    const contentOnly: SiteDesign = {
+      ...base,
+      footer: { ...footer, content: { links: [{ label: TEXT, path: "/contact" }] } },
     };
-    expect(() => assertAllowed(next)).not.toThrow();
-    next.footer = { ...next.footer, variantKey: "COLUMNS" };
-    expect(reasonOf(() => assertAllowed(next))).toBe("locked_variant");
+    expect(() => assertAllowed(contentOnly)).not.toThrow();
+    const variantChange: SiteDesign = {
+      ...contentOnly,
+      footer: { ...requireKey(contentOnly.footer, "footer"), variantKey: "COLUMNS" },
+    };
+    expect(reasonOf(() => assertAllowed(variantChange))).toBe("locked_variant");
   });
 
   it("refuses moving a locked header by replacing it with a new sectionId", () => {
-    const next = sampleDesign();
-    next.header = { ...next.header, sectionId: ID_E };
+    const base = sampleDesign();
+    const next: SiteDesign = {
+      ...base,
+      header: { ...requireKey(base.header, "header"), sectionId: ID_E },
+    };
     expect(reasonOf(() => assertAllowed(next))).toBe("delete_locked_section");
   });
 
   it("refuses reusing another sectionId", () => {
-    const next = sampleDesign();
-    const page = next.pages[0];
-    if (page === undefined) throw new Error("fixture page missing");
-    const hero = page.sections[0];
-    if (hero === undefined) throw new Error("fixture hero missing");
-    page.sections = [{ ...hero, sectionId: ID_A }];
-    expect(reasonOf(() => assertAllowed(next))).toBe("duplicate_section_id");
+    const base = sampleDesign();
+    const page = base.pages[0];
+    const hero = requireKey(page?.sections[0], "hero");
+    expect(reasonOf(() => assertAllowed(withHomeSections([{ ...hero, sectionId: ID_A }])))).toBe(
+      "duplicate_section_id",
+    );
   });
 
   it("refuses deleting then reinserting a locked section to bypass the lock", () => {
-    const next = sampleDesign();
-    next.header = { ...chrome("header", ID_E), content: { links: [] } };
+    const next: SiteDesign = {
+      ...sampleDesign(),
+      header: { ...chrome("header", ID_E), content: { links: [] } },
+    };
     expect(reasonOf(() => assertAllowed(next))).toBe("delete_locked_section");
   });
 
   it("refuses a hero variant outside the policy palette", () => {
-    const next = sampleDesign();
-    const page = next.pages[0];
-    if (page?.sections[0] === undefined) throw new Error("fixture hero missing");
-    page.sections = [{ ...page.sections[0], variantKey: "SPLIT" }];
-    const policy = samplePolicy();
-    policy.allowedVariantsBySection = { ...policy.allowedVariantsBySection, hero: ["CENTERED"] };
-    expect(reasonOf(() => assertAllowed(next, sampleDesign(), policy))).toBe("variant_not_allowed");
+    const hero = requireKey(sampleDesign().pages[0]?.sections[0], "hero");
+    const policy: SiteEditPolicy = {
+      ...samplePolicy(),
+      allowedVariantsBySection: { ...samplePolicy().allowedVariantsBySection, hero: ["CENTERED"] },
+    };
+    expect(
+      reasonOf(() =>
+        assertAllowed(withHomeSections([{ ...hero, variantKey: "SPLIT" }]), sampleDesign(), policy),
+      ),
+    ).toBe("variant_not_allowed");
   });
 
   it("allows a FULL-region variant that is in both the palette and the registry", () => {
-    const next = sampleDesign();
-    const page = next.pages[0];
-    if (page?.sections[0] === undefined) throw new Error("fixture hero missing");
-    page.sections = [{ ...page.sections[0], variantKey: "CENTERED" }];
-    expect(() => assertAllowed(next)).not.toThrow();
+    const hero = requireKey(sampleDesign().pages[0]?.sections[0], "hero");
+    expect(() =>
+      assertAllowed(withHomeSections([{ ...hero, variantKey: "CENTERED" }])),
+    ).not.toThrow();
   });
 
   it("refuses creating a page under conservative pageRules", () => {
-    const next = sampleDesign();
-    next.pages = [
-      ...next.pages,
-      {
-        pageId: ID_E,
-        path: "/extra",
-        title: TEXT,
-        seo: { description: { bn: "", en: "" }, noIndex: false },
-        sections: [],
-      },
-    ];
+    const base = sampleDesign();
+    const next: SiteDesign = {
+      ...base,
+      pages: [
+        ...base.pages,
+        {
+          pageId: ID_E,
+          path: "/extra",
+          title: TEXT,
+          seo: { description: { bn: "", en: "" }, noIndex: false },
+          sections: [],
+        },
+      ],
+    };
     expect(reasonOf(() => assertAllowed(next))).toBe("page_create_denied");
   });
 
   it("refuses deleting a page under conservative pageRules", () => {
-    const next = sampleDesign();
-    next.pages = [];
-    expect(reasonOf(() => assertAllowed(next))).toBe("page_delete_denied");
+    expect(reasonOf(() => assertAllowed({ ...sampleDesign(), pages: [] }))).toBe(
+      "page_delete_denied",
+    );
   });
 
   it("refuses a path change and a noIndex change", () => {
-    const next = sampleDesign();
-    const page = next.pages[0];
+    const page = sampleDesign().pages[0];
     if (page === undefined) throw new Error("fixture page missing");
-    next.pages = [{ ...page, path: "/moved" }];
-    expect(reasonOf(() => assertAllowed(next))).toBe("path_change_denied");
-    const indexed = sampleDesign();
-    const home = indexed.pages[0];
-    if (home === undefined) throw new Error("fixture page missing");
-    indexed.pages = [{ ...home, seo: { ...home.seo, noIndex: true } }];
-    expect(reasonOf(() => assertAllowed(indexed))).toBe("locked_no_index");
+    expect(
+      reasonOf(() => assertAllowed({ ...sampleDesign(), pages: [{ ...page, path: "/moved" }] })),
+    ).toBe("path_change_denied");
+    expect(
+      reasonOf(() =>
+        assertAllowed({
+          ...sampleDesign(),
+          pages: [{ ...page, seo: { ...page.seo, noIndex: true } }],
+        }),
+      ),
+    ).toBe("locked_no_index");
   });
 
   it("refuses a missing policy region change", () => {
-    const next = sampleDesign();
-    const page = next.pages[0];
-    if (page?.sections[0] === undefined) throw new Error("fixture hero missing");
-    page.sections = [{ ...page.sections[0], regionKey: "sidebar" }];
-    expect(reasonOf(() => assertAllowed(next))).toBe("reparent_denied");
+    const hero = requireKey(sampleDesign().pages[0]?.sections[0], "hero");
+    expect(
+      reasonOf(() => assertAllowed(withHomeSections([{ ...hero, regionKey: "sidebar" }]))),
+    ).toBe("reparent_denied");
   });
 
   it("refuses adding a section whose module is not in effectiveSectionKeys", () => {
-    const next = sampleDesign();
-    const page = next.pages[0];
+    const page = sampleDesign().pages[0];
     if (page === undefined) throw new Error("fixture page missing");
-    page.sections = [
+    const next = withHomeSections([
       ...page.sections,
       {
         sectionId: ID_E,
@@ -284,7 +319,7 @@ describe("sitePolicyEvaluator", () => {
         binding: null,
         content: { entries: [] },
       },
-    ];
+    ]);
     expect(() => {
       sitePolicyEvaluator.assertAllowed({
         previous: sampleDesign(),
@@ -296,27 +331,33 @@ describe("sitePolicyEvaluator", () => {
   });
 
   it("refuses a colour outside allowedColors", () => {
-    const policy = samplePolicy();
-    policy.allowedColors = ["#15803d"];
-    const next = sampleDesign();
-    expect(reasonOf(() => assertAllowed(next, sampleDesign(), policy))).toBe("color_not_allowed");
+    const policy: SiteEditPolicy = { ...samplePolicy(), allowedColors: ["#15803d"] };
+    expect(reasonOf(() => assertAllowed(sampleDesign(), sampleDesign(), policy))).toBe(
+      "color_not_allowed",
+    );
   });
 
   it("refuses changing includeInPublication on a content-only static page", () => {
-    const previous = sampleDesign();
-    previous.staticContent = [
-      { pageKey: "ABOUT", title: TEXT, body: TEXT, includeInPublication: true },
-    ];
-    const next = structuredClone(previous);
-    const about = next.staticContent[0];
-    if (about === undefined) throw new Error("fixture static missing");
-    about.includeInPublication = false;
+    const about = {
+      pageKey: "ABOUT" as const,
+      title: TEXT,
+      body: TEXT,
+      includeInPublication: true,
+    };
+    const previous: SiteDesign = { ...sampleDesign(), staticContent: [about] };
+    const next: SiteDesign = {
+      ...previous,
+      staticContent: [{ ...about, includeInPublication: false }],
+    };
     expect(reasonOf(() => assertAllowed(next, previous))).toBe("locked_static_content");
   });
 
   it("uses BUSINESS_RULE for a denial", () => {
-    const next = sampleDesign();
-    next.header = { ...next.header, variantKey: "CENTERED" };
+    const base = sampleDesign();
+    const next: SiteDesign = {
+      ...base,
+      header: { ...requireKey(base.header, "header"), variantKey: "CENTERED" },
+    };
     try {
       assertAllowed(next);
       throw new Error("expected denial");

@@ -43,6 +43,8 @@ describe("site page draft", () => {
       isPublished: true,
       version: 4,
       updatedAt: null,
+      publicationState: "LEGACY",
+      siteVersion: null,
     };
     expect(upsertBodyOf(draftOf(page), page.version)).toEqual({
       title: { bn: "পরিচিতি", en: "About" },

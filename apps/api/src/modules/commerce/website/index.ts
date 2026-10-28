@@ -13,6 +13,8 @@ import {
 } from "./application/use-cases/site-page.use-cases.js";
 import type { StorefrontSiteSources } from "./application/ports/website-ports.js";
 import { MongoSitePageRepository } from "./infrastructure/mongo-site-page.repository.js";
+import { MongoSiteRepository } from "./infrastructure/mongo-site.repository.js";
+import { MongoWebsiteVersionReader } from "./infrastructure/mongo-website-version.reader.js";
 import { WebsiteController } from "./presentation/website.controller.js";
 import { buildWebsiteStorefrontRouter } from "./presentation/website-storefront.router.js";
 import { buildWebsiteTenantRouter } from "./presentation/website-tenant.router.js";
@@ -34,10 +36,12 @@ export interface WebsiteAdminDependencies {
 /** The admin pages of the business (`/orgs/:organizationId/website/pages`). */
 export function buildWebsiteAdminRouter(dependencies: WebsiteAdminDependencies): Router {
   const pages = new MongoSitePageRepository();
+  const sites = new MongoSiteRepository();
   const controller = new WebsiteController({
-    listPages: new ListSitePagesUseCase(pages),
+    listPages: new ListSitePagesUseCase(pages, sites),
     upsertPage: new UpsertSitePageUseCase({
       pages,
+      sites,
       unitOfWork: new MongoUnitOfWork(),
       events: kernelEventPublisher,
       audit: dependencies.audit,
@@ -57,12 +61,14 @@ export function buildWebsiteStorefrontRouterFor(
   dependencies: WebsiteStorefrontDependencies,
 ): Router {
   const pages = new MongoSitePageRepository();
+  const sites = new MongoSiteRepository();
+  const versions = new MongoWebsiteVersionReader();
   return buildWebsiteStorefrontRouter({
     requireWebsiteModule: dependencies.requireWebsiteModule,
-    getPage: new GetPublishedSitePageUseCase(pages),
+    getPage: new GetPublishedSitePageUseCase(pages, sites, versions),
     getSite: new GetStorefrontSiteUseCase(
       dependencies.siteSources,
-      new ListPublishedSitePagesUseCase(pages),
+      new ListPublishedSitePagesUseCase(pages, sites, versions),
     ),
   });
 }

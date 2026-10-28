@@ -3,8 +3,10 @@
  * The main index is at its line limit, so this vocabulary has its own entry.
  */
 export {
+  PAGE_PUBLICATION_STATE,
   SITE_PAGE_BODY_MAX_LENGTH,
   SITE_PAGE_TITLE_MAX_LENGTH,
+  type PagePublicationState,
   type SitePageResponse,
   type SitePageUpdatedPayload,
   type SitePageUpsertRequest,
