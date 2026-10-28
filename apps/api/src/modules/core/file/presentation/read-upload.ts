@@ -144,7 +144,9 @@ class UploadReader {
  * Reads exactly one file and the `purpose` field from a multipart body while it streams. The type
  * is read from the first bytes and refused at once; the size is counted chunk by chunk and the
  * read stops the moment the limit is passed, so a large upload is never buffered whole (ADR-109).
- * The caller closes the connection after answering an aborted upload (see `closeAfterResponse`).
+ * `purpose` is the raw field (including WEBSITE_IMAGE); the schema and upload use case decide
+ * whether it is allowed. The caller closes the connection after answering an aborted upload
+ * (see `closeAfterResponse`).
  */
 export function readUpload(
   source: UploadSource,

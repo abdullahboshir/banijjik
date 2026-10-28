@@ -169,7 +169,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 ## Phase 4
 | Card | Status | Note |
 |---|---|---|
-| 4.1 theme engine | implemented (awaiting review), part C2 | branch `s/4.1-c2-pages-ui` (from C1 `s/4.1-c1-pages-api`); handoffs `docs/handoffs/4.1-c1.md` and `docs/handoffs/4.1-c2.md`. Editor shows publicationState and sends siteVersion when a Site exists. Browser suite not run locally (owner stack on 3000/4000); CI is the gate. A1/A2 still need review/merge. Parts A3–A3I, F, B on other branches |
+| 4.1 theme engine | A1+A2+F+B+C1+C2 merged (2026-10-28, owner merge yes; T1 written review skipped to land now). A3 still in another session | A1 contracts (`docs/handoffs/4.1-a1.md`). A2 Site + policy (`docs/handoffs/4.1-a2.md`; typecheck fixed on C1). F: WEBSITE_IMAGE PUBLIC + `website.site.update` (`docs/handoffs/4.1-f.md`, CI [40641982603](https://github.com/abdullahboshir/banijjik/actions/runs/40641982603)). B: shared renderer (`docs/handoffs/4.1-b.md`, CI [40642554599](https://github.com/abdullahboshir/banijjik/actions/runs/40642554599)). C1: legacy pages → Site.draftDesign (`docs/handoffs/4.1-c1.md`, CI [40644779757](https://github.com/abdullahboshir/banijjik/actions/runs/40644779757)). C2: editor `siteVersion` + publicationState (`docs/handoffs/4.1-c2.md`, CI [40644784153](https://github.com/abdullahboshir/banijjik/actions/runs/40644784153)). A3 must merge origin/main after this lands |
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.

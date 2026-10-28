@@ -1,6 +1,7 @@
 import type { StorefrontMeResponse } from "@banijjik/contracts/contact";
 import type { StorefrontSiteResponse } from "@banijjik/contracts/website";
 import { LogoImage } from "@banijjik/ui";
+import { SITE_CHROME_LINK_CLASS } from "@banijjik/ui/website";
 import type { Locale, Translator } from "@banijjik/i18n";
 import Link from "next/link";
 import type { ReactElement } from "react";
@@ -33,7 +34,9 @@ function LanguageLinks({
           href={`/language?to=${language}`}
           aria-current={language === locale ? "true" : undefined}
           className={
-            language === locale ? "font-semibold text-primary" : "text-secondary underline"
+            language === locale
+              ? `${SITE_CHROME_LINK_CLASS} font-semibold text-primary`
+              : `${SITE_CHROME_LINK_CLASS} text-secondary underline`
           }
         >
           {translator.t(`storefront.language.${language}`)}
@@ -59,7 +62,7 @@ function AccountArea({
   if (!site.features.customerLogin) return null;
   if (customer === undefined) {
     return (
-      <Link href="/sign-in" className="text-body font-semibold text-brand">
+      <Link href="/sign-in" className={`${SITE_CHROME_LINK_CLASS} font-semibold text-brand`}>
         {translator.t("storefront.nav.signIn")}
       </Link>
     );
@@ -71,7 +74,11 @@ function AccountArea({
       </span>
       <nav aria-label={translator.t("storefront.nav.account")} className="flex flex-wrap gap-3">
         {ACCOUNT_LINKS.map((link) => (
-          <Link key={link.href} href={link.href} className="font-semibold text-primary underline">
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`${SITE_CHROME_LINK_CLASS} font-semibold text-primary underline`}
+          >
             {translator.t(link.labelKey)}
           </Link>
         ))}
@@ -97,7 +104,9 @@ export function SiteHeader(props: SiteChromeProps): ReactElement {
               />
             ) : null}
             <span className="flex min-w-0 flex-col">
-              <span className="text-title truncate font-semibold text-primary">{site.name}</span>
+              <span className="text-title max-w-full break-words font-semibold text-primary">
+                {site.name}
+              </span>
               {site.tagline ? (
                 <span className="text-small text-secondary">{site.tagline}</span>
               ) : null}
@@ -110,11 +119,14 @@ export function SiteHeader(props: SiteChromeProps): ReactElement {
             aria-label={translator.t("storefront.nav.pages")}
             className="flex flex-wrap gap-4 text-body"
           >
-            <Link href="/" className="font-semibold text-primary">
+            <Link href="/" className={`${SITE_CHROME_LINK_CLASS} font-semibold text-primary`}>
               {translator.t("storefront.nav.home")}
             </Link>
             {site.features.directory ? (
-              <Link href="/search" className="font-semibold text-primary">
+              <Link
+                href="/search"
+                className={`${SITE_CHROME_LINK_CLASS} font-semibold text-primary`}
+              >
                 {translator.t("storefront.nav.search")}
               </Link>
             ) : null}
@@ -122,7 +134,7 @@ export function SiteHeader(props: SiteChromeProps): ReactElement {
               <Link
                 key={page.pageKey}
                 href={`${PAGE_PATH_PREFIX}/${slugOfPageKey(page.pageKey)}`}
-                className="text-secondary"
+                className={`${SITE_CHROME_LINK_CLASS} text-secondary`}
               >
                 {localizedText(page.title, locale)}
               </Link>
@@ -150,7 +162,7 @@ export function SiteFooter({
             <Link
               key={page.pageKey}
               href={`${PAGE_PATH_PREFIX}/${slugOfPageKey(page.pageKey)}`}
-              className="underline"
+              className={`${SITE_CHROME_LINK_CLASS} underline`}
             >
               {localizedText(page.title, locale)}
             </Link>
