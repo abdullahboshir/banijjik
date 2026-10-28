@@ -7,7 +7,7 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
 - No secrets, passwords or `.env` values.
 
-Last updated: 2026-10-28 (evening) by Cursor (lead, `banijjik-m2`) · 4.2 A1 landing; green CI [40674399416](https://github.com/abdullahboshir/banijjik/actions/runs/40674399416) on `d9421a8d`.
+Last updated: 2026-10-28 (evening) by Cursor (lead, `banijjik-m2`) · 4.2 A1 landing; green CI [40677545705](https://github.com/abdullahboshir/banijjik/actions/runs/40677545705) on `fd5b0409`.
 
 ## 1. Where the project stands
 - **Claude plan ends 2026-10-29.** Roles from `docs/RUN-WITHOUT-CLAUDE.md`. Owner still says yes to fast-forward of `main` after green CI.
@@ -52,7 +52,7 @@ Last updated: 2026-10-28 (evening) by Cursor (lead, `banijjik-m2`) · 4.2 A1 lan
 - Pushing `main` is allowed after green CI (owner 2026-10-23, 2026-10-25, 2026-10-28).
 
 ## 6. Session log (last five)
-- **2026-10-28 evening** (Cursor, `banijjik-m2`): merged `origin/main` into 4.2 A1 (`s/4.2-a1-onto-main`). Plan check R1 + Refresh A2-1. Green CI 40674399416. Next: FF, then A2C only.
+- **2026-10-28 evening** (Cursor, `banijjik-m2`): merged `origin/main` into 4.2 A1 (`s/4.2-a1-onto-main`). Plan check R1 + Refresh A2-1. Green CI 40677545705. Next: FF, then A2C only.
 - **2026-10-28 afternoon** (Cursor, `banijjik-m2`): verified the other session's A3 mix was uncommitted and pre-C1. Ported A3+A3D+A3R+A3I onto `s/4.1-a3-publish` from `origin/main`, filled lint/typecheck/HTTP gaps, green CI, FF `main` `636bcdb9`.
 - **2026-10-28 midday** (Cursor, `banijjik-m2`): owner asked to merge 4.1 F/B/C1/C2 without a full local suite. FF B (A1+F+B, `e45f0493`), then C2 after merging that main (A2+C1+C2+F/B, `1130cfe8`). A3 left for the other session.
 - **2026-10-27 evening** (Cursor lead, `banijjik-m2`): 3.42 merged; Phase 3 F1–F4 closed.
