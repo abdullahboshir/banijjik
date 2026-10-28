@@ -11,3 +11,10 @@ operator's way to act on them.
 - `GET /platform/dead-outbox-events` and `POST …/{eventId}/replay`: an outbox event that could not be
   handed to the queue goes back to PENDING.
 - Every action is audited in the platform audit log.
+
+It also owns the platform's host routing record (card 4.2 part A1, ADR-P4-B). `HostClaim` is one global
+row per host name because a per-organization unique index cannot keep a host unique across organizations.
+`MongoHostClaims` reserves a host for a site domain and generation, disables it on removal (a 24-hour
+quarantine before anyone may claim it again) and resolves a request's Host. It stores no tenant content;
+the tenant `SiteDomain` belongs to `commerce/website` (part A2). Host names are normalized and checked
+against the platform reservations before a claim is written.

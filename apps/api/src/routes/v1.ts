@@ -68,6 +68,7 @@ import {
   buildTrialStarter,
   registerSaasBillingModels,
 } from "../modules/platform/saas-billing/index.js";
+import { registerOperationsModels } from "../modules/platform/operations/index.js";
 import { registerCustomFieldModels } from "../modules/core/custom-field/index.js";
 import { registerFileModels } from "../modules/core/file/index.js";
 import { buildCoreTenantRouters, type CoreTenantRouters } from "./core-tenant-routers.js";
@@ -118,6 +119,7 @@ export function registerModuleModels(): void {
   registerIndustryModels();
   registerSaasBillingModels();
   registerEntitlementModels();
+  registerOperationsModels();
   registerCustomFieldModels();
   registerContactModels();
   registerCatalogModels();

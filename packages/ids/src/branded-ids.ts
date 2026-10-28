@@ -48,6 +48,8 @@ export type DirectoryListingStatsId = Id<"DirectoryListingStats">;
 export type PosDeviceId = Id<"PosDevice">;
 export type PosSessionId = Id<"PosSession">;
 export type PosHeldCartId = Id<"PosHeldCart">;
+export type HostClaimId = Id<"HostClaim">;
+export type SiteDomainId = Id<"SiteDomain">;
 
 export class InvalidIdError extends Error {
   constructor() {

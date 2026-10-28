@@ -31,3 +31,49 @@ export function outboxEventNotDead(): DomainRuleError {
     details: { ruleKey: PLATFORM_RULE_KEY.OUTBOX_EVENT_NOT_DEAD },
   });
 }
+
+/** The host name cannot be a claimable site host (plan 4.2 decision 2); the caller answers 400. */
+export function invalidHostname(hostname: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.VALIDATION_ERROR,
+    details: { fields: [{ path: "hostname", messageKey: "validation.invalid_value" }], hostname },
+  });
+}
+
+/** A platform host or the SaaS zone apex: never claimable by a business. */
+export function reservedHostname(hostname: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.VALIDATION_ERROR,
+    details: { fields: [{ path: "hostname", messageKey: "validation.invalid_value" }], hostname },
+  });
+}
+
+/** Another business (or another site domain) already holds this host. */
+export class HostClaimTakenError extends DomainRuleError {
+  constructor(hostname: string) {
+    super({ code: ERROR_CODE.DUPLICATE, details: { field: "hostname", hostname } });
+    this.name = "HostClaimTakenError";
+  }
+}
+
+/** A removed host waits out its provider deletion before anyone may claim it again (plan 4.2 decision 8). */
+export class HostClaimQuarantinedError extends DomainRuleError {
+  constructor(hostname: string, quarantineUntil: Date) {
+    super({
+      code: ERROR_CODE.CONFLICT,
+      details: { field: "hostname", hostname, quarantineUntil: quarantineUntil.toISOString() },
+    });
+    this.name = "HostClaimQuarantinedError";
+  }
+}
+
+/** A late job of an older operation generation must not touch the current claim (plan 4.2 decision 6). */
+export class HostClaimGenerationMismatchError extends DomainRuleError {
+  constructor(hostname: string, operationGeneration: number) {
+    super({
+      code: ERROR_CODE.CONFLICT,
+      details: { field: "hostname", hostname, operationGeneration },
+    });
+    this.name = "HostClaimGenerationMismatchError";
+  }
+}
