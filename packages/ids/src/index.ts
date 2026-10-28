@@ -45,6 +45,6 @@ export type {
 export type { EventSessionId } from "./branded-ids.js";
 export type { ListingReportId } from "./branded-ids.js";
 export type { ListingBlockId } from "./branded-ids.js";
-export type { SitePageId } from "./branded-ids.js";
+export type { SiteId, SitePageId, WebsiteVersionId } from "./branded-ids.js";
 export type { DirectoryListingStatsId } from "./branded-ids.js";
 export type { PosDeviceId, PosHeldCartId, PosSessionId } from "./branded-ids.js";
