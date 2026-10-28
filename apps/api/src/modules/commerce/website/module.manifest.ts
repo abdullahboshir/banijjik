@@ -25,6 +25,9 @@ export const websiteManifest = defineModule({
   permissions: [
     permissionDefinition(PERMISSION_KEY.WEBSITE_PAGE_READ),
     permissionDefinition(PERMISSION_KEY.WEBSITE_PAGE_UPDATE),
+    permissionDefinition(PERMISSION_KEY.WEBSITE_SITE_READ),
+    permissionDefinition(PERMISSION_KEY.WEBSITE_SITE_UPDATE),
+    permissionDefinition(PERMISSION_KEY.WEBSITE_SITE_PUBLISH),
   ],
   routes: {
     admin: ["/orgs/:organizationId/website"],

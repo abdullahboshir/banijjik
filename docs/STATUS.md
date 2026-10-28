@@ -169,7 +169,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 ## Phase 4
 | Card | Status | Note |
 |---|---|---|
-| 4.1 theme engine | implemented (awaiting review), part A1 | branch `s/4.1-a1-theme-contracts`; handoff `docs/handoffs/4.1-a1.md`; contracts + validation for tokens, section/variant registry, policy shapes, reserved paths, contrast; `website.site.read/update/publish`; publish events. CI pending first push |
+| 4.1 theme engine | implemented (awaiting review), part A1 | branch `s/4.1-a1-theme-contracts`; handoff `docs/handoffs/4.1-a1.md`; contracts + validation for tokens, section/variant registry, policy shapes, reserved paths, contrast; `website.site.read/update/publish`; publish events. First CI failed because OWNER catalog is the union of manifests; website manifest now declares the three site keys |
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.
