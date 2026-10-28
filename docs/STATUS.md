@@ -166,8 +166,13 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | M.8 matrimony templates and notifications | M.8a merged (2026-10-24, merge check by the lead; branch CI [run 40067765091](https://github.com/abdullahboshir/banijjik/actions/runs/40067765091)); **M.8b merged** (2026-10-25, merge check by the lead: accepted; follow-ups: `payload as ListingEventPayload` cast in the handler, the test-only optional `sender` in `buildCustomerSmsNotifier`) | M.8a: two DRAFT seed templates (data only) + contracts keys + loader registration + seed tests + directory end-to-end proof; handoff `docs/handoffs/M.8a.md` (snake_case-key deviation, owner-drafted consents, the five trust-and-safety `reportReasons` seeded per the lead's change to plan decision 5, Bengali consent wording fixed). M.8b: review-result SMS (API only) — `directory.notifyReviewResult` on approve/reject, text from i18n in the business locale, reasons from the template and never the staff note, `CustomerSmsNotifier` + `CustomerSmsSent` dedupe (TTL 90 days), `directory.notifyReviewBySms` setting (default true), disabled driver is a logged no-op; handoff `docs/handoffs/M.8b.md`. Works with the `test-inbox` driver until M.9 plugs a provider |
 | M.9 owner's site live | **part A1 merged** (2026-10-26, T1 review R1 then R2 by the lead; R2 passed with three small items fixed by the lead, `docs/handoffs/M.9-api-review-R2.md`); **part A2 merged** (2026-10-26, merge check by the lead, CI https://github.com/abdullahboshir/banijjik/actions/runs/40318908194), branch `s/M.9-ui-sms-settings`, handoff `docs/handoffs/M.9-ui.md`, CI https://github.com/abdullahboshir/banijjik/actions/runs/40314958204 (green, all browser suites; known gaps in the handoff: platform bottom nav shows five entries on a phone, 502 test answer shows no outcome words) | Branch `s/M.9-api-sms-gateways`; handoff `docs/handoffs/M.9-api.md`; review `docs/handoffs/M.9-api-review-R1.md` at `2054dc49`; latest main rebase and final green CI/card check pending. A2 screens follow A1; Part B remains owner go-live work. |
 
-## Phases 4–8
-Track here once Phase 3 is done (copy the cards from the roadmap).
+## Phase 4
+| Card | Status | Note |
+|---|---|---|
+| 4.3 shop/booking/guest checkout | implemented (awaiting review), part A0, CI https://github.com/abdullahboshir/banijjik/actions/runs/40635212093 | Kernel replay boundary: STOREFRONT namespace + paired resolveNamespace/authorizeReplay. Branch `s/4.3-a0-replay-boundary`; handoff `docs/handoffs/4.3-a0.md`. A1–V and COD parts remain. |
+
+## Phases 5–8
+Track here once Phase 4 is done (copy the cards from the roadmap).
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.
