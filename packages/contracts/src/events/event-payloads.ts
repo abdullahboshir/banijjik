@@ -66,6 +66,7 @@ import type { OrderEventPayload, SalesReturnEventPayload } from "../sales/sales-
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 import {
   WEBSITE_EVENT_TYPE,
+  type DomainEventPayload,
   type SitePageUpdatedPayload,
   type SitePublicationPayload,
 } from "../website/index.js";
@@ -223,5 +224,9 @@ export interface EventPayloadMap {
   readonly [WEBSITE_EVENT_TYPE.PAGE_UPDATED]: SitePageUpdatedPayload;
   readonly [WEBSITE_EVENT_TYPE.SITE_PUBLISHED]: SitePublicationPayload;
   readonly [WEBSITE_EVENT_TYPE.SITE_UNPUBLISHED]: SitePublicationPayload;
+  readonly [WEBSITE_EVENT_TYPE.DOMAIN_REQUESTED]: DomainEventPayload;
+  readonly [WEBSITE_EVENT_TYPE.DOMAIN_VERIFICATION_REQUESTED]: DomainEventPayload;
+  readonly [WEBSITE_EVENT_TYPE.DOMAIN_REMOVAL_REQUESTED]: DomainEventPayload;
+  readonly [WEBSITE_EVENT_TYPE.DOMAIN_STATE_CHANGED]: DomainEventPayload;
   readonly [POS_EVENT_TYPE.REGISTER_CLOSED]: PosRegisterClosedPayload;
 }

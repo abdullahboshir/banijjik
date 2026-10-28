@@ -6,6 +6,19 @@ export { sitePageKeyParamsSchema, sitePageUpsertRequestSchema } from "./website-
 export { saveSiteDraftRequestSchema, siteDesignSchema } from "./site-design.schema.js";
 export { siteEditPolicySchema } from "./site-policy.schema.js";
 export {
+  createSiteDomainRequestSchema,
+  removeSiteDomainQuerySchema,
+  selectCanonicalSiteDomainRequestSchema,
+  siteDomainIdParamsSchema,
+  siteDomainListQuerySchema,
+  siteDomainListResponseSchema,
+  siteDomainResponseSchema,
+  verifySiteDomainRequestSchema,
+  type CreateSiteDomainBody,
+  type SelectCanonicalSiteDomainBody,
+  type VerifySiteDomainBody,
+} from "./site-domain.schema.js";
+export {
   publishedSiteDesignSchema,
   publishSiteRequestSchema,
   restoreSiteRequestSchema,

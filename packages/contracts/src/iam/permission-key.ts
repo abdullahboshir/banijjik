@@ -131,6 +131,7 @@ export const PERMISSION_KEY = {
   WEBSITE_SITE_READ: "website.site.read",
   WEBSITE_SITE_UPDATE: "website.site.update",
   WEBSITE_SITE_PUBLISH: "website.site.publish",
+  WEBSITE_DOMAIN_MANAGE: "website.domain.manage",
   POS_DEVICE_MANAGE: "pos.device.manage",
   POS_SESSION_OPEN: "pos.session.open",
   POS_SALE_CREATE: "pos.sale.create",
@@ -202,4 +203,5 @@ export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
   PERMISSION_KEY.ACCOUNTING_LEDGER_READ,
   PERMISSION_KEY.WEBSITE_SITE_UPDATE,
   PERMISSION_KEY.WEBSITE_SITE_PUBLISH,
+  PERMISSION_KEY.WEBSITE_DOMAIN_MANAGE,
 ];

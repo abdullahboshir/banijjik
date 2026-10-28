@@ -15,6 +15,14 @@ export {
   type StorefrontSiteResponse,
 } from "./website-contracts.js";
 export { SITE_PAGE_KEY, type SitePageKey } from "./site-page-key.js";
+export {
+  SITE_DOMAIN_STATUS,
+  type DnsInstruction,
+  type DomainEventPayload,
+  type SiteDomainListResponse,
+  type SiteDomainResponse,
+  type SiteDomainStatus,
+} from "./site-domain.js";
 export type { LocalizedText } from "../platform/industry-template.js";
 export { WEBSITE_EVENT_TYPE, type WebsiteEventType } from "./website-event-type.js";
 export {

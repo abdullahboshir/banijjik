@@ -36,6 +36,7 @@ describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
         PERMISSION_KEY.SMS_LOG_READ,
         PERMISSION_KEY.WEBSITE_SITE_UPDATE,
         PERMISSION_KEY.WEBSITE_SITE_PUBLISH,
+        PERMISSION_KEY.WEBSITE_DOMAIN_MANAGE,
       ].sort(),
     );
   });
@@ -43,7 +44,7 @@ describe("ORGANIZATION_WIDE_PERMISSION_KEYS", () => {
 
 describe("PERMISSION_KEY", () => {
   it("lists the keys of every built module", () => {
-    expect(Object.values(PERMISSION_KEY)).toHaveLength(139);
+    expect(Object.values(PERMISSION_KEY)).toHaveLength(140);
     expect(Object.values(PERMISSION_KEY)).toEqual(
       expect.arrayContaining([
         "bookkeeping.account.read",
@@ -115,7 +116,7 @@ describe("PERMISSION_KEY", () => {
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.credit.purchase.read");
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.credit.purchase.verify");
     expect(PERMISSION_LABEL_MESSAGE_KEYS).toContain("permission.payment.payment.receive");
-    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(139);
+    expect(PERMISSION_LABEL_MESSAGE_KEYS).toHaveLength(140);
   });
 });
 
