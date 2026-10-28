@@ -18,6 +18,7 @@ function sale(overrides: Partial<PosSaleResponse["order"]> = {}): PosSaleRespons
           nameSnapshot: "Milk tea (Large)",
           quantity: 2,
           lineNetTotal: { amount: 30_000, currency: BDT },
+          performedByMemberId: null,
         },
       ],
       totals: {
@@ -54,12 +55,36 @@ describe("receipt model", () => {
     expect(model.documentNumber).toBe("INV-0007");
     expect(model.businessDate).toBe("2026-10-25");
     expect(model.lines).toEqual([
-      { name: "Milk tea (Large)", quantity: 2, lineNetTotal: { amount: 30_000, currency: BDT } },
+      {
+        name: "Milk tea (Large)",
+        quantity: 2,
+        lineNetTotal: { amount: 30_000, currency: BDT },
+        performerName: null,
+      },
     ]);
     expect(model.grandTotal).toEqual({ amount: 30_000, currency: BDT });
     expect(model.payments).toEqual([{ method: "CASH", amount: { amount: 30_000, currency: BDT } }]);
     expect(model.changeDue).toEqual({ amount: 2_000, currency: BDT });
     expect(model.footer).toBe("Thank you");
+  });
+
+  it("prints the performer name under a service line when the cashier named one", () => {
+    const memberId = "0190a000-0000-7000-8000-0000000000a1";
+    const base = sale();
+    const first = base.order.lines[0];
+    if (first === undefined) throw new Error("the fixture sale has no lines");
+    const model = buildReceiptModel(
+      {
+        ...base,
+        order: {
+          ...base.order,
+          lines: [{ ...first, nameSnapshot: "Haircut", performedByMemberId: memberId }],
+        },
+      },
+      { [memberId]: "Mim" },
+    );
+
+    expect(model.lines[0]?.performerName).toBe("Mim");
   });
 
   it("falls back to the order number, then the order id, before an invoice number exists", () => {

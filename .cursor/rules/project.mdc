@@ -1,9 +1,9 @@
 ---
-description: banijjik project rules (single source: AGENTS.md)
+description: banijjik project rules (AGENTS.md + speed rules)
 alwaysApply: true
 ---
 
-Follow @AGENTS.md exactly. It is the only rule file for this repo; do not apply rules from `.agent/` or the `archive/v0` branch.
+Follow @AGENTS.md exactly. Also follow @.cursor/rules/speed.mdc (speed rules). Do not apply rules from `.agent/` or the `archive/v0` branch.
 
 Then read @docs/RUN-WITHOUT-CLAUDE.md: the section for your role (lead, planner, implementer, reviewer) says how the work runs without a Claude lead.
 

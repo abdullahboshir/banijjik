@@ -6,6 +6,7 @@ import { Button, formatMoney, type DisplayLocale } from "@banijjik/ui";
 import { moneyFromInput } from "@banijjik/web-client";
 import { useState, type ReactElement } from "react";
 import type { CartLine } from "./cart";
+import type { TillCustomer } from "./till-customer";
 import type { PosLabels } from "./pos-labels";
 import { CustomerBlock } from "./pos-sheet-customer-block";
 import { useSheetCheckout, type SaleCustomerInput, type SheetCheckout } from "./pos-sheet-checkout";
@@ -24,6 +25,9 @@ export interface PosPaymentSheetProps {
   readonly labels: PosLabels;
   /** Customer lookup needs contact and store-credit read; without them the sale is anonymous. */
   readonly canFindCustomer: boolean;
+  readonly initialCustomer: TillCustomer | null;
+  readonly onCustomerChange: (customer: TillCustomer | null) => void;
+  readonly priceOverrideToken: string | null;
   readonly onPaid: (sale: PosSaleResponse) => void;
   readonly onBack: () => void;
 }
@@ -104,9 +108,9 @@ function SheetFooter(props: {
   const isOnline = useOnlineStatus();
   return (
     <>
-      {checkout.saleFailed ? (
+      {checkout.saleFailed !== undefined ? (
         <p role="alert" className="text-body text-danger">
-          {labels.saleFailed}
+          {checkout.saleFailed}
         </p>
       ) : null}
       <SheetActions
@@ -159,6 +163,56 @@ function useSheetTender(payableMinor: number, currency: CurrencyCode, creditSale
   return { rows, setRows, cashText, setCashText, plan, tender };
 }
 
+function tenderEditorOf(input: {
+  readonly creditSale: boolean;
+  readonly labels: PosLabels;
+  readonly locale: DisplayLocale;
+  readonly currency: CurrencyCode;
+  readonly tender: ReturnType<typeof useSheetTender>["tender"];
+  readonly rows: readonly DraftTenderRow[];
+  readonly cashText: string;
+  readonly onRowsChange: (rows: readonly DraftTenderRow[]) => void;
+  readonly onCashTextChange: (value: string) => void;
+}): ReactElement | null {
+  if (input.creditSale) return null;
+  const { tender } = input;
+  return (
+    <PosTenderEditor
+      labels={input.labels}
+      locale={input.locale}
+      currency={input.currency}
+      cashDueMinor={tender.cashDueMinor}
+      rows={input.rows}
+      cashText={input.cashText}
+      changeMinor={tender.plan.ok ? tender.plan.changeMinor : 0}
+      refusal={tender.plan.ok ? null : tender.plan.refusal}
+      onRowsChange={input.onRowsChange}
+      onCashTextChange={input.onCashTextChange}
+    />
+  );
+}
+
+function usePaymentSheetState(props: {
+  readonly organizationId: string;
+  readonly currency: CurrencyCode;
+  readonly totalMinor: number;
+  readonly lines: readonly CartLine[];
+  readonly onPaid: (sale: PosSaleResponse) => void;
+  readonly priceOverrideToken: string | null;
+  readonly initialCustomer: TillCustomer | null;
+  readonly onCustomerChange: (customer: TillCustomer | null) => void;
+}) {
+  const checkout = useSheetCheckout(props);
+  const sheet = useSheetCustomer({
+    totalMinor: props.totalMinor,
+    currency: props.currency,
+    initialCustomer: props.initialCustomer,
+    onCustomerChange: props.onCustomerChange,
+  });
+  const tender = useSheetTender(sheet.payableMinor, props.currency, sheet.creditSale);
+  return { checkout, sheet, tender };
+}
+
 function PaymentSheetBody(props: {
   readonly organizationId: string;
   readonly currency: CurrencyCode;
@@ -167,17 +221,26 @@ function PaymentSheetBody(props: {
   readonly labels: PosLabels;
   readonly totalMinor: number;
   readonly canFindCustomer: boolean;
+  readonly initialCustomer: TillCustomer | null;
+  readonly onCustomerChange: (customer: TillCustomer | null) => void;
+  readonly priceOverrideToken: string | null;
   readonly onPaid: (sale: PosSaleResponse) => void;
   readonly onBack: () => void;
 }): ReactElement {
-  const { organizationId, currency, locale, lines, labels, totalMinor, onPaid, onBack } = props;
-  const checkout = useSheetCheckout(organizationId, lines, onPaid);
-  const sheet = useSheetCustomer(totalMinor, currency);
-  const { rows, setRows, cashText, setCashText, plan, tender } = useSheetTender(
-    sheet.payableMinor,
+  const { organizationId, currency, locale, labels, totalMinor, onBack } = props;
+  const { checkout, sheet, tender: tenderState } = usePaymentSheetState(props);
+  const { rows, setRows, cashText, setCashText, plan, tender } = tenderState;
+  const tenderEditor = tenderEditorOf({
+    creditSale: sheet.creditSale,
+    labels,
+    locale,
     currency,
-    sheet.creditSale,
-  );
+    tender,
+    rows,
+    cashText,
+    onRowsChange: setRows,
+    onCashTextChange: setCashText,
+  });
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
       <SheetTotals
@@ -195,20 +258,7 @@ function PaymentSheetBody(props: {
         labels={labels}
         sheet={sheet}
       />
-      {sheet.creditSale ? null : (
-        <PosTenderEditor
-          labels={labels}
-          locale={locale}
-          currency={currency}
-          cashDueMinor={tender.cashDueMinor}
-          rows={rows}
-          cashText={cashText}
-          changeMinor={tender.plan.ok ? tender.plan.changeMinor : 0}
-          refusal={tender.plan.ok ? null : tender.plan.refusal}
-          onRowsChange={setRows}
-          onCashTextChange={setCashText}
-        />
-      )}
+      {tenderEditor}
       <SheetFooter
         labels={labels}
         plan={plan}
@@ -260,6 +310,9 @@ export function PosPaymentSheet(props: PosPaymentSheetProps): ReactElement {
       labels={labels}
       totalMinor={quote.totalMinor}
       canFindCustomer={props.canFindCustomer}
+      initialCustomer={props.initialCustomer}
+      onCustomerChange={props.onCustomerChange}
+      priceOverrideToken={props.priceOverrideToken}
       onPaid={onPaid}
       onBack={onBack}
     />

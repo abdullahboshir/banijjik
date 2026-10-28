@@ -73,7 +73,8 @@ Inputs: the org's `PlatformSubscription`, its base and add-on `Package`s, its `M
    final set, filtered by kinds; menu and tools are filtered again per user by permission
 ```
 
-- Output `ResolvedOrgConfig`: `{ organizationId, configVersion, registryHash, accessMode, modules, kinds, limits, menu, botTools, storefrontSections, settings, fields, terms }` (adds `registryHash` and `accessMode` to `09 §4.6`).
+- Output `ResolvedOrgConfig`: `{ organizationId, configVersion, registryHash, accessMode, modules, kinds, limits, menu, botTools, storefrontSections, websiteTemplateKeys, settings, fields, terms }` (adds `registryHash` and `accessMode` to `09 §4.6`).
+- `websiteTemplateKeys` is the only template-owned projection in that list: it comes from the industry template's own `websiteTemplateKeys`, so the website editor can ask which site templates this business may adopt without reading `industry` (4.1 A3R, ADR-033).
 - Cache key: `org:{organizationId}:config:{configVersion}:{registryHash}:{packageVersions}:{templateVersion}`. Editing a package or a template therefore changes the key for every org that uses it, without a fan-out job.
 - Platform invariant on save (not at resolve time): a base package's modules, plus SYSTEM and CORE, must be closed under `dependsOn`. A package that would ship a module without its dependency cannot be saved.
 

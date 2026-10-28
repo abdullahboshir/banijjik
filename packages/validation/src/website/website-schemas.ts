@@ -30,6 +30,7 @@ export const sitePageUpsertRequestSchema = z
     body: pageBodySchema,
     isPublished: z.boolean(),
     version: z.number().int().nonnegative(),
+    siteVersion: z.number().int().nonnegative().optional(),
   })
   .refine((page) => !page.isPublished || page.title.bn.length > 0 || page.title.en.length > 0, {
     path: ["title"],

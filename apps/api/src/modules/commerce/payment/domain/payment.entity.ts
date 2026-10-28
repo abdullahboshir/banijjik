@@ -93,6 +93,10 @@ export class Payment {
     return this.props.contactId;
   }
 
+  get posSessionId(): string | null | undefined {
+    return this.props.posSessionId;
+  }
+
   get receivedByMemberId(): string {
     return this.props.receivedByMemberId;
   }

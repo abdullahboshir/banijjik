@@ -267,7 +267,7 @@ All in the platform DB, all read through `resolveOrgConfig` (cached per `configV
 | **SettingValue** | `core/settings` | org (+ optional `locationId`) | `settingKey`, `value`, `locationId?`, `version` | Key must exist in the registry; `locationId` only for keys that allow a location override (ADR-016). |
 | **TermOverride** (versioned) | `core/settings` | org (tenant DB) | `termOverrideId`, `termKey`, `locale` (`bn` or `en`), `text` (1 to 40), `version` | Unique `(organizationId, termKey, locale)`. Allowed keys are the template's `configuration.terms`. Each language falls back to the template when no override exists (ADR-104). |
 
-`ResolvedOrgConfig` (output, not stored): `{ organizationId, configVersion, registryHash, accessMode, modules, kinds, fields, settings, terms, menu, botTools, storefrontSections, limits }`. `terms` is both languages per key. `settings` in `/me/config` is the client-visible organization-level subset. `fields` is the effective custom fields of the effective modules. Algorithm: `10 §3`. ADR-104.
+`ResolvedOrgConfig` (output, not stored): `{ organizationId, configVersion, registryHash, accessMode, modules, kinds, fields, settings, terms, menu, botTools, storefrontSections, websiteTemplateKeys, limits }`. `terms` is both languages per key. `settings` in `/me/config` is the client-visible organization-level subset. `fields` is the effective custom fields of the effective modules. `websiteTemplateKeys` is the industry template's own list, projected so website code never reads the industry key (4.1 A3R). Algorithm: `10 §3`. ADR-104.
 
 ---
 

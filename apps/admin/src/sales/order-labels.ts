@@ -166,6 +166,7 @@ function newOrderLabelsOf(t: T): OrderNewLabels {
 function lineLabelsOf(t: T): OrderLineLabels {
   return {
     product: t("orders.line.product"),
+    kindService: t("orders.line.kindService"),
     performer: t("orders.line.performer"),
     performerNone: t("orders.line.performerNone"),
     performerLoadFailed: t("orders.line.performerLoadFailed"),

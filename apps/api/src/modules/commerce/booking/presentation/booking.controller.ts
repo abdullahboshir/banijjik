@@ -10,7 +10,7 @@ import type {
   ResourceTimeOffCreateBody,
   ResourceUpdateBody,
 } from "@banijjik/validation/booking";
-import type { RequestHandler } from "express";
+import type { RequestHandler, Response } from "express";
 import { readTenantCaller } from "../../../../kernel/access/index.js";
 import { sendData } from "../../../../kernel/http/index.js";
 import { asId, type BookingId, type OrganizationId, type ResourceId } from "@banijjik/ids";
@@ -40,6 +40,10 @@ import type {
 
 const HTTP_CREATED = 201;
 
+function validatedQuery<Query>(response: Response): Query {
+  return response.locals["validated"].query as Query;
+}
+
 export class BookingController {
   constructor(
     private readonly useCases: {
@@ -66,7 +70,7 @@ export class BookingController {
   ) {}
 
   readonly availability: RequestHandler = async (request, response) => {
-    const query = request.query as unknown as AvailabilityQuery;
+    const query = validatedQuery<AvailabilityQuery>(response);
     const { organizationId, allowedLocationIds } = readTenantCaller();
     const slots = await this.useCases.getAvailability.execute({
       organizationId: asId<OrganizationId>(organizationId),
@@ -77,7 +81,7 @@ export class BookingController {
   };
 
   readonly list: RequestHandler = async (request, response) => {
-    const query = request.query as unknown as BookingListQuery;
+    const query = validatedQuery<BookingListQuery>(response);
     const { organizationId, allowedLocationIds } = readTenantCaller();
     const page = await this.useCases.listBookings.execute({
       organizationId: asId<OrganizationId>(organizationId),
@@ -233,7 +237,7 @@ export class BookingController {
   };
 
   readonly listResources: RequestHandler = async (request, response) => {
-    const query = request.query as unknown as ResourceListQuery;
+    const query = validatedQuery<ResourceListQuery>(response);
     const page = await this.useCases.listResources.execute(query);
     sendData(response, page.items, {
       meta: { page: query.page, limit: query.limit, hasNext: page.hasNext },

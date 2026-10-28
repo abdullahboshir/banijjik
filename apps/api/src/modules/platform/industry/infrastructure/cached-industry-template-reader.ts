@@ -30,6 +30,7 @@ export class CachedIndustryTemplateReader implements IndustryTemplateReader {
       enabledKinds: template.enabledKinds,
       contactRoleKeys: template.configuration.contactRoleKeys,
       resourceTypes: template.configuration.resourceTypes,
+      websiteTemplateKeys: template.configuration.websiteTemplateKeys,
       templateVersion: template.version,
     };
     this.dependencies.cache.set(templateKey, view);

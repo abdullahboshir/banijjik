@@ -1,7 +1,10 @@
 import {
+  PAGE_PUBLICATION_STATE,
   SITE_PAGE_KEY,
+  type PagePublicationState,
   type SitePageKey,
   type SitePageResponse,
+  type StaticPageDraft,
   type StorefrontSitePageResponse,
   type StorefrontSitePageSummary,
 } from "@banijjik/contracts/website";
@@ -9,8 +12,23 @@ import type { SitePage } from "../domain/site-page.entity.js";
 
 const EMPTY_TEXT = { bn: "", en: "" } as const;
 
+export const EMPTY_SITE_PAGE_TEXT = EMPTY_TEXT;
+
+export interface SitePagePublication {
+  readonly publicationState: PagePublicationState;
+  readonly siteVersion: number | null;
+}
+
+const LEGACY_PUBLICATION: SitePagePublication = {
+  publicationState: PAGE_PUBLICATION_STATE.LEGACY,
+  siteVersion: null,
+};
+
 /** A page that was never saved reads as an empty, unpublished page with version 0 (M.6a decision 1). */
-export function blankSitePageResponse(pageKey: SitePageKey): SitePageResponse {
+export function blankSitePageResponse(
+  pageKey: SitePageKey,
+  publication: SitePagePublication = LEGACY_PUBLICATION,
+): SitePageResponse {
   return {
     pageKey,
     title: EMPTY_TEXT,
@@ -18,10 +36,15 @@ export function blankSitePageResponse(pageKey: SitePageKey): SitePageResponse {
     isPublished: false,
     version: 0,
     updatedAt: null,
+    publicationState: publication.publicationState,
+    siteVersion: publication.siteVersion,
   };
 }
 
-export function toSitePageResponse(page: SitePage): SitePageResponse {
+export function toSitePageResponse(
+  page: SitePage,
+  publication: SitePagePublication = LEGACY_PUBLICATION,
+): SitePageResponse {
   return {
     pageKey: page.pageKey,
     title: page.title,
@@ -29,6 +52,27 @@ export function toSitePageResponse(page: SitePage): SitePageResponse {
     isPublished: page.isPublished,
     version: page.version,
     updatedAt: page.updatedAt.toISOString(),
+    publicationState: publication.publicationState,
+    siteVersion: publication.siteVersion,
+  };
+}
+
+/** Site-backed admin row. `version` is not a CAS token once a Site exists. */
+export function toSitePageResponseFromDraft(input: {
+  readonly page: StaticPageDraft;
+  readonly publicationState: PagePublicationState;
+  readonly siteVersion: number;
+  readonly updatedAt: Date;
+}): SitePageResponse {
+  return {
+    pageKey: input.page.pageKey,
+    title: input.page.title,
+    body: input.page.body,
+    isPublished: input.page.includeInPublication,
+    version: 0,
+    updatedAt: input.updatedAt.toISOString(),
+    publicationState: input.publicationState,
+    siteVersion: input.siteVersion,
   };
 }
 

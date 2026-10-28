@@ -21,9 +21,10 @@ function aFile(purpose: (typeof FILE_PURPOSE)[keyof typeof FILE_PURPOSE]): FileA
 }
 
 describe("FileAsset", () => {
-  it("makes logos and offering images public and everything else private, whatever is asked", () => {
+  it("makes logos, offering images and website images public and everything else private, whatever is asked", () => {
     expect(aFile(FILE_PURPOSE.LOGO).visibility).toBe(FILE_VISIBILITY.PUBLIC);
     expect(aFile(FILE_PURPOSE.OFFERING_IMAGE).visibility).toBe(FILE_VISIBILITY.PUBLIC);
+    expect(aFile(FILE_PURPOSE.WEBSITE_IMAGE).visibility).toBe(FILE_VISIBILITY.PUBLIC);
     expect(aFile(FILE_PURPOSE.CUSTOM_FIELD_IMAGE).visibility).toBe(FILE_VISIBILITY.PRIVATE);
     expect(aFile(FILE_PURPOSE.CUSTOM_FIELD_FILE).visibility).toBe(FILE_VISIBILITY.PRIVATE);
     expect(aFile(FILE_PURPOSE.ATTACHMENT).visibility).toBe(FILE_VISIBILITY.PRIVATE);

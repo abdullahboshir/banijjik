@@ -1,5 +1,6 @@
 "use client";
 
+import { OFFERING_KIND } from "@banijjik/contracts";
 import type { OfferingListItem, OfferingResponse } from "@banijjik/contracts/catalog";
 import { Button, FormField, TextInput, formatMoney, type DisplayLocale } from "@banijjik/ui";
 import { useEffect, useState, type ReactElement } from "react";
@@ -15,6 +16,8 @@ export interface ProductPickerProps {
   readonly labels: OrderLineLabels;
   readonly locale: DisplayLocale;
   readonly disabled?: boolean | undefined;
+  /** Instant-sale forms search services as well as products (plan 3.40 decision 13). */
+  readonly includeServices?: boolean | undefined;
   readonly onChange: (offering: OfferingResponse | undefined) => void;
 }
 
@@ -24,11 +27,13 @@ interface SearchState {
   readonly hasFailed: boolean;
 }
 
-function useProductSearch(
-  organizationId: string,
-  query: string,
-  hasSelection: boolean,
-): SearchState {
+function useProductSearch(input: {
+  readonly organizationId: string;
+  readonly query: string;
+  readonly hasSelection: boolean;
+  readonly includeServices: boolean;
+}): SearchState {
+  const { organizationId, query, hasSelection, includeServices } = input;
   const [state, setState] = useState<SearchState>({
     results: [],
     isSearching: false,
@@ -45,7 +50,7 @@ function useProductSearch(
       async function run(): Promise<void> {
         setState({ results: [], isSearching: true, hasFailed: false });
         try {
-          const results = await searchProducts(organizationId, text);
+          const results = await searchProducts(organizationId, text, includeServices);
           if (isCurrent) setState({ results, isSearching: false, hasFailed: false });
         } catch {
           if (isCurrent) setState({ results: [], isSearching: false, hasFailed: true });
@@ -57,13 +62,14 @@ function useProductSearch(
       isCurrent = false;
       window.clearTimeout(timer);
     };
-  }, [organizationId, query, hasSelection]);
+  }, [organizationId, query, hasSelection, includeServices]);
   return state;
 }
 
 function ResultList(props: {
   readonly results: readonly OfferingListItem[];
   readonly locale: DisplayLocale;
+  readonly kindService: string;
   readonly onPick: (item: OfferingListItem) => void;
 }): ReactElement {
   return (
@@ -76,6 +82,9 @@ function ResultList(props: {
             onClick={() => props.onPick(item)}
           >
             <span className="min-w-0 break-words">{item.name}</span>
+            {item.kind === OFFERING_KIND.SERVICE ? (
+              <span className="shrink-0 text-small text-secondary">{props.kindService}</span>
+            ) : null}
             {item.priceFrom ? (
               <span className="shrink-0 font-money text-small text-secondary">
                 {formatMoney(item.priceFrom, { locale: props.locale })}
@@ -154,7 +163,14 @@ function PickerOutcome(
     );
   }
   if (search.results.length > 0) {
-    return <ResultList results={search.results} locale={props.locale} onPick={props.onPick} />;
+    return (
+      <ResultList
+        results={search.results}
+        locale={props.locale}
+        kindService={labels.kindService}
+        onPick={props.onPick}
+      />
+    );
   }
   const showEmpty = props.hasText && !search.isSearching && !search.hasFailed;
   return showEmpty ? <p className="text-small text-secondary">{labels.noResults}</p> : null;
@@ -168,7 +184,12 @@ export function ProductPicker(props: ProductPickerProps): ReactElement {
     setQuery(offering.name);
     props.onChange(offering);
   });
-  const search = useProductSearch(props.organizationId, query, props.selected !== undefined);
+  const search = useProductSearch({
+    organizationId: props.organizationId,
+    query,
+    hasSelection: props.selected !== undefined,
+    includeServices: props.includeServices === true,
+  });
 
   useEffect(() => {
     if (props.selected !== undefined) setQuery(props.selected.name);

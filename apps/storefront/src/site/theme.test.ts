@@ -5,7 +5,10 @@ describe("site theme", () => {
   it("writes the business colours into the brand tokens and ignores a colour that is not a hex code", () => {
     const style = themeStyle({ primary: "#1F6F5C", accent: "teal" });
 
-    expect(style).toEqual({ "--color-brand-primary": "#1F6F5C" });
+    expect(style).toEqual({
+      "--color-brand-primary": "#1F6F5C",
+      "--site-color-primary": "#1F6F5C",
+    });
   });
 
   it("keeps the platform colours when the business has none", () => {

@@ -15,6 +15,7 @@ export interface SaleBodyInput {
   readonly contactId: string | null;
   /** Store credit applied before the payments; null when none is used. */
   readonly storeCreditUse: Money | null;
+  readonly priceOverrideToken?: string | null;
 }
 
 /**
@@ -28,11 +29,16 @@ export function buildSaleBody(input: SaleBodyInput): PosSaleBody {
       variantId: line.variantId,
       quantity: line.quantity,
       modifierOptionIds: [],
+      ...(line.performedByMemberId === null
+        ? {}
+        : { performedByMemberId: line.performedByMemberId }),
+      ...(line.unitPriceOverride === null ? {} : { unitPriceOverride: line.unitPriceOverride }),
     })),
     payments: input.payments.map((payment) => ({ method: payment.method, amount: payment.amount })),
   };
   if (input.cashTendered !== null) body.cashTendered = input.cashTendered;
   if (input.contactId !== null) body.contactId = input.contactId;
   if (input.storeCreditUse !== null) body.storeCreditUse = input.storeCreditUse;
+  if (input.priceOverrideToken) body.approvalTokens = { priceOverride: input.priceOverrideToken };
   return body;
 }

@@ -564,6 +564,8 @@ describe("Payment API", () => {
     const reversed = reverseRes.body.data;
     expect(reversed.direction).toBe(PAYMENT_DIRECTION.REVERSAL);
     expect(reversed.reversesPaymentId).toBe(payment.paymentId);
+    expect(reversed.approval.approverMemberId).toBeTypeOf("string");
+    expect(reversed.approval.approverUserId).toBeUndefined();
 
     // Second reversal attempt fails with 409
     const secondApprovalToken = await getApprovalToken(world, {

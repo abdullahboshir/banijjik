@@ -14,6 +14,8 @@ function permissiveView(templateVersion: number): IndustryTemplateView {
   return {
     allowedModuleKeys: MODULE_KEY_VALUES,
     contactRoleKeys: Object.values(CONTACT_ROLE),
+    // A template with no authored site template: a card that adopts one sets its own keys (4.4).
+    websiteTemplateKeys: [],
     enabledKinds: Object.values(OFFERING_KIND),
     templateVersion,
   };

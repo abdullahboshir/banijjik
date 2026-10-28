@@ -187,7 +187,7 @@ export async function resolveRefundApproval(
   });
   return {
     approvalId: consumed.approvalTokenId,
-    approverUserId: consumed.approverMemberId,
+    approverMemberId: consumed.approverMemberId,
     approvedAt: consumed.approvedAt.toISOString(),
   };
 }

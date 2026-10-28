@@ -1,5 +1,5 @@
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
-import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
+import type { PermissionGate, PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
 import type { StorageConfig } from "../../../config/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import type { FileStorage } from "./application/ports/file-ports.js";
@@ -30,6 +30,7 @@ export type { ReadUploadOptions } from "./presentation/read-upload.js";
 export interface FileModuleDependencies {
   readonly clock: Clock;
   readonly permission: PermissionMiddlewareFactory;
+  readonly websiteEdit: Pick<PermissionGate, "locationsWith">;
   readonly storage: StorageConfig;
   /** Tests pass a lower quota or a shorter upload timeout, or their own storage. */
   readonly overrides?: {
@@ -80,6 +81,7 @@ export function buildFileModule(dependencies: FileModuleDependencies): {
       unitOfWork: new MongoUnitOfWork(),
       clock: dependencies.clock,
       quotaBytes: overrides.quotaBytes ?? ORGANIZATION_STORAGE_QUOTA_BYTES,
+      websiteEdit: dependencies.websiteEdit,
     }),
     getFile: new GetFileUseCase(assets),
     readContent: new ReadFileContentUseCase({ assets, storage }),

@@ -34,9 +34,12 @@ function ReceiptLines(props: {
   return (
     <ul className="flex flex-col gap-1">
       {model.lines.map((line, index) => (
-        <li key={`${line.name}-${String(index)}`} className="flex justify-between gap-2">
-          <span>{`${line.name} × ${String(line.quantity)}`}</span>
-          <span>{moneyText(line.lineNetTotal, locale)}</span>
+        <li key={`${line.name}-${String(index)}`} className="flex flex-col gap-0.5">
+          <span className="flex justify-between gap-2">
+            <span>{`${line.name} × ${String(line.quantity)}`}</span>
+            <span>{moneyText(line.lineNetTotal, locale)}</span>
+          </span>
+          {line.performerName === null ? null : <span>{line.performerName}</span>}
         </li>
       ))}
     </ul>

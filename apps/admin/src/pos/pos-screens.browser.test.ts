@@ -1,40 +1,59 @@
 import {
+  POS_ALLOW_CREDIT_SALE_SETTING_KEY,
   POS_SESSION_STATUS,
+  type PosDeviceResponse,
   type PosSessionListResponse,
   type PosZReport,
 } from "@banijjik/contracts/pos";
+import { formatMoney } from "@banijjik/ui";
 import type { ElementHandle, Page } from "puppeteer-core";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { bodyText, gotoWhenHydrated, message, waitForText } from "../test-support/browser-helpers";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  bodyText,
+  gotoWhenHydrated,
+  message,
+  waitForText,
+  waitForTextIn,
+} from "../test-support/browser-helpers";
 import {
   clickByName,
   closePage,
   openPage,
   PHONE_VIEWPORT,
   signInWithCookies,
+  waitForDialogSettled,
 } from "../test-support/browser-page";
 import { INITIAL_JS_BUDGET_KIB, measureInitialJs, toKiB } from "../test-support/initial-js-size";
+import { publishTemplate } from "../test-support/browser-seed";
 import {
   API_PORT,
   ADMIN_ORIGIN,
   callApi,
   organizationIdOf,
-  seedOrganization,
+  seedOrganizationWithBody,
   seedPerson,
   startBrowserStack,
   type BrowserStack,
   type SeededPerson,
 } from "../test-support/browser-stack";
+import salonFixture from "../test-support/salon-industry-fixture.json" with { type: "json" };
 
 const ORG_SLUG = "till-shop";
-const BUSINESS_NAME = "কাউন্টার স্টোর";
+const BUSINESS_NAME = "কাউন্টার সেলুন";
 const PRODUCT_NAME = "চায়ের কাপ";
+const SERVICE_NAME = "হেয়ারকাট";
 const PRODUCT_PRICE_MINOR = 4000;
-/** Two cups at ৳40 each: the bill is ৳80, paid with ৳100 in cash, so the change is ৳20. */
-const CUPS_SOLD = 2;
-const BILL_MINOR = PRODUCT_PRICE_MINOR * CUPS_SOLD;
+const OVERRIDE_PRICE_MINOR = 2000;
+/** Same string the receipt prints (`formatMoney` + bn locale): ৳ plus a thin space, Western digits. */
+const OVERRIDE_RECEIPT_PRICE = formatMoney(
+  { amount: OVERRIDE_PRICE_MINOR, currency: "BDT" },
+  { locale: "bn" },
+);
+const SERVICE_PRICE_MINOR = 3000;
+/** One haircut at ৳30 and one cup at ৳40: the bill is ৳70, paid with ৳100, so the change is ৳30. */
+const BILL_MINOR = SERVICE_PRICE_MINOR + PRODUCT_PRICE_MINOR;
 const CASH_RECEIVED_TEXT = "100";
-const COUNTED_CASH_TEXT = "80";
+const COUNTED_CASH_TEXT = "70";
 /** The same budget as the other admin screens; the sheets, the close screen and the receipt load lazily. */
 const POS_BUDGET_KIB = INITIAL_JS_BUDGET_KIB;
 const TOUCH_TARGET_PX = 56;
@@ -46,16 +65,42 @@ let owner: SeededPerson;
 let organizationId: string;
 let locationId: string;
 let pairingCode = "";
+let currentDeviceId: string | null = null;
 
 beforeAll(async () => {
   stack = await startBrowserStack();
+  await publishTemplate(stack, "SALON");
   owner = await seedPerson("রফিক ক্যাশিয়ার");
-  await seedOrganization(owner, ORG_SLUG, BUSINESS_NAME);
+  await seedOrganizationWithBody(owner, {
+    name: BUSINESS_NAME,
+    slug: ORG_SLUG,
+    ...salonFixture,
+  });
   organizationId = await organizationIdOf(owner, ORG_SLUG);
   locationId = await firstLocationId();
   await seedProduct();
-  pairingCode = await createTillDevice();
+  await seedWalkInService();
+  await seedCustomer();
+  await setApprovalPin();
+  const device = await createTillDevice();
+  pairingCode = device.pairingCode;
+  currentDeviceId = device.posDeviceId;
 }, 240_000);
+
+afterEach(async () => {
+  if (currentDeviceId === null) return;
+  const devices = await apiGet<{ data: PosDeviceResponse[] }>(
+    `/orgs/${organizationId}/pos/devices?locationId=${locationId}&limit=100&page=1`,
+  );
+  const device = devices.data.find((item) => item.posDeviceId === currentDeviceId);
+  if (device !== undefined && device.status === "ACTIVE") {
+    await callApi(`/orgs/${organizationId}/pos/devices/${device.posDeviceId}/revoke`, {
+      cookies: owner.cookies,
+      body: { version: device.version },
+    });
+  }
+  currentDeviceId = null;
+});
 
 afterAll(async () => {
   await stack?.stop();
@@ -110,14 +155,86 @@ async function seedProduct(): Promise<void> {
   });
 }
 
+async function seedWalkInService(): Promise<void> {
+  const created = await callApi(`/orgs/${organizationId}/offerings`, {
+    cookies: owner.cookies,
+    body: {
+      kind: "SERVICE",
+      name: SERVICE_NAME,
+      kindDetails: {
+        durationMinutes: 30,
+        requiresResource: false,
+        bookingMode: "WALK_IN_ONLY",
+      },
+      variants: [
+        {
+          name: "Default",
+          price: { amount: SERVICE_PRICE_MINOR, currency: "BDT" },
+          unitKey: "SESSION",
+        },
+      ],
+    },
+  });
+  const offering = (await created.json()) as {
+    data: { offeringId: string; version: number };
+  };
+  await callApi(`/orgs/${organizationId}/offerings/${offering.data.offeringId}/publish`, {
+    cookies: owner.cookies,
+    body: { version: offering.data.version },
+  });
+}
+
 /** The owner registers a till at the shop and gets the one-time pairing code for the browser. */
-async function createTillDevice(): Promise<string> {
+async function createTillDevice(): Promise<{
+  readonly posDeviceId: string;
+  readonly pairingCode: string;
+}> {
   const created = await callApi(`/orgs/${organizationId}/pos/devices`, {
     cookies: owner.cookies,
     body: { locationId, name: "কাউন্টার ১" },
   });
-  const body = (await created.json()) as { data: { pairingCode: string } };
-  return body.data.pairingCode;
+  const body = (await created.json()) as { data: { posDeviceId: string; pairingCode: string } };
+  return body.data;
+}
+
+async function seedCustomer(): Promise<string> {
+  const response = await callApi(`/orgs/${organizationId}/contacts`, {
+    cookies: owner.cookies,
+    body: {
+      contactType: "PERSON",
+      name: "তিল বিক্রির গ্রাহক",
+      phoneE164: "+8801712345678",
+      contactRoles: ["CUSTOMER"],
+    },
+  });
+  const body = (await response.json()) as { data: { contactId: string } };
+  return body.data.contactId;
+}
+
+async function setApprovalPin(): Promise<void> {
+  const response = await fetch(
+    `http://localhost:${API_PORT}/api/v1/orgs/${organizationId}/me/approval-pin`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Cookie: ownerCookies(), Origin: ADMIN_ORIGIN },
+      body: JSON.stringify({ currentPassword: owner.password, pin: "1234" }),
+    },
+  );
+  if (!response.ok) throw new Error(`approval PIN answered ${response.status}`);
+}
+
+async function setCreditSaleAllowed(allowed: boolean): Promise<void> {
+  const response = await fetch(
+    `http://localhost:${API_PORT}/api/v1/orgs/${organizationId}/settings`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Cookie: ownerCookies(), Origin: ADMIN_ORIGIN },
+      body: JSON.stringify({
+        items: [{ settingKey: POS_ALLOW_CREDIT_SALE_SETTING_KEY, value: allowed }],
+      }),
+    },
+  );
+  if (!response.ok) throw new Error(`setting pos.allowCreditSale answered ${response.status}`);
 }
 
 async function tillPage(): Promise<Page> {
@@ -126,25 +243,56 @@ async function tillPage(): Promise<Page> {
   return page;
 }
 
-/** The input under a label that contains the wanted words; waits until the sheet has rendered it. */
+/**
+ * Types into the field for `labelText`. Matches a wrapping `<label>`, a FormField `htmlFor`, or an
+ * input whose aria-label / placeholder contains the words (the customer phone field).
+ */
 async function typeInLabel(page: Page, labelText: string, value: string): Promise<void> {
   await page.waitForFunction(
-    (wanted) =>
-      Array.from(document.querySelectorAll("label")).some(
-        (item) => (item.textContent ?? "").includes(wanted) && item.querySelector("input") !== null,
-      ),
+    (wanted) => {
+      for (const label of Array.from(document.querySelectorAll("label"))) {
+        if (!(label.textContent ?? "").includes(wanted)) continue;
+        if (label.querySelector("input") !== null) return true;
+        const htmlFor = label.getAttribute("for");
+        if (htmlFor !== null && document.getElementById(htmlFor) instanceof HTMLInputElement) {
+          return true;
+        }
+      }
+      return Array.from(document.querySelectorAll("input")).some((input) => {
+        const aria = input.getAttribute("aria-label") ?? "";
+        const placeholder = input.getAttribute("placeholder") ?? "";
+        return aria.includes(wanted) || placeholder.includes(wanted);
+      });
+    },
     { timeout: 20_000 },
     labelText,
   );
   const handle = await page.evaluateHandle((wanted) => {
-    const label = Array.from(document.querySelectorAll("label")).find((item) =>
-      (item.textContent ?? "").includes(wanted),
+    for (const label of Array.from(document.querySelectorAll("label"))) {
+      if (!(label.textContent ?? "").includes(wanted)) continue;
+      const nested = label.querySelector("input");
+      if (nested instanceof HTMLInputElement) return nested;
+      const htmlFor = label.getAttribute("for");
+      if (htmlFor === null) continue;
+      const byId = document.getElementById(htmlFor);
+      if (byId instanceof HTMLInputElement) return byId;
+    }
+    return (
+      Array.from(document.querySelectorAll("input")).find((input) => {
+        const aria = input.getAttribute("aria-label") ?? "";
+        const placeholder = input.getAttribute("placeholder") ?? "";
+        return aria.includes(wanted) || placeholder.includes(wanted);
+      }) ?? null
     );
-    return label?.querySelector("input") ?? null;
   }, labelText);
   const input = handle.asElement() as ElementHandle<HTMLInputElement> | null;
   if (input === null) throw new Error(`no input under the label "${labelText}"`);
-  await input.click({ clickCount: 3 });
+  // Sheet overlays intercept a real click; focus and select in the page instead.
+  await input.evaluate((element) => {
+    element.scrollIntoView({ block: "center" });
+    element.focus();
+    element.select();
+  });
   await input.type(value);
 }
 
@@ -154,44 +302,136 @@ async function pairTill(page: Page): Promise<void> {
   await clickByName(page, message("pos.pair.submit"));
 }
 
+async function pairNewTill(page: Page): Promise<void> {
+  await waitForText(page, message("pos.pair.title"));
+  const device = await createTillDevice();
+  currentDeviceId = device.posDeviceId;
+  await typeInLabel(page, message("pos.pair.code"), device.pairingCode);
+  await clickByName(page, message("pos.pair.submit"));
+}
+
+async function openSellingTill(): Promise<Page> {
+  const page = await tillPage();
+  await gotoWhenHydrated(page, `/${ORG_SLUG}/pos`, "main");
+  await pairNewTill(page);
+  await openRegister(page);
+  return page;
+}
+
+/**
+ * Taps a visible button or link in-page. A Puppeteer mouse click misses controls inside a Sheet
+ * overlay (the dialog layer eats the hit-test).
+ */
+async function tapByName(page: Page, name: string): Promise<void> {
+  await page.waitForFunction(
+    (wanted) =>
+      Array.from(document.querySelectorAll("button, a")).some(
+        (element) =>
+          (element.textContent?.trim() === wanted ||
+            element.getAttribute("aria-label") === wanted) &&
+          element.getClientRects().length > 0,
+      ),
+    {},
+    name,
+  );
+  const clicked = await page.evaluate((wanted) => {
+    const target = Array.from(document.querySelectorAll("button, a")).find(
+      (element) =>
+        (element.textContent?.trim() === wanted || element.getAttribute("aria-label") === wanted) &&
+        element.getClientRects().length > 0,
+    );
+    if (target === undefined) return false;
+    target.scrollIntoView({ block: "center" });
+    (target as HTMLElement).click();
+    return true;
+  }, name);
+  if (!clicked) throw new Error(`no visible control named "${name}"`);
+}
+
+/** The receipt toolbar wraps on a phone; a real click misses when New sale sits off-centre. */
+async function clickReceiptNewSale(page: Page): Promise<void> {
+  await tapByName(page, message("pos.receipt.newSale"));
+}
+
+async function waitForDialogClosed(page: Page): Promise<void> {
+  await page.waitForFunction(() => document.querySelector("[role=dialog]") === null);
+}
+
+async function clickDialogButton(page: Page, text: string): Promise<void> {
+  await page.waitForFunction(
+    (wanted) => {
+      const dialog = document.querySelector('[role="alertdialog"]');
+      return dialog?.textContent?.includes(wanted) ?? false;
+    },
+    {},
+    text,
+  );
+  await page.evaluate((wanted) => {
+    const dialog = document.querySelector('[role="alertdialog"]');
+    const button = Array.from(dialog?.querySelectorAll("button") ?? []).find(
+      (item) => item.textContent?.trim() === wanted,
+    );
+    (button as HTMLButtonElement | undefined)?.click();
+  }, text);
+}
+
 async function openRegister(page: Page): Promise<void> {
   await waitForText(page, message("pos.session.openTitle"));
   await clickByName(page, message("pos.session.open"));
 }
 
-/** Searches the catalog and taps the product row: each tap adds one cup. */
-async function addCup(page: Page): Promise<void> {
+/** Searches the catalog and taps the named row. */
+async function addOffering(page: Page, name: string): Promise<void> {
   const search = await page.waitForSelector(`input[type="search"]`, { visible: true });
   await search?.click({ clickCount: 3 });
-  await search?.type(PRODUCT_NAME);
+  await search?.type(name);
   await page.waitForFunction(
-    (name) =>
+    (wanted) =>
       Array.from(document.querySelectorAll("button[aria-label]")).some((button) =>
-        (button.getAttribute("aria-label") ?? "").includes(name),
+        (button.getAttribute("aria-label") ?? "").includes(wanted),
       ),
     {},
-    PRODUCT_NAME,
+    name,
   );
-  await page.evaluate((name) => {
+  await page.evaluate((wanted) => {
     const button = Array.from(document.querySelectorAll("button[aria-label]")).find((item) =>
-      (item.getAttribute("aria-label") ?? "").includes(name),
+      (item.getAttribute("aria-label") ?? "").includes(wanted),
     );
     (button as HTMLButtonElement | undefined)?.click();
-  }, PRODUCT_NAME);
+  }, name);
+}
+
+async function pickPerformer(page: Page, performerName: string): Promise<void> {
+  await page.waitForFunction(
+    (wanted) =>
+      Array.from(document.querySelectorAll("select option")).some(
+        (option) => option.textContent === wanted,
+      ),
+    {},
+    performerName,
+  );
+  await page.evaluate((wanted) => {
+    const select = document.querySelector("select");
+    if (select === null) return;
+    const option = Array.from(select.options).find((item) => item.textContent === wanted);
+    if (option === undefined) return;
+    select.value = option.value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }, performerName);
 }
 
 async function paySaleInCash(page: Page): Promise<void> {
-  await clickByName(page, message("pos.sale.pay"));
-  await waitForText(page, message("pos.pay.title"));
+  await tapByName(page, message("pos.sale.pay"));
   await typeInLabel(page, message("pos.pay.received"), CASH_RECEIVED_TEXT);
-  await clickByName(page, message("pos.pay.confirm"));
-  await waitForText(page, message("pos.receipt.title"));
+  await tapByName(page, message("pos.pay.confirm"));
+  // The title also lives in the bundled catalog (script tags), so wait on the paper.
+  await waitForTextIn(page, "article", message("pos.receipt.title"));
 }
 
-async function closeRegister(page: Page): Promise<void> {
+async function closeRegister(page: Page, countedCash = COUNTED_CASH_TEXT): Promise<void> {
   await clickByName(page, message("pos.sale.closeRegister"));
   await waitForText(page, message("pos.close.title"));
-  await typeInLabel(page, message("pos.close.counted"), COUNTED_CASH_TEXT);
+  await typeInLabel(page, message("pos.close.counted"), countedCash);
   await clickByName(page, message("pos.close.submit"));
   // The Z-report title also sits inside the submit button, so wait for the report-only print button.
   await waitForText(page, message("pos.z.print"));
@@ -199,7 +439,19 @@ async function closeRegister(page: Page): Promise<void> {
 
 /** The closed register of this till: the newest CLOSED session at this location. */
 /** Polls the session list until this till's register reads CLOSED: the close answer can land a moment later. */
-async function closedSessionId(): Promise<string> {
+async function newestClosedAt(): Promise<string> {
+  const listed = await apiGet<{ data: PosSessionListResponse }>(
+    `/orgs/${organizationId}/pos/sessions?locationId=${locationId}&limit=20`,
+  );
+  return (
+    listed.data.items
+      .filter((item) => item.status === POS_SESSION_STATUS.CLOSED)
+      .sort((left, right) => (right.closedAt ?? "").localeCompare(left.closedAt ?? ""))[0]
+      ?.closedAt ?? ""
+  );
+}
+
+async function closedSessionId(notBeforeClosedAt = ""): Promise<string> {
   const deadline = Date.now() + CLOSE_WAIT_MS;
   let lastListing = "";
   while (Date.now() < deadline) {
@@ -207,8 +459,12 @@ async function closedSessionId(): Promise<string> {
       `/orgs/${organizationId}/pos/sessions?locationId=${locationId}&limit=20`,
     );
     lastListing = JSON.stringify(listed).slice(0, 400);
-    const session = listed.data.items.find((item) => item.status === POS_SESSION_STATUS.CLOSED);
-    if (session !== undefined) return session.posSessionId;
+    const session = listed.data.items
+      .filter((item) => item.status === POS_SESSION_STATUS.CLOSED)
+      .sort((left, right) => (right.closedAt ?? "").localeCompare(left.closedAt ?? ""))[0];
+    if (session !== undefined && (session.closedAt ?? "") > notBeforeClosedAt) {
+      return session.posSessionId;
+    }
     await new Promise((resolve) => setTimeout(resolve, CLOSE_POLL_MS));
   }
   throw new Error(`no closed register at the shop: ${lastListing}`);
@@ -238,19 +494,23 @@ async function layoutOfSaleScreen(
 }
 
 describe("the till at a shop", () => {
-  it("pairs the browser, opens the register, sells two cups for cash, prints the receipt and closes with the Z-report numbers", async () => {
+  it("pairs the browser, opens the register, sells a service with a performer and a product for cash, prints both on the receipt and closes with the Z-report numbers", async () => {
     const page = await tillPage();
     await gotoWhenHydrated(page, `/${ORG_SLUG}/pos`, "main");
     await pairTill(page);
     await openRegister(page);
-    await addCup(page);
-    await addCup(page);
+    await addOffering(page, SERVICE_NAME);
+    await pickPerformer(page, owner.name);
+    await addOffering(page, PRODUCT_NAME);
     expect(await bodyText(page)).toContain(message("pos.sale.total"));
     const layout = await layoutOfSaleScreen(page);
     expect(layout.overflowsX).toBe(false);
     expect(layout.shortButtons).toBe(0);
     await paySaleInCash(page);
-    expect(await bodyText(page)).toContain(message("pos.pay.change"));
+    await waitForTextIn(page, "article", SERVICE_NAME);
+    await waitForTextIn(page, "article", PRODUCT_NAME);
+    await waitForTextIn(page, "article", owner.name);
+    await waitForTextIn(page, "article", message("pos.pay.change"));
     await clickByName(page, message("pos.receipt.newSale"));
     await closeRegister(page);
     const report = await zReportOf(await closedSessionId());
@@ -266,5 +526,107 @@ describe("the till at a shop", () => {
     process.stdout.write(`initial JS pos: ${toKiB(size.gzipBytes)} KiB\n`);
     await closePage(page);
     expect(toKiB(size.gzipBytes)).toBeLessThanOrEqual(POS_BUDGET_KIB);
+  }, 120_000);
+
+  it("the cashier holds a cart, starts another sale, then resumes the held cart and pays", async () => {
+    const page = await openSellingTill();
+    await addOffering(page, SERVICE_NAME);
+    await pickPerformer(page, owner.name);
+    await addOffering(page, PRODUCT_NAME);
+    await tapByName(page, message("pos.sale.pay"));
+    await typeInLabel(page, message("pos.customer.phone"), "+8801712345678");
+    await tapByName(page, message("pos.customer.find"));
+    await tapByName(page, "তিল বিক্রির গ্রাহক");
+    await tapByName(page, message("pos.pay.back"));
+    await tapByName(page, message("pos.till.hold"));
+    await waitForDialogSettled(page);
+    await typeInLabel(page, message("pos.till.holdLabel"), "চা");
+    await tapByName(page, message("pos.till.holdSubmit"));
+    await waitForDialogClosed(page);
+    await addOffering(page, SERVICE_NAME);
+    await tapByName(page, message("pos.till.held"));
+    await waitForDialogSettled(page);
+    await tapByName(page, message("pos.till.resume"));
+    await clickDialogButton(page, message("pos.till.resume"));
+    await waitForDialogClosed(page);
+    await tapByName(page, message("pos.sale.pay"));
+    await typeInLabel(page, message("pos.pay.received"), CASH_RECEIVED_TEXT);
+    await tapByName(page, message("pos.pay.confirm"));
+    await waitForTextIn(page, "article", message("pos.receipt.title"));
+    await waitForTextIn(page, "article", PRODUCT_NAME);
+    await waitForTextIn(page, "article", owner.name);
+    await clickReceiptNewSale(page);
+    await closeRegister(page, "40");
+    await closePage(page);
+  }, 120_000);
+
+  it("a price below list asks for a manager PIN and the receipt shows the overridden price", async () => {
+    const page = await openSellingTill();
+    await addOffering(page, PRODUCT_NAME);
+    await clickByName(page, `${message("pos.till.price")} ${PRODUCT_NAME}`);
+    await waitForDialogSettled(page);
+    await typeInLabel(page, message("pos.till.unitPrice"), "20");
+    await tapByName(page, message("pos.till.applyPrice"));
+    await waitForDialogSettled(page);
+    const pinField = await page.waitForSelector("#approval-pin", { visible: true });
+    await pinField?.type("1234");
+    await tapByName(page, message("pos.till.approvalSubmit"));
+    await page.waitForFunction(() => document.querySelector("#approval-pin") === null);
+    const sheetStillOpen = await page.evaluate(
+      () => document.querySelector("[role=dialog]") !== null,
+    );
+    if (sheetStillOpen) {
+      await tapByName(page, message("pos.till.approvalClose"));
+      await waitForDialogClosed(page);
+    }
+    await paySaleInCash(page);
+    await waitForTextIn(page, "article", OVERRIDE_RECEIPT_PRICE);
+    await clickReceiptNewSale(page);
+    await closeRegister(page, "20");
+    await closePage(page);
+  }, 120_000);
+
+  it("a till return of a cash sale lowers expected cash on the Z-report", async () => {
+    const page = await openSellingTill();
+    await addOffering(page, PRODUCT_NAME);
+    await paySaleInCash(page);
+    await waitForTextIn(page, "article", PRODUCT_NAME);
+    await clickReceiptNewSale(page);
+    await clickByName(page, message("pos.till.return"));
+    await waitForDialogSettled(page);
+    await tapByName(page, message("pos.till.findOrder"));
+    await page.waitForSelector("ul button", { visible: true });
+    await page.evaluate(() => {
+      const button = document.querySelector("ul button");
+      (button as HTMLButtonElement | null)?.click();
+    });
+    await typeInLabel(page, message("pos.till.returnQuantity"), "1");
+    await tapByName(page, message("pos.till.returnSubmit"));
+    await waitForTextIn(page, "[role=dialog]", message("pos.till.returnSuccess"));
+    await tapByName(page, message("pos.till.approvalClose"));
+    await waitForDialogClosed(page);
+    const previousClosedAt = await newestClosedAt();
+    await closeRegister(page, "0");
+    const report = await zReportOf(await closedSessionId(previousClosedAt));
+    expect(report.expectedCash).toEqual({ amount: 0, currency: "BDT" });
+    await closePage(page);
+  }, 120_000);
+
+  it("a credit sale is refused when the setting is off", async () => {
+    await setCreditSaleAllowed(false);
+    const page = await openSellingTill();
+    await addOffering(page, PRODUCT_NAME);
+    await tapByName(page, message("pos.sale.pay"));
+    await typeInLabel(page, message("pos.customer.phone"), "+8801712345678");
+    await tapByName(page, message("pos.customer.find"));
+    await tapByName(page, "তিল বিক্রির গ্রাহক");
+    const creditCheckbox = await page.waitForSelector('input[type="checkbox"]', { visible: true });
+    await creditCheckbox?.evaluate((element) => (element as HTMLInputElement).click());
+    await tapByName(page, message("pos.pay.confirm"));
+    await waitForTextIn(page, "[role=alert]", message("errors.pos_tender_required"));
+    await tapByName(page, message("pos.pay.back"));
+    await tapByName(page, message("pos.sale.clear"));
+    await closeRegister(page, "0");
+    await closePage(page);
   }, 120_000);
 });

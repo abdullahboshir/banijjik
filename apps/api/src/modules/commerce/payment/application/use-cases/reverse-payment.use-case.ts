@@ -90,6 +90,7 @@ async function buildReversalPayment(input: {
     receivedByMemberId: req.receivedByMemberId,
     businessDate,
     approval: approvalSnapshot,
+    posSessionId: original.posSessionId ?? null,
     note: req.note ?? `Reversal of ${original.paymentNumber}`,
     version: 1,
     createdAt: now,
@@ -254,7 +255,7 @@ export class ReversePaymentUseCase {
       });
       const approvalSnapshot: PaymentApprovalSnapshot = {
         approvalId: consumed.approvalTokenId,
-        approverUserId: consumed.approverMemberId,
+        approverMemberId: consumed.approverMemberId,
         approvedAt: consumed.approvedAt.toISOString(),
       };
       const now = deps.clock.now();

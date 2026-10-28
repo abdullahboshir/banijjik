@@ -69,7 +69,7 @@ export async function consumeReturnApprovals(input: {
     records.push(record);
     refund = {
       approvalId: record.approvalId,
-      approverUserId: record.approverMemberId,
+      approverMemberId: record.approverMemberId,
       approvedAt: record.approvedAt.toISOString(),
     };
   }

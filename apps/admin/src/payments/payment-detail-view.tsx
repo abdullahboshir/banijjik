@@ -151,7 +151,7 @@ function PaymentAllocationsSection(props: {
           <div className="grid grid-cols-2 gap-2 text-body-sm">
             <div>
               <span className="text-caption text-secondary">{labels.detail.approvedBy}</span>
-              <p className="font-mono text-primary">{payment.approval.approverUserId}</p>
+              <p className="font-mono text-primary">{payment.approval.approverMemberId}</p>
             </div>
             <div>
               <span className="text-caption text-secondary">{labels.detail.approvedAt}</span>

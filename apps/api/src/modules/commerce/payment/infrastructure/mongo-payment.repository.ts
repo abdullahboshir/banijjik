@@ -60,7 +60,7 @@ function toDomain(doc: PaymentDocument): Payment {
     approval: doc.approval
       ? {
           approvalId: doc.approval.approvalId,
-          approverUserId: doc.approval.approverUserId,
+          approverMemberId: doc.approval.approverMemberId,
           approvedAt: doc.approval.approvedAt,
         }
       : null,
@@ -110,7 +110,7 @@ function toPaymentDocument(payment: Payment): PaymentDocument {
     approval: props.approval
       ? {
           approvalId: props.approval.approvalId,
-          approverUserId: props.approval.approverUserId,
+          approverMemberId: props.approval.approverMemberId,
           approvedAt: props.approval.approvedAt,
         }
       : null,

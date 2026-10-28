@@ -19,6 +19,8 @@ export interface IndustryTemplateView {
   readonly contactRoleKeys: readonly ContactRole[];
   /** Template resource choices; absent in config cached before card 3.6. */
   readonly resourceTypes?: readonly IndustryTemplateResourceType[];
+  /** The site templates this industry offers (4.1 A3R; the seed schema requires at least one). */
+  readonly websiteTemplateKeys: readonly string[];
   readonly enabledKinds: readonly OfferingKind[];
   readonly templateVersion: number;
 }

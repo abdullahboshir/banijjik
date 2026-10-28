@@ -18,7 +18,7 @@ export function buildPostBookingsHandler(input: {
     ordering: "ORDERED",
     streamPrefixes: ["booking:"],
     async handle(envelope) {
-      await handleBookingEvent(input, envelope as unknown as EventEnvelope<{ bookingId: string }>);
+      await handleBookingEvent(input, envelope);
     },
   };
 }
@@ -30,6 +30,13 @@ async function handleBookingEvent(
   },
   envelope: EventEnvelope<{ bookingId: string }>,
 ): Promise<void> {
+  if (
+    envelope.type !== EVENT_TYPE.BOOKING_COMPLETED &&
+    envelope.type !== EVENT_TYPE.BOOKING_CANCELLED &&
+    envelope.type !== EVENT_TYPE.BOOKING_NO_SHOW_MARKED
+  ) {
+    return;
+  }
   if (envelope.organizationId === null) throw postingSourceMissing("organization");
   const organizationId = asId<OrganizationId>(envelope.organizationId);
   const actorUserId = envelope.actorUserId === null ? null : asId<UserId>(envelope.actorUserId);

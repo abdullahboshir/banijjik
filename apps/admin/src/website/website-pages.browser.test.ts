@@ -106,7 +106,11 @@ async function saveAbout(page: Page): Promise<void> {
 }
 
 /** A version-checked PUT straight to the API, as another editor would send it. */
-async function putAboutAsOtherEditor(version: number, title: string): Promise<void> {
+async function putAboutAsOtherEditor(
+  version: number,
+  title: string,
+  siteVersion: number | null,
+): Promise<void> {
   const cookieHeader = owner.cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
   const response = await fetch(`${API_ORIGIN}/api/v1/orgs/${organizationId}/website/pages/ABOUT`, {
     method: "PUT",
@@ -120,6 +124,7 @@ async function putAboutAsOtherEditor(version: number, title: string): Promise<vo
       body: { bn: "", en: ABOUT_BODY },
       isPublished: true,
       version,
+      ...(siteVersion === null ? {} : { siteVersion }),
     }),
   });
   if (!response.ok) throw new Error(`other editor's save answered ${response.status}`);
@@ -155,6 +160,7 @@ describe("the website page editor", () => {
   it("edits and publishes a page, and the storefront read shows it", async () => {
     const page = await ownerPage();
     await openPagesEditor(page);
+    await waitForText(page, message("website.pages.publication.LEGACY"));
     await page.type("#page-title-ABOUT-en", ABOUT_TITLE);
     await page.type("#page-body-ABOUT-en", ABOUT_BODY);
     await waitForHydration(page, "#page-publish-ABOUT");
@@ -187,10 +193,17 @@ describe("the website page editor", () => {
           Cookie: owner.cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; "),
         },
       });
-      const pages = ((await stored.json()) as { data: { pageKey: string; version: number }[] })
-        .data;
-      const version = pages.find((row) => row.pageKey === "ABOUT")?.version ?? 0;
-      await putAboutAsOtherEditor(version, "Saved by someone else");
+      const pages = (
+        (await stored.json()) as {
+          data: { pageKey: string; version: number; siteVersion: number | null }[];
+        }
+      ).data;
+      const about = pages.find((row) => row.pageKey === "ABOUT");
+      await putAboutAsOtherEditor(
+        about?.version ?? 0,
+        "Saved by someone else",
+        about?.siteVersion ?? null,
+      );
       await page.type("#page-title-ABOUT-en", STALE_TITLE);
       await saveAbout(page);
       await waitForText(page, message("website.pages.conflict"));

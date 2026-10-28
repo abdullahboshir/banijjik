@@ -12,6 +12,10 @@ type LevelWithItem = InventoryLevelDocument & {
   readonly available: number;
 };
 
+function toInventoryLevelRow(row: LevelWithItem): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(row));
+}
+
 export async function listInventoryLevelsWithItems(input: {
   readonly organizationId: string;
   readonly locationId: string;
@@ -60,7 +64,7 @@ export async function listInventoryLevelsWithItems(input: {
   const total = filtered.length;
   const skip = (input.page - 1) * input.limit;
   return {
-    rows: filtered.slice(skip, skip + input.limit) as unknown as readonly Record<string, unknown>[],
+    rows: filtered.slice(skip, skip + input.limit).map(toInventoryLevelRow),
     total,
   };
 }

@@ -11,6 +11,7 @@ import type { ModuleRegistry } from "../kernel/modules/index.js";
 import type { RateLimiter } from "../kernel/rate-limit/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildFileModule, type FileModuleDependencies } from "../modules/core/file/index.js";
+import { buildFileReferenceReader } from "../modules/core/file/index.js";
 import { buildCustomFieldModule } from "../modules/core/custom-field/index.js";
 import {
   buildConfigVersionBumper,
@@ -123,6 +124,7 @@ function buildPlatformCoreRouters(
   const files = buildFileModule({
     clock,
     permission,
+    websiteEdit: input.permissions,
     storage: input.storage,
     ...(input.fileOverrides === undefined ? {} : { overrides: input.fileOverrides }),
   });
@@ -187,12 +189,20 @@ function buildCommerceTenantRouters(
     posRouter: buildPosTenantRouter({ ...shared, pos: input.pos }),
     reportRouter: buildReportTenantRouter(shared),
     enrollmentRouter: buildEnrollmentTenantRouter(shared),
-    websiteRouter: buildWebsiteAdminRouter({
-      clock: input.clock,
-      audit: input.audit,
-      permission: input.permission,
-    }),
+    websiteRouter: websiteAdminRouterOf(input),
   };
+}
+
+/** Site writes are organization-wide and check public images through the file module (4.1). */
+function websiteAdminRouterOf(input: CoreTenantRouterInput): Router {
+  return buildWebsiteAdminRouter({
+    clock: input.clock,
+    audit: input.audit,
+    permission: input.permission,
+    idempotency: input.idempotency,
+    orgConfig: input.orgConfig,
+    files: buildFileReferenceReader(),
+  });
 }
 
 /** Routers of the `integration/*` modules (card M.9 on). */

@@ -8,7 +8,7 @@ export type SheetQuote =
   | { readonly kind: "ready"; readonly totalMinor: number }
   | { readonly kind: "failed" };
 
-function quoteRequestOf(locationId: string, lines: readonly CartLine[]): QuoteRequest {
+export function quoteRequestOf(locationId: string, lines: readonly CartLine[]): QuoteRequest {
   return {
     locationId,
     lines: lines.map((line) => ({
@@ -16,6 +16,7 @@ function quoteRequestOf(locationId: string, lines: readonly CartLine[]): QuoteRe
       variantId: line.variantId,
       quantity: line.quantity,
       modifierOptionIds: [],
+      ...(line.unitPriceOverride === null ? {} : { unitPriceOverride: line.unitPriceOverride }),
     })),
   };
 }

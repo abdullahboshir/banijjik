@@ -1,12 +1,16 @@
 import type { Money } from "@banijjik/contracts/payment";
 import type {
   PosCatalogSnapshotResponse,
+  PosHeldCartResponse,
   PosSaleResponse,
   PosSessionResponse,
   PosZReport,
 } from "@banijjik/contracts/pos";
+import type { SalesPerformerResponse } from "@banijjik/contracts/sales";
 import type { QuoteRequest, QuoteResponse } from "@banijjik/contracts/pricing";
 import type { PosSaleBody, PosSessionCloseBody } from "@banijjik/validation/pos";
+import type { PosHeldCartCreateBody, PosReturnBody } from "@banijjik/validation/pos";
+import type { SalesReturnResponse } from "@banijjik/contracts/sales";
 import { apiFetch } from "../lib/api/api-client";
 
 function posBase(organizationId: string): string {
@@ -108,6 +112,17 @@ export async function closeSession(
   return result.data;
 }
 
+/** Members who may be named on a walk-in service at this till's location. */
+export async function listSalePerformers(
+  organizationId: string,
+  locationId: string,
+): Promise<readonly SalesPerformerResponse[]> {
+  const result = await apiFetch<SalesPerformerResponse[]>(
+    `/orgs/${organizationId}/sales/performers?${new URLSearchParams({ locationId }).toString()}`,
+  );
+  return result.data;
+}
+
 /** The frozen Z-report of a closed register. */
 export async function fetchZReport(
   organizationId: string,
@@ -116,5 +131,46 @@ export async function fetchZReport(
   const result = await apiFetch<PosZReport>(
     `${posBase(organizationId)}/sessions/${posSessionId}/z-report`,
   );
+  return result.data;
+}
+
+export async function createHeldCart(
+  organizationId: string,
+  body: PosHeldCartCreateBody,
+): Promise<PosHeldCartResponse> {
+  const result = await apiFetch<PosHeldCartResponse>(`${posBase(organizationId)}/held-carts`, {
+    method: "POST",
+    body,
+  });
+  return result.data;
+}
+
+export async function listHeldCarts(
+  organizationId: string,
+): Promise<readonly PosHeldCartResponse[]> {
+  const result = await apiFetch<PosHeldCartResponse[]>(`${posBase(organizationId)}/held-carts`);
+  return result.data;
+}
+
+export async function deleteHeldCart(
+  organizationId: string,
+  heldCart: PosHeldCartResponse,
+): Promise<void> {
+  await apiFetch(
+    `${posBase(organizationId)}/held-carts/${heldCart.posHeldCartId}?version=${String(heldCart.version)}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function createTillReturn(
+  organizationId: string,
+  body: PosReturnBody,
+  idempotencyKey: string,
+): Promise<SalesReturnResponse> {
+  const result = await apiFetch<SalesReturnResponse>(`${posBase(organizationId)}/returns`, {
+    method: "POST",
+    body,
+    idempotencyKey,
+  });
   return result.data;
 }

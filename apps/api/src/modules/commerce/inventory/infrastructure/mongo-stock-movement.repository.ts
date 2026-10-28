@@ -10,7 +10,7 @@ export class MongoStockMovementRepository implements StockMovementRepository {
     const Model = models({ organizationId: document.organizationId }).get<StockMovementDocument>(
       STOCK_MOVEMENT_MODEL_NAME,
     );
-    await Model.create([document as StockMovementDocument], sessionOption(session));
+    await Model.create([document], sessionOption(session));
   }
 
   async countForOrganization(organizationId: OrganizationId): Promise<number> {
@@ -50,10 +50,10 @@ export class MongoStockMovementRepository implements StockMovementRepository {
         .sort({ occurredAt: -1, stockMovementId: -1 })
         .skip(skip)
         .limit(input.limit)
-        .lean(),
+        .lean<StockMovementRecord[]>(),
       Model.countDocuments(filter),
     ]);
-    return { items: items as unknown as StockMovementRecord[], total };
+    return { items, total };
   }
 
   async listAllForOrganization(
@@ -65,14 +65,17 @@ export class MongoStockMovementRepository implements StockMovementRepository {
     const Model = models({ organizationId }).get<StockMovementDocument>(STOCK_MOVEMENT_MODEL_NAME);
     const items = await Model.find(filter, { _id: 0 })
       .sort({ occurredAt: 1, stockMovementId: 1 })
-      .lean();
-    return items as unknown as StockMovementRecord[];
+      .lean<StockMovementRecord[]>();
+    return items;
   }
 
   async findById(stockMovementId: StockMovementId): Promise<StockMovementRecord | undefined> {
     const Model = models({}).get<StockMovementDocument>(STOCK_MOVEMENT_MODEL_NAME);
-    const document = await Model.findOne({ stockMovementId }, { _id: 0 }).lean();
-    return document === null ? undefined : (document as unknown as StockMovementRecord);
+    const document = await Model.findOne(
+      { stockMovementId },
+      { _id: 0 },
+    ).lean<StockMovementRecord>();
+    return document === null ? undefined : document;
   }
 
   async findBySource(input: {
@@ -92,7 +95,7 @@ export class MongoStockMovementRepository implements StockMovementRepository {
     );
     const items = await Model.find(filter, { _id: 0 })
       .sort({ occurredAt: 1, stockMovementId: 1 })
-      .lean();
-    return items as unknown as StockMovementRecord[];
+      .lean<StockMovementRecord[]>();
+    return items;
   }
 }

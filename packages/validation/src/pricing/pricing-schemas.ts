@@ -191,6 +191,7 @@ export const quoteRequestSchema = z.strictObject({
         quantity: z.number().int().positive().max(MAX_SAFE),
         modifierOptionIds: z.array(uuidV7Schema).max(MAX_MODIFIER_OPTIONS_PER_LINE).default([]),
         manualDiscount: manualDiscountSchema.optional(),
+        unitPriceOverride: moneySchema.optional(),
       }),
     )
     .min(1)

@@ -225,6 +225,57 @@ describe("POST /files", () => {
     }
   });
 
+  it("stores a website image as PUBLIC and links it publicly", async () => {
+    const world = await aWorld();
+
+    const response = await uploadAs(
+      world.alice,
+      world.organizationA,
+      "WEBSITE_IMAGE",
+      await pngImage(),
+      "hero.png",
+    );
+
+    expect(response.status).toBe(201);
+    expect(response.body.data).toMatchObject({
+      purpose: "WEBSITE_IMAGE",
+      visibility: "PUBLIC",
+      mimeType: "image/webp",
+    });
+    expect(response.body.data.url).toBe(`/api/v1/public/files/${response.body.data.fileId}/medium`);
+    const publicRead = await getWithoutSession(harness.app, response.body.data.url);
+    expect(publicRead.status).toBe(200);
+  });
+
+  it("refuses a PDF labelled as a website image", async () => {
+    const world = await aWorld();
+
+    const response = await uploadAs(
+      world.alice,
+      world.organizationA,
+      "WEBSITE_IMAGE",
+      pdfDocument(),
+      "hero.pdf",
+    );
+
+    expect(response.status).toBe(415);
+  });
+
+  it("refuses a staff member who may upload files but may not edit the website", async () => {
+    const world = await aWorld();
+
+    const logo = await uploadAs(world.sam, world.organizationA, "LOGO", await pngImage());
+    const website = await uploadAs(
+      world.sam,
+      world.organizationA,
+      "WEBSITE_IMAGE",
+      await pngImage(),
+    );
+
+    expect(logo.status).toBe(201);
+    expect(website.status).toBe(403);
+  });
+
   it("refuses a rider and a viewer, who may not upload", async () => {
     const world = await aWorld();
     const rider = await aMemberWithRole(world, SYSTEM_ROLE_KEY.RIDER);

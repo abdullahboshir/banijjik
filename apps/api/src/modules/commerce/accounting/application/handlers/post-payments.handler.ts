@@ -1,4 +1,10 @@
-import { EVENT_TYPE, MODULE_KEY, type EventEnvelope } from "@banijjik/contracts";
+import {
+  EVENT_TYPE,
+  MODULE_KEY,
+  type EventEnvelope,
+  type EventPayloadMap,
+  type EventType,
+} from "@banijjik/contracts";
 import {
   JOURNAL_SOURCE_TYPE,
   POSTING_KEY,
@@ -19,8 +25,20 @@ import { ensureSystemAccount } from "../ensure-system-account.js";
 import { draftBadDebtWriteOff } from "../../domain/write-off-posting-rules.js";
 import type { PaymentPostingSource } from "../ports/payment-posting-source.js";
 import { postJournalEntry, postReversal, type PostJournalDependencies } from "../post-journal.js";
+import type { PaymentEventPayload, StoreCreditEventPayload } from "@banijjik/contracts/payment";
 
-type AnyPaymentEnvelope = EventEnvelope<{ paymentId?: string; storeCreditEntryId?: string }>;
+type AnyPaymentEnvelope = EventEnvelope<PaymentEventPayload | StoreCreditEventPayload>;
+
+type TypedEventEnvelope<Type extends EventType> = Type extends EventType
+  ? EventEnvelope<EventPayloadMap[Type]> & { readonly type: Type }
+  : never;
+
+function isEventType<Type extends EventType>(
+  envelope: EventEnvelope<unknown>,
+  type: Type,
+): envelope is TypedEventEnvelope<Type> {
+  return envelope.type === type;
+}
 
 interface PaymentHandlerInput {
   readonly payments: PaymentPostingSource;
@@ -42,7 +60,7 @@ export function buildPostPaymentsHandler(
     ordering: "ORDERED",
     streamPrefixes: ["paymentAccount:"],
     async handle(envelope) {
-      await handlePaymentEvent(input, envelope as unknown as AnyPaymentEnvelope);
+      await handlePaymentEvent(input, envelope);
     },
   };
 }
@@ -70,7 +88,7 @@ async function requirePayment(
 
 async function postStoreCreditChange(
   input: PaymentHandlerInput,
-  envelope: AnyPaymentEnvelope,
+  envelope: EventEnvelope<StoreCreditEventPayload>,
 ): Promise<void> {
   const { organizationId, actorUserId } = organizationActor(envelope);
   const entryId = envelope.payload.storeCreditEntryId;
@@ -140,23 +158,55 @@ async function handlePaymentEvent(
   input: PaymentHandlerInput,
   envelope: AnyPaymentEnvelope,
 ): Promise<void> {
-  if (envelope.type === EVENT_TYPE.STORE_CREDIT_CHANGED) {
-    await postStoreCreditChange(input, envelope);
-    return;
+  switch (envelope.type) {
+    case EVENT_TYPE.STORE_CREDIT_CHANGED:
+      if (!isEventType(envelope, EVENT_TYPE.STORE_CREDIT_CHANGED)) return;
+      await postStoreCreditChange(input, envelope);
+      return;
+    case EVENT_TYPE.PAYMENT_RECEIVED:
+      if (!isEventType(envelope, EVENT_TYPE.PAYMENT_RECEIVED)) return;
+      await postPaymentReceived(input, envelope);
+      return;
+    case EVENT_TYPE.PAYMENT_REFUNDED:
+      if (!isEventType(envelope, EVENT_TYPE.PAYMENT_REFUNDED)) return;
+      await postPaymentRefunded(input, envelope);
+      return;
+    case EVENT_TYPE.PAYMENT_REVERSED:
+      if (!isEventType(envelope, EVENT_TYPE.PAYMENT_REVERSED)) return;
+      await postPaymentReversed(input, envelope);
+      return;
+    default:
+      return;
   }
-  const { organizationId, actorUserId } = organizationActor(envelope);
+}
+
+async function postPaymentReceived(
+  input: PaymentHandlerInput,
+  envelope: TypedEventEnvelope<typeof EVENT_TYPE.PAYMENT_RECEIVED>,
+): Promise<void> {
+  const actor = organizationActor(envelope);
   const snapshot = await requirePayment(input.payments, envelope.payload.paymentId);
-  if (envelope.type === EVENT_TYPE.PAYMENT_RECEIVED) {
-    for (const draft of draftPaymentReceived(snapshot)) {
-      await postJournalEntry(input.posting, { organizationId, actorUserId, draft });
-    }
-    return;
+  for (const draft of draftPaymentReceived(snapshot)) {
+    await postJournalEntry(input.posting, { ...actor, draft });
   }
-  if (envelope.type === EVENT_TYPE.PAYMENT_REFUNDED) {
-    for (const draft of draftPaymentRefund(snapshot)) {
-      await postJournalEntry(input.posting, { organizationId, actorUserId, draft });
-    }
-    return;
+}
+
+async function postPaymentRefunded(
+  input: PaymentHandlerInput,
+  envelope: TypedEventEnvelope<typeof EVENT_TYPE.PAYMENT_REFUNDED>,
+): Promise<void> {
+  const actor = organizationActor(envelope);
+  const snapshot = await requirePayment(input.payments, envelope.payload.paymentId);
+  for (const draft of draftPaymentRefund(snapshot)) {
+    await postJournalEntry(input.posting, { ...actor, draft });
   }
-  await postPaymentReversal(input, { organizationId, actorUserId }, snapshot);
+}
+
+async function postPaymentReversed(
+  input: PaymentHandlerInput,
+  envelope: TypedEventEnvelope<typeof EVENT_TYPE.PAYMENT_REVERSED>,
+): Promise<void> {
+  const actor = organizationActor(envelope);
+  const snapshot = await requirePayment(input.payments, envelope.payload.paymentId);
+  await postPaymentReversal(input, actor, snapshot);
 }

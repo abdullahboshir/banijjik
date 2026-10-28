@@ -42,6 +42,17 @@ function definedField<Key extends string, Value>(
   return value === undefined ? {} : ({ [key]: value } as Partial<Record<Key, Value>>);
 }
 
+function quoteLineOf(line: QuoteBody["lines"][number]) {
+  return {
+    offeringId: line.offeringId,
+    variantId: line.variantId,
+    quantity: line.quantity,
+    modifierOptionIds: line.modifierOptionIds,
+    ...definedField("manualDiscount", line.manualDiscount),
+    ...definedField("unitPriceOverride", line.unitPriceOverride),
+  };
+}
+
 export class TaxClassController {
   constructor(
     private readonly dependencies: {
@@ -226,13 +237,7 @@ export class QuoteController {
         organizationId,
         locationId: body.locationId,
         ...definedField("at", body.at),
-        lines: body.lines.map((line) => ({
-          offeringId: line.offeringId,
-          variantId: line.variantId,
-          quantity: line.quantity,
-          modifierOptionIds: line.modifierOptionIds,
-          ...definedField("manualDiscount", line.manualDiscount),
-        })),
+        lines: body.lines.map(quoteLineOf),
         ...definedField("orderDiscount", body.orderDiscount),
         ...definedField("paymentIsCash", body.paymentIsCash),
       }),

@@ -32,6 +32,11 @@ export interface ResolvedOrgConfig {
   readonly menu: readonly MenuEntry[];
   readonly botTools: readonly string[];
   readonly storefrontSections: readonly string[];
+  /**
+   * The site templates the industry offers (4.1 A3R). Feature code asks for these keys; it never
+   * reads `industry` (ADR-033). The config cache is per-process, so a cached copy never lacks it.
+   */
+  readonly websiteTemplateKeys: readonly string[];
   /** Client-visible organization-level settings (ADR-104). */
   readonly settings: Readonly<Record<string, unknown>>;
   /** Effective custom fields keyed by entity type (ADR-104). */

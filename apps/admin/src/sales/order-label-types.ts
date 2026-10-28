@@ -124,6 +124,8 @@ export interface OrderNewLabels {
 
 export interface OrderLineLabels {
   readonly product: string;
+  /** Badge on a SERVICE row in the instant-sale picker (plan 3.40). */
+  readonly kindService: string;
   /** The "Done by" select of a line (plan 3.11 Refresh C). */
   readonly performer: string;
   readonly performerNone: string;

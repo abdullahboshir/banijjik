@@ -59,6 +59,7 @@ describe("OrgConfigResolver sources", () => {
         allowedModuleKeys: [],
         contactRoleKeys: [],
         resourceTypes: [{ resourceTypeKey: "ROOM", termKey: "room", isMember: false }],
+        websiteTemplateKeys: ["clinic-trust", "doctor-chamber"],
         enabledKinds: [],
         templateVersion: 1,
       },
@@ -67,6 +68,7 @@ describe("OrgConfigResolver sources", () => {
     expect(resolved.resourceTypes).toEqual([
       { resourceTypeKey: "ROOM", termKey: "room", isMember: false },
     ]);
+    expect(resolved.websiteTemplateKeys).toEqual(["clinic-trust", "doctor-chamber"]);
     expect(resolved.modules).toEqual([MODULE_KEY.IAM]);
     expect(seen[1]).toEqual([MODULE_KEY.IAM]);
     expect(seen[2]).toEqual([MODULE_KEY.IAM]);

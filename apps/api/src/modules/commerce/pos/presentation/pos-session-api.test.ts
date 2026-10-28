@@ -1,6 +1,9 @@
 import { AUDIT_ACTION, SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
+import { PAYMENT_METHOD } from "@banijjik/contracts/payment";
 import { POS_EVENT_TYPE } from "@banijjik/contracts/pos";
 import { asId, newId, type ContactId, type OrganizationId } from "@banijjik/ids";
+import type { Response } from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   memberWithRole,
@@ -75,6 +78,38 @@ async function aCounter(packs = 10): Promise<Counter> {
 
 function sale(pack: Pack, payments: object[], extra: object = {}): object {
   return { lines: [lineOf(pack)], payments, ...extra };
+}
+
+async function reversePayment(
+  organizationId: string,
+  locationId: string,
+  manager: ApiActor,
+  paymentId: string,
+  amount: number,
+): Promise<Response> {
+  await manager.call("put", `/orgs/${organizationId}/me/approval-pin`, {
+    currentPassword: manager.person.password,
+    pin: "1234",
+  });
+  const approvers = await manager.call(
+    "get",
+    `/orgs/${organizationId}/approvers?locationId=${locationId}`,
+  );
+  const approved = await manager.call("post", `/orgs/${organizationId}/approvals`, {
+    action: APPROVAL_ACTION.PAYMENT_REVERSAL,
+    subjectKey: paymentId,
+    amount: bdt(amount),
+    locationId,
+    approverMemberId: approvers.body.data[0].memberId,
+    pin: "1234",
+  });
+  expect(approved.status, JSON.stringify(approved.body)).toBe(200);
+  return manager.callWith({
+    method: "post",
+    path: `/orgs/${organizationId}/payments/${paymentId}/reverse`,
+    idempotencyKey: newId(),
+    body: { approvalToken: approved.body.data.approvalToken },
+  });
 }
 
 describe("POS register", () => {
@@ -270,6 +305,70 @@ describe("POS Z-report", () => {
     expect(byManager.body.data).toEqual(report.body.data);
     expect(bySam.status).toBe(403);
     expect(await listOrders(shop)).toHaveLength(3);
+  });
+
+  it("a till cash payment reversed before close leaves expected cash equal to the float", async () => {
+    const { shop, manager, till, pack } = await aCounter();
+    const session = await openRegister(till, FLOAT);
+    const saleResponse = await saleCall(
+      till,
+      sale(pack, [{ method: PAYMENT_METHOD.CASH, amount: bdt(PRICE) }]),
+    );
+    expect(saleResponse.status, JSON.stringify(saleResponse.body)).toBe(201);
+    const paymentId = saleResponse.body.data.payments[0].paymentId as string;
+
+    const reversed = await reversePayment(
+      shop.organizationId,
+      till.locationId,
+      manager,
+      paymentId,
+      PRICE,
+    );
+    const reversalRow = await harness.connections.tenantShared
+      .collection("payments")
+      .findOne({ paymentId: reversed.body.data.paymentId });
+    const closed = await closeRegister(till, { session, countedCash: FLOAT });
+
+    expect(reversed.status, JSON.stringify(reversed.body)).toBe(201);
+    expect(reversalRow?.posSessionId).toBe(session.posSessionId);
+    expect(closed.status, JSON.stringify(closed.body)).toBe(200);
+    expect(closed.body.data.expectedCash).toEqual(bdt(FLOAT));
+  });
+
+  it("a reversal of a non-till payment does not change a register's expected cash", async () => {
+    const { shop, manager, till } = await aCounter();
+    const session = await openRegister(till, FLOAT);
+    const contactId = await addCustomer(shop, "Non till", "+8801700000099");
+    const payment = await manager.callWith({
+      method: "post",
+      path: `/orgs/${shop.organizationId}/payments`,
+      idempotencyKey: newId(),
+      body: {
+        locationId: till.locationId,
+        method: PAYMENT_METHOD.CASH,
+        amount: bdt(PRICE),
+        contactId,
+        allocations: [],
+      },
+    });
+    expect(payment.status, JSON.stringify(payment.body)).toBe(201);
+
+    const reversed = await reversePayment(
+      shop.organizationId,
+      till.locationId,
+      manager,
+      payment.body.data.paymentId as string,
+      PRICE,
+    );
+    const reversalRow = await harness.connections.tenantShared
+      .collection("payments")
+      .findOne({ paymentId: reversed.body.data.paymentId });
+    const closed = await closeRegister(till, { session, countedCash: FLOAT });
+
+    expect(reversed.status, JSON.stringify(reversed.body)).toBe(201);
+    expect(reversalRow?.posSessionId).toBeNull();
+    expect(closed.status, JSON.stringify(closed.body)).toBe(200);
+    expect(closed.body.data.expectedCash).toEqual(bdt(FLOAT));
   });
 
   it("the Z-report counts a credit sale with no payment", async () => {
