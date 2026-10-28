@@ -21,11 +21,35 @@ import { computeRequestHash } from "./request-hash.js";
 import { bodyToStore } from "./replay-redaction.js";
 import { captureJsonResponse, type CapturedResponse } from "./response-capture.js";
 
+export interface IdempotencyNamespace {
+  readonly scopeKind: IdempotencyKeyRef["scopeKind"];
+  readonly scopeId: string;
+}
+
+export type IdempotencyResolveNamespace = () =>
+  IdempotencyNamespace | Promise<IdempotencyNamespace>;
+
+export interface IdempotencyReplayAuthorization {
+  readonly record: StoredIdempotencyRecord;
+  readonly body: unknown;
+}
+
+export type IdempotencyAuthorizeReplay = (
+  authorization: IdempotencyReplayAuthorization,
+) => Promise<void>;
+
 export interface IdempotencyOptions {
   readonly clock: Clock;
   /** Defaults to the platform-database store. */
   readonly store?: IdempotencyStore;
+  readonly resolveNamespace?: IdempotencyResolveNamespace;
+  readonly authorizeReplay?: IdempotencyAuthorizeReplay;
 }
+
+export type StorefrontIdempotencyOptions = IdempotencyOptions & {
+  readonly resolveNamespace: IdempotencyResolveNamespace;
+  readonly authorizeReplay: IdempotencyAuthorizeReplay;
+};
 
 interface ClaimRequest {
   readonly ref: IdempotencyKeyRef;
@@ -39,6 +63,8 @@ const MAX_CLAIM_ATTEMPTS = 3;
 const IN_PROGRESS_RETRY_SECONDS = 1;
 const HTTP_SUCCESS_MIN = 200;
 const HTTP_SUCCESS_MAX = 299;
+export const STOREFRONT_IDEMPOTENCY_CALLBACKS_REQUIRED =
+  "Idempotency storefront callbacks must be provided together";
 
 function keyFieldError(messageKey: string): AppError {
   return validationFailed([{ path: IDEMPOTENCY_KEY_HEADER, messageKey }]);
@@ -56,13 +82,20 @@ function readIdempotencyKey(request: Request): string {
 }
 
 /** A tenant route keys by organization, a user route (`/me/...`) by user: keys never cross either. */
-function resolveScope(): Pick<IdempotencyKeyRef, "scopeKind" | "scopeId"> {
+function resolveStaffNamespace(): IdempotencyNamespace {
   const { organizationId, userId } = getRequestContext();
   if (organizationId !== undefined) {
     return { scopeKind: IDEMPOTENCY_SCOPE_KIND.ORGANIZATION, scopeId: organizationId };
   }
   if (userId === undefined) throw unauthenticated();
   return { scopeKind: IDEMPOTENCY_SCOPE_KIND.USER, scopeId: userId };
+}
+
+async function resolveRequestNamespace(
+  resolveNamespace: IdempotencyResolveNamespace | undefined,
+): Promise<IdempotencyNamespace> {
+  if (resolveNamespace !== undefined) return await resolveNamespace();
+  return resolveStaffNamespace();
 }
 
 function hashRequest(request: Request): string {
@@ -120,6 +153,31 @@ function replay(response: Response, record: StoredIdempotencyRecord): void {
   response.type("application/json").send(record.responseBody ?? "null");
 }
 
+function parseStoredReplayBody(record: StoredIdempotencyRecord): unknown {
+  const text = record.responseBody;
+  if (text === undefined) {
+    throw new AppError({ code: ERROR_CODE.INTERNAL, messageKey: "errors.internal" });
+  }
+  try {
+    const body: unknown = JSON.parse(text);
+    return body;
+  } catch (error) {
+    throw new AppError({
+      code: ERROR_CODE.INTERNAL,
+      messageKey: "errors.internal",
+      details: { reason: error instanceof Error ? error.name : "invalid_json" },
+    });
+  }
+}
+
+async function authorizeStoredReplay(
+  authorizeReplay: IdempotencyAuthorizeReplay | undefined,
+  record: StoredIdempotencyRecord,
+): Promise<void> {
+  if (authorizeReplay === undefined) return;
+  await authorizeReplay({ record, body: parseStoredReplayBody(record) });
+}
+
 function isSuccess(status: number): boolean {
   return status >= HTTP_SUCCESS_MIN && status <= HTTP_SUCCESS_MAX;
 }
@@ -142,6 +200,13 @@ function settleOutcome(
   };
 }
 
+function assertPairedCallbacks(options: IdempotencyOptions): void {
+  const hasResolve = options.resolveNamespace !== undefined;
+  const hasAuthorize = options.authorizeReplay !== undefined;
+  if (hasResolve === hasAuthorize) return;
+  throw new Error(STOREFRONT_IDEMPOTENCY_CALLBACKS_REQUIRED);
+}
+
 /**
  * Makes a `POST` safe to retry (14-API.md section 2, ADR-089). Mount it on the route after
  * `validate()`, so the request hash covers the parsed body. Same key and body: the first answer
@@ -150,15 +215,18 @@ function settleOutcome(
  * after success", and business invariants stay the final guard.
  */
 export function createIdempotencyMiddleware(options: IdempotencyOptions): RequestHandler {
+  assertPairedCallbacks(options);
   const { clock, store = new MongoIdempotencyStore() } = options;
   return async (request, response, next) => {
     const idempotencyKey = readIdempotencyKey(request);
+    const namespace = await resolveRequestNamespace(options.resolveNamespace);
     const claim: ClaimRequest = {
-      ref: { ...resolveScope(), idempotencyKey },
+      ref: { ...namespace, idempotencyKey },
       requestHash: hashRequest(request),
     };
     const decision = await decide(store, clock, claim);
     if (decision.kind === "REPLAY") {
+      await authorizeStoredReplay(options.authorizeReplay, decision.record);
       replay(response, decision.record);
       return;
     }
@@ -169,6 +237,13 @@ export function createIdempotencyMiddleware(options: IdempotencyOptions): Reques
     });
     next();
   };
+}
+
+/** Storefront checkout must name both callbacks so replay cannot skip current access. */
+export function createStorefrontIdempotencyMiddleware(
+  options: StorefrontIdempotencyOptions,
+): RequestHandler {
+  return createIdempotencyMiddleware(options);
 }
 
 function requestErrorContext(request: Request): { requestId?: string; method: string } {
