@@ -40,3 +40,7 @@ Start with 4.1 A1 after the lead reconciles Phase 3 closure and the plan check. 
 ## Deviations and carried observations
 
 All cards planned together by explicit owner request. 4.3 is materially larger because the owner pulled full COD forward; it is split into independently reviewed module-sized parts. No application code or unrelated Phase 3 card was changed. Current LEAD-STATE/STATUS differ on which Phase 3 fixes block Phase 4; the lead must reconcile this using actual merged review evidence. The main worktree's `.claude` local changes were untouched.
+
+## Follow-up author audit (2026-10-28)
+
+The later [audit R1](phase-4-plan-audit-R1.md) supersedes this handoff's initial contract assessment where corrected. It adds the shared assurance guide, fixes replay/booking/access/domain/migration/settlement/scalability seams, and records the owner's loss-reconciliation answer. The original verification above is historical evidence only; R1 records its own checks. No implementation or independent T1 approval is implied.

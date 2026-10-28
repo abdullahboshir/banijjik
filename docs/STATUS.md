@@ -154,15 +154,15 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 
 ## Phase 4 planning (2026-10-27)
 
-Owner requested every Phase 4 plan together. Planning-only exception to rolling-wave; implementation still waits for dependency refresh, the Phase 3 gate and independent T1 checks. Map: `docs/plans/phase-4-lanes.md`. Planning handoff: `docs/handoffs/phase-4-planning.md`. No runtime verification or implementation completion is claimed.
+Owner requested every Phase 4 plan together. Planning-only exception to rolling-wave; implementation still waits for dependency refresh, the Phase 3 gate and independent T1 checks. Map: `docs/plans/phase-4-lanes.md`. Planning handoff: `docs/handoffs/phase-4-planning.md`. No runtime verification or implementation completion is claimed. Author audit R1 (2026-10-28): `docs/handoffs/phase-4-plan-audit-R1.md`; shared assurance: `docs/plans/phase-4-assurance.md`. Blueprints still need exact-file/signature JIT refresh and independent T1 check.
 
 | Card | Status | Note |
 |---|---|---|
-| 4.1 theme engine | planned (Codex, 2026-10-27) | `docs/plans/4.1.md`; snapshots, lock evaluator, publication, renderer, manifest integration; T1 check pending |
-| 4.2 storefront domains/runtime | planned (Codex, 2026-10-27) | `docs/plans/4.2.md`; Cloudflare for SaaS selected under owner delegation; provider docs checked 2026-10-27, links in plan; real account/DNS/TLS smoke test is an implementation gate |
-| 4.3 shop/booking/guest checkout | planned (Codex, 2026-10-27) | `docs/plans/4.3.md` + `4.3-COD.md`; owner requires guest checkout and full COD in Phase 4; manual courier/rider lifecycle and settlement prerequisites; T1 checks pending |
-| 4.4 platform template/site builder | planned (Codex, 2026-10-27) | `docs/plans/4.4.md`; independent designs, policy controls, industry-safe same-look warning; T1 API / T2 screens |
-| 4.5 tenant editor | planned (Codex, 2026-10-27) | `docs/plans/4.5.md`; adoption, authenticated preview, policy-safe publish/restore; refresh after 4.1/4.4 |
+| 4.1 theme engine | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.1.md`; snapshots, complete lock policy, safe legacy migration, website-image purpose, renderer; T1 check pending |
+| 4.2 storefront domains/runtime | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.2.md`; Cloudflare for SaaS selected under owner delegation; provider docs checked 2026-10-27, links in plan; real account/DNS/TLS smoke test is an implementation gate |
+| 4.3 shop/booking/guest checkout | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.3.md` + `4.3-COD.md`; owner requires guest checkout and full COD in Phase 4; principal-safe replay, payment/expiry fencing, claim/privacy, manual courier/rider settlement and owner-approved loss/recovery; T1 checks pending |
+| 4.4 platform template/site builder | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.4.md`; independent designs, policy controls, bounded industry-safe similarity projection; T1 API / T2 screens |
+| 4.5 tenant editor | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.5.md`; lossless adoption, inert authenticated preview, policy-safe publish/unpublish/restore; refresh after 4.1/4.4 |
 | 4.6 simple booking page | folded into 4.3 (owner confirmed 2026-10-27) | `docs/plans/4.6.md` preserves its acceptance tests; folded does not mean implemented |
 
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
