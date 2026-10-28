@@ -17,4 +17,5 @@ row per host name because a per-organization unique index cannot keep a host uni
 `MongoHostClaims` reserves a host for a site domain and generation, disables it on removal (a 24-hour
 quarantine before anyone may claim it again) and resolves a request's Host. It stores no tenant content;
 the tenant `SiteDomain` belongs to `commerce/website` (part A2). Host names are normalized and checked
-against the platform reservations before a claim is written.
+against the platform reservations before a claim is written. Callers pass `HostnameReservations`;
+A2I wires `baseDomain` from `config.storefront` and `reservedHostnames: []` until C1.
