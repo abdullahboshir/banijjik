@@ -12,7 +12,7 @@ Owner answers, 2026-10-27:
 - The planner may select the custom-domain provider. Select Cloudflare for SaaS behind a provider port; accounts, zone and credentials remain deployment prerequisites.
 - Bring the **full COD lifecycle** into Phase 4. This adds explicit prerequisite parts for shipping, failure, redelivery, return-to-sender, collection, settlement and their accounting. Provider API automation remains 5.2; rider mobile operations remain 5.3. Staff can execute the complete lifecycle in Phase 4.
 
-All parts are planned, not implemented. Do not mark a card implementation-ready until its refresh and applicable plan check pass. ADR-P4-A through ADR-P4-D below are proposed architecture decisions; allocate numeric ADRs on integration, since other planning branches are active.
+All parts are planned, not implemented. Do not mark a card implementation-ready until its refresh and applicable plan check pass. ADR-P4-A through ADR-P4-E in docs/04-DECISIONS.md are proposed architecture decisions; allocate numeric ADRs on integration, since other planning branches are active.
 
 ## Mission and boundaries
 
@@ -39,7 +39,7 @@ Inspected implementation:
 | Target docs say channel/website; shipped module is commerce/website | Keep the shipped path (ADR-P4-A); no move hidden in a feature card. Correct the ownership references when this proposal is accepted. |
 | Website static pages already have key-based routes | Preserve ABOUT/FAQ/GUIDE/TERMS/PRIVACY/REFUND and their URLs. Layout pages use a separate route; publish snapshots include static text. |
 | Manifest storefrontSections arrays are empty | Register real sections at their owning manifests in small integration parts, then derive availability from resolveOrgConfig. No industry switch in renderer. |
-| Same-industry warning needs the industry key | Only platform/industry selects candidates; website receives opaque candidate IDs and compares fingerprints. |
+| Same-industry warning needs the industry key | Only platform/industry groups and queries indexed comparison projections; no unbounded candidate-ID array or feature-level industry read. |
 | Existing layout reads customer cookies | Do not CDN-cache personalized HTML. Cache public projections only; 4.2 owns the explicit cache policy. |
 | Existing site read is intentionally ungated | Preserve basic /site discovery. Published design and checkout have their own WEBSITE gates; no accidental break of Track M. |
 | Orders currently reject COURIER/OWN_RIDER | 4.3-COD lands before COD checkout; declare and test the full transition/posting matrix. |
@@ -52,12 +52,12 @@ Inspected implementation:
 
 | Plan | Tier | Parts / predecessor |
 |---|---|---|
-| [4.1](4.1.md) Theme engine | T1 | A1 contracts/validation → A2 persistence/policy → A3 publication/API → B renderer → C manifest integration |
-| [4.2](4.2.md) Hosting and storefront runtime | T1 | A1 domain registry → A2 Cloudflare worker → B domain wizard → C SSR/cache/SEO; after 4.1 A3, renderer before C |
-| [4.3-COD](4.3-COD.md) COD prerequisites, part of 4.3 | T1 | S sales → C courier manual records → R rider manual records → P collection/settlement → J accounting → B staff screens → V end-to-end; sequential cross-module review gates |
-| [4.3](4.3.md) Public catalog and checkout | T1 | A1 public reads → A2 guest identity → A3 business command adapters → A4 checkout/ownership → B1 shop → B2 bookings/plans/tracking → V day scenarios |
-| [4.4](4.4.md) Platform designer | T2 screens; T1 policy API | A1 template API → A2 industry compatibility/warnings → A3 operator site API → B builder; after 4.1 |
-| [4.5](4.5.md) Tenant editor | T2 | A template adoption/preview → B editor/rollback; after 4.1, 4.4 API, 4.2 preview runtime |
+| [4.1](4.1.md) Theme engine | T1 | A1 contracts/validation → A2 persistence/policy → A3 publication/API → A3D directory → A3R resolver → A3I composition → F website images → B renderer → C1 legacy API → C2 legacy UI |
+| [4.2](4.2.md) Hosting and storefront runtime | T1 | A1 host registry → A2 tenant domain lifecycle → A3 provider worker → B wizard → C1 host/SSR → C2 cache/SEO; after 4.1 A3I/B |
+| [4.3-COD](4.3-COD.md) COD prerequisites, part of 4.3 | T1 | S1 shipment → S2 RTS → S3 loss/recovery → C courier → R rider → P payment → J1/J2 accounting → I composition/report/commission/reconciliation parts → B1/B2 screens → V |
+| [4.3](4.3.md) Public catalog and checkout | T1 | A0 replay boundary → A1 public reads → A2 guest → A3C/S/B/P/E owner adapters → A4 checkout → A5A access/claim → A5B privacy → B1/B2/B3 → V; COD prerequisites before delivery enabled |
+| [4.4](4.4.md) Platform designer | T2 screens; T1 policy API | A1 template API → A2 bounded comparisons → A3 operator API → A3I composition → B1 template builder → B2 business designer; after 4.1 |
+| [4.5](4.5.md) Tenant editor | T1 A1/A2; T2 screens | A1 adoption → A2 preview → B1 editor → B2 publish/unpublish/restore; after 4.1, 4.4 APIs and 4.2 runtime |
 | [4.6](4.6.md) Simple booking page | folded | Acceptance coverage in 4.3; no separate implementation |
 
 Default execution is sequential. This file does **not** authorize parallel agents or expand the roadmap's parallel lanes. A lead may propose actual non-overlapping pairs in the roadmap after reviewing merged file ownership. New parts use their own branches/worktrees. A part with more than 15 T1 production files or 25 T2 files is split before implementation; shared registrations count toward the size.
@@ -81,21 +81,19 @@ Each implementation handoff lists actual command output, test names, deviations,
 - Host A + path/account/file of B cannot reveal B; removed/unverified domains do not route; private responses never hit a shared cache.
 - All five Offering kinds are browsable when enabled; PRODUCT order, SERVICE/RENTAL/EVENT booking and PLAN enrollment use existing business rules.
 - Guest and signed-in checkout both work, including lost-response retry; guest identity cannot claim a known contact.
-- Delivery → courier/rider collection → settlement and failure → redelivery / RTS have correct stock, dues, journals and reports after real outbox processing.
+- Delivery → courier/rider collection → settlement and failure → redelivery / RTS / approved loss and recovery have correct stock, dues, journals and reports after real outbox processing.
 - Directory, credit, account, consent, erasure, protected photos and static pages from Track M still work.
 - BN/EN, mobile 360/390/768 px, keyboard and 44 px targets pass; editor is lazy-loaded; LCP target <2.5 s, INP <200 ms and existing route budgets are measured, never waived here.
 - Real Cloudflare staging ownership/TLS/removal smoke test completes before custom domains are called production-ready.
 - A separate reviewer writes phase-4-review.md and reconciles docs/code drift before the pilot proceeds.
 
-## Proposed architecture records (for docs/04-DECISIONS.md)
+## Architecture records and audit gates
 
-**ADR-P4-A — website snapshots and boundaries. Accepted (proposed).** Keep commerce/website as the implemented module. SiteDesign and immutable WebsiteVersion snapshots are the sole rendering contract. A template revision is copied on explicit adoption; current site policy is always enforced on restore. Platform templates belong to platform/industry for industry access; no feature module reads industry. Keep old static-page endpoints via a draft adapter and publish full snapshots.
+[docs/04-DECISIONS.md](../04-DECISIONS.md) is the only ADR text authority: ADR-P4-A snapshots/boundaries; B domain provider/routing; C guest checkout; D launch scope including the owner-approved 2026-10-28 loss lifecycle amendment; E transaction/replay/access assurance. This map does not maintain duplicate ADR prose. Numeric IDs are assigned by the lead at integration.
 
-**ADR-P4-B — domain routing. Accepted (proposed).** Cloudflare for SaaS is the first edge provider, selected under the owner's delegated choice. Use platform/operations for globally unique host claims; tenant SiteDomain rows hold business-facing state. DNS ownership, provider hostname state and TLS readiness are separate. Provider calls and invalidation go through durable jobs. Host-only customer cookies remain unchanged.
+Read [phase-4-assurance.md](phase-4-assurance.md) for common no-damage, replay, privacy, scalability and rollout invariants, and [audit R1](../handoffs/phase-4-plan-audit-R1.md) for findings and remaining gates. The owner's 2026-10-28 answer includes manager-approved lost-goods closure and recovery/correction safeguards in COD.
 
-**ADR-P4-C — customer checkout. Accepted (proposed).** Owner approved guest checkout. Website orchestrates existing business modules through public command ports in one transaction; it owns checkout/access records only. Guest sessions cannot impersonate customer accounts or merge by phone. Mixed-kind checkout produces separate requests linked by checkoutId. Money/stock remain in their current modules.
-
-**ADR-P4-D — launch scope amendment. Accepted (owner for scope; mechanics proposed).** Owner approved folding 4.6 into 4.3 and bringing full COD into Phase 4. Manual courier and rider operations use their target modules and real ledgers; Phase 5 adds providers/mobile workflows, not a second lifecycle. 4.3 is incomplete until COD reconciliation and failed-delivery scenarios pass.
+These are reviewed-by-author design blueprints, not implementation-ready file lists. The JIT planner must freeze exact files, vocabulary, exported signatures, index rollout and tests for each part after dependencies merge. Split cross-module work into owner-specific parts and route-only composition; no implementer invents missing contracts or expands a wildcard. Independent T1 checking and Phase 3 closure remain mandatory.
 
 ## Follow-up input, not an invented approval
 
