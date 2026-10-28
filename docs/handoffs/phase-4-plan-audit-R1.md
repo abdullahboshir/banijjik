@@ -55,6 +55,23 @@ Documentation validator passed: 6 active plans × 11 required sections, 8 TypeSc
 
 Snippet parsing is syntax validation, not application typechecking or proof that planned interfaces already exist. Application typecheck/lint/test/build/browser suites are not run for this docs-only revision; no application files changed. Required implementation test cases are specifications, not claimed passing tests. Historical checks in phase-4-planning.md remain historical. Normal commit hooks remain enabled; no runtime CI pass is claimed for this planning revision.
 
+The documentation commit is 9bc65bd8, pushed to origin/s/docs-plan-phase-4 with a clean worktree and normal prettier/commit hooks. The finish gate below exited 1. Its fallback looks up the last code commit **on the current docs branch**; that code commit's actual successful push run belongs to s/3.40-api-walk-in-services: [CI 40326069315](https://github.com/abdullahboshir/banijjik/actions/runs/40326069315), full SHA 677ea5bea89a43052901c739949de9e873ed563b. A direct gh query by that full SHA returned completed/success. This is historical baseline evidence, not a new application test run and not a passing card:check. Fixing the shared checker is outside this planning card; carry the branch-filter limitation to the lead.
+
+```text
+PASS  card branch: s/docs-plan-phase-4
+PASS  everything committed: clean
+PASS  pushed: local 9bc65bd8, origin 9bc65bd8
+INFO  rebased on origin/main: main moved since your base: fine, do not rebase only for this; the lead merges it
+PASS  handoff written: a docs/handoffs/<card>-<api|ui>.md changed on this branch
+PASS  STATUS row updated: docs/STATUS.md changed on this branch
+PASS  no conflict markers: none
+PASS  no focused tests: none
+FAIL  CI green on 677ea5be: no CI run for this commit yet: push, then wait (last code commit; later commits change docs/ only)
+card:check FAILED: the card is not done. Fix every FAIL line and run it again.
+```
+
+At finish, origin/main was f8c7944a (including newer 3.42 pricing/POS changes); the reviewed application baseline stays 016bd228, rather than falsely claiming this audit inspected the new code. The required dependency refresh must include those changes before implementation. No rebase/main merge was performed merely to make a stale plan appear current.
+
 ## Handoff
 
 Continue from the refreshed phase map, assurance protocol and owning card. Keep changes on s/docs-plan-phase-4 for lead review; no main merge/push or unrelated worktree changes. The owner can inspect every correction before implementation begins.
