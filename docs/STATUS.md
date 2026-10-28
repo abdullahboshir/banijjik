@@ -159,7 +159,7 @@ Owner requested every Phase 4 plan together. Planning-only exception to rolling-
 | Card | Status | Note |
 |---|---|---|
 | 4.1 theme engine | **merged** (see Phase 4 table below) | `docs/plans/4.1.md` now on `main` via 4.2 A1 merge; implementation complete |
-| 4.2 storefront domains/runtime | A1 merging this session; A2C/A2/A2I frozen in Refresh A2-1; A3–C2 still blueprints | `docs/plans/4.2.md` Plan check R1 + Refresh A2-1. A1 = `HostClaim` registry (`docs/handoffs/4.2-a1.md`). Next implement: A2C only |
+| 4.2 storefront domains/runtime | **A1 merged** (2026-10-28); A2C/A2/A2I frozen in Refresh A2-1; A3–C2 still blueprints | `docs/plans/4.2.md` Plan check R1 + Refresh A2-1. A1 = `HostClaim` registry (`docs/handoffs/4.2-a1.md`, CI [40674399416](https://github.com/abdullahboshir/banijjik/actions/runs/40674399416)). Next implement: A2C only |
 | 4.3 shop/booking/guest checkout | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.3.md` + `4.3-COD.md`; owner requires guest checkout and full COD in Phase 4; principal-safe replay, payment/expiry fencing, claim/privacy, manual courier/rider settlement and owner-approved loss/recovery; T1 checks pending |
 | 4.4 platform template/site builder | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.4.md`; independent designs, policy controls, bounded industry-safe similarity projection; T1 API / T2 screens |
 | 4.5 tenant editor | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.5.md`; lossless adoption, inert authenticated preview, policy-safe publish/unpublish/restore; refresh after 4.1/4.4 |
@@ -183,7 +183,7 @@ Owner requested every Phase 4 plan together. Planning-only exception to rolling-
 | Card | Status | Note |
 |---|---|---|
 | 4.1 theme engine | A1+A2+A3+A3D+A3R+A3I+F+B+C1+C2 merged (2026-10-28, owner merge yes; T1 written review skipped to land now) | A3 publish/restore/unpublish + public published-site (`docs/handoffs/4.1-a3.md`, CI [40668993305](https://github.com/abdullahboshir/banijjik/actions/runs/40668993305)). A3D directory `storefrontSections` (`docs/handoffs/4.1-a3d.md`). A3R `websiteTemplateKeys` on `ResolvedOrgConfig` (`docs/handoffs/4.1-a3r.md`). A3I tenant/storefront composition (`docs/handoffs/4.1-a3i.md`). Earlier: A1 `docs/handoffs/4.1-a1.md`; A2 `docs/handoffs/4.1-a2.md`; F CI [40641982603](https://github.com/abdullahboshir/banijjik/actions/runs/40641982603); B [40642554599](https://github.com/abdullahboshir/banijjik/actions/runs/40642554599); C1 [40644779757](https://github.com/abdullahboshir/banijjik/actions/runs/40644779757); C2 [40644784153](https://github.com/abdullahboshir/banijjik/actions/runs/40644784153) |
-| 4.2 storefront domains/runtime | A1 on this branch (HostClaim registry + 4.1 main); Refresh A2-1 frozen | Plan `docs/plans/4.2.md`. A1 handoff `docs/handoffs/4.2-a1.md`. Next: A2C `s/4.2-a2c-domain-contracts` after A1 is on `main` |
+| 4.2 storefront domains/runtime | **A1 merged** (2026-10-28, HostClaim registry + 4.1 main; T1 written review skipped to land now) | Plan `docs/plans/4.2.md` Refresh A2-1. Handoff `docs/handoffs/4.2-a1.md`. CI [40674399416](https://github.com/abdullahboshir/banijjik/actions/runs/40674399416). Next: A2C `s/4.2-a2c-domain-contracts` |
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.
