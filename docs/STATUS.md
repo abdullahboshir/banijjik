@@ -169,7 +169,7 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 ## Phase 4
 | Card | Status | Note |
 |---|---|---|
-| 4.1 theme engine | implemented (awaiting review), part A1 | branch `s/4.1-a1-theme-contracts`; handoff `docs/handoffs/4.1-a1.md`; contracts + validation for tokens, section/variant registry, policy shapes, reserved paths, contrast; `website.site.read/update/publish`; publish events. First CI failed because OWNER catalog is the union of manifests; website manifest now declares the three site keys |
+| 4.1 theme engine | A1+F+B merged (2026-10-28, owner merge yes; T1 written review skipped to land now). A2, A3, C1, C2 not on this head | A1 contracts + validation (`docs/handoffs/4.1-a1.md`). F: `FILE_PURPOSE.WEBSITE_IMAGE` PUBLIC, gated by `file.create` + org-wide `website.site.update` (`docs/handoffs/4.1-f.md`, CI [40641982603](https://github.com/abdullahboshir/banijjik/actions/runs/40641982603)). B: shared `@banijjik/ui` static-section renderer and fixed token CSS map (`docs/handoffs/4.1-b.md`, CI [40642554599](https://github.com/abdullahboshir/banijjik/actions/runs/40642554599)). A3 is in another session; C1/C2 wait on green CI then merge this main |
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.
