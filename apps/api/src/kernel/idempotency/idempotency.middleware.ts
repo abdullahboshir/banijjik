@@ -57,7 +57,8 @@ interface ClaimRequest {
 }
 
 type Decision =
-  { readonly kind: "RUN" } | { readonly kind: "REPLAY"; readonly record: StoredIdempotencyRecord };
+  | { readonly kind: "RUN" }
+  | { readonly kind: "COMPLETED"; readonly record: StoredIdempotencyRecord };
 
 const MAX_CLAIM_ATTEMPTS = 3;
 const IN_PROGRESS_RETRY_SECONDS = 1;
@@ -137,10 +138,12 @@ async function decide(
     if (result.claimed) return { kind: "RUN" };
     const { record } = result;
     if (record === undefined) continue;
+    if (record.status === IDEMPOTENCY_STATUS.COMPLETED) {
+      return { kind: "COMPLETED", record };
+    }
     if (record.requestHash !== requestHash) {
       throw new AppError({ code: ERROR_CODE.IDEMPOTENCY_MISMATCH });
     }
-    if (record.status === IDEMPOTENCY_STATUS.COMPLETED) return { kind: "REPLAY", record };
     if (record.lockedUntil > now) throw inProgressError();
     if (await store.reclaim(ref, requestHash, now)) return { kind: "RUN" };
   }
@@ -211,8 +214,10 @@ function assertPairedCallbacks(options: IdempotencyOptions): void {
  * Makes a `POST` safe to retry (14-API.md section 2, ADR-089). Mount it on the route after
  * `validate()`, so the request hash covers the parsed body. Same key and body: the first answer
  * again, with `Idempotency-Replayed: true`. Same key, other body: `422 IDEMPOTENCY_MISMATCH`.
- * The record is not part of the business transaction: protection is "at least once, replay
- * after success", and business invariants stay the final guard.
+ * A completed record is authorized before mismatch or replay, so a revoked storefront principal
+ * cannot learn that a checkout exists. The record is not part of the business transaction:
+ * protection is "at least once, replay after success", and business invariants stay the final
+ * guard.
  */
 export function createIdempotencyMiddleware(options: IdempotencyOptions): RequestHandler {
   assertPairedCallbacks(options);
@@ -225,8 +230,11 @@ export function createIdempotencyMiddleware(options: IdempotencyOptions): Reques
       requestHash: hashRequest(request),
     };
     const decision = await decide(store, clock, claim);
-    if (decision.kind === "REPLAY") {
+    if (decision.kind === "COMPLETED") {
       await authorizeStoredReplay(options.authorizeReplay, decision.record);
+      if (decision.record.requestHash !== claim.requestHash) {
+        throw new AppError({ code: ERROR_CODE.IDEMPOTENCY_MISMATCH });
+      }
       replay(response, decision.record);
       return;
     }

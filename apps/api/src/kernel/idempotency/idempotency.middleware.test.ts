@@ -466,6 +466,32 @@ describe("storefront Idempotency-Key namespace", () => {
     expect(handlerRuns).toBe(1);
   });
 
+  it("hides a completed-record mismatch when current access is revoked", async () => {
+    const key = newId();
+    const organizationId = newId();
+    const guestSessionId = newId();
+
+    const first = await callStorefrontProbe({
+      key,
+      organizationId,
+      guestSessionId,
+      body: { mode: "ok" },
+    });
+    denyStorefrontReplay = true;
+    const mismatched = await callStorefrontProbe({
+      key,
+      organizationId,
+      guestSessionId,
+      body: { mode: "ok", amount: 2 },
+    });
+
+    expect(first.status).toBe(201);
+    expect(mismatched.status).toBe(404);
+    expect(mismatched.body.error.code).toBe("NOT_FOUND");
+    expect(mismatched.headers[REPLAYED]).toBeUndefined();
+    expect(handlerRuns).toBe(1);
+  });
+
   it("replays for the same storefront principal after a lost response", async () => {
     const key = newId();
     const organizationId = newId();
