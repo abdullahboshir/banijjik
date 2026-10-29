@@ -1,5 +1,53 @@
 import { DomainRuleError, ERROR_CODE, PLATFORM_RULE_KEY } from "@banijjik/contracts";
 
+export function invalidWebsiteTemplateField(path: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.VALIDATION_ERROR,
+    details: { fields: [{ path, messageKey: "validation.invalid_value" }] },
+  });
+}
+
+export function websiteTemplateNotFound(): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.NOT_FOUND });
+}
+
+export function websiteTemplateKeyTaken(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.CONFLICT,
+    messageKey: "errors.website_template_key_taken",
+  });
+}
+
+export function websiteTemplateTransitionInvalid(input: {
+  readonly fromStatus: string;
+  readonly toStatus: string;
+}): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.INVALID_TRANSITION,
+    messageKey: "errors.invalid_transition",
+    details: input,
+  });
+}
+
+export function websiteTemplateArchived(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "errors.website_template_archived",
+    details: { ruleKey: PLATFORM_RULE_KEY.WEBSITE_TEMPLATE_ARCHIVED },
+  });
+}
+
+export function websiteTemplateImageForbidden(sectionId: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "errors.website_template_image_forbidden",
+    details: {
+      ruleKey: PLATFORM_RULE_KEY.WEBSITE_TEMPLATE_IMAGE_FORBIDDEN,
+      sectionId,
+    },
+  });
+}
+
 /** A field of an industry template failed its format or catalogue check. */
 export function invalidIndustryTemplateField(path: string): DomainRuleError {
   return new DomainRuleError({

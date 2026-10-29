@@ -5,6 +5,14 @@ import {
   INDUSTRY_TEMPLATE_MODEL_NAME,
   industryTemplateSchema,
 } from "./industry-template.schema.js";
+import {
+  WEBSITE_TEMPLATE_COLLECTION_NAME,
+  WEBSITE_TEMPLATE_MODEL_NAME,
+  WEBSITE_TEMPLATE_REVISION_COLLECTION_NAME,
+  WEBSITE_TEMPLATE_REVISION_MODEL_NAME,
+  websiteTemplateRevisionSchema,
+  websiteTemplateSchema,
+} from "./website-template.schema.js";
 
 /** Registers the IndustryTemplate model. Templates are platform configuration (ADR-043, tenancy NONE). */
 export function registerIndustryModels(): void {
@@ -13,6 +21,20 @@ export function registerIndustryModels(): void {
     collectionName: INDUSTRY_TEMPLATE_COLLECTION_NAME,
     database: DATABASE_KIND.PLATFORM,
     schema: industryTemplateSchema,
+    tenancy: MODEL_TENANCY.NONE,
+  });
+  registerModel({
+    modelName: WEBSITE_TEMPLATE_MODEL_NAME,
+    collectionName: WEBSITE_TEMPLATE_COLLECTION_NAME,
+    database: DATABASE_KIND.PLATFORM,
+    schema: websiteTemplateSchema,
+    tenancy: MODEL_TENANCY.NONE,
+  });
+  registerModel({
+    modelName: WEBSITE_TEMPLATE_REVISION_MODEL_NAME,
+    collectionName: WEBSITE_TEMPLATE_REVISION_COLLECTION_NAME,
+    database: DATABASE_KIND.PLATFORM,
+    schema: websiteTemplateRevisionSchema,
     tenancy: MODEL_TENANCY.NONE,
   });
 }
