@@ -10,6 +10,11 @@ export interface SiteDomainRepository {
     readonly page: number;
     readonly limit: number;
   }): Promise<{ readonly items: readonly SiteDomain[]; readonly total: number }>;
+  listDuePage(input: {
+    readonly now: Date;
+    readonly afterSiteDomainId?: SiteDomainId;
+    readonly limit: number;
+  }): Promise<readonly SiteDomain[]>;
 }
 
 export interface SiteDomainUnitOfWork {

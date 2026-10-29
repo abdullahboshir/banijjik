@@ -1,3 +1,4 @@
+import { readCloudflareConfig } from "./read-cloudflare-config.js";
 import { readSmsConfig } from "./read-sms-config.js";
 import { ConfigError, type AppConfig, type ConfigIssue } from "./app-config.js";
 import {
@@ -73,7 +74,10 @@ function readTrustedProxyHops(env: Environment, isProduction: boolean): FieldRes
   return readField(env, rule);
 }
 
-type BaseConfig = Omit<AppConfig, "auth" | "platformAdmin" | "storage" | "storefront" | "sms">;
+type BaseConfig = Omit<
+  AppConfig,
+  "auth" | "platformAdmin" | "storage" | "storefront" | "sms" | "cloudflare"
+>;
 type ServerSettings = Pick<
   AppConfig,
   "port" | "logLevel" | "role" | "trustedProxyHops" | "corsAllowedOrigins"
@@ -156,7 +160,7 @@ function readBaseConfig(env: Environment): ConfigSection<BaseConfig> {
   }
   return { issues, value: { nodeEnv: nodeEnv.value, ...server.value, ...stores.value } };
 }
-type RuntimeSettings = Pick<AppConfig, "auth" | "storage" | "storefront" | "sms">;
+type RuntimeSettings = Pick<AppConfig, "auth" | "storage" | "storefront" | "sms" | "cloudflare">;
 
 /** The sections that production treats differently from development: sign-in, files and customer sign-in. */
 function readRuntimeSettings(env: Environment): {
@@ -168,12 +172,20 @@ function readRuntimeSettings(env: Environment): {
   const storage = readStorageConfig(env, isProduction);
   const storefront = readStorefrontConfig(env, isProduction);
   const sms = readSmsConfig(env, isProduction);
-  const issues = [...auth.issues, ...storage.issues, ...storefront.issues, ...sms.issues];
+  const cloudflare = readCloudflareConfig(env);
+  const issues = [
+    ...auth.issues,
+    ...storage.issues,
+    ...storefront.issues,
+    ...sms.issues,
+    ...cloudflare.issues,
+  ];
   if (
     auth.value === undefined ||
     storage.value === undefined ||
     storefront.value === undefined ||
-    sms.value === undefined
+    sms.value === undefined ||
+    cloudflare.value === undefined
   ) {
     return { issues };
   }
@@ -184,6 +196,7 @@ function readRuntimeSettings(env: Environment): {
       storage: storage.value,
       storefront: storefront.value,
       sms: sms.value,
+      cloudflare: cloudflare.value,
     },
   };
 }

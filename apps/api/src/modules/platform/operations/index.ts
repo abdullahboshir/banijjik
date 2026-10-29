@@ -19,6 +19,8 @@ import {
 } from "./application/use-cases/event-use-cases.js";
 import { EventOperationsController } from "./presentation/event-operations.controller.js";
 import { buildEventOperationsRouters } from "./presentation/event-operations.router.js";
+import { MongoDomainOperationRepository } from "./infrastructure/mongo-domain-operation.repository.js";
+import type { DomainOperationRepository } from "./application/domain-provider.js";
 
 export { operationsManifest } from "./module.manifest.js";
 export { registerOperationsModels } from "./infrastructure/register-operations-models.js";
@@ -31,6 +33,23 @@ export type {
 } from "./application/host-claims.js";
 export type { HostnameReservations } from "./application/hostname.js";
 export { normalizeHostname } from "./application/hostname.js";
+export {
+  ProviderUnavailableError,
+  type DomainOperationRepository,
+  type DomainProvider,
+  type EnsureDomainResult,
+  type InspectDomainResult,
+} from "./application/domain-provider.js";
+export {
+  DOMAIN_OPERATION_ACTION,
+  DOMAIN_OPERATION_STATE,
+  DomainOperation,
+  type DomainOperationAction,
+} from "./domain/domain-operation.entity.js";
+export { createDomainProvider } from "./infrastructure/cloudflare-domain-provider.js";
+export function createMongoDomainOperations(): DomainOperationRepository {
+  return new MongoDomainOperationRepository();
+}
 
 export interface OperationsRouterDependencies {
   readonly permission: PlatformPermissionMiddlewareFactory;

@@ -102,6 +102,10 @@ class InMemorySiteDomainRepository implements SiteDomainRepository {
     const start = (input.page - 1) * input.limit;
     return { items: this.rows.slice(start, start + input.limit), total: this.rows.length };
   }
+
+  async listDuePage(): Promise<readonly SiteDomain[]> {
+    return [];
+  }
 }
 
 class RecordingEvents implements SiteDomainEventPublisher {

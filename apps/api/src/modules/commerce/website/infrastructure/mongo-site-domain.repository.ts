@@ -13,6 +13,7 @@ import {
   sessionOption,
   updateVersioned,
 } from "../../../../kernel/db/index.js";
+import { SITE_DOMAIN_STATUS } from "@banijjik/contracts/website";
 import type { SiteDomainRepository } from "../application/ports/site-domain-ports.js";
 import { SiteDomain } from "../domain/site-domain.entity.js";
 import { SITE_DOMAIN_MODEL_NAME, type SiteDomainDocument } from "./site-domain.schema.js";
@@ -122,5 +123,32 @@ export class MongoSiteDomainRepository implements SiteDomainRepository {
       model.countDocuments({}),
     ]);
     return { items: rows.map(toDomain), total };
+  }
+
+  async listDuePage(input: {
+    readonly now: Date;
+    readonly afterSiteDomainId?: SiteDomainId;
+    readonly limit: number;
+  }): Promise<readonly SiteDomain[]> {
+    const filter: Record<string, unknown> = {
+      status: {
+        $in: [
+          SITE_DOMAIN_STATUS.VERIFYING,
+          SITE_DOMAIN_STATUS.ACTIVE,
+          SITE_DOMAIN_STATUS.SUSPENDED,
+          SITE_DOMAIN_STATUS.REMOVING,
+        ],
+      },
+      nextAttemptAt: { $lte: input.now },
+    };
+    if (input.afterSiteDomainId !== undefined) {
+      filter.siteDomainId = { $gt: input.afterSiteDomainId };
+    }
+    const rows = await domainModel()
+      .find(filter)
+      .sort({ siteDomainId: 1 })
+      .limit(input.limit)
+      .lean<SiteDomainDocument[]>();
+    return rows.map(toDomain);
   }
 }

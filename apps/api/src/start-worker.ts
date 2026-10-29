@@ -8,6 +8,8 @@ import type { ShutdownTask } from "./kernel/lifecycle/shutdown.js";
 import { createCloseRedisTask, createQueueRedisClient } from "./kernel/redis/index.js";
 import { registerBookingScheduledJobs } from "./modules/commerce/booking/index.js";
 import { registerCreditScheduledJobs } from "./modules/commerce/credit/index.js";
+import { registerWebsiteDomainJobs } from "./modules/commerce/website/index.js";
+import { createDomainProvider } from "./modules/platform/operations/index.js";
 import { registerPaymentScheduledJobs } from "./modules/commerce/payment/index.js";
 import { registerSalesScheduledJobs } from "./modules/commerce/sales/index.js";
 import { buildBookingDepositCheckAdapter } from "./routes/booking-deposit-adapter.js";
@@ -97,6 +99,10 @@ export function startWorker(
     }),
   );
   registerEnrollmentWorkerJobs({ clock: systemClock, orgConfig, registry });
+  registerWebsiteDomainJobs({
+    clock: systemClock,
+    provider: createDomainProvider(config.cloudflare),
+  });
   const effectiveness = buildEventModuleEffectiveness(systemClock);
   const scheduledJobs = startScheduledJobs({ redis, effectiveness, clock: systemClock });
   const processing = startEventProcessing({

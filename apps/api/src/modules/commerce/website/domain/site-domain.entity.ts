@@ -178,6 +178,71 @@ export class SiteDomain {
     });
   }
 
+  recordProvider(input: {
+    readonly providerHostnameId: string;
+    readonly ownershipRecords: readonly DnsInstruction[];
+    readonly certificateRecords: readonly DnsInstruction[];
+    readonly diagnosticKey: string | null;
+    readonly now: Date;
+  }): SiteDomain {
+    return new SiteDomain({
+      ...this.props,
+      providerHostnameId: input.providerHostnameId,
+      ownershipRecords: input.ownershipRecords,
+      certificateRecords: input.certificateRecords,
+      safeDiagnosticKey: input.diagnosticKey,
+      version: this.props.version + 1,
+      updatedAt: input.now,
+    });
+  }
+
+  activate(input: { readonly now: Date; readonly nextAttemptAt: Date }): SiteDomain {
+    if (this.props.status !== SITE_DOMAIN_STATUS.VERIFYING) throw notReady();
+    return this.withStatus({
+      status: SITE_DOMAIN_STATUS.ACTIVE,
+      now: input.now,
+      nextAttemptAt: input.nextAttemptAt,
+      lastVerifiedAt: input.now,
+    });
+  }
+
+  suspend(input: { readonly now: Date; readonly diagnosticKey: string | null }): SiteDomain {
+    if (this.props.status !== SITE_DOMAIN_STATUS.ACTIVE) throw notReady();
+    return this.withStatus({
+      status: SITE_DOMAIN_STATUS.SUSPENDED,
+      now: input.now,
+      diagnosticKey: input.diagnosticKey,
+    });
+  }
+
+  recoverToVerifying(input: { readonly now: Date }): SiteDomain {
+    if (this.props.status !== SITE_DOMAIN_STATUS.SUSPENDED) throw notReady();
+    return this.withStatus({ status: SITE_DOMAIN_STATUS.VERIFYING, now: input.now });
+  }
+
+  fail(input: { readonly now: Date; readonly diagnosticKey: string | null }): SiteDomain {
+    if (this.props.status !== SITE_DOMAIN_STATUS.VERIFYING) throw notReady();
+    return this.withStatus({
+      status: SITE_DOMAIN_STATUS.FAILED,
+      now: input.now,
+      diagnosticKey: input.diagnosticKey,
+    });
+  }
+
+  markRemoved(input: { readonly now: Date }): SiteDomain {
+    if (this.props.status !== SITE_DOMAIN_STATUS.REMOVING) throw notReady();
+    return this.withStatus({ status: SITE_DOMAIN_STATUS.REMOVED, now: input.now });
+  }
+
+  scheduleRetry(input: { readonly nextAttemptAt: Date; readonly now: Date }): SiteDomain {
+    return new SiteDomain({
+      ...this.props,
+      nextAttemptAt: input.nextAttemptAt,
+      version: this.props.version + 1,
+      updatedAt: input.now,
+    });
+  }
+
   /**
    * Status and CAS token move; generation stays so `hostClaims.disable` still matches the claim
    * that `reserve` wrote (A1 equality). A3 bumps generation when it retries the same domain.
@@ -185,15 +250,20 @@ export class SiteDomain {
   private withStatus(input: {
     readonly status: SiteDomainStatus;
     readonly now: Date;
-    readonly actorUserId: UserId | null;
+    readonly actorUserId?: UserId | null;
+    readonly nextAttemptAt?: Date;
+    readonly lastVerifiedAt?: Date;
+    readonly diagnosticKey?: string | null;
   }): SiteDomain {
     return new SiteDomain({
       ...this.props,
       status: input.status,
-      nextAttemptAt: input.now,
+      nextAttemptAt: input.nextAttemptAt ?? input.now,
+      ...(input.lastVerifiedAt === undefined ? {} : { lastVerifiedAt: input.lastVerifiedAt }),
+      ...(input.diagnosticKey === undefined ? {} : { safeDiagnosticKey: input.diagnosticKey }),
       version: this.props.version + 1,
       updatedAt: input.now,
-      updatedByUserId: input.actorUserId,
+      updatedByUserId: input.actorUserId ?? this.props.updatedByUserId,
     });
   }
 }

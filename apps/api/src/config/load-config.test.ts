@@ -89,6 +89,7 @@ describe("loadConfig", () => {
         smsDriver: "test-inbox",
         baseDomain: "localhost",
       },
+      cloudflare: { driver: "disabled" },
     });
     expect(Object.isFrozen(config)).toBe(true);
     expect(Object.isFrozen(config.storage)).toBe(true);
@@ -727,5 +728,39 @@ describe("loadConfig customer sign-in (card M.1)", () => {
     expect(loadConfig({ ...productionEnv, SMS_DRIVER: "disabled" }).storefront.smsDriver).toBe(
       "disabled",
     );
+  });
+});
+
+describe("loadConfig Cloudflare settings", () => {
+  const token = "test-only-cloudflare-token";
+  const zoneId = "a".repeat(32);
+
+  it("disables the driver when token, zone and fallback origin are omitted", () => {
+    expect(loadConfig(validEnv).cloudflare).toEqual({ driver: "disabled" });
+  });
+
+  it("reads token, zone and fallback origin together", () => {
+    expect(
+      loadConfig({
+        ...validEnv,
+        CLOUDFLARE_API_TOKEN: token,
+        CLOUDFLARE_ZONE_ID: zoneId,
+        CLOUDFLARE_FALLBACK_ORIGIN: "tenants.example.net",
+      }).cloudflare,
+    ).toEqual({
+      driver: "cloudflare",
+      apiToken: token,
+      zoneId,
+      fallbackOrigin: "tenants.example.net",
+      apiBaseUrl: "https://api.cloudflare.com/client/v4",
+    });
+  });
+
+  it("refuses a partial Cloudflare set and never echoes the token", () => {
+    const error = catchConfigError({ ...validEnv, CLOUDFLARE_API_TOKEN: token });
+    expect(error.issues).toEqual([
+      expect.objectContaining({ key: "CLOUDFLARE_API_TOKEN", problem: "INVALID" }),
+    ]);
+    expect(JSON.stringify(error.issues) + String(error)).not.toContain(token);
   });
 });
