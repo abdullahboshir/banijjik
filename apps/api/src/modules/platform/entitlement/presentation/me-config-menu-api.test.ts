@@ -56,6 +56,14 @@ const READ_ONLY_SETTINGS_MENU_KEYS = [
   "settings.modules",
   "customField.fields",
 ];
+/** Owner/manager also see domain management after the static pages (card 4.2 B). */
+const OWNER_SETTINGS_TAIL = [
+  "settings.terms",
+  "website.pages",
+  "website.domains",
+  "settings.modules",
+  "customField.fields",
+] as const;
 let harness: IamApiHarness;
 
 beforeAll(async () => {
@@ -107,7 +115,7 @@ describe("the settings menu of the organization module", () => {
       TAX_CLASSES_MENU_KEY,
       POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
-      ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
+      ...OWNER_SETTINGS_TAIL,
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
     ]);
   });
@@ -153,7 +161,7 @@ describe("the settings menu of the organization module", () => {
       TAX_CLASSES_MENU_KEY,
       POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
-      ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
+      ...OWNER_SETTINGS_TAIL,
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
     ]);
     expect(archived.status).toBe(200);
@@ -181,7 +189,7 @@ describe("the settings menu of the organization module", () => {
       TAX_CLASSES_MENU_KEY,
       POS_DEVICES_MENU_KEY,
       CATALOG_MENU_KEYS.adjustments,
-      ...READ_ONLY_SETTINGS_MENU_KEYS.slice(1),
+      ...OWNER_SETTINGS_TAIL,
       ACCOUNTING_TRIAL_BALANCE_MENU_KEY,
     ]);
   });
