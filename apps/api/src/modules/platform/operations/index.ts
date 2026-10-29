@@ -21,6 +21,16 @@ import { EventOperationsController } from "./presentation/event-operations.contr
 import { buildEventOperationsRouters } from "./presentation/event-operations.router.js";
 
 export { operationsManifest } from "./module.manifest.js";
+export { registerOperationsModels } from "./infrastructure/register-operations-models.js";
+export { createMongoHostClaims } from "./infrastructure/mongo-host-claims.js";
+export type {
+  DisableHostClaimInput,
+  HostClaimResolution,
+  HostClaims,
+  ReserveHostClaimInput,
+} from "./application/host-claims.js";
+export type { HostnameReservations } from "./application/hostname.js";
+export { normalizeHostname } from "./application/hostname.js";
 
 export interface OperationsRouterDependencies {
   readonly permission: PlatformPermissionMiddlewareFactory;

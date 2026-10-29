@@ -44,10 +44,14 @@ export type CommissionPayoutId = Id<"CommissionPayout">;
 export type ListingReportId = Id<"ListingReport">;
 export type ListingBlockId = Id<"ListingBlock">;
 export type SitePageId = Id<"SitePage">;
+export type SiteId = Id<"Site">;
+export type WebsiteVersionId = Id<"WebsiteVersion">;
 export type DirectoryListingStatsId = Id<"DirectoryListingStats">;
 export type PosDeviceId = Id<"PosDevice">;
 export type PosSessionId = Id<"PosSession">;
 export type PosHeldCartId = Id<"PosHeldCart">;
+export type HostClaimId = Id<"HostClaim">;
+export type SiteDomainId = Id<"SiteDomain">;
 
 export class InvalidIdError extends Error {
   constructor() {

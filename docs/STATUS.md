@@ -152,6 +152,19 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 | 3.45 card:check does not fail on a branch behind main | merged (2026-10-26, lead card (Opus 5.5), T3; CI 40305346610 green) | "rebased on origin/main" prints INFO and never fails; guide §8 step 4: rebase once before the first push. Cause: 3.39 A spent about 3 hours rebasing and waiting for CI each time main moved |
 | Phase 3 review | PASS WITH FIXES (2026-10-26, `docs/handoffs/phase-3-review.md`) | F1 (3.40), F2 (3.41) and F4 (3.43) merged 2026-10-27. **3.42 (F3) remains.** Phase 4 may be planned. Doc drift fixed: `09 §6` ownership map, report README |
 
+## Phase 4 planning (2026-10-27)
+
+Owner requested every Phase 4 plan together. Planning-only exception to rolling-wave; implementation still waits for dependency refresh, the Phase 3 gate and independent T1 checks. Map: `docs/plans/phase-4-lanes.md`. Planning handoff: `docs/handoffs/phase-4-planning.md`. No runtime verification or implementation completion is claimed. Author audit R1 (2026-10-28): `docs/handoffs/phase-4-plan-audit-R1.md`; shared assurance: `docs/plans/phase-4-assurance.md`. Blueprints still need exact-file/signature JIT refresh and independent T1 check.
+
+| Card | Status | Note |
+|---|---|---|
+| 4.1 theme engine | **merged** (see Phase 4 table below) | `docs/plans/4.1.md` now on `main` via 4.2 A1 merge; implementation complete |
+| 4.2 storefront domains/runtime | **A1 merged; A2C merged; A2 merged; A2I merged** (2026-10-29, owner merge yes; T1 written review skipped to land) | `docs/plans/4.2.md` Refresh A2-1. A2I CI [40816582956](https://github.com/abdullahboshir/banijjik/actions/runs/40816582956). A2I handoff `docs/handoffs/4.2-a2i.md`. Next: PLAN freeze A3 (`DomainOperation`, ≤15 files) |
+| 4.3 shop/booking/guest checkout | A0 merged (2026-10-29, owner merge yes; T1 written review skipped to land) | Replay boundary + R1 authorization fix. CI [40635212093](https://github.com/abdullahboshir/banijjik/actions/runs/40635212093); A0 handoff `docs/handoffs/4.3-a0.md`, review `docs/handoffs/4.3-a0-review-R1.md`. A1 requires plan refresh after 4.1/4.2; do not start until refreshed. |
+| 4.4 platform template/site builder | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.4.md`; independent designs, policy controls, bounded industry-safe similarity projection; T1 API / T2 screens |
+| 4.5 tenant editor | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.5.md`; lossless adoption, inert authenticated preview, policy-safe publish/unpublish/restore; refresh after 4.1/4.4 |
+| 4.6 simple booking page | folded into 4.3 (owner confirmed 2026-10-27) | `docs/plans/4.6.md` preserves its acceptance tests; folded does not mean implemented |
+
 ## Track M: matrimony (ADR-118, `docs/16-MATRIMONY-TRACK.md`)
 | Card | Status | Note |
 |---|---|---|
@@ -169,10 +182,9 @@ Status values: `todo` · `doing` · `blocked (<why>)` · `implemented (awaiting 
 ## Phase 4
 | Card | Status | Note |
 |---|---|---|
-| 4.3 shop/booking/guest checkout | implemented (awaiting review), part A0, CI https://github.com/abdullahboshir/banijjik/actions/runs/40635212093 | Kernel replay boundary: STOREFRONT namespace + paired resolveNamespace/authorizeReplay. Branch `s/4.3-a0-replay-boundary`; handoff `docs/handoffs/4.3-a0.md`. A1–V and COD parts remain. |
-
-## Phases 5–8
-Track here once Phase 4 is done (copy the cards from the roadmap).
+| 4.1 theme engine | A1+A2+A3+A3D+A3R+A3I+F+B+C1+C2 merged (2026-10-28, owner merge yes; T1 written review skipped to land now) | A3 publish/restore/unpublish + public published-site (`docs/handoffs/4.1-a3.md`, CI [40668993305](https://github.com/abdullahboshir/banijjik/actions/runs/40668993305)). A3D directory `storefrontSections` (`docs/handoffs/4.1-a3d.md`). A3R `websiteTemplateKeys` on `ResolvedOrgConfig` (`docs/handoffs/4.1-a3r.md`). A3I tenant/storefront composition (`docs/handoffs/4.1-a3i.md`). Earlier: A1 `docs/handoffs/4.1-a1.md`; A2 `docs/handoffs/4.1-a2.md`; F CI [40641982603](https://github.com/abdullahboshir/banijjik/actions/runs/40641982603); B [40642554599](https://github.com/abdullahboshir/banijjik/actions/runs/40642554599); C1 [40644779757](https://github.com/abdullahboshir/banijjik/actions/runs/40644779757); C2 [40644784153](https://github.com/abdullahboshir/banijjik/actions/runs/40644784153) |
+| 4.2 storefront domains/runtime | **A1 merged; A2C merged; A2 merged; A2I merged** (2026-10-29, owner merge yes; T1 written review skipped to land) | Plan `docs/plans/4.2.md` Refresh A2-1. A2I CI [40816582956](https://github.com/abdullahboshir/banijjik/actions/runs/40816582956). A2 CI [40807305308](https://github.com/abdullahboshir/banijjik/actions/runs/40807305308). Handoffs `docs/handoffs/4.2-a2i.md`, `docs/handoffs/4.2-a2.md`. Next: PLAN freeze A3 (`DomainOperation`, ≤15 files) |
+| 4.3 shop/booking/guest checkout | A0 merged (2026-10-29, owner merge yes; T1 written review skipped to land) | Replay boundary + R1 authorization fix. CI [40635212093](https://github.com/abdullahboshir/banijjik/actions/runs/40635212093); A0 handoff `docs/handoffs/4.3-a0.md`, review `docs/handoffs/4.3-a0-review-R1.md`. A1 requires plan refresh after 4.1/4.2; do not start until refreshed. |
 
 ## Handoffs
 One file per card: `docs/handoffs/<card>.md` (template: `docs/handoffs/_TEMPLATE.md`). Parallel sessions never edit the same handoff file. In this file, each session edits only its own card row.

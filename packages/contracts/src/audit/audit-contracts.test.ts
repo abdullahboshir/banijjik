@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "./audit-action.js";
 
 describe("audit vocabulary", () => {
+  it("includes the four custom-domain lifecycle actions", () => {
+    expect(Object.values(AUDIT_ACTION)).toHaveLength(146);
+    expect(Object.values(AUDIT_ACTION)).toEqual(
+      expect.arrayContaining([
+        "website.domain.created",
+        "website.domain.verificationRequested",
+        "website.domain.removalRequested",
+        "website.domain.canonicalSelected",
+      ]),
+    );
+  });
+
   it("names every action <module>.<entity>.<pastTenseVerb>", () => {
     for (const action of Object.values(AUDIT_ACTION)) {
       // The same pattern the event guard uses: a past tense verb, one word or camelCase ("checkInRecorded").
@@ -64,6 +76,9 @@ describe("audit vocabulary", () => {
       "checkIn",
       "listingReport",
       "sitePage",
+      "site",
+      "siteDomain",
+      "websiteVersion",
       "posDevice",
       "posSession",
       "posHeldCart",

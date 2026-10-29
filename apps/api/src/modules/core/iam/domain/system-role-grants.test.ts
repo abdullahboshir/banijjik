@@ -119,3 +119,27 @@ describe("system role grants of the file module (card 3.0)", () => {
     expect(sorted(granted)).toEqual(sorted(FILE_EXPECTED[roleKey]));
   });
 });
+
+describe("system role grants of the website module (card 4.1 A3I)", () => {
+  it("gives owner and manager site publish; staff only the legacy page read", () => {
+    const owner = grantedKeysOf(SYSTEM_ROLE_KEY.OWNER, ALL_KEYS);
+    const manager = grantedKeysOf(SYSTEM_ROLE_KEY.MANAGER, ALL_KEYS);
+    const staff = grantedKeysOf(SYSTEM_ROLE_KEY.STAFF, ALL_KEYS);
+    expect(owner.has(PERMISSION_KEY.WEBSITE_SITE_PUBLISH)).toBe(true);
+    expect(manager.has(PERMISSION_KEY.WEBSITE_SITE_PUBLISH)).toBe(true);
+    expect(staff.has(PERMISSION_KEY.WEBSITE_SITE_PUBLISH)).toBe(false);
+    expect(staff.has(PERMISSION_KEY.WEBSITE_SITE_READ)).toBe(false);
+    expect(staff.has(PERMISSION_KEY.WEBSITE_PAGE_READ)).toBe(true);
+  });
+});
+
+describe("system role grants of website domains (card 4.2 A2I)", () => {
+  it("does not give staff website.domain.manage", () => {
+    const owner = grantedKeysOf(SYSTEM_ROLE_KEY.OWNER, ALL_KEYS);
+    const manager = grantedKeysOf(SYSTEM_ROLE_KEY.MANAGER, ALL_KEYS);
+    const staff = grantedKeysOf(SYSTEM_ROLE_KEY.STAFF, ALL_KEYS);
+    expect(owner.has(PERMISSION_KEY.WEBSITE_DOMAIN_MANAGE)).toBe(true);
+    expect(manager.has(PERMISSION_KEY.WEBSITE_DOMAIN_MANAGE)).toBe(true);
+    expect(staff.has(PERMISSION_KEY.WEBSITE_DOMAIN_MANAGE)).toBe(false);
+  });
+});

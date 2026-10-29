@@ -24,6 +24,18 @@ import { OUTBOX_STATUS } from "./outbox-status.js";
 const EVENT_NAME_PATTERN = /^[a-z][a-z0-9-]*\.[a-z][A-Za-z]*\.[a-z][A-Za-z]*(ed|d)$/;
 
 describe("event types", () => {
+  it("includes the four custom-domain lifecycle events", () => {
+    expect(Object.values(WEBSITE_EVENT_TYPE)).toHaveLength(7);
+    expect(Object.values(WEBSITE_EVENT_TYPE)).toEqual(
+      expect.arrayContaining([
+        "website.domain.requested",
+        "website.domain.verificationRequested",
+        "website.domain.removalRequested",
+        "website.domain.stateChanged",
+      ]),
+    );
+  });
+
   it("contains every module event exactly once", () => {
     const expected = [
       ...Object.values(IAM_EVENT_TYPE),

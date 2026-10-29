@@ -273,6 +273,8 @@ function buildStorefrontRouters(
   const websiteRouter = buildWebsiteStorefrontRouterFor({
     requireWebsiteModule: moduleSwitch(input, MODULE_KEY.WEBSITE),
     siteSources: buildWebsiteSiteSources(input),
+    // Card 4.1: the published design is re-projected through the sections that are effective now.
+    orgConfig: input.orgConfig,
   });
 
   return { directoryRouter, creditRouter, contactRouter, websiteRouter };

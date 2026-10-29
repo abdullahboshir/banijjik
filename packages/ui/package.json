@@ -21,6 +21,10 @@
       "types": "./dist/markdown/render-markdown.d.ts",
       "default": "./dist/markdown/render-markdown.js"
     },
+    "./website": {
+      "types": "./dist/website/index.d.ts",
+      "default": "./dist/website/index.js"
+    },
     "./styles.css": "./src/styles.css"
   },
   "files": [
@@ -34,6 +38,8 @@
     "test": "vitest run --dir src"
   },
   "dependencies": {
+    "@banijjik/contracts": "*",
+    "@banijjik/ids": "*",
     "@radix-ui/react-dialog": "^1.2.0",
     "@radix-ui/react-slot": "^1.4.0",
     "class-variance-authority": "^0.7.1",

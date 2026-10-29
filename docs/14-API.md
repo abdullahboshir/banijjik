@@ -80,6 +80,9 @@ Why a path param, not a header: the org is visible in every log line, cache key 
 | 400 | `CANNOT_UNLOCK_OWN_LISTING` | a customer may not spend credits on their own listing |
 | 404 | `LISTING_NOT_APPROVED` | an unlock of a listing that is not APPROVED |
 | 429 | `UNLOCKS_PER_DAY_EXCEEDED` | the account reached `credit.unlocksPerDay` for the business day |
+| 403 | `WEBSITE_POLICY_DENIED` | the stored site edit policy refuses the change (locked region, token group, page rule or a missing policy entry) (4.1) |
+| 422 | `WEBSITE_DESIGN_INVALID` | a site design fails the section registry, the schema-version reader or the snapshot bounds at publish or restore (4.1) |
+| 422 | `WEBSITE_REFERENCE_INVALID` | an image reference is not an active public image of this business (4.1) |
 | 409 | `CREDIT_REFERENCE_TAKEN` | a transfer reference is already in use for a PENDING or VERIFIED purchase (ADR-132) |
 | 403 | `CREDIT_PURCHASE_SELF_SERVICE_FORBIDDEN` | staff cannot verify or reject their own credit purchase (ADR-132) |
 | 422 | `CREDIT_PAYMENT_METHOD_NOT_CONFIGURED` | selected payment method is not configured in `credit.payment.methods` (ADR-132) |
@@ -238,7 +241,7 @@ Permissions are from `10 §7` + `11` additions. `L` = location-scoped (supports 
 ### 5.8 website, messaging, bot, social, workflow, sms, payment-gateway (Phases 4–5; paths fixed now, details in their cards)
 | Prefix | Main endpoints |
 |---|---|
-| `/website` | `GET/PATCH /website/site`, `GET/POST/PATCH /website/pages[/{pageId}]`, `PUT /website/theme`, `POST /website/publish`, `GET /website/versions`, `POST /website/versions/{websiteVersionId}/restore`, `POST /website/domains`, `POST /website/domains/{domainId}/verify` |
+| `/website` | `GET/PATCH /website/site`, `PUT /website/theme`, `GET/POST/PATCH /website/layout-pages[/{pageId}]`, `POST /website/publish`, `POST /website/unpublish`, `GET /website/versions`, `POST /website/versions/{websiteVersionId}/restore` (legacy static pages stay `GET/PUT /website/pages[/{pageKey}]`); domains in 4.2 |
 | `/channels` | `GET /channels`, `POST /channels/facebook/connect` (OAuth start) → `GET /channels/facebook/callback`, `POST /channels/whatsapp/embedded-signup`, `POST /channels/{channelId}/disconnect`, `PATCH /channels/{channelId}` (botEnabled) |
 | `/conversations` | `GET /conversations?status=&assigned=&channelId=`, `GET /conversations/{conversationId}/messages`, `POST /conversations/{conversationId}/messages` (I), `POST /conversations/{conversationId}/take-over`, `/release-to-bot`, `/assign` |
 | `/bot` | `GET/PATCH /bot/settings`, `GET/POST/PATCH /bot/knowledge[/{knowledgeEntryId}]`, `POST /bot/test` (sandbox chat), `POST /bot/evals/run` (permission `bot.eval.run`) |
@@ -255,6 +258,7 @@ Public reads are cacheable (`Cache-Control` + CDN). Writes need the storefront c
 | `GET /api/v1/storefront/resolve?host=` | public | rate | `<slug>.<STOREFRONT_BASE_DOMAIN>` → `{ organizationId }` (ADR-119; `siteVersion` comes with the site cards) |
 | `GET /site` | public | cache | branding (name, tagline, logo, colours), feature switches (`directory`, `credit`, `customerLogin`, `website`), published page titles only; not gated by the website module (ADR-144) |
 | `GET /pages/{pageKey}` | public | | published page only, keys `ABOUT`, `FAQ`, `GUIDE`, `TERMS`, `PRIVACY`, `REFUND`; 404 when missing, unpublished or the website module is off (ADR-144) |
+| `GET /published-site` | public | | current published design; 404 until the first whole-site publish and after unpublish; website module must be on (4.1) |
 | `GET /directory/form` · `GET /directory/stats` | public | cache | form definition: sections, consents, storefront-visible listing fields, photo policy; home counts from the pre-aggregated summary, 404 when the directory module is off (ADR-144) |
 | `GET /offerings?category=&q=&kind=` · `GET /offerings/{offeringSlug}` · `GET /categories` | public | cache | ACTIVE offerings, storefront-visible fields only |
 | `GET /availability?offeringSlug=&from=&to=` | public | | |

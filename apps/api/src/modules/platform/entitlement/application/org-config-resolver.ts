@@ -139,6 +139,7 @@ export class OrgConfigResolver {
       menu: menuOf(manifests, moduleKeys, kinds),
       botTools: botToolsOf(manifests, moduleKeys),
       storefrontSections: storefrontSectionsOf(manifests, moduleKeys),
+      websiteTemplateKeys: request.template.websiteTemplateKeys,
       settings,
       fields: resolvedFields,
       contactRoleKeys: request.template.contactRoleKeys,

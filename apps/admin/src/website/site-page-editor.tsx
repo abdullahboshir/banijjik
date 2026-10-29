@@ -1,6 +1,10 @@
 "use client";
 
-import type { SitePageKey, SitePageResponse } from "@banijjik/contracts/website";
+import type {
+  PagePublicationState,
+  SitePageKey,
+  SitePageResponse,
+} from "@banijjik/contracts/website";
 import { Button, FormField, Textarea, TextInput } from "@banijjik/ui";
 import { useTranslator } from "@banijjik/web-client/client";
 import { useState, type ReactElement } from "react";
@@ -21,7 +25,10 @@ interface SaveEdits {
   readonly pageKey: SitePageKey;
   readonly draft: SitePageDraft;
   readonly version: number;
+  readonly siteVersion: number | null;
   readonly setVersion: (version: number) => void;
+  readonly setSiteVersion: (siteVersion: number | null) => void;
+  readonly setPublicationState: (state: PagePublicationState) => void;
   readonly setIsBusy: (busy: boolean) => void;
   readonly setNotice: (notice: string | undefined) => void;
 }
@@ -33,9 +40,11 @@ async function saveEdits(input: SaveEdits): Promise<void> {
   input.setIsBusy(true);
   input.setNotice(undefined);
   try {
-    const body = upsertBodyOf(input.draft, input.version);
+    const body = upsertBodyOf(input.draft, input.version, input.siteVersion);
     const saved = await saveSitePage(input.organizationId, input.pageKey, body);
     input.setVersion(saved.version);
+    input.setSiteVersion(saved.siteVersion);
+    input.setPublicationState(saved.publicationState);
     input.setNotice("website.pages.saved");
   } catch (error) {
     input.setNotice(isVersionConflict(error) ? "website.pages.conflict" : "website.pages.failed");
@@ -55,6 +64,8 @@ export function SitePageEditor({
   const { t } = useTranslator();
   const [draft, setDraft] = useState<SitePageDraft>(draftOf(page));
   const [version, setVersion] = useState(page.version);
+  const [siteVersion, setSiteVersion] = useState(page.siteVersion);
+  const [publicationState, setPublicationState] = useState(page.publicationState);
   const [isBusy, setIsBusy] = useState(false);
   const [notice, setNotice] = useState<string | undefined>(undefined);
   const save = (): Promise<void> =>
@@ -63,16 +74,17 @@ export function SitePageEditor({
       pageKey: page.pageKey,
       draft,
       version,
+      siteVersion,
       setVersion,
+      setSiteVersion,
+      setPublicationState,
       setIsBusy,
       setNotice,
     });
 
   return (
     <section className="flex flex-col gap-4 rounded-md border border-default p-4">
-      <h2 className="text-title font-semibold text-primary">
-        {t(`website.pages.${page.pageKey}`)}
-      </h2>
+      <PageEditorHeading pageKey={page.pageKey} publicationState={publicationState} t={t} />
       {LOCALES.map((locale) => (
         <LocaleFields
           key={locale}
@@ -91,19 +103,50 @@ export function SitePageEditor({
         label={t("website.pages.publish")}
         onChange={(isPublished) => setDraft({ ...draft, isPublished })}
       />
-      {notice ? (
+      <EditorActions canEdit={canEdit} isBusy={isBusy} notice={notice} onSave={save} t={t} />
+    </section>
+  );
+}
+
+function EditorActions(input: {
+  readonly canEdit: boolean;
+  readonly isBusy: boolean;
+  readonly notice: string | undefined;
+  readonly onSave: () => Promise<void>;
+  readonly t: (key: string) => string;
+}): ReactElement {
+  return (
+    <>
+      {input.notice ? (
         <p role="alert" className="text-body text-secondary">
-          {t(notice)}
+          {input.t(input.notice)}
         </p>
       ) : null}
-      {canEdit ? (
-        <Button variant="primary" isLoading={isBusy} onClick={() => void save()}>
-          {t("website.pages.save")}
+      {input.canEdit ? (
+        <Button variant="primary" isLoading={input.isBusy} onClick={() => void input.onSave()}>
+          {input.t("website.pages.save")}
         </Button>
       ) : (
-        <p className="text-small text-secondary">{t("website.pages.readOnly")}</p>
+        <p className="text-small text-secondary">{input.t("website.pages.readOnly")}</p>
       )}
-    </section>
+    </>
+  );
+}
+
+function PageEditorHeading(input: {
+  readonly pageKey: SitePageKey;
+  readonly publicationState: PagePublicationState;
+  readonly t: (key: string) => string;
+}): ReactElement {
+  return (
+    <>
+      <h2 className="text-title font-semibold text-primary">
+        {input.t(`website.pages.${input.pageKey}`)}
+      </h2>
+      <p id={`page-publication-${input.pageKey}`} className="text-small text-secondary">
+        {input.t(`website.pages.publication.${input.publicationState}`)}
+      </p>
+    </>
   );
 }
 
