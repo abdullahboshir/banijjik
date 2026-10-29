@@ -76,6 +76,7 @@ export function productionEnvironment(
     // Production needs these customer sign-in settings (card M.1); the values are fake.
     OTP_SECRET: "test-only-otp-secret-0123456789abcdef0123",
     STOREFRONT_BASE_DOMAIN: "sites.example.com",
+    STOREFRONT_RESERVED_HOSTNAMES: "admin.example.com,api.example.com,platform.example.com",
     // The test servers are local, which production config refuses. It accepts this flag only from a
     // process that says it is a test (CI or VITEST), so no real deployment can use it.
     ALLOW_LOCAL_SERVICES: "true",

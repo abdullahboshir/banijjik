@@ -60,7 +60,9 @@ import { buildStorefrontResolveHandler } from "./storefront-resolve.js";
 const RESOLVE_BUCKET = "storefront.resolve.ip";
 const SURFACE_BUCKET = "storefront.surface.ip";
 const ONE_MINUTE_SECONDS = 60;
-const RESOLVE_PER_MINUTE = 60;
+// C1 never caches a positive host answer, so every page and same-origin API proxy call hits
+// `/resolve` from the storefront server IP. The old 60/min cap assumed a 60s positive cache.
+const RESOLVE_PER_MINUTE = 6_000;
 const SURFACE_PER_MINUTE = 300;
 /** A block must reach a signed-in customer within a minute (ADR-119). */
 const ACCOUNT_STATUS_MAX_STALE_SECONDS = 60;

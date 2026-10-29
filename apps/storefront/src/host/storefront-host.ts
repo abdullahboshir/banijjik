@@ -33,6 +33,7 @@ async function fetchHostResolution(
 ): Promise<StorefrontHostResolution | undefined> {
   const url = `${storefrontApiOrigin()}${STOREFRONT_API_PREFIX}/resolve?host=${encodeURIComponent(hostname)}`;
   const response = await fetch(url, {
+    method: "GET",
     headers: { Accept: "application/json" },
     cache: "no-store",
   });

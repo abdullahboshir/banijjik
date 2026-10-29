@@ -10,9 +10,11 @@ import {
   grantDirectoryModule,
   publishAboutPage,
   publishTemplate,
+  seedPublishedSite,
   signInCustomer,
   type Session,
 } from "./test-support/seed";
+import { fetchStorefront } from "./test-support/storefront-fetch";
 import {
   API_ORIGIN,
   BASE_DOMAIN,
@@ -61,6 +63,7 @@ beforeAll(async () => {
   await seedBranding(owner, organizationId, PNG_BYTES);
   await enableCustomerLogin(owner, organizationId);
   await publishAboutPage(owner, organizationId);
+  await seedPublishedSite(stack, organizationId);
   const customer = await signInCustomer(stack, organizationId);
   customerCookie = customer.cookieHeader;
   listingNumber = (await seedApprovedListing(owner, customer, organizationId)).listingNumber;
@@ -91,15 +94,15 @@ async function openStorefront(
 ): Promise<Page> {
   const page = await stack.browser.newPage();
   await page.setViewport(viewport);
-  await page.goto(`${HOME}${path}`, { waitUntil: "networkidle0" });
+  await page.goto(`${HOME}${path}`, { waitUntil: "load" });
   return page;
 }
 
 /** Gzip size of the scripts the HTML of a route references: what the browser loads before the page works. */
 async function initialJsKib(path: string, cookieHeader?: string): Promise<number> {
-  const response = await fetch(`${HOME}${path}`, {
-    headers: cookieHeader === undefined ? {} : { Cookie: cookieHeader },
-  });
+  const hostname = `${SLUG}.${BASE_DOMAIN}`;
+  const headers = cookieHeader === undefined ? { hostname } : { hostname, cookieHeader };
+  const response = await fetchStorefront(path, headers);
   const html = await response.text();
   // Legacy polyfills carry `nomodule`: modern browsers never download them (same rule as the admin suite).
   const sources = (html.match(/<script\b[^>]*>/g) ?? [])
@@ -108,7 +111,8 @@ async function initialJsKib(path: string, cookieHeader?: string): Promise<number
     .filter((source) => source !== "");
   let total = 0;
   for (const source of new Set(sources)) {
-    const script = await fetch(new URL(source, HOME));
+    const scriptPath = new URL(source, HOME).pathname;
+    const script = await fetchStorefront(scriptPath, headers);
     total += gzipSync(Buffer.from(await script.arrayBuffer())).length;
   }
   return total / BYTES_PER_KIB;
@@ -157,7 +161,7 @@ describe("the public storefront", () => {
     await page.waitForSelector("#sign-in-code");
     const code = await latestSmsCode(stack, PHONE_NUMBER, sentAfter);
     await page.type("#sign-in-code", code);
-    await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }), clickSubmit(page)]);
+    await Promise.all([page.waitForNavigation({ waitUntil: "load" }), clickSubmit(page)]);
     const cookieNames = (await page.cookies()).map((cookie) => cookie.name);
     const headerText = await page.$eval("header", (header) => header.textContent ?? "");
     await page.close();
@@ -173,7 +177,7 @@ describe("the public storefront", () => {
   });
 
   it("answers an unknown host with 404 and the site-not-found text", async () => {
-    const response = await fetch(`http://nobody.${BASE_DOMAIN}:${STOREFRONT_PORT}/`);
+    const response = await fetchStorefront("/", { hostname: `nobody.${BASE_DOMAIN}` });
     const body = await response.text();
     expect(response.status).toBe(404);
     expect(body).toContain("এই সাইটটি নেই।");
