@@ -5,6 +5,21 @@
 export { sitePageKeyParamsSchema, sitePageUpsertRequestSchema } from "./website-schemas.js";
 export { saveSiteDraftRequestSchema, siteDesignSchema } from "./site-design.schema.js";
 export { siteEditPolicySchema } from "./site-policy.schema.js";
+export { siteTokensSchema } from "./site-design.schema.js";
+export {
+  createWebsiteTemplateRequestSchema,
+  platformWebsiteTemplateListQuerySchema,
+  platformWebsiteTemplateParamsSchema,
+  platformWebsiteTemplateRevisionListQuerySchema,
+  updateWebsiteTemplateRequestSchema,
+  websiteTemplateContentSchema,
+  websiteTemplateStatusRequestSchema,
+  type CreateWebsiteTemplateBody,
+  type PlatformWebsiteTemplateListQuery,
+  type PlatformWebsiteTemplateRevisionListQuery,
+  type UpdateWebsiteTemplateBody,
+  type WebsiteTemplateStatusBody,
+} from "./website-template.schema.js";
 export {
   createSiteDomainRequestSchema,
   removeSiteDomainQuerySchema,

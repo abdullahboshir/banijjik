@@ -161,7 +161,7 @@ Owner requested every Phase 4 plan together. Planning-only exception to rolling-
 | 4.1 theme engine | **merged** (see Phase 4 table below) | `docs/plans/4.1.md` now on `main` via 4.2 A1 merge; implementation complete |
 | 4.2 storefront domains/runtime | **A1 merged; A2C merged; A2 merged; A2I merged; A3 merged** (2026-10-29, owner merge yes; T1 written review skipped to land) | Plan `docs/plans/4.2.md` Refresh A3-1. A3 CI [40820722210](https://github.com/abdullahboshir/banijjik/actions/runs/40820722210). Handoff `docs/handoffs/4.2-a3.md`. Next: PLAN freeze B (admin DNS wizard) |
 | 4.3 shop/booking/guest checkout | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.3.md` + `4.3-COD.md`; owner requires guest checkout and full COD in Phase 4; principal-safe replay, payment/expiry fencing, claim/privacy, manual courier/rider settlement and owner-approved loss/recovery; T1 checks pending |
-| 4.4 platform template/site builder | planned; A1 check PASS WITH AMENDMENTS 2026-10-29 (Cursor) | `docs/plans/4.4.md` Refresh A1-1 + Amendment Check-1; A1→A1D→A1A→A1S ready to implement; A2/A3 not checked |
+| 4.4 platform template/site builder | A1 implemented; CI pending | `docs/handoffs/4.4-a1.md`; A1 check PASS WITH AMENDMENTS 2026-10-29 (Cursor); A1→A1D→A1A→A1S ready in order; A2/A3 not checked |
 | 4.5 tenant editor | planned; self-audited 2026-10-28 (Codex) | `docs/plans/4.5.md`; lossless adoption, inert authenticated preview, policy-safe publish/unpublish/restore; refresh after 4.1/4.4 |
 | 4.6 simple booking page | folded into 4.3 (owner confirmed 2026-10-27) | `docs/plans/4.6.md` preserves its acceptance tests; folded does not mean implemented |
 
