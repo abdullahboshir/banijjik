@@ -693,3 +693,14 @@ describe("website site publication API", () => {
     expect(refused.status).toBe(403);
   });
 });
+
+describe("website domains on production v1 (card 4.2 A2I)", () => {
+  it("lists domains through the composed HostClaims, not a private router", async () => {
+    const world = await aWorld();
+    await insertDraftSite(world.organizationA, world.alice.userId);
+    const list = await world.alice.call("get", `/orgs/${world.organizationA}/website/domains`);
+    expect(list.status).toBe(200);
+    expect(list.body.data.items).toEqual([]);
+    expect(list.body.data.total).toBe(0);
+  });
+});

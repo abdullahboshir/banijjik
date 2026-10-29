@@ -1,5 +1,6 @@
 import { buildEnrollmentTenantRouter } from "./enrollment-tenant-router.js";
 import { buildWebsiteAdminRouter } from "../modules/commerce/website/index.js";
+import { createMongoHostClaims } from "../modules/platform/operations/index.js";
 import { buildSmsTenantModuleRouter } from "./sms-adapters.js";
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { AppConfig } from "../config/index.js";
@@ -202,6 +203,10 @@ function websiteAdminRouterOf(input: CoreTenantRouterInput): Router {
     idempotency: input.idempotency,
     orgConfig: input.orgConfig,
     files: buildFileReferenceReader(),
+    hostClaims: createMongoHostClaims({
+      baseDomain: input.config.storefront.baseDomain,
+      reservedHostnames: [],
+    }),
   });
 }
 
