@@ -124,8 +124,10 @@ A session is finished only when all of these hold. "Done" without a green CI run
 The lead updates this board after each merge.
 
 ## 10. Review and merge (lead)
-- **CI green on the branch head** is the entry ticket. The lead does not rerun the full suite for a single card.
-- **Part A of a T1 card:** strict Opus review of the risky files only (domain rules, use cases that touch money, stock, credits or concurrency, tenancy and permission wiring, migrations), plus the plan's test list.
+- **CI green on the branch head** is the entry ticket for merging to `main`. The lead does not rerun the full suite locally for a single card.
+- **Overlap review and docs preparation with CI (owner, 2026-10-29):** Do not sit idle for 15–20 minutes waiting for CI before starting the review. As soon as the locally-verified code commit is pushed (`git push -u origin <branch>`), run the independent T1 review (or T2/T3 merge check) on `git diff "origin/main...<branch>"` and prepare `docs/handoffs/<card>-review-R1.md`, `docs/handoffs/<card>.md`, `docs/STATUS.md`, and `docs/LEAD-STATE.md` **while CI is running**. When CI finishes green and review is `PASS`, commit the `docs/` files (which skip CI via `paths-ignore: ["docs/**"]`) and fast-forward `main` immediately.
+- **Zero compromise on code quality or completeness:** Speed comes from targeted local verification (1–3 min), overlapping review with CI, and running independent lanes in parallel worktrees — never from stubs, `TODO`s, skipped tests, weakened assertions, or incomplete features.
+- **Part A of a T1 card:** strict review by an independent session/subagent of the risky files (domain rules, use cases that touch money, stock, credits or concurrency, tenancy and permission wiring, migrations, cache/host isolation), plus the plan's test list and §11.
 - **Part B and T2/T3 cards:** merge check: diff against the plan, the handoff's deviations, route sizes from the CI build log.
 - **Merging:** the lead rebases the branch on main, waits for green CI on the rebased head, fast-forwards main and pushes main (with the owner's permission).
 - **Several branches at once:** merged one by one in the order they pass; each later branch is rebased and must be green again.

@@ -185,8 +185,18 @@ with git push origin s/docs-state-<date>:main after I say yes.
 - Browser suites start the API and the worker: a test waits for event handlers (reload or poll with a deadline), never races them.
 - Two browser stacks cannot run at once while the dev stack in `banijjik` holds ports 3000 and 4000; then CI judges the browser suite.
 - **CI is not a debugger.** After a red job, read the failed **test name**. Guess-and-push (lead, 3.42: six CI rounds) is a violation of guide §7–§8. Speed does not allow incomplete or untested code.
+- **Zero-idle subagent pipeline (Antigravity / multi-agent sessions, owner 2026-10-29):**
+  - Run subagents with `Model: "flash"` (Gemini Flash). Keep roles strictly separated: an Implementer subagent never reviews its own code; spawn a fresh Reviewer subagent.
+  - **Overlap T1/T2 review and docs prep with CI:** As soon as the locally-verified code commit is pushed (`git push -u origin s/<card>-<part>-<slug>`) and CI starts on GitHub, immediately launch the independent Reviewer subagent on `git diff "origin/main...s/<card>-<part>-<slug>"` and prepare `docs/handoffs/<card>-review-R1.md`, `docs/handoffs/<card>.md`, `docs/STATUS.md`, and `docs/LEAD-STATE.md` **while CI is running**. The moment CI turns green, commit the `docs/` files (`paths-ignore: ["docs/**"]` skips a second CI wait) and fast-forward `main`.
+  - **Parallel lanes in separate worktrees:** When two cards/parts have no dependency between them, run them concurrently in separate git worktrees and push both so their GitHub CI runs execute simultaneously instead of back-to-back.
+  - **Zero compromise on completeness:** Never stub, skip a planned test, weaken an assertion, omit tenant/permission/validation checks, or push untested code to "save time". Every file and test in the frozen plan must pass locally before the first push.
+- **Windows / PowerShell command hygiene:**
+  - Use `npm.cmd`, `npx.cmd`, and `& "C:\Program Files\GitHub CLI\gh.exe"` in PowerShell so `.ps1` execution policy never fails a tool call.
+  - Always quote git revision ranges containing `..` (e.g. `"origin/main..HEAD"`, `"origin/main...HEAD"`) so PowerShell does not parse `..` as a range operator.
+  - In Storefront/Node tests on Windows that send virtual-host `Host` headers (`*.localhost`) over loopback, use `node:http` to `127.0.0.1` (`fetchStorefront` helper) because Node global `fetch` (undici) overrides custom `Host` headers.
+  - Ensure `productionEnvironment` in `apps/api/src/test-support/spawned-process.ts` includes any newly required production env vars so `sync-indexes.test.ts` never fails in CI.
 - `gh run watch` drops on this PC: poll `gh run view <id> --json jobs`. Failed job log: `gh api --allow-escape-sequences repos/abdullahboshir/banijjik/actions/jobs/<jobId>/logs`. Git Bash needs `export PATH="$PATH:/c/Program Files/GitHub CLI"`.
-- A push that changes only `docs/` runs no CI. A flaky failure (known: `sync-indexes`, `main.test`, `ordered-event-worker`, admin `auth-flow`) gets one `gh run rerun <id> --failed`; a second failure is a real bug.
+- A push that changes only `docs/` runs no CI. A flaky failure (known: `sync-indexes`, `main.test`, `ordered-event-worker`, admin `auth-flow`) or a GitHub 20m runner timeout during `Build` after `Lint`, `Typecheck` and `Test` all passed gets one `gh run rerun <id> --failed`; a second failure is a real bug.
 - Commit headers are not sentence-case and stay within 100 characters (commitlint). The pre-commit hook runs lint and format; fix, never bypass.
 - In the `banijjik` folder never `git commit -a`: the uncommitted `.claude/settings.json` must stay out. Name the paths.
 - `npm audit fix --omit=dev` removes devDependencies; run `npm install` after it.

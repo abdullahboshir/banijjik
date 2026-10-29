@@ -1,52 +1,73 @@
 ---
-description: Speed + correctness — local proof of YOUR part, one CI wait; never skip quality to save CI
+description: Speed + correctness — local proof of YOUR part, parallel subagent review during CI, one CI wait; never skip quality or completeness
 alwaysApply: true
 ---
 
-# Speed and correctness (owner 2026-10-29; cards 3.44 / 3.45)
+# Speed and correctness (owner 2026-10-29; cards 3.44 / 3.45 / Phase 4)
 
-Full text: `docs/plans/parallel-sessions-guide.md` §7–§8 and `docs/RUN-WITHOUT-CLAUDE.md` §9. Binding for implementer, reviewer and lead. These override AGENTS.md session protocol step 4 (do **not** run the Phase 0.2 full lifecycle locally). They do **not** weaken the Definition of Done.
+Full text: `docs/plans/parallel-sessions-guide.md` §7–§10 and `docs/RUN-WITHOUT-CLAUDE.md` §5–§9. Binding for implementer, reviewer, subagents and lead. These override AGENTS.md session protocol step 4 (do **not** run the Phase 0.2 full lifecycle locally). They **never** weaken the Definition of Done, code correctness, or completeness.
 
-Speed means: prove **this part** locally, then **one** CI wait. It is not permission to stub, skip a plan test, leave half-written files, or push code whose tests you did not run.
+Speed means:
+1. Write **100% complete, production-grade code and tests** for your part first (zero stubs, zero skipped tests, zero missing rules).
+2. Prove **your part** locally in 1–3 minutes (targeted tests + touched workspace typecheck + changed-file lint/prettier + app browser suite for UI).
+3. Push **once**, run the independent **Reviewer subagent in parallel while CI is running**, prepare the review and merge docs during the CI run, and merge immediately with a docs-only commit once CI turns green.
 
-## Never
+## Hard quality guardrails (never compromise for speed)
 
-- Root `npm run lint` / `typecheck` / `test` / `build`. CI does the whole repo.
-- Push to learn if a test fails. **CI is not a debugger.** A red run costs ~15 minutes.
-- Guess-and-push (tiny edit → wait → tiny edit). 3.42: six CI rounds is a violation.
-- A second rebase only because main moved (`card:check` INFO is enough).
-- `--no-verify`.
-- Claim a pass you did not see.
-- Skip a planned test, ship a TODO/stub/mock as finished, or drop a DoD item to "save CI time".
-- Push while the tests of files **you** changed still fail locally.
+- **Never** write incomplete code, partial use cases, `TODO`s, stubs, mock data, `any`, or `as unknown as` casts.
+- **Never** skip, weaken, or stub a test named in the plan or required by `parallel-sessions-guide.md` §11 / `RUN-WITHOUT-CLAUDE.md` §7 (happy path, validation error, permission denied, cross-org denied, cross-location, concurrency/idempotency, timezone/date edge cases).
+- **Never** push before running and seeing green output on every test file you created or modified.
+- If a plan test or requirement is ambiguous or needs a product decision: **stop and ask**. Never guess or invent a weaker rule.
 
-## Before every code push (report real command output)
+## Never (time-wasters that burn 15–40 minutes)
 
-1. Every test the plan names for this part exists; its body checks what the name promises.
-2. Run the test files you changed or added (API: `--maxWorkers=1` and the env string in RUN-WITHOUT-CLAUDE §9). If you edited a shared add-only file (contracts permissions, i18n catalogs, `routes/*.ts`), also run the neighbouring test that asserts that list.
-3. `npx turbo run lint typecheck --filter=<touched workspace>` — not the whole repo. Rebuild `@banijjik/contracts` (and validation/i18n) if those dist folders went stale.
-4. `npx prettier --check` on files you changed.
-5. **Screen or `*.browser.test.ts` change:** that app's browser suite must pass locally first (`VITEST_MAX_WORKERS=1 npm run test:browser` in `apps/admin`, `apps/platform` or `apps/storefront`). Iterate on one file, then the app suite before the first push of those changes.
+- Root `npm run lint` / `typecheck` / `test` / `build` locally. CI runs the whole monorepo.
+- Push to learn if a test or build fails. **CI is not a debugger.**
+- Guess-and-push (tiny edit → wait 20 min → tiny edit).
+- Sit idle waiting for CI before starting the T1/T2 review — always run the independent Reviewer while CI is running.
+- Run independent parallel-lane cards sequentially when separate worktrees are available; push independent branches concurrently so their CI runs overlap.
+- Rebase a second time only because `main` moved (`card:check` INFO is fine; the lead merges `origin/main`).
+- Use `--no-verify` or `git commit -a` in `banijjik`.
 
-If a plan test cannot be written without a product decision: **stop and ask**. Do not invent a weaker test.
+## Before every code push (1–3 minutes; report real command output)
 
-## After a red CI job (read the failed **test name**, not the job colour)
+1. Verify every file, contract, validation schema, i18n key (`bn` + `en`), and test listed in the frozen plan/Refresh for this part is 100% complete.
+2. Run the test files you changed or added (API: `npm.cmd test -w @banijjik/api -- <file> --maxWorkers=1` with the env vars in `RUN-WITHOUT-CLAUDE.md` §9). If you edited a shared add-only file (contracts permissions, i18n catalogs, `routes/*.ts`), also run the neighbouring contract/catalog test.
+3. Run `npx.cmd turbo run typecheck --filter=<touched workspace>` — not the whole repo. If workspace package types changed or you switched branches, run `npx.cmd turbo run build --filter="./packages/*"` first so `dist/` is never stale.
+4. Run `npx.cmd eslint --max-warnings 0 <changed files>` and `npx.cmd prettier --check <changed files>`.
+5. **Screen or `*.browser.test.ts` change:** build `@banijjik/api` first (`npx.cmd turbo run build --filter=@banijjik/api`), then run that app's browser suite locally (`VITEST_MAX_WORKERS=1 npm.cmd run test:browser -w @banijjik/<app>`).
+
+## While CI is running (zero-idle pipeline for Lead & Subagents)
+
+1. When using subagents in Antigravity, always pass `Model: "flash"` (Gemini Flash) and keep roles strictly separated (an Implementer subagent never reviews its own code).
+2. The moment the code commit is pushed (`git push -u origin s/<card>-<part>-<slug>`) and CI starts on GitHub:
+   - Immediately launch the independent **Reviewer** subagent on `git diff "origin/main...s/<card>-<part>-<slug>"` against the plan, `AGENTS.md`, and §11 / §7 checklists.
+   - Write `docs/handoffs/<card>-review-R1.md` and prepare the `docs/handoffs/<card>.md`, `docs/STATUS.md`, and `docs/LEAD-STATE.md` updates while CI is in progress.
+3. As soon as CI finishes green (and if review Verdict is `PASS`), commit the `docs/` files (`paths-ignore: ["docs/**"]` skips a second CI run) and fast-forward `main` immediately.
+
+## After a red CI job (read the failed **test name** or step, not just the job colour)
 
 | What failed | Do | Do not |
 |---|---|---|
-| Known flake: `ordered-event-worker.test.ts` (replay "runs a replayed event again…"), `sync-indexes.test.ts`, `main.test.ts` (worker HTTP), admin `auth-flow` | `gh run rerun <runId> --failed` **once** | New commit |
-| A file you touched | Run that file locally, fix, **one** push | Guess |
+| Known flake (`ordered-event-worker.test.ts`, `sync-indexes.test.ts`, `main.test.ts`, admin `auth-flow`) OR GitHub 20m runner timeout during `Build` after `Lint`, `Typecheck` and `Test` all passed | `gh run rerun <runId> --failed` **once** | New commit |
+| A file you touched | Reproduce that file locally, fix completely, verify locally, **one** push | Guess-and-push |
 | A file you did not touch, not a known flake | Stop; write it in the STATUS handoff | Touch it |
 
-A second failure of the same flake is a real bug: reproduce locally, then one push. Do not keep rerunning CI.
+A second failure of the same test is a real bug: reproduce locally, then one push. Never keep rerunning CI in a loop.
+
+## Windows / PowerShell hygiene (avoid wasted command retries)
+
+- Use `npm.cmd`, `npx.cmd`, and `& "C:\Program Files\GitHub CLI\gh.exe"` in PowerShell so `.ps1` execution policy never blocks a command.
+- Always quote git revision ranges containing `..` (e.g. `"origin/main..HEAD"`, `"origin/main...HEAD"`) so PowerShell does not parse `..` as an integer range operator.
+- In Storefront/Node tests on Windows that send custom `Host` headers (`*.localhost`) over loopback, use `node:http` to `127.0.0.1` (`fetchStorefront` helper) because Node global `fetch` (undici) overrides custom `Host` headers.
 
 ## Docs-only
 
-A commit that changes only `docs/` starts no CI. Do not wait. `card:check` uses the last **code** commit's green run.
+A commit that changes only `docs/` starts no CI (`paths-ignore: ["docs/**"]`). Do not wait for CI after a docs-only push; `card:check` uses the last **code** commit's green run.
 
 ```text
-❌ BAD: push → wait 15 min → read log → tiny edit → push again
-❌ BAD: skip tests / stub the part so CI stays green
-✅ GOOD: local failing file → fix until it passes here → one push → one CI wait
-✅ GOOD: known flake → one `gh run rerun --failed` → no new commit
+❌ BAD: push untested/incomplete code → wait 20 min → fail → tiny edit → wait 20 min
+❌ BAD: skip tests / stub logic / weaken assertions so CI stays green
+❌ BAD: wait 20 min doing nothing while CI runs, then start T1 review after CI finishes
+✅ GOOD: 100% complete code + tests → 2 min targeted local check → 1 push → T1 review + docs prep IN PARALLEL with CI → instant merge when green
 ```
