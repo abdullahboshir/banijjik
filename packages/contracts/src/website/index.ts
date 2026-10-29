@@ -26,6 +26,25 @@ export {
 export type { LocalizedText } from "../platform/industry-template.js";
 export { WEBSITE_EVENT_TYPE, type WebsiteEventType } from "./website-event-type.js";
 export {
+  WEBSITE_PRESET_KEY_PATTERN,
+  WEBSITE_TEMPLATE_KEY_PATTERN,
+  WEBSITE_TEMPLATE_MAX_PRESETS,
+  WEBSITE_TEMPLATE_MAX_REQUIRED_KINDS,
+  WEBSITE_TEMPLATE_MAX_REQUIRED_MODULES,
+  WEBSITE_TEMPLATE_STATUS,
+  type CreateWebsiteTemplateRequest,
+  type UpdateWebsiteTemplateRequest,
+  type WebsiteDesignPreset,
+  type WebsiteTemplateContent,
+  type WebsiteTemplateDetail,
+  type WebsiteTemplateListQuery,
+  type WebsiteTemplateRevisionListQuery,
+  type WebsiteTemplateRevisionSummary,
+  type WebsiteTemplateStatus,
+  type WebsiteTemplateStatusRequest,
+  type WebsiteTemplateSummary,
+} from "./website-template.js";
+export {
   DYNAMIC_SECTION_KEYS,
   REQUIRED_CHROME_REGION_KEYS,
   SECTION_CONTENT_KEYS,

@@ -634,5 +634,8 @@
   "sms.failure.IP_NOT_WHITELISTED": "Server IP is not approved",
   "sms.failure.PROVIDER_REFUSED": "Provider refused the message",
   "package.PACK_POS_DEVICE.name": "Extra POS device",
-  "menu.sms.gateway": "SMS"
+  "menu.sms.gateway": "SMS",
+  "errors.website_template_key_taken": "This website template key is already in use.",
+  "errors.website_template_archived": "An archived website template cannot be edited.",
+  "errors.website_template_image_forbidden": "A website template cannot reference a business image."
 }

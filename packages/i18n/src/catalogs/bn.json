@@ -634,5 +634,8 @@
   "sms.failure.IP_NOT_WHITELISTED": "সার্ভারের আইপি অনুমোদিত নয়",
   "sms.failure.PROVIDER_REFUSED": "সেবাদাতা বার্তাটি প্রত্যাখ্যান করেছে",
   "package.PACK_POS_DEVICE.name": "অতিরিক্ত পিওএস ডিভাইস",
-  "menu.sms.gateway": "এসএমএস"
+  "menu.sms.gateway": "এসএমএস",
+  "errors.website_template_key_taken": "ওয়েবসাইট টেমপ্লেটের এই কী আগে থেকেই আছে।",
+  "errors.website_template_archived": "আর্কাইভ করা ওয়েবসাইট টেমপ্লেট সম্পাদনা করা যায় না।",
+  "errors.website_template_image_forbidden": "ওয়েবসাইট টেমপ্লেটে কোনো ব্যবসার ছবি ব্যবহার করা যাবে না।"
 }

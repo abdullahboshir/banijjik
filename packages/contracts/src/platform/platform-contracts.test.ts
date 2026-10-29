@@ -47,6 +47,15 @@ describe("platform permissions", () => {
     expect(granted.has(PLATFORM_PERMISSION_KEY.SMS_WRITE)).toBe(false);
   });
 
+  it("keeps website-template permissions out of SUPPORT and BILLING", () => {
+    for (const role of [PLATFORM_ROLE.SUPPORT, PLATFORM_ROLE.BILLING]) {
+      const granted = platformPermissionsOf([role]);
+      expect(granted.has(PLATFORM_PERMISSION_KEY.WEBSITE_READ)).toBe(false);
+      expect(granted.has(PLATFORM_PERMISSION_KEY.WEBSITE_WRITE)).toBe(false);
+      expect(granted.has(PLATFORM_PERMISSION_KEY.WEBSITE_PUBLISH)).toBe(false);
+    }
+  });
+
   it("gives each role exactly the permissions of the final mapping (ADR-093)", () => {
     const sorted = (role: keyof typeof PLATFORM_ROLE_PERMISSIONS) =>
       [...PLATFORM_ROLE_PERMISSIONS[role]].sort();
