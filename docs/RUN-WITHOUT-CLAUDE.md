@@ -92,8 +92,8 @@ Use the card's file in `lead-orchestra/owner-guide/` when it exists; otherwise t
 Role: IMPLEMENTER for banijjik. Folder <folder>, branch s/<card>-<api|ui>-<slug> from origin/main.
 Read AGENTS.md, docs/plans/parallel-sessions-guide.md §1–§8 and §11, and docs/plans/<card>.md with every Refresh and Amendment.
 Implement part <A|B> exactly as the plan says. Touch only the files the plan lists. If the plan has a gap or conflicts with the code, stop and ask.
-Before the first push run locally: the changed test files, lint and typecheck of the touched workspaces, and for screens the app's browser suite.
-CI is not a debugger: after a red job, run the failing tests locally, then one push.
+Before the first push run locally: every test this part's plan names, the changed test files, lint and typecheck of the touched workspaces, and for screens the app's browser suite. Do not stub or skip a plan test to save CI time.
+CI is not a debugger: after a red job, read the failed test name. Known flake → one `gh run rerun --failed` (no new commit). Real failure in a file you touched → run it locally, fix, one push. A file you did not touch → stop and ask.
 Finish with every step of guide §8. Your last message starts with STATUS: DONE | QUESTION | BLOCKED; DONE carries the full npm run card:check output and the green CI link.
 ```
 Folders: one tool per folder, at most three cards at once on this PC. Existing worktrees are listed in LEAD-STATE §2; a new one: `git worktree add ../banijjik-<card> -b <branch> origin/main`, then `npm ci` and `npx turbo run build --filter="./packages/*"`.
@@ -184,7 +184,7 @@ with git push origin s/docs-state-<date>:main after I say yes.
 - After switching branches, `dist` folders are stale: `npx turbo run build --filter=<package>` for `@banijjik/contracts`, `validation`, `i18n`, and build `apps/api` before a browser suite (a stale API build gives false 404s).
 - Browser suites start the API and the worker: a test waits for event handlers (reload or poll with a deadline), never races them.
 - Two browser stacks cannot run at once while the dev stack in `banijjik` holds ports 3000 and 4000; then CI judges the browser suite.
-- **CI is not a debugger.** After a red job, run the failing file locally, then one push. Guess-and-push (lead, 3.42: six CI rounds) is a violation of guide §7–§8.
+- **CI is not a debugger.** After a red job, read the failed **test name**. Guess-and-push (lead, 3.42: six CI rounds) is a violation of guide §7–§8. Speed does not allow incomplete or untested code.
 - `gh run watch` drops on this PC: poll `gh run view <id> --json jobs`. Failed job log: `gh api --allow-escape-sequences repos/abdullahboshir/banijjik/actions/jobs/<jobId>/logs`. Git Bash needs `export PATH="$PATH:/c/Program Files/GitHub CLI"`.
 - A push that changes only `docs/` runs no CI. A flaky failure (known: `sync-indexes`, `main.test`, `ordered-event-worker`, admin `auth-flow`) gets one `gh run rerun <id> --failed`; a second failure is a real bug.
 - Commit headers are not sentence-case and stay within 100 characters (commitlint). The pre-commit hook runs lint and format; fix, never bypass.
