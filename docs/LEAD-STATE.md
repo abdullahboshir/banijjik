@@ -7,25 +7,22 @@ The one file a new lead session reads to continue the work. It holds what `docs/
 - At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
 - No secrets, passwords or `.env` values.
 
-Last updated: 2026-10-29 by Antigravity (`banijjik`) · `origin/main` after 4.2 C1 (`e2e74cb1`, CI [40866857486](https://github.com/abdullahboshir/banijjik/actions/runs/40866857486)) and Refresh C2-1 freeze.
+Last updated: 2026-10-29 by Antigravity (`banijjik`) · `origin/main` after 4.2 C1 (`e2e74cb1`), 4.4 A1D (`90186f1b`), and 4.2 C2 (`d6d845e3`, CI [40896729028](https://github.com/abdullahboshir/banijjik/actions/runs/40896729028)).
 
 ## 1. Where the project stands
 - **Claude plan ends 2026-10-29.** Roles from `docs/RUN-WITHOUT-CLAUDE.md`. Owner still says yes to fast-forward of `main` after green CI.
 - Speed: `.cursor/rules/speed.mdc`. No root lint/typecheck/test/build. CI is not a debugger. Docs-only skip CI. Bring a pushed branch up to date with `git merge origin/main` (never rebase, never `--force`). `card:check` INFO when main moved is enough.
 - Phase 3 F1–F4 closed. Phase 4 underway.
 - **4.1 complete on `main` (`636bcdb9`).** Owner merge yes; T1 written review skipped to land.
-- **4.2 A1 + A2C + A2 + A2I + A3 + B + C1 are on `main`.** C1 code `e2e74cb1`, CI [40866857486](https://github.com/abdullahboshir/banijjik/actions/runs/40866857486). Refresh C2-1 frozen in `docs/plans/4.2.md`.
-- Staging Cloudflare smoke waits on owner credentials.
+- **4.2 complete on `main` (A1 + A2C + A2 + A2I + A3 + B + C1 + C2).** C1 (`e2e74cb1`, CI [40866857486](https://github.com/abdullahboshir/banijjik/actions/runs/40866857486)) and C2 (`d6d845e3`, CI [40896729028](https://github.com/abdullahboshir/banijjik/actions/runs/40896729028)) reviewed and merged.
+- **4.3 A0** on `main` (`40823178658`).
+- **4.4 A1 + A1D** on `main` (A1D `fbe1ff65` / `90186f1b`, CI [40869825029](https://github.com/abdullahboshir/banijjik/actions/runs/40869825029)).
+- Staging Cloudflare smoke waits on owner credentials (`docs/runbooks/storefront-domains.md`).
 - ADR-150: full tenant website (4.1–4.5) before the pilot. ADR-149: each business site has its own design. ADR-P4-B Accepted (proposed).
 
 ## 2. Open branches (checked 2026-10-29)
 
-| Card / part | Branch | Folder | Tier | State → next step |
-|---|---|---|---|---|
-| 4.2 C2 | `s/4.2-c2-cache-seo` | `banijjik` | T1 | frozen (`Refresh C2-1`); ready to implement |
-| 4.4 A1D | `s/4.4-a1d-template-persistence` | `banijjik-4.1-a1` | T1 | T1 review R1 PASS; merge `origin/main` and wait for green CI |
-
-Merged this session: 4.2 C1 `e2e74cb1` → `main` + Refresh C2-1 freeze. Next: implement 4.2 C2 and merge 4.4 A1D.
+None — all open branches (`s/4.2-c1-host-runtime`, `s/4.4-a1d-template-persistence`, `s/4.2-c2-cache-seo`) have been reviewed, verified on CI, and merged into `main`.
 
 **Disk / local:** Docker Desktop + Redis 6380. Compose Mongo stays stopped. `gh run watch` drops (TLS); poll `gh run view <id> --json jobs`. Stale `dist` after branch switch: `npx turbo run build --filter=<pkg>`. Owner stack holds 3000/4000.
 
@@ -33,11 +30,11 @@ Merged this session: 4.2 C1 `e2e74cb1` → `main` + Refresh C2-1 freeze. Next: i
 - Turn on "Start Docker Desktop when you sign in".
 - Product: 3.9 offline selling; M.6 listing `noindex`; keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
 - Older: P1 rotate leaked secrets (repo is public).
-- Optional: Cloudflare staging credentials for a real A3 smoke (STATUS gap). Not required for C2.
+- Optional: Cloudflare staging credentials for a real A3 smoke (`docs/runbooks/storefront-domains.md`).
 
 ## 4. Next actions, in order
-1. Implement **4.2 C2** (`s/4.2-c2-cache-seo`: public cache, SEO metadata, `robots.txt`, `sitemap.xml`, runbook) from `Refresh C2-1`, verify locally, push and merge.
-2. Sync `origin/main` into **4.4 A1D** (`s/4.4-a1d-template-persistence`), wait for green CI, and merge.
+1. Refresh **4.3 A1** (`docs/plans/4.3.md`) against `main` (now that 4.1 and 4.2 are 100% merged) and run independent T1 plan check before implementing.
+2. Implement **4.4 A1A** (`s/4.4-a1a-platform-template-api`: platform template CRUD/validation use cases) from `docs/plans/4.4.md` (already checked PASS WITH AMENDMENTS).
 3. Follow-ups (not blocking): M.6a review leftovers; M.7 B needs `directory.listing.read`; 3.5b A2 return response lacks `reversal.businessDate`.
 
 ## 5. How the lead works
@@ -51,8 +48,8 @@ Merged this session: 4.2 C1 `e2e74cb1` → `main` + Refresh C2-1 freeze. Next: i
 - Pushing `main` is allowed after green CI (owner 2026-10-23, 2026-10-25, 2026-10-28).
 
 ## 6. Session log (last five)
+- **2026-10-29** (Antigravity, `banijjik`): implemented, T1-reviewed (R1 PASS) and merged 4.2 C2 (`d6d845e3`, CI 40896729028) and 4.4 A1D (`90186f1b`, CI 40869825029) to `main`; Card 4.2 is 100% complete.
 - **2026-10-29** (Antigravity, `banijjik`): fixed 4.2 C1 browser seed + production env, T1 review R1 PASS, green CI (`40866857486`), FF `main` and froze `Refresh C2-1`.
 - **2026-10-29** (Cursor, `banijjik-4.2-a2c`): landed 4.2 B (`4167a64b`, CI 40831295349) and 4.4 A1 (`d35e3112`, CI 40835038619).
 - **2026-10-29** (Cursor, `banijjik-4.2-a2c`): landed A3 (`3d6d133c`, CI 40820722210) after A2C/A2/A2I.
 - **2026-10-29** (Cursor, `banijjik-4.2-a2c`): landed A2C, A2 (`ed191a97`, CI 40807305308), A2I (`749bef7d`, CI 40816582956).
-- **2026-10-28 afternoon** (Cursor, `banijjik-m2`): ported 4.1 A3+A3D+A3R+A3I onto `s/4.1-a3-publish`, green CI, FF `main` `636bcdb9`.
