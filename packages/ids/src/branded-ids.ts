@@ -52,6 +52,7 @@ export type PosSessionId = Id<"PosSession">;
 export type PosHeldCartId = Id<"PosHeldCart">;
 export type HostClaimId = Id<"HostClaim">;
 export type SiteDomainId = Id<"SiteDomain">;
+export type DomainOperationId = Id<"DomainOperation">;
 
 export class InvalidIdError extends Error {
   constructor() {

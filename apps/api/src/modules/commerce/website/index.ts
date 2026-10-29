@@ -4,7 +4,13 @@ import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { getRequestContext } from "../../../kernel/context/index.js";
 import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
+import { registerScheduledJob } from "../../../kernel/jobs/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
+import {
+  createMongoDomainOperations,
+  type DomainProvider,
+  type HostClaims,
+} from "../../platform/operations/index.js";
 import type { FileReferenceReader } from "../../core/file/index.js";
 import { GetStorefrontSiteUseCase } from "./application/use-cases/storefront-site.use-case.js";
 import {
@@ -32,7 +38,6 @@ import {
   UpdateSiteLayoutPageUseCase,
   UpdateSiteThemeUseCase,
 } from "./application/use-cases/site-layout.use-case.js";
-import type { HostClaims } from "../../platform/operations/index.js";
 import {
   ListSiteDomainsUseCase,
   RemoveSiteDomainUseCase,
@@ -40,6 +45,10 @@ import {
   SelectCanonicalSiteDomainUseCase,
   VerifySiteDomainUseCase,
 } from "./application/use-cases/site-domain.use-cases.js";
+import {
+  buildReconcileDomainsJob,
+  ProcessDueSiteDomainsUseCase,
+} from "./application/use-cases/process-site-domain.use-case.js";
 import { MongoSiteDomainRepository } from "./infrastructure/mongo-site-domain.repository.js";
 import { MongoSitePageRepository } from "./infrastructure/mongo-site-page.repository.js";
 import { MongoSiteRepository } from "./infrastructure/mongo-site.repository.js";
@@ -57,6 +66,25 @@ import { buildWebsiteTenantRouter } from "./presentation/website-tenant.router.j
 
 export { websiteManifest } from "./module.manifest.js";
 export { registerWebsiteModels } from "./infrastructure/register-website-models.js";
+
+export function registerWebsiteDomainJobs(input: {
+  readonly clock: Clock;
+  readonly provider: DomainProvider;
+}): void {
+  registerScheduledJob(
+    buildReconcileDomainsJob({
+      useCase: new ProcessDueSiteDomainsUseCase({
+        domains: new MongoSiteDomainRepository(),
+        sites: new MongoSiteRepository(),
+        operations: createMongoDomainOperations(),
+        provider: input.provider,
+        unitOfWork: new MongoUnitOfWork(),
+        events: kernelEventPublisher,
+        clock: input.clock,
+      }),
+    }),
+  );
+}
 export type { StorefrontSiteSources } from "./application/ports/website-ports.js";
 export type {
   StorefrontBusinessProfile,

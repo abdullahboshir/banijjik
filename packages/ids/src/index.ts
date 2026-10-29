@@ -48,4 +48,4 @@ export type { ListingBlockId } from "./branded-ids.js";
 export type { SiteId, SitePageId, WebsiteVersionId } from "./branded-ids.js";
 export type { DirectoryListingStatsId } from "./branded-ids.js";
 export type { PosDeviceId, PosHeldCartId, PosSessionId } from "./branded-ids.js";
-export type { HostClaimId, SiteDomainId } from "./branded-ids.js";
+export type { DomainOperationId, HostClaimId, SiteDomainId } from "./branded-ids.js";

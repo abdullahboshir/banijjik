@@ -75,4 +75,13 @@ describe("SiteDomain", () => {
     expect(removing.status).toBe(SITE_DOMAIN_STATUS.REMOVING);
     expect(removing.operationGeneration).toBe(1);
   });
+
+  it("activates VERIFYING, suspends ACTIVE, and recovers SUSPENDED into VERIFYING", () => {
+    const verifying = pendingDomain().requestVerification({ now: LATER, actorUserId: ACTOR });
+    const active = verifying.activate({ now: LATER, nextAttemptAt: LATER });
+    expect(active.status).toBe(SITE_DOMAIN_STATUS.ACTIVE);
+    const suspended = active.suspend({ now: LATER, diagnosticKey: "pending_validation" });
+    expect(suspended.status).toBe(SITE_DOMAIN_STATUS.SUSPENDED);
+    expect(suspended.recoverToVerifying({ now: LATER }).status).toBe(SITE_DOMAIN_STATUS.VERIFYING);
+  });
 });

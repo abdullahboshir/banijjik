@@ -1,3 +1,4 @@
+import type { CloudflareConfig } from "./read-cloudflare-config.js";
 import type { SmsConfig } from "./read-sms-config.js";
 
 /** Where uploaded files are stored (ADR-109). Credentials are never logged. */
@@ -42,6 +43,7 @@ export interface AppConfig {
   readonly corsAllowedOrigins: readonly string[];
   readonly storage: StorageConfig;
   readonly storefront: StorefrontConfig;
+  readonly cloudflare: CloudflareConfig;
   readonly auth: {
     /** Signs access tokens. Never logged. */
     readonly accessTokenSecret: string;
