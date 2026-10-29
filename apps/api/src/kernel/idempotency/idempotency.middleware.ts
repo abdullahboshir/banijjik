@@ -21,11 +21,35 @@ import { computeRequestHash } from "./request-hash.js";
 import { bodyToStore } from "./replay-redaction.js";
 import { captureJsonResponse, type CapturedResponse } from "./response-capture.js";
 
+export interface IdempotencyNamespace {
+  readonly scopeKind: IdempotencyKeyRef["scopeKind"];
+  readonly scopeId: string;
+}
+
+export type IdempotencyResolveNamespace = () =>
+  IdempotencyNamespace | Promise<IdempotencyNamespace>;
+
+export interface IdempotencyReplayAuthorization {
+  readonly record: StoredIdempotencyRecord;
+  readonly body: unknown;
+}
+
+export type IdempotencyAuthorizeReplay = (
+  authorization: IdempotencyReplayAuthorization,
+) => Promise<void>;
+
 export interface IdempotencyOptions {
   readonly clock: Clock;
   /** Defaults to the platform-database store. */
   readonly store?: IdempotencyStore;
+  readonly resolveNamespace?: IdempotencyResolveNamespace;
+  readonly authorizeReplay?: IdempotencyAuthorizeReplay;
 }
+
+export type StorefrontIdempotencyOptions = IdempotencyOptions & {
+  readonly resolveNamespace: IdempotencyResolveNamespace;
+  readonly authorizeReplay: IdempotencyAuthorizeReplay;
+};
 
 interface ClaimRequest {
   readonly ref: IdempotencyKeyRef;
@@ -33,12 +57,15 @@ interface ClaimRequest {
 }
 
 type Decision =
-  { readonly kind: "RUN" } | { readonly kind: "REPLAY"; readonly record: StoredIdempotencyRecord };
+  | { readonly kind: "RUN" }
+  | { readonly kind: "COMPLETED"; readonly record: StoredIdempotencyRecord };
 
 const MAX_CLAIM_ATTEMPTS = 3;
 const IN_PROGRESS_RETRY_SECONDS = 1;
 const HTTP_SUCCESS_MIN = 200;
 const HTTP_SUCCESS_MAX = 299;
+export const STOREFRONT_IDEMPOTENCY_CALLBACKS_REQUIRED =
+  "Idempotency storefront callbacks must be provided together";
 
 function keyFieldError(messageKey: string): AppError {
   return validationFailed([{ path: IDEMPOTENCY_KEY_HEADER, messageKey }]);
@@ -56,13 +83,20 @@ function readIdempotencyKey(request: Request): string {
 }
 
 /** A tenant route keys by organization, a user route (`/me/...`) by user: keys never cross either. */
-function resolveScope(): Pick<IdempotencyKeyRef, "scopeKind" | "scopeId"> {
+function resolveStaffNamespace(): IdempotencyNamespace {
   const { organizationId, userId } = getRequestContext();
   if (organizationId !== undefined) {
     return { scopeKind: IDEMPOTENCY_SCOPE_KIND.ORGANIZATION, scopeId: organizationId };
   }
   if (userId === undefined) throw unauthenticated();
   return { scopeKind: IDEMPOTENCY_SCOPE_KIND.USER, scopeId: userId };
+}
+
+async function resolveRequestNamespace(
+  resolveNamespace: IdempotencyResolveNamespace | undefined,
+): Promise<IdempotencyNamespace> {
+  if (resolveNamespace !== undefined) return await resolveNamespace();
+  return resolveStaffNamespace();
 }
 
 function hashRequest(request: Request): string {
@@ -104,10 +138,12 @@ async function decide(
     if (result.claimed) return { kind: "RUN" };
     const { record } = result;
     if (record === undefined) continue;
+    if (record.status === IDEMPOTENCY_STATUS.COMPLETED) {
+      return { kind: "COMPLETED", record };
+    }
     if (record.requestHash !== requestHash) {
       throw new AppError({ code: ERROR_CODE.IDEMPOTENCY_MISMATCH });
     }
-    if (record.status === IDEMPOTENCY_STATUS.COMPLETED) return { kind: "REPLAY", record };
     if (record.lockedUntil > now) throw inProgressError();
     if (await store.reclaim(ref, requestHash, now)) return { kind: "RUN" };
   }
@@ -118,6 +154,31 @@ function replay(response: Response, record: StoredIdempotencyRecord): void {
   response.setHeader(IDEMPOTENCY_REPLAYED_HEADER, "true");
   response.status(record.responseStatus ?? HTTP_SUCCESS_MIN);
   response.type("application/json").send(record.responseBody ?? "null");
+}
+
+function parseStoredReplayBody(record: StoredIdempotencyRecord): unknown {
+  const text = record.responseBody;
+  if (text === undefined) {
+    throw new AppError({ code: ERROR_CODE.INTERNAL, messageKey: "errors.internal" });
+  }
+  try {
+    const body: unknown = JSON.parse(text);
+    return body;
+  } catch (error) {
+    throw new AppError({
+      code: ERROR_CODE.INTERNAL,
+      messageKey: "errors.internal",
+      details: { reason: error instanceof Error ? error.name : "invalid_json" },
+    });
+  }
+}
+
+async function authorizeStoredReplay(
+  authorizeReplay: IdempotencyAuthorizeReplay | undefined,
+  record: StoredIdempotencyRecord,
+): Promise<void> {
+  if (authorizeReplay === undefined) return;
+  await authorizeReplay({ record, body: parseStoredReplayBody(record) });
 }
 
 function isSuccess(status: number): boolean {
@@ -142,23 +203,38 @@ function settleOutcome(
   };
 }
 
+function assertPairedCallbacks(options: IdempotencyOptions): void {
+  const hasResolve = options.resolveNamespace !== undefined;
+  const hasAuthorize = options.authorizeReplay !== undefined;
+  if (hasResolve === hasAuthorize) return;
+  throw new Error(STOREFRONT_IDEMPOTENCY_CALLBACKS_REQUIRED);
+}
+
 /**
  * Makes a `POST` safe to retry (14-API.md section 2, ADR-089). Mount it on the route after
  * `validate()`, so the request hash covers the parsed body. Same key and body: the first answer
  * again, with `Idempotency-Replayed: true`. Same key, other body: `422 IDEMPOTENCY_MISMATCH`.
- * The record is not part of the business transaction: protection is "at least once, replay
- * after success", and business invariants stay the final guard.
+ * A completed record is authorized before mismatch or replay, so a revoked storefront principal
+ * cannot learn that a checkout exists. The record is not part of the business transaction:
+ * protection is "at least once, replay after success", and business invariants stay the final
+ * guard.
  */
 export function createIdempotencyMiddleware(options: IdempotencyOptions): RequestHandler {
+  assertPairedCallbacks(options);
   const { clock, store = new MongoIdempotencyStore() } = options;
   return async (request, response, next) => {
     const idempotencyKey = readIdempotencyKey(request);
+    const namespace = await resolveRequestNamespace(options.resolveNamespace);
     const claim: ClaimRequest = {
-      ref: { ...resolveScope(), idempotencyKey },
+      ref: { ...namespace, idempotencyKey },
       requestHash: hashRequest(request),
     };
     const decision = await decide(store, clock, claim);
-    if (decision.kind === "REPLAY") {
+    if (decision.kind === "COMPLETED") {
+      await authorizeStoredReplay(options.authorizeReplay, decision.record);
+      if (decision.record.requestHash !== claim.requestHash) {
+        throw new AppError({ code: ERROR_CODE.IDEMPOTENCY_MISMATCH });
+      }
       replay(response, decision.record);
       return;
     }
@@ -169,6 +245,13 @@ export function createIdempotencyMiddleware(options: IdempotencyOptions): Reques
     });
     next();
   };
+}
+
+/** Storefront checkout must name both callbacks so replay cannot skip current access. */
+export function createStorefrontIdempotencyMiddleware(
+  options: StorefrontIdempotencyOptions,
+): RequestHandler {
+  return createIdempotencyMiddleware(options);
 }
 
 function requestErrorContext(request: Request): { requestId?: string; method: string } {

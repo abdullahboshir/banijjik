@@ -7,8 +7,8 @@ import {
 } from "./idempotency-contracts.js";
 
 describe("idempotency contracts", () => {
-  it("scopes keys by organization or user only", () => {
-    expect(Object.keys(IDEMPOTENCY_SCOPE_KIND)).toEqual(["ORGANIZATION", "USER"]);
+  it("scopes keys by organization, user, or storefront principal", () => {
+    expect(Object.keys(IDEMPOTENCY_SCOPE_KIND)).toEqual(["ORGANIZATION", "USER", "STOREFRONT"]);
   });
 
   it("has the two record states of the claim flow", () => {

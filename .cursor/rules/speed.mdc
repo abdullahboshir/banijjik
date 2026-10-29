@@ -1,35 +1,52 @@
 ---
-description: Speed rules — local cheap tests, one CI wait; never use CI as a debugger
+description: Speed + correctness — local proof of YOUR part, one CI wait; never skip quality to save CI
 alwaysApply: true
 ---
 
-# Speed rules (owner 2026-10-26; cards 3.44 / 3.45)
+# Speed and correctness (owner 2026-10-29; cards 3.44 / 3.45)
 
-Full text: `docs/plans/parallel-sessions-guide.md` §7–§8. Binding for implementer, reviewer and lead. These override AGENTS.md session protocol step 4 (do not run the Phase 0.2 full lifecycle locally).
+Full text: `docs/plans/parallel-sessions-guide.md` §7–§8 and `docs/RUN-WITHOUT-CLAUDE.md` §9. Binding for implementer, reviewer and lead. These override AGENTS.md session protocol step 4 (do **not** run the Phase 0.2 full lifecycle locally). They do **not** weaken the Definition of Done.
+
+Speed means: prove **this part** locally, then **one** CI wait. It is not permission to stub, skip a plan test, leave half-written files, or push code whose tests you did not run.
 
 ## Never
 
-- Root `npm run lint` / `typecheck` / `test` / `build`. CI does that.
-- Push to learn if a test fails. **CI is not a debugger.** A red run costs ~15 minutes and subscription tokens.
+- Root `npm run lint` / `typecheck` / `test` / `build`. CI does the whole repo.
+- Push to learn if a test fails. **CI is not a debugger.** A red run costs ~15 minutes.
+- Guess-and-push (tiny edit → wait → tiny edit). 3.42: six CI rounds is a violation.
 - A second rebase only because main moved (`card:check` INFO is enough).
 - `--no-verify`.
+- Claim a pass you did not see.
+- Skip a planned test, ship a TODO/stub/mock as finished, or drop a DoD item to "save CI time".
+- Push while the tests of files **you** changed still fail locally.
 
-## Before every code push (report real output; no pass you did not see)
+## Before every code push (report real command output)
 
-1. Only the test files you changed or added.
-2. `npx turbo run lint typecheck --filter=<touched workspace>` — not the whole repo.
-3. `npx prettier --check` on files you changed.
-4. **Screen or `*.browser.test.ts` change:** that app's browser suite must pass locally first (`VITEST_MAX_WORKERS=1 npm run test:browser` in `apps/admin`, `apps/platform` or `apps/storefront`). While iterating, one file is enough: `npm run test:browser -w @banijjik/admin -- src/<path>.browser.test.ts`. Then the app suite before the first push of those changes.
+1. Every test the plan names for this part exists; its body checks what the name promises.
+2. Run the test files you changed or added (API: `--maxWorkers=1` and the env string in RUN-WITHOUT-CLAUDE §9). If you edited a shared add-only file (contracts permissions, i18n catalogs, `routes/*.ts`), also run the neighbouring test that asserts that list.
+3. `npx turbo run lint typecheck --filter=<touched workspace>` — not the whole repo. Rebuild `@banijjik/contracts` (and validation/i18n) if those dist folders went stale.
+4. `npx prettier --check` on files you changed.
+5. **Screen or `*.browser.test.ts` change:** that app's browser suite must pass locally first (`VITEST_MAX_WORKERS=1 npm run test:browser` in `apps/admin`, `apps/platform` or `apps/storefront`). Iterate on one file, then the app suite before the first push of those changes.
 
-## After a red CI job
+If a plan test cannot be written without a product decision: **stop and ask**. Do not invent a weaker test.
 
-Run the failing file locally, fix, then **one** push. Do not guess-and-push.
+## After a red CI job (read the failed **test name**, not the job colour)
+
+| What failed | Do | Do not |
+|---|---|---|
+| Known flake: `ordered-event-worker.test.ts` (replay "runs a replayed event again…"), `sync-indexes.test.ts`, `main.test.ts` (worker HTTP), admin `auth-flow` | `gh run rerun <runId> --failed` **once** | New commit |
+| A file you touched | Run that file locally, fix, **one** push | Guess |
+| A file you did not touch, not a known flake | Stop; write it in the STATUS handoff | Touch it |
+
+A second failure of the same flake is a real bug: reproduce locally, then one push. Do not keep rerunning CI.
 
 ## Docs-only
 
-A commit that changes only `docs/` starts no CI. Do not wait. `card:check` uses the last code commit's green run.
+A commit that changes only `docs/` starts no CI. Do not wait. `card:check` uses the last **code** commit's green run.
 
 ```text
 ❌ BAD: push → wait 15 min → read log → tiny edit → push again
-✅ GOOD: local failing file → fix → one push → one CI wait
+❌ BAD: skip tests / stub the part so CI stays green
+✅ GOOD: local failing file → fix until it passes here → one push → one CI wait
+✅ GOOD: known flake → one `gh run rerun --failed` → no new commit
 ```
