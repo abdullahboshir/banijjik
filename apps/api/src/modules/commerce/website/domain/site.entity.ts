@@ -4,6 +4,7 @@ import {
   newId,
   type OrganizationId,
   type SiteId,
+  type SiteDomainId,
   type UserId,
   type WebsiteVersionId,
 } from "@banijjik/ids";
@@ -103,8 +104,9 @@ export class Site {
     return this.props.hasPublishedOnce;
   }
 
-  get canonicalSiteDomainId(): string | null {
-    return this.props.canonicalSiteDomainId;
+  get canonicalSiteDomainId(): SiteDomainId | null {
+    const siteDomainId = this.props.canonicalSiteDomainId;
+    return siteDomainId === null ? null : asId<SiteDomainId>(siteDomainId);
   }
 
   get version(): number {
@@ -175,7 +177,7 @@ export class Site {
 
   /** Canonical host is a pointer on Site, never a flag on SiteDomain (plan 4.2 Refresh A2-1). */
   setCanonical(input: {
-    readonly siteDomainId: string;
+    readonly siteDomainId: SiteDomainId;
     readonly now: Date;
     readonly actorUserId: UserId | null;
   }): Site {

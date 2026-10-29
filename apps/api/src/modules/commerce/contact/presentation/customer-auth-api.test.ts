@@ -1,8 +1,14 @@
+import { MODULE_KEY, MODULE_OVERRIDE_EFFECT } from "@banijjik/contracts";
 import { STOREFRONT_ACCESS_COOKIE_NAME } from "@banijjik/contracts/contact";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { asId, newId, type OrganizationId } from "@banijjik/ids";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { models } from "../../../../kernel/db/index.js";
+import { runInOrganizationContext } from "../../../../kernel/tenancy/index.js";
 import { callApi, freshIp, parseSetCookies } from "../../../../test-support/auth-api-client.js";
+import { writeModuleOverride } from "../../../../test-support/entitlement-world.js";
 import { registerIamApiModels, startIamApi } from "../../../../test-support/iam-api-harness.js";
 import type { IamApiHarness } from "../../../../test-support/iam-api-harness.js";
+import { permissivePolicy, siteDesign } from "../../../../test-support/site-fixtures.js";
 import {
   asCustomerCookies,
   callStorefront,
@@ -20,6 +26,7 @@ import {
   createTwoOrganizations,
   type TwoOrganizations,
 } from "../../../../test-support/two-organizations.js";
+import { MongoSiteRepository, SITE_MODEL_NAME, type SiteDocument } from "../../website/index.js";
 
 registerIamApiModels();
 
@@ -33,6 +40,10 @@ afterAll(async () => {
   await harness.dispose();
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 async function aWorldWithLoginOn(): Promise<TwoOrganizations> {
   const world = await createTwoOrganizations(harness.app, harness.connections, {
     industryTemplateKey: "RETAIL",
@@ -44,6 +55,35 @@ async function aWorldWithLoginOn(): Promise<TwoOrganizations> {
 
 function signIn(world: TwoOrganizations, phone?: string) {
   return signInCustomer(harness, world.organizationA, phone);
+}
+
+async function seedPublishedSite(organizationId: string): Promise<string> {
+  const siteId = newId();
+  const websiteVersionId = newId();
+  const now = new Date();
+  const siteModel = models({}).get<SiteDocument>(SITE_MODEL_NAME);
+  await runInOrganizationContext(asId<OrganizationId>(organizationId), async () => {
+    await siteModel.create([
+      {
+        siteId,
+        organizationId,
+        draftDesign: siteDesign(),
+        editPolicy: permissivePolicy(),
+        sourceTemplateKey: "retail-starter",
+        sourceTemplateRevision: 1,
+        publishedWebsiteVersionId: websiteVersionId,
+        nextRevision: 2,
+        hasPublishedOnce: true,
+        canonicalSiteDomainId: null,
+        version: 2,
+        createdAt: now,
+        updatedAt: now,
+        createdByUserId: null,
+        updatedByUserId: null,
+      },
+    ]);
+  });
+  return websiteVersionId;
 }
 
 function refreshCall(world: TwoOrganizations, session: { access: string; refresh: string }) {
@@ -219,6 +259,7 @@ describe("customer sign-in with a phone code", () => {
 describe("the public host lookup", () => {
   it("maps a business's host to its organization id and answers 404 for anything else", async () => {
     const world = await aWorldWithLoginOn();
+    const publishedWebsiteVersionId = await seedPublishedSite(world.organizationA);
     const row = await harness.connections.platform
       .collection("organizations")
       .findOne({ organizationId: world.organizationA });
@@ -236,10 +277,80 @@ describe("the public host lookup", () => {
     const nested = await resolve(`a.${slug}.localhost`);
 
     expect(found.status).toBe(200);
-    expect(found.body.data).toEqual({ organizationId: world.organizationA });
+    expect(found.body.data).toEqual({
+      organizationId: world.organizationA,
+      generation: 0,
+      canonicalHostname: `${slug}.localhost`,
+      publishedWebsiteVersionId,
+    });
     expect(unknown.status).toBe(404);
     expect(foreign.status).toBe(404);
     expect(nested.status).toBe(404);
+  });
+
+  it("does not resolve an inactive organization even when its site remains published", async () => {
+    const world = await aWorldWithLoginOn();
+    await seedPublishedSite(world.organizationA);
+    const organization = await harness.connections.platform
+      .collection("organizations")
+      .findOne({ organizationId: world.organizationA });
+    const slug = String(organization?.["slug"]);
+    await harness.connections.platform
+      .collection("organizations")
+      .updateOne({ organizationId: world.organizationA }, { $set: { status: "SUSPENDED" } });
+
+    const response = await callApi(harness.app, {
+      method: "get",
+      path: `/api/v1/storefront/resolve?host=${encodeURIComponent(`${slug}.localhost`)}`,
+      ip: freshIp(),
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.messageKey).toBe("errors.storefront_not_available");
+  });
+
+  it("does not resolve a host when the website module is not effective", async () => {
+    const world = await aWorldWithLoginOn();
+    await seedPublishedSite(world.organizationA);
+    await writeModuleOverride({
+      organizationId: world.organizationA,
+      moduleKey: MODULE_KEY.WEBSITE,
+      effect: MODULE_OVERRIDE_EFFECT.TENANT_DISABLE,
+    });
+    const organization = await harness.connections.platform
+      .collection("organizations")
+      .findOne({ organizationId: world.organizationA });
+    const slug = String(organization?.["slug"]);
+
+    const response = await callApi(harness.app, {
+      method: "get",
+      path: `/api/v1/storefront/resolve?host=${encodeURIComponent(`${slug}.localhost`)}`,
+      ip: freshIp(),
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.messageKey).toBe("errors.storefront_not_available");
+  });
+
+  it("answers 503, never 404, when the authoritative site lookup fails", async () => {
+    const world = await aWorldWithLoginOn();
+    await seedPublishedSite(world.organizationA);
+    const organization = await harness.connections.platform
+      .collection("organizations")
+      .findOne({ organizationId: world.organizationA });
+    const slug = String(organization?.["slug"]);
+    vi.spyOn(MongoSiteRepository.prototype, "findCurrent").mockRejectedValue(
+      new Error("tenant database unavailable"),
+    );
+
+    const response = await callApi(harness.app, {
+      method: "get",
+      path: `/api/v1/storefront/resolve?host=${encodeURIComponent(`${slug}.localhost`)}`,
+      ip: freshIp(),
+    });
+
+    expect(response.status).toBe(503);
+    expect(response.body.error.code).toBe("RETRY_LATER");
   });
 });
 

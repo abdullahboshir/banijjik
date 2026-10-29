@@ -15,7 +15,7 @@ import {
   createCustomerTokenVerifier,
 } from "../kernel/auth/index.js";
 import { getRequestContext, runWithRequestContext } from "../kernel/context/index.js";
-import { AppError, sendData, validate } from "../kernel/http/index.js";
+import { AppError, validate } from "../kernel/http/index.js";
 import { rateLimit, type RateLimiter } from "../kernel/rate-limit/index.js";
 import { contactFieldsOf } from "./contact-tenant-router.js";
 import { runInOrganizationContext } from "../kernel/tenancy/index.js";
@@ -53,13 +53,16 @@ import {
   buildWebsiteStorefrontRouterFor,
   type StorefrontSiteSources,
 } from "../modules/commerce/website/index.js";
-import { buildDirectoryAdapters } from "./directory-storefront-adapters.js";
 import { buildCreditModuleDeps } from "./credit-tenant-router.js";
+import { buildDirectoryAdapters } from "./directory-storefront-adapters.js";
+import { buildStorefrontResolveHandler } from "./storefront-resolve.js";
 
 const RESOLVE_BUCKET = "storefront.resolve.ip";
 const SURFACE_BUCKET = "storefront.surface.ip";
 const ONE_MINUTE_SECONDS = 60;
-const RESOLVE_PER_MINUTE = 60;
+// C1 never caches a positive host answer, so every page and same-origin API proxy call hits
+// `/resolve` from the storefront server IP. The old 60/min cap assumed a 60s positive cache.
+const RESOLVE_PER_MINUTE = 6_000;
 const SURFACE_PER_MINUTE = 300;
 /** A block must reach a signed-in customer within a minute (ADR-119). */
 const ACCOUNT_STATUS_MAX_STALE_SECONDS = 60;
@@ -82,29 +85,6 @@ function notAvailable(): AppError {
     code: ERROR_CODE.NOT_FOUND,
     messageKey: "errors.storefront_not_available",
   });
-}
-
-/** `shop.sites.example.com:3000` under base domain `sites.example.com` is the business slug `shop`. */
-export function slugOfHost(host: string, baseDomain: string): string | undefined {
-  const hostName = (host.split(":")[0] ?? "").toLowerCase();
-  const suffix = `.${baseDomain}`;
-  if (!hostName.endsWith(suffix)) return undefined;
-  const slug = hostName.slice(0, -suffix.length);
-  return slug === "" || slug.includes(".") ? undefined : slug;
-}
-
-function buildResolveHandler(
-  organizations: StorefrontOrganizationReader,
-  baseDomain: string,
-): RequestHandler {
-  return async (_request, response) => {
-    const { host } = response.locals["validated"].query as { host: string };
-    const slug = slugOfHost(host, baseDomain);
-    const organization =
-      slug === undefined ? undefined : await organizations.findActiveBySlug(slug);
-    if (organization === undefined) throw notAvailable();
-    sendData(response, { organizationId: organization.organizationId });
-  };
 }
 
 /** Checks the business of the path, then runs the rest of the request as that business (tenant context). */
@@ -317,7 +297,7 @@ function mountOrganizationSurface(
  * business must be ACTIVE; the customer's token must be for that business (ADR-119).
  */
 export function buildStorefrontRouter(input: StorefrontRouterInput): Router {
-  const { config, rateLimiter } = input;
+  const { rateLimiter } = input;
   const organizations = buildStorefrontOrganizationReader();
   const router = Router();
   router.get(
@@ -329,7 +309,7 @@ export function buildStorefrontRouter(input: StorefrontRouterInput): Router {
       windowSeconds: ONE_MINUTE_SECONDS,
     }),
     validate({ query: storefrontResolveQuerySchema }),
-    buildResolveHandler(organizations, config.storefront.baseDomain),
+    buildStorefrontResolveHandler(input, organizations),
   );
   mountOrganizationSurface(router, input, organizations);
   return router;

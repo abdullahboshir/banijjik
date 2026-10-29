@@ -11,6 +11,7 @@ import {
   seedApprovedListing,
   seedBusiness,
   seedOwner,
+  seedPublishedSite,
   signInCustomer,
   type Session,
 } from "./test-support/seed";
@@ -102,6 +103,7 @@ beforeAll(async () => {
   await publishTemplate(stack, "MATRIMONY");
   owner = await seedOwner();
   organizationId = await seedBusiness(owner, SLUG, BUSINESS_NAME);
+  await seedPublishedSite(stack, organizationId);
   await grantDirectoryModule(stack, organizationId);
   await grantOptionalModule(stack, organizationId, MODULE_KEY.CREDIT);
   await enableCustomerLogin(owner, organizationId);
@@ -145,14 +147,14 @@ async function configureCredits(): Promise<void> {
 }
 
 async function signInInBrowser(page: Page, phone: string): Promise<void> {
-  await page.goto(`${HOME}/sign-in`, { waitUntil: "networkidle0" });
+  await page.goto(`${HOME}/sign-in`, { waitUntil: "load" });
   await page.type("#sign-in-phone", phone);
   const sentAfter = new Date();
   await clickSubmit(page);
   await page.waitForSelector("#sign-in-code");
   const code = await latestSmsCode(stack, phone, sentAfter);
   await page.type("#sign-in-code", code);
-  await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }), clickSubmit(page)]);
+  await Promise.all([page.waitForNavigation({ waitUntil: "load" }), clickSubmit(page)]);
 }
 
 async function clickSubmit(page: Page): Promise<void> {
@@ -160,7 +162,7 @@ async function clickSubmit(page: Page): Promise<void> {
 }
 
 async function openPage(page: Page, path: string): Promise<void> {
-  await page.goto(`${HOME}${path}`, { waitUntil: "networkidle0" });
+  await page.goto(`${HOME}${path}`, { waitUntil: "load" });
 }
 
 async function bodyText(page: Page): Promise<string> {
@@ -179,7 +181,10 @@ async function clickButtonText(page: Page, text: string): Promise<void> {
   await page.waitForFunction(
     (wanted) =>
       Array.from(document.querySelectorAll("button")).some(
-        (button) => button.textContent?.trim() === wanted && !button.disabled,
+        (button) =>
+          button.textContent?.trim() === wanted &&
+          !button.disabled &&
+          Object.keys(button).some((key) => key.startsWith("__reactProps")),
       ),
     { timeout: DEADLINE_MS, polling: POLL_MS },
     text,
@@ -204,6 +209,7 @@ async function hasButtonText(page: Page, text: string): Promise<boolean> {
 
 /** Sets a control's value the way a user does: the native setter, then the events React listens to. */
 async function setValue(page: Page, selector: string, value: string): Promise<void> {
+  await page.waitForSelector(selector, { timeout: DEADLINE_MS });
   await page.$eval(
     selector,
     (element, next) => {

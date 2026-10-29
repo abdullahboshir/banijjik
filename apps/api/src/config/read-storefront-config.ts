@@ -7,6 +7,8 @@ import {
   smsDriverRule,
   SMS_TEST_INBOX_IN_PRODUCTION_HINT,
   storefrontBaseDomainRule,
+  storefrontReservedHostnamesRule,
+  splitOrigins,
 } from "./env.schema.js";
 import type { ConfigSection } from "./read-auth-config.js";
 import {
@@ -54,11 +56,24 @@ export function readStorefrontConfig(
       ? storefrontBaseDomainRule
       : { ...storefrontBaseDomainRule, defaultValue: DEVELOPMENT_BASE_DOMAIN },
   );
-  const issues = collectIssues([otpSecret, smsDriver, baseDomain]);
+  const reservedRule = {
+    ...storefrontReservedHostnamesRule,
+    ...(!isProduction ? { defaultValue: "" } : {}),
+  };
+  const reservedHostnames = readField(env, reservedRule);
+  const hasProductionReservations =
+    !isProduction ||
+    reservedHostnames.value === undefined ||
+    splitOrigins(reservedHostnames.value).length > 0;
+  const reservationResult = hasProductionReservations
+    ? reservedHostnames
+    : failure(storefrontReservedHostnamesRule, "INVALID");
+  const issues = collectIssues([otpSecret, smsDriver, baseDomain, reservationResult]);
   if (
     otpSecret.value === undefined ||
     smsDriver.value === undefined ||
-    baseDomain.value === undefined
+    baseDomain.value === undefined ||
+    reservationResult.value === undefined
   ) {
     return { issues };
   }
@@ -68,6 +83,9 @@ export function readStorefrontConfig(
       otpSecret: otpSecret.value,
       smsDriver: smsDriver.value,
       baseDomain: baseDomain.value.toLowerCase(),
+      reservedHostnames: splitOrigins(reservationResult.value).map((hostname) =>
+        hostname.toLowerCase(),
+      ),
     }),
   };
 }

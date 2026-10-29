@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --dir src",
+    "test": "vitest run src proxy.test.ts",
     "test:browser": "vitest run --config vitest.browser.config.ts"
   },
   "dependencies": {

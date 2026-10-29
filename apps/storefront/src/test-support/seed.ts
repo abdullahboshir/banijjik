@@ -9,6 +9,8 @@ import {
   type StorefrontStack,
 } from "./storefront-stack";
 
+export { seedPublishedSite } from "./seed-published-site";
+
 /**
  * Setup through the real API, so the browser test sees what a business and its customers see. Every call
  * sends the storefront origin, which the API lists as allowed.

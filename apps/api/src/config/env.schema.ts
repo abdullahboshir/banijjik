@@ -172,6 +172,20 @@ export const storefrontBaseDomainRule: FieldRule<string> = {
   schema: z.string().max(253).regex(HOST_NAME_PATTERN),
 };
 
+export const storefrontReservedHostnamesRule: FieldRule<string> = {
+  key: "STOREFRONT_RESERVED_HOSTNAMES",
+  hint: "must be a comma-separated list of host names without schemes or ports",
+  schema: z
+    .string()
+    .refine(
+      (value) =>
+        splitOrigins(value).every(
+          (hostname) => hostname.length <= 253 && HOST_NAME_PATTERN.test(hostname),
+        ),
+      "invalid hostname",
+    ),
+};
+
 export const accessTokenSecretRule: FieldRule<string> = {
   key: "AUTH_ACCESS_TOKEN_SECRET",
   hint: `must be a random string of at least ${MINIMUM_SECRET_LENGTH} characters`,
