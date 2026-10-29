@@ -1,24 +1,54 @@
 import { storefrontApiOrigin } from "../config/environment";
 import { STOREFRONT_API_PREFIX } from "../config/storefront-config";
-import { createSystemHostResolver } from "./host-resolver";
+import { createHostResolver, type StorefrontHostResolution } from "./host-resolver";
 
 interface ResolveBody {
-  readonly data: { readonly organizationId: string };
+  readonly data: StorefrontHostResolution;
 }
 
-/** Asks the API which business the host belongs to (14-API section 6). 404 is an unknown host. */
-async function fetchOrganizationIdForHost(host: string): Promise<string | undefined> {
-  const url = `${storefrontApiOrigin()}${STOREFRONT_API_PREFIX}/resolve?host=${encodeURIComponent(host)}`;
-  const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+function isHostResolution(value: unknown): value is StorefrontHostResolution {
+  if (!isRecord(value)) return false;
+  return (
+    hasString(value, "organizationId") &&
+    hasInteger(value, "generation") &&
+    hasString(value, "canonicalHostname") &&
+    hasString(value, "publishedWebsiteVersionId")
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function hasString(value: Record<string, unknown>, key: string): boolean {
+  return typeof value[key] === "string";
+}
+
+function hasInteger(value: Record<string, unknown>, key: string): boolean {
+  return typeof value[key] === "number" && Number.isInteger(value[key]);
+}
+
+async function fetchHostResolution(
+  hostname: string,
+): Promise<StorefrontHostResolution | undefined> {
+  const url = `${storefrontApiOrigin()}${STOREFRONT_API_PREFIX}/resolve?host=${encodeURIComponent(hostname)}`;
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
   if (response.status === 404) return undefined;
-  if (!response.ok) throw new Error(`resolve answered ${response.status}`);
+  if (!response.ok) throw new Error(`storefront host lookup failed with ${response.status}`);
+
   const body = (await response.json()) as ResolveBody;
-  return body.data.organizationId;
+  if (!isHostResolution(body.data)) throw new Error("storefront host lookup returned invalid data");
+  return body.data;
 }
 
-const hostResolver = createSystemHostResolver(fetchOrganizationIdForHost);
+const hostResolver = createHostResolver({
+  fetchResolution: fetchHostResolution,
+  now: () => Date.now(),
+});
 
-/** The business a Host belongs to, from the in-process cache when the answer is fresh. */
-export function resolveHostOrganization(host: string): Promise<string | undefined> {
+export function resolveStorefrontHost(host: string): Promise<StorefrontHostResolution | undefined> {
   return hostResolver.resolve(host);
 }

@@ -253,7 +253,7 @@ describe("RemoveSiteDomainUseCase", () => {
     if (stored === undefined) throw new Error("domain missing");
     stack.domains.rows[0] = withStatus(stored, SITE_DOMAIN_STATUS.ACTIVE);
     stack.sites.site = site.setCanonical({
-      siteDomainId: created.siteDomainId,
+      siteDomainId: asId<SiteDomainId>(created.siteDomainId),
       now: stack.clock.now(),
       actorUserId: ACTOR,
     });

@@ -86,6 +86,13 @@ export class MongoSiteDomainRepository implements SiteDomainRepository {
     return row === null ? undefined : toDomain(row);
   }
 
+  async findByHostname(hostname: string): Promise<SiteDomain | undefined> {
+    const row = await domainModel()
+      .findOne({ hostname }, undefined, sessionOption(getActiveSession()))
+      .lean<SiteDomainDocument>();
+    return row === null ? undefined : toDomain(row);
+  }
+
   async save(domain: SiteDomain, expectedVersion: number): Promise<void> {
     await updateVersioned<SiteDomainDocument>({
       model: domainModel(),

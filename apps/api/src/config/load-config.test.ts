@@ -31,6 +31,7 @@ const FAKE_OTP_SECRET = "test-only-otp-secret-0123456789abcdef0123";
 const customerLoginEnv = {
   OTP_SECRET: FAKE_OTP_SECRET,
   STOREFRONT_BASE_DOMAIN: "sites.example.com",
+  STOREFRONT_RESERVED_HOSTNAMES: "api.example.com, admin.example.com, platform.example.com",
 };
 
 const productionEnv = {
@@ -88,6 +89,7 @@ describe("loadConfig", () => {
         otpSecret: expect.any(String),
         smsDriver: "test-inbox",
         baseDomain: "localhost",
+        reservedHostnames: [],
       },
       cloudflare: { driver: "disabled" },
     });
@@ -621,6 +623,7 @@ describe("loadConfig customer sign-in (card M.1)", () => {
       otpSecret: expect.any(String),
       smsDriver: "test-inbox",
       baseDomain: "localhost",
+      reservedHostnames: [],
     });
     expect(Object.isFrozen(config.storefront)).toBe(true);
   });
@@ -632,7 +635,36 @@ describe("loadConfig customer sign-in (card M.1)", () => {
       otpSecret: FAKE_OTP_SECRET,
       smsDriver: "disabled",
       baseDomain: "sites.example.com",
+      reservedHostnames: ["api.example.com", "admin.example.com", "platform.example.com"],
     });
+  });
+
+  it("requires and normalizes validated reserved public hostnames in production", () => {
+    const config = loadConfig({
+      ...productionEnv,
+      STOREFRONT_RESERVED_HOSTNAMES: " API.EXAMPLE.COM, admin.example.com,API.EXAMPLE.COM ",
+    });
+    const missing = catchConfigError(
+      Object.fromEntries(
+        Object.entries(productionEnv).filter(([key]) => key !== "STOREFRONT_RESERVED_HOSTNAMES"),
+      ),
+    );
+    const invalid = catchConfigError({
+      ...productionEnv,
+      STOREFRONT_RESERVED_HOSTNAMES: "https://api.example.com",
+    });
+    const empty = catchConfigError({ ...productionEnv, STOREFRONT_RESERVED_HOSTNAMES: " , " });
+
+    expect(config.storefront.reservedHostnames).toEqual(["api.example.com", "admin.example.com"]);
+    expect(missing.issues).toEqual([
+      expect.objectContaining({ key: "STOREFRONT_RESERVED_HOSTNAMES", problem: "MISSING" }),
+    ]);
+    expect(invalid.issues).toEqual([
+      expect.objectContaining({ key: "STOREFRONT_RESERVED_HOSTNAMES", problem: "INVALID" }),
+    ]);
+    expect(empty.issues).toEqual([
+      expect.objectContaining({ key: "STOREFRONT_RESERVED_HOSTNAMES", problem: "INVALID" }),
+    ]);
   });
 
   it("refuses the test inbox in production", () => {

@@ -8,6 +8,7 @@ import { ORGANIZATION_MODEL_NAME, type OrganizationDocument } from "./organizati
 
 const PROJECTION = {
   organizationId: 1,
+  slug: 1,
   name: 1,
   defaultLocale: 1,
   configVersion: 1,
@@ -17,13 +18,14 @@ const PROJECTION = {
 
 type Row = Pick<
   OrganizationDocument,
-  "organizationId" | "name" | "defaultLocale" | "configVersion" | "branding"
+  "organizationId" | "slug" | "name" | "defaultLocale" | "configVersion" | "branding"
 >;
 
 /** Missing branding (created before card 3.12) reads as no branding, never as an error. */
 function toStorefrontOrganization(row: Row): StorefrontOrganization {
   return {
     organizationId: row.organizationId,
+    slug: row.slug,
     name: row.name,
     defaultLocale: row.defaultLocale,
     configVersion: row.configVersion,

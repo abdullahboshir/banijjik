@@ -20,6 +20,8 @@ export interface StorefrontConfig {
   readonly smsDriver: "test-inbox" | "disabled" | "gateway";
   /** `<slug>.<baseDomain>` is the public host of a business. */
   readonly baseDomain: string;
+  /** Public platform, API and admin hosts that no tenant may claim. */
+  readonly reservedHostnames: readonly string[];
 }
 
 export interface AppConfig {

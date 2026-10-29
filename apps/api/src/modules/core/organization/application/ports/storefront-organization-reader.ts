@@ -3,6 +3,7 @@ import type { PreferredLocale } from "@banijjik/contracts";
 /** What the public site needs to know about a business: who it is and in which language it speaks. */
 export interface StorefrontOrganization {
   readonly organizationId: string;
+  readonly slug: string;
   readonly name: string;
   readonly defaultLocale: PreferredLocale;
   /** Keys the resolved-config cache; the storefront puts it into the request context like tenantContext does. */

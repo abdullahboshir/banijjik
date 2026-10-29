@@ -4,10 +4,17 @@ import { ORGANIZATION_HEADER } from "../config/storefront-config";
  * The request headers a page or route sees: the client's copy with the organization header replaced by
  * the one the Host resolved to (or removed for an unknown host). A client can never supply it (M.6 decision 9).
  */
-export function requestHeadersFor(source: Headers, organizationId: string | undefined): Headers {
+export function requestHeadersFor(
+  source: Headers,
+  resolution: { readonly organizationId: string; readonly hostname: string } | undefined,
+): Headers {
   const headers = new Headers(source);
   headers.delete(ORGANIZATION_HEADER);
-  if (organizationId !== undefined) headers.set(ORGANIZATION_HEADER, organizationId);
+  headers.delete("x-forwarded-host");
+  if (resolution !== undefined) {
+    headers.set(ORGANIZATION_HEADER, resolution.organizationId);
+    headers.set("x-forwarded-host", resolution.hostname);
+  }
   return headers;
 }
 

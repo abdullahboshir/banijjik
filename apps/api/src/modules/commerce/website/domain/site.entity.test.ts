@@ -3,7 +3,7 @@ import {
   type SiteDesign,
   type SiteEditPolicy,
 } from "@banijjik/contracts/website";
-import { asId, newId, type OrganizationId, type UserId } from "@banijjik/ids";
+import { asId, newId, type OrganizationId, type SiteDomainId, type UserId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
 import { Site } from "./site.entity.js";
 
@@ -131,7 +131,7 @@ describe("Site", () => {
   it("bumps version when the canonical domain pointer is set or cleared", () => {
     const site = createSite(sampleDesign());
     const pointed = site.setCanonical({
-      siteDomainId: ID_A,
+      siteDomainId: asId<SiteDomainId>(ID_A),
       now: new Date("2026-10-29T00:00:00.000Z"),
       actorUserId: site.createdByUserId,
     });

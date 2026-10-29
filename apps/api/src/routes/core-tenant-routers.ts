@@ -205,7 +205,12 @@ function websiteAdminRouterOf(input: CoreTenantRouterInput): Router {
     files: buildFileReferenceReader(),
     hostClaims: createMongoHostClaims({
       baseDomain: input.config.storefront.baseDomain,
-      reservedHostnames: [],
+      reservedHostnames: [
+        ...new Set([
+          input.config.storefront.baseDomain,
+          ...input.config.storefront.reservedHostnames,
+        ]),
+      ],
     }),
   });
 }

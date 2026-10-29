@@ -14,6 +14,10 @@ import {
 import type { FileReferenceReader } from "../../core/file/index.js";
 import { GetStorefrontSiteUseCase } from "./application/use-cases/storefront-site.use-case.js";
 import {
+  lookupPublishedStorefrontHost,
+  StorefrontHostReader,
+} from "./application/storefront-host-reader.js";
+import {
   GetPublishedSitePageUseCase,
   ListPublishedSitePagesUseCase,
   ListSitePagesUseCase,
@@ -66,6 +70,16 @@ import { buildWebsiteTenantRouter } from "./presentation/website-tenant.router.j
 
 export { websiteManifest } from "./module.manifest.js";
 export { registerWebsiteModels } from "./infrastructure/register-website-models.js";
+export { lookupPublishedStorefrontHost, StorefrontHostReader };
+export { MongoSiteRepository } from "./infrastructure/mongo-site.repository.js";
+export { SITE_MODEL_NAME, type SiteDocument } from "./infrastructure/site.schema.js";
+
+export function buildStorefrontHostReader(): StorefrontHostReader {
+  return new StorefrontHostReader({
+    sites: new MongoSiteRepository(),
+    domains: new MongoSiteDomainRepository(),
+  });
+}
 
 export function registerWebsiteDomainJobs(input: {
   readonly clock: Clock;

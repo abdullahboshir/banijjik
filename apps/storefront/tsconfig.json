@@ -20,6 +20,7 @@
     "src",
     "next.config.ts",
     "proxy.ts",
+    "proxy.test.ts",
     "vitest.config.ts",
     "vitest.browser.config.ts"
   ]
