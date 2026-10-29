@@ -15,7 +15,7 @@ export const IDEMPOTENCY_RECORD_COLLECTION_NAME = "idempotency_records";
 export interface IdempotencyRecordDocument {
   idempotencyRecordId: string;
   scopeKind: IdempotencyScopeKind;
-  /** The organizationId or userId the key belongs to, so a key never collides across them. */
+  /** The organizationId, userId, or storefront principal key the record belongs to. */
   scopeId: string;
   idempotencyKey: string;
   /** SHA-256 over method, route pattern, validated params and canonical body. */
@@ -57,8 +57,8 @@ idempotencyRecordSchema.index({ idempotencyRecordId: 1 }, { unique: true });
 idempotencyRecordSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 /**
- * Tenancy NONE on purpose: the record spans user and organization scopes and is reached only by
- * this folder's store, always with an explicit scope filter.
+ * Tenancy NONE on purpose: the record spans user, organization and storefront scopes and is
+ * reached only by this folder's store, always with an explicit scope filter.
  */
 export function registerIdempotencyModel(): void {
   registerModel({

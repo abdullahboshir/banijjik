@@ -13,24 +13,35 @@ import {
 } from "../../test-support/test-databases.js";
 import { runWithRequestContext } from "../context/index.js";
 import { initializeModels, type DatabaseConnections } from "../db/index.js";
-import { sendData, validate } from "../http/index.js";
-import { createIdempotencyMiddleware } from "./idempotency.middleware.js";
+import { notFound, sendData, validate } from "../http/index.js";
+import {
+  createIdempotencyMiddleware,
+  createStorefrontIdempotencyMiddleware,
+  STOREFRONT_IDEMPOTENCY_CALLBACKS_REQUIRED,
+} from "./idempotency.middleware.js";
 import { registerIdempotencyModel } from "./idempotency-record.schema.js";
+import { redactFromReplay } from "./replay-redaction.js";
+import { storefrontNamespaceFromContext } from "./storefront-namespace.js";
 
 registerIdempotencyModel();
 
 const probeBodySchema = z.looseObject({ mode: z.string().default("ok") });
 const USER_HEADER = "x-test-user";
 const ORGANIZATION_HEADER = "x-test-organization";
+const CUSTOMER_HEADER = "x-test-customer-account";
+const GUEST_HEADER = "x-test-guest-session";
 const REPLAYED = IDEMPOTENCY_REPLAYED_HEADER.toLowerCase();
 const DEFAULT_USER_ID = newId();
 const SLOW_MILLISECONDS = 200;
 const LOCK_SECONDS_PLUS_ONE = 61;
+const SECRET_ONCE = "once-only";
 
 let connections: DatabaseConnections;
 let clock: MutableClock;
 let probe: TestApp;
+let storefrontProbe: TestApp;
 let handlerRuns = 0;
+let denyStorefrontReplay = false;
 const heldRequests: (() => void)[] = [];
 let notifyHeldRequestStarted: (() => void) | undefined;
 
@@ -64,7 +75,47 @@ async function runMode(mode: string, response: Response): Promise<boolean> {
     response.send("not json");
     return true;
   }
+  if (mode === "secret") {
+    redactFromReplay(response, ["secret"]);
+    sendData(response, { run: handlerRuns, secret: SECRET_ONCE }, { status: 201 });
+    return true;
+  }
   return false;
+}
+
+function buildStorefrontProbeRouter(router: Router): void {
+  router.use((incoming, _response, next) => {
+    const organizationId = incoming.get(ORGANIZATION_HEADER);
+    const customerAccountId = incoming.get(CUSTOMER_HEADER);
+    const guestSessionId = incoming.get(GUEST_HEADER);
+    runWithRequestContext(
+      {
+        requestId: newId(),
+        ...(organizationId === undefined ? {} : { organizationId }),
+        ...(customerAccountId === undefined ? {} : { customerAccountId }),
+        ...(guestSessionId === undefined ? {} : { guestSessionId }),
+      },
+      () => next(),
+    );
+  });
+  const idempotency = createStorefrontIdempotencyMiddleware({
+    clock,
+    resolveNamespace: storefrontNamespaceFromContext,
+    authorizeReplay: async () => {
+      if (denyStorefrontReplay) throw notFound();
+    },
+  });
+  router.post(
+    "/storefront-probe",
+    validate({ body: probeBodySchema }),
+    idempotency,
+    async (incoming, response) => {
+      handlerRuns += 1;
+      const { mode } = incoming.body as { mode: string };
+      if (await runMode(mode, response)) return;
+      sendData(response, { run: handlerRuns }, { status: 201 });
+    },
+  );
 }
 
 function buildProbeRouter(router: Router): void {
@@ -102,6 +153,7 @@ beforeAll(async () => {
   await initializeModels();
   clock = new MutableClock(new Date());
   probe = createTestApp(buildProbeRouter);
+  storefrontProbe = createTestApp(buildStorefrontProbeRouter);
 });
 
 afterAll(async () => {
@@ -110,6 +162,7 @@ afterAll(async () => {
 
 beforeEach(() => {
   handlerRuns = 0;
+  denyStorefrontReplay = false;
 });
 
 interface ProbeCall {
@@ -132,6 +185,26 @@ function callProbe(call: ProbeCall = {}) {
   if (call.organizationId !== undefined) {
     pending = pending.set(ORGANIZATION_HEADER, call.organizationId);
   }
+  return pending.send(call.body ?? { mode: "ok" });
+}
+
+interface StorefrontProbeCall {
+  readonly key: string;
+  readonly organizationId: string;
+  readonly customerAccountId?: string;
+  readonly guestSessionId?: string;
+  readonly body?: object;
+}
+
+function callStorefrontProbe(call: StorefrontProbeCall) {
+  let pending = request(storefrontProbe.app)
+    .post("/api/v1/storefront-probe")
+    .set(IDEMPOTENCY_KEY_HEADER, call.key)
+    .set(ORGANIZATION_HEADER, call.organizationId);
+  if (call.customerAccountId !== undefined) {
+    pending = pending.set(CUSTOMER_HEADER, call.customerAccountId);
+  }
+  if (call.guestSessionId !== undefined) pending = pending.set(GUEST_HEADER, call.guestSessionId);
   return pending.send(call.body ?? { mode: "ok" });
 }
 
@@ -278,5 +351,159 @@ describe("Idempotency-Key middleware", () => {
 
     for (const response of responses) expect(response.headers[REPLAYED]).toBeUndefined();
     expect(handlerRuns).toBe(4);
+  });
+
+  it("omits redacted fields from a replay so a stored answer carries no secret", async () => {
+    const key = newId();
+
+    const first = await callProbe({ key, body: { mode: "secret" } });
+    const second = await callProbe({ key, body: { mode: "secret" } });
+
+    expect(first.body.data.secret).toBe(SECRET_ONCE);
+    expect(second.headers[REPLAYED]).toBe("true");
+    expect(second.body.data.secret).toBeUndefined();
+    expect(handlerRuns).toBe(1);
+  });
+
+  it("refuses to start when only one storefront callback is provided", () => {
+    expect(() =>
+      createIdempotencyMiddleware({
+        clock,
+        resolveNamespace: storefrontNamespaceFromContext,
+      }),
+    ).toThrow(STOREFRONT_IDEMPOTENCY_CALLBACKS_REQUIRED);
+  });
+});
+
+describe("storefront Idempotency-Key namespace", () => {
+  it("does not let another customer in the same organization replay a checkout key", async () => {
+    const key = newId();
+    const organizationId = newId();
+
+    const first = await callStorefrontProbe({
+      key,
+      organizationId,
+      customerAccountId: newId(),
+    });
+    const other = await callStorefrontProbe({
+      key,
+      organizationId,
+      customerAccountId: newId(),
+    });
+
+    expect(first.status).toBe(201);
+    expect(other.status).toBe(201);
+    expect(other.headers[REPLAYED]).toBeUndefined();
+    expect(handlerRuns).toBe(2);
+  });
+
+  it("does not let a guest session of another organization reuse the same key", async () => {
+    const key = newId();
+    const guestSessionId = newId();
+
+    const first = await callStorefrontProbe({
+      key,
+      organizationId: newId(),
+      guestSessionId,
+    });
+    const otherOrg = await callStorefrontProbe({
+      key,
+      organizationId: newId(),
+      guestSessionId,
+    });
+
+    expect(first.status).toBe(201);
+    expect(otherOrg.status).toBe(201);
+    expect(otherOrg.headers[REPLAYED]).toBeUndefined();
+    expect(handlerRuns).toBe(2);
+  });
+
+  it("ignores a guestSessionId in the body when choosing the namespace", async () => {
+    const key = newId();
+    const organizationId = newId();
+    const cookieGuest = newId();
+    const bodyGuest = newId();
+    const body = { mode: "ok", guestSessionId: bodyGuest };
+
+    const first = await callStorefrontProbe({
+      key,
+      organizationId,
+      guestSessionId: cookieGuest,
+      body,
+    });
+    const sameCookie = await callStorefrontProbe({
+      key,
+      organizationId,
+      guestSessionId: cookieGuest,
+      body,
+    });
+    const bodyGuestCaller = await callStorefrontProbe({
+      key,
+      organizationId,
+      guestSessionId: bodyGuest,
+      body,
+    });
+
+    expect(first.status).toBe(201);
+    expect(sameCookie.headers[REPLAYED]).toBe("true");
+    expect(bodyGuestCaller.headers[REPLAYED]).toBeUndefined();
+    expect(handlerRuns).toBe(2);
+  });
+
+  it("hides a stored replay when current access is revoked", async () => {
+    const key = newId();
+    const organizationId = newId();
+    const guestSessionId = newId();
+
+    const first = await callStorefrontProbe({ key, organizationId, guestSessionId });
+    denyStorefrontReplay = true;
+    const replayed = await callStorefrontProbe({ key, organizationId, guestSessionId });
+
+    expect(first.status).toBe(201);
+    expect(replayed.status).toBe(404);
+    expect(replayed.headers[REPLAYED]).toBeUndefined();
+    expect(replayed.body.data).toBeUndefined();
+    expect(handlerRuns).toBe(1);
+  });
+
+  it("hides a completed-record mismatch when current access is revoked", async () => {
+    const key = newId();
+    const organizationId = newId();
+    const guestSessionId = newId();
+
+    const first = await callStorefrontProbe({
+      key,
+      organizationId,
+      guestSessionId,
+      body: { mode: "ok" },
+    });
+    denyStorefrontReplay = true;
+    const mismatched = await callStorefrontProbe({
+      key,
+      organizationId,
+      guestSessionId,
+      body: { mode: "ok", amount: 2 },
+    });
+
+    expect(first.status).toBe(201);
+    expect(mismatched.status).toBe(404);
+    expect(mismatched.body.error.code).toBe("NOT_FOUND");
+    expect(mismatched.headers[REPLAYED]).toBeUndefined();
+    expect(handlerRuns).toBe(1);
+  });
+
+  it("replays for the same storefront principal after a lost response", async () => {
+    const key = newId();
+    const organizationId = newId();
+    const customerAccountId = newId();
+
+    const first = await callStorefrontProbe({ key, organizationId, customerAccountId });
+    const retry = await callStorefrontProbe({ key, organizationId, customerAccountId });
+
+    expect(first.status).toBe(201);
+    expect(retry.status).toBe(201);
+    expect(retry.body).toEqual(first.body);
+    expect(retry.headers[REPLAYED]).toBe("true");
+    expect(handlerRuns).toBe(1);
   });
 });

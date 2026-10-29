@@ -6,8 +6,8 @@ export const IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
 /** Response header set when the stored answer of an earlier request is sent again. */
 export const IDEMPOTENCY_REPLAYED_HEADER = "Idempotency-Replayed";
 
-/** Whose key space a key lives in: an organization on tenant routes, a user on user routes. */
-export const IDEMPOTENCY_SCOPE_KIND = defineEnum(["ORGANIZATION", "USER"]);
+/** Whose key space a key lives in. STOREFRONT is a technical principal key, never a business scope. */
+export const IDEMPOTENCY_SCOPE_KIND = defineEnum(["ORGANIZATION", "USER", "STOREFRONT"]);
 export type IdempotencyScopeKind =
   (typeof IDEMPOTENCY_SCOPE_KIND)[keyof typeof IDEMPOTENCY_SCOPE_KIND];
 
