@@ -172,4 +172,29 @@ export class Site {
       updatedByUserId: input.actorUserId,
     });
   }
+
+  /** Canonical host is a pointer on Site, never a flag on SiteDomain (plan 4.2 Refresh A2-1). */
+  setCanonical(input: {
+    readonly siteDomainId: string;
+    readonly now: Date;
+    readonly actorUserId: UserId | null;
+  }): Site {
+    return new Site({
+      ...this.props,
+      canonicalSiteDomainId: input.siteDomainId,
+      version: this.props.version + 1,
+      updatedAt: input.now,
+      updatedByUserId: input.actorUserId,
+    });
+  }
+
+  clearCanonical(input: { readonly now: Date; readonly actorUserId: UserId | null }): Site {
+    return new Site({
+      ...this.props,
+      canonicalSiteDomainId: null,
+      version: this.props.version + 1,
+      updatedAt: input.now,
+      updatedByUserId: input.actorUserId,
+    });
+  }
 }

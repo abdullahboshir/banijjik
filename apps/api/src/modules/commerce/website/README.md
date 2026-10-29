@@ -7,4 +7,5 @@ The public website of a business. Static pages (ABOUT, FAQ, GUIDE, TERMS, PRIVAC
 - Admin legacy pages: `GET /orgs/:id/website/pages`, `PUT /orgs/:id/website/pages/:pageKey` (`website.page.read` and `website.page.update`). After a Site exists, those writes go through the same policy evaluator and CAS.
 - Storefront: `GET /storefront/orgs/:id/site` (branding, feature switches, published titles; not gated by this module), `GET /storefront/orgs/:id/pages/:pageKey` (published pages only, 404 while the module is off), `GET /storefront/orgs/:id/published-site` (published design, 404 until the first publish).
 - The body of a static page is Markdown text; the storefront renders it without raw HTML (M.6b).
-- Decision records: ADR-144, ADR-149.
+- Custom domains (card 4.2 A2): `GET/POST /website/domains`, `POST /website/domains/:siteDomainId/verify`, `DELETE /website/domains/:siteDomainId`, `PATCH /website/domains/:siteDomainId` (`website.domain.manage`, all-location authority, mutations take `Idempotency-Key`). Add returns 202 PENDING; verify writes the outbox only; Cloudflare is A3. Production composition of `HostClaims` is A2I.
+- Decision records: ADR-144, ADR-149, ADR-P4-B.

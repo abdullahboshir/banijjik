@@ -127,4 +127,21 @@ describe("Site", () => {
     expect(savedFirst.version).toBe(2);
     expect(second.version).toBe(1);
   });
+
+  it("bumps version when the canonical domain pointer is set or cleared", () => {
+    const site = createSite(sampleDesign());
+    const pointed = site.setCanonical({
+      siteDomainId: ID_A,
+      now: new Date("2026-10-29T00:00:00.000Z"),
+      actorUserId: site.createdByUserId,
+    });
+    expect(pointed.canonicalSiteDomainId).toBe(ID_A);
+    expect(pointed.version).toBe(2);
+    const cleared = pointed.clearCanonical({
+      now: new Date("2026-10-29T01:00:00.000Z"),
+      actorUserId: site.createdByUserId,
+    });
+    expect(cleared.canonicalSiteDomainId).toBeNull();
+    expect(cleared.version).toBe(3);
+  });
 });

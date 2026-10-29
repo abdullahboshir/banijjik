@@ -98,6 +98,7 @@ export class MongoSiteRepository implements SiteRepository {
           publishedWebsiteVersionId: site.publishedWebsiteVersionId,
           nextRevision: site.nextRevision,
           hasPublishedOnce: site.hasPublishedOnce,
+          canonicalSiteDomainId: site.canonicalSiteDomainId,
           updatedAt: site.updatedAt,
           updatedByUserId: site.updatedByUserId,
         },

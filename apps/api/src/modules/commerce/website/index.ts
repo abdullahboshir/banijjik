@@ -32,11 +32,22 @@ import {
   UpdateSiteLayoutPageUseCase,
   UpdateSiteThemeUseCase,
 } from "./application/use-cases/site-layout.use-case.js";
+import type { HostClaims } from "../../platform/operations/index.js";
+import {
+  ListSiteDomainsUseCase,
+  RemoveSiteDomainUseCase,
+  RequestSiteDomainUseCase,
+  SelectCanonicalSiteDomainUseCase,
+  VerifySiteDomainUseCase,
+} from "./application/use-cases/site-domain.use-cases.js";
+import { MongoSiteDomainRepository } from "./infrastructure/mongo-site-domain.repository.js";
 import { MongoSitePageRepository } from "./infrastructure/mongo-site-page.repository.js";
 import { MongoSiteRepository } from "./infrastructure/mongo-site.repository.js";
 import { MongoSiteVersionRepository } from "./infrastructure/mongo-site-version.repository.js";
 import { MongoWebsiteVersionReader } from "./infrastructure/mongo-website-version.reader.js";
 import { buildSiteMediaChecker } from "./infrastructure/site-media.checker.js";
+import { SiteDomainController } from "./presentation/site-domain.controller.js";
+import { buildSiteDomainRouter } from "./presentation/site-domain.router.js";
 import { SiteController } from "./presentation/site.controller.js";
 import { buildSitePublicRouter } from "./presentation/site-public.router.js";
 import { buildSiteRouter } from "./presentation/site.router.js";
@@ -92,6 +103,8 @@ export interface WebsiteAdminDependencies {
   readonly orgConfig: OrgSectionReader;
   /** The file module's reader, adapted here so a site can only show this business's public images. */
   readonly files: FileReferenceReader;
+  /** Platform host registry. A2I passes the production adapter; A2 tests pass a fake or Mongo one. */
+  readonly hostClaims: HostClaims;
 }
 
 /** The publication dependencies of one request pipeline: the same repositories and one transaction seam. */
@@ -116,7 +129,9 @@ function buildPublication(input: {
   };
 }
 
-function buildSiteController(dependencies: WebsiteAdminDependencies): SiteController {
+function buildSiteController(
+  dependencies: Omit<WebsiteAdminDependencies, "hostClaims">,
+): SiteController {
   const sites = new MongoSiteRepository();
   const versions = new MongoSiteVersionRepository();
   const sections = tenantSectionAvailability(dependencies.orgConfig);
@@ -149,7 +164,11 @@ function buildSiteController(dependencies: WebsiteAdminDependencies): SiteContro
  * The admin routes of the business: the legacy static-page bridge (`/website/pages`) and the site
  * document of card 4.1 (`/website/site`, `/theme`, `/layout-pages`, `/publish`, `/versions`).
  */
-export function buildWebsiteAdminRouter(dependencies: WebsiteAdminDependencies): Router {
+export function buildWebsiteAdminRouter(
+  dependencies: Omit<WebsiteAdminDependencies, "hostClaims"> & {
+    readonly hostClaims?: HostClaims;
+  },
+): Router {
   const pages = new MongoSitePageRepository();
   const sites = new MongoSiteRepository();
   const legacyRouter = buildWebsiteTenantRouter({
@@ -174,7 +193,43 @@ export function buildWebsiteAdminRouter(dependencies: WebsiteAdminDependencies):
   const router = Router({ mergeParams: true });
   router.use(legacyRouter);
   router.use(siteRouter);
+  const hostClaims = dependencies.hostClaims;
+  if (hostClaims !== undefined) {
+    router.use(buildWebsiteDomainRouter({ ...dependencies, hostClaims }));
+  }
   return router;
+}
+
+/**
+ * Domain HTTP only. A2 tests mount this beside production v1 until A2I passes `hostClaims`
+ * into `websiteAdminRouterOf`.
+ */
+export function buildWebsiteDomainRouter(
+  dependencies: Pick<
+    WebsiteAdminDependencies,
+    "clock" | "audit" | "permission" | "idempotency" | "hostClaims"
+  >,
+): Router {
+  const stack = {
+    sites: new MongoSiteRepository(),
+    domains: new MongoSiteDomainRepository(),
+    hostClaims: dependencies.hostClaims,
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+    audit: dependencies.audit,
+    clock: dependencies.clock,
+  };
+  return buildSiteDomainRouter({
+    controller: new SiteDomainController({
+      request: new RequestSiteDomainUseCase(stack),
+      verify: new VerifySiteDomainUseCase(stack),
+      remove: new RemoveSiteDomainUseCase(stack),
+      selectCanonical: new SelectCanonicalSiteDomainUseCase(stack),
+      list: new ListSiteDomainsUseCase(stack),
+    }),
+    permission: dependencies.permission,
+    idempotency: dependencies.idempotency,
+  });
 }
 
 export interface WebsiteStorefrontDependencies {

@@ -7,6 +7,11 @@ import {
   sitePageSchema,
 } from "./site-page.schema.js";
 import {
+  SITE_DOMAIN_COLLECTION_NAME,
+  SITE_DOMAIN_MODEL_NAME,
+  siteDomainSchema,
+} from "./site-domain.schema.js";
+import {
   WEBSITE_VERSION_COLLECTION_NAME,
   WEBSITE_VERSION_MODEL_NAME,
   websiteVersionSchema,
@@ -34,5 +39,12 @@ export function registerWebsiteModels(): void {
     schema: websiteVersionSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
     appendOnly: true,
+  });
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: SITE_DOMAIN_MODEL_NAME,
+    collectionName: SITE_DOMAIN_COLLECTION_NAME,
+    schema: siteDomainSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

@@ -83,6 +83,12 @@ describe("site domain schemas", () => {
     expect(siteDomainIdParamsSchema.parse({ siteDomainId: SITE_DOMAIN_ID }).siteDomainId).toBe(
       SITE_DOMAIN_ID,
     );
+    expect(
+      siteDomainIdParamsSchema.parse({
+        siteDomainId: SITE_DOMAIN_ID,
+        organizationId: SITE_DOMAIN_ID,
+      }).siteDomainId,
+    ).toBe(SITE_DOMAIN_ID);
     expect(verifySiteDomainRequestSchema.safeParse({ version: 1 }).success).toBe(true);
     expect(verifySiteDomainRequestSchema.safeParse({ version: 0 }).success).toBe(false);
     expect(removeSiteDomainQuerySchema.parse({ version: "2" })).toEqual({ version: 2 });

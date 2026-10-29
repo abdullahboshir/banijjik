@@ -35,7 +35,8 @@ export const createSiteDomainRequestSchema = z.strictObject({
   hostname: z.string().trim().min(1).max(253),
 });
 
-export const siteDomainIdParamsSchema = z.strictObject({ siteDomainId: uuidV7Schema });
+/** `z.object` so mergeParams can keep `organizationId` (same as 4.1 page/version params). */
+export const siteDomainIdParamsSchema = z.object({ siteDomainId: uuidV7Schema });
 
 export const verifySiteDomainRequestSchema = z.strictObject({ version: versionSchema });
 

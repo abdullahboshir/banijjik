@@ -30,6 +30,7 @@ export type {
   ReserveHostClaimInput,
 } from "./application/host-claims.js";
 export type { HostnameReservations } from "./application/hostname.js";
+export { normalizeHostname } from "./application/hostname.js";
 
 export interface OperationsRouterDependencies {
   readonly permission: PlatformPermissionMiddlewareFactory;
