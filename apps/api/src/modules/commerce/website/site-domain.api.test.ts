@@ -2,14 +2,11 @@ import { ERROR_CODE, IDEMPOTENCY_KEY_HEADER, SYSTEM_ROLE_KEY } from "@banijjik/c
 import { SITE_DOMAIN_STATUS, WEBSITE_EVENT_TYPE } from "@banijjik/contracts/website";
 import { asId, newId, type OrganizationId, type SiteDomainId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createIdempotencyMiddleware } from "../../../kernel/idempotency/index.js";
 import { models } from "../../../kernel/db/index.js";
 import {
   OUTBOX_EVENT_MODEL_NAME,
   type OutboxEventDocument,
 } from "../../../kernel/events/outbox-event.schema.js";
-import { systemClock } from "../../../kernel/time/index.js";
-import { buildAuditRecorder } from "../../core/audit/index.js";
 import { createMongoHostClaims } from "../../platform/operations/index.js";
 import {
   registerIamApiModels,
@@ -28,7 +25,6 @@ import {
   SITE_DOMAIN_MODEL_NAME,
   type SiteDomainDocument,
 } from "./infrastructure/site-domain.schema.js";
-import { buildWebsiteDomainRouter } from "./index.js";
 
 registerIamApiModels();
 
@@ -39,16 +35,7 @@ const hostClaims = createMongoHostClaims(TEST_RESERVATIONS);
 
 beforeAll(async () => {
   harness = await startIamApi({
-    tenantRouterFactories: [
-      (permission) =>
-        buildWebsiteDomainRouter({
-          clock: systemClock,
-          audit: buildAuditRecorder(systemClock),
-          permission,
-          idempotency: createIdempotencyMiddleware({ clock: systemClock }),
-          hostClaims,
-        }),
-    ],
+    environmentOverrides: { STOREFRONT_BASE_DOMAIN: TEST_RESERVATIONS.baseDomain },
   });
 });
 
