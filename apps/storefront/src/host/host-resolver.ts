@@ -14,6 +14,7 @@ export interface StorefrontHostResolution {
   readonly generation: number;
   readonly canonicalHostname: string;
   readonly publishedWebsiteVersionId: string;
+  readonly hostname?: string;
 }
 
 export interface HostResolverOptions {

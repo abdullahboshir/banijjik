@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { StorefrontDirectoryStatsResponse } from "@banijjik/contracts/directory";
 import type { StorefrontSiteResponse } from "@banijjik/contracts/website";
 import Link from "next/link";
@@ -8,7 +9,22 @@ import { HomeStats } from "../src/components/home-stats";
 import { storefrontTranslator } from "../src/i18n/translator";
 import { localizedText } from "../src/i18n/localized-text";
 import { PAGE_PATH_PREFIX, slugOfPageKey } from "../src/static-pages/page-routes";
-import { requireOrganizationId } from "../src/site/current-site";
+import { currentSiteResolution, requireOrganizationId } from "../src/site/current-site";
+import { buildPageMetadata } from "../src/site/site-metadata";
+import { brandName } from "../src/config/environment";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const resolution = await currentSiteResolution();
+  if (resolution === undefined) {
+    return buildPageMetadata({ canonicalHostname: undefined, title: brandName(), path: "/" });
+  }
+  const site = await readPublic<StorefrontSiteResponse>(`/orgs/${resolution.organizationId}/site`);
+  return buildPageMetadata({
+    canonicalHostname: resolution.canonicalHostname,
+    title: site?.name ?? brandName(),
+    path: "/",
+  });
+}
 
 export default async function HomePage(): Promise<ReactElement> {
   const organizationId = await requireOrganizationId();

@@ -5,10 +5,15 @@ import { resolveStorefrontHost } from "./src/host/storefront-host";
 
 const RETRY_AFTER_SECONDS = "1";
 
+function parseRequestHostname(hostHeader: string | null): string | undefined {
+  if (hostHeader === null) return undefined;
+  return hostHeader.replace(/:\d+$/, "").replace(/\.$/, "").toLowerCase();
+}
+
 /**
- * Runs on every request (Next.js 16 calls this file `proxy.ts`). It resolves the Host to a business and
- * hands it to the pages and route handlers as a header. The client cannot set that header: it is
- * replaced here on every request (M.6 decision 9). Access and path rules live in the route handlers.
+ * Runs on every request. It resolves the Host to a business and hands the full authoritative
+ * host resolution (organizationId, hostname, canonicalHostname, publishedWebsiteVersionId, generation)
+ * to pages and route handlers via trusted headers.
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   let resolution: StorefrontHostResolution | undefined;
@@ -20,19 +25,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       { status: 503, headers: { "cache-control": "no-store", "retry-after": RETRY_AFTER_SECONDS } },
     );
   }
-  const hostname = request.headers
-    .get("host")
-    ?.replace(/:\d+$/, "")
-    .replace(/\.$/, "")
-    .toLowerCase();
+
+  const hostname = parseRequestHostname(request.headers.get("host"));
+  const trustedResolution =
+    resolution === undefined || hostname === undefined
+      ? undefined
+      : {
+          organizationId: resolution.organizationId,
+          hostname: resolution.hostname ?? hostname,
+          generation: resolution.generation,
+          canonicalHostname: resolution.canonicalHostname,
+          publishedWebsiteVersionId: resolution.publishedWebsiteVersionId,
+        };
+
   return NextResponse.next({
     request: {
-      headers: requestHeadersFor(
-        request.headers,
-        resolution === undefined || hostname === undefined
-          ? undefined
-          : { organizationId: resolution.organizationId, hostname },
-      ),
+      headers: requestHeadersFor(request.headers, trustedResolution),
     },
   });
 }

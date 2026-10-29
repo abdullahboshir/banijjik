@@ -1,11 +1,16 @@
 import { parseApiResponse } from "@banijjik/web-client";
 import { cookies } from "next/headers";
 import { storefrontApiOrigin } from "../config/environment";
-import { PUBLIC_REVALIDATE_SECONDS, STOREFRONT_API_PREFIX } from "../config/storefront-config";
+import { STOREFRONT_API_PREFIX } from "../config/storefront-config";
 import { STOREFRONT_ACCESS_COOKIE_NAME } from "../session/storefront-cookies";
+import { currentSiteResolution } from "../site/current-site";
+import { buildPublicCacheKey, publicProjectionCache } from "../site/public-cache";
 
 const HTTP_NOT_FOUND = 404;
 const HTTP_UNAUTHENTICATED = 401;
+const HTTP_OK = 200;
+const LOCALE_COOKIE_NAME = "locale";
+const DEFAULT_LOCALE = "bn";
 
 /**
  * Server-side reads of the storefront API (server components only). Shared rule: a 404 is answered as
@@ -22,14 +27,80 @@ function sendGet(path: string, init: RequestInit): Promise<Response> {
   return fetch(url, { ...init, headers: { Accept: "application/json", ...init.headers } });
 }
 
-/** Public, cacheable reads (site, pages, form, stats, listing number lookup): the same for everyone. */
+function isPublicCacheable(cacheControl: string | null): boolean {
+  if (cacheControl === null) return false;
+  const lower = cacheControl.toLowerCase();
+  return lower.includes("public") && !lower.includes("private") && !lower.includes("no-store");
+}
+
+function parsePathAndQuery(path: string): {
+  readonly pathname: string;
+  readonly query?: URLSearchParams | undefined;
+} {
+  const [pathname, search] = path.split("?", 2);
+  const query = search ? new URLSearchParams(search) : undefined;
+  return { pathname: pathname ?? path, query };
+}
+
+async function currentRequestLocale(): Promise<string> {
+  try {
+    const jar = await cookies();
+    return jar.get(LOCALE_COOKIE_NAME)?.value || DEFAULT_LOCALE;
+  } catch {
+    return DEFAULT_LOCALE;
+  }
+}
+
+/**
+ * Authoritative public projection reads (site, pages, form, stats).
+ * Checks the authoritative host resolution before consulting the cache.
+ * Refuses cache hits when host resolution is absent (P4-11).
+ * Never caches Set-Cookie, private, no-store or error responses.
+ */
 export async function readPublic<Data>(path: string): Promise<Data | undefined> {
-  const response = await sendGet(path, { next: { revalidate: PUBLIC_REVALIDATE_SECONDS } });
-  return envelopeData<Data>(response);
+  const resolution = await currentSiteResolution();
+  if (resolution === undefined) {
+    const response = await sendGet(path, { cache: "no-store" });
+    return envelopeData<Data>(response);
+  }
+
+  const locale = await currentRequestLocale();
+  const { pathname, query } = parsePathAndQuery(path);
+  const cacheKey = buildPublicCacheKey({
+    organizationId: resolution.organizationId,
+    websiteVersionId: resolution.publishedWebsiteVersionId,
+    locale,
+    locationId: "all",
+    projection: pathname,
+    query,
+  });
+
+  const cached = publicProjectionCache.get<Data>(cacheKey);
+  if (cached !== undefined) return cached;
+
+  const response = await sendGet(path, { cache: "no-store" });
+  const isCacheable =
+    response.status === HTTP_OK &&
+    isPublicCacheable(response.headers.get("cache-control")) &&
+    response.headers.getSetCookie().length === 0;
+
+  const data = await envelopeData<Data>(response);
+  if (isCacheable && data !== undefined) {
+    publicProjectionCache.set(cacheKey, data, {
+      organizationId: resolution.organizationId,
+      websiteVersionId: resolution.publishedWebsiteVersionId,
+    });
+  }
+  return data;
 }
 
 async function visitorAccessToken(): Promise<string | undefined> {
-  return (await cookies()).get(STOREFRONT_ACCESS_COOKIE_NAME)?.value;
+  try {
+    const jar = await cookies();
+    return jar.get(STOREFRONT_ACCESS_COOKIE_NAME)?.value;
+  } catch {
+    return undefined;
+  }
 }
 
 /**

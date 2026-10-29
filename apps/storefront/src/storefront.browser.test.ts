@@ -1,3 +1,4 @@
+import http from "node:http";
 import { gzipSync } from "node:zlib";
 import type { Page } from "puppeteer-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -14,7 +15,57 @@ import {
   signInCustomer,
   type Session,
 } from "./test-support/seed";
-import { fetchStorefront } from "./test-support/storefront-fetch";
+function toResponseHeaders(rawHeaders: http.IncomingHttpHeaders): Headers {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(rawHeaders)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) headers.append(key, item);
+      continue;
+    }
+    headers.set(key, value);
+  }
+  return headers;
+}
+
+function fetchStorefront(
+  path: string,
+  options: { hostname: string; cookieHeader?: string },
+): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const headers: Record<string, string> = {
+      Host: `${options.hostname}:${STOREFRONT_PORT}`,
+    };
+    if (options.cookieHeader !== undefined) {
+      headers["Cookie"] = options.cookieHeader;
+    }
+    const req = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: STOREFRONT_PORT,
+        path,
+        method: "GET",
+        headers,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          const body = Buffer.concat(chunks);
+          resolve(
+            new Response(body, {
+              status: res.statusCode ?? 200,
+              statusText: res.statusMessage ?? "",
+              headers: toResponseHeaders(res.headers),
+            }),
+          );
+        });
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
 import {
   API_ORIGIN,
   BASE_DOMAIN,
@@ -119,14 +170,20 @@ async function initialJsKib(path: string, cookieHeader?: string): Promise<number
 }
 
 describe("the public storefront", () => {
-  it("shows the home page with the logo, the colours and the statistics", async () => {
+  it("shows the home page with the logo, the colours, the statistics and canonical metadata", async () => {
     const page = await openStorefront("/", DESKTOP_VIEWPORT);
+    const title = await page.title();
+    const canonicalHref = await page.$eval('link[rel="canonical"]', (link) =>
+      link.getAttribute("href"),
+    );
     const logoCount = await page.$$eval(`img[alt="${BUSINESS_NAME}"]`, (images) => images.length);
     const brandColour = await page.evaluate(() =>
       document.documentElement.style.getPropertyValue("--color-brand-primary").trim(),
     );
     const hasStatistics = await page.$("#home-stats-title");
     await page.close();
+    expect(title).toContain(BUSINESS_NAME);
+    expect(canonicalHref?.replace(/\/$/, "")).toBe(`https://${SLUG}.${BASE_DOMAIN}`);
     expect(logoCount).toBeGreaterThan(0);
     // The API stores colours in lower case.
     expect(brandColour).toBe("#1f6f5c");
@@ -169,11 +226,51 @@ describe("the public storefront", () => {
     expect(headerText).toContain(PHONE_NUMBER);
   });
 
-  it("shows a published static page", async () => {
+  it("shows a published static page with localized title and canonical link", async () => {
     const page = await openStorefront("/pages/about", DESKTOP_VIEWPORT);
+    const title = await page.title();
+    const canonicalHref = await page.$eval('link[rel="canonical"]', (link) =>
+      link.getAttribute("href"),
+    );
     const heading = await page.$eval("h1", (node) => node.textContent ?? "");
     await page.close();
     expect(heading).toBe("আমাদের সম্পর্কে");
+    expect(title).toBe("আমাদের সম্পর্কে");
+    expect(canonicalHref).toBe(`https://${SLUG}.${BASE_DOMAIN}/pages/about`);
+  });
+
+  it("serves robots.txt with canonical sitemap and disallows private routes", async () => {
+    const response = await fetchStorefront("/robots.txt", {
+      hostname: `${SLUG}.${BASE_DOMAIN}`,
+    });
+    expect(response.status).toBe(200);
+    const body = await response.text();
+    expect(body.toLowerCase()).toContain("user-agent: *");
+    expect(body).toContain("Allow: /");
+    expect(body).toContain("Disallow: /api/");
+    expect(body).toContain("Disallow: /sign-in");
+    expect(body).toContain("Disallow: /my/");
+    expect(body).toContain("Disallow: /preview");
+    expect(body).toContain("Disallow: /cart");
+    expect(body).toContain("Disallow: /checkout");
+    expect(body).toContain(`Sitemap: https://${SLUG}.${BASE_DOMAIN}/sitemap.xml`);
+  });
+
+  it("serves sitemap.xml with canonical URLs and excludes private routes and listings", async () => {
+    const response = await fetchStorefront("/sitemap.xml", {
+      hostname: `${SLUG}.${BASE_DOMAIN}`,
+    });
+    expect(response.status).toBe(200);
+    const body = await response.text();
+    expect(body).toContain(`https://${SLUG}.${BASE_DOMAIN}/`);
+    expect(body).toContain(`https://${SLUG}.${BASE_DOMAIN}/search`);
+    expect(body).toContain(`https://${SLUG}.${BASE_DOMAIN}/pages/about`);
+    expect(body).not.toContain("/listings/");
+    expect(body).not.toContain("/sign-in");
+    expect(body).not.toContain("/my/");
+    expect(body).not.toContain("/preview");
+    expect(body).not.toContain("/cart");
+    expect(body).not.toContain("/checkout");
   });
 
   it("answers an unknown host with 404 and the site-not-found text", async () => {

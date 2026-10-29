@@ -1,17 +1,15 @@
 import type { MetadataRoute } from "next";
-import { headers } from "next/headers";
-import { organizationIdFrom } from "../src/host/organization-header";
+import { currentSiteResolution } from "../src/site/current-site";
+import { buildRobotsMetadata } from "../src/site/site-metadata";
 
-const HTTPS = "https";
+export const dynamic = "force-dynamic";
 
-/** Every host gets its own robots file. Sign-in and the API are never crawled. */
+/**
+ * Every host gets its own robots file.
+ * Unknown hosts disallow all crawling.
+ * Resolved hosts allow public pages, disallow API, customer and private routes, and reference the canonical sitemap.
+ */
 export default async function robots(): Promise<MetadataRoute.Robots> {
-  const requestHeaders = await headers();
-  const organizationId = organizationIdFrom(requestHeaders);
-  if (organizationId === undefined) return { rules: { userAgent: "*", disallow: "/" } };
-  const origin = `${requestHeaders.get("x-forwarded-proto") ?? HTTPS}://${requestHeaders.get("host") ?? ""}`;
-  return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/sign-in"] },
-    sitemap: `${origin}/sitemap.xml`,
-  };
+  const resolution = await currentSiteResolution();
+  return buildRobotsMetadata(resolution?.canonicalHostname);
 }

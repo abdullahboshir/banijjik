@@ -7,6 +7,8 @@ import { SiteFooter, SiteHeader } from "../src/components/site-chrome";
 import { readPublic, readSignedInCustomer } from "../src/api/storefront-api";
 import { storefrontTranslator } from "../src/i18n/translator";
 import { organizationIdFrom } from "../src/host/organization-header";
+import { currentSiteResolution } from "../src/site/current-site";
+import { buildLayoutMetadata } from "../src/site/site-metadata";
 import { brandName } from "../src/config/environment";
 import { themeStyle } from "../src/site/theme";
 import type { StorefrontMeResponse } from "@banijjik/contracts/contact";
@@ -33,7 +35,17 @@ const notoSansBengali = localFont({
   variable: "--font-noto-bengali",
 });
 
-export const metadata: Metadata = { title: brandName() };
+export async function generateMetadata(): Promise<Metadata> {
+  const resolution = await currentSiteResolution();
+  if (resolution === undefined) {
+    return buildLayoutMetadata({ canonicalHostname: undefined });
+  }
+  const site = await readPublic<StorefrontSiteResponse>(`/orgs/${resolution.organizationId}/site`);
+  return buildLayoutMetadata({
+    canonicalHostname: resolution.canonicalHostname,
+    title: site?.name ?? brandName(),
+  });
+}
 
 interface SiteFrame {
   readonly site: StorefrontSiteResponse;

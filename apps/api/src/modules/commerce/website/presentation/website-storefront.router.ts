@@ -7,7 +7,7 @@ import type { SitePageKey } from "@banijjik/contracts/website";
 import type { GetStorefrontSiteUseCase } from "../application/use-cases/storefront-site.use-case.js";
 import type { GetPublishedSitePageUseCase } from "../application/use-cases/site-page.use-cases.js";
 
-/** The site read changes at most once a minute, so shared caches may keep it that long (M.6a decision 2). */
+/** The site and page reads change at most once a minute, so shared caches may keep them that long (M.6a decision 2). */
 const SITE_CACHE_CONTROL = "public, max-age=60";
 
 export interface WebsiteStorefrontRouterDependencies {
@@ -42,7 +42,9 @@ export function buildWebsiteStorefrontRouter(input: WebsiteStorefrontRouterDepen
     validate({ params: sitePageKeyParamsSchema }),
     async (_request, response) => {
       const { pageKey } = response.locals["validated"].params as { pageKey: SitePageKey };
-      sendData(response, await input.getPage.execute(pageKey));
+      const page = await input.getPage.execute(pageKey);
+      response.set("Cache-Control", SITE_CACHE_CONTROL);
+      sendData(response, page);
     },
   );
   return router;

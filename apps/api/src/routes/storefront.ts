@@ -66,6 +66,28 @@ const RESOLVE_PER_MINUTE = 6_000;
 const SURFACE_PER_MINUTE = 300;
 /** A block must reach a signed-in customer within a minute (ADR-119). */
 const ACCOUNT_STATUS_MAX_STALE_SECONDS = 60;
+const PRIVATE_NO_STORE = "private, no-store";
+
+/**
+ * Enforces Cache-Control: private, no-store by default. Forces private, no-store
+ * whenever inbound request carries Cookie or Authorization or outbound response sets Set-Cookie.
+ */
+function storefrontCacheGuard(): RequestHandler {
+  return (request, response, next) => {
+    response.setHeader("Cache-Control", PRIVATE_NO_STORE);
+    const hasCreds = Boolean(request.headers.cookie || request.headers.authorization);
+    const originalSet = response.setHeader.bind(response);
+    response.setHeader = (name, value) => {
+      const lower = name.toLowerCase();
+      if (lower === "cache-control" && (hasCreds || response.getHeader("set-cookie"))) {
+        return originalSet("Cache-Control", PRIVATE_NO_STORE);
+      }
+      if (lower === "set-cookie") originalSet("Cache-Control", PRIVATE_NO_STORE);
+      return originalSet(name, value);
+    };
+    next();
+  };
+}
 
 export interface StorefrontRouterInput {
   readonly config: AppConfig;
@@ -281,6 +303,7 @@ function mountOrganizationSurface(
       limit: SURFACE_PER_MINUTE,
       windowSeconds: ONE_MINUTE_SECONDS,
     }),
+    storefrontCacheGuard(),
     validate({ params: storefrontOrganizationParamsSchema }),
     businessContext(organizations),
     // Before the contact router, whose customer-login switch guards every path (M.6a: /site must answer).
@@ -309,6 +332,7 @@ export function buildStorefrontRouter(input: StorefrontRouterInput): Router {
       windowSeconds: ONE_MINUTE_SECONDS,
     }),
     validate({ query: storefrontResolveQuerySchema }),
+    storefrontCacheGuard(),
     buildStorefrontResolveHandler(input, organizations),
   );
   mountOrganizationSurface(router, input, organizations);

@@ -24,6 +24,8 @@ const RETURNED_RESPONSE_HEADERS = [
   "last-modified",
 ] as const;
 
+const PRIVATE_NO_STORE = "private, no-store";
+
 export function headersForUpstream(incoming: Headers): Headers {
   const outgoing = new Headers();
   for (const name of FORWARDED_REQUEST_HEADERS) {
@@ -33,15 +35,22 @@ export function headersForUpstream(incoming: Headers): Headers {
   return outgoing;
 }
 
-/** Copies the allowed headers, then every `Set-Cookie` the API sent, one header line each. */
+/**
+ * Copies the allowed headers, then every `Set-Cookie` the API sent, one header line each.
+ * Forces `Cache-Control: private, no-store` if cookies are set or upstream omitted Cache-Control.
+ */
 export function headersForBrowser(upstream: Response): Headers {
   const outgoing = new Headers();
   for (const name of RETURNED_RESPONSE_HEADERS) {
     const value = upstream.headers.get(name);
     if (value !== null) outgoing.set(name, value);
   }
-  for (const cookie of upstream.headers.getSetCookie()) {
+  const setCookies = upstream.headers.getSetCookie();
+  for (const cookie of setCookies) {
     outgoing.append("set-cookie", cookie);
+  }
+  if (setCookies.length > 0 || upstream.headers.get("cache-control") === null) {
+    outgoing.set("cache-control", PRIVATE_NO_STORE);
   }
   return outgoing;
 }

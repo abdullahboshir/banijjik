@@ -19,6 +19,7 @@ import {
   type WebsiteVersionId,
 } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import request from "supertest";
 import { models } from "../../../kernel/db/index.js";
 import { writeModuleOverride } from "../../../test-support/entitlement-world.js";
 import {
@@ -702,5 +703,111 @@ describe("website domains on production v1 (card 4.2 A2I)", () => {
     expect(list.status).toBe(200);
     expect(list.body.data.items).toEqual([]);
     expect(list.body.data.total).toBe(0);
+  });
+});
+
+describe("storefront cache-control and private guards (card 4.2 C2)", () => {
+  it("direct API responses for anonymous public site and page projections carry Cache-Control: public, max-age=60", async () => {
+    const world = await aWorld();
+    await world.alice.call("put", pagePath(world.organizationA), pageBody({ isPublished: true }));
+
+    const siteResponse = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/site",
+    });
+    expect(siteResponse.status).toBe(200);
+    expect(siteResponse.headers["cache-control"]).toBe("public, max-age=60");
+
+    const pageResponse = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/pages/ABOUT",
+    });
+    expect(pageResponse.status).toBe(200);
+    expect(pageResponse.headers["cache-control"]).toBe("public, max-age=60");
+
+    const siteB = await insertDraftSite(world.organizationB, world.bob.userId);
+    await world.bob.callWith({
+      method: "post",
+      path: `/orgs/${world.organizationB}/website/publish`,
+      body: { expectedVersion: siteB.version },
+      idempotencyKey: newId(),
+    });
+
+    const publishedSiteResponse = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationB,
+      suffix: "/published-site",
+    });
+    expect(publishedSiteResponse.status).toBe(200);
+    expect(publishedSiteResponse.headers["cache-control"]).toBe("public, max-age=60");
+  });
+
+  it("forces Cache-Control: private, no-store whenever a request carries cookies or authorization", async () => {
+    const world = await aWorld();
+
+    const cookieResponse = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/site",
+      cookies: { sf_access: "some-token" },
+    });
+    expect(cookieResponse.status).toBe(200);
+    expect(cookieResponse.headers["cache-control"]).toBe("private, no-store");
+
+    const authResponse = await request(harness.app)
+      .get(`/api/v1/storefront/orgs/${world.organizationA}/site`)
+      .set("Authorization", "Bearer token");
+    expect(authResponse.status).toBe(200);
+    expect(authResponse.headers["cache-control"]).toBe("private, no-store");
+  });
+
+  it("sets Cache-Control: private, no-store on /resolve and private customer endpoints", async () => {
+    const world = await aWorld();
+
+    const resolveResponse = await request(harness.app).get(
+      `/api/v1/storefront/resolve?host=${world.organizationA}.sites.example.com`,
+    );
+    expect(resolveResponse.headers["cache-control"]).toBe("private, no-store");
+
+    const meResponse = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/me",
+    });
+    expect(meResponse.headers["cache-control"]).toBe("private, no-store");
+  });
+
+  it("never leaks disabled module or unpublished versions through public routes (P4-12)", async () => {
+    const world = await aWorld();
+    const unpub = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationB,
+      suffix: "/published-site",
+    });
+    expect(unpub.status).toBe(404);
+
+    await world.alice.call("put", pagePath(world.organizationA), pageBody({ isPublished: true }));
+
+    await writeModuleOverride({
+      organizationId: world.organizationA,
+      moduleKey: MODULE_KEY.WEBSITE,
+      effect: MODULE_OVERRIDE_EFFECT.PLATFORM_REVOKE,
+    });
+
+    const disabledPage = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/pages/ABOUT",
+    });
+    expect(disabledPage.status).toBe(404);
+
+    const disabledPublished = await callStorefront(harness.app, {
+      method: "get",
+      organizationId: world.organizationA,
+      suffix: "/published-site",
+    });
+    expect(disabledPublished.status).toBe(404);
   });
 });
