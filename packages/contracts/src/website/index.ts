@@ -146,4 +146,10 @@ export {
   type PublicOrderCommands,
   type PublicBookingCommands,
   type PublicEnrollmentCommands,
+  type PublicQuoteRequest,
+  type PublicQuoteLineResponse,
+  type PublicQuoteResponse,
+  type CheckoutContactInput,
+  type CheckoutRequest,
+  type CheckoutResponse,
 } from "./checkout-contracts.js";
