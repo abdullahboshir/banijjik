@@ -62,3 +62,10 @@ export {
   type CustomerContactExportData,
   type CustomerDataExportResponse,
 } from "./customer-data-export.js";
+export {
+  type CheckoutContactSnapshot,
+  type CreateProvisionalContactInput,
+  type ProvisionalContactResult,
+  type ContactProvisionalCreatedPayload,
+  type ProvisionalContactCreatedPayload,
+} from "./guest-contact-contracts.js";

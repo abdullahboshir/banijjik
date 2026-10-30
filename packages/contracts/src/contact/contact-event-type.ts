@@ -9,6 +9,7 @@ export const CONTACT_EVENT_TYPE = Object.freeze({
   CUSTOMER_ACCOUNT_UNBLOCKED: "contact.customerAccount.unblocked",
   CUSTOMER_ACCOUNT_ENDED: "contact.customerAccount.ended",
   CUSTOMER_ACCOUNT_ERASED: "contact.customerAccount.erased",
+  PROVISIONAL_CREATED: "contact.provisional.created",
 } as const);
 
 export type ContactEventType = (typeof CONTACT_EVENT_TYPE)[keyof typeof CONTACT_EVENT_TYPE];

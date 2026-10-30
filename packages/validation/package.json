@@ -65,6 +65,10 @@
     "./report": {
       "types": "./dist/report/index.d.ts",
       "default": "./dist/report/index.js"
+    },
+    "./contact": {
+      "types": "./dist/contact/index.d.ts",
+      "default": "./dist/contact/index.js"
     }
   },
   "files": [

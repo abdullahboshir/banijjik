@@ -29,6 +29,7 @@ import type {
   CustomerAccountEventPayload,
   CustomerOtpRequestedPayload,
 } from "../contact/contact-contracts.js";
+import type { ContactProvisionalCreatedPayload } from "../contact/guest-contact-contracts.js";
 import { CONTACT_EVENT_TYPE } from "../contact/contact-event-type.js";
 import { CUSTOM_FIELD_EVENT_TYPE } from "../custom-field/custom-field-event-type.js";
 import type { CustomFieldDefinitionChangedPayload } from "../custom-field/custom-field-contracts.js";
@@ -164,6 +165,7 @@ export interface EventPayloadMap {
   readonly [CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_UNBLOCKED]: CustomerAccountEventPayload;
   readonly [CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_ENDED]: CustomerAccountEventPayload;
   readonly [CONTACT_EVENT_TYPE.CUSTOMER_ACCOUNT_ERASED]: CustomerAccountEventPayload;
+  readonly [CONTACT_EVENT_TYPE.PROVISIONAL_CREATED]: ContactProvisionalCreatedPayload;
   readonly [CATALOG_EVENT_TYPE.OFFERING_CREATED]: OfferingEventPayload;
   readonly [CATALOG_EVENT_TYPE.OFFERING_UPDATED]: OfferingEventPayload;
   readonly [CATALOG_EVENT_TYPE.OFFERING_PUBLISHED]: OfferingEventPayload;

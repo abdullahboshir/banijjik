@@ -11,25 +11,14 @@ import type { RateLimiter } from "../../../kernel/rate-limit/index.js";
 import type { Clock } from "../../../kernel/time/index.js";
 import type { ContactWriteDependencies } from "./application/contact-dependencies.js";
 import type { CustomerAuthDependencies } from "./application/customer-auth-dependencies.js";
-import type {
-  ContactCustomFieldReader,
-  SensitiveValueAccess,
-} from "./application/ports/custom-field-ports.js";
-import type {
-  CustomerDataExportParticipant,
-  CustomerErasureParticipant,
-  CustomerErasureResult,
-} from "./application/ports/customer-participants.js";
-import type {
-  CustomerAccessTokenIssuer,
-  CustomerSmsNotifier,
-  OtpMessageComposer,
-} from "./application/ports/customer-account-ports.js";
-import type {
-  ContactRoleCatalog,
-  DedupeModeReader,
-  HomeLocationLookup,
-} from "./application/ports/settings-and-locations.js";
+import type { ContactCustomFieldReader } from "./application/ports/custom-field-ports.js";
+import type { SensitiveValueAccess } from "./application/ports/custom-field-ports.js";
+import type { CustomerDataExportParticipant } from "./application/ports/customer-participants.js";
+import type { CustomerErasureParticipant } from "./application/ports/customer-participants.js";
+import type { CustomerAccessTokenIssuer } from "./application/ports/customer-account-ports.js";
+import type { ContactRoleCatalog } from "./application/ports/settings-and-locations.js";
+import type { DedupeModeReader } from "./application/ports/settings-and-locations.js";
+import type { HomeLocationLookup } from "./application/ports/settings-and-locations.js";
 import {
   BlockCustomerAccountUseCase,
   GetCustomerAccountUseCase,
@@ -75,27 +64,23 @@ export { registerContactModels } from "./infrastructure/register-contact-models.
 export { buildSalesContactReader } from "./sales-contact-reader.js";
 export { buildCustomerAccountBlocker } from "./customer-account-blocker.js";
 export { buildCustomerSmsNotifier, registerContactEventHandlers } from "./customer-sms-notifier.js";
-export type {
-  ContactCustomFieldReader,
-  ContactRoleCatalog,
-  CustomerAccessTokenIssuer,
-  CustomerDataExportParticipant,
-  CustomerErasureParticipant,
-  CustomerErasureResult,
-  CustomerSmsNotifier,
-  DedupeModeReader,
-  HomeLocationLookup,
-  OtpMessageComposer,
-  SensitiveValueAccess,
-};
+export type { ContactCustomFieldReader } from "./application/ports/custom-field-ports.js";
+export type { SensitiveValueAccess } from "./application/ports/custom-field-ports.js";
+export type { CustomerDataExportParticipant } from "./application/ports/customer-participants.js";
+export type { CustomerErasureParticipant } from "./application/ports/customer-participants.js";
+export type { CustomerErasureResult } from "./application/ports/customer-participants.js";
+export type { CustomerAccessTokenIssuer } from "./application/ports/customer-account-ports.js";
+export type { CustomerSmsNotifier } from "./application/ports/customer-account-ports.js";
+export type { OtpMessageComposer } from "./application/ports/customer-account-ports.js";
+export type { ContactRoleCatalog } from "./application/ports/settings-and-locations.js";
+export type { DedupeModeReader } from "./application/ports/settings-and-locations.js";
+export type { HomeLocationLookup } from "./application/ports/settings-and-locations.js";
 
 export interface ContactTenantDependencies {
   readonly clock: Clock;
   readonly audit: AuditRecorder;
   readonly permission: PermissionMiddlewareFactory;
-  /** The `Idempotency-Key` middleware, built once by routes/v1.ts. */
   readonly idempotency: RequestHandler;
-  /** Adapters over other modules (custom-field, settings, organization), supplied by routes. */
   readonly customFields: ContactCustomFieldReader;
   readonly sensitiveAccess: SensitiveValueAccess;
   readonly dedupeModes: DedupeModeReader;
@@ -113,14 +98,9 @@ export function buildContactRouter(dependencies: ContactTenantDependencies): Rou
     contacts,
     unitOfWork,
     events: kernelEventPublisher,
-    audit: dependencies.audit,
-    clock: dependencies.clock,
-    customFields: dependencies.customFields,
-    sensitiveAccess: dependencies.sensitiveAccess,
-    dedupeModes: dependencies.dedupeModes,
-    roleCatalog: dependencies.roleCatalog,
     customerAccounts: accounts,
     customerSessions: sessions,
+    ...dependencies,
   };
   const withLocations = { ...write, locations: dependencies.locations };
   const controller = new ContactController({
@@ -140,29 +120,27 @@ export function buildContactRouter(dependencies: ContactTenantDependencies): Rou
     sessions,
     unitOfWork,
     events: kernelEventPublisher,
-    audit: dependencies.audit,
-    clock: dependencies.clock,
+    ...dependencies,
   };
   const accountController = new CustomerAccountStaffController({
     getAccount: new GetCustomerAccountUseCase(staff),
     blockAccount: new BlockCustomerAccountUseCase(staff),
     unblockAccount: new UnblockCustomerAccountUseCase(staff),
   });
-  const router = Router({ mergeParams: true });
-  router.use(
-    buildCustomerAccountStaffRouter({
-      accounts: accountController,
-      permission: dependencies.permission,
-    }),
-  );
-  router.use(
-    buildContactTenantRouter({
-      contacts: controller,
-      permission: dependencies.permission,
-      idempotency: dependencies.idempotency,
-    }),
-  );
-  return router;
+  return Router({ mergeParams: true })
+    .use(
+      buildCustomerAccountStaffRouter({
+        accounts: accountController,
+        permission: dependencies.permission,
+      }),
+    )
+    .use(
+      buildContactTenantRouter({
+        contacts: controller,
+        permission: dependencies.permission,
+        idempotency: dependencies.idempotency,
+      }),
+    );
 }
 
 export interface ContactStorefrontDependencies {
@@ -171,10 +149,8 @@ export interface ContactStorefrontDependencies {
   readonly limiter: RateLimiter;
   readonly tokens: CustomerAccessTokenIssuer;
   readonly storefront: Pick<StorefrontConfig, "otpSecret">;
-  /** Cookies are Secure everywhere except local development. */
   readonly isSecureCookies: boolean;
   readonly accessTokenSeconds: number;
-  /** 404 `storefront_not_available` unless the business switched customer sign-in on. Built by routes. */
   readonly requireCustomerLogin: RequestHandler;
   readonly authenticateCustomer: RequestHandler;
   readonly contactFields: ContactCustomFieldReader;
@@ -182,7 +158,7 @@ export interface ContactStorefrontDependencies {
   readonly exportParticipants: readonly CustomerDataExportParticipant[];
 }
 
-/** The customer sign-in routes (card M.1). routes/storefront.ts mounts them behind the business pipeline. */
+/** The customer sign-in routes (card M.1). */
 export function buildContactStorefrontRouterFor(
   dependencies: ContactStorefrontDependencies,
 ): Router {
@@ -196,14 +172,8 @@ export function buildContactStorefrontRouterFor(
     challenges: new MongoOtpChallengeRepository(),
     unitOfWork: new MongoUnitOfWork(),
     events: kernelEventPublisher,
-    audit: dependencies.audit,
-    clock,
-    limiter: dependencies.limiter,
-    tokens: dependencies.tokens,
     otpSecret: dependencies.storefront.otpSecret,
-    contactFields: dependencies.contactFields,
-    erasureParticipants: dependencies.erasureParticipants,
-    exportParticipants: dependencies.exportParticipants,
+    ...dependencies,
   };
   const controller = new CustomerAuthController({
     sendOtp: new SendCustomerOtpUseCase(auth),
@@ -232,72 +202,87 @@ export function buildContactStorefrontRouterFor(
 export function buildCustomerAccountStatusReader(): CustomerAccountStatusReader {
   const accounts = new MongoCustomerAccountRepository();
   return {
-    async isActive(customerAccountId) {
-      const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
-      return account?.isActive() ?? false;
-    },
+    isActive: async (customerAccountId) =>
+      (await accounts.findById(asId<CustomerAccountId>(customerAccountId)))?.isActive() ?? false,
   };
 }
 
 export { buildCustomerPhoneReader } from "./customer-phone-reader.js";
 
-/**
- * The inline `{ create: { name, phone } }` creator for another module's request body (card 3.6's
- * booking sheet): reuses an ACTIVE contact with the phone, creates a CUSTOMER otherwise.
- */
+export interface InlineContactCreator {
+  findOrCreateByPhone(input: InlineContactCreate): Promise<ContactId>;
+  isActive(contactId: ContactId): Promise<boolean>;
+}
+export interface CustomerAccountLookup {
+  exists(id: CustomerAccountId): Promise<boolean>;
+  findById(id: CustomerAccountId): Promise<{ contactId: string; phoneE164: string } | undefined>;
+}
+export interface ContactLookup {
+  findActiveByPhone(phone: string): Promise<{ contactId: string } | undefined>;
+  findActiveByEmail(email: string): Promise<{ contactId: string } | undefined>;
+}
+
+/** Inline `{ create: { name, phone } }` creator for another module's request body (card 3.6). */
 export function buildInlineContactCreator(dependencies: {
   readonly audit: AuditRecorder;
   readonly clock: Clock;
-}): {
-  findOrCreateByPhone(input: InlineContactCreate): Promise<ContactId>;
-  isActive(contactId: ContactId): Promise<boolean>;
-} {
+}): InlineContactCreator {
   const write = {
     contacts: new MongoContactRepository(),
     unitOfWork: new MongoUnitOfWork(),
     events: kernelEventPublisher,
   };
   return {
-    findOrCreateByPhone: (input) => findOrCreateInlineContact({ ...write, ...dependencies }, input),
-    isActive: async (contactId) =>
+    findOrCreateByPhone: (input: InlineContactCreate) =>
+      findOrCreateInlineContact({ ...write, ...dependencies }, input),
+    isActive: async (contactId: ContactId) =>
       (await write.contacts.findById(contactId))?.status === CONTACT_STATUS.ACTIVE,
   };
 }
 
 /** Tenant-scoped existence check, for modules that reference a customer account by id. */
-export function buildCustomerAccountLookup(): {
-  exists(customerAccountId: CustomerAccountId): Promise<boolean>;
-  findById(
-    customerAccountId: CustomerAccountId,
-  ): Promise<{ contactId: string; phoneE164: string } | undefined>;
-} {
+export function buildCustomerAccountLookup(): CustomerAccountLookup {
   const accounts = new MongoCustomerAccountRepository();
   return {
-    async exists(customerAccountId) {
-      const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
-      return account !== undefined;
-    },
-    async findById(customerAccountId) {
-      const account = await accounts.findById(asId<CustomerAccountId>(customerAccountId));
-      if (!account) return undefined;
-      return { contactId: account.contactId, phoneE164: account.phoneE164 };
+    exists: async (id: CustomerAccountId) =>
+      (await accounts.findById(asId<CustomerAccountId>(id))) !== undefined,
+    findById: async (id: CustomerAccountId) => {
+      const a = await accounts.findById(asId<CustomerAccountId>(id));
+      return a ? { contactId: a.contactId, phoneE164: a.phoneE164 } : undefined;
     },
   };
 }
 
-export function buildContactLookup(): {
-  findActiveByPhone(phoneE164: string): Promise<{ contactId: string } | undefined>;
-  findActiveByEmail(email: string): Promise<{ contactId: string } | undefined>;
-} {
+export function buildContactLookup(): ContactLookup {
   const contacts = new MongoContactRepository();
   return {
-    async findActiveByPhone(phone) {
-      const contact = await contacts.findActiveByPhone(phone);
-      return contact ? { contactId: contact.contactId } : undefined;
+    findActiveByPhone: async (phone: string) => {
+      const c = await contacts.findActiveByPhone(phone);
+      return c ? { contactId: c.contactId } : undefined;
     },
-    async findActiveByEmail(email) {
-      const contact = await contacts.findActiveByEmail(email);
-      return contact ? { contactId: contact.contactId } : undefined;
+    findActiveByEmail: async (email: string) => {
+      const c = await contacts.findActiveByEmail(email);
+      return c ? { contactId: c.contactId } : undefined;
     },
   };
 }
+
+export {
+  buildMongoGuestSessionProvisionalLinkPort,
+  buildProvisionalGuestContactCreator,
+  type ProvisionalGuestContactCreatorOptions,
+} from "./guest-contact-creator.js";
+export {
+  CreateProvisionalGuestContactUseCase,
+  type CreateProvisionalGuestContactDependencies,
+} from "./application/use-cases/create-provisional-guest-contact.use-case.js";
+export {
+  buildProvisionalContact,
+  type BuildProvisionalContactResult,
+} from "./domain/provisional-contact.js";
+export type {
+  GuestSessionProvisionalLinkPort,
+  GuestSessionRecord,
+  LinkProvisionalContactInput,
+  ProvisionalGuestContactCreator,
+} from "./application/ports/guest-contact-ports.js";

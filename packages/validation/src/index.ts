@@ -176,11 +176,17 @@ export {
   contactIdParamsSchema,
   contactListQuerySchema,
   contactUpdateRequestSchema,
+  checkoutContactIntakeSchema,
+  checkoutContactSnapshotSchema,
+  createProvisionalContactInputSchema,
   type ContactAnonymizeBody,
   type ContactCreateBody,
   type ContactListQuery,
   type ContactUpdateBody,
-} from "./contact/contact.schema.js";
+  type CheckoutContactIntakeInput,
+  type CheckoutContactSnapshotInput,
+  type CreateProvisionalContactPayload,
+} from "./contact/index.js";
 export { buildSettingValueSchema } from "./settings/build-setting-value-schema.js";
 export {
   STRUCTURED_SETTING_SCHEMAS,
