@@ -45,6 +45,8 @@
   "errors.insufficient_stock": "যথেষ্ট স্টক নেই।",
   "errors.slot_unavailable": "এই সময়টি আর খালি নেই।",
   "errors.capacity_full": "আসন বা জায়গা আর খালি নেই।",
+  "errors.booking_hold_expired": "বুকিংয়ের সময়সীমা শেষ হয়ে গেছে। অনুগ্রহ করে আবার সময় বেছে নিন।",
+  "errors.booking_payment_fence_conflict": "বুকিং প্রক্রিয়াধীন থাকায় বা পরিবর্তন হওয়ায় পেমেন্ট শুরু করা যায়নি।",
   "errors.idempotency_mismatch": "একই অনুরোধ আলাদা তথ্য দিয়ে পাঠানো হয়েছে। নতুন করে শুরু করুন।",
   "errors.limit_reached": "আপনার প্যাকেজের সীমা শেষ হয়ে গেছে। চালিয়ে যেতে প্যাকেজ আপগ্রেড করুন।",
   "errors.business_rule": "ব্যবসার নিয়ম অনুযায়ী এখন এই কাজটি করা যাচ্ছে না।",

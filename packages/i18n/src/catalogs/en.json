@@ -45,6 +45,8 @@
   "errors.insufficient_stock": "There is not enough stock.",
   "errors.slot_unavailable": "This time slot is no longer available.",
   "errors.capacity_full": "There are no seats or spots left.",
+  "errors.booking_hold_expired": "The booking hold has expired. Please select a time slot again.",
+  "errors.booking_payment_fence_conflict": "Payment could not be started because the booking is being processed or was modified.",
   "errors.idempotency_mismatch": "The same request was sent with different details. Please start again.",
   "errors.limit_reached": "You have reached your package limit. Upgrade your package to continue.",
   "errors.business_rule": "This cannot be done right now because of a business rule.",
