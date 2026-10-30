@@ -20,6 +20,17 @@ export async function persistHoldBooking(input: {
   await input.dependencies.unitOfWork.run(async () => {
     await input.reserveCapacity();
     await input.dependencies.bookings.insert(input.booking);
+    if (input.dependencies.depositCheck) {
+      await input.dependencies.depositCheck.initializeSummary({
+        organizationId: input.organizationId,
+        requestId: input.booking.bookingId,
+        contactId: input.booking.contactId,
+        locationId: input.booking.locationId,
+        total: input.booking.price.total,
+        actorUserId: input.booking.createdByUserId,
+        now: input.booking.createdAt,
+      });
+    }
     await input.dependencies.events.publish(
       BOOKING_EVENT_TYPE.BOOKING_HELD,
       { bookingId: input.booking.bookingId },

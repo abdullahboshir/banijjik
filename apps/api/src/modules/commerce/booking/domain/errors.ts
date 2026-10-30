@@ -64,3 +64,11 @@ export function bookingRuleError(
 ): DomainRuleError {
   return new DomainRuleError({ code, details: { ruleKey } });
 }
+
+export function bookingHoldExpired(): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.BOOKING_HOLD_EXPIRED });
+}
+
+export function bookingPaymentFenceConflict(): DomainRuleError {
+  return new DomainRuleError({ code: ERROR_CODE.BOOKING_PAYMENT_FENCE_CONFLICT });
+}

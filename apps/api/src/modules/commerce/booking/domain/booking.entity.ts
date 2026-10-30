@@ -54,6 +54,8 @@ export interface BookingProps {
   readonly eventSessionId?: EventSessionId | null;
   readonly history: readonly BookingHistoryEntry[];
   readonly version: number;
+  readonly checkoutId?: string | null;
+  readonly paymentFenceVersion?: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly createdByUserId: UserId | null;
@@ -106,6 +108,8 @@ export class Booking {
       source: BOOKING_SOURCE.STAFF,
       note: input.note,
       holdExpiresAt: null,
+      checkoutId: null,
+      paymentFenceVersion: 0,
       eventSessionId: input.eventSessionId ?? null,
       history: [],
       version: 1,
@@ -134,6 +138,8 @@ export class Booking {
     readonly holdExpiresAt: Date;
     readonly note: string | null;
     readonly source: BookingSource;
+    readonly checkoutId?: string | null | undefined;
+    readonly paymentFenceVersion?: number | undefined;
     readonly eventSessionId?: EventSessionId | undefined;
     readonly now: Date;
     readonly actorUserId: UserId | null;
@@ -159,6 +165,8 @@ export class Booking {
       source: input.source,
       note: input.note,
       holdExpiresAt: input.holdExpiresAt,
+      checkoutId: input.checkoutId ?? null,
+      paymentFenceVersion: input.paymentFenceVersion ?? 0,
       eventSessionId: input.eventSessionId ?? null,
       history: [],
       version: 1,
@@ -261,6 +269,14 @@ export class Booking {
     return this.props.cancellationFeeRetained ?? null;
   }
 
+  get checkoutId(): string | null {
+    return this.props.checkoutId ?? null;
+  }
+
+  get paymentFenceVersion(): number {
+    return this.props.paymentFenceVersion ?? 0;
+  }
+
   get history(): readonly BookingHistoryEntry[] {
     return this.props.history;
   }
@@ -297,6 +313,15 @@ export class Booking {
     },
   ): Booking {
     return new Booking(transitionBookingProps(this.props, action, input));
+  }
+
+  incrementPaymentFence(now: Date): Booking {
+    return new Booking({
+      ...this.props,
+      paymentFenceVersion: (this.props.paymentFenceVersion ?? 0) + 1,
+      version: this.props.version + 1,
+      updatedAt: now,
+    });
   }
 
   toProps(): BookingProps {

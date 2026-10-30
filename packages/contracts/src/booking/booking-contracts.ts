@@ -176,6 +176,8 @@ export interface BookingResponse {
   readonly holdExpiresAt: string | null;
   readonly history: readonly BookingHistoryEntry[];
   readonly version: number;
+  readonly paymentFenceVersion?: number;
+  readonly checkoutId?: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly contactName?: string;

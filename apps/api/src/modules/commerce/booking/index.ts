@@ -129,3 +129,12 @@ export function registerBookingScheduledJobs(input: {
 }
 
 export { buildEventSessionRouter } from "./build-event-session-router.js";
+export {
+  buildStorefrontBookingCommands,
+  type BookingStorefrontDependencies,
+} from "./application/storefront-booking-commands.js";
+export {
+  buildBookingPaymentLifecycle,
+  type BookingPaymentLifecyclePort,
+  type BookingPaymentLifecycleDependencies,
+} from "./application/booking-payment-lifecycle.js";

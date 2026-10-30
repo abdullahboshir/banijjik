@@ -65,6 +65,8 @@ export function toBooking(row: BookingDocument): Booking {
     source: row.source,
     note: row.note,
     holdExpiresAt: row.holdExpiresAt,
+    checkoutId: row.checkoutId ?? null,
+    paymentFenceVersion: row.paymentFenceVersion ?? 0,
     eventSessionId:
       row.eventSessionId === null || row.eventSessionId === undefined
         ? null
@@ -107,6 +109,8 @@ export function bookingDocument(booking: Booking): BookingDocument {
     source: props.source,
     note: props.note,
     holdExpiresAt: props.holdExpiresAt,
+    checkoutId: props.checkoutId ?? null,
+    paymentFenceVersion: props.paymentFenceVersion ?? 0,
     eventSessionId: props.eventSessionId ?? null,
     cancellationFeeRetained: props.cancellationFeeRetained ?? null,
     history: [...props.history],

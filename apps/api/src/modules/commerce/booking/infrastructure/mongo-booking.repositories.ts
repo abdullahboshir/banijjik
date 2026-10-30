@@ -171,6 +171,8 @@ export class MongoBookingRepository implements BookingRepository {
           cancellationFeeRetained: props.cancellationFeeRetained ?? null,
           history: props.history,
           note: props.note,
+          checkoutId: props.checkoutId ?? null,
+          paymentFenceVersion: props.paymentFenceVersion ?? 0,
           updatedAt: props.updatedAt,
           updatedByUserId: props.updatedByUserId,
         },

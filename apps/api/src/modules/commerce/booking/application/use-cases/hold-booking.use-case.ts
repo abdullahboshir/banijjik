@@ -20,6 +20,7 @@ import type {
   PriceQuoterPort,
 } from "../ports/booking-context-ports.js";
 import type { EventSessionRepository } from "../ports/event-session-repository.js";
+import type { DepositCheckPort } from "../ports/payment-ports.js";
 import type { BookingEventPublisher } from "./create-booking.use-case.js";
 
 export interface HoldBookingDependencies {
@@ -35,6 +36,7 @@ export interface HoldBookingDependencies {
   readonly settings: BookingSettingsReader;
   readonly quoter: PriceQuoterPort;
   readonly contacts: ContactCreator;
+  readonly depositCheck?: DepositCheckPort;
   readonly timeZone: { read(organizationId: OrganizationId): Promise<string> };
   readonly timeOff: {
     listOverlapping(

@@ -174,9 +174,8 @@ function paymentStatusReaderOf(): PaymentStatusReader {
   };
 }
 
-/** Booking API on the tenant pipeline (card 3.6). */
-export function buildBookingTenantRouter(input: BookingRouterInput): Router {
-  return buildBookingRouter({
+export function buildBookingTenantPorts(input: BookingRouterInput): BookingTenantDependencies {
+  return {
     clock: input.clock,
     audit: input.audit,
     permission: input.permission,
@@ -187,5 +186,10 @@ export function buildBookingTenantRouter(input: BookingRouterInput): Router {
     contacts: contactCreatorOf(input),
     depositCheck: buildBookingDepositCheckAdapter(),
     paymentStatusReader: paymentStatusReaderOf(),
-  });
+  };
+}
+
+/** Booking API on the tenant pipeline (card 3.6). */
+export function buildBookingTenantRouter(input: BookingRouterInput): Router {
+  return buildBookingRouter(buildBookingTenantPorts(input));
 }

@@ -13,6 +13,7 @@ export async function assembleHoldBooking(input: {
   allowedLocationIds: readonly string[] | "ALL";
   body: BookingHoldBody;
   source: typeof BOOKING_SOURCE.STOREFRONT;
+  checkoutId?: string | null;
 }): Promise<{
   booking: Booking;
   capacity: HoldCapacity;
@@ -40,6 +41,7 @@ export async function assembleHoldBooking(input: {
       currency: prepared.line.unitPrice.currency,
     },
     holdExpiresAt: prepared.holdExpiresAt,
+    checkoutId: input.checkoutId ?? null,
     note: input.body.note ?? null,
     source: input.source,
     now: prepared.now,
