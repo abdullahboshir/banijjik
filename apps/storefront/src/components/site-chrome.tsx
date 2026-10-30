@@ -88,6 +88,26 @@ function AccountArea({
   );
 }
 
+function BrandHeading({ site }: { readonly site: StorefrontSiteResponse }): ReactElement {
+  return (
+    <Link href="/" className="flex min-w-0 items-center gap-3">
+      {site.logoUrl ? (
+        <LogoImage
+          src={site.logoUrl}
+          alt={site.name}
+          className="h-10 w-10 rounded object-contain"
+        />
+      ) : null}
+      <span className="flex min-w-0 flex-col">
+        <span className="text-title max-w-full break-words font-semibold text-primary">
+          {site.name}
+        </span>
+        {site.tagline ? <span className="text-small text-secondary">{site.tagline}</span> : null}
+      </span>
+    </Link>
+  );
+}
+
 /** The top of every page: the business's logo and name, its navigation, language and account. */
 export function SiteHeader(props: SiteChromeProps): ReactElement {
   const { site, locale, translator } = props;
@@ -95,23 +115,7 @@ export function SiteHeader(props: SiteChromeProps): ReactElement {
     <header className="border-b border-default bg-surface">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/" className="flex min-w-0 items-center gap-3">
-            {site.logoUrl ? (
-              <LogoImage
-                src={site.logoUrl}
-                alt={site.name}
-                className="h-10 w-10 rounded object-contain"
-              />
-            ) : null}
-            <span className="flex min-w-0 flex-col">
-              <span className="text-title max-w-full break-words font-semibold text-primary">
-                {site.name}
-              </span>
-              {site.tagline ? (
-                <span className="text-small text-secondary">{site.tagline}</span>
-              ) : null}
-            </span>
-          </Link>
+          <BrandHeading site={site} />
           <LanguageLinks translator={translator} locale={locale} />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -121,6 +125,15 @@ export function SiteHeader(props: SiteChromeProps): ReactElement {
           >
             <Link href="/" className={`${SITE_CHROME_LINK_CLASS} font-semibold text-primary`}>
               {translator.t("storefront.nav.home")}
+            </Link>
+            <Link
+              href="/offerings"
+              className={`${SITE_CHROME_LINK_CLASS} font-semibold text-primary`}
+            >
+              {translator.t("storefront.nav.offerings")}
+            </Link>
+            <Link href="/cart" className={`${SITE_CHROME_LINK_CLASS} font-semibold text-primary`}>
+              {translator.t("storefront.nav.cart")}
             </Link>
             {site.features.directory ? (
               <Link

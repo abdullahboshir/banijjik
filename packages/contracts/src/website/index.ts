@@ -153,6 +153,7 @@ export {
   type PublicBookingCommands,
   type PublicEnrollmentCommands,
   type PublicQuoteLine,
+  type PublicQuoteLineResponse,
   type PublicQuoteRequest,
   type PublicQuoteResponse,
   type CheckoutContactInput,
