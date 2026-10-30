@@ -1,34 +1,26 @@
 import { Router, type RequestHandler } from "express";
 import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
-import { getRequestContext } from "../../../kernel/context/index.js";
-import { MongoUnitOfWork, models } from "../../../kernel/db/index.js";
+import { MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import { registerScheduledJob } from "../../../kernel/jobs/index.js";
-import { systemClock, type Clock } from "../../../kernel/time/index.js";
-import { MongoRateLimiter, type RateLimiter } from "../../../kernel/rate-limit/index.js";
-import { WEBSITE_GUEST_CHECKOUT_SETTING_KEY } from "@banijjik/contracts/website";
+import type { Clock } from "../../../kernel/time/index.js";
 import {
   createMongoDomainOperations,
   type DomainProvider,
   type HostClaims,
 } from "../../platform/operations/index.js";
 import type { FileReferenceReader } from "../../core/file/index.js";
-import { GetStorefrontSiteUseCase } from "./application/use-cases/storefront-site.use-case.js";
 import {
   lookupPublishedStorefrontHost,
   StorefrontHostReader,
 } from "./application/storefront-host-reader.js";
 import {
-  GetPublishedSitePageUseCase,
-  ListPublishedSitePagesUseCase,
   ListSitePagesUseCase,
   UpsertSitePageUseCase,
 } from "./application/use-cases/site-page.use-cases.js";
 import type { SiteSectionAvailability } from "./application/ports/site-publication-ports.js";
-import type { StorefrontSiteSources } from "./application/ports/website-ports.js";
 import {
-  GetPublishedSiteUseCase,
   GetSiteDraftUseCase,
   ListSiteVersionsUseCase,
 } from "./application/use-cases/read-site.use-case.js";
@@ -59,20 +51,13 @@ import { MongoSiteDomainRepository } from "./infrastructure/mongo-site-domain.re
 import { MongoSitePageRepository } from "./infrastructure/mongo-site-page.repository.js";
 import { MongoSiteRepository } from "./infrastructure/mongo-site.repository.js";
 import { MongoSiteVersionRepository } from "./infrastructure/mongo-site-version.repository.js";
-import { MongoWebsiteVersionReader } from "./infrastructure/mongo-website-version.reader.js";
 import { buildSiteMediaChecker } from "./infrastructure/site-media.checker.js";
 import { SiteDomainController } from "./presentation/site-domain.controller.js";
 import { buildSiteDomainRouter } from "./presentation/site-domain.router.js";
 import { SiteController } from "./presentation/site.controller.js";
-import { buildSitePublicRouter } from "./presentation/site-public.router.js";
 import { buildSiteRouter } from "./presentation/site.router.js";
 import { WebsiteController } from "./presentation/website.controller.js";
-import { buildWebsiteStorefrontRouter } from "./presentation/website-storefront.router.js";
 import { buildWebsiteTenantRouter } from "./presentation/website-tenant.router.js";
-import { CreateGuestSessionUseCase } from "./application/use-cases/create-guest-session.use-case.js";
-import { ResolveGuestSessionUseCase } from "./application/use-cases/resolve-guest-session.use-case.js";
-import { MongoGuestSessionRepository } from "./infrastructure/mongo-guest-session.repository.js";
-import { buildGuestSessionRouter } from "./presentation/guest-session.router.js";
 
 export { websiteManifest } from "./module.manifest.js";
 export { registerWebsiteModels } from "./infrastructure/register-website-models.js";
@@ -101,6 +86,67 @@ export {
   type GuestSessionRequest,
   type GuestSessionRouterDependencies,
 } from "./presentation/guest-session.router.js";
+export {
+  QuoteCheckoutUseCase,
+  formatPrincipalKey,
+  computeObjectHash,
+  type QuoteCheckoutDependencies,
+} from "./application/quote-checkout.js";
+export {
+  SubmitCheckoutUseCase,
+  type SubmitCheckoutDependencies,
+} from "./application/submit-checkout.js";
+export {
+  buildCheckoutRouter,
+  createStorefrontPrincipalMiddleware,
+  type CheckoutRouterDependencies,
+  type CheckoutRequestWithPrincipal,
+} from "./presentation/checkout.router.js";
+export {
+  MongoCheckoutQuoteRepository,
+  MongoCheckoutRepository,
+  MongoCheckoutAccessRepository,
+  MongoCheckoutRequestLinkRepository,
+} from "./infrastructure/mongo-checkout.repository.js";
+export {
+  CHECKOUT_QUOTE_MODEL_NAME,
+  CHECKOUT_QUOTE_COLLECTION_NAME,
+  type CheckoutQuoteDocument,
+} from "./infrastructure/checkout-quote.schema.js";
+export {
+  CHECKOUT_MODEL_NAME,
+  CHECKOUT_COLLECTION_NAME,
+  CHECKOUT_REQUEST_LINK_MODEL_NAME,
+  CHECKOUT_REQUEST_LINK_COLLECTION_NAME,
+  type CheckoutDocument,
+  type CheckoutRequestLinkDocument,
+} from "./infrastructure/checkout.schema.js";
+export {
+  CHECKOUT_ACCESS_MODEL_NAME,
+  CHECKOUT_ACCESS_COLLECTION_NAME,
+  type CheckoutAccessDocument,
+} from "./infrastructure/checkout-access.schema.js";
+export type {
+  CheckoutQuote,
+  Checkout,
+  CheckoutAccess,
+  CheckoutAccessOwner,
+  CheckoutRequestLinkRecord,
+  CheckoutContactSnapshot,
+  CheckoutQuoteInputSnapshot,
+  CheckoutPricedSnapshot,
+} from "./domain/checkout-types.js";
+export type {
+  CatalogQuoteReaderPort,
+  GuestContactPort,
+  OrgStorefrontConfigReader,
+  PricedSelectionsResult,
+  StorefrontOrganizationConfig,
+  CheckoutQuoteRepositoryPort,
+  CheckoutRepositoryPort,
+  CheckoutAccessRepositoryPort,
+  CheckoutRequestLinkRepositoryPort,
+} from "./application/checkout-ports.js";
 export type {
   StorefrontSiteSources,
   StorefrontBusinessProfile,
@@ -136,20 +182,8 @@ interface OrgSectionReader {
   current(): Promise<{ readonly config: { readonly storefrontSections: readonly string[] } }>;
 }
 
-interface PublicOrgSectionReader {
-  forOrganization(organizationId: string): Promise<{
-    readonly config: { readonly storefrontSections: readonly string[] };
-  }>;
-}
-
 const tenantSectionAvailability = (org: OrgSectionReader): SiteSectionAvailability => ({
   effectiveSectionKeys: async () => (await org.current()).config.storefrontSections,
-});
-
-const publicSectionAvailability = (org: PublicOrgSectionReader): SiteSectionAvailability => ({
-  effectiveSectionKeys: async () =>
-    (await org.forOrganization(String(getRequestContext().organizationId))).config
-      .storefrontSections,
 });
 
 export interface WebsiteAdminDependencies {
@@ -251,61 +285,8 @@ export function buildWebsiteDomainRouter(
   });
 }
 
-export interface WebsiteStorefrontDependencies {
-  readonly requireWebsiteModule: RequestHandler;
-  readonly siteSources: StorefrontSiteSources;
-  readonly orgConfig: PublicOrgSectionReader;
-  readonly clock?: Clock;
-  readonly limiter?: RateLimiter;
-  readonly isProduction?: boolean;
-  readonly isGuestCheckoutEnabled?: (organizationId: string) => Promise<boolean>;
-}
-
-const isGuestEnabled = async (organizationId: string): Promise<boolean> => {
-  const repo = models({}).get<{ value?: unknown }>("SettingValue");
-  if (!repo) return true;
-  const doc = await repo
-    .findOne({ organizationId, settingKey: WEBSITE_GUEST_CHECKOUT_SETTING_KEY, locationId: null })
-    .lean<{ value?: unknown }>();
-  return doc?.value !== false;
-};
-
-export function buildWebsiteStorefrontRouterFor(deps: WebsiteStorefrontDependencies): Router {
-  const pages = new MongoSitePageRepository();
-  const sites = new MongoSiteRepository();
-  const versions = new MongoWebsiteVersionReader();
-  const clock = deps.clock ?? systemClock;
-  const limiter = deps.limiter ?? new MongoRateLimiter(clock);
-  const guestRepo = new MongoGuestSessionRepository();
-  return buildWebsiteStorefrontRouter({
-    requireWebsiteModule: deps.requireWebsiteModule,
-    getPage: new GetPublishedSitePageUseCase(pages, sites, versions),
-    getSite: new GetStorefrontSiteUseCase(
-      deps.siteSources,
-      new ListPublishedSitePagesUseCase(pages, sites, versions),
-    ),
-  })
-    .use(
-      buildSitePublicRouter({
-        requireWebsiteModule: deps.requireWebsiteModule,
-        getPublishedSite: new GetPublishedSiteUseCase({
-          sites,
-          versions: new MongoSiteVersionRepository(),
-          sections: publicSectionAvailability(deps.orgConfig),
-        }),
-      }),
-    )
-    .use(
-      buildGuestSessionRouter({
-        requireWebsiteModule: deps.requireWebsiteModule,
-        limiter,
-        isProduction: deps.isProduction,
-        createGuestSession: new CreateGuestSessionUseCase({
-          repository: guestRepo,
-          clock,
-          isGuestCheckoutEnabled: deps.isGuestCheckoutEnabled ?? isGuestEnabled,
-        }),
-        resolveGuestSession: new ResolveGuestSessionUseCase(guestRepo, clock),
-      }),
-    );
-}
+export {
+  buildWebsiteStorefrontRouterFor,
+  type WebsiteStorefrontDependencies,
+  type PublicOrgSectionReader,
+} from "./storefront-website-router.js";

@@ -8,6 +8,8 @@ export const WEBSITE_EVENT_TYPE = Object.freeze({
   DOMAIN_REMOVAL_REQUESTED: "website.domain.removalRequested",
   DOMAIN_STATE_CHANGED: "website.domain.stateChanged",
   GUEST_SESSION_CREATED: "website.guestSession.created",
+  CHECKOUT_CREATED: "website.checkout.created",
+  CHECKOUT_CLAIMED: "website.checkout.claimed",
 } as const);
 
 export type WebsiteEventType = (typeof WEBSITE_EVENT_TYPE)[keyof typeof WEBSITE_EVENT_TYPE];

@@ -231,10 +231,20 @@ export interface EventPayloadMap {
   readonly [WEBSITE_EVENT_TYPE.DOMAIN_REMOVAL_REQUESTED]: DomainEventPayload;
   readonly [WEBSITE_EVENT_TYPE.DOMAIN_STATE_CHANGED]: DomainEventPayload;
   readonly [WEBSITE_EVENT_TYPE.GUEST_SESSION_CREATED]: GuestSessionCreatedPayload;
+  readonly [WEBSITE_EVENT_TYPE.CHECKOUT_CREATED]: CheckoutCreatedPayload;
+  readonly [WEBSITE_EVENT_TYPE.CHECKOUT_CLAIMED]: CheckoutClaimedPayload;
   readonly [POS_EVENT_TYPE.REGISTER_CLOSED]: PosRegisterClosedPayload;
 }
 
 export interface GuestSessionCreatedPayload {
   readonly guestSessionId: string;
   readonly expiresAt: string;
+}
+
+export interface CheckoutCreatedPayload {
+  readonly checkoutId: string;
+}
+
+export interface CheckoutClaimedPayload {
+  readonly checkoutId: string;
 }

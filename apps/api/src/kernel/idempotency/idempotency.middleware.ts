@@ -26,8 +26,9 @@ export interface IdempotencyNamespace {
   readonly scopeId: string;
 }
 
-export type IdempotencyResolveNamespace = () =>
-  IdempotencyNamespace | Promise<IdempotencyNamespace>;
+export type IdempotencyResolveNamespace = (
+  request?: Request,
+) => IdempotencyNamespace | Promise<IdempotencyNamespace>;
 
 export interface IdempotencyReplayAuthorization {
   readonly record: StoredIdempotencyRecord;
@@ -36,6 +37,7 @@ export interface IdempotencyReplayAuthorization {
 
 export type IdempotencyAuthorizeReplay = (
   authorization: IdempotencyReplayAuthorization,
+  request?: Request,
 ) => Promise<void>;
 
 export interface IdempotencyOptions {
@@ -94,8 +96,9 @@ function resolveStaffNamespace(): IdempotencyNamespace {
 
 async function resolveRequestNamespace(
   resolveNamespace: IdempotencyResolveNamespace | undefined,
+  request?: Request,
 ): Promise<IdempotencyNamespace> {
-  if (resolveNamespace !== undefined) return await resolveNamespace();
+  if (resolveNamespace !== undefined) return await resolveNamespace(request);
   return resolveStaffNamespace();
 }
 
@@ -176,9 +179,10 @@ function parseStoredReplayBody(record: StoredIdempotencyRecord): unknown {
 async function authorizeStoredReplay(
   authorizeReplay: IdempotencyAuthorizeReplay | undefined,
   record: StoredIdempotencyRecord,
+  request?: Request,
 ): Promise<void> {
   if (authorizeReplay === undefined) return;
-  await authorizeReplay({ record, body: parseStoredReplayBody(record) });
+  await authorizeReplay({ record, body: parseStoredReplayBody(record) }, request);
 }
 
 function isSuccess(status: number): boolean {
@@ -224,14 +228,14 @@ export function createIdempotencyMiddleware(options: IdempotencyOptions): Reques
   const { clock, store = new MongoIdempotencyStore() } = options;
   return async (request, response, next) => {
     const idempotencyKey = readIdempotencyKey(request);
-    const namespace = await resolveRequestNamespace(options.resolveNamespace);
+    const namespace = await resolveRequestNamespace(options.resolveNamespace, request);
     const claim: ClaimRequest = {
       ref: { ...namespace, idempotencyKey },
       requestHash: hashRequest(request),
     };
     const decision = await decide(store, clock, claim);
     if (decision.kind === "COMPLETED") {
-      await authorizeStoredReplay(options.authorizeReplay, decision.record);
+      await authorizeStoredReplay(options.authorizeReplay, decision.record, request);
       if (decision.record.requestHash !== claim.requestHash) {
         throw new AppError({ code: ERROR_CODE.IDEMPOTENCY_MISMATCH });
       }
