@@ -51,6 +51,8 @@ export class Order implements OrderProps {
   readonly cancelReason: string | null;
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly posSessionId: OrderProps["posSessionId"];
+  readonly checkoutId: OrderProps["checkoutId"];
+  readonly recipient: OrderProps["recipient"];
   readonly hasStockLines: boolean;
   readonly returnStatus: OrderProps["returnStatus"];
   readonly completedAt: OrderProps["completedAt"];
@@ -79,6 +81,8 @@ export class Order implements OrderProps {
     this.cancelReason = props.cancelReason;
     this.customFields = props.customFields;
     this.posSessionId = props.posSessionId;
+    this.checkoutId = props.checkoutId ?? null;
+    this.recipient = props.recipient ?? null;
     this.hasStockLines = props.hasStockLines;
     this.returnStatus = props.returnStatus;
     this.completedAt = props.completedAt;
@@ -110,6 +114,8 @@ export class Order implements OrderProps {
       cancelReason: null,
       customFields: input.customFields,
       posSessionId: input.posSessionId,
+      checkoutId: input.checkoutId ?? null,
+      recipient: input.recipient ?? null,
       hasStockLines: input.hasStockLines,
       returnStatus: ORDER_RETURN_STATUS.NONE,
       completedAt: null,
@@ -145,6 +151,8 @@ export class Order implements OrderProps {
       cancelReason: this.cancelReason,
       customFields: this.customFields,
       posSessionId: this.posSessionId,
+      checkoutId: this.checkoutId,
+      recipient: this.recipient,
       hasStockLines: this.hasStockLines,
       returnStatus: this.returnStatus,
       completedAt: this.completedAt,

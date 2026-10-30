@@ -80,7 +80,9 @@ export class PlaceOrderUseCase {
     });
     if (prepared.lines.length === 0) throw orderNeedsLine();
     if (draft.fulfillment.method === FULFILLMENT_METHOD.PICKUP) {
-      await this.assertContactWithPhone(draft.contactId);
+      if (!draft.recipient) {
+        await this.assertContactWithPhone(draft.contactId);
+      }
     }
     const ownerExempt =
       settings.discountOwnerWithoutApproval && (await this.dependencies.owner.isOwner());

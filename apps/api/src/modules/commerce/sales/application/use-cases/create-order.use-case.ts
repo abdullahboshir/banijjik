@@ -8,8 +8,10 @@ import {
   SALES_EVENT_TYPE,
   type FulfillmentMethod,
   type OrderResponse,
+  type OrderSource,
   type OrderTotals,
 } from "@banijjik/contracts/sales";
+import type { CheckoutRecipientSnapshot } from "@banijjik/contracts/website";
 import {
   asId,
   newId,
@@ -80,6 +82,9 @@ export interface OrderBodyBase {
   readonly note?: string | null | undefined;
   readonly customFields?: Readonly<Record<string, unknown>> | undefined;
   readonly approvalToken?: string | undefined;
+  readonly source?: OrderSource | undefined;
+  readonly checkoutId?: string | null | undefined;
+  readonly recipient?: CheckoutRecipientSnapshot | null | undefined;
 }
 
 /** A DRAFT: no number, no stock effect; lines are optional and quoted when present. */
@@ -107,6 +112,25 @@ export class CreateOrderUseCase {
     const totals =
       prepared?.totals ??
       emptyTotalsOf(await this.dependencies.currency.read(input.organizationId));
+    return this.buildDraftEntity({
+      input,
+      contactId,
+      prepared,
+      totals,
+      businessDate: businessDateOf(now, timeZone),
+      now,
+    });
+  }
+
+  private buildDraftEntity(params: {
+    input: CreateOrderInput;
+    contactId: ContactId | null;
+    prepared: PreparedLines | undefined;
+    totals: OrderTotals;
+    businessDate: string;
+    now: Date;
+  }): Order {
+    const { input, contactId, prepared, totals, businessDate, now } = params;
     return Order.createDraft({
       orderId: newId<OrderId>(),
       organizationId: input.organizationId,
@@ -117,13 +141,15 @@ export class CreateOrderUseCase {
       },
       lines: prepared?.lines ?? [],
       totals,
-      businessDate: businessDateOf(now, timeZone),
-      source: ORDER_SOURCE.ADMIN,
+      businessDate,
+      source: input.body.source ?? ORDER_SOURCE.ADMIN,
       note: input.body.note ?? null,
       orderDiscount: input.body.orderDiscount ?? null,
       customFields: input.body.customFields ?? {},
-      hasStockLines: prepared !== undefined && prepared.trackedLines.length > 0,
+      hasStockLines: Boolean(prepared && prepared.trackedLines.length > 0),
       posSessionId: null,
+      checkoutId: input.body.checkoutId ?? null,
+      recipient: input.body.recipient ?? null,
       createdByUserId: input.actorUserId,
       now,
     });

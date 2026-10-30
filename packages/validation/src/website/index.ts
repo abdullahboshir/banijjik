@@ -49,3 +49,16 @@ export {
   type CreateGuestSessionBodyInput,
   type GuestSessionParamsInput,
 } from "./guest-session-schemas.js";
+export {
+  publicSelectionSchema,
+  checkoutSelectionSchema,
+  checkoutRecipientSnapshotSchema,
+  checkoutDeliveryAddressSchema,
+  checkoutFulfillmentSchema,
+  placeStorefrontOrderSchema,
+  type PublicSelectionInput,
+  type CheckoutSelectionInput,
+  type CheckoutRecipientSnapshotInput,
+  type CheckoutFulfillmentInput,
+  type PlaceStorefrontOrderInput,
+} from "./checkout-command-schemas.js";

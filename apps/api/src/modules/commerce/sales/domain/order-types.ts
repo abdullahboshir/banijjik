@@ -11,6 +11,7 @@ import type {
   OrderStatus,
   OrderTotals,
 } from "@banijjik/contracts/sales";
+import type { CheckoutRecipientSnapshot } from "@banijjik/contracts/website";
 import type { ContactId, LocationId, OrderId, OrganizationId, UserId } from "@banijjik/ids";
 
 /**
@@ -66,6 +67,10 @@ export interface OrderProps {
    * till, which is what lets the Z-report count a credit sale that has no payment of its own.
    */
   readonly posSessionId: string | null;
+  /** Linked storefront checkout id when created via customer checkout (card 4.3). */
+  readonly checkoutId: string | null;
+  /** Verified recipient snapshot when submitted via customer checkout (card 4.3). */
+  readonly recipient: CheckoutRecipientSnapshot | null;
   /**
    * Whether the order holds a stock reservation (tracked lines were reserved at place). Complete
    * and cancel need it because the stock port cannot answer "is there a reservation?".
@@ -97,6 +102,8 @@ export interface NewOrderInput {
   readonly customFields: Readonly<Record<string, unknown>>;
   readonly hasStockLines: boolean;
   readonly posSessionId: string | null;
+  readonly checkoutId?: string | null;
+  readonly recipient?: CheckoutRecipientSnapshot | null;
   readonly createdByUserId: UserId | null;
   readonly now: Date;
 }

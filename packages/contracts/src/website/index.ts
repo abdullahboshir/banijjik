@@ -136,3 +136,14 @@ export {
   formatGuestCookie,
   parseGuestCookie,
 } from "./guest-session-contracts.js";
+export {
+  type StorefrontCommandContext,
+  type PublicSelection,
+  type CheckoutSelection,
+  type CheckoutRecipientSnapshot,
+  type CheckoutFulfillment,
+  type CheckoutRequestLink,
+  type PublicOrderCommands,
+  type PublicBookingCommands,
+  type PublicEnrollmentCommands,
+} from "./checkout-contracts.js";

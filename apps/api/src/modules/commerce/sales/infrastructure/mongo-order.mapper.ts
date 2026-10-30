@@ -116,6 +116,10 @@ export function toOrder(row: OrderDocument): Order {
     customFields: row.customFields,
     hasStockLines: row.hasStockLines,
     posSessionId: row.posSessionId ?? null,
+    checkoutId: row.checkoutId ?? null,
+    recipient: row.recipient
+      ? { name: row.recipient.name, phoneE164: row.recipient.phoneE164 }
+      : null,
     returnStatus: row.returnStatus ?? ORDER_RETURN_STATUS.NONE,
     completedAt: row.completedAt ?? null,
     version: row.version,
@@ -179,6 +183,10 @@ function mutableFieldsOf(props: OrderProps): MutableOrderFields {
     customFields: { ...props.customFields },
     hasStockLines: props.hasStockLines,
     posSessionId: props.posSessionId,
+    checkoutId: props.checkoutId,
+    recipient: props.recipient
+      ? { name: props.recipient.name, phoneE164: props.recipient.phoneE164 }
+      : null,
     returnStatus: props.returnStatus,
     completedAt: props.completedAt,
     createdAt: props.createdAt,

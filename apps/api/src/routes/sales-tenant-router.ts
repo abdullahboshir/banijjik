@@ -180,6 +180,7 @@ function unitCostReaderOf(): SalesTenantPorts["unitCosts"] {
 }
 
 /** Everything sales cannot build itself, plus the two guards the router mounts per route. */
+/** Tenant ports for sales module (cards 3.5a, 4.3). */
 export function buildSalesTenantPorts(input: SalesRouterInput): SalesTenantPorts {
   const currencies = buildOrganizationCurrencyReader();
   return {
@@ -211,7 +212,8 @@ export function buildSalesTenantPorts(input: SalesRouterInput): SalesTenantPorts
     }),
     performers: buildMemberPerformerReader(),
     kinds: {
-      effectiveKinds: async () => (await input.orgConfig.current()).config.kinds,
+      effectiveKinds: async (organizationId) =>
+        (await input.orgConfig.forOrganization(organizationId)).config.kinds,
     },
     ...returnPortsOf(input),
   };

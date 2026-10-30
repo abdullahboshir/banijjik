@@ -204,6 +204,13 @@ export interface OrderResponse {
   readonly source: OrderSource;
   /** The register session that sold this order at the till, or null (card 3.9 A2-6). */
   readonly posSessionId?: string | null;
+  /** Linked storefront checkout id when created via customer checkout (card 4.3). */
+  readonly checkoutId?: string | null;
+  /** Verified recipient snapshot when submitted via customer checkout (card 4.3). */
+  readonly recipient?: {
+    readonly name: string;
+    readonly phoneE164: string;
+  } | null;
   readonly approval: OrderApproval | null;
   readonly note: string | null;
   /** What the seller entered for the whole order; an edit re-quotes from it (ADR-131). */

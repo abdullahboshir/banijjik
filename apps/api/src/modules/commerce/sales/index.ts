@@ -44,6 +44,8 @@ import {
 export { salesManifest } from "./module.manifest.js";
 export { registerSalesModels } from "./infrastructure/register-sales-models.js";
 export { buildSalesController, buildSalesDependencies };
+export { buildStorefrontOrderCommands } from "./application/storefront-order-commands.js";
+export type { PublicOrderCommands } from "@banijjik/contracts/website";
 export type { SalesJobPorts, SalesTenantPorts, SalesTenantRouterDependencies };
 
 export function buildSalesRouter(dependencies: SalesTenantRouterDependencies): Router {

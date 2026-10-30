@@ -84,6 +84,11 @@ export interface ApprovalDocument {
   action: (typeof APPROVAL_ACTION)[keyof typeof APPROVAL_ACTION];
 }
 
+export interface RecipientDocument {
+  name: string;
+  phoneE164: string;
+}
+
 export interface OrderDocument {
   orderId: string;
   organizationId: string;
@@ -106,6 +111,10 @@ export interface OrderDocument {
   hasStockLines: boolean;
   /** The POS register that sold this order; null for every other order (plan 3.9 A2-6). */
   posSessionId: string | null;
+  /** Linked storefront checkout id when created via customer checkout (card 4.3). */
+  checkoutId: string | null;
+  /** Verified recipient snapshot when submitted via customer checkout (card 4.3). */
+  recipient: RecipientDocument | null;
   returnStatus: OrderReturnStatus;
   completedAt: Date | null;
   version: number;
@@ -206,6 +215,14 @@ const approvalSchema = new Schema<ApprovalDocument>(
   SUB_SCHEMA_OPTIONS,
 );
 
+const recipientSchema = new Schema<RecipientDocument>(
+  {
+    name: { type: String, required: true },
+    phoneE164: { type: String, required: true },
+  },
+  SUB_SCHEMA_OPTIONS,
+);
+
 export const orderSchema = new Schema<OrderDocument>(
   {
     ...domainIdField("orderId"),
@@ -227,6 +244,8 @@ export const orderSchema = new Schema<OrderDocument>(
     customFields: { type: Schema.Types.Mixed, default: {} },
     hasStockLines: { type: Boolean, required: true, default: false },
     posSessionId: { type: String, default: null },
+    checkoutId: { type: String, default: null },
+    recipient: { type: recipientSchema, default: null },
     completedAt: { type: Date, default: null },
     returnStatus: {
       type: String,
@@ -254,6 +273,10 @@ orderSchema.index(
 );
 /** The drafts and placed-orders scans of the hourly jobs (plan decisions 4 and 5). */
 orderSchema.index({ organizationId: 1, status: 1, createdAt: 1, orderId: 1 });
+orderSchema.index(
+  { organizationId: 1, checkoutId: 1 },
+  { partialFilterExpression: { checkoutId: { $type: "string" } } },
+);
 
 export const orderCounterSchema = new Schema<OrderCounterDocument>(
   {
