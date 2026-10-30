@@ -116,7 +116,7 @@ class CartStore {
   public addItem(input: {
     readonly locationId: string;
     readonly selection: PublicSelection;
-    readonly customFields?: Readonly<Record<string, unknown>>;
+    readonly customFields?: Readonly<Record<string, unknown>> | undefined;
     readonly display: CartItemDisplayInfo;
   }): { readonly ok: boolean; readonly reason?: "LOCATION_MISMATCH" } {
     this.load();
@@ -180,7 +180,7 @@ class CartStore {
   public switchLocationAndAdd(input: {
     readonly locationId: string;
     readonly selection: PublicSelection;
-    readonly customFields?: Readonly<Record<string, unknown>>;
+    readonly customFields?: Readonly<Record<string, unknown>> | undefined;
     readonly display: CartItemDisplayInfo;
   }): void {
     this.clear();
