@@ -1,9 +1,8 @@
-import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, SEQUENCE_KEY } from "@banijjik/contracts";
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, ERROR_CODE, SEQUENCE_KEY } from "@banijjik/contracts";
 import {
   PAYMENT_DIRECTION,
   PAYMENT_EVENT_TYPE,
   PAYMENT_METHOD,
-  PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
   type Money,
   type PaymentAllocation,
   type PaymentMethod,
@@ -23,7 +22,11 @@ import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import type { Clock } from "../../../../../kernel/time/index.js";
 import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
 import { Payment } from "../../domain/payment.entity.js";
-import { paymentContactNotFoundError } from "../../domain/errors.js";
+import {
+  DomainRuleError,
+  paymentContactNotFoundError,
+  paymentRequestNotFoundError,
+} from "../../domain/errors.js";
 import { validatePaymentAllocations } from "../../domain/payment-rules.js";
 import { businessDateOf } from "../../domain/timezone.js";
 import type {
@@ -38,8 +41,10 @@ import type { RequestReaderRegistry } from "../ports/request-reader.js";
 import type { RequestPaymentLifecycleRegistry } from "../ports/request-payment-lifecycle.js";
 import { formatPaymentNumber, toPaymentResponse } from "./payment-view.js";
 import {
+  enrichAllocationsWithRevenueState,
   handleOverpayment,
   handleStoreCreditPayment,
+  resolveStoreCreditExpiresAt,
   updateSummaries,
   validateAllocationLimits,
   validateMobileMoney,
@@ -149,34 +154,6 @@ export interface ReceivePaymentDependencies {
   readonly orgConfig: OrgConfigService;
 }
 
-async function resolveStoreCreditExpiresAt(
-  orgConfig: OrgConfigService,
-  organizationId: OrganizationId,
-  now: Date,
-): Promise<Date | null> {
-  const effective = await orgConfig.forOrganization(organizationId);
-  const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
-  const expiryDays = typeof val === "number" && val > 0 ? val : null;
-  return expiryDays ? new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000) : null;
-}
-
-async function enrichAllocationsWithRevenueState(
-  requestReaders: RequestReaderRegistry,
-  organizationId: OrganizationId,
-  rawAllocations: readonly PaymentAllocation[],
-): Promise<readonly PaymentAllocation[]> {
-  const allocations: PaymentAllocation[] = [];
-  for (const alloc of rawAllocations) {
-    const reader = requestReaders.get(alloc.requestType);
-    const snapshot = reader ? await reader.read(organizationId, alloc.requestId) : undefined;
-    allocations.push({
-      ...alloc,
-      revenueState: snapshot?.revenueState ?? "BEFORE_REVENUE",
-    });
-  }
-  return allocations;
-}
-
 async function prepareReceiveContext(
   deps: ReceivePaymentDependencies,
   input: ReceivePaymentInput,
@@ -216,6 +193,29 @@ async function prepareReceiveContext(
   return { overpaymentAmount, businessDate, expiresAt, allocations, now };
 }
 
+async function invokeBeginReceipt(
+  lifecycle: RequestPaymentLifecycle,
+  opts: {
+    readonly organizationId: OrganizationId;
+    readonly alloc: PaymentAllocation;
+    readonly now: Date;
+  },
+): Promise<void> {
+  try {
+    await lifecycle.beginReceipt({
+      organizationId: opts.organizationId,
+      requestType: opts.alloc.requestType,
+      requestId: opts.alloc.requestId,
+      now: opts.now,
+    });
+  } catch (err: unknown) {
+    if (err instanceof DomainRuleError && err.code === ERROR_CODE.NOT_FOUND) {
+      throw paymentRequestNotFoundError(opts.alloc.requestId);
+    }
+    throw err;
+  }
+}
+
 async function runLifecyclesBegin(
   lifecycles: RequestPaymentLifecycleRegistry | undefined,
   input: ReceivePaymentInput,
@@ -224,14 +224,12 @@ async function runLifecyclesBegin(
   if (!lifecycles) return;
   for (const alloc of input.allocations) {
     const lifecycle = lifecycles.get(alloc.requestType);
-    if (lifecycle) {
-      await lifecycle.beginReceipt({
-        organizationId: input.organizationId,
-        requestType: alloc.requestType,
-        requestId: alloc.requestId,
-        now,
-      });
-    }
+    if (!lifecycle) continue;
+    await invokeBeginReceipt(lifecycle, {
+      organizationId: input.organizationId,
+      alloc,
+      now,
+    });
   }
 }
 

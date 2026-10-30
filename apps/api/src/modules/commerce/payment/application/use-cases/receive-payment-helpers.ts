@@ -1,15 +1,19 @@
 import {
   PAYMENT_METHOD,
+  PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
   STORE_CREDIT_DIRECTION,
   STORE_CREDIT_ENTRY_KIND,
+  type PaymentAllocation,
 } from "@banijjik/contracts/payment";
 import {
   asId,
   newId,
   type ContactId,
+  type OrganizationId,
   type PaymentId,
   type StoreCreditEntryId,
 } from "@banijjik/ids";
+import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
 import { StoreCreditEntry } from "../../domain/store-credit-entry.entity.js";
 import {
   paymentAllocationsInvalidError,
@@ -183,4 +187,32 @@ export async function updateSummaries(opts: {
       now,
     });
   }
+}
+
+export async function resolveStoreCreditExpiresAt(
+  orgConfig: OrgConfigService,
+  organizationId: OrganizationId,
+  now: Date,
+): Promise<Date | null> {
+  const effective = await orgConfig.forOrganization(organizationId);
+  const val = effective.config.settings[PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY];
+  const expiryDays = typeof val === "number" && val > 0 ? val : null;
+  return expiryDays ? new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000) : null;
+}
+
+export async function enrichAllocationsWithRevenueState(
+  requestReaders: RequestReaderRegistry,
+  organizationId: OrganizationId,
+  rawAllocations: readonly PaymentAllocation[],
+): Promise<readonly PaymentAllocation[]> {
+  const allocations: PaymentAllocation[] = [];
+  for (const alloc of rawAllocations) {
+    const reader = requestReaders.get(alloc.requestType);
+    const snapshot = reader ? await reader.read(organizationId, alloc.requestId) : undefined;
+    allocations.push({
+      ...alloc,
+      revenueState: snapshot?.revenueState ?? "BEFORE_REVENUE",
+    });
+  }
+  return allocations;
 }

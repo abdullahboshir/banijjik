@@ -503,7 +503,6 @@ describe("Payment Receipt Lifecycle Integration (Part A3P)", () => {
 
     const terminalStatuses = [
       BOOKING_STATUS.CANCELLED,
-      BOOKING_STATUS.COMPLETED,
       BOOKING_STATUS.EXPIRED,
       BOOKING_STATUS.NO_SHOW,
     ] as const;

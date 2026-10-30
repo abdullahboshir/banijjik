@@ -4,19 +4,20 @@ import { asId, type BookingId, type OrganizationId } from "@banijjik/ids";
 import { buildBookingReader } from "../modules/commerce/booking/index.js";
 import type { RequestReader, RequestReadSnapshot } from "../modules/commerce/payment/index.js";
 
-const TERMINAL_STATUSES: readonly BookingStatus[] = [
-  BOOKING_STATUS.CANCELLED,
-  BOOKING_STATUS.COMPLETED,
-  BOOKING_STATUS.EXPIRED,
-  BOOKING_STATUS.NO_SHOW,
-];
-
 function isAcceptingPayments(
-  booking: { status: BookingStatus; holdExpiresAt: Date | null },
+  booking: {
+    readonly status: BookingStatus;
+    readonly holdExpiresAt: Date | null;
+    readonly cancellationFeeRetained?: { readonly amount: number } | null | undefined;
+  },
   now: Date,
 ): boolean {
-  if (TERMINAL_STATUSES.includes(booking.status)) {
+  if (booking.status === BOOKING_STATUS.EXPIRED || booking.status === BOOKING_STATUS.NO_SHOW) {
     return false;
+  }
+  if (booking.status === BOOKING_STATUS.CANCELLED) {
+    const fee = booking.cancellationFeeRetained?.amount ?? 0;
+    return fee > 0;
   }
   if (booking.status === BOOKING_STATUS.HELD) {
     if (booking.holdExpiresAt !== null && now.getTime() >= booking.holdExpiresAt.getTime()) {

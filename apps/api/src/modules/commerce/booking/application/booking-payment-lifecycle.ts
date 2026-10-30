@@ -1,9 +1,5 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, SEQUENCE_KEY } from "@banijjik/contracts";
-import {
-  BOOKING_EVENT_TYPE,
-  BOOKING_STATUS,
-  type BookingStatus,
-} from "@banijjik/contracts/booking";
+import { BOOKING_EVENT_TYPE, BOOKING_STATUS } from "@banijjik/contracts/booking";
 import { asId, type BookingId, type OrganizationId } from "@banijjik/ids";
 import { nextSequenceValue } from "../../../../kernel/sequence/index.js";
 import {
@@ -18,13 +14,6 @@ import type { BookingSettingsReader } from "./ports/booking-context-ports.js";
 import type { BookingEventPublisher } from "./use-cases/create-booking.use-case.js";
 import type { AuditRecorder } from "../../../../kernel/audit/index.js";
 import { formatBookingNumber } from "./booking-transition-shared.js";
-
-const TERMINAL_STATUSES: readonly BookingStatus[] = [
-  BOOKING_STATUS.CANCELLED,
-  BOOKING_STATUS.COMPLETED,
-  BOOKING_STATUS.EXPIRED,
-  BOOKING_STATUS.NO_SHOW,
-];
 
 export interface BookingPaymentLifecyclePort {
   beginReceipt(input: {
@@ -49,8 +38,14 @@ export interface BookingPaymentLifecycleDependencies {
 }
 
 function assertValidForReceipt(booking: Booking, now: Date): void {
-  if (TERMINAL_STATUSES.includes(booking.status)) {
+  if (booking.status === BOOKING_STATUS.EXPIRED || booking.status === BOOKING_STATUS.NO_SHOW) {
     throw bookingPaymentFenceConflict();
+  }
+  if (booking.status === BOOKING_STATUS.CANCELLED) {
+    const fee = booking.cancellationFeeRetained?.amount ?? 0;
+    if (fee <= 0) {
+      throw bookingPaymentFenceConflict();
+    }
   }
   if (booking.status === BOOKING_STATUS.HELD) {
     if (booking.holdExpiresAt !== null && booking.holdExpiresAt <= now) {
