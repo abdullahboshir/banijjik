@@ -245,6 +245,8 @@
   "errors.otp_invalid": "কোডটি সঠিক নয়। আবার দেখুন, অথবা নতুন কোড চান।",
   "errors.customer_account_blocked": "এই অ্যাকাউন্টে সাইন ইন করা যাবে না। অনুগ্রহ করে প্রতিষ্ঠানের সাথে যোগাযোগ করুন।",
   "errors.storefront_not_available": "এই প্রতিষ্ঠানের জন্য সাইন ইন এখন চালু নেই।",
+  "errors.guest_session_expired": "গেস্ট সেশনের মেয়াদ শেষ হয়ে গেছে। অনুগ্রহ করে কার্ট রিফ্রেশ করুন।",
+  "errors.guest_checkout_disabled": "এই প্রতিষ্ঠানের জন্য গেস্ট চেকআউট চালু নেই।",
   "sms.customerOtp": "{businessName}: আপনার সাইন ইন কোড {code}। কোডটি {minutes} মিনিট পর্যন্ত চলবে।",
   "sms.customerOtpErase": "{businessName}: আপনার অ্যাকাউন্ট মুছে ফেলার কোড {code}। কোডটি {minutes} মিনিট পর্যন্ত চলবে।",
   "errors.setting_not_available": "এই ব্যবসার জন্য এই সেটিংটি নেই।",

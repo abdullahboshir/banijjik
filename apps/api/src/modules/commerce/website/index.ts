@@ -2,10 +2,12 @@ import { Router, type RequestHandler } from "express";
 import type { PermissionMiddlewareFactory } from "../../../kernel/access/index.js";
 import type { AuditRecorder } from "../../../kernel/audit/index.js";
 import { getRequestContext } from "../../../kernel/context/index.js";
-import { MongoUnitOfWork } from "../../../kernel/db/index.js";
+import { MongoUnitOfWork, models } from "../../../kernel/db/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import { registerScheduledJob } from "../../../kernel/jobs/index.js";
-import type { Clock } from "../../../kernel/time/index.js";
+import { systemClock, type Clock } from "../../../kernel/time/index.js";
+import { MongoRateLimiter, type RateLimiter } from "../../../kernel/rate-limit/index.js";
+import { WEBSITE_GUEST_CHECKOUT_SETTING_KEY } from "@banijjik/contracts/website";
 import {
   createMongoDomainOperations,
   type DomainProvider,
@@ -23,8 +25,8 @@ import {
   ListSitePagesUseCase,
   UpsertSitePageUseCase,
 } from "./application/use-cases/site-page.use-cases.js";
-import type { StorefrontSiteSources } from "./application/ports/website-ports.js";
 import type { SiteSectionAvailability } from "./application/ports/site-publication-ports.js";
+import type { StorefrontSiteSources } from "./application/ports/website-ports.js";
 import {
   GetPublishedSiteUseCase,
   GetSiteDraftUseCase,
@@ -67,19 +69,49 @@ import { buildSiteRouter } from "./presentation/site.router.js";
 import { WebsiteController } from "./presentation/website.controller.js";
 import { buildWebsiteStorefrontRouter } from "./presentation/website-storefront.router.js";
 import { buildWebsiteTenantRouter } from "./presentation/website-tenant.router.js";
+import { CreateGuestSessionUseCase } from "./application/use-cases/create-guest-session.use-case.js";
+import { ResolveGuestSessionUseCase } from "./application/use-cases/resolve-guest-session.use-case.js";
+import { MongoGuestSessionRepository } from "./infrastructure/mongo-guest-session.repository.js";
+import { buildGuestSessionRouter } from "./presentation/guest-session.router.js";
 
 export { websiteManifest } from "./module.manifest.js";
 export { registerWebsiteModels } from "./infrastructure/register-website-models.js";
 export { lookupPublishedStorefrontHost, StorefrontHostReader };
 export { MongoSiteRepository } from "./infrastructure/mongo-site.repository.js";
 export { SITE_MODEL_NAME, type SiteDocument } from "./infrastructure/site.schema.js";
+export {
+  CreateGuestSessionUseCase,
+  type CreateGuestSessionDependencies,
+} from "./application/use-cases/create-guest-session.use-case.js";
+export {
+  ResolveGuestSessionUseCase,
+  hashGuestSecret,
+  verifyGuestSecret,
+  type ResolveGuestSessionInput,
+  type ResolveGuestSessionOutcome,
+} from "./application/use-cases/resolve-guest-session.use-case.js";
+export { MongoGuestSessionRepository } from "./infrastructure/mongo-guest-session.repository.js";
+export type {
+  GuestSessionRepository,
+  UpdateGuestSessionProvisionalContactInput,
+} from "./application/ports/guest-session-repository.port.js";
+export {
+  buildGuestSessionRouter,
+  createGuestSessionAuthMiddleware,
+  type GuestSessionRequest,
+  type GuestSessionRouterDependencies,
+} from "./presentation/guest-session.router.js";
+export type {
+  StorefrontSiteSources,
+  StorefrontBusinessProfile,
+  StorefrontFeatureFlags,
+} from "./application/ports/website-ports.js";
 
-export function buildStorefrontHostReader(): StorefrontHostReader {
-  return new StorefrontHostReader({
+export const buildStorefrontHostReader = (): StorefrontHostReader =>
+  new StorefrontHostReader({
     sites: new MongoSiteRepository(),
     domains: new MongoSiteDomainRepository(),
   });
-}
 
 export function registerWebsiteDomainJobs(input: {
   readonly clock: Clock;
@@ -99,97 +131,55 @@ export function registerWebsiteDomainJobs(input: {
     }),
   );
 }
-export type { StorefrontSiteSources } from "./application/ports/website-ports.js";
-export type {
-  StorefrontBusinessProfile,
-  StorefrontFeatureFlags,
-} from "./application/ports/website-ports.js";
 
-/** Only the effective section list is needed here, so the website module names no entitlement type. */
 interface OrgSectionReader {
   current(): Promise<{ readonly config: { readonly storefrontSections: readonly string[] } }>;
 }
 
-/** The public read has no signed-in organization, so the business of the path is asked by id. */
 interface PublicOrgSectionReader {
   forOrganization(organizationId: string): Promise<{
     readonly config: { readonly storefrontSections: readonly string[] };
   }>;
 }
 
-function tenantSectionAvailability(orgConfig: OrgSectionReader): SiteSectionAvailability {
-  return {
-    async effectiveSectionKeys() {
-      const effective = await orgConfig.current();
-      return effective.config.storefrontSections;
-    },
-  };
-}
+const tenantSectionAvailability = (org: OrgSectionReader): SiteSectionAvailability => ({
+  effectiveSectionKeys: async () => (await org.current()).config.storefrontSections,
+});
 
-function publicSectionAvailability(orgConfig: PublicOrgSectionReader): SiteSectionAvailability {
-  return {
-    async effectiveSectionKeys() {
-      const organizationId = String(getRequestContext().organizationId);
-      const effective = await orgConfig.forOrganization(organizationId);
-      return effective.config.storefrontSections;
-    },
-  };
-}
+const publicSectionAvailability = (org: PublicOrgSectionReader): SiteSectionAvailability => ({
+  effectiveSectionKeys: async () =>
+    (await org.forOrganization(String(getRequestContext().organizationId))).config
+      .storefrontSections,
+});
 
 export interface WebsiteAdminDependencies {
   readonly clock: Clock;
   readonly audit: AuditRecorder;
   readonly permission: PermissionMiddlewareFactory;
-  /** The `Idempotency-Key` middleware, built once by routes/v1.ts (ADR-089). */
   readonly idempotency: RequestHandler;
   readonly orgConfig: OrgSectionReader;
-  /** The file module's reader, adapted here so a site can only show this business's public images. */
   readonly files: FileReferenceReader;
-  /** Platform host registry. A2I passes the production adapter; A2 tests pass a fake or Mongo one. */
   readonly hostClaims: HostClaims;
 }
 
-/** The publication dependencies of one request pipeline: the same repositories and one transaction seam. */
-function buildPublication(input: {
-  readonly sites: MongoSiteRepository;
-  readonly versions: MongoSiteVersionRepository;
-  readonly images: ReturnType<typeof buildSiteMediaChecker>;
-  readonly sections: SiteSectionAvailability;
-  readonly audit: AuditRecorder;
-  readonly clock: Clock;
-}) {
-  const unitOfWork = new MongoUnitOfWork();
-  return {
-    sites: input.sites,
-    versions: input.versions,
-    images: input.images,
-    sections: input.sections,
-    unitOfWork,
-    events: kernelEventPublisher,
-    audit: input.audit,
-    clock: input.clock,
-  };
-}
-
-function buildSiteController(
-  dependencies: Omit<WebsiteAdminDependencies, "hostClaims">,
-): SiteController {
+function buildSiteController(deps: Omit<WebsiteAdminDependencies, "hostClaims">): SiteController {
   const sites = new MongoSiteRepository();
   const versions = new MongoSiteVersionRepository();
-  const sections = tenantSectionAvailability(dependencies.orgConfig);
-  const images = buildSiteMediaChecker(dependencies.files);
-  const publication = buildPublication({
+  const sections = tenantSectionAvailability(deps.orgConfig);
+  const layout = { sites, sections, clock: deps.clock };
+  const publication = {
     sites,
     versions,
-    images,
+    images: buildSiteMediaChecker(deps.files),
     sections,
-    audit: dependencies.audit,
-    clock: dependencies.clock,
-  });
-  const layout = { sites, sections, clock: dependencies.clock };
+    unitOfWork: new MongoUnitOfWork(),
+    events: kernelEventPublisher,
+    audit: deps.audit,
+    clock: deps.clock,
+  };
   return new SiteController({
     getDraft: new GetSiteDraftUseCase(sites),
-    saveDraft: new SaveSiteDraftUseCase({ sites, clock: dependencies.clock }),
+    saveDraft: new SaveSiteDraftUseCase({ sites, clock: deps.clock }),
     listPages: new ListSiteLayoutPagesUseCase({ sites }),
     updateTheme: new UpdateSiteThemeUseCase(layout),
     createPage: new CreateSiteLayoutPageUseCase(layout),
@@ -202,14 +192,8 @@ function buildSiteController(
   });
 }
 
-/**
- * The admin routes of the business: the legacy static-page bridge (`/website/pages`) and the site
- * document of card 4.1 (`/website/site`, `/theme`, `/layout-pages`, `/publish`, `/versions`).
- */
 export function buildWebsiteAdminRouter(
-  dependencies: Omit<WebsiteAdminDependencies, "hostClaims"> & {
-    readonly hostClaims?: HostClaims;
-  },
+  deps: Omit<WebsiteAdminDependencies, "hostClaims"> & { readonly hostClaims?: HostClaims },
 ): Router {
   const pages = new MongoSitePageRepository();
   const sites = new MongoSiteRepository();
@@ -221,33 +205,26 @@ export function buildWebsiteAdminRouter(
         sites,
         unitOfWork: new MongoUnitOfWork(),
         events: kernelEventPublisher,
-        audit: dependencies.audit,
-        clock: dependencies.clock,
+        audit: deps.audit,
+        clock: deps.clock,
       }),
     }),
-    permission: dependencies.permission,
+    permission: deps.permission,
   });
   const siteRouter = buildSiteRouter({
-    controller: buildSiteController(dependencies),
-    permission: dependencies.permission,
-    idempotency: dependencies.idempotency,
+    controller: buildSiteController(deps),
+    permission: deps.permission,
+    idempotency: deps.idempotency,
   });
-  const router = Router({ mergeParams: true });
-  router.use(legacyRouter);
-  router.use(siteRouter);
-  const hostClaims = dependencies.hostClaims;
-  if (hostClaims !== undefined) {
-    router.use(buildWebsiteDomainRouter({ ...dependencies, hostClaims }));
+  const router = Router({ mergeParams: true }).use(legacyRouter).use(siteRouter);
+  if (deps.hostClaims !== undefined) {
+    router.use(buildWebsiteDomainRouter({ ...deps, hostClaims: deps.hostClaims }));
   }
   return router;
 }
 
-/**
- * Domain HTTP only. A2 tests mount this beside production v1 until A2I passes `hostClaims`
- * into `websiteAdminRouterOf`.
- */
 export function buildWebsiteDomainRouter(
-  dependencies: Pick<
+  deps: Pick<
     WebsiteAdminDependencies,
     "clock" | "audit" | "permission" | "idempotency" | "hostClaims"
   >,
@@ -255,11 +232,11 @@ export function buildWebsiteDomainRouter(
   const stack = {
     sites: new MongoSiteRepository(),
     domains: new MongoSiteDomainRepository(),
-    hostClaims: dependencies.hostClaims,
+    hostClaims: deps.hostClaims,
     unitOfWork: new MongoUnitOfWork(),
     events: kernelEventPublisher,
-    audit: dependencies.audit,
-    clock: dependencies.clock,
+    audit: deps.audit,
+    clock: deps.clock,
   };
   return buildSiteDomainRouter({
     controller: new SiteDomainController({
@@ -269,8 +246,8 @@ export function buildWebsiteDomainRouter(
       selectCanonical: new SelectCanonicalSiteDomainUseCase(stack),
       list: new ListSiteDomainsUseCase(stack),
     }),
-    permission: dependencies.permission,
-    idempotency: dependencies.idempotency,
+    permission: deps.permission,
+    idempotency: deps.idempotency,
   });
 }
 
@@ -278,35 +255,57 @@ export interface WebsiteStorefrontDependencies {
   readonly requireWebsiteModule: RequestHandler;
   readonly siteSources: StorefrontSiteSources;
   readonly orgConfig: PublicOrgSectionReader;
+  readonly clock?: Clock;
+  readonly limiter?: RateLimiter;
+  readonly isProduction?: boolean;
+  readonly isGuestCheckoutEnabled?: (organizationId: string) => Promise<boolean>;
 }
 
-/**
- * The public reads of the business: its site and, while the website is on, its published pages and
- * its published design (card 4.1).
- */
-export function buildWebsiteStorefrontRouterFor(
-  dependencies: WebsiteStorefrontDependencies,
-): Router {
+const isGuestEnabled = async (organizationId: string): Promise<boolean> => {
+  const repo = models({}).get<{ value?: unknown }>("SettingValue");
+  if (!repo) return true;
+  const doc = await repo
+    .findOne({ organizationId, settingKey: WEBSITE_GUEST_CHECKOUT_SETTING_KEY, locationId: null })
+    .lean<{ value?: unknown }>();
+  return doc?.value !== false;
+};
+
+export function buildWebsiteStorefrontRouterFor(deps: WebsiteStorefrontDependencies): Router {
   const pages = new MongoSitePageRepository();
   const sites = new MongoSiteRepository();
   const versions = new MongoWebsiteVersionReader();
-  const router = buildWebsiteStorefrontRouter({
-    requireWebsiteModule: dependencies.requireWebsiteModule,
+  const clock = deps.clock ?? systemClock;
+  const limiter = deps.limiter ?? new MongoRateLimiter(clock);
+  const guestRepo = new MongoGuestSessionRepository();
+  return buildWebsiteStorefrontRouter({
+    requireWebsiteModule: deps.requireWebsiteModule,
     getPage: new GetPublishedSitePageUseCase(pages, sites, versions),
     getSite: new GetStorefrontSiteUseCase(
-      dependencies.siteSources,
+      deps.siteSources,
       new ListPublishedSitePagesUseCase(pages, sites, versions),
     ),
-  });
-  router.use(
-    buildSitePublicRouter({
-      requireWebsiteModule: dependencies.requireWebsiteModule,
-      getPublishedSite: new GetPublishedSiteUseCase({
-        sites: new MongoSiteRepository(),
-        versions: new MongoSiteVersionRepository(),
-        sections: publicSectionAvailability(dependencies.orgConfig),
+  })
+    .use(
+      buildSitePublicRouter({
+        requireWebsiteModule: deps.requireWebsiteModule,
+        getPublishedSite: new GetPublishedSiteUseCase({
+          sites,
+          versions: new MongoSiteVersionRepository(),
+          sections: publicSectionAvailability(deps.orgConfig),
+        }),
       }),
-    }),
-  );
-  return router;
+    )
+    .use(
+      buildGuestSessionRouter({
+        requireWebsiteModule: deps.requireWebsiteModule,
+        limiter,
+        isProduction: deps.isProduction,
+        createGuestSession: new CreateGuestSessionUseCase({
+          repository: guestRepo,
+          clock,
+          isGuestCheckoutEnabled: deps.isGuestCheckoutEnabled ?? isGuestEnabled,
+        }),
+        resolveGuestSession: new ResolveGuestSessionUseCase(guestRepo, clock),
+      }),
+    );
 }

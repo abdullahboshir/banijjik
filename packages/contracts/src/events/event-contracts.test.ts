@@ -25,7 +25,7 @@ const EVENT_NAME_PATTERN = /^[a-z][a-z0-9-]*\.[a-z][A-Za-z]*\.[a-z][A-Za-z]*(ed|
 
 describe("event types", () => {
   it("includes the four custom-domain lifecycle events", () => {
-    expect(Object.values(WEBSITE_EVENT_TYPE)).toHaveLength(7);
+    expect(Object.values(WEBSITE_EVENT_TYPE)).toHaveLength(8);
     expect(Object.values(WEBSITE_EVENT_TYPE)).toEqual(
       expect.arrayContaining([
         "website.domain.requested",

@@ -43,3 +43,9 @@ export {
   siteVersionsQuerySchema,
   websiteVersionIdParamsSchema,
 } from "./site-publication.schema.js";
+export {
+  createGuestSessionBodySchema,
+  guestSessionParamsSchema,
+  type CreateGuestSessionBodyInput,
+  type GuestSessionParamsInput,
+} from "./guest-session-schemas.js";
