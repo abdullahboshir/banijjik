@@ -21,7 +21,10 @@ import {
   buildMembershipDirectory,
   buildOrganizationTimezoneReader,
 } from "../modules/core/organization/index.js";
-import { buildPaymentRequestReaders } from "./payment-request-readers.js";
+import {
+  buildPaymentRequestLifecycles,
+  buildPaymentRequestReaders,
+} from "./payment-request-readers.js";
 
 export interface PaymentRouterInput {
   readonly clock: Clock;
@@ -35,6 +38,12 @@ export interface PaymentRouterInput {
 
 export function buildPaymentTenantRouterFor(input: PaymentRouterInput): Router {
   const requestReaders = buildPaymentRequestReaders();
+  const lifecycles = buildPaymentRequestLifecycles({
+    orgConfig: input.orgConfig,
+    manifests: input.manifests,
+    clock: input.clock,
+    audit: input.audit,
+  });
 
   const directory = asSystemPort(SYSTEM_REASON.AUTH_LOOKUP, buildMembershipDirectory());
   const timezones = buildOrganizationTimezoneReader();
@@ -46,6 +55,7 @@ export function buildPaymentTenantRouterFor(input: PaymentRouterInput): Router {
     idempotency: input.idempotency,
     orgConfig: input.orgConfig,
     manifests: input.manifests,
+    lifecycles,
     timeZone: {
       read: async (organizationId: OrganizationId) => {
         const tz = await timezones.read(organizationId);

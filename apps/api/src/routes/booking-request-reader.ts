@@ -1,11 +1,34 @@
-import { BOOKING_STATUS } from "@banijjik/contracts/booking";
+import { BOOKING_STATUS, type BookingStatus } from "@banijjik/contracts/booking";
 import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import { asId, type BookingId, type OrganizationId } from "@banijjik/ids";
 import { buildBookingReader } from "../modules/commerce/booking/index.js";
 import type { RequestReader, RequestReadSnapshot } from "../modules/commerce/payment/index.js";
 
+const TERMINAL_STATUSES: readonly BookingStatus[] = [
+  BOOKING_STATUS.CANCELLED,
+  BOOKING_STATUS.COMPLETED,
+  BOOKING_STATUS.EXPIRED,
+  BOOKING_STATUS.NO_SHOW,
+];
+
+function isAcceptingPayments(
+  booking: { status: BookingStatus; holdExpiresAt: Date | null },
+  now: Date,
+): boolean {
+  if (TERMINAL_STATUSES.includes(booking.status)) {
+    return false;
+  }
+  if (booking.status === BOOKING_STATUS.HELD) {
+    if (booking.holdExpiresAt !== null && now.getTime() >= booking.holdExpiresAt.getTime()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function buildBookingRequestReader(
   bookings: ReturnType<typeof buildBookingReader> = buildBookingReader(),
+  now: () => Date = () => new Date(),
 ): RequestReader {
   return {
     async read(
@@ -22,7 +45,7 @@ export function buildBookingRequestReader(
           booking.status === BOOKING_STATUS.COMPLETED ? "AFTER_REVENUE" : "BEFORE_REVENUE",
         contactId: booking.contactId,
         locationId: booking.locationId,
-        acceptsPayments: true,
+        acceptsPayments: isAcceptingPayments(booking, now()),
         refundLimit: null,
       };
     },

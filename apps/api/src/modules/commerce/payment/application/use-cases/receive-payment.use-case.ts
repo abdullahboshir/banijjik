@@ -35,6 +35,7 @@ import type {
   TimezoneReader,
 } from "../ports/payment-repositories.js";
 import type { RequestReaderRegistry } from "../ports/request-reader.js";
+import type { RequestPaymentLifecycleRegistry } from "../ports/request-payment-lifecycle.js";
 import { formatPaymentNumber, toPaymentResponse } from "./payment-view.js";
 import {
   handleOverpayment,
@@ -137,6 +138,7 @@ export interface ReceivePaymentDependencies {
   readonly summaries: PaymentSummaryRepository;
   readonly contactStoreCredit: ContactStoreCreditPort;
   readonly requestReaders: RequestReaderRegistry;
+  readonly lifecycles?: RequestPaymentLifecycleRegistry | undefined;
   readonly unitOfWork: PaymentUnitOfWork;
   readonly events: {
     publish(eventType: string, payload: unknown, options?: { orderingKey?: string }): Promise<void>;
@@ -200,7 +202,6 @@ async function prepareReceiveContext(
     contactId: input.contactId,
     isCash: input.method === PAYMENT_METHOD.CASH,
   });
-  await validateAllocationLimits(deps.requestReaders, deps.summaries, input);
 
   const timeZone = await deps.timeZone.read(input.organizationId);
   const now = deps.clock.now();
@@ -215,6 +216,44 @@ async function prepareReceiveContext(
   return { overpaymentAmount, businessDate, expiresAt, allocations, now };
 }
 
+async function runLifecyclesBegin(
+  lifecycles: RequestPaymentLifecycleRegistry | undefined,
+  input: ReceivePaymentInput,
+  now: Date,
+): Promise<void> {
+  if (!lifecycles) return;
+  for (const alloc of input.allocations) {
+    const lifecycle = lifecycles.get(alloc.requestType);
+    if (lifecycle) {
+      await lifecycle.beginReceipt({
+        organizationId: input.organizationId,
+        requestType: alloc.requestType,
+        requestId: alloc.requestId,
+        now,
+      });
+    }
+  }
+}
+
+async function runLifecyclesEnd(
+  lifecycles: RequestPaymentLifecycleRegistry | undefined,
+  input: ReceivePaymentInput,
+  now: Date,
+): Promise<void> {
+  if (!lifecycles) return;
+  for (const alloc of input.allocations) {
+    const lifecycle = lifecycles.get(alloc.requestType);
+    if (lifecycle) {
+      await lifecycle.endReceipt({
+        organizationId: input.organizationId,
+        requestType: alloc.requestType,
+        requestId: alloc.requestId,
+        now,
+      });
+    }
+  }
+}
+
 export class ReceivePaymentUseCase {
   constructor(private readonly dependencies: ReceivePaymentDependencies) {}
 
@@ -224,6 +263,9 @@ export class ReceivePaymentUseCase {
       await prepareReceiveContext(deps, input);
 
     return deps.unitOfWork.run(async () => {
+      await runLifecyclesBegin(deps.lifecycles, input, now);
+      await validateAllocationLimits(deps.requestReaders, deps.summaries, input);
+
       const paymentId = newId<PaymentId>();
       const debitEntryId = await handleStoreCreditPayment({
         contactStoreCredit: deps.contactStoreCredit,
@@ -263,6 +305,7 @@ export class ReceivePaymentUseCase {
         input,
         now,
       });
+      await runLifecyclesEnd(deps.lifecycles, input, now);
       await publishReceivedEffects({
         events: deps.events,
         audit: deps.audit,

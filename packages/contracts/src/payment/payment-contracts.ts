@@ -39,6 +39,10 @@ export type PaymentRequestType = (typeof PAYMENT_REQUEST_TYPE)[keyof typeof PAYM
 export const PAYMENT_STATUS = defineEnum(["UNPAID", "PARTIAL", "PAID", "REFUNDED"]);
 export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 
+export const PAYMENT_LIFECYCLE_STAGE = defineEnum(["BEGIN", "END"]);
+export type PaymentLifecycleStage =
+  (typeof PAYMENT_LIFECYCLE_STAGE)[keyof typeof PAYMENT_LIFECYCLE_STAGE];
+
 export const STORE_CREDIT_ENTRY_KIND = defineEnum([
   "PAYMENT_OVERPAYMENT",
   "PAYMENT_USE",

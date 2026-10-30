@@ -22,6 +22,11 @@ import {
   type RequestReader,
   type RequestReadSnapshot,
 } from "./application/ports/request-reader.js";
+import {
+  RequestPaymentLifecycleRegistry,
+  type RequestPaymentLifecycle,
+} from "./application/ports/request-payment-lifecycle.js";
+import { DefaultRequestPaymentLifecycle } from "./application/lifecycle/default-request-payment-lifecycle.js";
 import type { RequestAdvanceReader } from "./application/ports/request-advance-reader.js";
 import { AdjustStoreCreditUseCase } from "./application/use-cases/adjust-store-credit.use-case.js";
 import {
@@ -62,6 +67,8 @@ export {
   AdjustStoreCreditUseCase,
   ListStoreCreditEntriesUseCase,
   RequestReaderRegistry,
+  RequestPaymentLifecycleRegistry,
+  DefaultRequestPaymentLifecycle,
   MongoPaymentRepository,
   MongoStoreCreditRepository,
   MongoPaymentSummaryRepository,
@@ -71,6 +78,7 @@ export {
   toPaymentResponse,
   type RequestReader,
   type RequestReadSnapshot,
+  type RequestPaymentLifecycle,
   type RequestAdvanceReader,
   type PaymentRepository,
   type StoreCreditRepository,
@@ -87,6 +95,7 @@ export interface PaymentTenantDependencies {
   readonly manifests: readonly ModuleManifest[];
   readonly approvals: Pick<ApprovalVerifier, "consume">;
   readonly requestReaders: RequestReaderRegistry;
+  readonly lifecycles?: RequestPaymentLifecycleRegistry | undefined;
   readonly hasRefundWithoutApprovalPermission: (
     userId: import("@banijjik/ids").UserId,
     organizationId: import("@banijjik/ids").OrganizationId,
@@ -131,6 +140,7 @@ export function buildPaymentController(
     summaries,
     contactStoreCredit,
     requestReaders: deps.requestReaders,
+    lifecycles: deps.lifecycles,
     unitOfWork,
     events: kernelEventPublisher,
     audit: deps.audit,

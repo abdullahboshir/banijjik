@@ -65,16 +65,18 @@ async function handleBeginReceipt(
 ): Promise<void> {
   const bookingId = asId<BookingId>(input.bookingId);
   const booking = await deps.bookings.findById(bookingId);
-  if (!booking) {
+  if (!booking || booking.organizationId !== input.organizationId) {
     throw recordNotFound();
   }
 
   assertValidForReceipt(booking, input.now);
 
-  const updated = booking.incrementPaymentFence(input.now);
-  await deps.unitOfWork.run(async () => {
-    await deps.bookings.update(updated, booking.version);
-  });
+  if (booking.status === BOOKING_STATUS.HELD) {
+    const updated = booking.incrementPaymentFence(input.now);
+    await deps.unitOfWork.run(async () => {
+      await deps.bookings.update(updated, booking.version);
+    });
+  }
 }
 
 async function transitionSatisfiedHold(params: {
@@ -128,7 +130,11 @@ async function handleEndReceipt(
   const bookingId = asId<BookingId>(input.bookingId);
   const organizationId = asId<OrganizationId>(input.organizationId);
   const booking = await deps.bookings.findById(bookingId);
-  if (!booking || booking.status !== BOOKING_STATUS.HELD) {
+  if (
+    !booking ||
+    booking.organizationId !== input.organizationId ||
+    booking.status !== BOOKING_STATUS.HELD
+  ) {
     return;
   }
 

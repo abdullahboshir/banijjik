@@ -147,7 +147,9 @@ export class MongoBookingRepository implements BookingRepository {
   }
 
   async findById(bookingId: BookingId): Promise<Booking | undefined> {
-    const row = await bookingModel().findOne({ bookingId }).lean<BookingDocument>();
+    const row = await bookingModel()
+      .findOne({ bookingId }, null, sessionOption(getActiveSession()))
+      .lean<BookingDocument>();
     return row === null ? undefined : toBooking(row);
   }
 

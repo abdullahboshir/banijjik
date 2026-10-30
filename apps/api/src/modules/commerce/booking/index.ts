@@ -138,3 +138,12 @@ export {
   type BookingPaymentLifecyclePort,
   type BookingPaymentLifecycleDependencies,
 } from "./application/booking-payment-lifecycle.js";
+export { buildBookingOfferingReader } from "./infrastructure/booking-catalog-adapter.js";
+export { buildBookingSettingsReader } from "./application/booking-settings-reader.js";
+export { buildOrganizationTimezoneReader } from "./infrastructure/booking-org-adapter.js";
+export {
+  MongoBookingRepository,
+  MongoResourceRepository,
+} from "./infrastructure/mongo-booking.repositories.js";
+export { MongoEventSessionRepository } from "./infrastructure/mongo-event-session.repository.js";
+export { Booking } from "./domain/booking.entity.js";
