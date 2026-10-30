@@ -1,5 +1,5 @@
 import type { Money, PlanDetails } from "@banijjik/contracts/catalog";
-import type { EnrollmentAction } from "@banijjik/contracts/enrollment";
+import type { EnrollmentAction, EnrollmentCreationMode } from "@banijjik/contracts/enrollment";
 import type {
   EnrollmentCreateBody,
   EnrollmentListQuery,
@@ -51,6 +51,7 @@ export interface EnrollmentRepository {
   checkIn(checkIn: CheckIn): Promise<void>;
   checkIns(query: CheckInListQuery): Promise<{ items: CheckIn[]; hasNext: boolean }>;
   markReminder(enrollment: Enrollment): Promise<boolean>;
+  findByCheckoutId?(organizationId: string, checkoutId: string): Promise<Enrollment | undefined>;
 }
 export interface EnrollmentSettings {
   readonly graceDays: number;
@@ -129,6 +130,8 @@ export interface EnrollmentCaller {
   readonly organizationId: string;
   readonly actorUserId: string | null;
   readonly allowedLocationIds: readonly string[] | "ALL";
+  readonly creationMode?: EnrollmentCreationMode;
+  readonly checkoutId?: string | null;
 }
 export type TransitionInput = EnrollmentCaller & {
   readonly enrollmentId: string;

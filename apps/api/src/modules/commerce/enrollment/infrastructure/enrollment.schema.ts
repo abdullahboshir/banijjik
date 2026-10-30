@@ -40,6 +40,7 @@ const enrollment = new Schema<Enrollment>(
     ...versionField,
     organizationId: { type: String, required: true, immutable: true },
     locationId: { type: String, required: true },
+    checkoutId: { type: String, default: null },
     enrollmentNumber: { type: String, required: true },
     contactId: { type: String, required: true },
     billToContactId: { type: String, required: true },
@@ -67,6 +68,7 @@ enrollment.index({ organizationId: 1, locationId: 1, status: 1, enrollmentId: 1 
 enrollment.index({ organizationId: 1, contactId: 1, status: 1 });
 enrollment.index({ organizationId: 1, offeringId: 1, enrollmentId: 1 });
 enrollment.index({ organizationId: 1, enrollmentNumber: 1 }, { unique: true });
+enrollment.index({ organizationId: 1, checkoutId: 1 }, { sparse: true });
 
 const period = new Schema<EnrollmentPeriod>(
   {

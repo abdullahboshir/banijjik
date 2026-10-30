@@ -36,14 +36,31 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
     return row ?? undefined;
   }
   async insert(enrollment: Enrollment, period: EnrollmentPeriod): Promise<void> {
-    await enrollments().create([enrollment], options());
+    await enrollments().create(
+      [
+        {
+          ...enrollment,
+          checkoutId: enrollment.checkoutId ?? null,
+        },
+      ],
+      options(),
+    );
     await this.insertPeriod(period);
   }
   async find(enrollmentId: string): Promise<Enrollment | undefined> {
     const row = await enrollments()
       .findOne({ enrollmentId }, projection, options())
       .lean<Enrollment>();
-    return row ?? undefined;
+    return row ? { ...row, checkoutId: row.checkoutId ?? null } : undefined;
+  }
+  async findByCheckoutId(
+    organizationId: string,
+    checkoutId: string,
+  ): Promise<Enrollment | undefined> {
+    const row = await enrollments()
+      .findOne({ organizationId, checkoutId }, projection, options())
+      .lean<Enrollment>();
+    return row ? { ...row, checkoutId: row.checkoutId ?? null } : undefined;
   }
   async findPeriod(
     organizationId: string,
