@@ -33,9 +33,9 @@ None — 4.3 A1, A2, and A3C landed cleanly.
 - Optional: Cloudflare staging credentials for a real A3 smoke (`docs/runbooks/storefront-domains.md`).
 
 ## 4. Next actions, in order
-1. Implement **4.3 COD-S1** / **4.3 A3S** (`s/4.3-a3s-customer-order`: customer order command) from `docs/plans/4.3.md` and `docs/plans/4.3-COD.md`.
+1. Implement **4.3 COD-S1** / **4.3 A3S** (`s/4.3-a3s-customer-order`: customer order command), **4.3 A3B** (`s/4.3-a3b-customer-booking`), **4.3 A3P** (`s/4.3-a3p-payment-lifecycle`), and **4.3 A3E** (`s/4.3-a3e-customer-enrollment`) — all frozen in `docs/plans/4.3.md` (`Refresh A3S-A3E`) and `docs/plans/4.3-COD.md` (`Refresh COD-S1`).
 2. Implement **4.4 A1A** (`s/4.4-a1a-platform-template-api`: platform template CRUD/validation use cases) from `docs/plans/4.4.md`.
-3. Follow-ups (not blocking): M.6a review leftovers; M.7 B needs `directory.listing.read`; 3.5b A2 return response lacks `reversal.businessDate`.
+3. Follow-ups (not blocking): 4.3 A1 review leftovers (`docs/handoffs/4.3-a1-review-R1.md`); M.6a review leftovers; M.7 B needs `directory.listing.read`; 3.5b A2 return response lacks `reversal.businessDate`.
 
 ## 5. How the lead works
 - **Role:** plans, T1 reviews, merge checks, fast-forward of `main`. Reply in Bengali script; code/docs in English.
@@ -50,8 +50,8 @@ None — 4.3 A1, A2, and A3C landed cleanly.
 - Pushing `main` is allowed after green CI (owner 2026-10-23, 2026-10-25, 2026-10-28).
 
 ## 6. Session log (last five)
+- **2026-10-30** (Antigravity, `banijjik`): verified 4.3 A1 (`be5c8b9c`), completed T1 review (`4.3-a1-review-R1.md`); completed, T1-reviewed (R1 PASS) and merged 4.3 A2 (`738b441c`, CI 40992400902) and 4.3 A3C (`5308dd0d`, CI 40998523354); froze `Refresh A1-A3C`, `Refresh COD-S1`, and `Refresh A3S-A3E`.
 - **2026-10-29** (Antigravity, `banijjik`): implemented, T1-reviewed (R1 PASS) and merged 4.2 C2 (`d6d845e3`, CI 40896729028) and 4.4 A1D (`90186f1b`, CI 40869825029) to `main`; Card 4.2 is 100% complete.
 - **2026-10-29** (Antigravity, `banijjik`): fixed 4.2 C1 browser seed + production env, T1 review R1 PASS, green CI (`40866857486`), FF `main` and froze `Refresh C2-1`.
 - **2026-10-29** (Cursor, `banijjik-4.2-a2c`): landed 4.2 B (`4167a64b`, CI 40831295349) and 4.4 A1 (`d35e3112`, CI 40835038619).
 - **2026-10-29** (Cursor, `banijjik-4.2-a2c`): landed A3 (`3d6d133c`, CI 40820722210) after A2C/A2/A2I.
-- **2026-10-29** (Cursor, `banijjik-4.2-a2c`): landed A2C, A2 (`ed191a97`, CI 40807305308), A2I (`749bef7d`, CI 40816582956).
