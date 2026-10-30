@@ -103,3 +103,44 @@ export interface PublicEnrollmentCommands {
     input: CheckoutSelection,
   ): Promise<CheckoutRequestLink>;
 }
+
+export interface PublicQuoteRequest {
+  readonly locationId: string;
+  readonly selections: readonly CheckoutSelection[];
+  readonly fulfillment: CheckoutFulfillment;
+}
+
+export interface PublicQuoteLineResponse {
+  readonly selectionId: string;
+  readonly subtotal: Money;
+  readonly discount: Money;
+  readonly tax: Money;
+  readonly total: Money;
+  readonly amountRequiredBeforeConfirmation: Money;
+}
+
+export interface PublicQuoteResponse {
+  readonly quoteId: string;
+  readonly expiresAt: string;
+  readonly total: Money;
+  readonly lines: readonly PublicQuoteLineResponse[];
+  readonly deliveryCharge: Money;
+}
+
+export interface CheckoutContactInput {
+  readonly name: string;
+  readonly phone: string;
+  readonly customFields?: Readonly<Record<string, unknown>>;
+}
+
+export interface CheckoutRequest {
+  readonly quoteId: string;
+  readonly contact: CheckoutContactInput;
+}
+
+export interface CheckoutResponse {
+  readonly checkoutId: string;
+  readonly locationId: string;
+  readonly total: Money;
+  readonly requests: readonly CheckoutRequestLink[];
+}
