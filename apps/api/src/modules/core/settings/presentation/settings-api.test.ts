@@ -198,6 +198,9 @@ describe("GET /settings", () => {
       "sales.returnWindowDays",
       "sales.usePacking",
       "sms.dailyLimit",
+      "website.checkoutEnabled",
+      "website.guestCheckout",
+      "website.publicLocationIds",
     ]);
     expect(settingsOf(response)["organization.digitScript"]).toEqual({
       value: "LATIN",
