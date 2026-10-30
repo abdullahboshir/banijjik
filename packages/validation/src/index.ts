@@ -272,6 +272,14 @@ export {
 } from "./catalog/category-schemas.js";
 export { synonymsUpdateRequestSchema, type SynonymsUpdateBody } from "./catalog/synonym-schemas.js";
 export {
+  publicOfferingsQuerySchema,
+  publicOfferingDetailQuerySchema,
+  publicOfferingParamsSchema,
+  type PublicOfferingsQueryInput,
+  type PublicOfferingDetailQueryInput,
+  type PublicOfferingParamsInput,
+} from "./catalog/storefront-schemas.js";
+export {
   creditAdjustRequestSchema,
   creditAccountIdParamsSchema,
   creditEntriesQuerySchema,

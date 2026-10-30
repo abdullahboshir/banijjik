@@ -20,28 +20,13 @@ import { rateLimit, type RateLimiter } from "../kernel/rate-limit/index.js";
 import { contactFieldsOf } from "./contact-tenant-router.js";
 import { runInOrganizationContext } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
+import { buildCatalogStorefront } from "../modules/commerce/catalog/index.js";
 import {
   buildContactStorefrontRouterFor,
   buildCustomerAccountStatusReader,
 } from "../modules/commerce/contact/index.js";
-import {
-  buildDirectoryStorefrontRouterFor,
-  buildDirectoryErasureParticipantFor,
-  buildDirectoryExportParticipantsFor,
-} from "../modules/commerce/directory/index.js";
-import {
-  buildCreditStorefrontRouter,
-  buildCreditErasureParticipant,
-  buildCreditExportParticipant,
-  CancelCreditPurchaseUseCase,
-  GetCreditPaymentInfoUseCase,
-  GetMyCreditsUseCase,
-  GetMyUnlocksUseCase,
-  ListActiveCreditPacksUseCase,
-  ListMyCreditPurchasesUseCase,
-  SubmitCreditPurchaseUseCase,
-  UnlockListingUseCase,
-} from "../modules/commerce/credit/index.js";
+import * as directory from "../modules/commerce/directory/index.js";
+import * as credit from "../modules/commerce/credit/index.js";
 import {
   buildStorefrontOrganizationReader,
   type StorefrontOrganizationReader,
@@ -60,18 +45,11 @@ import { buildStorefrontResolveHandler } from "./storefront-resolve.js";
 const RESOLVE_BUCKET = "storefront.resolve.ip";
 const SURFACE_BUCKET = "storefront.surface.ip";
 const ONE_MINUTE_SECONDS = 60;
-// C1 never caches a positive host answer, so every page and same-origin API proxy call hits
-// `/resolve` from the storefront server IP. The old 60/min cap assumed a 60s positive cache.
 const RESOLVE_PER_MINUTE = 6_000;
 const SURFACE_PER_MINUTE = 300;
-/** A block must reach a signed-in customer within a minute (ADR-119). */
 const ACCOUNT_STATUS_MAX_STALE_SECONDS = 60;
 const PRIVATE_NO_STORE = "private, no-store";
 
-/**
- * Enforces Cache-Control: private, no-store by default. Forces private, no-store
- * whenever inbound request carries Cookie or Authorization or outbound response sets Set-Cookie.
- */
 function storefrontCacheGuard(): RequestHandler {
   return (request, response, next) => {
     response.setHeader("Cache-Control", PRIVATE_NO_STORE);
@@ -96,9 +74,7 @@ export interface StorefrontRouterInput {
   readonly audit: AuditRecorder;
   readonly orgConfig: OrgConfigService;
   readonly manifests: readonly ModuleManifest[];
-  /** Tests shorten the account status cache. Production passes none. */
   readonly accountStatusMaxStaleSeconds?: number;
-  /** Same overrides as the tenant file module (listing photo uploads on the storefront). */
   readonly fileOverrides?: FileModuleDependencies["overrides"];
 }
 
@@ -109,21 +85,18 @@ function notAvailable(): AppError {
   });
 }
 
-/** Checks the business of the path, then runs the rest of the request as that business (tenant context). */
 function businessContext(organizations: StorefrontOrganizationReader): RequestHandler {
   return async (request, _response, next) => {
     const organizationId = String(request.params["organizationId"]);
     const organization = await organizations.findActiveById(organizationId);
     if (organization === undefined) throw notAvailable();
-    const { configVersion } = organization;
     await runInOrganizationContext(organizationId, async () => {
-      // The settings read keys its cache on the config version, as tenantContext() provides it for admin requests.
-      runWithRequestContext({ ...getRequestContext(), configVersion }, () => next());
+      const ctx = { ...getRequestContext(), configVersion: organization.configVersion };
+      runWithRequestContext(ctx, () => next());
     });
   };
 }
 
-/** Customer sign-in is on only when the business switched it on and an SMS driver exists (M.6a decision 2). */
 function customerLoginEnabled(
   input: StorefrontRouterInput,
 ): (organizationId: string) => Promise<boolean> {
@@ -131,11 +104,11 @@ function customerLoginEnabled(
     orgConfig: input.orgConfig,
     manifests: input.manifests,
   });
-  const hasSmsDriver = input.config.storefront.smsDriver !== "disabled";
+  const hasSms = input.config.storefront.smsDriver !== "disabled";
   return async (organizationId) => {
-    if (!hasSmsDriver) return false;
-    const resolved = await resolver.resolve(organizationId, { keys: [CUSTOMER_LOGIN_SETTING_KEY] });
-    return resolved.get(CUSTOMER_LOGIN_SETTING_KEY)?.value === true;
+    if (!hasSms) return false;
+    const res = await resolver.resolve(organizationId, { keys: [CUSTOMER_LOGIN_SETTING_KEY] });
+    return res.get(CUSTOMER_LOGIN_SETTING_KEY)?.value === true;
   };
 }
 
@@ -150,17 +123,19 @@ function customerLoginSwitch(input: StorefrontRouterInput): RequestHandler {
 
 function buildCustomerAuth(config: AppConfig, clock: Clock, input: StorefrontRouterInput) {
   const secret = config.auth.accessTokenSecret;
+  const maxStale = input.accountStatusMaxStaleSeconds ?? ACCOUNT_STATUS_MAX_STALE_SECONDS;
   const accounts = cacheAccountStatus(buildCustomerAccountStatusReader(), {
     clock,
-    maxStaleSeconds: input.accountStatusMaxStaleSeconds ?? ACCOUNT_STATUS_MAX_STALE_SECONDS,
+    maxStaleSeconds: maxStale,
   });
   const verifier = createCustomerTokenVerifier({ secret, clock });
-  const customerAuth = authenticateCustomer({ verifier, accounts });
-  const customerAuthOptional = authenticateCustomerOptional({ verifier, accounts });
-  return { customerAuth, customerAuthOptional, secret };
+  return {
+    customerAuth: authenticateCustomer({ verifier, accounts }),
+    customerAuthOptional: authenticateCustomerOptional({ verifier, accounts }),
+    secret,
+  };
 }
 
-/** A storefront route answers 404 while its owner module is off for the business. */
 function moduleSwitch(input: StorefrontRouterInput, moduleKey: ModuleKey): RequestHandler {
   return async (_request, _response, next) => {
     const { organizationId } = getRequestContext();
@@ -171,11 +146,6 @@ function moduleSwitch(input: StorefrontRouterInput, moduleKey: ModuleKey): Reque
   };
 }
 
-function creditModuleSwitch(input: StorefrontRouterInput): RequestHandler {
-  return moduleSwitch(input, MODULE_KEY.CREDIT);
-}
-
-/** The reads behind GET /site: branding from the organization, feature switches from entitlement. */
 function buildWebsiteSiteSources(input: StorefrontRouterInput): StorefrontSiteSources {
   const organizations = buildStorefrontOrganizationReader();
   const isCustomerLoginOn = customerLoginEnabled(input);
@@ -200,19 +170,40 @@ function buildStorefrontCreditRouter(
     customerAuthOptional: ReturnType<typeof authenticateCustomerOptional>;
   },
 ) {
-  return buildCreditStorefrontRouter({
-    requireCreditModule: creditModuleSwitch(input),
-    unlockListing: new UnlockListingUseCase(creditDeps),
-    getMyCredits: new GetMyCreditsUseCase(creditDeps),
-    getMyUnlocks: new GetMyUnlocksUseCase(creditDeps),
-    listPacks: new ListActiveCreditPacksUseCase(creditDeps),
-    getPaymentInfo: new GetCreditPaymentInfoUseCase(creditDeps),
-    submitPurchase: new SubmitCreditPurchaseUseCase(creditDeps),
-    listMyPurchases: new ListMyCreditPurchasesUseCase(creditDeps),
-    cancelPurchase: new CancelCreditPurchaseUseCase(creditDeps),
+  return credit.buildCreditStorefrontRouter({
+    requireCreditModule: moduleSwitch(input, MODULE_KEY.CREDIT),
+    unlockListing: new credit.UnlockListingUseCase(creditDeps),
+    getMyCredits: new credit.GetMyCreditsUseCase(creditDeps),
+    getMyUnlocks: new credit.GetMyUnlocksUseCase(creditDeps),
+    listPacks: new credit.ListActiveCreditPacksUseCase(creditDeps),
+    getPaymentInfo: new credit.GetCreditPaymentInfoUseCase(creditDeps),
+    submitPurchase: new credit.SubmitCreditPurchaseUseCase(creditDeps),
+    listMyPurchases: new credit.ListMyCreditPurchasesUseCase(creditDeps),
+    cancelPurchase: new credit.CancelCreditPurchaseUseCase(creditDeps),
     limiter: input.rateLimiter,
     authenticateCustomer: auth.customerAuth,
     authenticateCustomerOptional: auth.customerAuthOptional,
+  });
+}
+
+function buildStorefrontDirectoryRouter(
+  input: StorefrontRouterInput,
+  auth: {
+    customerAuth: ReturnType<typeof authenticateCustomer>;
+    customerAuthOptional: ReturnType<typeof authenticateCustomerOptional>;
+  },
+  adapters: ReturnType<typeof buildDirectoryAdapters>,
+) {
+  return directory.buildDirectoryStorefrontRouterFor({
+    requireDirectoryModule: moduleSwitch(input, MODULE_KEY.DIRECTORY),
+    clock: input.clock,
+    audit: input.audit,
+    limiter: input.rateLimiter,
+    adapters,
+    authenticateCustomer: auth.customerAuth,
+    authenticateCustomerOptional: auth.customerAuthOptional,
+    storage: input.config.storage,
+    ...(input.fileOverrides === undefined ? {} : { fileOverrides: input.fileOverrides }),
   });
 }
 
@@ -232,21 +223,19 @@ function buildStorefrontRouters(
     manifests: input.manifests,
     clock,
   });
-
-  const directoryRouter = buildDirectoryStorefrontRouterFor({
-    requireDirectoryModule: moduleSwitch(input, MODULE_KEY.DIRECTORY),
-    clock,
-    audit,
-    limiter: rateLimiter,
-    adapters: directoryAdapters,
-    authenticateCustomer: auth.customerAuth,
-    authenticateCustomerOptional: auth.customerAuthOptional,
-    storage: config.storage,
-    ...(input.fileOverrides === undefined ? {} : { fileOverrides: input.fileOverrides }),
-  });
-
+  const directoryRouter = buildStorefrontDirectoryRouter(input, auth, directoryAdapters);
   const creditRouter = buildStorefrontCreditRouter(input, creditDeps, auth);
 
+  const dirErasure = directory.buildDirectoryErasureParticipantFor({
+    clock,
+    audit,
+    adapters: directoryAdapters,
+  });
+  const dirExport = directory.buildDirectoryExportParticipantsFor({
+    clock,
+    audit,
+    adapters: directoryAdapters,
+  });
   const contactRouter = buildContactStorefrontRouterFor({
     clock,
     audit,
@@ -262,24 +251,20 @@ function buildStorefrontRouters(
     requireCustomerLogin: customerLoginSwitch(input),
     authenticateCustomer: auth.customerAuth,
     contactFields: contactFieldsOf(),
-    erasureParticipants: [
-      buildDirectoryErasureParticipantFor({ clock, audit, adapters: directoryAdapters }),
-      buildCreditErasureParticipant(creditDeps),
-    ],
-    exportParticipants: [
-      ...buildDirectoryExportParticipantsFor({ clock, audit, adapters: directoryAdapters }),
-      buildCreditExportParticipant(creditDeps),
-    ],
+    erasureParticipants: [dirErasure, credit.buildCreditErasureParticipant(creditDeps)],
+    exportParticipants: [...dirExport, credit.buildCreditExportParticipant(creditDeps)],
   });
 
   const websiteRouter = buildWebsiteStorefrontRouterFor({
     requireWebsiteModule: moduleSwitch(input, MODULE_KEY.WEBSITE),
     siteSources: buildWebsiteSiteSources(input),
-    // Card 4.1: the published design is re-projected through the sections that are effective now.
     orgConfig: input.orgConfig,
   });
-
-  return { directoryRouter, creditRouter, contactRouter, websiteRouter };
+  const catalogRouter = buildCatalogStorefront({
+    orgConfig: input.orgConfig,
+    requireCatalogModule: moduleSwitch(input, MODULE_KEY.CATALOG),
+  });
+  return { directoryRouter, creditRouter, contactRouter, websiteRouter, catalogRouter };
 }
 
 function mountOrganizationSurface(
@@ -287,18 +272,13 @@ function mountOrganizationSurface(
   input: StorefrontRouterInput,
   organizations: StorefrontOrganizationReader,
 ): void {
-  const { config, clock, rateLimiter } = input;
-  const auth = buildCustomerAuth(config, clock, input);
-  const { directoryRouter, creditRouter, contactRouter, websiteRouter } = buildStorefrontRouters(
-    input,
-    rateLimiter,
-    auth,
-  );
+  const auth = buildCustomerAuth(input.config, input.clock, input);
+  const r = buildStorefrontRouters(input, input.rateLimiter, auth);
 
   router.use(
     "/orgs/:organizationId",
     rateLimit({
-      limiter: rateLimiter,
+      limiter: input.rateLimiter,
       bucket: SURFACE_BUCKET,
       limit: SURFACE_PER_MINUTE,
       windowSeconds: ONE_MINUTE_SECONDS,
@@ -306,27 +286,21 @@ function mountOrganizationSurface(
     storefrontCacheGuard(),
     validate({ params: storefrontOrganizationParamsSchema }),
     businessContext(organizations),
-    // Before the contact router, whose customer-login switch guards every path (M.6a: /site must answer).
-    websiteRouter,
-    directoryRouter,
-    creditRouter,
-    contactRouter,
+    r.websiteRouter,
+    r.catalogRouter,
+    r.directoryRouter,
+    r.creditRouter,
+    r.contactRouter,
   );
 }
 
-/**
- * The public storefront API (14-API.md section 6, ADR-077), mounted once by routes/v1.ts. It has its
- * own pipeline: no admin sign-in, no membership. A request names a business in the path; the
- * business must be ACTIVE; the customer's token must be for that business (ADR-119).
- */
 export function buildStorefrontRouter(input: StorefrontRouterInput): Router {
-  const { rateLimiter } = input;
   const organizations = buildStorefrontOrganizationReader();
   const router = Router();
   router.get(
     "/resolve",
     rateLimit({
-      limiter: rateLimiter,
+      limiter: input.rateLimiter,
       bucket: RESOLVE_BUCKET,
       limit: RESOLVE_PER_MINUTE,
       windowSeconds: ONE_MINUTE_SECONDS,

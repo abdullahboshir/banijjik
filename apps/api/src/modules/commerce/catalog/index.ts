@@ -199,3 +199,49 @@ export function buildCatalogRouter(dependencies: CatalogTenantDependencies): Rou
     idempotency: dependencies.idempotency,
   });
 }
+
+import {
+  GetPublicCategoriesUseCase,
+  type GetPublicCategoriesInput,
+} from "./application/use-cases/get-public-categories.use-case.js";
+import {
+  GetPublicOfferingDetailUseCase,
+  type GetPublicOfferingDetailInput,
+} from "./application/use-cases/get-public-offering-detail.use-case.js";
+import {
+  GetPublicOfferingsUseCase,
+  type GetPublicOfferingsInput,
+} from "./application/use-cases/get-public-offerings.use-case.js";
+import { MongoPublicCatalogReader } from "./infrastructure/mongo-public-catalog.reader.js";
+import {
+  buildCatalogStorefrontRouter,
+  type CatalogStorefrontRouterDependencies,
+} from "./presentation/catalog-storefront.router.js";
+
+export {
+  GetPublicCategoriesUseCase,
+  type GetPublicCategoriesInput,
+  GetPublicOfferingDetailUseCase,
+  type GetPublicOfferingDetailInput,
+  GetPublicOfferingsUseCase,
+  type GetPublicOfferingsInput,
+  MongoPublicCatalogReader,
+  buildCatalogStorefrontRouter,
+  type CatalogStorefrontRouterDependencies,
+};
+export { type PublicCatalogReader } from "./application/ports/public-catalog-reader.port.js";
+
+import type { OrgConfigService } from "../../platform/entitlement/index.js";
+
+export function buildCatalogStorefront(input: {
+  readonly orgConfig: OrgConfigService;
+  readonly requireCatalogModule: RequestHandler;
+}): Router {
+  const reader = new MongoPublicCatalogReader();
+  return buildCatalogStorefrontRouter({
+    requireCatalogModule: input.requireCatalogModule,
+    getOfferings: new GetPublicOfferingsUseCase(reader, input.orgConfig),
+    getOfferingDetail: new GetPublicOfferingDetailUseCase(reader, input.orgConfig),
+    getCategories: new GetPublicCategoriesUseCase(reader, input.orgConfig),
+  });
+}

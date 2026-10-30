@@ -48,6 +48,10 @@ export const catalogManifest = defineModule({
       "/orgs/:organizationId/modifier-groups",
       "/orgs/:organizationId/catalog",
     ],
+    storefront: [
+      "/storefront/orgs/:organizationId/offerings",
+      "/storefront/orgs/:organizationId/categories",
+    ],
   },
   menu: [
     {
@@ -100,7 +104,7 @@ export const catalogManifest = defineModule({
   ],
   customFieldEntities: ["offering", "category"],
   botTools: [],
-  storefrontSections: [],
+  storefrontSections: ["offering-grid", "category-strip"],
   events: {
     emits: [
       CATALOG_EVENT_TYPE.OFFERING_CREATED,

@@ -637,5 +637,8 @@
   "menu.sms.gateway": "SMS",
   "errors.website_template_key_taken": "This website template key is already in use.",
   "errors.website_template_archived": "An archived website template cannot be edited.",
-  "errors.website_template_image_forbidden": "A website template cannot reference a business image."
+  "errors.website_template_image_forbidden": "A website template cannot reference a business image.",
+  "storefront.catalog.not_available": "The public catalog is currently unavailable.",
+  "storefront.catalog.offering_not_found": "The requested offering was not found.",
+  "storefront.catalog.category_not_found": "The requested category was not found."
 }
