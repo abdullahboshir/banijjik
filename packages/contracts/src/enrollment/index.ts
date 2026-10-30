@@ -113,3 +113,4 @@ export type {
   CheckInResponse,
   EnrollmentTransitionResponse,
 } from "./enrollment-responses.js";
+export { ENROLLMENT_CREATION_MODE, type EnrollmentCreationMode } from "./enrollment-contracts.js";

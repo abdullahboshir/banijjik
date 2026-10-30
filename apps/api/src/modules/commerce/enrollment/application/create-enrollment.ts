@@ -1,4 +1,5 @@
 import { DomainRuleError, ERROR_CODE, SEQUENCE_KEY } from "@banijjik/contracts";
+import type { Money, PlanDetails } from "@banijjik/contracts/catalog";
 import {
   ENROLLMENT_STATUS,
   ENROLLMENT_PERIOD_STATUS,
@@ -90,6 +91,21 @@ async function recognizeFirstPeriodIfActive(
     announce: true,
   });
 }
+function determineInitialStatus(params: {
+  readonly isCustomerRequest: boolean;
+  readonly requirePayment: boolean;
+  readonly startsOn: string;
+  readonly today: string;
+}): (typeof ENROLLMENT_STATUS)[keyof typeof ENROLLMENT_STATUS] {
+  if (params.isCustomerRequest) {
+    return ENROLLMENT_STATUS.PENDING;
+  }
+  if (!params.requirePayment && params.startsOn <= params.today) {
+    return ENROLLMENT_STATUS.ACTIVE;
+  }
+  return ENROLLMENT_STATUS.PENDING;
+}
+
 async function prepareEnrollment(
   dependencies: EnrollmentDependencies,
   caller: EnrollmentCaller,
@@ -111,10 +127,12 @@ async function prepareEnrollment(
   const common = auditFields(caller, body.locationId, now);
   const enrollmentId = newId();
   const enrollmentPeriodId = newId();
+  const isCustomerRequest = caller.creationMode === "CUSTOMER_REQUEST";
   const enrollment: Enrollment = {
     ...common,
     enrollmentId,
     enrollmentNumber,
+    checkoutId: caller.checkoutId ?? null,
     contactId: body.contactId,
     billToContactId: await dependencies.context.payer(
       caller.organizationId,
@@ -124,10 +142,12 @@ async function prepareEnrollment(
     offeringId: body.offeringId,
     variantId: body.variantId,
     startsOn: body.startsOn,
-    status:
-      !settings.requirePayment && body.startsOn <= today
-        ? ENROLLMENT_STATUS.ACTIVE
-        : ENROLLMENT_STATUS.PENDING,
+    status: determineInitialStatus({
+      isCustomerRequest,
+      requirePayment: settings.requirePayment,
+      startsOn: body.startsOn,
+      today,
+    }),
     autoRenew: body.autoRenew ?? plan.autoRenewDefault,
     currentEnrollmentPeriodId: enrollmentPeriodId,
     securityDepositHeld: plan.securityDeposit ?? { amount: 0, currency: fee.currency },
@@ -143,6 +163,17 @@ async function prepareEnrollment(
   return { enrollment, period };
 }
 
+export function calculateUpfrontObligation(plan: PlanDetails, firstRecurringFee: Money): Money {
+  let total = firstRecurringFee;
+  if (plan.admissionFee !== undefined) {
+    total = addMoney(total, plan.admissionFee);
+  }
+  if (plan.securityDeposit !== undefined) {
+    total = addMoney(total, plan.securityDeposit);
+  }
+  return total;
+}
+
 function firstPeriod(enrollment: Enrollment, caller: EnrollmentCaller): EnrollmentPeriod {
   return {
     ...auditFields(caller, enrollment.locationId, enrollment.createdAt),
@@ -151,10 +182,7 @@ function firstPeriod(enrollment: Enrollment, caller: EnrollmentCaller): Enrollme
     periodNumber: 1,
     periodStartsOn: enrollment.startsOn,
     periodEndsOn: addDays(addBillingPeriod(enrollment.startsOn, enrollment.plan.billingPeriod), -1),
-    fee:
-      enrollment.plan.admissionFee === undefined
-        ? enrollment.firstRecurringFee
-        : addMoney(enrollment.firstRecurringFee, enrollment.plan.admissionFee),
+    fee: calculateUpfrontObligation(enrollment.plan, enrollment.firstRecurringFee),
     ...(enrollment.plan.sessionLimitPerPeriod === undefined
       ? {}
       : { sessionsAllowed: enrollment.plan.sessionLimitPerPeriod }),

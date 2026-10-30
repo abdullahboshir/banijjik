@@ -23,6 +23,12 @@ export type { EnrollmentPaymentPort } from "./application/ports.js";
 export { refundRemaining } from "./domain/refunds.js";
 export { buildEnrollmentPeriodPostingSource } from "./infrastructure/enrollment-period-posting-source.js";
 export type { HeldAdvanceReader } from "./infrastructure/enrollment-period-posting-source.js";
+export {
+  buildStorefrontEnrollmentCommands,
+  type EnrollmentStorefrontDependencies,
+} from "./application/storefront-enrollment-commands.js";
+export { calculateUpfrontObligation } from "./application/create-enrollment.js";
+export type { PublicEnrollmentCommands } from "@banijjik/contracts/website";
 
 export function buildEnrollmentDependencies(
   input: EnrollmentContextInput & {

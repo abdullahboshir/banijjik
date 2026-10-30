@@ -22,6 +22,7 @@ export interface EnrollmentAuditFields {
 export interface Enrollment extends EnrollmentAuditFields {
   readonly enrollmentId: string;
   readonly enrollmentNumber: string;
+  readonly checkoutId: string | null;
   readonly contactId: string;
   readonly billToContactId: string;
   readonly offeringId: string;

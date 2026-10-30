@@ -49,3 +49,7 @@ export const checkInListQuerySchema = paginationQuerySchema.extend({
   contactId: uuidV7Schema.optional(),
 });
 export type CheckInListQuery = z.infer<typeof checkInListQuerySchema>;
+export {
+  customerEnrollmentRequestSchema,
+  type CustomerEnrollmentRequestBody,
+} from "./enrollment-schemas.js";

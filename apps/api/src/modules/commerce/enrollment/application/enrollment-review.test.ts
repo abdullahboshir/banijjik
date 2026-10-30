@@ -320,6 +320,7 @@ function reviewFixture() {
       ...common,
       enrollmentId: newId(),
       enrollmentNumber: "000001",
+      checkoutId: null,
       contactId: newId(),
       billToContactId: newId(),
       offeringId: newId(),

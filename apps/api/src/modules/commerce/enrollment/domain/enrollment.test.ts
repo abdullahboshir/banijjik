@@ -14,6 +14,7 @@ function enrollment(overrides: Partial<Enrollment> = {}): Enrollment {
   return {
     enrollmentId: newId(),
     enrollmentNumber: "000001",
+    checkoutId: null,
     organizationId: newId(),
     locationId: newId(),
     contactId: newId(),
