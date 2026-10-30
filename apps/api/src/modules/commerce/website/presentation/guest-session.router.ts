@@ -82,7 +82,7 @@ export function createGuestSessionAuthMiddleware(
       clearGuestCookie(response, isProduction);
       throw new AppError({
         code: ERROR_CODE.WEBSITE_GUEST_SESSION_EXPIRED,
-        messageKey: "errors.guest_session_expired",
+        messageKey: "errors.website_guest_session_expired",
       });
     }
 

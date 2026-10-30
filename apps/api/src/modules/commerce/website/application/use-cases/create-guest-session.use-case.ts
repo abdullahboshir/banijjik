@@ -32,7 +32,7 @@ export class CreateGuestSessionUseCase {
     if (isEnabled && !(await isEnabled(organizationId))) {
       throw new AppError({
         code: ERROR_CODE.WEBSITE_GUEST_CHECKOUT_DISABLED,
-        messageKey: "errors.guest_checkout_disabled",
+        messageKey: "errors.website_guest_checkout_disabled",
       });
     }
 
