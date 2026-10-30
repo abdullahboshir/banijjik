@@ -1,4 +1,6 @@
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import {
+  PAYMENT_EVENT_TYPE,
   PAYMENT_METHOD,
   PAYMENT_STORE_CREDIT_EXPIRY_DAYS_SETTING_KEY,
   STORE_CREDIT_DIRECTION,
@@ -13,6 +15,7 @@ import {
   type PaymentId,
   type StoreCreditEntryId,
 } from "@banijjik/ids";
+import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
 import { StoreCreditEntry } from "../../domain/store-credit-entry.entity.js";
 import {
@@ -215,4 +218,39 @@ export async function enrichAllocationsWithRevenueState(
     });
   }
   return allocations;
+}
+
+export async function publishReceivedEffects(opts: {
+  readonly events: {
+    publish(eventType: string, payload: unknown, options?: { orderingKey?: string }): Promise<void>;
+  };
+  readonly audit: AuditRecorder;
+  readonly input: ReceivePaymentInput;
+  readonly paymentId: PaymentId;
+  readonly debitEntryId: string | null;
+  readonly creditEntryId: string | null;
+}): Promise<void> {
+  const { events, audit, input, paymentId, debitEntryId, creditEntryId } = opts;
+  const orderingKey = `paymentAccount:${input.organizationId}`;
+  await events.publish(PAYMENT_EVENT_TYPE.PAYMENT_RECEIVED, { paymentId }, { orderingKey });
+  if (debitEntryId) {
+    await events.publish(
+      PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED,
+      { storeCreditEntryId: debitEntryId },
+      { orderingKey },
+    );
+  }
+  if (creditEntryId) {
+    await events.publish(
+      PAYMENT_EVENT_TYPE.STORE_CREDIT_CHANGED,
+      { storeCreditEntryId: creditEntryId },
+      { orderingKey },
+    );
+  }
+  await audit.record({
+    action: AUDIT_ACTION.PAYMENT_RECEIVED,
+    entityType: AUDIT_ENTITY_TYPE.payment,
+    entityId: paymentId,
+    changes: { amount: { to: input.amount.amount }, method: { to: input.method } },
+  });
 }
