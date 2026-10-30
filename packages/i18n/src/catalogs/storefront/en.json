@@ -123,6 +123,7 @@
   "storefront.account.photoHint": "Add one photo. The business decides where it is shown.",
   "storefront.account.photoFailed": "The photo could not be added. Check the file type and size, then try again.",
   "storefront.nav.myRequests": "My requests",
+  "storefront.common.loading": "Loading...",
   "storefront.requests.title": "My requests",
   "storefront.requests.subtitle": "Track your orders, bookings, and course enrollments",
   "storefront.requests.filterAll": "All ({count})",

@@ -89,9 +89,6 @@ function DetailFinancialCard({
         </div>
         {data.holdExpiresAt && (
           <div>
-            <span className="text-caption text-secondary">
-              {t("storefront.requests.holdExpiresIn")}:
-            </span>
             <div className="pt-1">
               <HoldCountdown expiresAt={data.holdExpiresAt} locale={locale} />
             </div>
@@ -185,7 +182,7 @@ export function RequestDetailView(props: RequestDetailViewProps): ReactElement {
   if (isLoading) {
     return (
       <div className="flex min-h-[300px] items-center justify-center">
-        <p className="text-body text-secondary">{t("storefront.search.min")}...</p>
+        <p className="text-body text-secondary">{t("storefront.common.loading")}</p>
       </div>
     );
   }

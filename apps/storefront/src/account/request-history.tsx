@@ -243,7 +243,7 @@ export function RequestHistoryView({
 
       {isLoading && (
         <div className="flex min-h-[200px] items-center justify-center">
-          <p className="text-body text-secondary">{t("storefront.search.min")}...</p>
+          <p className="text-body text-secondary">{t("storefront.common.loading")}</p>
         </div>
       )}
 

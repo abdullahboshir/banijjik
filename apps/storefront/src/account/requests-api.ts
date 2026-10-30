@@ -109,28 +109,3 @@ export async function getRequestDetail(
     `/orgs/${organizationId}/me/requests/${requestType}/${requestId}`,
   );
 }
-
-/**
- * Pure server-side fetch helper for server components that have access to the API origin and cookie header.
- * Kept free of next/headers so this module can be safely imported by client components.
- */
-export async function fetchStorefrontServer<Data>(
-  apiOrigin: string,
-  path: string,
-  cookieHeader?: string,
-): Promise<Data | undefined> {
-  try {
-    const response = await fetch(`${apiOrigin}/api/v1/storefront${path}`, {
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-    });
-    if (!response.ok) return undefined;
-    const json = (await response.json()) as { data?: Data } | undefined;
-    return json?.data;
-  } catch {
-    return undefined;
-  }
-}

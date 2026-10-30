@@ -645,6 +645,7 @@
   "storefront.catalog.not_available": "The public catalog is currently unavailable.",
   "storefront.catalog.offering_not_found": "The requested offering was not found.",
   "storefront.catalog.category_not_found": "The requested category was not found.",
+  "storefront.common.loading": "Loading...",
   "storefront.nav.myRequests": "My requests",
   "storefront.requests.title": "My requests",
   "storefront.requests.subtitle": "Track your orders, bookings, and course enrollments",

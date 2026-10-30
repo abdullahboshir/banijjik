@@ -171,7 +171,7 @@ function renderReceiptFallback(isLoading: boolean, t: Translator["t"]): ReactEle
   if (isLoading) {
     return (
       <div className="flex min-h-[300px] items-center justify-center">
-        <p className="text-body text-secondary">{t("storefront.search.min")}...</p>
+        <p className="text-body text-secondary">{t("storefront.common.loading")}</p>
       </div>
     );
   }
