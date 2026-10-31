@@ -30,7 +30,9 @@ jobs:
   verify:
     name: verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # The full suite needs about 19 minutes on a quiet runner (verify 18m53s, Test 14m16s), so 20 minutes
+    # killed passing branches during runner contention. Same budget as the browser job.
+    timeout-minutes: 30
     # The queue and permission-cache tests need a real Redis; the suite fails without TEST_REDIS_URL on CI.
     services:
       redis:
