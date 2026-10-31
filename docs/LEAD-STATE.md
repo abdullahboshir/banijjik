@@ -1,57 +1,45 @@
 # Lead state (planner and reviewer)
 
-The one file a new lead session reads to continue the work. It holds what `docs/STATUS.md` does not: open branches and their review state, what waits on the owner, the next actions in order, and how the lead works.
-
-**Rules for this file**
-- The lead session updates it after every milestone (a merge, a review result, a new plan, an owner decision) and before the session ends. Commit it on a short docs branch and fast-forward `main` (see "Docs commits").
-- At most about 150 lines. Replace old content; do not append history. The session log keeps only the last five sessions.
-- No secrets, passwords or `.env` values.
-
-Last updated: 2026-10-30 by Antigravity (`banijjik`) · `origin/main` after 4.3 A0, A1 (`be5c8b9c`), A2 (`738b441c`), and A3C (`5308dd0d`).
+Last updated: 2026-10-31 by Codex · audit baseline `origin/main af785811`.
 
 ## 1. Where the project stands
-- **Claude plan ends 2026-10-29.** Roles from `docs/RUN-WITHOUT-CLAUDE.md`. Owner still says yes to fast-forward of `main` after green CI.
-- Speed: `.cursor/rules/speed.mdc`. No root lint/typecheck/test/build. CI is not a debugger. Docs-only skip CI. Bring a pushed branch up to date with `git merge origin/main` (never rebase, never `--force`). `card:check` INFO when main moved is enough.
-- Phase 3 F1–F4 closed. Phase 4 underway.
-- **4.1 complete on `main` (`636bcdb9`).**
-- **4.2 complete on `main` (A1 + A2C + A2 + A2I + A3 + B + C1 + C2).**
-- **4.3 A0, A1, A2, A3C complete.** A1 (`be5c8b9c`), A2 (`738b441c`), and A3C (`5308dd0d`, safe guest contact creation, customer phone isolation, partial unique index preservation) implemented, T1-reviewed and green.
-- **4.4 A1 + A1D** on `main` (A1D `fbe1ff65` / `90186f1b`, CI [40869825029](https://github.com/abdullahboshir/banijjik/actions/runs/40869825029)).
-- Staging Cloudflare smoke waits on owner credentials (`docs/runbooks/storefront-domains.md`).
-- ADR-150: full tenant website (4.1–4.5) before the pilot. ADR-149: each business site has its own design. ADR-P4-B Accepted (proposed).
+- Phase 3 cards 3.40–3.43 are merged on origin/main. Phase 4 is in progress; do not label Phase 4 complete (4.4, 4.5 and formal phase review remain separate gates).
+- 4.3 is NOT COMPLETE. Evidence matrix and closure blockers: `docs/handoffs/4.3-completion-check.md`.
+- Main 4.3 parts A0–A4, B1–B3 are included in `origin/main`; A5A has four independent T1 blockers, A5B is uncommitted, V is uncommitted and not ready.
+- All 15 mandatory COD parts have no implementation evidence on origin. COD-S1's Phase 3 prerequisite is now satisfied, but its refresh baseline is stale and independent T1 plan check is missing.
+- Folded 4.6 acceptance tests remain unverified.
+- No authorization to fast-forward any branch to main has been given in this session. Prepare verified branches and request the applicable owner yes as the final step.
 
-## 2. Open branches (checked 2026-10-30)
-
-None — 4.3 A1, A2, and A3C landed cleanly.
-
-**Disk / local:** Docker Desktop + Redis 6380. Compose Mongo stays stopped. `gh run watch` drops (TLS); poll `gh run view <id> --json jobs`. Stale `dist` after branch switch: `npx turbo run build --filter=<pkg>`. Owner stack holds 3000/4000.
+## 2. Open branches / worktrees (checked 2026-10-31)
+- `banijjik`, `s/4.3-a5a-request-projections-claim`: A5A handoff head `4af21a4c`, CI rerun running; fresh independent T1 review FAIL. Do not call done.
+- `banijjik-4.3-a5a-fixes`, `s/4.3-a5a-review-fixes`: prepared isolated continuation; implementer agent assigned the four review fixes. Next: local verification, push branch, separate T1 re-review, green CI.
+- `banijjik-4.1-a1`, `s/4.3-a5b-privacy-participants`: has uncommitted A5B code. Preserve; not completion evidence. Do not start until A5A review/CI and dependency merge gate are clear.
+- `banijjik-1.7b`, `s/4.3-v-commerce-scenarios`: branch points at A5A; dirty V files are uncommitted and this is not the planned V branch. Preserve; V waits for A5B and all COD.
+- `banijjik-4.3-audit`, `s/docs-4.3-audit`: interim completion matrix, corrected 4.3 STATUS row and this state update; local docs branch only, not pushed to main.
+- No `s/4.3-cod-*` remote branches found.
 
 ## 3. Waiting on the owner
-- Turn on "Start Docker Desktop when you sign in".
-- Product: 3.9 offline selling; M.6 listing `noindex`; keep or drop the stashed `AGENTS.md` / `05-CONVENTIONS.md` edits.
-- Older: P1 rotate leaked secrets (repo is public).
-- Optional: Cloudflare staging credentials for a real A3 smoke (`docs/runbooks/storefront-domains.md`).
+- Owner authorization is required before any main fast-forward (RUN-WITHOUT-CLAUDE.md §6.3 / AGENTS.md).
+- No product/architecture decision found to ask for in the current COD-S1 refresh; stop and ask only if refreshed code surfaces a binding ambiguity.
 
-## 4. Next actions, in order
-1. Implement **4.3 COD-S1** / **4.3 A3S** (`s/4.3-a3s-customer-order`: customer order command), **4.3 A3B** (`s/4.3-a3b-customer-booking`), **4.3 A3P** (`s/4.3-a3p-payment-lifecycle`), and **4.3 A3E** (`s/4.3-a3e-customer-enrollment`) — all frozen in `docs/plans/4.3.md` (`Refresh A3S-A3E`) and `docs/plans/4.3-COD.md` (`Refresh COD-S1`).
-2. Implement **4.4 A1A** (`s/4.4-a1a-platform-template-api`: platform template CRUD/validation use cases) from `docs/plans/4.4.md`.
-3. Follow-ups (not blocking): 4.3 A1 review leftovers (`docs/handoffs/4.3-a1-review-R1.md`); M.6a review leftovers; M.7 B needs `directory.listing.read`; 3.5b A2 return response lacks `reversal.businessDate`.
+## 4. Next actions in order
+1. Finish the active A5A review-fix session and independently review its resulting branch; require exact-head green CI.
+2. Confirm A5A integration readiness and resolve its main inclusion only after owner approval.
+3. Refresh COD-S1 against current main, then obtain independent T1 plan check before implementation. Phase 3 gate is satisfied.
+4. Follow exact COD order: S1 → S2 → S3 → C → R → P → J1 → J2 → I0 → I1 → I2 → I3 → B1 → B2 → V. Each later blueprint gets a just-in-time refresh and independent T1 check as applicable; one approved part per implementation session.
+5. Finish A5B after A5A dependency; resolve its independent T1 review and green CI.
+6. Close any A1 review follow-ups confirmed in current source; record tests/evidence.
+7. Complete both V tracks only after all API/UI/COD dependencies merge; exercise real worker/outbox, all five kinds, privacy/claim/financial/report assertions, COD loss/recovery/corrections, 4.6 checks and storefront browser suite.
+8. Update `docs/handoffs/4.3-completion-check.md` with exact implementation commits, reviews, local test output and green CI links; mark 4.3 complete only after every gate and owner-approved main inclusion.
 
-## 5. How the lead works
-- **Role:** plans, T1 reviews, merge checks, fast-forward of `main`. Reply in Bengali script; code/docs in English.
-- **Subagents & zero-idle pipeline (owner 2026-10-29):** Always run subagents with `Model: "flash"` (Gemini Flash) and separate roles (Implementer never reviews its own code). Never sit idle waiting for CI: launch the independent Reviewer subagent and prepare `docs/handoffs/<card>-review-R1.md`, `docs/handoffs/<card>.md`, `docs/STATUS.md`, and `docs/LEAD-STATE.md` **while CI is running**, then commit `docs/` (`paths-ignore: ["docs/**"]`) and fast-forward `main` as soon as CI turns green. Run independent parallel lanes in separate worktrees so their CI runs overlap. Never sacrifice code quality, completeness, or planned tests for speed.
-- **Windows / PowerShell hygiene:** Always use `npm.cmd`, `npx.cmd`, and `& "C:\Program Files\GitHub CLI\gh.exe"`, quote git ranges (`"origin/main..HEAD"`), and use `node:http` (`fetchStorefront`) for loopback virtual-host headers on Windows.
-- **Merge:** `git fetch origin && git merge origin/main` on the card branch. STATUS row merged on the branch, commit, push, wait green CI (docs-only uses the last code run). Then `git push origin <branch>:main`. If rejected, main moved: merge again. Never force-push.
-- **card:check** must print PASS on every line (INFO about main is fine) before a review or merge.
-- **Never:** `--no-verify`, resetting existing commits, committing `.env`, `git commit -a` in `banijjik` (picks up `.claude/settings.json`).
-- **Docs commits:** `git switch -c s/docs-<slug> origin/main`, commit, `git push origin HEAD:main`.
-- **Local verify:** `MONGOMS_SYSTEM_BINARY="C:/Program Files/MongoDB/Server/8.2/bin/mongod.exe"` `MONGOMS_VERSION_CHECK=false` `TEST_REDIS_URL=redis://127.0.0.1:6380`. Do not run the root suite.
-- **i18n / add-only conflicts:** keep both sides; catalogs join with a comma.
-- Pushing `main` is allowed after green CI (owner 2026-10-23, 2026-10-25, 2026-10-28).
+## 5. Working rules
+- One approved part per implementation session; separate branches/worktrees. No parallel part work unless phase-4-lanes explicitly pairs it.
+- Lead plans, audits, reviews and coordinates; implementer and reviewer are different sessions/tools. Never approve own code.
+- No whole monorepo suite locally. Every part runs planned/changed tests, touched workspace lint/typecheck and browser suite for screens before push; exact-head green CI before merge.
+- No guessed design. Update only the relevant 4.3 STATUS row; maintain the completion handoff with evidence. Do not run 4.4/4.5 implementation in this task.
+- Use `git merge origin/main` for pushed branches; never rebase/force-push. No main push without owner authorization.
+- Storefront delivery options remain disabled until COD I0–I3 and V pass.
 
 ## 6. Session log (last five)
-- **2026-10-30** (Antigravity, `banijjik`): verified 4.3 A1 (`be5c8b9c`), completed T1 review (`4.3-a1-review-R1.md`); completed, T1-reviewed (R1 PASS) and merged 4.3 A2 (`738b441c`, CI 40992400902) and 4.3 A3C (`5308dd0d`, CI 40998523354); froze `Refresh A1-A3C`, `Refresh COD-S1`, and `Refresh A3S-A3E`.
-- **2026-10-29** (Antigravity, `banijjik`): implemented, T1-reviewed (R1 PASS) and merged 4.2 C2 (`d6d845e3`, CI 40896729028) and 4.4 A1D (`90186f1b`, CI 40869825029) to `main`; Card 4.2 is 100% complete.
-- **2026-10-29** (Antigravity, `banijjik`): fixed 4.2 C1 browser seed + production env, T1 review R1 PASS, green CI (`40866857486`), FF `main` and froze `Refresh C2-1`.
-- **2026-10-29** (Cursor, `banijjik-4.2-a2c`): landed 4.2 B (`4167a64b`, CI 40831295349) and 4.4 A1 (`d35e3112`, CI 40835038619).
-- **2026-10-29** (Cursor, `banijjik-4.2-a2c`): landed A3 (`3d6d133c`, CI 40820722210) after A2C/A2/A2I.
+- 2026-10-31: reality audit corrected Phase 3 status from stale lead state; audited remote CI/branches/worktrees; A5A rerun requested after cancelled Build; fresh independent T1 review found four A5A blockers; assigned isolated fix session; wrote evidence-based NOT COMPLETE matrix.
+- Earlier sessions: see prior main history and individual handoffs.
