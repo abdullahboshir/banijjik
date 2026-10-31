@@ -199,6 +199,7 @@ describe("GET /settings", () => {
       "sales.usePacking",
       "sms.dailyLimit",
       "website.checkoutEnabled",
+      "website.deliveryCharge",
       "website.guestCheckout",
       "website.publicLocationIds",
     ]);
