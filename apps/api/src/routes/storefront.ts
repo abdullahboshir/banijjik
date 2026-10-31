@@ -275,6 +275,7 @@ function mountOrganizationSurface(
     storefrontCacheGuard(),
     validate({ params: storefrontOrganizationParamsSchema }),
     businessContext(organizations),
+    auth.customerAuthOptional,
     r.websiteRouter,
     r.checkoutRouter,
     r.catalogRouter,
