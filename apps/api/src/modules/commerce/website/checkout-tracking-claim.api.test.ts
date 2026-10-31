@@ -10,9 +10,9 @@ import {
 import { newId } from "@banijjik/ids";
 import express from "express";
 import request from "supertest";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { runWithRequestContext } from "../../../kernel/context/index.js";
-import { MongoUnitOfWork } from "../../../kernel/db/index.js";
+import { models, MongoUnitOfWork } from "../../../kernel/db/index.js";
 import { kernelEventPublisher } from "../../../kernel/events/index.js";
 import { errorHandler } from "../../../kernel/http/index.js";
 import { MongoRateLimiter } from "../../../kernel/rate-limit/index.js";
@@ -35,6 +35,8 @@ import {
 import { QuoteCheckoutUseCase } from "./application/quote-checkout.js";
 import {
   ReadOwnRequestsUseCase,
+  statusKey,
+  type RequestStatusReadInput,
   type RequestStatusReaderPort,
   type RequestStatusSnapshot,
 } from "./application/read-own-requests.js";
@@ -43,17 +45,24 @@ import { CreateGuestSessionUseCase } from "./application/use-cases/create-guest-
 import { ResolveGuestSessionUseCase } from "./application/use-cases/resolve-guest-session.use-case.js";
 import {
   MongoCheckoutAccessRepository,
-  MongoCheckoutQuoteRepository,
   MongoCheckoutRepository,
-  MongoCheckoutRequestLinkRepository,
 } from "./infrastructure/mongo-checkout.repository.js";
+import { MongoCheckoutRequestLinkRepository } from "./infrastructure/mongo-checkout-request-link.repository.js";
+import { MongoCheckoutQuoteRepository } from "./infrastructure/mongo-checkout-quote.repository.js";
+import { CHECKOUT_REQUEST_LINK_MODEL_NAME } from "./infrastructure/checkout.schema.js";
 import { MongoGuestSessionRepository } from "./infrastructure/mongo-guest-session.repository.js";
 import { buildCheckoutRouter } from "./presentation/checkout.router.js";
+import { buildStorefrontRequestStatusReaderAdapter } from "../../../routes/storefront-request-status-adapter.js";
 
 registerIamApiModels();
 
 const RETAIL = { industryTemplateKey: "RETAIL" };
 let harness: IamApiHarness;
+
+function requirePresent<T>(value: T | null | undefined, label: string): T {
+  if (value === null || value === undefined) throw new Error(`Expected ${label} to be present`);
+  return value;
+}
 
 beforeAll(async () => {
   harness = await startCatalogApi();
@@ -156,8 +165,21 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
       verifiedPhones.get(customerAccountId) ?? null,
   };
 
+  let statusReaderOverride: RequestStatusReaderPort | null = null;
+  let statusBatches: readonly RequestStatusReadInput[][] = [];
+
   const requestStatusReader: RequestStatusReaderPort = {
-    readStatus: async (input) => requestStatuses.get(input.requestId) ?? null,
+    readStatuses: async (inputs) => {
+      if (statusReaderOverride) return statusReaderOverride.readStatuses(inputs);
+      statusBatches = [...statusBatches, [...inputs]];
+      return new Map(
+        inputs.flatMap((input) => {
+          const key = statusKey(input.requestType, input.requestId);
+          const snapshot = requestStatuses.get(key);
+          return snapshot ? [[key, snapshot] as const] : [];
+        }),
+      );
+    },
   };
 
   let app: express.Express;
@@ -175,6 +197,8 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     verifiedPhones.clear();
     customerContacts.clear();
     requestStatuses.clear();
+    statusReaderOverride = null;
+    statusBatches = [];
 
     limiter = new MongoRateLimiter(clock);
 
@@ -214,6 +238,7 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     const claimCheckout = new ClaimCheckoutUseCase({
       access: accessRepo,
       checkouts: checkoutRepo,
+      requestLinks: requestLinkRepo,
       resolveGuestSession,
       customerPhoneReader,
       unitOfWork,
@@ -391,6 +416,115 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     expect(custListRes.body.data.items[0].checkoutId).toBe(custCheckout.checkoutId);
   });
 
+  it("revokes request links with the access row so a revoked session loses list and detail", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const guest = await createGuest(world.organizationA);
+    const cookie = `${SF_GUEST_COOKIE_NAME}=${formatGuestCookie(guest.guestSessionId, guest.rawSecret)}`;
+    const { checkoutId } = await createQuoteAndCheckout({
+      organizationId: world.organizationA,
+      locationId: world.locationA1,
+      cookie,
+    });
+
+    const revoked = await runInOrganizationContext(world.organizationA, () =>
+      accessRepo.revoke(world.organizationA, checkoutId, currentTime),
+    );
+    expect(revoked).toBe(true);
+
+    const links = await runInOrganizationContext(world.organizationA, () =>
+      requestLinkRepo.listByCheckoutId(world.organizationA, checkoutId),
+    );
+    expect(links).toHaveLength(1);
+    expect(links[0]?.revokedAt).toEqual(currentTime);
+
+    const detailRes = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationA}/checkouts/${checkoutId}`)
+      .set("Cookie", cookie);
+    expect(detailRes.status).toBe(404);
+    expect(detailRes.body.error.code).toBe(ERROR_CODE.NOT_FOUND);
+
+    const listRes = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests`)
+      .set("Cookie", cookie);
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.data.items).toHaveLength(0);
+    expect(listRes.body.data.total).toBe(0);
+  });
+
+  it("pages owner requests in the database, filters by type there, and batches status reads", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const guest = await createGuest(world.organizationA);
+    const cookie = `${SF_GUEST_COOKIE_NAME}=${formatGuestCookie(guest.guestSessionId, guest.rawSecret)}`;
+    const firstCheckout = await createQuoteAndCheckout({
+      organizationId: world.organizationA,
+      locationId: world.locationA1,
+      cookie,
+    });
+    const secondCheckout = await createQuoteAndCheckout({
+      organizationId: world.organizationA,
+      locationId: world.locationA1,
+      cookie,
+    });
+
+    const linkModel = await runInOrganizationContext(world.organizationA, async () =>
+      models({}).get<Record<string, unknown>>(CHECKOUT_REQUEST_LINK_MODEL_NAME),
+    );
+    const findSpy = vi.spyOn(linkModel, "find");
+    const countSpy = vi.spyOn(linkModel, "countDocuments");
+
+    try {
+      const firstPage = await request(app)
+        .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests?page=1&limit=1`)
+        .set("Cookie", cookie);
+      const secondPage = await request(app)
+        .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests?page=2&limit=1`)
+        .set("Cookie", cookie);
+      const filteredPage = await request(app)
+        .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests?requestType=BOOKING`)
+        .set("Cookie", cookie);
+      const allPage = await request(app)
+        .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests`)
+        .set("Cookie", cookie);
+
+      expect(firstPage.status).toBe(200);
+      expect(secondPage.status).toBe(200);
+      expect(firstPage.body.data.total).toBe(2);
+      expect(secondPage.body.data.total).toBe(2);
+      expect(firstPage.body.data.items).toHaveLength(1);
+      expect(secondPage.body.data.items).toHaveLength(1);
+      expect(firstPage.body.data.items[0].checkoutId).not.toBe(
+        secondPage.body.data.items[0].checkoutId,
+      );
+      expect([firstCheckout.checkoutId, secondCheckout.checkoutId]).toContain(
+        firstPage.body.data.items[0].checkoutId,
+      );
+      expect(filteredPage.body.data.items).toHaveLength(0);
+      expect(filteredPage.body.data.total).toBe(0);
+
+      // 4 list calls, one query each: never one query per link.
+      expect(findSpy).toHaveBeenCalledTimes(4);
+      expect(countSpy).toHaveBeenCalledTimes(4);
+      const filters = findSpy.mock.calls.map((call) => call[0]);
+      expect(filters[0]).toMatchObject({
+        revokedAt: null,
+        ownerType: "GUEST",
+        ownerIdentifier: guest.guestSessionId,
+      });
+      expect(filters[2]).toMatchObject({ requestType: "BOOKING" });
+      expect(filters[3]).not.toHaveProperty("requestType");
+      expect(findSpy.mock.results[0]?.value.getOptions()).toMatchObject({ skip: 0, limit: 1 });
+      expect(findSpy.mock.results[1]?.value.getOptions()).toMatchObject({ skip: 1, limit: 1 });
+      expect(allPage.status).toBe(200);
+      expect(allPage.body.data.items).toHaveLength(2);
+    } finally {
+      findSpy.mockRestore();
+      countSpy.mockRestore();
+    }
+
+    // Two paginated pages (1 link each) and one unfiltered page (2 links): one batched read each.
+    expect(statusBatches.map((batch) => batch.length)).toEqual([1, 1, 2]);
+  });
+
   it("projects enrollment payable amount using enrollmentPeriodId as payment requestId", async () => {
     const world = await worldFor(harness, RETAIL);
     const guest = await createGuest(world.organizationA);
@@ -416,17 +550,38 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     });
 
     const enrollmentRequestId = response.requests[0].requestId as string;
-    // Simulate enrollment period snapshot lookup per ADR-139
     const enrollmentPeriodId = newId();
-    requestStatuses.set(enrollmentRequestId, {
-      requestId: enrollmentRequestId,
-      requestType: "ENROLLMENT",
-      publicNumber: "ENR-000042",
-      status: "PENDING",
-      paymentRequired: { amount: 7500, currency: CURRENCY_CODE.BDT },
-      holdExpiresAt: null,
-      createdAt: currentTime,
-      plan: { startsOn: "2026-11-01", currentPeriodId: enrollmentPeriodId },
+    const summaryQueries: string[][] = [];
+    statusReaderOverride = buildStorefrontRequestStatusReaderAdapter({
+      orders: { findByIds: async () => [] },
+      bookings: { findByIds: async () => [] },
+      enrollments: {
+        findByIds: async (ids) =>
+          ids.map((enrollmentId) => ({
+            enrollmentId,
+            organizationId: world.organizationA,
+            enrollmentNumber: "ENR-000042",
+            status: "ACTIVE",
+            currentEnrollmentPeriodId: enrollmentPeriodId,
+            startsOn: "2026-11-01",
+            firstRecurringFee: { amount: 5000, currency: CURRENCY_CODE.BDT },
+            createdAt: currentTime,
+          })),
+      },
+      summaries: {
+        findByRequests: async (_organizationId, _requestType, requestIds) => {
+          summaryQueries.push([...requestIds]);
+          // ADR-139: the payable belongs to the current period, never the enrollment ID.
+          return requestIds.includes(enrollmentPeriodId)
+            ? [
+                {
+                  requestId: enrollmentPeriodId,
+                  due: { amount: 7500, currency: CURRENCY_CODE.BDT },
+                },
+              ]
+            : [];
+        },
+      },
     });
 
     const detailRes = await request(app)
@@ -447,6 +602,8 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     expect(singleReqRes.status).toBe(200);
     expect(singleReqRes.body.data.paymentRequired.amount).toBe(7500);
     expect(singleReqRes.body.data.publicNumber).toBe("ENR-000042");
+    expect(singleReqRes.body.data.plan).toEqual({ startsOn: "2026-11-01", endsOn: null });
+    expect(summaryQueries).toEqual([[enrollmentPeriodId], [enrollmentPeriodId]]);
   });
 
   it("refuses checkout detail and /me/requests access to another customer or guest session in the same organization", async () => {
@@ -464,10 +621,12 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     const guest2 = await createGuest(world.organizationA);
     const cookie2 = `${SF_GUEST_COOKIE_NAME}=${formatGuestCookie(guest2.guestSessionId, guest2.rawSecret)}`;
 
+    // A foreign owner is indistinguishable from a missing checkout: 404, not a 403 oracle.
     const foreignGuestRes = await request(app)
       .get(`/api/v1/storefront/orgs/${world.organizationA}/checkouts/${checkoutId}`)
       .set("Cookie", cookie2);
-    expect(foreignGuestRes.status).toBe(403);
+    expect(foreignGuestRes.status).toBe(404);
+    expect(foreignGuestRes.body.error.code).toBe(ERROR_CODE.NOT_FOUND);
 
     const foreignGuestList = await request(app)
       .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests`)
@@ -482,13 +641,57 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     const foreignCustRes = await request(app)
       .get(`/api/v1/storefront/orgs/${world.organizationA}/checkouts/${checkoutId}`)
       .set("x-test-customer-account-id", foreignCustomerId);
-    expect(foreignCustRes.status).toBe(403);
+    expect(foreignCustRes.status).toBe(404);
+    expect(foreignCustRes.body.error.code).toBe(ERROR_CODE.NOT_FOUND);
 
     const foreignCustList = await request(app)
       .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests`)
       .set("x-test-customer-account-id", foreignCustomerId);
     expect(foreignCustList.status).toBe(200);
     expect(foreignCustList.body.data.items).toHaveLength(0);
+  });
+
+  it("denies an organization B guest access to an organization A checkout, list and claim", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const guestA = await createGuest(world.organizationA);
+    const cookieA = `${SF_GUEST_COOKIE_NAME}=${formatGuestCookie(guestA.guestSessionId, guestA.rawSecret)}`;
+    const { checkoutId } = await createQuoteAndCheckout({
+      organizationId: world.organizationA,
+      locationId: world.locationA1,
+      cookie: cookieA,
+    });
+    const guestB = await createGuest(world.organizationB);
+    const cookieB = `${SF_GUEST_COOKIE_NAME}=${formatGuestCookie(guestB.guestSessionId, guestB.rawSecret)}`;
+
+    const response = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationB}/checkouts/${checkoutId}`)
+      .set("Cookie", cookieB);
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe(ERROR_CODE.NOT_FOUND);
+
+    const listResponse = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationB}/me/requests`)
+      .set("Cookie", cookieB);
+    expect(listResponse.status).toBe(200);
+    expect(listResponse.body.data.items).toHaveLength(0);
+    expect(listResponse.body.data.total).toBe(0);
+
+    const claimResponse = await request(app)
+      .post(`/api/v1/storefront/orgs/${world.organizationB}/checkouts/${checkoutId}/claim`)
+      .set("Cookie", cookieB)
+      .set("x-test-customer-account-id", newId());
+    expect(claimResponse.status).toBe(404);
+    expect(claimResponse.body.error.code).toBe(ERROR_CODE.NOT_FOUND);
+
+    // Organization A ownership is untouched by the cross-organization attempt.
+    const accessA = await runInOrganizationContext(world.organizationA, () =>
+      accessRepo.findByCheckoutId(world.organizationA, checkoutId),
+    );
+    expect(accessA?.owner).toEqual({
+      type: "GUEST",
+      identifier: guestA.guestSessionId,
+    });
   });
 
   it("claims guest checkout into verified customer account when both guest cookie and matching verified phone are present", async () => {
@@ -558,17 +761,33 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
       .set("x-test-customer-account-id", customerAccountId);
     expect(claimRes.status).toBe(200);
 
-    // Guest session tracking is revoked immediately
+    // Guest session tracking is revoked immediately (different owner is a 404, not an oracle)
     const trackingRes = await request(app)
       .get(`/api/v1/storefront/orgs/${world.organizationA}/checkouts/${checkoutId}`)
       .set("Cookie", cookie);
-    expect(trackingRes.status).toBe(403);
+    expect(trackingRes.status).toBe(404);
+    expect(trackingRes.body.error.code).toBe(ERROR_CODE.NOT_FOUND);
+
+    const movedLinks = await runInOrganizationContext(world.organizationA, () =>
+      requestLinkRepo.listByCheckoutId(world.organizationA, checkoutId),
+    );
+    expect(movedLinks).toHaveLength(1);
+    expect(movedLinks[0]?.ownerType).toBe("CUSTOMER");
+    expect(movedLinks[0]?.ownerIdentifier).toBe(customerAccountId);
 
     const guestListRes = await request(app)
       .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests`)
       .set("Cookie", cookie);
     expect(guestListRes.status).toBe(200);
     expect(guestListRes.body.data.items).toHaveLength(0);
+
+    // The claimed request now belongs to the customer account
+    const customerListRes = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests`)
+      .set("x-test-customer-account-id", customerAccountId);
+    expect(customerListRes.status).toBe(200);
+    expect(customerListRes.body.data.items).toHaveLength(1);
+    expect(customerListRes.body.data.items[0].checkoutId).toBe(checkoutId);
 
     // Idempotency replay by guest session is also revoked
     const replayRes = await request(app)
@@ -656,14 +875,22 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
       contactPhone: phone,
     });
 
-    const beforeCheckout = await runInOrganizationContext(world.organizationA, () =>
-      checkoutRepo.findById(world.organizationA, checkoutId),
+    const beforeCheckout = requirePresent(
+      await runInOrganizationContext(world.organizationA, () =>
+        checkoutRepo.findById(world.organizationA, checkoutId),
+      ),
+      "beforeCheckout",
     );
-    expect(beforeCheckout).not.toBeNull();
-    if (!beforeCheckout) throw new Error("Expected beforeCheckout to be present");
     const originalCreationPrincipal = beforeCheckout.creationPrincipalKey;
     const originalContactId = beforeCheckout.contactId;
     expect(originalCreationPrincipal).toBe(`GUEST:${guest.guestSessionId}`);
+
+    const beforeLinks = await runInOrganizationContext(world.organizationA, () =>
+      requestLinkRepo.listByCheckoutId(world.organizationA, checkoutId),
+    );
+    expect(beforeLinks).toHaveLength(1);
+    const beforeLink = requirePresent(beforeLinks[0], "a request link before the claim");
+    expect(beforeLink.ownerType).toBe("GUEST");
 
     const customerAccountId = newId();
     verifiedPhones.set(customerAccountId, phone);
@@ -676,15 +903,30 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
       .set("x-test-customer-account-id", customerAccountId);
     expect(claimRes.status).toBe(200);
 
-    const afterCheckout = await runInOrganizationContext(world.organizationA, () =>
-      checkoutRepo.findById(world.organizationA, checkoutId),
+    const afterCheckout = requirePresent(
+      await runInOrganizationContext(world.organizationA, () =>
+        checkoutRepo.findById(world.organizationA, checkoutId),
+      ),
+      "afterCheckout",
     );
-    expect(afterCheckout).not.toBeNull();
-    if (!afterCheckout) throw new Error("Expected afterCheckout to be present");
     // creationPrincipalKey remains unchanged
     expect(afterCheckout.creationPrincipalKey).toBe(originalCreationPrincipal);
     // contactId on checkout remains original provisional contact, NOT merged with customerContactId
     expect(afterCheckout.contactId).toBe(originalContactId);
     expect(afterCheckout.contactId).not.toBe(customerContactId);
+
+    // The historical request itself is moved, never rewritten: same request, same public number.
+    const afterLinks = await runInOrganizationContext(world.organizationA, () =>
+      requestLinkRepo.listByCheckoutId(world.organizationA, checkoutId),
+    );
+    expect(afterLinks).toHaveLength(1);
+    const afterLink = requirePresent(afterLinks[0], "a request link after the claim");
+    expect(afterLink.requestId).toBe(beforeLink.requestId);
+    expect(afterLink.requestType).toBe(beforeLink.requestType);
+    expect(afterLink.publicNumber).toBe(beforeLink.publicNumber);
+    expect(afterLink.status).toBe(beforeLink.status);
+    expect(afterLink.ownerType).toBe("CUSTOMER");
+    expect(afterLink.ownerIdentifier).toBe(customerAccountId);
+    expect(afterLink.revokedAt).toBeNull();
   });
 });

@@ -139,6 +139,7 @@ export {
 export {
   WEBSITE_CHECKOUT_ENABLED_SETTING_KEY,
   WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY,
+  WEBSITE_DELIVERY_CHARGE_SETTING_KEY,
   STOREFRONT_CHECKOUT_PER_WINDOW,
   STOREFRONT_CHECKOUT_WINDOW_SECONDS,
   STOREFRONT_CHECKOUT_RATE_LIMIT_BUCKET,
@@ -167,4 +168,9 @@ export {
   type StorefrontRequestItem,
   type StorefrontRequestListResponse,
   type StorefrontRequestDetailResponse,
+  type StorefrontOrderItem,
+  type StorefrontOrderFulfillmentMethod,
+  type StorefrontRequestSchedule,
+  type StorefrontRequestPlan,
+  type StorefrontRequestFulfillment,
 } from "./checkout-contracts.js";

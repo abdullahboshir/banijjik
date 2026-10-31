@@ -4,10 +4,14 @@ import type {
   CheckoutDetailRequestItem,
   CheckoutDetailResponse,
   CheckoutPrincipal,
+  StorefrontOrderItem,
   StorefrontRequestDetailResponse,
+  StorefrontRequestFulfillment,
   StorefrontRequestItem,
   StorefrontRequestListQuery,
   StorefrontRequestListResponse,
+  StorefrontRequestPlan,
+  StorefrontRequestSchedule,
 } from "@banijjik/contracts/website";
 import { AppError } from "../../../../kernel/http/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
@@ -26,18 +30,30 @@ export interface RequestStatusSnapshot {
   readonly paymentRequired: Money;
   readonly holdExpiresAt: Date | null;
   readonly createdAt: Date;
-  readonly items?: readonly unknown[];
-  readonly schedule?: unknown;
-  readonly plan?: unknown;
-  readonly fulfillment?: unknown;
+  readonly items?: readonly StorefrontOrderItem[];
+  readonly schedule?: StorefrontRequestSchedule;
+  readonly plan?: StorefrontRequestPlan;
+  readonly fulfillment?: StorefrontRequestFulfillment;
 }
 
+export interface RequestStatusReadInput {
+  readonly organizationId: string;
+  readonly requestType: "ORDER" | "BOOKING" | "ENROLLMENT";
+  readonly requestId: string;
+}
+
+/**
+ * One read per request type per page: tracking the list of a guest with many requests must not
+ * fan out into a query per link (N+1).
+ */
 export interface RequestStatusReaderPort {
-  readStatus(input: {
-    readonly organizationId: string;
-    readonly requestType: "ORDER" | "BOOKING" | "ENROLLMENT";
-    readonly requestId: string;
-  }): Promise<RequestStatusSnapshot | null>;
+  readStatuses(
+    inputs: readonly RequestStatusReadInput[],
+  ): Promise<ReadonlyMap<string, RequestStatusSnapshot>>;
+}
+
+export function statusKey(requestType: string, requestId: string): string {
+  return `${requestType}:${requestId}`;
 }
 
 export interface ReadOwnRequestsDependencies {
@@ -52,13 +68,6 @@ function resolveHoldExpiresAt(liveHold?: Date | null, linkHold?: Date | null): s
   if (liveHold) return liveHold.toISOString();
   if (linkHold) return linkHold.toISOString();
   return null;
-}
-
-function assignExtraProps(mutable: Record<string, unknown>, live: RequestStatusSnapshot): void {
-  if (live.items !== undefined) mutable.items = live.items;
-  if (live.schedule !== undefined) mutable.schedule = live.schedule;
-  if (live.plan !== undefined) mutable.plan = live.plan;
-  if (live.fulfillment !== undefined) mutable.fulfillment = live.fulfillment;
 }
 
 function buildDetailPayload(
@@ -92,8 +101,13 @@ function buildDetailPayload(
     createdAt: link.createdAt.toISOString(),
   };
 
-  assignExtraProps(result as unknown as Record<string, unknown>, live);
-  return result;
+  return {
+    ...result,
+    ...(live.items === undefined ? {} : { items: live.items }),
+    ...(live.schedule === undefined ? {} : { schedule: live.schedule }),
+    ...(live.plan === undefined ? {} : { plan: live.plan }),
+    ...(live.fulfillment === undefined ? {} : { fulfillment: live.fulfillment }),
+  };
 }
 
 export class ReadOwnRequestsUseCase {
@@ -119,15 +133,9 @@ export class ReadOwnRequestsUseCase {
       input.organizationId,
       input.checkoutId,
     );
-    const requests = await Promise.all(
-      links.map(async (link) => {
-        const live = await this.deps.requestStatusReader.readStatus({
-          organizationId: input.organizationId,
-          requestType: link.requestType,
-          requestId: link.requestId,
-        });
-        return this.mapDetailItem(link, live);
-      }),
+    const statuses = await this.readStatuses(input.organizationId, links);
+    const requests = links.map((link) =>
+      this.mapDetailItem(link, statuses.get(statusKey(link.requestType, link.requestId)) ?? null),
     );
 
     const status = requests.length > 0 && requests[0] ? requests[0].status : "SUBMITTED";
@@ -158,47 +166,23 @@ export class ReadOwnRequestsUseCase {
         ? input.principal.customerAccountId
         : input.principal.guestSessionId;
 
-    const accesses = await this.deps.access.listByOwner(
-      input.organizationId,
-      input.principal.type,
-      principalId,
-    );
-
     const page = Math.max(1, input.query.page ?? 1);
     const limit = Math.min(100, Math.max(1, input.query.limit ?? 20));
+    const result = await this.deps.requestLinks.listByOwner({
+      organizationId: input.organizationId,
+      ownerType: input.principal.type,
+      identifier: principalId,
+      ...(input.query.requestType ? { requestType: input.query.requestType } : {}),
+      page,
+      limit,
+    });
 
-    if (accesses.length === 0) {
-      return { items: [], total: 0, page, limit };
-    }
-
-    const linkArrays = await Promise.all(
-      accesses.map((a) =>
-        this.deps.requestLinks.listByCheckoutId(input.organizationId, a.checkoutId),
-      ),
-    );
-    const allLinks = linkArrays.flat();
-
-    const filteredLinks = input.query.requestType
-      ? allLinks.filter((l) => l.requestType === input.query.requestType)
-      : allLinks;
-
-    filteredLinks.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    const total = filteredLinks.length;
-    const pagedLinks = filteredLinks.slice((page - 1) * limit, page * limit);
-
-    const items = await Promise.all(
-      pagedLinks.map(async (link) => {
-        const live = await this.deps.requestStatusReader.readStatus({
-          organizationId: input.organizationId,
-          requestType: link.requestType,
-          requestId: link.requestId,
-        });
-        return this.mapRequestItem(link, live);
-      }),
+    const statuses = await this.readStatuses(input.organizationId, result.links);
+    const items = result.links.map((link) =>
+      this.mapRequestItem(link, statuses.get(statusKey(link.requestType, link.requestId)) ?? null),
     );
 
-    return { items, total, page, limit };
+    return { items, total: result.total, page, limit };
   }
 
   async getRequestDetail(input: {
@@ -218,13 +202,26 @@ export class ReadOwnRequestsUseCase {
 
     await this.assertAccess(input.organizationId, link.checkoutId, input.principal);
 
-    const live = await this.deps.requestStatusReader.readStatus({
-      organizationId: input.organizationId,
-      requestType: link.requestType,
-      requestId: link.requestId,
-    });
+    const statuses = await this.readStatuses(input.organizationId, [link]);
+    return buildDetailPayload(
+      link,
+      statuses.get(statusKey(link.requestType, link.requestId)) ?? null,
+      input.organizationId,
+    );
+  }
 
-    return buildDetailPayload(link, live, input.organizationId);
+  private readStatuses(
+    organizationId: string,
+    links: readonly CheckoutRequestLinkRecord[],
+  ): Promise<ReadonlyMap<string, RequestStatusSnapshot>> {
+    if (links.length === 0) return Promise.resolve(new Map());
+    return this.deps.requestStatusReader.readStatuses(
+      links.map((link) => ({
+        organizationId,
+        requestType: link.requestType,
+        requestId: link.requestId,
+      })),
+    );
   }
 
   private async assertAccess(
@@ -233,21 +230,19 @@ export class ReadOwnRequestsUseCase {
     principal: CheckoutPrincipal,
   ) {
     const accessRecord = await this.deps.access.findByCheckoutId(organizationId, checkoutId);
-    if (!accessRecord) {
+    if (!accessRecord || accessRecord.revokedAt !== null) {
       throw new AppError({ code: ERROR_CODE.NOT_FOUND, messageKey: "errors.checkout_not_found" });
-    }
-    if (accessRecord.revokedAt !== null) {
-      throw new AppError({ code: ERROR_CODE.FORBIDDEN, messageKey: "errors.forbidden" });
     }
 
     const principalId =
       principal.type === "CUSTOMER" ? principal.customerAccountId : principal.guestSessionId;
 
+    // A foreign owner is indistinguishable from a missing checkout: no existence oracle.
     if (
       accessRecord.owner.type !== principal.type ||
       accessRecord.owner.identifier !== principalId
     ) {
-      throw new AppError({ code: ERROR_CODE.FORBIDDEN, messageKey: "errors.forbidden" });
+      throw new AppError({ code: ERROR_CODE.NOT_FOUND, messageKey: "errors.checkout_not_found" });
     }
 
     return accessRecord;

@@ -9,6 +9,7 @@ import {
 import {
   SECTION_KEY,
   WEBSITE_CHECKOUT_ENABLED_SETTING_KEY,
+  WEBSITE_DELIVERY_CHARGE_SETTING_KEY,
   WEBSITE_EVENT_TYPE,
   WEBSITE_GUEST_CHECKOUT_SETTING_KEY,
   WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY,
@@ -86,6 +87,13 @@ export const websiteManifest = defineModule({
       settingKey: WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY,
       value: { kind: "STRUCTURED", schemaKey: "website.publicLocationIds" },
       systemDefault: [],
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+    {
+      settingKey: WEBSITE_DELIVERY_CHARGE_SETTING_KEY,
+      value: { kind: "INTEGER", min: 0, max: 100_000_000_000 },
+      systemDefault: 0,
       allowsLocationOverride: false,
       isClientVisible: true,
     },

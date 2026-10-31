@@ -34,10 +34,10 @@ import { CreateGuestSessionUseCase } from "./application/use-cases/create-guest-
 import { ResolveGuestSessionUseCase } from "./application/use-cases/resolve-guest-session.use-case.js";
 import {
   MongoCheckoutAccessRepository,
-  MongoCheckoutQuoteRepository,
   MongoCheckoutRepository,
-  MongoCheckoutRequestLinkRepository,
 } from "./infrastructure/mongo-checkout.repository.js";
+import { MongoCheckoutRequestLinkRepository } from "./infrastructure/mongo-checkout-request-link.repository.js";
+import { MongoCheckoutQuoteRepository } from "./infrastructure/mongo-checkout-quote.repository.js";
 import { MongoGuestSessionRepository } from "./infrastructure/mongo-guest-session.repository.js";
 import { buildCheckoutRouter } from "./presentation/checkout.router.js";
 

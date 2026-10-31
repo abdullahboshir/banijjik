@@ -17,12 +17,6 @@ import type {
   CheckoutRepositoryPort,
   CheckoutRequestLinkRepositoryPort,
 } from "./checkout-ports.js";
-import {
-  MongoCheckoutAccessRepository,
-  MongoCheckoutQuoteRepository,
-  MongoCheckoutRepository,
-  MongoCheckoutRequestLinkRepository,
-} from "../infrastructure/mongo-checkout.repository.js";
 
 export interface CheckoutPrivacyDependencies {
   readonly accesses: CheckoutAccessRepositoryPort;
@@ -31,18 +25,7 @@ export interface CheckoutPrivacyDependencies {
   readonly quotes: CheckoutQuoteRepositoryPort;
 }
 
-export function buildDefaultCheckoutPrivacyDependencies(): CheckoutPrivacyDependencies {
-  return {
-    accesses: new MongoCheckoutAccessRepository(),
-    checkouts: new MongoCheckoutRepository(),
-    requestLinks: new MongoCheckoutRequestLinkRepository(),
-    quotes: new MongoCheckoutQuoteRepository(),
-  };
-}
-
-function mapRequestLinkToExportItem(
-  link: CheckoutRequestLinkRecord,
-): CheckoutExportRequestItem {
+function mapRequestLinkToExportItem(link: CheckoutRequestLinkRecord): CheckoutExportRequestItem {
   return {
     checkoutRequestLinkId: link.checkoutRequestLinkId,
     selectionIds: link.selectionIds,
@@ -101,12 +84,12 @@ export function buildCheckoutExportParticipant(
       readonly maxRows: number;
     }): Promise<CheckoutExportSection> {
       const fetchLimit = input.maxRows + 1;
-      const accesses = await dependencies.accesses.listByOwner(
-        input.organizationId,
-        "CUSTOMER",
-        input.customerAccountId,
-        { limit: fetchLimit },
-      );
+      const accesses = await dependencies.accesses.listByOwner({
+        organizationId: input.organizationId,
+        ownerType: "CUSTOMER",
+        identifier: input.customerAccountId,
+        limit: fetchLimit,
+      });
 
       const truncated = accesses.length > input.maxRows;
       const slicedAccesses = truncated ? accesses.slice(0, input.maxRows) : accesses;
@@ -127,10 +110,7 @@ export function buildCheckoutExportParticipant(
 
       const linksByCheckoutId = groupLinksByCheckoutId(rawLinks);
       const checkoutItems: CheckoutExportItem[] = checkouts.map((checkout) =>
-        mapCheckoutToExportItem(
-          checkout,
-          linksByCheckoutId.get(checkout.checkoutId) ?? [],
-        ),
+        mapCheckoutToExportItem(checkout, linksByCheckoutId.get(checkout.checkoutId) ?? []),
       );
 
       return {
@@ -163,15 +143,20 @@ export function buildCheckoutErasureParticipant(
       });
 
       // 2. Scrub contact snapshot in Checkout records
+      let quoteIds: readonly string[] = [];
       if (checkoutIds.length > 0) {
+        const ownedCheckouts = await dependencies.checkouts.findByIds(organizationId, checkoutIds);
+        quoteIds = ownedCheckouts.map((checkout) => checkout.quoteId);
         await dependencies.checkouts.redactContactSnapshots(organizationId, checkoutIds);
       }
 
-      // 3. Scrub quotes associated with this customer principal
+      // 3. Scrub quotes: those this customer requested directly, and the ones behind every
+      // checkout it owns — a claimed checkout keeps the original guest-session principal.
       await dependencies.quotes.scrubPrincipalQuotes(
         organizationId,
         `CUSTOMER:${customerAccountId}`,
       );
+      await dependencies.quotes.scrubQuotesByIds(organizationId, quoteIds);
 
       // Financial records (orders, bookings, enrollments, request links, acceptedTotals) remain preserved
       return { forfeitedCredits: 0 };
@@ -185,14 +170,10 @@ export interface CheckoutPrivacyParticipants {
 }
 
 export function buildCheckoutPrivacyParticipants(
-  dependencies?: Partial<CheckoutPrivacyDependencies>,
+  dependencies: CheckoutPrivacyDependencies,
 ): CheckoutPrivacyParticipants {
-  const resolvedDeps: CheckoutPrivacyDependencies = {
-    ...buildDefaultCheckoutPrivacyDependencies(),
-    ...dependencies,
-  };
   return {
-    exportParticipant: buildCheckoutExportParticipant(resolvedDeps),
-    erasureParticipant: buildCheckoutErasureParticipant(resolvedDeps),
+    exportParticipant: buildCheckoutExportParticipant(dependencies),
+    erasureParticipant: buildCheckoutErasureParticipant(dependencies),
   };
 }

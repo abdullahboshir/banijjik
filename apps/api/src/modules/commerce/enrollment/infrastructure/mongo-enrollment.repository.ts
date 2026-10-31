@@ -53,6 +53,13 @@ export class MongoEnrollmentRepository implements EnrollmentRepository {
       .lean<Enrollment>();
     return row ? { ...row, checkoutId: row.checkoutId ?? null } : undefined;
   }
+  async findByIds(enrollmentIds: readonly string[]): Promise<readonly Enrollment[]> {
+    if (enrollmentIds.length === 0) return [];
+    const rows = await enrollments()
+      .find({ enrollmentId: { $in: [...enrollmentIds] } }, projection, options())
+      .lean<Enrollment[]>();
+    return rows.map((row) => ({ ...row, checkoutId: row.checkoutId ?? null }));
+  }
   async findByCheckoutId(
     organizationId: string,
     checkoutId: string,

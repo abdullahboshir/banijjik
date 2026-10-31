@@ -1,32 +1,14 @@
 import { buildOrderPaymentAdapter } from "./order-payment-adapter.js";
 import { asSystemPort } from "../kernel/context/index.js";
-import { SYSTEM_REASON } from "@banijjik/contracts";
+import { ERROR_CODE, SYSTEM_REASON } from "@banijjik/contracts";
 import { isApprovalRequired } from "../modules/commerce/payment/index.js";
 import { buildMembershipDirectory } from "../modules/core/organization/index.js";
-import {
-  ERROR_CODE,
-  PERMISSION_KEY,
-  type CurrencyCode,
-  type ModuleManifest,
-} from "@banijjik/contracts";
-import {
-  DEFAULT_APPROVAL_DISCOUNT_AMOUNT_ABOVE,
-  DEFAULT_APPROVAL_DISCOUNT_PERCENT_ABOVE,
-  PRICING_APPROVAL_DISCOUNT_AMOUNT_ABOVE_SETTING_KEY,
-  PRICING_APPROVAL_DISCOUNT_PERCENT_ABOVE_SETTING_KEY,
-  PRICING_DEFAULT_TAX_CLASS_KEY_SETTING_KEY,
-  PRICING_ROUNDING,
-  PRICING_ROUNDING_SETTING_KEY,
-  PRICING_TAX_INCLUSIVE_SETTING_KEY,
-  isPricingRounding,
-  type PricingRounding,
-} from "@banijjik/contracts/pricing";
+import { PERMISSION_KEY, type CurrencyCode, type ModuleManifest } from "@banijjik/contracts";
 import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
-import { AppError } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
-import { forbidden } from "../kernel/http/index.js";
+import { AppError, forbidden } from "../kernel/http/index.js";
 import { buildDefaultCatalogQuoteReader } from "../modules/commerce/catalog/index.js";
 import { buildInventoryCostReader, buildStockLedger } from "../modules/commerce/inventory/index.js";
 import {
@@ -44,8 +26,11 @@ import {
   buildOrganizationCurrencyReader,
 } from "../modules/core/organization/index.js";
 import { buildApprovalVerifier } from "../modules/core/iam/index.js";
-import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import { buildLimitGuard, type OrgConfigService } from "../modules/platform/entitlement/index.js";
+import {
+  buildOrganizationPricingContext,
+  buildPricingSettingsReader,
+} from "./pricing-route-ports.js";
 
 export interface SalesRouterInput {
   readonly clock: Clock;
@@ -57,67 +42,6 @@ export interface SalesRouterInput {
   readonly manifests: readonly ModuleManifest[];
 }
 
-function numberOrDefault(value: unknown, fallback: number): number {
-  return typeof value === "number" ? value : fallback;
-}
-
-function roundingOf(value: unknown): PricingRounding {
-  if (typeof value === "string" && isPricingRounding(value)) return value;
-  return PRICING_ROUNDING.NONE;
-}
-
-/** Pricing keeps the settings reader; sales quotes through the same reader (card 3.4). */
-function pricingSettingsOf(input: SalesRouterInput): PricingTenantDependencies["settings"] {
-  const resolver = buildSettingsResolver({
-    orgConfig: input.orgConfig,
-    manifests: input.manifests,
-  });
-  return {
-    read: async (organizationId) => {
-      const resolved = await resolver.resolve(organizationId, {
-        keys: [
-          PRICING_TAX_INCLUSIVE_SETTING_KEY,
-          PRICING_ROUNDING_SETTING_KEY,
-          PRICING_APPROVAL_DISCOUNT_PERCENT_ABOVE_SETTING_KEY,
-          PRICING_APPROVAL_DISCOUNT_AMOUNT_ABOVE_SETTING_KEY,
-          PRICING_DEFAULT_TAX_CLASS_KEY_SETTING_KEY,
-        ],
-      });
-      const defaultKey = resolved.get(PRICING_DEFAULT_TAX_CLASS_KEY_SETTING_KEY)?.value;
-      return {
-        taxInclusive: resolved.get(PRICING_TAX_INCLUSIVE_SETTING_KEY)?.value === true,
-        rounding: roundingOf(resolved.get(PRICING_ROUNDING_SETTING_KEY)?.value),
-        approvalPercentAbove: numberOrDefault(
-          resolved.get(PRICING_APPROVAL_DISCOUNT_PERCENT_ABOVE_SETTING_KEY)?.value,
-          DEFAULT_APPROVAL_DISCOUNT_PERCENT_ABOVE,
-        ),
-        approvalAmountAbove: numberOrDefault(
-          resolved.get(PRICING_APPROVAL_DISCOUNT_AMOUNT_ABOVE_SETTING_KEY)?.value,
-          DEFAULT_APPROVAL_DISCOUNT_AMOUNT_ABOVE,
-        ),
-        defaultTaxClassKey: typeof defaultKey === "string" ? defaultKey : "",
-      };
-    },
-  };
-}
-
-/** Pricing needs the organization currency; a tenant without one is a server-side fault. */
-function organizationOf() {
-  const currencies = buildOrganizationCurrencyReader();
-  return {
-    read: async (organizationId: Parameters<typeof currencies.read>[0]) => {
-      const currency = await currencies.read(organizationId);
-      if (currency === undefined) {
-        throw new AppError({
-          code: ERROR_CODE.INTERNAL,
-          messageKey: "errors.missing_tenant_context",
-        });
-      }
-      return { currency };
-    },
-  };
-}
-
 /** The quoter of an order line set: the client never sends a price (decision 2). */
 function quoterOf(input: SalesRouterInput): SalesTenantPorts["quoter"] {
   const pricing: PricingTenantDependencies = {
@@ -125,8 +49,8 @@ function quoterOf(input: SalesRouterInput): SalesTenantPorts["quoter"] {
     audit: input.audit,
     permission: input.permission,
     idempotency: input.idempotency,
-    organization: organizationOf(),
-    settings: pricingSettingsOf(input),
+    organization: buildOrganizationPricingContext(),
+    settings: buildPricingSettingsReader(input),
     catalog: buildDefaultCatalogQuoteReader(),
     locationReach: {
       mayReach: async (locationId) => {

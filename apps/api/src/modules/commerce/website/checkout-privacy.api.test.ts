@@ -1,22 +1,38 @@
-import { CURRENCY_CODE, ERROR_CODE, type CurrencyCode } from "@banijjik/contracts";
+import {
+  CURRENCY_CODE,
+  ERROR_CODE,
+  IDEMPOTENCY_STATUS,
+  type CurrencyCode,
+} from "@banijjik/contracts";
 import type { CheckoutExportSection } from "@banijjik/contracts/contact";
 import { newId, type CustomerAccountId, type OrganizationId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { runWithRequestContext } from "../../../kernel/context/index.js";
+import type { IdempotencyReplayAuthorization } from "../../../kernel/idempotency/index.js";
 import { runInOrganizationContext } from "../../../kernel/tenancy/index.js";
 import { startCatalogApi, worldFor } from "../../../test-support/catalog-world.js";
 import { registerIamApiModels, type IamApiHarness } from "../../../test-support/iam-api-harness.js";
 import { buildCheckoutPrivacyParticipants } from "./application/checkout-privacy-participants.js";
-import { ReadOwnRequestsUseCase } from "./application/read-own-requests.js";
-import type { Checkout, CheckoutAccess, CheckoutRequestLinkRecord } from "./domain/checkout-types.js";
+import { ReadOwnRequestsUseCase, statusKey } from "./application/read-own-requests.js";
+import type {
+  Checkout,
+  CheckoutAccess,
+  CheckoutRequestLinkRecord,
+} from "./domain/checkout-types.js";
 import {
   MongoCheckoutAccessRepository,
-  MongoCheckoutQuoteRepository,
   MongoCheckoutRepository,
-  MongoCheckoutRequestLinkRepository,
 } from "./infrastructure/mongo-checkout.repository.js";
+import { MongoCheckoutRequestLinkRepository } from "./infrastructure/mongo-checkout-request-link.repository.js";
+import { MongoCheckoutQuoteRepository } from "./infrastructure/mongo-checkout-quote.repository.js";
 import { buildAuthorizeReplay } from "./presentation/storefront-principal.middleware.js";
 
 registerIamApiModels();
+
+function requirePresent<T>(value: T | null | undefined, label: string): T {
+  if (value === null || value === undefined) throw new Error(`Expected ${label} to be present`);
+  return value;
+}
 
 const RETAIL = { industryTemplateKey: "RETAIL" };
 let harness: IamApiHarness;
@@ -51,20 +67,74 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     checkouts: checkoutRepo,
     requestLinks: requestLinkRepo,
     requestStatusReader: {
-      readStatus: async (input) => ({
-        requestId: input.requestId,
-        requestType: input.requestType,
-        status: "SUBMITTED",
-        publicNumber: "PUB-1",
-        paymentRequired: { amount: 5000, currency: CURRENCY_CODE.BDT as CurrencyCode },
-        holdExpiresAt: null,
-        createdAt: new Date("2026-10-30T10:00:00.000Z"),
-      }),
+      readStatuses: async (inputs) =>
+        new Map(
+          inputs.map((input) => [
+            statusKey(input.requestType, input.requestId),
+            {
+              requestId: input.requestId,
+              requestType: input.requestType,
+              status: "SUBMITTED",
+              publicNumber: "PUB-1",
+              paymentRequired: { amount: 5000, currency: CURRENCY_CODE.BDT as CurrencyCode },
+              holdExpiresAt: null,
+              createdAt: new Date("2026-10-30T10:00:00.000Z"),
+            },
+          ]),
+        ),
     },
     clock,
   });
 
   const authorizeReplay = buildAuthorizeReplay(accessRepo);
+
+  function inOrg<Result>(organizationId: string, work: () => Promise<Result>): Promise<Result> {
+    return runInOrganizationContext(organizationId, work);
+  }
+
+  function exportForAccount(input: {
+    readonly organizationId: OrganizationId;
+    readonly customerAccountId: CustomerAccountId;
+    readonly maxRows: number;
+  }) {
+    return inOrg(input.organizationId, () =>
+      participants.exportParticipant.exportForAccount(input),
+    );
+  }
+
+  function eraseForAccount(input: {
+    readonly organizationId: OrganizationId;
+    readonly customerAccountId: CustomerAccountId;
+    readonly now: Date;
+  }) {
+    return inOrg(input.organizationId, () =>
+      participants.erasureParticipant.eraseForAccount(input),
+    );
+  }
+
+  type DetailInput = Parameters<ReadOwnRequestsUseCase["getCheckoutDetail"]>[0];
+
+  function readDetail(input: DetailInput) {
+    return inOrg(input.organizationId, () => readOwnRequests.getCheckoutDetail(input));
+  }
+
+  function readAccess(organizationId: string, checkoutId: string) {
+    return inOrg(organizationId, () => accessRepo.findByCheckoutId(organizationId, checkoutId));
+  }
+
+  function readCheckout(organizationId: string, checkoutId: string) {
+    return inOrg(organizationId, () => checkoutRepo.findById(organizationId, checkoutId));
+  }
+
+  function readQuote(organizationId: string, quoteId: string) {
+    return inOrg(organizationId, () => quoteRepo.findById(organizationId, quoteId));
+  }
+
+  function listLinks(organizationId: string, checkoutId: string) {
+    return inOrg(organizationId, () =>
+      requestLinkRepo.listByCheckoutId(organizationId, checkoutId),
+    );
+  }
 
   async function seedCheckoutFixture(input: {
     readonly organizationId: string;
@@ -72,6 +142,8 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     readonly checkoutId: string;
     readonly quoteId: string;
     readonly owner: { readonly type: "CUSTOMER" | "GUEST"; readonly identifier: string };
+    /** A claimed checkout keeps the original guest-session principal on its quote. */
+    readonly quotePrincipalKey?: string;
     readonly links?: readonly CheckoutRequestLinkRecord[];
     readonly contactSnapshot?: {
       readonly name: string;
@@ -106,70 +178,73 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
       createdAt: new Date("2026-10-30T10:00:00.000Z"),
       updatedAt: new Date("2026-10-30T10:00:00.000Z"),
     };
-    await checkoutRepo.save(checkout);
+    await inOrg(input.organizationId, async () => {
+      await checkoutRepo.save(checkout);
 
-    const access: CheckoutAccess = {
-      checkoutAccessId: newId(),
-      organizationId: input.organizationId,
-      checkoutId: input.checkoutId,
-      owner: input.owner,
-      revokedAt: null,
-      version: 1,
-      createdAt: new Date("2026-10-30T10:00:00.000Z"),
-      updatedAt: new Date("2026-10-30T10:00:00.000Z"),
-    };
-    await accessRepo.save(access);
+      const access: CheckoutAccess = {
+        checkoutAccessId: newId(),
+        organizationId: input.organizationId,
+        checkoutId: input.checkoutId,
+        owner: input.owner,
+        revokedAt: null,
+        version: 1,
+        createdAt: new Date("2026-10-30T10:00:00.000Z"),
+        updatedAt: new Date("2026-10-30T10:00:00.000Z"),
+      };
+      await accessRepo.save(access);
 
-    if (input.links && input.links.length > 0) {
-      await requestLinkRepo.saveMany(input.links);
-    }
+      if (input.links && input.links.length > 0) {
+        await requestLinkRepo.saveMany(input.links);
+      }
 
-    await quoteRepo.save({
-      quoteId: input.quoteId,
-      organizationId: input.organizationId,
-      principalKey:
-        input.owner.type === "CUSTOMER"
-          ? `CUSTOMER:${input.owner.identifier}`
-          : `GUEST:${input.owner.identifier}`,
-      input: {
-        locationId: input.locationId,
-        selections: [
-          {
-            selectionId: newId(),
-            selection: {
-              kind: "PRODUCT",
-              offeringId: newId(),
-              variantId: newId(),
-              quantity: 1,
-              modifierOptionIds: [],
+      await quoteRepo.save({
+        quoteId: input.quoteId,
+        organizationId: input.organizationId,
+        principalKey:
+          input.quotePrincipalKey ??
+          (input.owner.type === "CUSTOMER"
+            ? `CUSTOMER:${input.owner.identifier}`
+            : `GUEST:${input.owner.identifier}`),
+        input: {
+          locationId: input.locationId,
+          selections: [
+            {
+              selectionId: newId(),
+              selection: {
+                kind: "PRODUCT",
+                offeringId: newId(),
+                variantId: newId(),
+                quantity: 1,
+                modifierOptionIds: [],
+              },
+              customFields: { color: "navy" },
             },
-            customFields: { color: "navy" },
-          },
-        ],
-        fulfillment: {
-          method: "COURIER",
-          address: {
-            recipientName: contactSnapshot.name,
-            phone: contactSnapshot.phoneE164,
-            addressLine: "Road 12, Banani",
-            districtCode: "DHK",
-            areaCode: "BANANI",
+          ],
+          fulfillment: {
+            method: "COURIER",
+            address: {
+              recipientName: contactSnapshot.name,
+              phone: contactSnapshot.phoneE164,
+              addressLine: "Road 12, Banani",
+              districtCode: "DHK",
+              areaCode: "BANANI",
+            },
           },
         },
-      },
-      inputHash: "quote-hash-" + input.quoteId,
-      pricedSnapshot: {
-        total: { amount: 5000, currency: CURRENCY_CODE.BDT as CurrencyCode },
-        lines: [],
-        deliveryCharge: { amount: 100, currency: CURRENCY_CODE.BDT as CurrencyCode },
-      },
-      configVersion: 1,
-      expiresAt: new Date("2026-10-30T12:00:00.000Z"),
-      consumedAt: new Date("2026-10-30T10:00:00.000Z"),
-      consumedCheckoutId: input.checkoutId,
-      version: 1,
-      createdAt: new Date("2026-10-30T09:55:00.000Z"),
-      updatedAt: new Date("2026-10-30T10:00:00.000Z"),
+        inputHash: "quote-hash-" + input.quoteId,
+        pricedSnapshot: {
+          total: { amount: 5000, currency: CURRENCY_CODE.BDT as CurrencyCode },
+          lines: [],
+          deliveryCharge: { amount: 100, currency: CURRENCY_CODE.BDT as CurrencyCode },
+        },
+        configVersion: 1,
+        expiresAt: new Date("2026-10-30T12:00:00.000Z"),
+        consumedAt: new Date("2026-10-30T10:00:00.000Z"),
+        consumedCheckoutId: input.checkoutId,
+        version: 1,
+        createdAt: new Date("2026-10-30T09:55:00.000Z"),
+        updatedAt: new Date("2026-10-30T10:00:00.000Z"),
+      });
     });
   }
 
@@ -192,6 +267,9 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
       status: "PLACED",
       paymentRequired: { amount: 5000, currency: CURRENCY_CODE.BDT as CurrencyCode },
       holdExpiresAt: null,
+      ownerType: "CUSTOMER",
+      ownerIdentifier: customerAccountId,
+      revokedAt: null,
       createdAt: new Date("2026-10-30T10:00:00.000Z"),
       updatedAt: new Date("2026-10-30T10:00:00.000Z"),
     };
@@ -218,6 +296,9 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
       status: "CONFIRMED",
       paymentRequired: { amount: 2000, currency: CURRENCY_CODE.BDT as CurrencyCode },
       holdExpiresAt: new Date("2026-10-30T11:00:00.000Z"),
+      ownerType: "CUSTOMER",
+      ownerIdentifier: customerAccountId,
+      revokedAt: null,
       createdAt: new Date("2026-10-30T10:05:00.000Z"),
       updatedAt: new Date("2026-10-30T10:05:00.000Z"),
     };
@@ -232,7 +313,7 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
       links: [link2],
     });
 
-    const exportResult = (await participants.exportParticipant.exportForAccount({
+    const exportResult = (await exportForAccount({
       organizationId,
       customerAccountId,
       maxRows: 10,
@@ -246,19 +327,27 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     expect(exportedIds).toContain(checkout1Id);
     expect(exportedIds).toContain(checkout2Id);
 
-    const c1 = exportResult.checkouts.find((c) => c.checkoutId === checkout1Id);
-    expect(c1?.requests).toHaveLength(1);
-    expect(c1?.requests[0]?.requestType).toBe("ORDER");
-    expect(c1?.requests[0]?.publicNumber).toBe("ORD-001");
+    const c1 = requirePresent(
+      exportResult.checkouts.find((c) => c.checkoutId === checkout1Id),
+      "checkout 1",
+    );
+    const c1Request = requirePresent(c1.requests[0], "checkout 1 request");
+    expect(c1.requests).toHaveLength(1);
+    expect(c1Request.requestType).toBe("ORDER");
+    expect(c1Request.publicNumber).toBe("ORD-001");
 
-    const c2 = exportResult.checkouts.find((c) => c.checkoutId === checkout2Id);
-    expect(c2?.requests).toHaveLength(1);
-    expect(c2?.requests[0]?.requestType).toBe("BOOKING");
-    expect(c2?.requests[0]?.publicNumber).toBe("BKG-002");
-    expect(c2?.requests[0]?.holdExpiresAt).toBe("2026-10-30T11:00:00.000Z");
+    const c2 = requirePresent(
+      exportResult.checkouts.find((c) => c.checkoutId === checkout2Id),
+      "checkout 2",
+    );
+    const c2Request = requirePresent(c2.requests[0], "checkout 2 request");
+    expect(c2.requests).toHaveLength(1);
+    expect(c2Request.requestType).toBe("BOOKING");
+    expect(c2Request.publicNumber).toBe("BKG-002");
+    expect(c2Request.holdExpiresAt).toBe("2026-10-30T11:00:00.000Z");
 
     // Max rows truncation test
-    const truncatedResult = (await participants.exportParticipant.exportForAccount({
+    const truncatedResult = (await exportForAccount({
       organizationId,
       customerAccountId,
       maxRows: 1,
@@ -301,7 +390,7 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
       owner: { type: "CUSTOMER", identifier: otherCustomerAccountId },
     });
 
-    const exportResult = (await participants.exportParticipant.exportForAccount({
+    const exportResult = (await exportForAccount({
       organizationId,
       customerAccountId: targetCustomerAccountId,
       maxRows: 10,
@@ -318,6 +407,26 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     const locationId = world.locationA1;
     const checkoutId = newId();
     const quoteId = newId();
+    const claimedCheckoutId = newId();
+    const claimedQuoteId = newId();
+    const guestSessionId = newId();
+    const orderLink: CheckoutRequestLinkRecord = {
+      checkoutRequestLinkId: newId(),
+      organizationId,
+      checkoutId,
+      selectionIds: [newId()],
+      requestType: "ORDER",
+      requestId: newId(),
+      publicNumber: "ORD-PRIV-1",
+      status: "PLACED",
+      paymentRequired: { amount: 5000, currency: CURRENCY_CODE.BDT as CurrencyCode },
+      holdExpiresAt: null,
+      ownerType: "CUSTOMER",
+      ownerIdentifier: customerAccountId,
+      revokedAt: null,
+      createdAt: new Date("2026-10-30T10:00:00.000Z"),
+      updatedAt: new Date("2026-10-30T10:00:00.000Z"),
+    };
 
     await seedCheckoutFixture({
       organizationId,
@@ -325,6 +434,7 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
       checkoutId,
       quoteId,
       owner: { type: "CUSTOMER", identifier: customerAccountId },
+      links: [orderLink],
       contactSnapshot: {
         name: "Private Customer",
         phoneE164: "+8801700112233",
@@ -332,24 +442,49 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
       },
     });
 
+    // A checkout the customer claimed still carries the guest session on its quote.
+    await seedCheckoutFixture({
+      organizationId,
+      locationId,
+      checkoutId: claimedCheckoutId,
+      quoteId: claimedQuoteId,
+      owner: { type: "CUSTOMER", identifier: customerAccountId },
+      quotePrincipalKey: `GUEST:${guestSessionId}`,
+    });
+
     // Tracking and replay work before erasure
-    const trackingBefore = await readOwnRequests.getCheckoutDetail({
+    const trackingBefore = await readDetail({
       organizationId,
       principal: { type: "CUSTOMER", customerAccountId, contactId: "" },
       checkoutId,
     });
     expect(trackingBefore.contactSnapshot.name).toBe("Private Customer");
 
-    await runInOrganizationContext(organizationId, async () => {
-      await authorizeReplay(
-        { body: { data: { checkoutId } } } as any,
-        { checkoutPrincipal: { type: "CUSTOMER", customerAccountId, contactId: "" } } as any,
-      );
-    });
+    const listBefore = await inOrg(organizationId, () =>
+      readOwnRequests.listRequests({
+        organizationId,
+        principal: { type: "CUSTOMER", customerAccountId, contactId: "" },
+        query: { page: 1, limit: 20 },
+      }),
+    );
+    expect(listBefore.total).toBeGreaterThan(0);
+
+    const replayAuthorization: IdempotencyReplayAuthorization = {
+      record: {
+        requestHash: "replay-hash",
+        status: IDEMPOTENCY_STATUS.COMPLETED,
+        lockedUntil: new Date("2026-10-30T12:00:00.000Z"),
+      },
+      body: { data: { checkoutId } },
+    };
+
+    await runWithRequestContext({ requestId: newId(), organizationId, customerAccountId }, () =>
+      authorizeReplay(replayAuthorization),
+    );
 
     // Execute erasure
     const eraseTime = new Date("2026-10-30T14:30:00.000Z");
-    const eraseResult = await participants.erasureParticipant.eraseForAccount({
+    const eraseResult = await eraseForAccount({
       organizationId,
       customerAccountId,
       now: eraseTime,
@@ -357,52 +492,91 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     expect(eraseResult.forfeitedCredits).toBe(0);
 
     // Verify CheckoutAccess is revoked
-    const accessAfter = await accessRepo.findByCheckoutId(organizationId, checkoutId);
-    expect(accessAfter?.revokedAt?.toISOString()).toBe(eraseTime.toISOString());
-    expect(accessAfter?.version).toBe(2);
+    const accessAfter = requirePresent(
+      await readAccess(organizationId, checkoutId),
+      "access after erasure",
+    );
+    expect(accessAfter.revokedAt?.toISOString()).toBe(eraseTime.toISOString());
+    expect(accessAfter.version).toBe(2);
 
     // Verify contact snapshot is redacted
-    const checkoutAfter = await checkoutRepo.findById(organizationId, checkoutId);
-    expect(checkoutAfter?.contactSnapshot).toEqual({
+    const checkoutAfter = requirePresent(
+      await readCheckout(organizationId, checkoutId),
+      "checkout after erasure",
+    );
+    expect(checkoutAfter.contactSnapshot).toEqual({
       name: "[REDACTED]",
       phoneE164: "[REDACTED]",
       customFields: {},
     });
-    expect(checkoutAfter?.version).toBe(2);
+    expect(checkoutAfter.version).toBe(2);
 
     // Verify CheckoutQuote PII is scrubbed
-    const quoteAfter = await quoteRepo.findById(organizationId, quoteId);
-    const fulfillmentAddress = (quoteAfter?.input.fulfillment as any)?.address;
+    const quoteAfter = requirePresent(
+      await readQuote(organizationId, quoteId),
+      "quote after erasure",
+    );
+    const fulfillment = requirePresent(quoteAfter.input.fulfillment, "quote fulfillment");
+    const fulfillmentAddress = requirePresent(
+      "address" in fulfillment ? fulfillment.address : null,
+      "fulfillment address",
+    );
     expect(fulfillmentAddress.recipientName).toBe("[REDACTED]");
     expect(fulfillmentAddress.phone).toBe("[REDACTED]");
     expect(fulfillmentAddress.addressLine).toBe("[REDACTED]");
-    expect(quoteAfter?.input.selections[0]?.customFields).toEqual({});
+    expect(quoteAfter.input.selections[0]?.customFields).toEqual({});
 
-    // Verify subsequent tracking throws FORBIDDEN
+    // A claimed checkout quotes under the guest principal; erasure must still scrub it.
+    const claimedQuoteAfter = requirePresent(
+      await readQuote(organizationId, claimedQuoteId),
+      "claimed quote after erasure",
+    );
+    const claimedFulfillment = requirePresent(
+      claimedQuoteAfter.input.fulfillment,
+      "claimed quote fulfillment",
+    );
+    expect(requirePresent(claimedFulfillment.address, "claimed quote address").phone).toBe(
+      "[REDACTED]",
+    );
+
+    // Request links are the /me/requests page source, so revocation must reach them too.
+    const linkAfter = requirePresent(
+      (await listLinks(organizationId, checkoutId))[0],
+      "request link after erasure",
+    );
+    expect(linkAfter.revokedAt?.toISOString()).toBe(eraseTime.toISOString());
+    const listAfter = await inOrg(organizationId, () =>
+      readOwnRequests.listRequests({
+        organizationId,
+        principal: { type: "CUSTOMER", customerAccountId, contactId: "" },
+        query: { page: 1, limit: 20 },
+      }),
+    );
+    expect(listAfter.items).toEqual([]);
+    expect(listAfter.total).toBe(0);
+
+    // Verify subsequent tracking is refused; revoked access is a 404, not an existence oracle
     await expect(
-      readOwnRequests.getCheckoutDetail({
+      readDetail({
         organizationId,
         principal: { type: "CUSTOMER", customerAccountId, contactId: "" },
         checkoutId,
       }),
     ).rejects.toMatchObject({
-      code: ERROR_CODE.FORBIDDEN,
+      code: ERROR_CODE.NOT_FOUND,
     });
 
     // Verify subsequent replay authorization throws FORBIDDEN
     await expect(
-      runInOrganizationContext(organizationId, async () => {
-        await authorizeReplay(
-          { body: { data: { checkoutId } } } as any,
-          { checkoutPrincipal: { type: "CUSTOMER", customerAccountId, contactId: "" } } as any,
-        );
-      }),
+      runWithRequestContext({ requestId: newId(), organizationId, customerAccountId }, () =>
+        authorizeReplay(replayAuthorization),
+      ),
     ).rejects.toMatchObject({
       code: ERROR_CODE.FORBIDDEN,
     });
 
     // Idempotency check: second erase call succeeds safely
-    const secondEraseResult = await participants.erasureParticipant.eraseForAccount({
+    const secondEraseResult = await eraseForAccount({
       organizationId,
       customerAccountId,
       now: new Date("2026-10-30T15:00:00.000Z"),
@@ -432,6 +606,9 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
         status: "PLACED",
         paymentRequired: { amount: 5000, currency: CURRENCY_CODE.BDT as CurrencyCode },
         holdExpiresAt: null,
+        ownerType: "CUSTOMER",
+        ownerIdentifier: customerAccountId,
+        revokedAt: null,
         createdAt: new Date("2026-10-30T10:00:00.000Z"),
         updatedAt: new Date("2026-10-30T10:00:00.000Z"),
       },
@@ -446,6 +623,9 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
         status: "CONFIRMED",
         paymentRequired: { amount: 1000, currency: CURRENCY_CODE.BDT as CurrencyCode },
         holdExpiresAt: null,
+        ownerType: "CUSTOMER",
+        ownerIdentifier: customerAccountId,
+        revokedAt: null,
         createdAt: new Date("2026-10-30T10:00:00.000Z"),
         updatedAt: new Date("2026-10-30T10:00:00.000Z"),
       },
@@ -460,6 +640,9 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
         status: "PENDING",
         paymentRequired: { amount: 3000, currency: CURRENCY_CODE.BDT as CurrencyCode },
         holdExpiresAt: null,
+        ownerType: "CUSTOMER",
+        ownerIdentifier: customerAccountId,
+        revokedAt: null,
         createdAt: new Date("2026-10-30T10:00:00.000Z"),
         updatedAt: new Date("2026-10-30T10:00:00.000Z"),
       },
@@ -521,7 +704,7 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     });
 
     // Run erasure
-    await participants.erasureParticipant.eraseForAccount({
+    await eraseForAccount({
       organizationId,
       customerAccountId,
       now: new Date("2026-10-30T15:00:00.000Z"),
@@ -531,7 +714,9 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     const orderAfter = await tenantDb.collection("orders").findOne({ orderId });
     expect(orderAfter).not.toBeNull();
     expect(orderAfter?.["status"]).toBe("PLACED");
-    expect(orderAfter?.["totals"]).toEqual({ total: { amount: 5000, currency: CURRENCY_CODE.BDT } });
+    expect(orderAfter?.["totals"]).toEqual({
+      total: { amount: 5000, currency: CURRENCY_CODE.BDT },
+    });
 
     const bookingAfter = await tenantDb.collection("bookings").findOne({ bookingId });
     expect(bookingAfter).not.toBeNull();
@@ -550,15 +735,11 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     });
 
     // Assert request links and accepted totals on checkout are preserved
-    const linksAfter = await requestLinkRepo.listByCheckoutId(organizationId, checkoutId);
+    const linksAfter = await listLinks(organizationId, checkoutId);
     expect(linksAfter).toHaveLength(3);
-    expect(linksAfter.map((l) => l.publicNumber)).toEqual([
-      "ORD-FIN-1",
-      "BKG-FIN-2",
-      "ENR-FIN-3",
-    ]);
+    expect(linksAfter.map((l) => l.publicNumber)).toEqual(["ORD-FIN-1", "BKG-FIN-2", "ENR-FIN-3"]);
 
-    const checkoutDoc = await checkoutRepo.findById(organizationId, checkoutId);
+    const checkoutDoc = await readCheckout(organizationId, checkoutId);
     expect(checkoutDoc?.acceptedTotals).toEqual({
       total: { amount: 5000, currency: CURRENCY_CODE.BDT },
       deliveryCharge: { amount: 100, currency: CURRENCY_CODE.BDT },
@@ -607,7 +788,7 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     });
 
     // Cross-org export attempt produces empty checkouts
-    const crossExport = (await participants.exportParticipant.exportForAccount({
+    const crossExport = (await exportForAccount({
       organizationId: orgAId,
       customerAccountId: customerB,
       maxRows: 10,
@@ -615,33 +796,33 @@ describe("Storefront Checkout Privacy Participants (Card 4.3 Part A5B)", () => {
     expect(crossExport.checkouts).toEqual([]);
 
     // Cross-org erasure attempt does not affect customer B in Org B
-    await participants.erasureParticipant.eraseForAccount({
+    await eraseForAccount({
       organizationId: orgAId,
       customerAccountId: customerB,
       now: new Date("2026-10-30T16:00:00.000Z"),
     });
 
-    const accessB = await accessRepo.findByCheckoutId(orgBId, checkoutBId);
+    const accessB = await readAccess(orgBId, checkoutBId);
     expect(accessB?.revokedAt).toBeNull();
 
-    const checkoutB = await checkoutRepo.findById(orgBId, checkoutBId);
+    const checkoutB = await readCheckout(orgBId, checkoutBId);
     expect(checkoutB?.contactSnapshot.name).toBe("Customer B");
     expect(checkoutB?.contactSnapshot.phoneE164).toBe("+8801700000002");
 
     // Correct org erasure erases customer B in Org B, leaving customer A in Org A untouched
-    await participants.erasureParticipant.eraseForAccount({
+    await eraseForAccount({
       organizationId: orgBId,
       customerAccountId: customerB,
       now: new Date("2026-10-30T16:30:00.000Z"),
     });
 
-    const accessBAfter = await accessRepo.findByCheckoutId(orgBId, checkoutBId);
+    const accessBAfter = await readAccess(orgBId, checkoutBId);
     expect(accessBAfter?.revokedAt).not.toBeNull();
 
-    const checkoutBAfter = await checkoutRepo.findById(orgBId, checkoutBId);
+    const checkoutBAfter = await readCheckout(orgBId, checkoutBId);
     expect(checkoutBAfter?.contactSnapshot.name).toBe("[REDACTED]");
 
-    const checkoutA = await checkoutRepo.findById(orgAId, checkoutAId);
+    const checkoutA = await readCheckout(orgAId, checkoutAId);
     expect(checkoutA?.contactSnapshot.name).toBe("Customer A");
   });
 });

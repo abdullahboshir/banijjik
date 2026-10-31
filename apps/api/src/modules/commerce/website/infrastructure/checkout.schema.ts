@@ -55,6 +55,9 @@ export const checkoutRequestLinkSchema = new Schema<CheckoutRequestLinkDocument>
     status: { type: String, required: true },
     paymentRequired: { type: Schema.Types.Mixed, required: true },
     holdExpiresAt: { type: Date, default: null },
+    ownerType: { type: String, required: true, enum: ["CUSTOMER", "GUEST"] },
+    ownerIdentifier: { type: String, required: true },
+    revokedAt: { type: Date, default: null },
   },
   {
     collection: CHECKOUT_REQUEST_LINK_COLLECTION_NAME,
@@ -72,4 +75,18 @@ checkoutRequestLinkSchema.index({
   checkoutId: 1,
   requestType: 1,
   requestId: 1,
+});
+checkoutRequestLinkSchema.index({
+  organizationId: 1,
+  checkoutId: 1,
+  createdAt: -1,
+  checkoutRequestLinkId: 1,
+});
+checkoutRequestLinkSchema.index({
+  organizationId: 1,
+  ownerType: 1,
+  ownerIdentifier: 1,
+  revokedAt: 1,
+  createdAt: -1,
+  checkoutRequestLinkId: 1,
 });

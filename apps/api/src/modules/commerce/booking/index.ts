@@ -42,6 +42,7 @@ export function buildMarkNoShowsJobWithPersistence(
   return buildMarkNoShowsJob({ ...input, bookings: new MongoBookingRepository() });
 }
 export { MongoResourceSlotUsageRepository };
+export { MongoResourceTimeOffRepository } from "./infrastructure/mongo-resource-timeoff.repository.js";
 export { buildExpireHoldsJob, buildMarkNoShowsJob };
 export type { BookingPostingSource } from "../accounting/index.js";
 

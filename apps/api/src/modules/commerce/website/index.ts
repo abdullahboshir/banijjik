@@ -98,7 +98,9 @@ export {
 } from "./application/submit-checkout.js";
 export {
   ReadOwnRequestsUseCase,
+  statusKey,
   type ReadOwnRequestsDependencies,
+  type RequestStatusReadInput,
   type RequestStatusReaderPort,
   type RequestStatusSnapshot,
 } from "./application/read-own-requests.js";
@@ -110,9 +112,6 @@ export {
 } from "./application/claim-checkout.js";
 export {
   buildCheckoutPrivacyParticipants,
-  buildCheckoutExportParticipant,
-  buildCheckoutErasureParticipant,
-  type CheckoutPrivacyDependencies,
   type CheckoutPrivacyParticipants,
 } from "./application/checkout-privacy-participants.js";
 export {
@@ -122,11 +121,11 @@ export {
   type CheckoutRequestWithPrincipal,
 } from "./presentation/checkout.router.js";
 export {
-  MongoCheckoutQuoteRepository,
   MongoCheckoutRepository,
   MongoCheckoutAccessRepository,
-  MongoCheckoutRequestLinkRepository,
 } from "./infrastructure/mongo-checkout.repository.js";
+export { MongoCheckoutRequestLinkRepository } from "./infrastructure/mongo-checkout-request-link.repository.js";
+export { MongoCheckoutQuoteRepository } from "./infrastructure/mongo-checkout-quote.repository.js";
 export {
   CHECKOUT_QUOTE_MODEL_NAME,
   CHECKOUT_QUOTE_COLLECTION_NAME,
