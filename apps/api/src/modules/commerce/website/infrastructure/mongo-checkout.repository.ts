@@ -82,6 +82,57 @@ export class MongoCheckoutQuoteRepository implements CheckoutQuoteRepositoryPort
     );
     return res.modifiedCount === 1;
   }
+
+  async scrubPrincipalQuotes(organizationId: string, principalKey: string): Promise<void> {
+    const quotes = await this.model()
+      .find({ organizationId, principalKey }, null, sessionOption(getActiveSession()))
+      .lean<CheckoutQuoteDocument[]>();
+
+    for (const quote of quotes) {
+      let needsUpdate = false;
+      let updatedInput = quote.input;
+      if (
+        updatedInput.fulfillment &&
+        "address" in updatedInput.fulfillment &&
+        updatedInput.fulfillment.address
+      ) {
+        needsUpdate = true;
+        updatedInput = {
+          ...updatedInput,
+          fulfillment: {
+            ...updatedInput.fulfillment,
+            address: {
+              ...updatedInput.fulfillment.address,
+              recipientName: "[REDACTED]",
+              phone: "[REDACTED]",
+              addressLine: "[REDACTED]",
+            },
+          },
+        };
+      }
+      if (
+        updatedInput.selections &&
+        updatedInput.selections.some((s) => Object.keys(s.customFields ?? {}).length > 0)
+      ) {
+        needsUpdate = true;
+        updatedInput = {
+          ...updatedInput,
+          selections: updatedInput.selections.map((s) => ({ ...s, customFields: {} })),
+        };
+      }
+
+      if (needsUpdate) {
+        await this.model().updateOne(
+          { organizationId, quoteId: quote.quoteId },
+          {
+            $set: { input: updatedInput },
+            $inc: { version: 1 },
+          },
+          sessionOption(getActiveSession()),
+        );
+      }
+    }
+  }
 }
 
 export class MongoCheckoutRepository implements CheckoutRepositoryPort {
@@ -138,6 +189,54 @@ export class MongoCheckoutRepository implements CheckoutRepositoryPort {
       .lean<CheckoutDocument>();
     return doc ? toCheckout(doc) : null;
   }
+
+  async findByIds(
+    organizationId: string,
+    checkoutIds: readonly string[],
+  ): Promise<readonly Checkout[]> {
+    if (checkoutIds.length === 0) return [];
+    const docs = await this.model()
+      .find(
+        { organizationId, checkoutId: { $in: checkoutIds } },
+        null,
+        sessionOption(getActiveSession()),
+      )
+      .sort({ createdAt: -1 })
+      .lean<CheckoutDocument[]>();
+    return docs.map(toCheckout);
+  }
+
+  async listByContactId(organizationId: string, contactId: string): Promise<readonly Checkout[]> {
+    const docs = await this.model()
+      .find({ organizationId, contactId }, null, sessionOption(getActiveSession()))
+      .sort({ createdAt: -1 })
+      .lean<CheckoutDocument[]>();
+    return docs.map(toCheckout);
+  }
+
+  async redactContactSnapshots(
+    organizationId: string,
+    checkoutIds: readonly string[],
+  ): Promise<void> {
+    if (checkoutIds.length === 0) return;
+    await this.model().updateMany(
+      {
+        organizationId,
+        checkoutId: { $in: checkoutIds },
+      },
+      {
+        $set: {
+          contactSnapshot: {
+            name: "[REDACTED]",
+            phoneE164: "[REDACTED]",
+            customFields: {},
+          },
+        },
+        $inc: { version: 1 },
+      },
+      sessionOption(getActiveSession()),
+    );
+  }
 }
 
 export class MongoCheckoutAccessRepository implements CheckoutAccessRepositoryPort {
@@ -175,8 +274,9 @@ export class MongoCheckoutAccessRepository implements CheckoutAccessRepositoryPo
     organizationId: string,
     ownerType: "CUSTOMER" | "GUEST",
     identifier: string,
+    options?: { readonly limit?: number },
   ): Promise<readonly CheckoutAccess[]> {
-    const docs = await this.model()
+    let query = this.model()
       .find(
         {
           organizationId,
@@ -187,8 +287,13 @@ export class MongoCheckoutAccessRepository implements CheckoutAccessRepositoryPo
         null,
         sessionOption(getActiveSession()),
       )
-      .sort({ createdAt: -1 })
-      .lean<CheckoutAccessDocument[]>();
+      .sort({ createdAt: -1 });
+
+    if (options?.limit !== undefined) {
+      query = query.limit(options.limit);
+    }
+
+    const docs = await query.lean<CheckoutAccessDocument[]>();
     return docs.map(toCheckoutAccess);
   }
 
@@ -224,6 +329,64 @@ export class MongoCheckoutAccessRepository implements CheckoutAccessRepositoryPo
     );
     return res.modifiedCount === 1;
   }
+
+  async revokeForOwner(input: {
+    readonly organizationId: string;
+    readonly ownerType: "CUSTOMER" | "GUEST";
+    readonly identifier: string;
+    readonly now: Date;
+  }): Promise<readonly string[]> {
+    const docs = await this.model()
+      .find(
+        {
+          organizationId: input.organizationId,
+          "owner.type": input.ownerType,
+          "owner.identifier": input.identifier,
+        },
+        { checkoutId: 1, revokedAt: 1 },
+        sessionOption(getActiveSession()),
+      )
+      .lean<CheckoutAccessDocument[]>();
+
+    const allCheckoutIds = docs.map((d) => d.checkoutId);
+    const unrevokedCheckoutIds = docs.filter((d) => d.revokedAt === null).map((d) => d.checkoutId);
+
+    if (unrevokedCheckoutIds.length > 0) {
+      await this.model().updateMany(
+        {
+          organizationId: input.organizationId,
+          checkoutId: { $in: unrevokedCheckoutIds },
+          revokedAt: null,
+        },
+        {
+          $set: { revokedAt: input.now },
+          $inc: { version: 1 },
+        },
+        sessionOption(getActiveSession()),
+      );
+    }
+    return allCheckoutIds;
+  }
+
+  async revokeByCheckoutIds(
+    organizationId: string,
+    checkoutIds: readonly string[],
+    now: Date,
+  ): Promise<void> {
+    if (checkoutIds.length === 0) return;
+    await this.model().updateMany(
+      {
+        organizationId,
+        checkoutId: { $in: checkoutIds },
+        revokedAt: null,
+      },
+      {
+        $set: { revokedAt: now },
+        $inc: { version: 1 },
+      },
+      sessionOption(getActiveSession()),
+    );
+  }
 }
 
 export class MongoCheckoutRequestLinkRepository implements CheckoutRequestLinkRepositoryPort {
@@ -256,6 +419,22 @@ export class MongoCheckoutRequestLinkRepository implements CheckoutRequestLinkRe
   ): Promise<readonly CheckoutRequestLinkRecord[]> {
     const docs = await this.model()
       .find({ organizationId, checkoutId }, null, sessionOption(getActiveSession()))
+      .sort({ createdAt: 1 })
+      .lean<CheckoutRequestLinkDocument[]>();
+    return docs.map(toCheckoutRequestLink);
+  }
+
+  async listByCheckoutIds(
+    organizationId: string,
+    checkoutIds: readonly string[],
+  ): Promise<readonly CheckoutRequestLinkRecord[]> {
+    if (checkoutIds.length === 0) return [];
+    const docs = await this.model()
+      .find(
+        { organizationId, checkoutId: { $in: checkoutIds } },
+        null,
+        sessionOption(getActiveSession()),
+      )
       .sort({ createdAt: 1 })
       .lean<CheckoutRequestLinkDocument[]>();
     return docs.map(toCheckoutRequestLink);

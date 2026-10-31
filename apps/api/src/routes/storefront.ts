@@ -29,6 +29,7 @@ import {
 import type { FileModuleDependencies } from "../modules/core/file/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import {
+  buildCheckoutPrivacyParticipants,
   buildWebsiteStorefrontRouterFor,
   type StorefrontSiteSources,
 } from "../modules/commerce/website/index.js";
@@ -201,8 +202,16 @@ function buildStorefrontContactRouter(
     requireCustomerLogin: customerLoginSwitch(input),
     authenticateCustomer: auth.customerAuth,
     contactFields: contactFieldsOf(),
-    erasureParticipants: [dirErasure, credit.buildCreditErasureParticipant(deps.creditDeps)],
-    exportParticipants: [...dirExport, credit.buildCreditExportParticipant(deps.creditDeps)],
+    erasureParticipants: [
+      dirErasure,
+      credit.buildCreditErasureParticipant(deps.creditDeps),
+      buildCheckoutPrivacyParticipants().erasureParticipant,
+    ],
+    exportParticipants: [
+      ...dirExport,
+      credit.buildCreditExportParticipant(deps.creditDeps),
+      buildCheckoutPrivacyParticipants().exportParticipant,
+    ],
   });
 }
 

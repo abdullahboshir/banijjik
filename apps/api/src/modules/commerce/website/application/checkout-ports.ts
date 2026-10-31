@@ -27,6 +27,7 @@ export interface CheckoutQuoteRepositoryPort {
     readonly checkoutId: string;
     readonly now: Date;
   }): Promise<boolean>;
+  scrubPrincipalQuotes(organizationId: string, principalKey: string): Promise<void>;
 }
 
 export interface CheckoutRepositoryPort {
@@ -38,6 +39,9 @@ export interface CheckoutRepositoryPort {
     creationPrincipalKey: string,
     idempotencyKeyHash: string,
   ): Promise<Checkout | null>;
+  findByIds(organizationId: string, checkoutIds: readonly string[]): Promise<readonly Checkout[]>;
+  listByContactId(organizationId: string, contactId: string): Promise<readonly Checkout[]>;
+  redactContactSnapshots(organizationId: string, checkoutIds: readonly string[]): Promise<void>;
 }
 
 export interface CheckoutAccessRepositoryPort {
@@ -47,6 +51,7 @@ export interface CheckoutAccessRepositoryPort {
     organizationId: string,
     ownerType: "CUSTOMER" | "GUEST",
     identifier: string,
+    options?: { readonly limit?: number },
   ): Promise<readonly CheckoutAccess[]>;
   updateOwner(input: {
     readonly organizationId: string;
@@ -55,6 +60,17 @@ export interface CheckoutAccessRepositoryPort {
     readonly newOwner: CheckoutAccessOwner;
   }): Promise<boolean>;
   revoke(organizationId: string, checkoutId: string, now: Date): Promise<boolean>;
+  revokeForOwner(input: {
+    readonly organizationId: string;
+    readonly ownerType: "CUSTOMER" | "GUEST";
+    readonly identifier: string;
+    readonly now: Date;
+  }): Promise<readonly string[]>;
+  revokeByCheckoutIds(
+    organizationId: string,
+    checkoutIds: readonly string[],
+    now: Date,
+  ): Promise<void>;
 }
 
 export interface CheckoutRequestLinkRepositoryPort {
@@ -62,6 +78,10 @@ export interface CheckoutRequestLinkRepositoryPort {
   listByCheckoutId(
     organizationId: string,
     checkoutId: string,
+  ): Promise<readonly CheckoutRequestLinkRecord[]>;
+  listByCheckoutIds(
+    organizationId: string,
+    checkoutIds: readonly string[],
   ): Promise<readonly CheckoutRequestLinkRecord[]>;
   findByRequest(
     organizationId: string,

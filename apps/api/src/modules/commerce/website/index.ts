@@ -109,6 +109,13 @@ export {
   type CustomerPhoneReaderPort,
 } from "./application/claim-checkout.js";
 export {
+  buildCheckoutPrivacyParticipants,
+  buildCheckoutExportParticipant,
+  buildCheckoutErasureParticipant,
+  type CheckoutPrivacyDependencies,
+  type CheckoutPrivacyParticipants,
+} from "./application/checkout-privacy-participants.js";
+export {
   buildCheckoutRouter,
   createStorefrontPrincipalMiddleware,
   type CheckoutRouterDependencies,

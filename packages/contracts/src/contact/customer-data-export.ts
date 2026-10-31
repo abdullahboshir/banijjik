@@ -1,11 +1,13 @@
 import { defineEnum } from "../define-enum.js";
 import type { ListingResponse } from "../directory/directory-contracts.js";
+import type { Money } from "../pricing/pricing-contracts.js";
 import type { ContactAddress } from "./contact-contracts.js";
 
 export const CUSTOMER_DATA_EXPORT_SECTION_KEY = defineEnum([
   "LISTING",
   "DIRECTORY_ACTIVITY",
   "CREDIT",
+  "CHECKOUT",
 ]);
 export type CustomerDataExportSectionKey =
   (typeof CUSTOMER_DATA_EXPORT_SECTION_KEY)[keyof typeof CUSTOMER_DATA_EXPORT_SECTION_KEY];
@@ -80,8 +82,42 @@ export interface CreditExportSection {
   readonly truncated: boolean;
 }
 
+export interface CheckoutExportRequestItem {
+  readonly checkoutRequestLinkId: string;
+  readonly selectionIds: readonly string[];
+  readonly requestType: "ORDER" | "BOOKING" | "ENROLLMENT";
+  readonly requestId: string;
+  readonly publicNumber: string | null;
+  readonly status: string;
+  readonly paymentRequired: Money;
+  readonly holdExpiresAt: string | null;
+}
+
+export interface CheckoutExportItem {
+  readonly checkoutId: string;
+  readonly locationId: string;
+  readonly quoteId: string;
+  readonly total: Money;
+  readonly contactSnapshot: {
+    readonly name: string;
+    readonly phoneE164: string;
+    readonly customFields: Readonly<Record<string, unknown>>;
+  };
+  readonly requests: readonly CheckoutExportRequestItem[];
+  readonly createdAt: string;
+}
+
+export interface CheckoutExportSection {
+  readonly sectionKey: "CHECKOUT";
+  readonly checkouts: readonly CheckoutExportItem[];
+  readonly truncated: boolean;
+}
+
 export type CustomerDataExportSection =
-  ListingExportSection | DirectoryActivityExportSection | CreditExportSection;
+  | ListingExportSection
+  | DirectoryActivityExportSection
+  | CreditExportSection
+  | CheckoutExportSection;
 
 export interface CustomerAccountExportData {
   readonly customerAccountId: string;
@@ -106,6 +142,7 @@ export interface CustomerDataExportSections {
   readonly LISTING: ListingExportSection;
   readonly DIRECTORY_ACTIVITY: DirectoryActivityExportSection;
   readonly CREDIT: CreditExportSection;
+  readonly CHECKOUT?: CheckoutExportSection;
 }
 
 export interface CustomerDataExportResponse {
