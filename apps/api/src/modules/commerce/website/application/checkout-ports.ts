@@ -63,6 +63,11 @@ export interface CheckoutRequestLinkRepositoryPort {
     organizationId: string,
     checkoutId: string,
   ): Promise<readonly CheckoutRequestLinkRecord[]>;
+  findByRequest(
+    organizationId: string,
+    requestType: "ORDER" | "BOOKING" | "ENROLLMENT",
+    requestId: string,
+  ): Promise<CheckoutRequestLinkRecord | null>;
 }
 
 export interface EventPublisher {

@@ -1,47 +1,55 @@
-import { ERROR_CODE } from "@banijjik/contracts";
 import {
   SF_GUEST_COOKIE_NAME,
   STOREFRONT_CHECKOUT_PER_WINDOW,
   STOREFRONT_CHECKOUT_RATE_LIMIT_BUCKET,
   STOREFRONT_CHECKOUT_WINDOW_SECONDS,
   parseGuestCookie,
-  type CheckoutPrincipal,
+  type StorefrontRequestListQuery,
 } from "@banijjik/contracts/website";
-import { Router, type Request, type RequestHandler, type Response } from "express";
-import { getRequestContext } from "../../../../kernel/context/index.js";
 import {
-  AppError,
-  readCookie,
-  sendData,
-  unauthenticated,
-  validate,
-} from "../../../../kernel/http/index.js";
-import {
-  createStorefrontIdempotencyMiddleware,
-  storefrontIdempotencyNamespace,
-  type IdempotencyReplayAuthorization,
-} from "../../../../kernel/idempotency/index.js";
-import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
-import type { Clock } from "../../../../kernel/time/index.js";
-import {
+  checkoutIdParamsSchema,
   publicQuoteRequestSchema,
+  storefrontRequestListQuerySchema,
+  storefrontRequestParamsSchema,
   submitCheckoutRequestSchema,
 } from "@banijjik/validation/website";
+import { Router, type Request, type RequestHandler, type Response } from "express";
+import { getRequestContext } from "../../../../kernel/context/index.js";
+import { readCookie, sendData, unauthenticated, validate } from "../../../../kernel/http/index.js";
+import { createStorefrontIdempotencyMiddleware } from "../../../../kernel/idempotency/index.js";
+import { rateLimit, type RateLimiter } from "../../../../kernel/rate-limit/index.js";
+import type { Clock } from "../../../../kernel/time/index.js";
+import type { ClaimCheckoutUseCase } from "../application/claim-checkout.js";
+import type { ReadOwnRequestsUseCase } from "../application/read-own-requests.js";
 import type {
   CheckoutAccessRepositoryPort,
   QuoteCheckoutUseCase,
   SubmitCheckoutUseCase,
 } from "../index.js";
 import type { ResolveGuestSessionUseCase } from "../application/use-cases/resolve-guest-session.use-case.js";
+import {
+  buildAuthorizeReplay,
+  createStorefrontPrincipalMiddleware,
+  resolveNamespace,
+  resolveOrgId,
+  type CheckoutRequestWithPrincipal,
+} from "./storefront-principal.middleware.js";
 
-export interface CheckoutRequestWithPrincipal extends Request {
-  checkoutPrincipal?: CheckoutPrincipal;
-}
+export {
+  createStorefrontPrincipalMiddleware,
+  getRequestPrincipal,
+  buildAuthorizeReplay,
+  resolveNamespace,
+  resolveOrgId,
+  type CheckoutRequestWithPrincipal,
+} from "./storefront-principal.middleware.js";
 
 export interface CheckoutRouterDependencies {
   readonly requireWebsiteModule: RequestHandler;
   readonly quoteCheckout: QuoteCheckoutUseCase;
   readonly submitCheckout: SubmitCheckoutUseCase;
+  readonly readOwnRequests?: ReadOwnRequestsUseCase;
+  readonly claimCheckout?: ClaimCheckoutUseCase;
   readonly resolveGuestSession: ResolveGuestSessionUseCase;
   readonly resolveCustomerContactId?: (
     organizationId: string,
@@ -51,128 +59,6 @@ export interface CheckoutRouterDependencies {
   readonly limiter: RateLimiter;
   readonly clock: Clock;
   readonly isProduction?: boolean;
-}
-
-function resolveOrgId(): string {
-  const { organizationId } = getRequestContext();
-  if (!organizationId) {
-    throw new AppError({
-      code: ERROR_CODE.NOT_FOUND,
-      messageKey: "errors.storefront_not_available",
-    });
-  }
-  return organizationId;
-}
-
-export function createStorefrontPrincipalMiddleware(
-  resolveGuestSession: ResolveGuestSessionUseCase,
-  resolveCustomerContactId?: (
-    organizationId: string,
-    customerAccountId: string,
-  ) => Promise<string | undefined>,
-): RequestHandler {
-  return async (req: CheckoutRequestWithPrincipal, _res: Response, next) => {
-    const ctx = getRequestContext();
-    const organizationId = resolveOrgId();
-
-    if (ctx.customerAccountId) {
-      const contactId = resolveCustomerContactId
-        ? await resolveCustomerContactId(organizationId, ctx.customerAccountId)
-        : undefined;
-      if (contactId) {
-        req.checkoutPrincipal = {
-          type: "CUSTOMER",
-          customerAccountId: ctx.customerAccountId,
-          contactId,
-        };
-        return next();
-      }
-    }
-
-    const rawCookie = readCookie(req, SF_GUEST_COOKIE_NAME);
-    const parsed = parseGuestCookie(rawCookie);
-    if (!parsed) {
-      throw unauthenticated();
-    }
-
-    const outcome = await resolveGuestSession.execute({
-      organizationId,
-      guestSessionId: parsed.guestSessionId,
-      rawSecret: parsed.rawSecret,
-    });
-
-    if (outcome.kind === "CROSS_ORG") {
-      throw new AppError({ code: ERROR_CODE.FORBIDDEN, messageKey: "errors.forbidden" });
-    }
-    if (outcome.kind === "EXPIRED") {
-      throw new AppError({
-        code: ERROR_CODE.WEBSITE_GUEST_SESSION_EXPIRED,
-        messageKey: "errors.website_guest_session_expired",
-      });
-    }
-    if (outcome.kind === "INVALID") {
-      throw unauthenticated();
-    }
-
-    req.checkoutPrincipal = {
-      type: "GUEST",
-      guestSessionId: outcome.session.guestSessionId,
-    };
-    next();
-  };
-}
-
-function getRequestPrincipal(req?: Request): CheckoutPrincipal {
-  const principal = (req as CheckoutRequestWithPrincipal | undefined)?.checkoutPrincipal;
-  if (principal) return principal;
-  const ctx = getRequestContext();
-  if (ctx.customerAccountId) {
-    return { type: "CUSTOMER", customerAccountId: ctx.customerAccountId, contactId: "" };
-  }
-  if (ctx.guestSessionId) {
-    return { type: "GUEST", guestSessionId: ctx.guestSessionId };
-  }
-  throw unauthenticated();
-}
-
-function buildAuthorizeReplay(access: CheckoutAccessRepositoryPort) {
-  return async (authorization: IdempotencyReplayAuthorization, req?: Request): Promise<void> => {
-    const organizationId = resolveOrgId();
-    const body = authorization.body as { data?: { checkoutId?: string } } | undefined;
-    const checkoutId = body?.data?.checkoutId;
-    if (!checkoutId) return;
-
-    const accessRecord = await access.findByCheckoutId(organizationId, checkoutId);
-    if (!accessRecord || accessRecord.revokedAt !== null) {
-      throw new AppError({ code: ERROR_CODE.FORBIDDEN, messageKey: "errors.forbidden" });
-    }
-
-    const principal = getRequestPrincipal(req);
-    const principalId =
-      principal.type === "CUSTOMER" ? principal.customerAccountId : principal.guestSessionId;
-
-    if (
-      accessRecord.owner.type !== principal.type ||
-      accessRecord.owner.identifier !== principalId
-    ) {
-      throw new AppError({ code: ERROR_CODE.FORBIDDEN, messageKey: "errors.forbidden" });
-    }
-  };
-}
-
-function resolveNamespace(req?: Request) {
-  const principal = getRequestPrincipal(req);
-  const organizationId = resolveOrgId();
-  if (principal.type === "CUSTOMER") {
-    return storefrontIdempotencyNamespace({
-      organizationId,
-      principal: { type: "CUSTOMER", customerAccountId: principal.customerAccountId },
-    });
-  }
-  return storefrontIdempotencyNamespace({
-    organizationId,
-    principal: { type: "GUEST", guestSessionId: principal.guestSessionId },
-  });
 }
 
 function registerQuoteRoute(
@@ -248,6 +134,126 @@ function registerCheckoutRoute(
   );
 }
 
+function registerCheckoutDetailRoute(
+  router: Router,
+  deps: CheckoutRouterDependencies,
+  resolvePrincipal: RequestHandler,
+): void {
+  if (!deps.readOwnRequests) return;
+  const reader = deps.readOwnRequests;
+
+  router.get(
+    "/checkouts/:checkoutId",
+    deps.requireWebsiteModule,
+    resolvePrincipal,
+    validate({ params: checkoutIdParamsSchema }),
+    async (req: CheckoutRequestWithPrincipal, res: Response) => {
+      res.setHeader("Cache-Control", "private, no-store");
+      const organizationId = resolveOrgId();
+      const principal = req.checkoutPrincipal;
+      if (!principal) throw unauthenticated();
+
+      const checkoutId = String(req.params.checkoutId);
+      const result = await reader.getCheckoutDetail({ organizationId, principal, checkoutId });
+      sendData(res, result);
+    },
+  );
+}
+
+function registerRequestListAndDetailRoutes(
+  router: Router,
+  deps: CheckoutRouterDependencies,
+  resolvePrincipal: RequestHandler,
+): void {
+  if (!deps.readOwnRequests) return;
+  const reader = deps.readOwnRequests;
+
+  router.get(
+    "/me/requests",
+    deps.requireWebsiteModule,
+    resolvePrincipal,
+    validate({ query: storefrontRequestListQuerySchema }),
+    async (req: CheckoutRequestWithPrincipal, res: Response) => {
+      res.setHeader("Cache-Control", "private, no-store");
+      const organizationId = resolveOrgId();
+      const principal = req.checkoutPrincipal;
+      if (!principal) throw unauthenticated();
+
+      const result = await reader.listRequests({
+        organizationId,
+        principal,
+        query: req.query as StorefrontRequestListQuery,
+      });
+      sendData(res, result);
+    },
+  );
+
+  router.get(
+    "/me/requests/:requestType/:requestId",
+    deps.requireWebsiteModule,
+    resolvePrincipal,
+    validate({ params: storefrontRequestParamsSchema }),
+    async (req: CheckoutRequestWithPrincipal, res: Response) => {
+      res.setHeader("Cache-Control", "private, no-store");
+      const organizationId = resolveOrgId();
+      const principal = req.checkoutPrincipal;
+      if (!principal) throw unauthenticated();
+
+      const requestType = req.params.requestType as "ORDER" | "BOOKING" | "ENROLLMENT";
+      const requestId = String(req.params.requestId);
+      const result = await reader.getRequestDetail({
+        organizationId,
+        principal,
+        requestType,
+        requestId,
+      });
+      sendData(res, result);
+    },
+  );
+}
+
+function registerClaimRoutes(router: Router, deps: CheckoutRouterDependencies): void {
+  if (!deps.claimCheckout) return;
+  const claimer = deps.claimCheckout;
+
+  router.post(
+    "/checkouts/:checkoutId/claim",
+    deps.requireWebsiteModule,
+    validate({ params: checkoutIdParamsSchema }),
+    async (req: Request, res: Response) => {
+      res.setHeader("Cache-Control", "private, no-store");
+      const organizationId = resolveOrgId();
+      const ctx = getRequestContext();
+      const customerAccountId = ctx.customerAccountId;
+      if (!customerAccountId) throw unauthenticated();
+
+      const rawCookie = readCookie(req, SF_GUEST_COOKIE_NAME);
+      const parsed = parseGuestCookie(rawCookie);
+      if (!parsed) throw unauthenticated();
+
+      const checkoutId = String(req.params.checkoutId);
+      const result = await claimer.execute({
+        organizationId,
+        checkoutId,
+        guestSessionId: parsed.guestSessionId,
+        rawSecret: parsed.rawSecret,
+        customerAccountId,
+      });
+      sendData(res, result);
+    },
+  );
+}
+
+function registerTrackingAndClaimRoutes(
+  router: Router,
+  deps: CheckoutRouterDependencies,
+  resolvePrincipal: RequestHandler,
+): void {
+  registerCheckoutDetailRoute(router, deps, resolvePrincipal);
+  registerRequestListAndDetailRoutes(router, deps, resolvePrincipal);
+  registerClaimRoutes(router, deps);
+}
+
 export function buildCheckoutRouter(dependencies: CheckoutRouterDependencies): Router {
   const router = Router();
   const resolvePrincipal = createStorefrontPrincipalMiddleware(
@@ -257,6 +263,7 @@ export function buildCheckoutRouter(dependencies: CheckoutRouterDependencies): R
 
   registerQuoteRoute(router, dependencies, resolvePrincipal);
   registerCheckoutRoute(router, dependencies, resolvePrincipal);
+  registerTrackingAndClaimRoutes(router, dependencies, resolvePrincipal);
 
   return router;
 }

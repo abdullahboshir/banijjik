@@ -160,4 +160,11 @@ export {
   type CheckoutRequest,
   type CheckoutResponse,
   type CheckoutPrincipal,
+  type CheckoutDetailRequestItem,
+  type CheckoutDetailResponse,
+  type ClaimCheckoutResponse,
+  type StorefrontRequestListQuery,
+  type StorefrontRequestItem,
+  type StorefrontRequestListResponse,
+  type StorefrontRequestDetailResponse,
 } from "./checkout-contracts.js";

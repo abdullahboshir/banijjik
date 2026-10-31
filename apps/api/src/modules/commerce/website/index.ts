@@ -97,6 +97,18 @@ export {
   type SubmitCheckoutDependencies,
 } from "./application/submit-checkout.js";
 export {
+  ReadOwnRequestsUseCase,
+  type ReadOwnRequestsDependencies,
+  type RequestStatusReaderPort,
+  type RequestStatusSnapshot,
+} from "./application/read-own-requests.js";
+export {
+  ClaimCheckoutUseCase,
+  type ClaimCheckoutDependencies,
+  type ClaimCheckoutInput,
+  type CustomerPhoneReaderPort,
+} from "./application/claim-checkout.js";
+export {
   buildCheckoutRouter,
   createStorefrontPrincipalMiddleware,
   type CheckoutRouterDependencies,

@@ -197,7 +197,7 @@ export class SubmitCheckoutUseCase {
         contactSnapshot: {
           name: input.body.contact.name,
           phoneE164: input.body.contact.phone,
-          customFields: input.body.contact.customFields,
+          customFields: input.body.contact.customFields ?? {},
         },
       });
     }
@@ -215,7 +215,7 @@ export class SubmitCheckoutUseCase {
       contactSnapshot: {
         name: input.body.contact.name,
         phoneE164: input.body.contact.phone,
-        customFields: input.body.contact.customFields,
+        customFields: input.body.contact.customFields ?? {},
       },
       quoteId: input.body.quoteId,
       acceptedTotals: {
