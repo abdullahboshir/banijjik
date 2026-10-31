@@ -12,6 +12,8 @@ export interface CheckoutApiError {
   readonly message?: string;
 }
 
+const HTTP_UNAUTHORIZED = 401;
+
 /**
  * Creates a guest session for an anonymous customer.
  * Sets the httpOnly sf_guest cookie through the storefront proxy.
@@ -27,16 +29,24 @@ export async function createGuestSession(
 
 /**
  * Requests a server-calculated, 5-minute price quote for checkout selections.
+ * The first cart visit has no guest cookie yet, so an unauthenticated answer creates the guest
+ * session the quote needs and asks again; an existing session is reused and never rotated.
  */
 export async function requestQuote(
   organizationId: string,
   body: PublicQuoteRequest,
 ): Promise<ClientResult<PublicQuoteResponse>> {
-  return callStorefront<PublicQuoteResponse>(
-    "POST",
-    `/orgs/${encodeURIComponent(organizationId)}/quotes`,
-    { body },
-  );
+  const quote = (): Promise<ClientResult<PublicQuoteResponse>> =>
+    callStorefront<PublicQuoteResponse>(
+      "POST",
+      `/orgs/${encodeURIComponent(organizationId)}/quotes`,
+      { body },
+    );
+  const first = await quote();
+  if (first.status !== HTTP_UNAUTHORIZED) return first;
+  const session = await createGuestSession(organizationId);
+  if (!session.ok) return first;
+  return quote();
 }
 
 /**

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type ReactElement } from "react";
 import { translatorFor } from "../i18n/client-translator";
 import { cartStore, type CartState } from "./cart-store";
-import { createGuestSession, requestQuote, submitCheckout } from "./checkout-api";
+import { requestQuote, submitCheckout } from "./checkout-api";
 import { CheckoutAlerts } from "./checkout-alerts";
 import { CheckoutContactForm } from "./checkout-contact-form";
 import { CheckoutOrderSummary } from "./checkout-order-summary";
@@ -43,8 +43,11 @@ interface SubmitParams {
   readonly onError: (msg: string) => void;
 }
 
+/**
+ * Submits under the guest session that created the quote: the server binds a quote to its principal,
+ * so a fresh session here would be a different owner and the quote would be refused.
+ */
 async function executeCheckoutSubmit(params: SubmitParams): Promise<void> {
-  await createGuestSession(params.organizationId);
   const key = cartStore.getOrGenerateIdempotencyKey();
   const res = await submitCheckout(params.organizationId, key, {
     quoteId: params.quoteId,
