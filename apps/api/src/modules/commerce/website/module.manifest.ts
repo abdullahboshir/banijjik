@@ -6,7 +6,13 @@ import {
   SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
-import { SECTION_KEY, WEBSITE_EVENT_TYPE } from "@banijjik/contracts/website";
+import {
+  SECTION_KEY,
+  WEBSITE_CHECKOUT_ENABLED_SETTING_KEY,
+  WEBSITE_EVENT_TYPE,
+  WEBSITE_GUEST_CHECKOUT_SETTING_KEY,
+  WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY,
+} from "@banijjik/contracts/website";
 import { defineModule } from "../../../kernel/modules/index.js";
 
 /**
@@ -61,7 +67,29 @@ export const websiteManifest = defineModule({
       settingsTopicKey: SETTINGS_TOPIC.WEBSITE,
     },
   ],
-  settings: [],
+  settings: [
+    {
+      settingKey: WEBSITE_GUEST_CHECKOUT_SETTING_KEY,
+      value: { kind: "BOOLEAN" },
+      systemDefault: true,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+    {
+      settingKey: WEBSITE_CHECKOUT_ENABLED_SETTING_KEY,
+      value: { kind: "BOOLEAN" },
+      systemDefault: false,
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+    {
+      settingKey: WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY,
+      value: { kind: "STRUCTURED", schemaKey: "website.publicLocationIds" },
+      systemDefault: [],
+      allowsLocationOverride: false,
+      isClientVisible: true,
+    },
+  ],
   customFieldEntities: [],
   botTools: [],
   /** The chrome and the static blocks the website module itself renders (decision 10). */
@@ -83,6 +111,8 @@ export const websiteManifest = defineModule({
       WEBSITE_EVENT_TYPE.DOMAIN_VERIFICATION_REQUESTED,
       WEBSITE_EVENT_TYPE.DOMAIN_REMOVAL_REQUESTED,
       WEBSITE_EVENT_TYPE.DOMAIN_STATE_CHANGED,
+      WEBSITE_EVENT_TYPE.GUEST_SESSION_CREATED,
+      WEBSITE_EVENT_TYPE.CHECKOUT_CREATED,
     ],
     consumes: [],
   },

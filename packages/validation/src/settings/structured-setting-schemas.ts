@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 import { creditPaymentMethodsSettingSchema } from "../credit/credit-schemas.js";
 import { paymentMethodsSettingSchema } from "../payment/payment-schemas.js";
 
@@ -10,6 +10,7 @@ import { paymentMethodsSettingSchema } from "../payment/payment-schemas.js";
 const schemas: Record<string, ZodType> = {
   "credit.payment.methods": creditPaymentMethodsSettingSchema,
   "payment.methods": paymentMethodsSettingSchema,
+  "website.publicLocationIds": z.array(z.string().min(1)),
 };
 
 export const STRUCTURED_SETTING_SCHEMAS: Readonly<Record<string, ZodType>> = schemas;

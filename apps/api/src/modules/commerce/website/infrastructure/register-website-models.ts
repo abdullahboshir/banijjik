@@ -16,6 +16,24 @@ import {
   WEBSITE_VERSION_MODEL_NAME,
   websiteVersionSchema,
 } from "./website-version.schema.js";
+import {
+  CHECKOUT_QUOTE_COLLECTION_NAME,
+  CHECKOUT_QUOTE_MODEL_NAME,
+  checkoutQuoteSchema,
+} from "./checkout-quote.schema.js";
+import {
+  CHECKOUT_COLLECTION_NAME,
+  CHECKOUT_MODEL_NAME,
+  CHECKOUT_REQUEST_LINK_COLLECTION_NAME,
+  CHECKOUT_REQUEST_LINK_MODEL_NAME,
+  checkoutRequestLinkSchema,
+  checkoutSchema,
+} from "./checkout.schema.js";
+import {
+  CHECKOUT_ACCESS_COLLECTION_NAME,
+  CHECKOUT_ACCESS_MODEL_NAME,
+  checkoutAccessSchema,
+} from "./checkout-access.schema.js";
 
 export function registerWebsiteModels(): void {
   registerModel({
@@ -45,6 +63,34 @@ export function registerWebsiteModels(): void {
     modelName: SITE_DOMAIN_MODEL_NAME,
     collectionName: SITE_DOMAIN_COLLECTION_NAME,
     schema: siteDomainSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: CHECKOUT_QUOTE_MODEL_NAME,
+    collectionName: CHECKOUT_QUOTE_COLLECTION_NAME,
+    schema: checkoutQuoteSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: CHECKOUT_MODEL_NAME,
+    collectionName: CHECKOUT_COLLECTION_NAME,
+    schema: checkoutSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: CHECKOUT_REQUEST_LINK_MODEL_NAME,
+    collectionName: CHECKOUT_REQUEST_LINK_COLLECTION_NAME,
+    schema: checkoutRequestLinkSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: CHECKOUT_ACCESS_MODEL_NAME,
+    collectionName: CHECKOUT_ACCESS_COLLECTION_NAME,
+    schema: checkoutAccessSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }
