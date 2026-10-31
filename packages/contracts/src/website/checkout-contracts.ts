@@ -1,4 +1,4 @@
-import type { Money } from "../catalog/catalog-contracts.js";
+import type { Money } from "../pricing/pricing-contracts.js";
 import type { CheckoutContactSnapshot } from "../contact/guest-contact-contracts.js";
 
 export type CheckoutOfferingKind = "PRODUCT" | "SERVICE" | "RENTAL" | "EVENT" | "PLAN";
@@ -56,7 +56,7 @@ export type CheckoutSelectionItem = PublicSelection;
 export interface CheckoutSelection {
   readonly selectionId: string;
   readonly selection: PublicSelection;
-  readonly customFields?: Readonly<Record<string, unknown>>;
+  readonly customFields: Readonly<Record<string, unknown>>;
 }
 
 export interface CheckoutRecipientSnapshot {
@@ -127,7 +127,7 @@ export interface PublicQuoteRequest {
   readonly fulfillment: CheckoutFulfillment;
 }
 
-export interface PublicQuoteLine {
+export interface PublicQuoteLineResponse {
   readonly selectionId: string;
   readonly subtotal: Money;
   readonly discount: Money;
@@ -136,13 +136,13 @@ export interface PublicQuoteLine {
   readonly amountRequiredBeforeConfirmation: Money;
 }
 
-export type PublicQuoteLineResponse = PublicQuoteLine;
+export type PublicQuoteLine = PublicQuoteLineResponse;
 
 export interface PublicQuoteResponse {
   readonly quoteId: string;
   readonly expiresAt: string;
   readonly total: Money;
-  readonly lines: readonly PublicQuoteLine[];
+  readonly lines: readonly PublicQuoteLineResponse[];
   readonly deliveryCharge: Money;
 }
 
