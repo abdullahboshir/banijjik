@@ -101,6 +101,8 @@ export {
   type ReadOwnRequestsDependencies,
   type RequestStatusReaderPort,
   type RequestStatusSnapshot,
+  type StorefrontOrderItem,
+  type StorefrontOrderFulfillment,
 } from "./application/read-own-requests.js";
 export {
   ClaimCheckoutUseCase,

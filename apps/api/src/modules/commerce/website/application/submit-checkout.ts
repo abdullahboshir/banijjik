@@ -9,7 +9,12 @@ import type {
 import { newId } from "@banijjik/ids";
 import { AppError } from "../../../../kernel/http/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
-import type { Checkout, CheckoutAccess, CheckoutQuote } from "../domain/checkout-types.js";
+import type {
+  Checkout,
+  CheckoutAccess,
+  CheckoutAccessOwner,
+  CheckoutQuote,
+} from "../domain/checkout-types.js";
 import type {
   CatalogQuoteReaderPort,
   CheckoutAccessRepositoryPort,
@@ -62,6 +67,12 @@ interface SaveRecordsArgs {
     readonly now: Date;
   };
   readonly links: readonly CheckoutRequestLink[];
+}
+
+function resolveAccessOwner(principal: CheckoutPrincipal): CheckoutAccessOwner {
+  return principal.type === "CUSTOMER"
+    ? { type: "CUSTOMER", identifier: principal.customerAccountId }
+    : { type: "GUEST", identifier: principal.guestSessionId };
 }
 
 export class SubmitCheckoutUseCase {
@@ -230,14 +241,13 @@ export class SubmitCheckoutUseCase {
     };
     await this.deps.checkouts.save(checkout);
 
+    const owner: CheckoutAccessOwner = resolveAccessOwner(input.principal);
+
     const checkoutAccess: CheckoutAccess = {
       checkoutAccessId: newId(),
       organizationId: input.organizationId,
       checkoutId,
-      owner:
-        input.principal.type === "CUSTOMER"
-          ? { type: "CUSTOMER", identifier: input.principal.customerAccountId }
-          : { type: "GUEST", identifier: input.principal.guestSessionId },
+      owner,
       revokedAt: null,
       version: 1,
       createdAt: input.now,
@@ -257,6 +267,9 @@ export class SubmitCheckoutUseCase {
         status: link.status,
         paymentRequired: link.paymentRequired,
         holdExpiresAt: link.holdExpiresAt ? new Date(link.holdExpiresAt) : null,
+        ownerType: owner.type,
+        ownerIdentifier: owner.identifier,
+        revokedAt: null,
         createdAt: input.now,
         updatedAt: input.now,
       })),

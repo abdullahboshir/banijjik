@@ -136,6 +136,7 @@ function buildCheckoutUseCases(
   const claimCheckout = new ClaimCheckoutUseCase({
     access: repos.accessRepo,
     checkouts: repos.checkoutRepo,
+    requestLinks: repos.requestLinkRepo,
     resolveGuestSession: adapters.resolveGuestSession,
     customerPhoneReader: adapters.customerPhoneReader,
     unitOfWork: repos.unitOfWork,

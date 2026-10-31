@@ -214,6 +214,7 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     const claimCheckout = new ClaimCheckoutUseCase({
       access: accessRepo,
       checkouts: checkoutRepo,
+      requestLinks: requestLinkRepo,
       resolveGuestSession,
       customerPhoneReader,
       unitOfWork,
@@ -391,6 +392,47 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     expect(custListRes.body.data.items[0].checkoutId).toBe(custCheckout.checkoutId);
   });
 
+  it("returns owner request pages and applies request type filters in the database query", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const guest = await createGuest(world.organizationA);
+    const cookie = `${SF_GUEST_COOKIE_NAME}=${formatGuestCookie(guest.guestSessionId, guest.rawSecret)}`;
+    const firstCheckout = await createQuoteAndCheckout({
+      organizationId: world.organizationA,
+      locationId: world.locationA1,
+      cookie,
+    });
+    const secondCheckout = await createQuoteAndCheckout({
+      organizationId: world.organizationA,
+      locationId: world.locationA1,
+      cookie,
+    });
+
+    const firstPage = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests?page=1&limit=1`)
+      .set("Cookie", cookie);
+    const secondPage = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests?page=2&limit=1`)
+      .set("Cookie", cookie);
+    const filteredPage = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests?requestType=BOOKING`)
+      .set("Cookie", cookie);
+
+    expect(firstPage.status).toBe(200);
+    expect(secondPage.status).toBe(200);
+    expect(firstPage.body.data.total).toBe(2);
+    expect(secondPage.body.data.total).toBe(2);
+    expect(firstPage.body.data.items).toHaveLength(1);
+    expect(secondPage.body.data.items).toHaveLength(1);
+    expect(firstPage.body.data.items[0].checkoutId).not.toBe(
+      secondPage.body.data.items[0].checkoutId,
+    );
+    expect([firstCheckout.checkoutId, secondCheckout.checkoutId]).toContain(
+      firstPage.body.data.items[0].checkoutId,
+    );
+    expect(filteredPage.body.data.items).toHaveLength(0);
+    expect(filteredPage.body.data.total).toBe(0);
+  });
+
   it("projects enrollment payable amount using enrollmentPeriodId as payment requestId", async () => {
     const world = await worldFor(harness, RETAIL);
     const guest = await createGuest(world.organizationA);
@@ -491,6 +533,26 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
     expect(foreignCustList.body.data.items).toHaveLength(0);
   });
 
+  it("denies an organization B guest access to an organization A checkout", async () => {
+    const world = await worldFor(harness, RETAIL);
+    const guestA = await createGuest(world.organizationA);
+    const cookieA = `${SF_GUEST_COOKIE_NAME}=${formatGuestCookie(guestA.guestSessionId, guestA.rawSecret)}`;
+    const { checkoutId } = await createQuoteAndCheckout({
+      organizationId: world.organizationA,
+      locationId: world.locationA1,
+      cookie: cookieA,
+    });
+    const guestB = await createGuest(world.organizationB);
+    const cookieB = `${SF_GUEST_COOKIE_NAME}=${formatGuestCookie(guestB.guestSessionId, guestB.rawSecret)}`;
+
+    const response = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationB}/checkouts/${checkoutId}`)
+      .set("Cookie", cookieB);
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe(ERROR_CODE.NOT_FOUND);
+  });
+
   it("claims guest checkout into verified customer account when both guest cookie and matching verified phone are present", async () => {
     const world = await worldFor(harness, RETAIL);
     const guest = await createGuest(world.organizationA);
@@ -569,6 +631,14 @@ describe("Storefront Private Request Projections, Tracking & Guest Claim (Card 4
       .set("Cookie", cookie);
     expect(guestListRes.status).toBe(200);
     expect(guestListRes.body.data.items).toHaveLength(0);
+
+    // The claimed request now belongs to the customer account
+    const customerListRes = await request(app)
+      .get(`/api/v1/storefront/orgs/${world.organizationA}/me/requests`)
+      .set("x-test-customer-account-id", customerAccountId);
+    expect(customerListRes.status).toBe(200);
+    expect(customerListRes.body.data.items).toHaveLength(1);
+    expect(customerListRes.body.data.items[0].checkoutId).toBe(checkoutId);
 
     // Idempotency replay by guest session is also revoked
     const replayRes = await request(app)

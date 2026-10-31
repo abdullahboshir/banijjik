@@ -1,4 +1,5 @@
 import type { CurrencyCode } from "@banijjik/contracts";
+import type { OrderLineSnapshot } from "@banijjik/contracts/sales";
 import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import type {
   CheckoutFulfillment,
@@ -35,6 +36,7 @@ import {
   type PricedSelectionsResult,
   type RequestStatusReaderPort,
   type RequestStatusSnapshot,
+  type StorefrontOrderItem,
   type StorefrontOrganizationConfig,
 } from "../modules/commerce/website/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
@@ -155,9 +157,19 @@ async function readOrderStatus(
     paymentRequired: summary ? summary.due : order.totals.grandTotal,
     holdExpiresAt: null,
     createdAt: order.createdAt,
-    items: order.lines,
-    fulfillment: order.fulfillment,
+    items: projectStorefrontOrderItems(order.lines),
+    fulfillment: { method: order.fulfillment.method },
   };
+}
+
+export function projectStorefrontOrderItems(
+  lines: readonly OrderLineSnapshot[],
+): readonly StorefrontOrderItem[] {
+  return lines.map((line) => ({
+    name: line.nameSnapshot,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+  }));
 }
 
 async function readBookingStatus(

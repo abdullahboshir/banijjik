@@ -79,6 +79,9 @@ export function toCheckoutRequestLink(doc: CheckoutRequestLinkDocument): Checkou
     status: doc.status,
     paymentRequired: doc.paymentRequired,
     holdExpiresAt: doc.holdExpiresAt ?? null,
+    ownerType: doc.ownerType,
+    ownerIdentifier: doc.ownerIdentifier,
+    revokedAt: doc.revokedAt ?? null,
     createdAt: audit.createdAt ?? new Date(),
     updatedAt: audit.updatedAt ?? new Date(),
   };

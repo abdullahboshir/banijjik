@@ -9,6 +9,7 @@ import type { Clock } from "../../../../kernel/time/index.js";
 import type {
   CheckoutAccessRepositoryPort,
   CheckoutRepositoryPort,
+  CheckoutRequestLinkRepositoryPort,
   EventPublisher,
   UnitOfWork,
 } from "./checkout-ports.js";
@@ -21,6 +22,7 @@ export interface CustomerPhoneReaderPort {
 export interface ClaimCheckoutDependencies {
   readonly access: CheckoutAccessRepositoryPort;
   readonly checkouts: CheckoutRepositoryPort;
+  readonly requestLinks: CheckoutRequestLinkRepositoryPort;
   readonly resolveGuestSession: ResolveGuestSessionUseCase;
   readonly customerPhoneReader: CustomerPhoneReaderPort;
   readonly unitOfWork: UnitOfWork;
@@ -65,6 +67,15 @@ export class ClaimCheckoutUseCase {
       if (!updated) {
         throw new AppError({ code: ERROR_CODE.CONFLICT, messageKey: "errors.conflict" });
       }
+
+      await this.deps.requestLinks.transferOwner({
+        organizationId: input.organizationId,
+        checkoutId: input.checkoutId,
+        fromOwnerType: "GUEST",
+        fromOwnerIdentifier: input.guestSessionId,
+        toOwner: { type: "CUSTOMER", identifier: input.customerAccountId },
+        now: this.deps.clock.now(),
+      });
 
       await this.deps.events.publish(WEBSITE_EVENT_TYPE.CHECKOUT_CLAIMED, {
         checkoutId: input.checkoutId,

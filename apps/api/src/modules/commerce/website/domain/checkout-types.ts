@@ -84,6 +84,11 @@ export interface CheckoutRequestLinkRecord {
   readonly status: string;
   readonly paymentRequired: Money;
   readonly holdExpiresAt: Date | null;
+  // Owner projection of CheckoutAccess, denormalized so tracking lists page in the database
+  // without a $lookup (the tenant kernel refuses joins, ADR-087).
+  readonly ownerType: "CUSTOMER" | "GUEST";
+  readonly ownerIdentifier: string;
+  readonly revokedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

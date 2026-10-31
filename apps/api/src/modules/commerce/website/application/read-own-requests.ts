@@ -26,10 +26,20 @@ export interface RequestStatusSnapshot {
   readonly paymentRequired: Money;
   readonly holdExpiresAt: Date | null;
   readonly createdAt: Date;
-  readonly items?: readonly unknown[];
+  readonly items?: readonly StorefrontOrderItem[];
   readonly schedule?: unknown;
   readonly plan?: unknown;
-  readonly fulfillment?: unknown;
+  readonly fulfillment?: StorefrontOrderFulfillment;
+}
+
+export interface StorefrontOrderItem {
+  readonly name: string;
+  readonly quantity: number;
+  readonly unitPrice: Money;
+}
+
+export interface StorefrontOrderFulfillment {
+  readonly method: "INSTANT" | "PICKUP" | "COURIER" | "OWN_RIDER";
 }
 
 export interface RequestStatusReaderPort {
@@ -52,13 +62,6 @@ function resolveHoldExpiresAt(liveHold?: Date | null, linkHold?: Date | null): s
   if (liveHold) return liveHold.toISOString();
   if (linkHold) return linkHold.toISOString();
   return null;
-}
-
-function assignExtraProps(mutable: Record<string, unknown>, live: RequestStatusSnapshot): void {
-  if (live.items !== undefined) mutable.items = live.items;
-  if (live.schedule !== undefined) mutable.schedule = live.schedule;
-  if (live.plan !== undefined) mutable.plan = live.plan;
-  if (live.fulfillment !== undefined) mutable.fulfillment = live.fulfillment;
 }
 
 function buildDetailPayload(
@@ -92,8 +95,13 @@ function buildDetailPayload(
     createdAt: link.createdAt.toISOString(),
   };
 
-  assignExtraProps(result as unknown as Record<string, unknown>, live);
-  return result;
+  return {
+    ...result,
+    ...(live.items === undefined ? {} : { items: live.items }),
+    ...(live.schedule === undefined ? {} : { schedule: live.schedule }),
+    ...(live.plan === undefined ? {} : { plan: live.plan }),
+    ...(live.fulfillment === undefined ? {} : { fulfillment: live.fulfillment }),
+  };
 }
 
 export class ReadOwnRequestsUseCase {
@@ -158,37 +166,19 @@ export class ReadOwnRequestsUseCase {
         ? input.principal.customerAccountId
         : input.principal.guestSessionId;
 
-    const accesses = await this.deps.access.listByOwner(
-      input.organizationId,
-      input.principal.type,
-      principalId,
-    );
-
     const page = Math.max(1, input.query.page ?? 1);
     const limit = Math.min(100, Math.max(1, input.query.limit ?? 20));
-
-    if (accesses.length === 0) {
-      return { items: [], total: 0, page, limit };
-    }
-
-    const linkArrays = await Promise.all(
-      accesses.map((a) =>
-        this.deps.requestLinks.listByCheckoutId(input.organizationId, a.checkoutId),
-      ),
-    );
-    const allLinks = linkArrays.flat();
-
-    const filteredLinks = input.query.requestType
-      ? allLinks.filter((l) => l.requestType === input.query.requestType)
-      : allLinks;
-
-    filteredLinks.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    const total = filteredLinks.length;
-    const pagedLinks = filteredLinks.slice((page - 1) * limit, page * limit);
+    const result = await this.deps.requestLinks.listByOwner({
+      organizationId: input.organizationId,
+      ownerType: input.principal.type,
+      identifier: principalId,
+      ...(input.query.requestType ? { requestType: input.query.requestType } : {}),
+      page,
+      limit,
+    });
 
     const items = await Promise.all(
-      pagedLinks.map(async (link) => {
+      result.links.map(async (link) => {
         const live = await this.deps.requestStatusReader.readStatus({
           organizationId: input.organizationId,
           requestType: link.requestType,
@@ -198,7 +188,7 @@ export class ReadOwnRequestsUseCase {
       }),
     );
 
-    return { items, total, page, limit };
+    return { items, total: result.total, page, limit };
   }
 
   async getRequestDetail(input: {
