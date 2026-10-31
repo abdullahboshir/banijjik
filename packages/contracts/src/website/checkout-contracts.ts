@@ -1,49 +1,90 @@
-import type { Money } from "../catalog/catalog-contracts.js";
-import type { CheckoutContactSnapshot } from "../contact/guest-contact-contracts.js";
+import type { Money } from "../pricing/pricing-contracts.js";
 
 export type CheckoutOfferingKind = "PRODUCT" | "SERVICE" | "RENTAL" | "EVENT" | "PLAN";
-
-export interface CheckoutSelectionItem {
-  readonly kind: CheckoutOfferingKind;
-  readonly offeringId: string;
-  readonly variantId: string;
-  readonly quantity: number;
-  readonly modifierOptionIds?: readonly string[];
-  readonly scheduleSlotId?: string;
-  readonly periodStart?: string;
-  readonly periodEnd?: string;
-}
-
-export interface CheckoutSelection {
-  readonly selectionId: string;
-  readonly selection: CheckoutSelectionItem;
-  readonly customFields?: Readonly<Record<string, unknown>>;
-}
-
-export type PublicSelection = CheckoutSelectionItem;
-export type CheckoutRecipientSnapshot = CheckoutContactSnapshot;
-
-export type CheckoutFulfillmentKind = "PICKUP" | "DELIVERY" | "ON_PREMISE" | "DIGITAL";
-
-export interface CheckoutFulfillment {
-  readonly kind: CheckoutFulfillmentKind;
-  readonly address?: string;
-  readonly notes?: string;
-}
-
-export interface CheckoutRequestLink {
-  readonly requestId: string;
-  readonly requestType: "ORDER" | "BOOKING" | "ENROLLMENT";
-  readonly payableAmount: Money;
-  readonly status: string;
-}
 
 export interface StorefrontCommandContext {
   readonly organizationId: string;
   readonly locationId: string;
   readonly contactId: string;
-  readonly idempotencyKey: string;
-  readonly correlationId: string;
+  readonly checkoutId: string;
+  readonly actorUserId: null;
+  readonly idempotencyKey?: string;
+  readonly correlationId?: string;
+}
+
+export type PublicSelection =
+  | {
+      readonly kind: "PRODUCT";
+      readonly offeringId: string;
+      readonly variantId: string;
+      readonly quantity: number;
+      readonly modifierOptionIds: readonly string[];
+    }
+  | {
+      readonly kind: "SERVICE";
+      readonly offeringId: string;
+      readonly variantId: string;
+      readonly startsAt: string; // ISO 8601
+      readonly resourceIds: readonly string[];
+    }
+  | {
+      readonly kind: "RENTAL";
+      readonly offeringId: string;
+      readonly variantId: string;
+      readonly startsAt: string; // ISO 8601
+      readonly endsAt: string; // ISO 8601
+      readonly resourceIds: readonly string[];
+    }
+  | {
+      readonly kind: "EVENT";
+      readonly offeringId: string;
+      readonly variantId: string;
+      readonly eventSessionId: string;
+      readonly quantity: number;
+    }
+  | {
+      readonly kind: "PLAN";
+      readonly offeringId: string;
+      readonly variantId: string;
+      readonly startsOn: string; // YYYY-MM-DD
+      readonly resourceIds: readonly string[];
+    };
+
+export type CheckoutSelectionItem = PublicSelection;
+
+export interface CheckoutSelection {
+  readonly selectionId: string;
+  readonly selection: PublicSelection;
+  readonly customFields: Readonly<Record<string, unknown>>;
+}
+
+export interface CheckoutRecipientSnapshot {
+  readonly name: string;
+  readonly phoneE164: string;
+}
+
+export interface CheckoutFulfillment {
+  readonly method: "PICKUP" | "COURIER" | "OWN_RIDER";
+  readonly address?: {
+    readonly recipientName: string;
+    readonly phone: string;
+    readonly addressLine: string;
+    readonly districtCode: string;
+    readonly areaCode: string;
+    readonly postalCode?: string;
+  };
+  readonly kind?: "PICKUP" | "DELIVERY" | "ON_PREMISE" | "DIGITAL";
+  readonly notes?: string;
+}
+
+export interface CheckoutRequestLink {
+  readonly selectionIds: readonly string[];
+  readonly requestType: "ORDER" | "BOOKING" | "ENROLLMENT";
+  readonly requestId: string;
+  readonly publicNumber: string | null;
+  readonly status: string;
+  readonly paymentRequired: Money;
+  readonly holdExpiresAt: string | null;
 }
 
 export interface PublicOrderCommands {
@@ -51,6 +92,7 @@ export interface PublicOrderCommands {
     context: StorefrontCommandContext,
     input: {
       readonly selections: readonly CheckoutSelection[];
+      readonly recipient: CheckoutRecipientSnapshot;
       readonly fulfillment: CheckoutFulfillment;
       readonly notes?: string;
     },
@@ -77,7 +119,7 @@ export interface PublicQuoteRequest {
   readonly fulfillment: CheckoutFulfillment;
 }
 
-export interface PublicQuoteLine {
+export interface PublicQuoteLineResponse {
   readonly selectionId: string;
   readonly subtotal: Money;
   readonly discount: Money;
@@ -86,13 +128,13 @@ export interface PublicQuoteLine {
   readonly amountRequiredBeforeConfirmation: Money;
 }
 
-export type PublicQuoteLineResponse = PublicQuoteLine;
+export type PublicQuoteLine = PublicQuoteLineResponse;
 
 export interface PublicQuoteResponse {
   readonly quoteId: string;
   readonly expiresAt: string;
   readonly total: Money;
-  readonly lines: readonly PublicQuoteLine[];
+  readonly lines: readonly PublicQuoteLineResponse[];
   readonly deliveryCharge: Money;
 }
 
