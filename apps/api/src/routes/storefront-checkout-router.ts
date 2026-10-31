@@ -1,10 +1,9 @@
-import { CURRENCY_CODE, type CurrencyCode } from "@banijjik/contracts";
+import type { ModuleManifest } from "@banijjik/contracts";
 import type {
   PublicBookingCommands,
   PublicEnrollmentCommands,
   PublicOrderCommands,
 } from "@banijjik/contracts/website";
-import { newId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type { AuditRecorder } from "../kernel/audit/index.js";
 import { MongoUnitOfWork } from "../kernel/db/index.js";
@@ -31,55 +30,28 @@ import {
 } from "../modules/commerce/website/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import {
-  buildCatalogQuoteReaderAdapter,
   buildCustomerPhoneReaderAdapter,
   buildGuestContactAdapter,
   buildOrgStorefrontConfigReaderAdapter,
   buildResolveCustomerContactId,
-  buildStorefrontRequestStatusReaderAdapter,
 } from "./storefront-checkout-adapters.js";
+import { buildStorefrontCommerceCommands } from "./storefront-commerce-commands.js";
 
 export interface StorefrontCheckoutRouterOptions {
   readonly requireWebsiteModule: RequestHandler;
   readonly orgConfig: OrgConfigService;
+  readonly manifests: readonly ModuleManifest[];
   readonly clock: Clock;
   readonly audit: AuditRecorder;
   readonly limiter: RateLimiter;
   readonly isProduction?: boolean;
-  readonly publicOrders?: PublicOrderCommands;
-  readonly publicBookings?: PublicBookingCommands;
-  readonly publicEnrollments?: PublicEnrollmentCommands;
-  readonly catalogQuoter?: CatalogQuoteReaderPort;
+  readonly publicOrders: PublicOrderCommands;
+  readonly publicBookings: PublicBookingCommands;
+  readonly publicEnrollments: PublicEnrollmentCommands;
+  readonly catalogQuoter: CatalogQuoteReaderPort;
+  readonly requestStatusReader: RequestStatusReaderPort;
   readonly guestContact?: GuestContactPort;
   readonly customerPhoneReader?: CustomerPhoneReaderPort;
-  readonly requestStatusReader?: RequestStatusReaderPort;
-}
-
-function buildFallbackLink(type: "ORDER" | "BOOKING" | "ENROLLMENT", status: string) {
-  return {
-    selectionIds: [newId()],
-    requestId: newId(),
-    requestType: type,
-    publicNumber: null,
-    paymentRequired: { amount: 0, currency: CURRENCY_CODE.BDT as CurrencyCode },
-    payableAmount: { amount: 0, currency: CURRENCY_CODE.BDT as CurrencyCode },
-    status,
-    holdExpiresAt: null,
-  };
-}
-
-function resolvePublicCommands(options: StorefrontCheckoutRouterOptions) {
-  return {
-    publicOrders: options.publicOrders ?? {
-      place: async () => buildFallbackLink("ORDER", "PLACED"),
-    },
-    publicBookings: options.publicBookings ?? {
-      request: async () => buildFallbackLink("BOOKING", "HELD"),
-    },
-    publicEnrollments: options.publicEnrollments ?? {
-      request: async () => buildFallbackLink("ENROLLMENT", "PENDING"),
-    },
-  };
 }
 
 function buildCheckoutUseCases(
@@ -100,7 +72,7 @@ function buildCheckoutUseCases(
     readonly requestStatusReader: RequestStatusReaderPort;
   },
 ) {
-  const { publicOrders, publicBookings, publicEnrollments } = resolvePublicCommands(options);
+  const { publicOrders, publicBookings, publicEnrollments } = options;
 
   const quoteCheckout = new QuoteCheckoutUseCase({
     catalogQuoter: adapters.catalogQuoter,
@@ -147,6 +119,37 @@ function buildCheckoutUseCases(
   return { quoteCheckout, submitCheckout, readOwnRequests, claimCheckout };
 }
 
+export interface StorefrontSurfaceCheckoutInput {
+  readonly requireWebsiteModule: RequestHandler;
+  readonly orgConfig: OrgConfigService;
+  readonly manifests: readonly ModuleManifest[];
+  readonly clock: Clock;
+  readonly audit: AuditRecorder;
+  readonly limiter: RateLimiter;
+  readonly isProduction: boolean;
+}
+
+export function buildStorefrontSurfaceCheckoutRouter(
+  input: StorefrontSurfaceCheckoutInput,
+): Router {
+  const orgConfigReader = buildOrgStorefrontConfigReaderAdapter(input.orgConfig, input.manifests);
+  const commerce = buildStorefrontCommerceCommands({
+    clock: input.clock,
+    audit: input.audit,
+    orgConfig: input.orgConfig,
+    manifests: input.manifests,
+    orgConfigReader,
+  });
+  return buildStorefrontCheckoutRouter({
+    ...input,
+    publicOrders: commerce.publicOrders,
+    publicBookings: commerce.publicBookings,
+    publicEnrollments: commerce.publicEnrollments,
+    catalogQuoter: commerce.catalogQuoter,
+    requestStatusReader: commerce.requestStatusReader,
+  });
+}
+
 export function buildStorefrontCheckoutRouter(options: StorefrontCheckoutRouterOptions): Router {
   const quoteRepo = new MongoCheckoutQuoteRepository();
   const checkoutRepo = new MongoCheckoutRepository();
@@ -156,14 +159,16 @@ export function buildStorefrontCheckoutRouter(options: StorefrontCheckoutRouterO
   const unitOfWork = new MongoUnitOfWork();
 
   const resolveGuestSession = new ResolveGuestSessionUseCase(guestRepo, options.clock);
-  const catalogQuoter = options.catalogQuoter ?? buildCatalogQuoteReaderAdapter();
+  const catalogQuoter = options.catalogQuoter;
   const guestContact =
     options.guestContact ??
     buildGuestContactAdapter({ audit: options.audit, clock: options.clock });
-  const orgConfigReader = buildOrgStorefrontConfigReaderAdapter(options.orgConfig);
+  const orgConfigReader = buildOrgStorefrontConfigReaderAdapter(
+    options.orgConfig,
+    options.manifests,
+  );
   const customerPhoneReader = options.customerPhoneReader ?? buildCustomerPhoneReaderAdapter();
-  const requestStatusReader =
-    options.requestStatusReader ?? buildStorefrontRequestStatusReaderAdapter();
+  const requestStatusReader = options.requestStatusReader;
   const resolveCustomerContactId = buildResolveCustomerContactId();
 
   const useCases = buildCheckoutUseCases(

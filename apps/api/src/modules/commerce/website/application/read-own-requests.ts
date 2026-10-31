@@ -4,10 +4,14 @@ import type {
   CheckoutDetailRequestItem,
   CheckoutDetailResponse,
   CheckoutPrincipal,
+  StorefrontOrderItem,
   StorefrontRequestDetailResponse,
+  StorefrontRequestFulfillment,
   StorefrontRequestItem,
   StorefrontRequestListQuery,
   StorefrontRequestListResponse,
+  StorefrontRequestPlan,
+  StorefrontRequestSchedule,
 } from "@banijjik/contracts/website";
 import { AppError } from "../../../../kernel/http/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
@@ -27,27 +31,29 @@ export interface RequestStatusSnapshot {
   readonly holdExpiresAt: Date | null;
   readonly createdAt: Date;
   readonly items?: readonly StorefrontOrderItem[];
-  readonly schedule?: unknown;
-  readonly plan?: unknown;
-  readonly fulfillment?: StorefrontOrderFulfillment;
+  readonly schedule?: StorefrontRequestSchedule;
+  readonly plan?: StorefrontRequestPlan;
+  readonly fulfillment?: StorefrontRequestFulfillment;
 }
 
-export interface StorefrontOrderItem {
-  readonly name: string;
-  readonly quantity: number;
-  readonly unitPrice: Money;
+export interface RequestStatusReadInput {
+  readonly organizationId: string;
+  readonly requestType: "ORDER" | "BOOKING" | "ENROLLMENT";
+  readonly requestId: string;
 }
 
-export interface StorefrontOrderFulfillment {
-  readonly method: "INSTANT" | "PICKUP" | "COURIER" | "OWN_RIDER";
-}
-
+/**
+ * One read per request type per page: tracking the list of a guest with many requests must not
+ * fan out into a query per link (N+1).
+ */
 export interface RequestStatusReaderPort {
-  readStatus(input: {
-    readonly organizationId: string;
-    readonly requestType: "ORDER" | "BOOKING" | "ENROLLMENT";
-    readonly requestId: string;
-  }): Promise<RequestStatusSnapshot | null>;
+  readStatuses(
+    inputs: readonly RequestStatusReadInput[],
+  ): Promise<ReadonlyMap<string, RequestStatusSnapshot>>;
+}
+
+export function statusKey(requestType: string, requestId: string): string {
+  return `${requestType}:${requestId}`;
 }
 
 export interface ReadOwnRequestsDependencies {
@@ -127,15 +133,9 @@ export class ReadOwnRequestsUseCase {
       input.organizationId,
       input.checkoutId,
     );
-    const requests = await Promise.all(
-      links.map(async (link) => {
-        const live = await this.deps.requestStatusReader.readStatus({
-          organizationId: input.organizationId,
-          requestType: link.requestType,
-          requestId: link.requestId,
-        });
-        return this.mapDetailItem(link, live);
-      }),
+    const statuses = await this.readStatuses(input.organizationId, links);
+    const requests = links.map((link) =>
+      this.mapDetailItem(link, statuses.get(statusKey(link.requestType, link.requestId)) ?? null),
     );
 
     const status = requests.length > 0 && requests[0] ? requests[0].status : "SUBMITTED";
@@ -177,15 +177,9 @@ export class ReadOwnRequestsUseCase {
       limit,
     });
 
-    const items = await Promise.all(
-      result.links.map(async (link) => {
-        const live = await this.deps.requestStatusReader.readStatus({
-          organizationId: input.organizationId,
-          requestType: link.requestType,
-          requestId: link.requestId,
-        });
-        return this.mapRequestItem(link, live);
-      }),
+    const statuses = await this.readStatuses(input.organizationId, result.links);
+    const items = result.links.map((link) =>
+      this.mapRequestItem(link, statuses.get(statusKey(link.requestType, link.requestId)) ?? null),
     );
 
     return { items, total: result.total, page, limit };
@@ -208,13 +202,26 @@ export class ReadOwnRequestsUseCase {
 
     await this.assertAccess(input.organizationId, link.checkoutId, input.principal);
 
-    const live = await this.deps.requestStatusReader.readStatus({
-      organizationId: input.organizationId,
-      requestType: link.requestType,
-      requestId: link.requestId,
-    });
+    const statuses = await this.readStatuses(input.organizationId, [link]);
+    return buildDetailPayload(
+      link,
+      statuses.get(statusKey(link.requestType, link.requestId)) ?? null,
+      input.organizationId,
+    );
+  }
 
-    return buildDetailPayload(link, live, input.organizationId);
+  private readStatuses(
+    organizationId: string,
+    links: readonly CheckoutRequestLinkRecord[],
+  ): Promise<ReadonlyMap<string, RequestStatusSnapshot>> {
+    if (links.length === 0) return Promise.resolve(new Map());
+    return this.deps.requestStatusReader.readStatuses(
+      links.map((link) => ({
+        organizationId,
+        requestType: link.requestType,
+        requestId: link.requestId,
+      })),
+    );
   }
 
   private async assertAccess(
@@ -223,21 +230,19 @@ export class ReadOwnRequestsUseCase {
     principal: CheckoutPrincipal,
   ) {
     const accessRecord = await this.deps.access.findByCheckoutId(organizationId, checkoutId);
-    if (!accessRecord) {
+    if (!accessRecord || accessRecord.revokedAt !== null) {
       throw new AppError({ code: ERROR_CODE.NOT_FOUND, messageKey: "errors.checkout_not_found" });
-    }
-    if (accessRecord.revokedAt !== null) {
-      throw new AppError({ code: ERROR_CODE.FORBIDDEN, messageKey: "errors.forbidden" });
     }
 
     const principalId =
       principal.type === "CUSTOMER" ? principal.customerAccountId : principal.guestSessionId;
 
+    // A foreign owner is indistinguishable from a missing checkout: no existence oracle.
     if (
       accessRecord.owner.type !== principal.type ||
       accessRecord.owner.identifier !== principalId
     ) {
-      throw new AppError({ code: ERROR_CODE.FORBIDDEN, messageKey: "errors.forbidden" });
+      throw new AppError({ code: ERROR_CODE.NOT_FOUND, messageKey: "errors.checkout_not_found" });
     }
 
     return accessRecord;

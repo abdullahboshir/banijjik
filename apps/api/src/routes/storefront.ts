@@ -34,7 +34,7 @@ import {
 } from "../modules/commerce/website/index.js";
 import { buildCreditModuleDeps } from "./credit-tenant-router.js";
 import { buildDirectoryAdapters } from "./directory-storefront-adapters.js";
-import { buildStorefrontCheckoutRouter } from "./storefront-checkout-router.js";
+import { buildStorefrontSurfaceCheckoutRouter } from "./storefront-checkout-router.js";
 import {
   buildCustomerAuth,
   customerLoginEnabled,
@@ -238,9 +238,10 @@ function buildStorefrontRouters(
     orgConfig: input.orgConfig,
     requireCatalogModule: moduleSwitch(input, MODULE_KEY.CATALOG),
   });
-  const checkoutRouter = buildStorefrontCheckoutRouter({
+  const checkoutRouter = buildStorefrontSurfaceCheckoutRouter({
     requireWebsiteModule: moduleSwitch(input, MODULE_KEY.WEBSITE),
     orgConfig: input.orgConfig,
+    manifests: input.manifests,
     clock,
     audit,
     limiter: rateLimiter,

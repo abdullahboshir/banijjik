@@ -68,7 +68,7 @@ export class ClaimCheckoutUseCase {
         throw new AppError({ code: ERROR_CODE.CONFLICT, messageKey: "errors.conflict" });
       }
 
-      await this.deps.requestLinks.transferOwner({
+      const transferred = await this.deps.requestLinks.transferOwner({
         organizationId: input.organizationId,
         checkoutId: input.checkoutId,
         fromOwnerType: "GUEST",
@@ -76,6 +76,10 @@ export class ClaimCheckoutUseCase {
         toOwner: { type: "CUSTOMER", identifier: input.customerAccountId },
         now: this.deps.clock.now(),
       });
+      // The access row moved but its links did not: half-claimed checkout, roll back via CONFLICT.
+      if (transferred === 0) {
+        throw new AppError({ code: ERROR_CODE.CONFLICT, messageKey: "errors.conflict" });
+      }
 
       await this.deps.events.publish(WEBSITE_EVENT_TYPE.CHECKOUT_CLAIMED, {
         checkoutId: input.checkoutId,

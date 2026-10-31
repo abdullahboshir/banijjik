@@ -68,6 +68,14 @@ export class MongoOrderRepository implements OrderRepository {
     return row === null ? undefined : toOrder(row);
   }
 
+  async findByIds(orderIds: readonly OrderId[]): Promise<readonly Order[]> {
+    if (orderIds.length === 0) return [];
+    const rows = await orderModel()
+      .find({ orderId: { $in: [...orderIds] } }, undefined, sessionOption(getActiveSession()))
+      .lean<OrderDocument[]>();
+    return rows.map(toOrder);
+  }
+
   async update(order: Order, expectedVersion: number): Promise<Order> {
     const updated = await updateVersioned({
       model: orderModel(),

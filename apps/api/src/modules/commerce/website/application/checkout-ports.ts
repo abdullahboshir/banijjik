@@ -66,6 +66,7 @@ export interface CheckoutRequestLinkRepositoryPort {
     readonly page: number;
     readonly limit: number;
   }): Promise<{ readonly links: readonly CheckoutRequestLinkRecord[]; readonly total: number }>;
+  /** Returns how many live links moved; `0` means the checkout's links are inconsistent. */
   transferOwner(input: {
     readonly organizationId: string;
     readonly checkoutId: string;
@@ -73,7 +74,9 @@ export interface CheckoutRequestLinkRepositoryPort {
     readonly fromOwnerIdentifier: string;
     readonly toOwner: CheckoutAccessOwner;
     readonly now: Date;
-  }): Promise<void>;
+  }): Promise<number>;
+  /** Stamps every live link of the checkout so a revoked access cannot keep listing requests. */
+  revokeByCheckoutId(organizationId: string, checkoutId: string, now: Date): Promise<number>;
   findByRequest(
     organizationId: string,
     requestType: "ORDER" | "BOOKING" | "ENROLLMENT",
