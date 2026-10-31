@@ -1,5 +1,5 @@
 import { ERROR_CODE, MODULE_KEY, type ModuleKey, type ModuleManifest } from "@banijjik/contracts";
-import { CUSTOMER_LOGIN_SETTING_KEY, CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
+import { CUSTOMER_OTP_RULES } from "@banijjik/contracts/contact";
 import {
   storefrontOrganizationParamsSchema,
   storefrontResolveQuerySchema,
@@ -10,9 +10,7 @@ import type { AuditRecorder } from "../kernel/audit/index.js";
 import {
   authenticateCustomer,
   authenticateCustomerOptional,
-  cacheAccountStatus,
   createCustomerTokenIssuer,
-  createCustomerTokenVerifier,
 } from "../kernel/auth/index.js";
 import { getRequestContext, runWithRequestContext } from "../kernel/context/index.js";
 import { AppError, validate } from "../kernel/http/index.js";
@@ -21,17 +19,13 @@ import { contactFieldsOf } from "./contact-tenant-router.js";
 import { runInOrganizationContext } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildCatalogStorefront } from "../modules/commerce/catalog/index.js";
-import {
-  buildContactStorefrontRouterFor,
-  buildCustomerAccountStatusReader,
-} from "../modules/commerce/contact/index.js";
+import { buildContactStorefrontRouterFor } from "../modules/commerce/contact/index.js";
 import * as directory from "../modules/commerce/directory/index.js";
 import * as credit from "../modules/commerce/credit/index.js";
 import {
   buildStorefrontOrganizationReader,
   type StorefrontOrganizationReader,
 } from "../modules/core/organization/index.js";
-import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import type { FileModuleDependencies } from "../modules/core/file/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import {
@@ -40,6 +34,12 @@ import {
 } from "../modules/commerce/website/index.js";
 import { buildCreditModuleDeps } from "./credit-tenant-router.js";
 import { buildDirectoryAdapters } from "./directory-storefront-adapters.js";
+import { buildStorefrontSurfaceCheckoutRouter } from "./storefront-checkout-router.js";
+import {
+  buildCustomerAuth,
+  customerLoginEnabled,
+  customerLoginSwitch,
+} from "./storefront-customer-auth.js";
 import { buildStorefrontResolveHandler } from "./storefront-resolve.js";
 
 const RESOLVE_BUCKET = "storefront.resolve.ip";
@@ -47,7 +47,6 @@ const SURFACE_BUCKET = "storefront.surface.ip";
 const ONE_MINUTE_SECONDS = 60;
 const RESOLVE_PER_MINUTE = 6_000;
 const SURFACE_PER_MINUTE = 300;
-const ACCOUNT_STATUS_MAX_STALE_SECONDS = 60;
 const PRIVATE_NO_STORE = "private, no-store";
 
 function storefrontCacheGuard(): RequestHandler {
@@ -94,45 +93,6 @@ function businessContext(organizations: StorefrontOrganizationReader): RequestHa
       const ctx = { ...getRequestContext(), configVersion: organization.configVersion };
       runWithRequestContext(ctx, () => next());
     });
-  };
-}
-
-function customerLoginEnabled(
-  input: StorefrontRouterInput,
-): (organizationId: string) => Promise<boolean> {
-  const resolver = buildSettingsResolver({
-    orgConfig: input.orgConfig,
-    manifests: input.manifests,
-  });
-  const hasSms = input.config.storefront.smsDriver !== "disabled";
-  return async (organizationId) => {
-    if (!hasSms) return false;
-    const res = await resolver.resolve(organizationId, { keys: [CUSTOMER_LOGIN_SETTING_KEY] });
-    return res.get(CUSTOMER_LOGIN_SETTING_KEY)?.value === true;
-  };
-}
-
-function customerLoginSwitch(input: StorefrontRouterInput): RequestHandler {
-  const isEnabled = customerLoginEnabled(input);
-  return async (_request, _response, next) => {
-    const { organizationId } = getRequestContext();
-    if (organizationId === undefined || !(await isEnabled(organizationId))) throw notAvailable();
-    next();
-  };
-}
-
-function buildCustomerAuth(config: AppConfig, clock: Clock, input: StorefrontRouterInput) {
-  const secret = config.auth.accessTokenSecret;
-  const maxStale = input.accountStatusMaxStaleSeconds ?? ACCOUNT_STATUS_MAX_STALE_SECONDS;
-  const accounts = cacheAccountStatus(buildCustomerAccountStatusReader(), {
-    clock,
-    maxStaleSeconds: maxStale,
-  });
-  const verifier = createCustomerTokenVerifier({ secret, clock });
-  return {
-    customerAuth: authenticateCustomer({ verifier, accounts }),
-    customerAuthOptional: authenticateCustomerOptional({ verifier, accounts }),
-    secret,
   };
 }
 
@@ -207,6 +167,45 @@ function buildStorefrontDirectoryRouter(
   });
 }
 
+function buildStorefrontContactRouter(
+  input: StorefrontRouterInput,
+  auth: { customerAuth: ReturnType<typeof authenticateCustomer>; secret: string },
+  deps: {
+    creditDeps: ReturnType<typeof buildCreditModuleDeps>;
+    directoryAdapters: ReturnType<typeof buildDirectoryAdapters>;
+  },
+) {
+  const { config, clock, audit, rateLimiter } = input;
+  const dirErasure = directory.buildDirectoryErasureParticipantFor({
+    clock,
+    audit,
+    adapters: deps.directoryAdapters,
+  });
+  const dirExport = directory.buildDirectoryExportParticipantsFor({
+    clock,
+    audit,
+    adapters: deps.directoryAdapters,
+  });
+  return buildContactStorefrontRouterFor({
+    clock,
+    audit,
+    limiter: rateLimiter,
+    tokens: createCustomerTokenIssuer({
+      secret: auth.secret,
+      clock,
+      ttlSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
+    }),
+    storefront: config.storefront,
+    isSecureCookies: config.nodeEnv === "production",
+    accessTokenSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
+    requireCustomerLogin: customerLoginSwitch(input),
+    authenticateCustomer: auth.customerAuth,
+    contactFields: contactFieldsOf(),
+    erasureParticipants: [dirErasure, credit.buildCreditErasureParticipant(deps.creditDeps)],
+    exportParticipants: [...dirExport, credit.buildCreditExportParticipant(deps.creditDeps)],
+  });
+}
+
 function buildStorefrontRouters(
   input: StorefrontRouterInput,
   rateLimiter: RateLimiter,
@@ -225,34 +224,9 @@ function buildStorefrontRouters(
   });
   const directoryRouter = buildStorefrontDirectoryRouter(input, auth, directoryAdapters);
   const creditRouter = buildStorefrontCreditRouter(input, creditDeps, auth);
-
-  const dirErasure = directory.buildDirectoryErasureParticipantFor({
-    clock,
-    audit,
-    adapters: directoryAdapters,
-  });
-  const dirExport = directory.buildDirectoryExportParticipantsFor({
-    clock,
-    audit,
-    adapters: directoryAdapters,
-  });
-  const contactRouter = buildContactStorefrontRouterFor({
-    clock,
-    audit,
-    limiter: rateLimiter,
-    tokens: createCustomerTokenIssuer({
-      secret: auth.secret,
-      clock,
-      ttlSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
-    }),
-    storefront: config.storefront,
-    isSecureCookies: config.nodeEnv === "production",
-    accessTokenSeconds: CUSTOMER_OTP_RULES.accessTokenSeconds,
-    requireCustomerLogin: customerLoginSwitch(input),
-    authenticateCustomer: auth.customerAuth,
-    contactFields: contactFieldsOf(),
-    erasureParticipants: [dirErasure, credit.buildCreditErasureParticipant(creditDeps)],
-    exportParticipants: [...dirExport, credit.buildCreditExportParticipant(creditDeps)],
+  const contactRouter = buildStorefrontContactRouter(input, auth, {
+    creditDeps,
+    directoryAdapters,
   });
 
   const websiteRouter = buildWebsiteStorefrontRouterFor({
@@ -264,7 +238,23 @@ function buildStorefrontRouters(
     orgConfig: input.orgConfig,
     requireCatalogModule: moduleSwitch(input, MODULE_KEY.CATALOG),
   });
-  return { directoryRouter, creditRouter, contactRouter, websiteRouter, catalogRouter };
+  const checkoutRouter = buildStorefrontSurfaceCheckoutRouter({
+    requireWebsiteModule: moduleSwitch(input, MODULE_KEY.WEBSITE),
+    orgConfig: input.orgConfig,
+    manifests: input.manifests,
+    clock,
+    audit,
+    limiter: rateLimiter,
+    isProduction: config.nodeEnv === "production",
+  });
+  return {
+    directoryRouter,
+    creditRouter,
+    contactRouter,
+    websiteRouter,
+    catalogRouter,
+    checkoutRouter,
+  };
 }
 
 function mountOrganizationSurface(
@@ -286,7 +276,9 @@ function mountOrganizationSurface(
     storefrontCacheGuard(),
     validate({ params: storefrontOrganizationParamsSchema }),
     businessContext(organizations),
+    auth.customerAuthOptional,
     r.websiteRouter,
+    r.checkoutRouter,
     r.catalogRouter,
     r.directoryRouter,
     r.creditRouter,

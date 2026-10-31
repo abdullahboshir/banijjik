@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { uuidV7Schema } from "../uuid-v7.schema.js";
+import { paginationQuerySchema } from "../pagination.js";
 
 export const publicSelectionSchema = z.discriminatedUnion("kind", [
   z
@@ -140,3 +142,26 @@ export type PlaceStorefrontOrderInput = z.infer<typeof placeStorefrontOrderSchem
 export type CheckoutContactInputSchema = z.infer<typeof checkoutContactInputSchema>;
 export type PublicQuoteRequestInput = z.infer<typeof publicQuoteRequestSchema>;
 export type SubmitCheckoutRequestInput = z.infer<typeof submitCheckoutRequestSchema>;
+
+export const checkoutIdParamsSchema = z
+  .object({
+    checkoutId: uuidV7Schema,
+  })
+  .strict();
+
+export const storefrontRequestListQuerySchema = paginationQuerySchema
+  .extend({
+    requestType: z.enum(["ORDER", "BOOKING", "ENROLLMENT"]).optional(),
+  })
+  .strict();
+
+export const storefrontRequestParamsSchema = z
+  .object({
+    requestType: z.enum(["ORDER", "BOOKING", "ENROLLMENT"]),
+    requestId: uuidV7Schema,
+  })
+  .strict();
+
+export type CheckoutIdParamsInput = z.infer<typeof checkoutIdParamsSchema>;
+export type StorefrontRequestListQueryInput = z.infer<typeof storefrontRequestListQuerySchema>;
+export type StorefrontRequestParamsInput = z.infer<typeof storefrontRequestParamsSchema>;

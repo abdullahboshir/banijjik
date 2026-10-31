@@ -53,6 +53,7 @@
   "errors.checkout_not_available": "Storefront checkout is currently not available for this business.",
   "errors.checkout_capacity_unavailable": "The requested booking slot, seats, or inventory are no longer available.",
   "errors.checkout_disabled": "Storefront checkout is currently disabled for this business.",
+  "errors.checkout_claim_phone_mismatch": "The verified phone number of this account does not match the contact information for this checkout.",
   "errors.idempotency_mismatch": "The same request was sent with different details. Please start again.",
   "errors.limit_reached": "You have reached your package limit. Upgrade your package to continue.",
   "errors.business_rule": "This cannot be done right now because of a business rule.",

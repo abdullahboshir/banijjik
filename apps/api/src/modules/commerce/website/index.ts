@@ -97,17 +97,31 @@ export {
   type SubmitCheckoutDependencies,
 } from "./application/submit-checkout.js";
 export {
+  ReadOwnRequestsUseCase,
+  statusKey,
+  type ReadOwnRequestsDependencies,
+  type RequestStatusReadInput,
+  type RequestStatusReaderPort,
+  type RequestStatusSnapshot,
+} from "./application/read-own-requests.js";
+export {
+  ClaimCheckoutUseCase,
+  type ClaimCheckoutDependencies,
+  type ClaimCheckoutInput,
+  type CustomerPhoneReaderPort,
+} from "./application/claim-checkout.js";
+export {
   buildCheckoutRouter,
   createStorefrontPrincipalMiddleware,
   type CheckoutRouterDependencies,
   type CheckoutRequestWithPrincipal,
 } from "./presentation/checkout.router.js";
 export {
-  MongoCheckoutQuoteRepository,
   MongoCheckoutRepository,
   MongoCheckoutAccessRepository,
   MongoCheckoutRequestLinkRepository,
 } from "./infrastructure/mongo-checkout.repository.js";
+export { MongoCheckoutQuoteRepository } from "./infrastructure/mongo-checkout-quote.repository.js";
 export {
   CHECKOUT_QUOTE_MODEL_NAME,
   CHECKOUT_QUOTE_COLLECTION_NAME,

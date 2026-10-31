@@ -118,6 +118,7 @@ export type { SalesReturnWriteInput };
 export function buildOrderRepository(): OrderRepository {
   return new MongoOrderRepository();
 }
+export { MongoOrderRepository };
 
 export function buildOrderSnapshotReader(): { read: OrderRepository["findById"] } {
   const orders = buildOrderRepository();

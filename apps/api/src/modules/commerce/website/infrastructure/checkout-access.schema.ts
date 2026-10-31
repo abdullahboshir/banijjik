@@ -37,5 +37,7 @@ checkoutAccessSchema.index({
   organizationId: 1,
   "owner.type": 1,
   "owner.identifier": 1,
+  revokedAt: 1,
   createdAt: -1,
+  checkoutId: 1,
 });

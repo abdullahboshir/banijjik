@@ -153,6 +153,14 @@ export class MongoBookingRepository implements BookingRepository {
     return row === null ? undefined : toBooking(row);
   }
 
+  async findByIds(bookingIds: readonly BookingId[]): Promise<readonly Booking[]> {
+    if (bookingIds.length === 0) return [];
+    const rows = await bookingModel()
+      .find({ bookingId: { $in: [...bookingIds] } }, null, sessionOption(getActiveSession()))
+      .lean<BookingDocument[]>();
+    return rows.map(toBooking);
+  }
+
   async update(booking: Booking, expectedVersion: number): Promise<Booking> {
     const props = booking.toProps();
     const updated = await updateVersioned({
