@@ -333,7 +333,11 @@ describe("event booking API", () => {
     // Sales close 60 minutes before the start.
     advanceClockTo(new Date(sessionStartMs - 61 * 60_000).toISOString());
     const beforeCloseActor = await signInAgain(world);
-    const beforeClose = await beforeCloseActor.call("post", bookingsPath(world.organizationA), body);
+    const beforeClose = await beforeCloseActor.call(
+      "post",
+      bookingsPath(world.organizationA),
+      body,
+    );
     expect(beforeClose.status).toBe(201);
 
     advanceClockTo(new Date(sessionStartMs - 59 * 60_000).toISOString());
