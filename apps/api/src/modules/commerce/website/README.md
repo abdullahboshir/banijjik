@@ -9,4 +9,10 @@ The public website of a business. Static pages (ABOUT, FAQ, GUIDE, TERMS, PRIVAC
 - The body of a static page is Markdown text; the storefront renders it without raw HTML (M.6b).
 - Custom domains (card 4.2 A2): `GET/POST /website/domains`, `POST /website/domains/:siteDomainId/verify`, `DELETE /website/domains/:siteDomainId`, `PATCH /website/domains/:siteDomainId` (`website.domain.manage`, all-location authority, mutations take `Idempotency-Key`). Add returns 202 PENDING; verify writes the outbox only; Cloudflare is A3. Production composition of `HostClaims` is A2I.
 - Admin DNS wizard (card 4.2 B): `/{orgSlug}/website/domains`. The menu key is `website.domains` (order 61). A missing Site shows an empty state; Site creation stays 4.5.
+- Storefront Checkout & Tracking (card 4.3):
+  - Orchestration (`QuoteCheckoutUseCase`, `SubmitCheckoutUseCase`): `POST /quotes`, `POST /checkout` with storefront idempotency and rate limiting.
+  - Access Authority (`CheckoutAccess`): Single source of truth for tracking, claim, replay, and export authorization. Owned by either `CUSTOMER` or `GUEST`.
+  - Claim (`ClaimCheckoutUseCase`): `POST /checkouts/:checkoutId/claim` CAS-transfers access from `GUEST` to verified `CUSTOMER` matching the checkout contact snapshot phone. Revokes guest tracking and idempotency replay authorization.
+  - Tracking & Projections (`ReadOwnRequestsUseCase`): `GET /checkouts/:checkoutId`, `GET /me/requests`, `GET /me/requests/:requestType/:requestId` (no-store, private projection).
+  - Customer Privacy Participants (`buildCheckoutPrivacyParticipants`): Implements `CustomerDataExportParticipant` (`CHECKOUT` section with owned/claimed checkouts and request links) and `CustomerErasureParticipant` (revokes `CheckoutAccess`, scrubs PII in `Checkout.contactSnapshot` and `CheckoutQuote` inputs, while strictly preserving financial orders, bookings, enrollments, request links, accepted totals, and audit integrity).
 - Decision records: ADR-144, ADR-149, ADR-P4-B.

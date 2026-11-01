@@ -1,26 +1,16 @@
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
-import type {
-  Checkout,
-  CheckoutAccess,
-  CheckoutAccessOwner,
-  CheckoutRequestLinkRecord,
-} from "../domain/checkout-types.js";
+import type { Checkout, CheckoutAccess, CheckoutAccessOwner } from "../domain/checkout-types.js";
 import type {
   CheckoutAccessRepositoryPort,
   CheckoutRepositoryPort,
-  CheckoutRequestLinkRepositoryPort,
 } from "../application/checkout-ports.js";
 import {
   CHECKOUT_ACCESS_MODEL_NAME,
   type CheckoutAccessDocument,
 } from "./checkout-access.schema.js";
-import {
-  CHECKOUT_MODEL_NAME,
-  CHECKOUT_REQUEST_LINK_MODEL_NAME,
-  type CheckoutDocument,
-  type CheckoutRequestLinkDocument,
-} from "./checkout.schema.js";
-import { toCheckout, toCheckoutAccess, toCheckoutRequestLink } from "./checkout-mappers.js";
+import { MongoCheckoutRequestLinkRepository } from "./mongo-checkout-request-link.repository.js";
+import { CHECKOUT_MODEL_NAME, type CheckoutDocument } from "./checkout.schema.js";
+import { toCheckout, toCheckoutAccess } from "./checkout-mappers.js";
 
 export class MongoCheckoutRepository implements CheckoutRepositoryPort {
   private model() {
@@ -76,13 +66,46 @@ export class MongoCheckoutRepository implements CheckoutRepositoryPort {
       .lean<CheckoutDocument>();
     return doc ? toCheckout(doc) : null;
   }
-}
 
-interface OwnerRequestLinksQuery {
-  readonly organizationId: string;
-  readonly ownerType: "CUSTOMER" | "GUEST";
-  readonly ownerIdentifier: string;
-  readonly requestType?: "ORDER" | "BOOKING" | "ENROLLMENT";
+  async findByIds(
+    organizationId: string,
+    checkoutIds: readonly string[],
+  ): Promise<readonly Checkout[]> {
+    if (checkoutIds.length === 0) return [];
+    const docs = await this.model()
+      .find(
+        { organizationId, checkoutId: { $in: checkoutIds } },
+        null,
+        sessionOption(getActiveSession()),
+      )
+      .sort({ createdAt: -1 })
+      .lean<CheckoutDocument[]>();
+    return docs.map(toCheckout);
+  }
+
+  async redactContactSnapshots(
+    organizationId: string,
+    checkoutIds: readonly string[],
+  ): Promise<void> {
+    if (checkoutIds.length === 0) return;
+    await this.model().updateMany(
+      {
+        organizationId,
+        checkoutId: { $in: checkoutIds },
+      },
+      {
+        $set: {
+          contactSnapshot: {
+            name: "[REDACTED]",
+            phoneE164: "[REDACTED]",
+            customFields: {},
+          },
+        },
+        $inc: { version: 1 },
+      },
+      sessionOption(getActiveSession()),
+    );
+  }
 }
 
 export class MongoCheckoutAccessRepository implements CheckoutAccessRepositoryPort {
@@ -114,6 +137,33 @@ export class MongoCheckoutAccessRepository implements CheckoutAccessRepositoryPo
       .findOne({ organizationId, checkoutId }, null, sessionOption(getActiveSession()))
       .lean<CheckoutAccessDocument>();
     return doc ? toCheckoutAccess(doc) : null;
+  }
+
+  async listByOwner(input: {
+    readonly organizationId: string;
+    readonly ownerType: "CUSTOMER" | "GUEST";
+    readonly identifier: string;
+    readonly limit?: number;
+  }): Promise<readonly CheckoutAccess[]> {
+    let query = this.model()
+      .find(
+        {
+          organizationId: input.organizationId,
+          "owner.type": input.ownerType,
+          "owner.identifier": input.identifier,
+          revokedAt: null,
+        },
+        null,
+        sessionOption(getActiveSession()),
+      )
+      .sort({ createdAt: -1 });
+
+    if (input.limit !== undefined) {
+      query = query.limit(input.limit);
+    }
+
+    const docs = await query.lean<CheckoutAccessDocument[]>();
+    return docs.map(toCheckoutAccess);
   }
 
   async updateOwner(input: {
@@ -149,125 +199,56 @@ export class MongoCheckoutAccessRepository implements CheckoutAccessRepositoryPo
     if (res.modifiedCount !== 1) return false;
     // Tracking lists page on the link's denormalized owner, so revocation must reach the links
     // too or a revoked session could keep seeing its requests.
-    await new MongoCheckoutRequestLinkRepository().revokeByCheckoutId(
+    await new MongoCheckoutRequestLinkRepository().revokeByCheckoutIds(
       organizationId,
-      checkoutId,
+      [checkoutId],
       now,
     );
     return true;
   }
-}
 
-export class MongoCheckoutRequestLinkRepository implements CheckoutRequestLinkRepositoryPort {
-  private model() {
-    return models({}).get<CheckoutRequestLinkDocument>(CHECKOUT_REQUEST_LINK_MODEL_NAME);
-  }
-
-  async saveMany(links: readonly CheckoutRequestLinkRecord[]): Promise<void> {
-    if (links.length === 0) return;
-    await this.model().create(
-      links.map((link) => ({
-        checkoutRequestLinkId: link.checkoutRequestLinkId,
-        organizationId: link.organizationId,
-        checkoutId: link.checkoutId,
-        selectionIds: link.selectionIds,
-        requestType: link.requestType,
-        requestId: link.requestId,
-        publicNumber: link.publicNumber,
-        status: link.status,
-        paymentRequired: link.paymentRequired,
-        holdExpiresAt: link.holdExpiresAt,
-        ownerType: link.ownerType,
-        ownerIdentifier: link.ownerIdentifier,
-        revokedAt: link.revokedAt,
-      })),
-      { ...sessionOption(getActiveSession()), ordered: true },
-    );
-  }
-
-  async listByCheckoutId(
-    organizationId: string,
-    checkoutId: string,
-  ): Promise<readonly CheckoutRequestLinkRecord[]> {
-    const docs = await this.model()
-      .find({ organizationId, checkoutId }, null, sessionOption(getActiveSession()))
-      .sort({ createdAt: 1 })
-      .lean<CheckoutRequestLinkDocument[]>();
-    return docs.map(toCheckoutRequestLink);
-  }
-
-  async listByOwner(input: {
+  async revokeForOwner(input: {
     readonly organizationId: string;
     readonly ownerType: "CUSTOMER" | "GUEST";
     readonly identifier: string;
-    readonly requestType?: "ORDER" | "BOOKING" | "ENROLLMENT";
-    readonly page: number;
-    readonly limit: number;
-  }): Promise<{ readonly links: readonly CheckoutRequestLinkRecord[]; readonly total: number }> {
-    const query: OwnerRequestLinksQuery = {
-      organizationId: input.organizationId,
-      ownerType: input.ownerType,
-      ownerIdentifier: input.identifier,
-      ...(input.requestType ? { requestType: input.requestType } : {}),
-    };
-    const filter = { ...query, revokedAt: null };
-    const [total, docs] = await Promise.all([
-      this.model().countDocuments(filter, sessionOption(getActiveSession())),
-      this.model()
-        .find(filter, null, sessionOption(getActiveSession()))
-        .sort({ createdAt: -1, checkoutRequestLinkId: 1 })
-        .skip((input.page - 1) * input.limit)
-        .limit(input.limit)
-        .lean<CheckoutRequestLinkDocument[]>(),
-    ]);
-    return { links: docs.map(toCheckoutRequestLink), total };
-  }
-
-  async transferOwner(input: {
-    readonly organizationId: string;
-    readonly checkoutId: string;
-    readonly fromOwnerType: "CUSTOMER" | "GUEST";
-    readonly fromOwnerIdentifier: string;
-    readonly toOwner: CheckoutAccessOwner;
     readonly now: Date;
-  }): Promise<number> {
-    const res = await this.model().updateMany(
-      {
-        organizationId: input.organizationId,
-        checkoutId: input.checkoutId,
-        ownerType: input.fromOwnerType,
-        ownerIdentifier: input.fromOwnerIdentifier,
-        revokedAt: null,
-      },
-      {
-        $set: {
-          ownerType: input.toOwner.type,
-          ownerIdentifier: input.toOwner.identifier,
-          updatedAt: input.now,
+  }): Promise<readonly string[]> {
+    const docs = await this.model()
+      .find(
+        {
+          organizationId: input.organizationId,
+          "owner.type": input.ownerType,
+          "owner.identifier": input.identifier,
         },
-      },
-      sessionOption(getActiveSession()),
-    );
-    return res.matchedCount;
-  }
+        { checkoutId: 1, revokedAt: 1 },
+        sessionOption(getActiveSession()),
+      )
+      .lean<CheckoutAccessDocument[]>();
 
-  async revokeByCheckoutId(organizationId: string, checkoutId: string, now: Date): Promise<number> {
-    const res = await this.model().updateMany(
-      { organizationId, checkoutId, revokedAt: null },
-      { $set: { revokedAt: now, updatedAt: now } },
-      sessionOption(getActiveSession()),
-    );
-    return res.matchedCount;
-  }
+    const allCheckoutIds = docs.map((d) => d.checkoutId);
+    const unrevokedCheckoutIds = docs.filter((d) => d.revokedAt === null).map((d) => d.checkoutId);
 
-  async findByRequest(
-    organizationId: string,
-    requestType: "ORDER" | "BOOKING" | "ENROLLMENT",
-    requestId: string,
-  ): Promise<CheckoutRequestLinkRecord | null> {
-    const doc = await this.model()
-      .findOne({ organizationId, requestType, requestId }, null, sessionOption(getActiveSession()))
-      .lean<CheckoutRequestLinkDocument>();
-    return doc ? toCheckoutRequestLink(doc) : null;
+    if (unrevokedCheckoutIds.length > 0) {
+      await this.model().updateMany(
+        {
+          organizationId: input.organizationId,
+          checkoutId: { $in: unrevokedCheckoutIds },
+          revokedAt: null,
+        },
+        {
+          $set: { revokedAt: input.now },
+          $inc: { version: 1 },
+        },
+        sessionOption(getActiveSession()),
+      );
+      // The link list pages on the denormalized owner; without this the erased customer would
+      // still see every revoked checkout in /me/requests.
+      await new MongoCheckoutRequestLinkRepository().revokeByCheckoutIds(
+        input.organizationId,
+        unrevokedCheckoutIds,
+        input.now,
+      );
+    }
+    return allCheckoutIds;
   }
 }

@@ -2,6 +2,7 @@ import type { EffectiveCustomField } from "@banijjik/contracts";
 import {
   CUSTOMER_DATA_EXPORT_MAX_ROWS,
   CUSTOMER_DATA_EXPORT_SECTION_KEY,
+  type CheckoutExportSection,
   type CustomerAccountExportData,
   type CustomerContactExportData,
   type CustomerDataExportResponse,
@@ -96,6 +97,10 @@ export class ExportCustomerDataUseCase {
       );
     }
 
+    const checkoutSection = sections.find(
+      (s): s is CheckoutExportSection => s.sectionKey === CUSTOMER_DATA_EXPORT_SECTION_KEY.CHECKOUT,
+    );
+
     return {
       exportedAt: clock.now().toISOString(),
       account: toAccountExport(account),
@@ -107,6 +112,7 @@ export class ExportCustomerDataUseCase {
           CUSTOMER_DATA_EXPORT_SECTION_KEY.DIRECTORY_ACTIVITY,
         ),
         CREDIT: requireSection(sections, CUSTOMER_DATA_EXPORT_SECTION_KEY.CREDIT),
+        ...(checkoutSection !== undefined ? { CHECKOUT: checkoutSection } : {}),
       },
     };
   }

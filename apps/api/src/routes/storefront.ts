@@ -40,6 +40,8 @@ import {
   customerLoginEnabled,
   customerLoginSwitch,
 } from "./storefront-customer-auth.js";
+import { buildStorefrontCheckoutPrivacyParticipants } from "./storefront-checkout-privacy.js";
+import { storefrontCacheGuard } from "./storefront-cache-guard.js";
 import { buildStorefrontResolveHandler } from "./storefront-resolve.js";
 
 const RESOLVE_BUCKET = "storefront.resolve.ip";
@@ -47,24 +49,6 @@ const SURFACE_BUCKET = "storefront.surface.ip";
 const ONE_MINUTE_SECONDS = 60;
 const RESOLVE_PER_MINUTE = 6_000;
 const SURFACE_PER_MINUTE = 300;
-const PRIVATE_NO_STORE = "private, no-store";
-
-function storefrontCacheGuard(): RequestHandler {
-  return (request, response, next) => {
-    response.setHeader("Cache-Control", PRIVATE_NO_STORE);
-    const hasCreds = Boolean(request.headers.cookie || request.headers.authorization);
-    const originalSet = response.setHeader.bind(response);
-    response.setHeader = (name, value) => {
-      const lower = name.toLowerCase();
-      if (lower === "cache-control" && (hasCreds || response.getHeader("set-cookie"))) {
-        return originalSet("Cache-Control", PRIVATE_NO_STORE);
-      }
-      if (lower === "set-cookie") originalSet("Cache-Control", PRIVATE_NO_STORE);
-      return originalSet(name, value);
-    };
-    next();
-  };
-}
 
 export interface StorefrontRouterInput {
   readonly config: AppConfig;
@@ -186,6 +170,7 @@ function buildStorefrontContactRouter(
     audit,
     adapters: deps.directoryAdapters,
   });
+  const checkoutPrivacy = buildStorefrontCheckoutPrivacyParticipants();
   return buildContactStorefrontRouterFor({
     clock,
     audit,
@@ -201,8 +186,16 @@ function buildStorefrontContactRouter(
     requireCustomerLogin: customerLoginSwitch(input),
     authenticateCustomer: auth.customerAuth,
     contactFields: contactFieldsOf(),
-    erasureParticipants: [dirErasure, credit.buildCreditErasureParticipant(deps.creditDeps)],
-    exportParticipants: [...dirExport, credit.buildCreditExportParticipant(deps.creditDeps)],
+    erasureParticipants: [
+      dirErasure,
+      credit.buildCreditErasureParticipant(deps.creditDeps),
+      checkoutPrivacy.erasureParticipant,
+    ],
+    exportParticipants: [
+      ...dirExport,
+      credit.buildCreditExportParticipant(deps.creditDeps),
+      checkoutPrivacy.exportParticipant,
+    ],
   });
 }
 

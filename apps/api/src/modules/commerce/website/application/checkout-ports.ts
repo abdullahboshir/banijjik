@@ -27,6 +27,10 @@ export interface CheckoutQuoteRepositoryPort {
     readonly checkoutId: string;
     readonly now: Date;
   }): Promise<boolean>;
+  /** Scrubs recipient and custom-field PII from every quote the principal created. */
+  scrubPrincipalQuotes(organizationId: string, principalKey: string): Promise<void>;
+  /** Scrubs the same PII from quotes already turned into checkouts, whatever their principal. */
+  scrubQuotesByIds(organizationId: string, quoteIds: readonly string[]): Promise<void>;
 }
 
 export interface CheckoutRepositoryPort {
@@ -38,11 +42,19 @@ export interface CheckoutRepositoryPort {
     creationPrincipalKey: string,
     idempotencyKeyHash: string,
   ): Promise<Checkout | null>;
+  findByIds(organizationId: string, checkoutIds: readonly string[]): Promise<readonly Checkout[]>;
+  redactContactSnapshots(organizationId: string, checkoutIds: readonly string[]): Promise<void>;
 }
 
 export interface CheckoutAccessRepositoryPort {
   save(access: CheckoutAccess): Promise<void>;
   findByCheckoutId(organizationId: string, checkoutId: string): Promise<CheckoutAccess | null>;
+  listByOwner(input: {
+    readonly organizationId: string;
+    readonly ownerType: "CUSTOMER" | "GUEST";
+    readonly identifier: string;
+    readonly limit?: number;
+  }): Promise<readonly CheckoutAccess[]>;
   updateOwner(input: {
     readonly organizationId: string;
     readonly checkoutId: string;
@@ -50,6 +62,12 @@ export interface CheckoutAccessRepositoryPort {
     readonly newOwner: CheckoutAccessOwner;
   }): Promise<boolean>;
   revoke(organizationId: string, checkoutId: string, now: Date): Promise<boolean>;
+  revokeForOwner(input: {
+    readonly organizationId: string;
+    readonly ownerType: "CUSTOMER" | "GUEST";
+    readonly identifier: string;
+    readonly now: Date;
+  }): Promise<readonly string[]>;
 }
 
 export interface CheckoutRequestLinkRepositoryPort {
@@ -57,6 +75,10 @@ export interface CheckoutRequestLinkRepositoryPort {
   listByCheckoutId(
     organizationId: string,
     checkoutId: string,
+  ): Promise<readonly CheckoutRequestLinkRecord[]>;
+  listByCheckoutIds(
+    organizationId: string,
+    checkoutIds: readonly string[],
   ): Promise<readonly CheckoutRequestLinkRecord[]>;
   listByOwner(input: {
     readonly organizationId: string;
@@ -75,8 +97,12 @@ export interface CheckoutRequestLinkRepositoryPort {
     readonly toOwner: CheckoutAccessOwner;
     readonly now: Date;
   }): Promise<number>;
-  /** Stamps every live link of the checkout so a revoked access cannot keep listing requests. */
-  revokeByCheckoutId(organizationId: string, checkoutId: string, now: Date): Promise<number>;
+  /** Stamps every live link of these checkouts so a revoked access cannot keep listing requests. */
+  revokeByCheckoutIds(
+    organizationId: string,
+    checkoutIds: readonly string[],
+    now: Date,
+  ): Promise<number>;
   findByRequest(
     organizationId: string,
     requestType: "ORDER" | "BOOKING" | "ENROLLMENT",

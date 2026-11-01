@@ -1,5 +1,5 @@
 import { getActiveSession, models, sessionOption } from "../../../../kernel/db/index.js";
-import type { CheckoutQuote } from "../domain/checkout-types.js";
+import type { CheckoutQuote, CheckoutQuoteInputSnapshot } from "../domain/checkout-types.js";
 import type { CheckoutQuoteRepositoryPort } from "../application/checkout-ports.js";
 import { CHECKOUT_QUOTE_MODEL_NAME, type CheckoutQuoteDocument } from "./checkout-quote.schema.js";
 import { toQuote } from "./checkout-mappers.js";
@@ -56,4 +56,75 @@ export class MongoCheckoutQuoteRepository implements CheckoutQuoteRepositoryPort
     );
     return res.modifiedCount === 1;
   }
+
+  async scrubPrincipalQuotes(organizationId: string, principalKey: string): Promise<void> {
+    const quotes = await this.model()
+      .find({ organizationId, principalKey }, null, sessionOption(getActiveSession()))
+      .lean<CheckoutQuoteDocument[]>();
+    await this.scrubQuotes(organizationId, quotes);
+  }
+
+  async scrubQuotesByIds(organizationId: string, quoteIds: readonly string[]): Promise<void> {
+    if (quoteIds.length === 0) return;
+    const quotes = await this.model()
+      .find(
+        { organizationId, quoteId: { $in: [...quoteIds] } },
+        null,
+        sessionOption(getActiveSession()),
+      )
+      .lean<CheckoutQuoteDocument[]>();
+    await this.scrubQuotes(organizationId, quotes);
+  }
+
+  private async scrubQuotes(
+    organizationId: string,
+    quotes: readonly CheckoutQuoteDocument[],
+  ): Promise<void> {
+    for (const quote of quotes) {
+      const redacted = redactQuoteInput(quote.input);
+      if (!redacted) continue;
+      await this.model().updateOne(
+        { organizationId, quoteId: quote.quoteId },
+        {
+          $set: { input: redacted },
+          $inc: { version: 1 },
+        },
+        sessionOption(getActiveSession()),
+      );
+    }
+  }
+}
+
+/**
+ * Returns the redacted snapshot, or `null` when the quote carries no scrubable PII.
+ * Shared by both erasure lookups so a claimed checkout (quote still keyed to the guest
+ * session) is scrubbed exactly like a checkout the customer created directly.
+ */
+function redactQuoteInput(input: CheckoutQuoteInputSnapshot): CheckoutQuoteInputSnapshot | null {
+  let redacted = input;
+  if (input.fulfillment.address) {
+    const address = input.fulfillment.address;
+    redacted = {
+      ...redacted,
+      fulfillment: {
+        ...input.fulfillment,
+        address: {
+          ...address,
+          recipientName: "[REDACTED]",
+          phone: "[REDACTED]",
+          addressLine: "[REDACTED]",
+        },
+      },
+    };
+  }
+  const hasCustomFields = input.selections.some(
+    (selection) => Object.keys(selection.customFields ?? {}).length > 0,
+  );
+  if (hasCustomFields) {
+    redacted = {
+      ...redacted,
+      selections: redacted.selections.map((selection) => ({ ...selection, customFields: {} })),
+    };
+  }
+  return redacted === input ? null : redacted;
 }

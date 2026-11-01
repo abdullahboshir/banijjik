@@ -111,6 +111,10 @@ export {
   type CustomerPhoneReaderPort,
 } from "./application/claim-checkout.js";
 export {
+  buildCheckoutPrivacyParticipants,
+  type CheckoutPrivacyParticipants,
+} from "./application/checkout-privacy-participants.js";
+export {
   buildCheckoutRouter,
   createStorefrontPrincipalMiddleware,
   type CheckoutRouterDependencies,
@@ -119,8 +123,8 @@ export {
 export {
   MongoCheckoutRepository,
   MongoCheckoutAccessRepository,
-  MongoCheckoutRequestLinkRepository,
 } from "./infrastructure/mongo-checkout.repository.js";
+export { MongoCheckoutRequestLinkRepository } from "./infrastructure/mongo-checkout-request-link.repository.js";
 export { MongoCheckoutQuoteRepository } from "./infrastructure/mongo-checkout-quote.repository.js";
 export {
   CHECKOUT_QUOTE_MODEL_NAME,

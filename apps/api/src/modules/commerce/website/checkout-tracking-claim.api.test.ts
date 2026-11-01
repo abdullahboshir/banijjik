@@ -46,8 +46,8 @@ import { ResolveGuestSessionUseCase } from "./application/use-cases/resolve-gues
 import {
   MongoCheckoutAccessRepository,
   MongoCheckoutRepository,
-  MongoCheckoutRequestLinkRepository,
 } from "./infrastructure/mongo-checkout.repository.js";
+import { MongoCheckoutRequestLinkRepository } from "./infrastructure/mongo-checkout-request-link.repository.js";
 import { MongoCheckoutQuoteRepository } from "./infrastructure/mongo-checkout-quote.repository.js";
 import { CHECKOUT_REQUEST_LINK_MODEL_NAME } from "./infrastructure/checkout.schema.js";
 import { MongoGuestSessionRepository } from "./infrastructure/mongo-guest-session.repository.js";
