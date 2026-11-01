@@ -8,6 +8,8 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     // Starts one in-memory MongoDB replica set for the whole run; tests read its URI with inject().
     globalSetup: ["./src/test-support/replica-set.global-setup.ts"],
+    // Starts every test file on the same calendar day, so date-bound tests do not change with the real date.
+    setupFiles: ["./src/test-support/fixed-calendar.setup.ts"],
     // Read here because configuration files may read the environment (ADR-083); tests get the values through inject().
     provide: {
       redisUrl: process.env["TEST_REDIS_URL"] ?? "",
