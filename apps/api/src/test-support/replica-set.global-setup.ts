@@ -24,6 +24,8 @@ const BINARY_DOWNLOAD_DIR = fileURLToPath(
 export default async function setup(project: TestProject): Promise<() => Promise<void>> {
   const replicaSet = await MongoMemoryReplSet.create({
     binary: { version: MONGODB_BINARY_VERSION, downloadDir: BINARY_DOWNLOAD_DIR },
+    // The harness clock is a fixed past date, so documents with a TTL index must not be deleted early.
+    instanceOpts: [{ args: ["--setParameter", "ttlMonitorEnabled=false"] }],
     replSet: { count: 1, storageEngine: "wiredTiger" },
   });
   project.provide("mongoUri", replicaSet.getUri());

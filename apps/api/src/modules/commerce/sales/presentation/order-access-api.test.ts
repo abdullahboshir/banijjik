@@ -36,17 +36,11 @@ const MILLISECONDS_PER_SECOND = 1000;
 const HOURS_IN_SECONDS = 3_600;
 /** Bangladesh stays on a fixed +06 all year, so the month flip is an exact UTC instant. */
 const DHAKA_UTC_OFFSET_HOURS = 6;
-/**
- * Mid-month, so the next Dhaka month flip stays inside the 14-day trial plus 7-day grace. The harness
- * clock starts at the real date, which breaks the month-flip test near a month end.
- */
-const TEST_START_INSTANT = new Date("2026-10-11T08:00:00.000Z");
 
 let harness: IamApiHarness;
 
 beforeAll(async () => {
   harness = await startCatalogApi();
-  harness.clock.setNow(TEST_START_INSTANT);
   // This file has its own database, so the BUNDLE package can be tightened for all its tests.
   await harness.connections.platform
     .collection("packages")
