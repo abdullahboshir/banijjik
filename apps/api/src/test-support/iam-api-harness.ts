@@ -108,7 +108,8 @@ export async function startIamApi(
   await initializeModels();
   const logs = createLogCapture();
   const logger = createLogger({ level: "debug", destination: logs.destination });
-  // The real time as the starting point: stored TTL dates must not look expired to MongoDB.
+  // Starts at the suite's fixed calendar (fixed-calendar.setup.ts), so the harness clock and the code that
+  // reads Date directly agree on the day.
   const clock = new MutableClock(new Date());
   // Every new organization starts a trial on the BUNDLE package, so the packages are seeded first.
   await buildEnsureSeedPackagesUseCase(clock).execute();

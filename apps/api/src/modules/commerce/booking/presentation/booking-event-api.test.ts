@@ -15,7 +15,8 @@ import {
   type IamApiHarness,
 } from "../../../../test-support/iam-api-harness.js";
 import { addMemberWithAssignments, findSystemRoleId } from "../../../../test-support/rbac-world.js";
-import type { ApiActor } from "../../../../test-support/two-organizations.js";
+import { loginViaApi } from "../../../../test-support/auth-api-scenarios.js";
+import { ApiActor } from "../../../../test-support/two-organizations.js";
 import type { TwoOrganizations } from "../../../../test-support/two-organizations.js";
 
 registerIamApiModels();
@@ -35,10 +36,9 @@ const COACHING = { industryTemplateKey: "COACHING" };
 
 const SESSION_START = "2026-11-01T04:00:00.000Z";
 const SESSION_END = "2026-11-01T05:00:00.000Z";
-/** The harness clock starts on 2026-10-11T08:00Z and only moves forward, so the sales-close test
- * uses the next morning: its clock jumps stay in hours, which keeps the sign-in valid. */
-const SALES_CLOSE_START = "2026-10-12T10:00:00.000Z";
-const SALES_CLOSE_END = "2026-10-12T11:00:00.000Z";
+const MILLISECONDS_PER_HOUR = 3_600_000;
+/** The sales-close session starts this far after the harness clock, so the clock jumps stay in hours and the sign-in stays valid. */
+const SALES_CLOSE_SESSION_DELAY_HOURS = 3;
 
 type Offering = { offeringId: string; variants: { variantId: string }[] };
 
@@ -114,6 +114,12 @@ async function seatsSold(eventSessionId: string): Promise<number> {
 function advanceClockTo(iso: string): void {
   const now = harness.clock.now().getTime();
   harness.clock.advanceSeconds(Math.round((new Date(iso).getTime() - now) / 1000));
+}
+
+/** A clock jump ages the session cookie the API issued, so the owner signs in again after each jump. */
+async function signInAgain(world: TwoOrganizations): Promise<ApiActor> {
+  const session = await loginViaApi(harness.app, world.alice.person);
+  return new ApiActor(harness.app, { ...world.alice.person, session });
 }
 
 async function eventWorld(): Promise<{
@@ -308,25 +314,35 @@ describe("event booking API", () => {
       world.organizationA,
       COACHING_CONTACT_FIELDS,
     );
+    const sessionStartMs =
+      harness.clock.now().getTime() + SALES_CLOSE_SESSION_DELAY_HOURS * MILLISECONDS_PER_HOUR;
+    const salesCloseStart = new Date(sessionStartMs).toISOString();
     const eventSessionId = await createSession(world.alice, world.organizationA, offering, {
       locationId: world.locationA1,
-      startsAt: SALES_CLOSE_START,
-      endsAt: SALES_CLOSE_END,
+      startsAt: salesCloseStart,
+      endsAt: new Date(sessionStartMs + MILLISECONDS_PER_HOUR).toISOString(),
     });
     const body = eventBookingBody({
       offering,
       locationId: world.locationA1,
       contactId,
       eventSessionId,
-      startsAt: SALES_CLOSE_START,
+      startsAt: salesCloseStart,
     });
 
-    advanceClockTo("2026-10-12T08:59:00.000Z");
-    const beforeClose = await world.alice.call("post", bookingsPath(world.organizationA), body);
+    // Sales close 60 minutes before the start.
+    advanceClockTo(new Date(sessionStartMs - 61 * 60_000).toISOString());
+    const beforeCloseActor = await signInAgain(world);
+    const beforeClose = await beforeCloseActor.call(
+      "post",
+      bookingsPath(world.organizationA),
+      body,
+    );
     expect(beforeClose.status).toBe(201);
 
-    advanceClockTo("2026-10-12T09:01:00.000Z");
-    const afterClose = await world.alice.call("post", bookingsPath(world.organizationA), body);
+    advanceClockTo(new Date(sessionStartMs - 59 * 60_000).toISOString());
+    const afterCloseActor = await signInAgain(world);
+    const afterClose = await afterCloseActor.call("post", bookingsPath(world.organizationA), body);
     expect(afterClose.status).toBe(422);
     expect(afterClose.body.error?.details?.ruleKey).toBe("BOOKING_EVENT_SALES_CLOSED");
   });
