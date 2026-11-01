@@ -108,9 +108,9 @@ export async function startIamApi(
   await initializeModels();
   const logs = createLogCapture();
   const logger = createLogger({ level: "debug", destination: logs.destination });
-  // A fixed start date keeps date-bound tests stable; the test MongoDB runs without its TTL monitor, so
-  // stored dates in the past (relative to the real time) are not deleted mid-test.
-  const clock = new MutableClock();
+  // Starts at the suite's fixed calendar (fixed-calendar.setup.ts), so the harness clock and the code that
+  // reads Date directly agree on the day.
+  const clock = new MutableClock(new Date());
   // Every new organization starts a trial on the BUNDLE package, so the packages are seeded first.
   await buildEnsureSeedPackagesUseCase(clock).execute();
   await buildEnsureSeedIndustryTemplatesUseCase(clock).execute();
