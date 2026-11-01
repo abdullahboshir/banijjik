@@ -11,6 +11,7 @@ import { CartLineRow } from "./cart-line-row";
 import { CartQuoteSidebar } from "./cart-quote-sidebar";
 import { cartStore, type CartState } from "./cart-store";
 import { requestQuote } from "./checkout-api";
+import { quoteErrorKeyOf } from "./checkout-outcome";
 
 export interface CartViewProps {
   readonly organizationId: string;
@@ -79,7 +80,7 @@ function useCartQuote(organizationId: string, cart: CartState, t: Translator["t"
     });
     setIsQuoting(false);
     if (!res.ok || !res.data) {
-      setQuoteError(t("storefront.cart.quoteError"));
+      setQuoteError(t(quoteErrorKeyOf(res)));
       return;
     }
     cartStore.setQuote(res.data);

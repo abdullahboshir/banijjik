@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type ReactElement } from "react";
 import { translatorFor } from "../i18n/client-translator";
 import { cartStore, type CartState } from "./cart-store";
-import { createGuestSession, requestQuote, submitCheckout } from "./checkout-api";
+import { requestQuote, submitCheckout } from "./checkout-api";
 import { CheckoutAlerts } from "./checkout-alerts";
 import { CheckoutContactForm } from "./checkout-contact-form";
 import { CheckoutOrderSummary } from "./checkout-order-summary";
+import { quoteErrorKeyOf, SUBMIT_OUTCOME, submitOutcomeOf } from "./checkout-outcome";
 
 export interface CheckoutViewProps {
   readonly organizationId: string;
@@ -43,25 +44,32 @@ interface SubmitParams {
   readonly onError: (msg: string) => void;
 }
 
+// Submit runs under the guest session the quote created: a new session would change the quote's
+// principal and the server would refuse the quote.
 async function executeCheckoutSubmit(params: SubmitParams): Promise<void> {
-  await createGuestSession(params.organizationId);
   const key = cartStore.getOrGenerateIdempotencyKey();
   const res = await submitCheckout(params.organizationId, key, {
     quoteId: params.quoteId,
     contact: { name: params.name.trim(), phone: params.phone.trim() },
   });
 
-  if (res.ok && res.data) {
+  const outcome = submitOutcomeOf(res);
+  if (outcome === SUBMIT_OUTCOME.PLACED && res.data) {
     cartStore.clear();
     params.router.push(`/checkouts/${encodeURIComponent(res.data.checkoutId)}`);
     return;
   }
-  if (res.status === 409 || res.fields.some((f) => f.messageKey.includes("PRICE_CHANGED"))) {
+  if (outcome === SUBMIT_OUTCOME.PRICE_CHANGED) {
     params.onPriceChanged();
     return;
   }
-  if (res.fields.some((f) => f.messageKey.includes("QUOTE_EXPIRED"))) {
+  // A lost session leaves the quote unusable just like an expired one; refreshing the quote starts a new session.
+  if (outcome === SUBMIT_OUTCOME.QUOTE_EXPIRED || outcome === SUBMIT_OUTCOME.SESSION_LOST) {
     params.onQuoteExpired();
+    return;
+  }
+  if (outcome === SUBMIT_OUTCOME.CAPACITY_UNAVAILABLE) {
+    params.onError(params.t("storefront.checkout.capacityUnavailable"));
     return;
   }
   params.onError(params.t("storefront.checkout.errorGeneral"));
@@ -96,7 +104,7 @@ async function fetchRefreshedQuote(
     cartStore.resetIdempotencyKey();
     return null;
   }
-  return t("storefront.cart.quoteError");
+  return t(quoteErrorKeyOf(res));
 }
 
 function useCheckoutSubmission(organizationId: string, cart: CartState, t: Translator["t"]) {
