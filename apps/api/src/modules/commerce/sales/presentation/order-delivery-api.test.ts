@@ -191,7 +191,7 @@ describe("order delivery state, address and complete guard", () => {
     expect(patched.body.data.delivery).toBeNull();
   });
 
-  it("refuses a PLACED PATCH from COURIER to PICKUP without a contact phone", async () => {
+  it("refuses a PLACED or CONFIRMED PATCH from COURIER to PICKUP without a contact phone", async () => {
     const shop = shopOf(await worldFor(harness, RETAIL));
     const item = await counterItemOf(shop, "Contactless courier tea");
     const draft = await draftOrder(shop, {
@@ -211,9 +211,21 @@ describe("order delivery state, address and complete guard", () => {
       SALES_RULE_KEY.CONTACT_PHONE_REQUIRED,
       { contactId: "" },
     );
+    const confirmed = await confirmOrder(shop, {
+      orderId: draft.orderId,
+      version: placed.order.version,
+    });
+    expectRule(
+      await patchCall(shop, draft.orderId, {
+        version: confirmed.version,
+        fulfillmentMethod: "PICKUP",
+      }),
+      SALES_RULE_KEY.CONTACT_PHONE_REQUIRED,
+      { contactId: "" },
+    );
     const unchanged = await getOrder(shop, draft.orderId);
     expect(unchanged.fulfillment.method).toBe("COURIER");
-    expect(unchanged.status).toBe("PLACED");
+    expect(unchanged.status).toBe("CONFIRMED");
   });
 
   it("lets a PLACED COURIER order switch to PICKUP when a phone-bearing contact is present", async () => {
