@@ -1,4 +1,5 @@
 import { SYSTEM_ROLE_KEY } from "@banijjik/contracts";
+import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
 import { SALES_DELIVERY_RULE_KEY } from "@banijjik/contracts/sales/delivery";
 import { newId } from "@banijjik/ids";
 import type { Response } from "supertest";
@@ -190,6 +191,54 @@ describe("order delivery state, address and complete guard", () => {
     expect(patched.body.data.delivery).toBeNull();
   });
 
+  it("refuses a PLACED PATCH from COURIER to PICKUP without a contact phone", async () => {
+    const shop = shopOf(await worldFor(harness, RETAIL));
+    const item = await counterItemOf(shop, "Contactless courier tea");
+    const draft = await draftOrder(shop, {
+      locationId: shop.locationId,
+      fulfillmentMethod: "COURIER",
+      deliveryAddress: DHAKA_ADDRESS,
+      lines: linesOf(item),
+    });
+    const placed = await placeOrder(shop, { orderId: draft.orderId, version: draft.version });
+    expect(placed.status).toBe(200);
+    expect(placed.order.contactId).toBeNull();
+    expectRule(
+      await patchCall(shop, draft.orderId, {
+        version: placed.order.version,
+        fulfillmentMethod: "PICKUP",
+      }),
+      SALES_RULE_KEY.CONTACT_PHONE_REQUIRED,
+      { contactId: "" },
+    );
+    const unchanged = await getOrder(shop, draft.orderId);
+    expect(unchanged.fulfillment.method).toBe("COURIER");
+    expect(unchanged.status).toBe("PLACED");
+  });
+
+  it("lets a PLACED COURIER order switch to PICKUP when a phone-bearing contact is present", async () => {
+    const shop = shopOf(await worldFor(harness, RETAIL));
+    const item = await counterItemOf(shop, "Phone pickup switch tea");
+    const contactId = await addCustomer(shop, "Rahim pickup", RAHIM_PHONE);
+    const draft = await draftOrder(shop, {
+      locationId: shop.locationId,
+      fulfillmentMethod: "COURIER",
+      deliveryAddress: DHAKA_ADDRESS,
+      lines: linesOf(item),
+    });
+    const placed = await placeOrder(shop, { orderId: draft.orderId, version: draft.version });
+    expect(placed.status).toBe(200);
+    const patched = await patchCall(shop, draft.orderId, {
+      version: placed.order.version,
+      fulfillmentMethod: "PICKUP",
+      contactId,
+    });
+    expect(patched.status).toBe(200);
+    expect(patched.body.data.fulfillment.method).toBe("PICKUP");
+    expect(patched.body.data.contactId).toBe(contactId);
+    expect(patched.body.data.delivery).toBeNull();
+  });
+
   it("refuses a PLACED or CONFIRMED PATCH to COURIER without an address", async () => {
     const shop = shopOf(await worldFor(harness, RETAIL));
     const item = await counterItemOf(shop, "Placed switch tea");
@@ -255,6 +304,32 @@ describe("order delivery state, address and complete guard", () => {
     });
     expect(instant.status).toBe(422);
     expect(instant.body.error.details.ruleKey).toBe("FULFILLMENT_METHOD_UNSUPPORTED");
+  });
+
+  it("refuses a PATCH that turns a counter draft into INSTANT with the same error as create", async () => {
+    const shop = shopOf(await worldFor(harness, RETAIL));
+    const item = await counterItemOf(shop, "Instant patch tea");
+    const created = await shop.actor.call("post", ordersPath(shop.organizationId), {
+      locationId: shop.locationId,
+      fulfillmentMethod: "INSTANT",
+      lines: linesOf(item),
+    });
+    const draft = await draftOrder(shop, {
+      locationId: shop.locationId,
+      lines: linesOf(item),
+    });
+    const patched = await patchCall(shop, draft.orderId, {
+      version: draft.version,
+      fulfillmentMethod: "INSTANT",
+    });
+    expect(created.status).toBe(422);
+    expect(patched.status).toBe(422);
+    expect(created.body.error.details).toEqual(patched.body.error.details);
+    expect(created.body.error.details).toMatchObject({
+      ruleKey: SALES_RULE_KEY.FULFILLMENT_METHOD_UNSUPPORTED,
+      method: "INSTANT",
+    });
+    expect((await getOrder(shop, draft.orderId)).fulfillment.method).toBe("PICKUP");
   });
 
   it("lets the address change in DRAFT, PLACED and CONFIRMED and refuses PACKED", async () => {

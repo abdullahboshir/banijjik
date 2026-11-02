@@ -25,6 +25,7 @@ import {
   isDeliveryFulfillment,
   assertLocationAllowed,
   orderOrderingKey,
+  resolveFulfillmentMethod,
   stockInputOf,
 } from "../sales-transition-shared.js";
 import { toOrderResponse } from "../sales-views.js";
@@ -128,7 +129,8 @@ export class UpdateOrderUseCase {
   /**
    * Past place an edit may not hollow the order out (R1-3): it keeps at least one line, and a
    * PICKUP order keeps a contact the shop can call — the same rule place enforces. A DRAFT may
-   * still be emptied.
+   * still be emptied. The contact rule is judged on the **next** method so a COURIER→PICKUP
+   * switch cannot skip the phone the shop would need after the address is cleared.
    */
   private async assertContentOfPlacedOrder(
     args: EditArgs,
@@ -137,7 +139,8 @@ export class UpdateOrderUseCase {
     const { existing } = args;
     if (existing.status === ORDER_STATUS.DRAFT) return;
     if (args.prepared === undefined && this.quoteChangedOf(args)) throw orderNeedsLine();
-    if (existing.fulfillment.method !== FULFILLMENT_METHOD.PICKUP) return;
+    const nextMethod = args.input.body.fulfillmentMethod ?? existing.fulfillment.method;
+    if (nextMethod !== FULFILLMENT_METHOD.PICKUP) return;
     const nextContactId = contactId === undefined ? existing.contactId : contactId;
     if (nextContactId === null) throw contactPhoneRequired("");
     const contact = await this.dependencies.contacts.findActive(nextContactId);
@@ -147,10 +150,14 @@ export class UpdateOrderUseCase {
 
   /**
    * D2: a DRAFT may switch to COURIER/OWN_RIDER with no address yet; a PLACED or CONFIRMED
-   * order must keep a non-null address. Pickup/instant may not carry one.
+   * order must keep a non-null address. Pickup/instant may not carry one. A method change is
+   * resolved the same way create is (served = PICKUP), so a counter order cannot become INSTANT.
    */
   private assertDeliveryEdit(existing: Order, body: UpdateBody): void {
-    const nextMethod = body.fulfillmentMethod ?? existing.fulfillment.method;
+    const nextMethod =
+      body.fulfillmentMethod === undefined
+        ? existing.fulfillment.method
+        : resolveFulfillmentMethod(body.fulfillmentMethod, FULFILLMENT_METHOD.PICKUP);
     const nextAddress = nextDeliveryAddressOf(existing, body, nextMethod);
     assertAddressAllowedForMethod(nextMethod, nextAddress);
     if (existing.status === ORDER_STATUS.DRAFT) return;
