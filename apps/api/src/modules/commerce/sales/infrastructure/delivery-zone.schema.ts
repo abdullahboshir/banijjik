@@ -1,4 +1,4 @@
-import { DELIVERY_ZONE_STATUS, type DeliveryZoneStatus } from "@banijjik/contracts/sales";
+import { DELIVERY_ZONE_STATUS, type DeliveryZoneStatus } from "@banijjik/contracts/sales/delivery";
 import { Schema } from "mongoose";
 import {
   auditFields,

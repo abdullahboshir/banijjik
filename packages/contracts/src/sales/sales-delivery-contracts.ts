@@ -17,6 +17,21 @@ export interface DeliveryAddress {
 export const DELIVERY_ZONE_STATUS = { ACTIVE: "ACTIVE", INACTIVE: "INACTIVE" } as const;
 export type DeliveryZoneStatus = (typeof DELIVERY_ZONE_STATUS)[keyof typeof DELIVERY_ZONE_STATUS];
 
+/**
+ * COD delivery rule keys. Kept off `SALES_RULE_KEY` so the admin new-order route does not
+ * load them with `@banijjik/contracts/sales` (initial JS budget).
+ */
+export const SALES_DELIVERY_RULE_KEY = {
+  DELIVERY_ZONE_UNAVAILABLE: "DELIVERY_ZONE_UNAVAILABLE",
+  DELIVERY_ZONE_CURRENCY_MISMATCH: "DELIVERY_ZONE_CURRENCY_MISMATCH",
+  DELIVERY_ADDRESS_REQUIRED: "DELIVERY_ADDRESS_REQUIRED",
+  DELIVERY_METHOD_NOT_COMPLETABLE: "DELIVERY_METHOD_NOT_COMPLETABLE",
+  ADDRESS_NOT_ALLOWED_FOR_METHOD: "ADDRESS_NOT_ALLOWED_FOR_METHOD",
+  DISPATCH_METHOD_MISMATCH: "DISPATCH_METHOD_MISMATCH",
+} as const;
+export type SalesDeliveryRuleKey =
+  (typeof SALES_DELIVERY_RULE_KEY)[keyof typeof SALES_DELIVERY_RULE_KEY];
+
 export interface DeliveryZone {
   readonly deliveryZoneId: string;
   readonly organizationId: string;

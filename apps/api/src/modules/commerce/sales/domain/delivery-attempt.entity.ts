@@ -3,7 +3,7 @@ import {
   SALES_DELIVERY_FAIL_REASON,
   type DeliveryAttempt as DeliveryAttemptContract,
   type DeliveryFailReasonKey,
-} from "@banijjik/contracts/sales";
+} from "@banijjik/contracts/sales/delivery";
 import { newId, type OrderId, type OrganizationId, type UserId } from "@banijjik/ids";
 
 const INITIAL_VERSION = 1;

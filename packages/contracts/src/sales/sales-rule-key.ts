@@ -1,3 +1,5 @@
+import type { SalesDeliveryRuleKey } from "./sales-delivery-contracts.js";
+
 /** Business-rule keys of the sales module (422 `details.ruleKey`). */
 export const SALES_RULE_KEY = {
   ORDER_CONTACT_LOCKED_BY_PAYMENT: "ORDER_CONTACT_LOCKED_BY_PAYMENT",
@@ -38,15 +40,10 @@ export const SALES_RULE_KEY = {
   SALES_EXCHANGE_PAYMENTS_ABOVE_TOTAL: "SALES_EXCHANGE_PAYMENTS_ABOVE_TOTAL",
   /** An exchange payment or the return credit is in another currency than the new order (never assumed). */
   SALES_EXCHANGE_CURRENCY_MISMATCH: "SALES_EXCHANGE_CURRENCY_MISMATCH",
-  DELIVERY_ZONE_UNAVAILABLE: "DELIVERY_ZONE_UNAVAILABLE",
-  DELIVERY_ZONE_CURRENCY_MISMATCH: "DELIVERY_ZONE_CURRENCY_MISMATCH",
-  DELIVERY_ADDRESS_REQUIRED: "DELIVERY_ADDRESS_REQUIRED",
-  DELIVERY_METHOD_NOT_COMPLETABLE: "DELIVERY_METHOD_NOT_COMPLETABLE",
-  ADDRESS_NOT_ALLOWED_FOR_METHOD: "ADDRESS_NOT_ALLOWED_FOR_METHOD",
-  DISPATCH_METHOD_MISMATCH: "DISPATCH_METHOD_MISMATCH",
 } as const;
 
-export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
+export type SalesRuleKey =
+  (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY] | SalesDeliveryRuleKey;
 
 /** Message keys the sales module sends, besides the kernel codes. Both catalogs need each. */
 export const SALES_MESSAGE_KEYS: readonly string[] = [

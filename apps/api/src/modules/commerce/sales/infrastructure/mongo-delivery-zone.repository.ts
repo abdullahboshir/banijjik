@@ -1,6 +1,6 @@
 import type { CurrencyCode } from "@banijjik/contracts";
 import type { Money } from "@banijjik/contracts/pricing";
-import { DELIVERY_ZONE_STATUS } from "@banijjik/contracts/sales";
+import { DELIVERY_ZONE_STATUS } from "@banijjik/contracts/sales/delivery";
 import { asId, InvalidIdError, type OrganizationId, type UserId } from "@banijjik/ids";
 import type { Model } from "mongoose";
 import { conflict } from "../../../../kernel/http/index.js";

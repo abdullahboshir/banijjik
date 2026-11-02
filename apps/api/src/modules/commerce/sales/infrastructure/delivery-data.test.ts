@@ -1,5 +1,5 @@
 import { CURRENCY_CODE, ERROR_CODE } from "@banijjik/contracts";
-import { DELIVERY_ZONE_STATUS } from "@banijjik/contracts/sales";
+import { DELIVERY_ZONE_STATUS } from "@banijjik/contracts/sales/delivery";
 import { newId, type OrderId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { initializeModels, models, type DatabaseConnections } from "../../../../kernel/db/index.js";

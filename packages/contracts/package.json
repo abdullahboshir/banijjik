@@ -67,6 +67,10 @@
       "types": "./dist/sales/index.d.ts",
       "default": "./dist/sales/index.js"
     },
+    "./sales/delivery": {
+      "types": "./dist/sales/sales-delivery-contracts.d.ts",
+      "default": "./dist/sales/sales-delivery-contracts.js"
+    },
     "./website": {
       "types": "./dist/website/index.d.ts",
       "default": "./dist/website/index.js"

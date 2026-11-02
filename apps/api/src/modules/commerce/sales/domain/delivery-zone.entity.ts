@@ -1,10 +1,10 @@
 import { DomainRuleError, ERROR_CODE, type LocalizedText } from "@banijjik/contracts";
+import type { Money } from "@banijjik/contracts/pricing";
 import {
   DELIVERY_ZONE_STATUS,
   type DeliveryZone as DeliveryZoneContract,
   type DeliveryZoneStatus,
-  type Money,
-} from "@banijjik/contracts/sales";
+} from "@banijjik/contracts/sales/delivery";
 import { newId, type OrganizationId, type UserId } from "@banijjik/ids";
 
 const INITIAL_VERSION = 1;

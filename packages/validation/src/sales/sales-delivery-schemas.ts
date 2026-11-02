@@ -2,7 +2,7 @@ import {
   DELIVERY_ZONE_STATUS,
   MAX_DELIVERY_FAIL_NOTE_LENGTH,
   SALES_DELIVERY_FAIL_REASON,
-} from "@banijjik/contracts/sales";
+} from "@banijjik/contracts/sales/delivery";
 import { z } from "zod";
 import { versionSchema } from "../organization/organization-fields.js";
 import { phoneE164Schema } from "../phone.js";

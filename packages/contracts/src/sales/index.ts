@@ -90,20 +90,4 @@ export {
   type SalesExchangePreviewResponse,
   type SalesExchangeResponse,
 } from "./sales-exchange-contracts.js";
-export {
-  DELIVERY_ZONE_STATUS,
-  MAX_DELIVERY_FAIL_NOTE_LENGTH,
-  SALES_DELIVERY_FAIL_REASON,
-  type CreateDeliveryZoneRequest,
-  type DeliveryAddress,
-  type DeliveryAttempt,
-  type DeliveryFailReasonKey,
-  type DeliveryFailedRequest,
-  type DeliveryZone,
-  type DeliveryZoneStatus,
-  type FirstShipmentPostingFacts,
-  type FirstShipmentResponse,
-  type OrderDeliveryResponse,
-  type ShipOrderRequest,
-  type UpdateDeliveryZoneRequest,
-} from "./sales-delivery-contracts.js";
+// Delivery contracts are `@banijjik/contracts/sales/delivery` so admin order screens do not load them.

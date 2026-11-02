@@ -1,5 +1,5 @@
 import { ERROR_CODE } from "@banijjik/contracts";
-import { SALES_DELIVERY_FAIL_REASON } from "@banijjik/contracts/sales";
+import { SALES_DELIVERY_FAIL_REASON } from "@banijjik/contracts/sales/delivery";
 import { newId, type OrderId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
 import { DeliveryAttempt } from "./delivery-attempt.entity.js";

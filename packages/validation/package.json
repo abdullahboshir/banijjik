@@ -54,6 +54,10 @@
       "types": "./dist/sales/index.d.ts",
       "default": "./dist/sales/index.js"
     },
+    "./sales/delivery": {
+      "types": "./dist/sales/sales-delivery-schemas.d.ts",
+      "default": "./dist/sales/sales-delivery-schemas.js"
+    },
     "./pos": {
       "types": "./dist/pos/index.d.ts",
       "default": "./dist/pos/index.js"

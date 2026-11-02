@@ -40,15 +40,4 @@ export {
   type SalesExchangePaymentBody,
   type SalesExchangeRequestBody,
 } from "./sales-exchange-schemas.js";
-export {
-  createDeliveryZoneRequestSchema,
-  deliveryAddressSchema,
-  deliveryFailedRequestSchema,
-  shipOrderRequestSchema,
-  updateDeliveryZoneRequestSchema,
-  type CreateDeliveryZoneBody,
-  type DeliveryAddressBody,
-  type DeliveryFailedBody,
-  type ShipOrderBody,
-  type UpdateDeliveryZoneBody,
-} from "./sales-delivery-schemas.js";
+// Delivery schemas are `@banijjik/validation/sales/delivery` so admin order screens do not load them.

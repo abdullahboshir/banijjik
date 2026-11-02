@@ -1,4 +1,4 @@
-import { SALES_DELIVERY_FAIL_REASON } from "@banijjik/contracts/sales";
+import { SALES_DELIVERY_FAIL_REASON } from "@banijjik/contracts/sales/delivery";
 import { newId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
 import {

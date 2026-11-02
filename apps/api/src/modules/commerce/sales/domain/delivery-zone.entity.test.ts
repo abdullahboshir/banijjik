@@ -1,5 +1,5 @@
 import { CURRENCY_CODE, ERROR_CODE } from "@banijjik/contracts";
-import { DELIVERY_ZONE_STATUS } from "@banijjik/contracts/sales";
+import { DELIVERY_ZONE_STATUS } from "@banijjik/contracts/sales/delivery";
 import { isUuidV7, newId, type OrganizationId, type UserId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
 import { DeliveryZone } from "./delivery-zone.entity.js";
