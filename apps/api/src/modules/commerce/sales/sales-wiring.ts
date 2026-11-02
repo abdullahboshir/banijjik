@@ -66,7 +66,13 @@ import {
   type SalesExchangeDependencies,
 } from "./application/use-cases/sales-exchange.use-cases.js";
 import { SalesExchangeController } from "./presentation/sales-exchange.controller.js";
+import { ManageDeliveryZonesUseCase } from "./application/use-cases/manage-delivery-zones.use-case.js";
 import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
+import { MongoDeliveryZoneRepository } from "./infrastructure/mongo-delivery-zone.repository.js";
+import {
+  DeliveryZoneHttpController,
+  type DeliveryZoneController,
+} from "./presentation/delivery-zone-tenant.router.js";
 
 /**
  * The ports this module cannot build itself: pricing's quoter, inventory's ledger, iam's
@@ -119,6 +125,7 @@ export function buildSalesDependencies(ports: SalesTenantPorts): SalesDependenci
     unitCosts: ports.unitCosts,
     performers: ports.performers,
     kinds: ports.kinds,
+    deliveryZones: new MongoDeliveryZoneRepository(),
   };
 }
 
@@ -163,6 +170,12 @@ export function buildSalesExchangeController(ports: SalesTenantPorts): SalesExch
     preview: new PreviewSalesExchangeUseCase(dependencies),
     create: new CreateSalesExchangeUseCase(dependencies),
   });
+}
+
+export function buildDeliveryZoneController(ports: SalesTenantPorts): DeliveryZoneController {
+  return new DeliveryZoneHttpController(
+    new ManageDeliveryZonesUseCase(buildSalesDependencies(ports)),
+  );
 }
 
 export function buildSalesController(dependencies: SalesDependencies): OrderController {

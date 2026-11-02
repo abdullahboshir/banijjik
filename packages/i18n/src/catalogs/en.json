@@ -471,6 +471,7 @@
   "permission.sales.return.reverse": "Reverse returns",
   "permission.sales.order.confirm": "Confirm orders",
   "permission.sales.order.cancel": "Cancel orders",
+  "permission.sales.deliveryZone.manage": "Manage delivery zones",
   "errors.kind_needs_booking": "That offering needs a booking, not an order.",
   "errors.fulfillment_method_unsupported": "That fulfillment method is not used by this business.",
   "errors.advance_needs_payments": "An advance needs the payments module.",

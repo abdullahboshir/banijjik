@@ -5,6 +5,7 @@ import {
   createDeliveryZoneRequestSchema,
   deliveryAddressSchema,
   deliveryFailedRequestSchema,
+  deliveryZoneListQuerySchema,
   shipOrderRequestSchema,
 } from "./sales-delivery-schemas.js";
 
@@ -55,6 +56,13 @@ describe("createDeliveryZoneRequestSchema", () => {
       status: "ACTIVE",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("deliveryZoneListQuerySchema", () => {
+  it("defaults the page size to 50 and refuses a limit above 100", () => {
+    expect(deliveryZoneListQuerySchema.parse({})).toEqual({ page: 1, limit: 50 });
+    expect(deliveryZoneListQuerySchema.safeParse({ limit: "101" }).success).toBe(false);
   });
 });
 

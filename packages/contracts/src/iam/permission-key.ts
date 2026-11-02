@@ -120,6 +120,7 @@ export const PERMISSION_KEY = {
   SALES_RETURN_READ: "sales.return.read",
   SALES_RETURN_CREATE: "sales.return.create",
   SALES_RETURN_REVERSE: "sales.return.reverse",
+  SALES_DELIVERY_ZONE_MANAGE: "sales.deliveryZone.manage",
   ENROLLMENT_ENROLLMENT_READ: "enrollment.enrollment.read",
   ENROLLMENT_ENROLLMENT_CREATE: "enrollment.enrollment.create",
   ENROLLMENT_ENROLLMENT_UPDATE: "enrollment.enrollment.update",
@@ -204,4 +205,5 @@ export const ORGANIZATION_WIDE_PERMISSION_KEYS: readonly PermissionKey[] = [
   PERMISSION_KEY.WEBSITE_SITE_UPDATE,
   PERMISSION_KEY.WEBSITE_SITE_PUBLISH,
   PERMISSION_KEY.WEBSITE_DOMAIN_MANAGE,
+  PERMISSION_KEY.SALES_DELIVERY_ZONE_MANAGE,
 ];

@@ -8,10 +8,13 @@ import { movementValue, type InventoryPostingSource } from "../inventory/index.j
 import type { OrderPostingSnapshot, OrderPostingSource } from "../accounting/index.js";
 import { MongoOrderRepository } from "./infrastructure/mongo-order.repositories.js";
 import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
+import { MongoDeliveryZoneRepository } from "./infrastructure/mongo-delivery-zone.repository.js";
+import type { DeliveryZoneRepository } from "./application/ports/delivery-zone.repository.js";
 import type { SalesReturnRepository } from "./application/ports/sales-return-ports.js";
 import type { Router } from "express";
 import { registerScheduledJob } from "../../../kernel/jobs/index.js";
 import {
+  buildDeliveryZoneController,
   buildSalesController,
   buildSalesDependencies,
   buildSalesExchangeController,
@@ -34,6 +37,7 @@ import { buildAutoCancelPlacedJob } from "./application/jobs/auto-cancel-placed.
 import { buildSalesTenantRouter } from "./presentation/order-tenant.router.js";
 import { buildSalesExchangeTenantRouter } from "./presentation/sales-exchange-tenant.router.js";
 import { buildSalesReturnTenantRouter } from "./presentation/sales-return-tenant.router.js";
+import { buildDeliveryZoneTenantRouter } from "./presentation/delivery-zone-tenant.router.js";
 import {
   buildInstantSaleService,
   type InstantSaleInput,
@@ -43,7 +47,7 @@ import {
 
 export { salesManifest } from "./module.manifest.js";
 export { registerSalesModels } from "./infrastructure/register-sales-models.js";
-export { buildSalesController, buildSalesDependencies };
+export { buildDeliveryZoneController, buildSalesController, buildSalesDependencies };
 export { buildStorefrontOrderCommands } from "./application/storefront-order-commands.js";
 export type { PublicOrderCommands } from "@banijjik/contracts/website";
 export type { SalesJobPorts, SalesTenantPorts, SalesTenantRouterDependencies };
@@ -64,6 +68,13 @@ export function buildSalesRouter(dependencies: SalesTenantRouterDependencies): R
   router.use(
     buildSalesExchangeTenantRouter({
       controller: buildSalesExchangeController(dependencies),
+      permission: dependencies.permission,
+      idempotency: dependencies.idempotency,
+    }),
+  );
+  router.use(
+    buildDeliveryZoneTenantRouter({
+      controller: buildDeliveryZoneController(dependencies),
       permission: dependencies.permission,
       idempotency: dependencies.idempotency,
     }),
@@ -89,6 +100,10 @@ export type { PaymentTotals } from "./domain/payment-status.js";
 export { buildSalesReturnPostingSourceAdapter } from "./infrastructure/sales-return-posting-source.adapter.js";
 export function buildSalesReturnRepository(): SalesReturnRepository {
   return new MongoSalesReturnRepository();
+}
+
+export function buildDeliveryZoneRepository(): DeliveryZoneRepository {
+  return new MongoDeliveryZoneRepository();
 }
 
 export type { InstantSaleInput, InstantSaleService, PreparedInstantSale };
