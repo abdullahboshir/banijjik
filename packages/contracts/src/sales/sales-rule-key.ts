@@ -38,6 +38,12 @@ export const SALES_RULE_KEY = {
   SALES_EXCHANGE_PAYMENTS_ABOVE_TOTAL: "SALES_EXCHANGE_PAYMENTS_ABOVE_TOTAL",
   /** An exchange payment or the return credit is in another currency than the new order (never assumed). */
   SALES_EXCHANGE_CURRENCY_MISMATCH: "SALES_EXCHANGE_CURRENCY_MISMATCH",
+  DELIVERY_ZONE_UNAVAILABLE: "DELIVERY_ZONE_UNAVAILABLE",
+  DELIVERY_ZONE_CURRENCY_MISMATCH: "DELIVERY_ZONE_CURRENCY_MISMATCH",
+  DELIVERY_ADDRESS_REQUIRED: "DELIVERY_ADDRESS_REQUIRED",
+  DELIVERY_METHOD_NOT_COMPLETABLE: "DELIVERY_METHOD_NOT_COMPLETABLE",
+  ADDRESS_NOT_ALLOWED_FOR_METHOD: "ADDRESS_NOT_ALLOWED_FOR_METHOD",
+  DISPATCH_METHOD_MISMATCH: "DISPATCH_METHOD_MISMATCH",
 } as const;
 
 export type SalesRuleKey = (typeof SALES_RULE_KEY)[keyof typeof SALES_RULE_KEY];
@@ -69,4 +75,10 @@ export const SALES_MESSAGE_KEYS: readonly string[] = [
   "errors.sales_exchange_needs_contact",
   "errors.sales_exchange_payments_above_total",
   "errors.sales_exchange_currency_mismatch",
+  "errors.delivery_zone_unavailable",
+  "errors.delivery_zone_currency_mismatch",
+  "errors.delivery_address_required",
+  "errors.delivery_method_not_completable",
+  "errors.address_not_allowed_for_method",
+  "errors.dispatch_method_mismatch",
 ];

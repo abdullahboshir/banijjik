@@ -1,0 +1,130 @@
+import { defineEnum } from "../define-enum.js";
+import type { LocalizedText } from "../platform/industry-template.js";
+import type { Money } from "../pricing/pricing-contracts.js";
+
+/**
+ * Delivery address stored on a COURIER/OWN_RIDER order. `phoneE164` is E.164 at every boundary.
+ */
+export interface DeliveryAddress {
+  readonly recipientName: string;
+  readonly phoneE164: string;
+  readonly addressLine: string;
+  readonly districtCode: string;
+  readonly areaCode: string;
+  readonly postalCode: string | null;
+}
+
+export const DELIVERY_ZONE_STATUS = { ACTIVE: "ACTIVE", INACTIVE: "INACTIVE" } as const;
+export type DeliveryZoneStatus = (typeof DELIVERY_ZONE_STATUS)[keyof typeof DELIVERY_ZONE_STATUS];
+
+export interface DeliveryZone {
+  readonly deliveryZoneId: string;
+  readonly organizationId: string;
+  readonly zoneKey: string;
+  readonly name: LocalizedText;
+  readonly areaCodes: readonly string[];
+  readonly fee: Money;
+  readonly status: DeliveryZoneStatus;
+  readonly version: number;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+  readonly createdByUserId: string;
+  readonly updatedByUserId: string;
+}
+
+export interface CreateDeliveryZoneRequest {
+  readonly zoneKey: string;
+  readonly name: LocalizedText;
+  readonly areaCodes: readonly string[];
+  readonly feeMinor: number;
+  readonly status: DeliveryZoneStatus;
+}
+
+export interface UpdateDeliveryZoneRequest {
+  readonly version: number;
+  readonly name?: LocalizedText;
+  readonly areaCodes?: readonly string[];
+  readonly feeMinor?: number;
+  readonly status?: DeliveryZoneStatus;
+}
+
+export interface DeliveryAttempt {
+  readonly deliveryAttemptId: string;
+  readonly organizationId: string;
+  readonly orderId: string;
+  readonly ordinal: number;
+  readonly method: "COURIER" | "OWN_RIDER";
+  readonly consignmentId: string | null;
+  readonly deliveryAssignmentId: string | null;
+  readonly startedAt: Date;
+  readonly failedAt: Date | null;
+  readonly reasonKey: string | null;
+  readonly note: string | null;
+  readonly version: number;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+  readonly createdByUserId: string;
+  readonly updatedByUserId: string;
+}
+
+export interface ShipOrderRequest {
+  readonly version: number;
+  readonly dispatch:
+    | { readonly method: "COURIER"; readonly consignmentId: string }
+    | { readonly method: "OWN_RIDER"; readonly deliveryAssignmentId: string };
+}
+
+export const SALES_DELIVERY_FAIL_REASON = defineEnum([
+  "RECIPIENT_UNAVAILABLE",
+  "REFUSED",
+  "ADDRESS_INVALID",
+  "OTHER",
+]);
+export type DeliveryFailReasonKey =
+  (typeof SALES_DELIVERY_FAIL_REASON)[keyof typeof SALES_DELIVERY_FAIL_REASON];
+
+export const MAX_DELIVERY_FAIL_NOTE_LENGTH = 200;
+
+export interface DeliveryFailedRequest {
+  readonly version: number;
+  readonly reasonKey: DeliveryFailReasonKey;
+  readonly note?: string;
+}
+
+export interface FirstShipmentPostingFacts {
+  readonly shipmentEventId: string;
+  readonly deliveryAttemptId: string;
+  readonly shippedAt: Date;
+  readonly businessDate: string;
+  readonly lines: readonly {
+    readonly orderLineId: string;
+    readonly quantity: number;
+    readonly unitCostSnapshot: Money | null;
+    readonly lineNetTotal: Money;
+  }[];
+  readonly netRevenue: Money;
+  readonly taxTotal: Money;
+  readonly deliveryIncome: Money;
+  readonly netPaidAtShipment: Money;
+}
+
+export interface OrderDeliveryResponse {
+  readonly address: DeliveryAddress | null;
+  readonly deliveryZoneId: string | null;
+  readonly shippedAt: string | null;
+  readonly currentDeliveryAttemptId: string | null;
+  readonly deliveryAttemptCount: number;
+  /** Immutable first-ship snapshot, read-only; null until the first ship. */
+  readonly firstShipment: FirstShipmentResponse | null;
+}
+
+export interface FirstShipmentResponse {
+  readonly shipmentEventId: string;
+  readonly deliveryAttemptId: string;
+  readonly shippedAt: string;
+  readonly businessDate: string;
+  readonly netRevenue: Money;
+  readonly taxTotal: Money;
+  readonly deliveryIncome: Money;
+  readonly netPaidAtShipment: Money;
+}

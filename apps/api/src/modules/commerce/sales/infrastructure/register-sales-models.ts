@@ -1,6 +1,16 @@
 import { DATABASE_KIND, MODEL_TENANCY } from "@banijjik/contracts";
 import { registerModel } from "../../../../kernel/db/index.js";
 import {
+  DELIVERY_ATTEMPT_COLLECTION_NAME,
+  DELIVERY_ATTEMPT_MODEL_NAME,
+  deliveryAttemptSchema,
+} from "./delivery-attempt.schema.js";
+import {
+  DELIVERY_ZONE_COLLECTION_NAME,
+  DELIVERY_ZONE_MODEL_NAME,
+  deliveryZoneSchema,
+} from "./delivery-zone.schema.js";
+import {
   SALES_RETURN_COLLECTION_NAME,
   SALES_RETURN_MODEL_NAME,
   salesReturnSchema,
@@ -35,6 +45,20 @@ export function registerSalesModels(): void {
     modelName: ORDER_COUNTER_MODEL_NAME,
     collectionName: ORDER_COUNTER_COLLECTION_NAME,
     schema: orderCounterSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    ...tenant,
+    modelName: DELIVERY_ZONE_MODEL_NAME,
+    collectionName: DELIVERY_ZONE_COLLECTION_NAME,
+    schema: deliveryZoneSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    ...tenant,
+    modelName: DELIVERY_ATTEMPT_MODEL_NAME,
+    collectionName: DELIVERY_ATTEMPT_COLLECTION_NAME,
+    schema: deliveryAttemptSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }
