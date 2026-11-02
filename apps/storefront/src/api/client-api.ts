@@ -15,6 +15,8 @@ export interface ClientResult<Data> {
   readonly status: number;
   readonly data: Data | undefined;
   readonly fields: readonly FieldProblem[];
+  /** `error.code` of a failed answer; undefined on success or without an error envelope. */
+  readonly errorCode?: string | undefined;
 }
 
 export interface ClientCallOptions {
@@ -26,7 +28,15 @@ const HTTP_OK_MAX = 299;
 const NO_FIELDS: readonly FieldProblem[] = [];
 
 interface ErrorEnvelope {
-  readonly error?: { readonly details?: { readonly fields?: readonly FieldProblem[] } };
+  readonly error?: {
+    readonly code?: unknown;
+    readonly details?: { readonly fields?: readonly FieldProblem[] };
+  };
+}
+
+function errorCodeOf(json: unknown): string | undefined {
+  const code = (json as ErrorEnvelope | undefined)?.error?.code;
+  return typeof code === "string" ? code : undefined;
 }
 
 function fieldsOf(json: unknown): readonly FieldProblem[] {
@@ -62,5 +72,12 @@ export async function callStorefront<Data>(
   const json = await jsonOf(response);
   const ok = response.status <= HTTP_OK_MAX;
   const data = ok ? (json as { data?: Data } | undefined)?.data : undefined;
-  return { ok, status: response.status, data, fields: ok ? NO_FIELDS : fieldsOf(json) };
+  if (ok) return { ok, status: response.status, data, fields: NO_FIELDS };
+  return {
+    ok,
+    status: response.status,
+    data,
+    fields: fieldsOf(json),
+    errorCode: errorCodeOf(json),
+  };
 }
