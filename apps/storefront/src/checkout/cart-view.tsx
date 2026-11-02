@@ -4,14 +4,7 @@ import type { CheckoutFulfillment } from "@banijjik/contracts/website";
 import type { Locale, Translator } from "@banijjik/i18n";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-  type ReactElement,
-} from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactElement } from "react";
 import { translatorFor } from "../i18n/client-translator";
 import { CartFulfillmentOptions, type CartDeliveryAddress } from "./cart-fulfillment-options";
 import { CartLineRow } from "./cart-line-row";
@@ -112,8 +105,7 @@ function useCartQuote(organizationId: string, cart: CartState, t: Translator["t"
 
 export function CartView(props: CartViewProps): ReactElement {
   const router = useRouter();
-  // One translator per locale: `fetchQuote` depends on `t`, and a fresh one each render would re-quote forever.
-  const t = useMemo(() => translatorFor(props.locale).t, [props.locale]);
+  const t = translatorFor(props.locale).t;
 
   const cart = useSyncExternalStore(
     (onStoreChange) => cartStore.subscribe(onStoreChange),
