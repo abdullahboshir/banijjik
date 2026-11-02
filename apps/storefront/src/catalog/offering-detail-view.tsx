@@ -108,6 +108,7 @@ function OfferingDetailContent({
         {actionSlot ?? (
           <OfferingKindControls
             organizationId={organizationId}
+            locationId={sel.locationId}
             offering={offering}
             locale={locale}
             t={t}

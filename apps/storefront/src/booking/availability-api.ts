@@ -1,23 +1,17 @@
+import type { AvailabilitySlot } from "@banijjik/contracts/booking";
 import { callStorefront, type ClientResult } from "../api/client-api";
 
 export interface PublicAvailabilityQuery {
   readonly offeringId: string;
   readonly variantId: string;
   readonly locationId: string;
-  readonly startDate: string; // YYYY-MM-DD
-  readonly endDate: string; // YYYY-MM-DD
-}
-
-export interface PublicTimeSlot {
-  readonly startsAt: string; // ISO 8601
-  readonly endsAt: string; // ISO 8601
-  readonly available: boolean;
-  readonly resourceIds: readonly string[];
+  readonly startDate: string;
+  readonly endDate: string;
 }
 
 export interface PublicAvailabilityDay {
-  readonly date: string; // YYYY-MM-DD
-  readonly slots: readonly PublicTimeSlot[];
+  readonly date: string;
+  readonly slots: readonly AvailabilitySlot[];
 }
 
 export interface PublicAvailabilityResponse {
@@ -45,15 +39,14 @@ function validateDateRange(startDate: string, endDate: string): void {
 }
 
 /**
- * Fetches real-time slot availability for a service offering variant.
- * Enforces bounded query range (<= 31 days).
+ * Live free slots for one SERVICE variant. The client keeps the 31-day guard; the API omits taken
+ * slots and does not send an `available` flag.
  */
 export async function fetchAvailability(
   organizationId: string,
   query: PublicAvailabilityQuery,
 ): Promise<ClientResult<PublicAvailabilityResponse>> {
   validateDateRange(query.startDate, query.endDate);
-
   const params = new URLSearchParams({
     offeringId: query.offeringId,
     variantId: query.variantId,
@@ -61,7 +54,6 @@ export async function fetchAvailability(
     startDate: query.startDate,
     endDate: query.endDate,
   });
-
   return callStorefront<PublicAvailabilityResponse>(
     "GET",
     `/orgs/${encodeURIComponent(organizationId)}/availability?${params.toString()}`,

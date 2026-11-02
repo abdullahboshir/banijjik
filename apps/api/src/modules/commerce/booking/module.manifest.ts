@@ -68,6 +68,7 @@ export const bookingManifest = defineModule({
       "/orgs/:organizationId/availability",
       "/orgs/:organizationId/event-sessions",
     ],
+    storefront: ["/storefront/orgs/:organizationId/availability"],
   },
   menu: [
     {

@@ -142,6 +142,7 @@ export {
 export { buildBookingOfferingReader } from "./infrastructure/booking-catalog-adapter.js";
 export { buildBookingSettingsReader } from "./application/booking-settings-reader.js";
 export { buildOrganizationTimezoneReader } from "./infrastructure/booking-org-adapter.js";
+export { buildBookingStorefront } from "./build-booking-storefront.js";
 export {
   MongoBookingRepository,
   MongoResourceRepository,

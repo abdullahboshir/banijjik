@@ -30,6 +30,11 @@ export {
   type ResourceUpdateBody,
 } from "./booking-schemas.js";
 export {
+  publicAvailabilityQuerySchema,
+  calendarDayNumber,
+  type PublicAvailabilityQuery,
+} from "./storefront-availability-schemas.js";
+export {
   eventSessionCreateSchema,
   eventSessionUpdateSchema,
   eventSessionVersionSchema,

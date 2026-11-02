@@ -18,7 +18,6 @@ import { rateLimit, type RateLimiter } from "../kernel/rate-limit/index.js";
 import { contactFieldsOf } from "./contact-tenant-router.js";
 import { runInOrganizationContext } from "../kernel/tenancy/index.js";
 import type { Clock } from "../kernel/time/index.js";
-import { buildCatalogStorefront } from "../modules/commerce/catalog/index.js";
 import { buildContactStorefrontRouterFor } from "../modules/commerce/contact/index.js";
 import * as directory from "../modules/commerce/directory/index.js";
 import * as credit from "../modules/commerce/credit/index.js";
@@ -28,13 +27,10 @@ import {
 } from "../modules/core/organization/index.js";
 import type { FileModuleDependencies } from "../modules/core/file/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
-import {
-  buildWebsiteStorefrontRouterFor,
-  type StorefrontSiteSources,
-} from "../modules/commerce/website/index.js";
+import { type StorefrontSiteSources } from "../modules/commerce/website/index.js";
 import { buildCreditModuleDeps } from "./credit-tenant-router.js";
 import { buildDirectoryAdapters } from "./directory-storefront-adapters.js";
-import { buildStorefrontSurfaceCheckoutRouter } from "./storefront-checkout-router.js";
+import { buildShopSurfaceRouters } from "./storefront-shop-routers.js";
 import {
   buildCustomerAuth,
   customerLoginEnabled,
@@ -222,31 +218,23 @@ function buildStorefrontRouters(
     directoryAdapters,
   });
 
-  const websiteRouter = buildWebsiteStorefrontRouterFor({
-    requireWebsiteModule: moduleSwitch(input, MODULE_KEY.WEBSITE),
-    siteSources: buildWebsiteSiteSources(input),
-    orgConfig: input.orgConfig,
-  });
-  const catalogRouter = buildCatalogStorefront({
-    orgConfig: input.orgConfig,
-    requireCatalogModule: moduleSwitch(input, MODULE_KEY.CATALOG),
-  });
-  const checkoutRouter = buildStorefrontSurfaceCheckoutRouter({
-    requireWebsiteModule: moduleSwitch(input, MODULE_KEY.WEBSITE),
+  const shop = buildShopSurfaceRouters({
     orgConfig: input.orgConfig,
     manifests: input.manifests,
     clock,
     audit,
     limiter: rateLimiter,
     isProduction: config.nodeEnv === "production",
+    siteSources: buildWebsiteSiteSources(input),
+    requireWebsiteModule: moduleSwitch(input, MODULE_KEY.WEBSITE),
+    requireCatalogModule: moduleSwitch(input, MODULE_KEY.CATALOG),
+    requireBookingModule: moduleSwitch(input, MODULE_KEY.BOOKING),
   });
   return {
     directoryRouter,
     creditRouter,
     contactRouter,
-    websiteRouter,
-    catalogRouter,
-    checkoutRouter,
+    ...shop,
   };
 }
 
@@ -273,6 +261,7 @@ function mountOrganizationSurface(
     r.websiteRouter,
     r.checkoutRouter,
     r.catalogRouter,
+    r.bookingRouter,
     r.directoryRouter,
     r.creditRouter,
     r.contactRouter,

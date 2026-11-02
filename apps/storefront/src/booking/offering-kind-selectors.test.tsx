@@ -74,13 +74,17 @@ describe("Part B2: Offering Kind Selectors and Availability", () => {
       expect(walkInOffering.publicCustomFields["bookingMode"]).toBe("WALK_IN_ONLY");
     });
 
-    it("adds scheduled SERVICE selection to cart with startsAt and resourceIds", () => {
+    it("adds scheduled SERVICE selection using the availability slot startsAt unchanged", () => {
       const scheduledOffering = createMockOffering({
         kind: "SERVICE",
         publicCustomFields: {
           resources: [{ resourceId: "staff-karim", name: "Karim (Stylist)" }],
         },
       });
+      const date = "2026-11-08";
+      const hardcodedClockSlot = "10:00";
+      const apiStartsAt = "2026-11-08T03:00:00.000Z";
+      expect(apiStartsAt).not.toBe(new Date(`${date}T${hardcodedClockSlot}:00.000Z`).toISOString());
 
       const res = cartStore.addItem({
         locationId: "loc-dhaka",
@@ -88,7 +92,7 @@ describe("Part B2: Offering Kind Selectors and Availability", () => {
           kind: "SERVICE",
           offeringId: scheduledOffering.offeringId,
           variantId: "var-1",
-          startsAt: "2026-11-05T10:00:00.000Z",
+          startsAt: apiStartsAt,
           resourceIds: ["staff-karim"],
         },
         display: {
@@ -105,7 +109,10 @@ describe("Part B2: Offering Kind Selectors and Availability", () => {
       expect(items.length).toBe(1);
       expect(items[0]?.selection.kind).toBe("SERVICE");
       if (items[0]?.selection.kind === "SERVICE") {
-        expect(items[0].selection.startsAt).toBe("2026-11-05T10:00:00.000Z");
+        expect(items[0].selection.startsAt).toBe(apiStartsAt);
+        expect(items[0].selection.startsAt).not.toBe(
+          new Date(`${date}T${hardcodedClockSlot}:00.000Z`).toISOString(),
+        );
         expect(items[0].selection.resourceIds).toEqual(["staff-karim"]);
       }
     });

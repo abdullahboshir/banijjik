@@ -42,6 +42,7 @@ export const websiteManifest = defineModule({
     storefront: [
       "/storefront/orgs/:organizationId/pages",
       "/storefront/orgs/:organizationId/published-site",
+      "/storefront/orgs/:organizationId/locations",
     ],
   },
   menu: [

@@ -62,10 +62,11 @@ function resolveLocationId(
   if (queryLoc) return queryLoc;
   if (offering.activeLocationIds[0]) return offering.activeLocationIds[0];
   if (offering.publishedLocationIds[0]) return offering.publishedLocationIds[0];
-  return "default";
+  return "";
 }
 
 export interface UseOfferingSelectionResult {
+  readonly locationId: string;
   readonly selectedVariantId: string;
   readonly setSelectedVariantId: (id: string) => void;
   readonly selectedModifiers: Record<string, string[]>;
@@ -168,6 +169,7 @@ export function useOfferingSelection(
   }
 
   return {
+    locationId: locId,
     selectedVariantId,
     setSelectedVariantId,
     selectedModifiers,

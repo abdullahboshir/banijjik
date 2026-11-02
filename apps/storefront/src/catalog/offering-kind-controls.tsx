@@ -23,6 +23,7 @@ import { ProductVariantControls } from "./product-variant-controls";
 
 export interface OfferingKindControlsProps {
   readonly organizationId: string;
+  readonly locationId: string;
   readonly offering: PublicOfferingDetailResponse;
   readonly locale: Locale;
   readonly t: Translator["t"];
@@ -46,6 +47,7 @@ export function OfferingKindControls(props: OfferingKindControlsProps): ReactEle
     return (
       <ServiceBookingSelector
         organizationId={props.organizationId}
+        locationId={props.locationId}
         offering={offering}
         locale={locale}
         t={t}
@@ -79,6 +81,7 @@ export function OfferingKindControls(props: OfferingKindControlsProps): ReactEle
   if (offering.kind === "PLAN") {
     return (
       <PlanEnrollmentSelector
+        locationId={props.locationId}
         offering={offering}
         locale={locale}
         t={t}

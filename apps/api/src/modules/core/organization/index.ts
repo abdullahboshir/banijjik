@@ -37,6 +37,7 @@ import { MongoInvitationTokenLookup } from "./infrastructure/mongo-invitation-to
 import { MongoLocationRepository } from "./infrastructure/mongo-location.repository.js";
 import type { ActiveLocationCounter } from "./application/ports/active-location-counter.js";
 import type { LocationLookup } from "./application/ports/location-lookup.js";
+import type { LocationManagementRepository } from "./application/ports/location-management-repository.js";
 import { MongoActiveLocationCounter } from "./infrastructure/mongo-active-location-counter.js";
 import { MongoLocationLookup } from "./infrastructure/mongo-location-lookup.js";
 import { MongoConfigVersionBumper } from "./infrastructure/mongo-config-version-bumper.js";
@@ -177,6 +178,13 @@ export function buildActiveLocationCounter(): ActiveLocationCounter {
 /** Whether a location of the current organization is ACTIVE. Settings uses this, not the model. */
 export function buildLocationLookup(): LocationLookup {
   return new MongoLocationLookup();
+}
+
+export type { LocationManagementRepository };
+
+/** Tenant-scoped locations for public storefront reads; website must not import infrastructure. */
+export function buildLocationManagementRepository(): LocationManagementRepository {
+  return new MongoLocationRepository();
 }
 
 /** The template key and config version of an organization, for the config resolver. */

@@ -4,8 +4,10 @@ import { models } from "../../../kernel/db/index.js";
 import { systemClock, type Clock } from "../../../kernel/time/index.js";
 import { MongoRateLimiter, type RateLimiter } from "../../../kernel/rate-limit/index.js";
 import { WEBSITE_GUEST_CHECKOUT_SETTING_KEY } from "@banijjik/contracts/website";
+import type { LocationManagementRepository } from "../../core/organization/index.js";
 import type { SiteSectionAvailability } from "./application/ports/site-publication-ports.js";
 import type { StorefrontSiteSources } from "./application/ports/website-ports.js";
+import { ListPublicLocationsUseCase } from "./application/use-cases/list-public-locations.use-case.js";
 import { GetStorefrontSiteUseCase } from "./application/use-cases/storefront-site.use-case.js";
 import {
   GetPublishedSitePageUseCase,
@@ -39,6 +41,8 @@ export interface WebsiteStorefrontDependencies {
   readonly requireWebsiteModule: RequestHandler;
   readonly siteSources: StorefrontSiteSources;
   readonly orgConfig: PublicOrgSectionReader;
+  readonly locations: LocationManagementRepository;
+  readonly readPublicLocationIds: (organizationId: string) => Promise<readonly string[]>;
   readonly clock?: Clock;
   readonly limiter?: RateLimiter;
   readonly isProduction?: boolean;
@@ -68,6 +72,8 @@ export function buildWebsiteStorefrontRouterFor(deps: WebsiteStorefrontDependenc
       deps.siteSources,
       new ListPublishedSitePagesUseCase(pages, sites, versions),
     ),
+    listLocations: new ListPublicLocationsUseCase(deps.locations),
+    readPublicLocationIds: deps.readPublicLocationIds,
   })
     .use(
       buildSitePublicRouter({

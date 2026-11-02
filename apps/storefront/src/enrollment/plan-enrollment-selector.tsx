@@ -14,6 +14,7 @@ export interface PlanEnrollmentSelectionInput {
 }
 
 export interface PlanEnrollmentSelectorProps {
+  readonly locationId: string;
   readonly offering: PublicOfferingDetailResponse;
   readonly locale: Locale;
   readonly t: Translator["t"];
@@ -241,7 +242,9 @@ export function PlanEnrollmentSelector(props: PlanEnrollmentSelectorProps): Reac
     });
   }
 
-  const isEnrollable = Boolean(selectedVariant && selectedVariant.isAvailable && startsOn);
+  const isEnrollable = Boolean(
+    selectedVariant && selectedVariant.isAvailable && startsOn && props.locationId,
+  );
 
   return (
     <div className="flex flex-col gap-5 border-t border-default pt-5">
