@@ -34,6 +34,14 @@ const IDEMPOTENCY_HEADER = "Idempotency-Key";
 const HOME = `http://${SLUG}.${BASE_DOMAIN}:${STOREFRONT_PORT}`;
 const BDT = CURRENCY_CODE.BDT;
 
+/** Matches the cart/checkout `formatPrice` display: currency code, space, major units with two decimals. */
+function quotedTotalText(amountMinor: number): string {
+  return `${BDT} ${(amountMinor / 100).toFixed(2)}`;
+}
+
+const ORIGINAL_TOTAL = quotedTotalText(PRODUCT_PRICE);
+const RAISED_TOTAL = quotedTotalText(RAISED_PRICE);
+
 const bn = STOREFRONT_CATALOGS.bn;
 
 function bnTextOf(key: string): string {
@@ -155,15 +163,20 @@ async function publishProduct(): Promise<void> {
   if (!available.ok) throw new Error(`availability was not set: ${await available.text()}`);
 }
 
-/** A later price for the same variant, so the next submission sees CHECKOUT_PRICE_CHANGED. */
-async function raisePrice(): Promise<void> {
+/** Sets the live catalog price. Later tests restore `PRODUCT_PRICE` so they quote the original total. */
+async function setCatalogPrice(amount: number): Promise<void> {
   const patched = await ownerCall("PATCH", `/orgs/${organizationId}/offerings/${offeringId}`, {
     version: offeringVersion,
-    variants: [{ variantId, price: { amount: RAISED_PRICE, currency: BDT }, unitKey: "PIECE" }],
+    variants: [{ variantId, price: { amount, currency: BDT }, unitKey: "PIECE" }],
   });
-  if (!patched.ok) throw new Error(`the price was not raised: ${await patched.text()}`);
+  if (!patched.ok) throw new Error(`the price was not set: ${await patched.text()}`);
   const body = (await patched.json()) as { data: { version: number } };
   offeringVersion = body.data.version;
+}
+
+/** A later price for the same variant, so the next submission sees CHECKOUT_PRICE_CHANGED. */
+async function raisePrice(): Promise<void> {
+  await setCatalogPrice(RAISED_PRICE);
 }
 
 async function openPage(page: Page, path: string): Promise<void> {
@@ -314,7 +327,7 @@ describe("the public storefront commerce flow", () => {
       );
 
       await addToCart(page);
-      await proceedToCartQuote(page, "BDT 25.00");
+      await proceedToCartQuote(page, ORIGINAL_TOTAL);
 
       await fillContactAndSubmit(page);
       await waitForReceipt(page);
@@ -338,7 +351,7 @@ describe("the public storefront commerce flow", () => {
       await page.setViewport(MOBILE_VIEWPORT);
       await openOffering(page);
       await addToCart(page);
-      await proceedToCartQuote(page, "BDT 25.00");
+      await proceedToCartQuote(page, ORIGINAL_TOTAL);
 
       await waitForEnabledButton(page, bnText.placeOrder);
       await setValue(page, "#checkout-name", CUSTOMER_NAME);
@@ -351,11 +364,12 @@ describe("the public storefront commerce flow", () => {
 
       await clickButton(page, bnText.acceptPriceChange);
       await waitForTextGone(page, bnText.priceChangedTitle);
-      await waitForText(page, "BDT 30.00");
+      await waitForText(page, RAISED_TOTAL);
 
       await clickButton(page, bnText.placeOrder);
       await waitForReceipt(page);
     } finally {
+      await setCatalogPrice(PRODUCT_PRICE);
       await context.close();
     }
   }, 300_000);
@@ -363,11 +377,13 @@ describe("the public storefront commerce flow", () => {
   it("recovers when the guest session is lost between quote and submit", async () => {
     const context = await stack.browser.createBrowserContext();
     try {
+      // Independent of the price-change case: quote the original catalog total.
+      await setCatalogPrice(PRODUCT_PRICE);
       const page = await context.newPage();
       await page.setViewport(MOBILE_VIEWPORT);
       await openOffering(page);
       await addToCart(page);
-      await proceedToCartQuote(page, "BDT 25.00");
+      await proceedToCartQuote(page, ORIGINAL_TOTAL);
 
       await waitForEnabledButton(page, bnText.placeOrder);
       await setValue(page, "#checkout-name", CUSTOMER_NAME);
