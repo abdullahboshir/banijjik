@@ -1,7 +1,9 @@
 import {
   CURRENCY_CODE,
+  ERROR_CODE,
   MODULE_KEY,
   MODULE_OVERRIDE_EFFECT,
+  OUTBOX_STATUS,
   SEED_INDUSTRY_TEMPLATE_KEY,
 } from "@banijjik/contracts";
 import {
@@ -12,28 +14,43 @@ import {
   DEPOSIT_REQUIRED,
 } from "@banijjik/contracts/booking";
 import { PAYMENT_METHOD, PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
+import { SALES_EVENT_TYPE } from "@banijjik/contracts/sales";
 import {
   SF_GUEST_COOKIE_NAME,
   WEBSITE_CHECKOUT_ENABLED_SETTING_KEY,
   WEBSITE_EVENT_TYPE,
+  WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY,
+  type CheckoutDetailResponse,
   type CheckoutResponse,
   type CheckoutSelection,
   type PublicQuoteResponse,
 } from "@banijjik/contracts/website";
-import { asId, newId } from "@banijjik/ids";
+import {
+  asId,
+  newId,
+  type EventSessionId,
+  type OrganizationId,
+  type ResourceId,
+} from "@banijjik/ids";
+import type { WithId, Document as MongoDocument } from "mongodb";
 import type { Response } from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildAuditRecorder } from "../../core/audit/index.js";
 import { MongoUnitOfWork, models } from "../../../kernel/db/index.js";
 import { eventHandlerRegistry, kernelEventPublisher } from "../../../kernel/events/index.js";
 import type { EventJobData, EventJobQueue } from "../../../kernel/events/event-job.js";
+import { runEventHandler } from "../../../kernel/events/handler-runner.js";
+import type { ModuleEffectiveness } from "../../../kernel/events/module-effectiveness.js";
 import { OutboxDispatcher } from "../../../kernel/events/outbox-dispatcher.js";
 import {
   OUTBOX_EVENT_MODEL_NAME,
   type OutboxEventDocument,
 } from "../../../kernel/events/outbox-event.schema.js";
+import { jobRegistry, runScheduledJob } from "../../../kernel/jobs/index.js";
 import { runInOrganizationContext } from "../../../kernel/tenancy/index.js";
 import { systemClock } from "../../../kernel/time/index.js";
+import { registerAccountingAndExpenseHandlers } from "../../../routes/accounting-event-handlers.js";
+import { buildBookingDepositCheckAdapter } from "../../../routes/booking-deposit-adapter.js";
 import { MODULE_MANIFESTS, buildModuleRegistry } from "../../../routes/module-registry.js";
 import {
   buildOrganizationConfigPorts,
@@ -43,6 +60,8 @@ import {
   buildPaymentRequestLifecycles,
   buildPaymentRequestReaders,
 } from "../../../routes/payment-request-readers.js";
+import { registerReportEventHandlers } from "../../../routes/report-event-handlers.js";
+import { processOrganizationOutbox } from "../../../test-support/outbox-replay.js";
 import { createHall } from "../../../test-support/booking-hall-world.js";
 import {
   publishBookableEvent,
@@ -55,6 +74,7 @@ import { writeModuleOverride } from "../../../test-support/entitlement-world.js"
 import { registerIamApiModels, type IamApiHarness } from "../../../test-support/iam-api-harness.js";
 import {
   addInventoryItem,
+  levelOf,
   publishOffering,
   receiveStock,
   setSetting,
@@ -72,16 +92,16 @@ import type { ApiActor, TwoOrganizations } from "../../../test-support/two-organ
 import {
   MongoEventSessionRepository,
   MongoResourceSlotUsageRepository,
-  buildExpireHoldsJob,
   buildOrganizationTimezoneReader,
   MongoBookingRepository,
+  registerBookingScheduledJobs,
 } from "../booking/index.js";
 import { buildOrderSnapshotReader } from "../sales/index.js";
 import {
-  MongoContactStoreCreditAdapter,
   MongoPaymentRepository,
   MongoPaymentSummaryRepository,
   MongoStoreCreditRepository,
+  MongoContactStoreCreditAdapter,
   ReceivePaymentUseCase,
 } from "../payment/index.js";
 import { buildOrgConfigService } from "../../platform/entitlement/index.js";
@@ -104,11 +124,47 @@ const SUNDAY_RENTAL_END = "2026-11-01T06:00:00.000Z";
 const SUNDAY_EVENT_START = "2026-11-01T07:00:00.000Z";
 const SUNDAY_EVENT_END = "2026-11-01T09:00:00.000Z";
 const SUNDAY_PLAN_STARTS_ON = "2026-11-01";
+const UNPAID_HOLD_START = "2026-11-01T05:30:00.000Z";
+const UNPAID_HOLD_END = "2026-11-01T06:00:00.000Z";
+const SERVICE_START_END = "2026-11-01T04:30:00.000Z";
+
+const PRODUCT_UNIT_PRICE = 2500;
+const PRODUCT_QUANTITY = 2;
+const SERVICE_UNIT_PRICE = 50_000;
+const RENTAL_UNIT_PRICE = 3000;
+const EVENT_UNIT_PRICE = 4000;
+const PLAN_RECURRING_FEE = 5000;
+const PLAN_ADMISSION_FEE = 1000;
+const PLAN_SECURITY_DEPOSIT = 2000;
+const PLAN_UPFRONT = PLAN_ADMISSION_FEE + PLAN_RECURRING_FEE + PLAN_SECURITY_DEPOSIT;
+const MIXED_QUOTE_TOTAL =
+  PRODUCT_UNIT_PRICE * PRODUCT_QUANTITY +
+  SERVICE_UNIT_PRICE +
+  RENTAL_UNIT_PRICE +
+  EVENT_UNIT_PRICE +
+  PLAN_RECURRING_FEE;
+const DEPOSIT_MINOR = 1000;
+const HOLD_MINUTES = 15;
+const ALWAYS_EFFECTIVE: ModuleEffectiveness = { isEffective: async () => true };
 
 let harness: IamApiHarness;
 
+/**
+ * Both template rows are platform documents in a database every other suite in this run shares,
+ * so the widening below is snapshotted first and put back in `afterAll` (review R1 must-fix 3).
+ */
+let widenedTemplates: readonly WithId<MongoDocument>[] = [];
+
 beforeAll(async () => {
   harness = await startCatalogApi();
+  widenedTemplates = await harness.connections.platform
+    .collection("industry_templates")
+    .find({
+      industryTemplateKey: {
+        $in: [SEED_INDUSTRY_TEMPLATE_KEY.MATRIMONY, COMMERCE.industryTemplateKey],
+      },
+    })
+    .toArray();
   await harness.connections.platform
     .collection("industry_templates")
     .updateOne(
@@ -123,9 +179,14 @@ beforeAll(async () => {
       $inc: { version: 1 },
     },
   );
+  ensureWorkerRegistrations();
 });
 
 afterAll(async () => {
+  const templates = harness.connections.platform.collection("industry_templates");
+  for (const row of widenedTemplates) {
+    await templates.replaceOne({ _id: row._id }, row);
+  }
   await harness.dispose();
 });
 
@@ -148,6 +209,36 @@ function variantOf(
   return requirePresent(offering.variants[index], "offering variant").variantId;
 }
 
+function buildOrgConfig() {
+  const registry = buildModuleRegistry();
+  return buildOrgConfigService({
+    registry,
+    clock: harness.clock,
+    ...buildOrganizationConfigPorts(),
+    ...buildResolvedConfigSources(registry),
+    templates: buildIndustryTemplateReader(harness.clock),
+  });
+}
+
+/** Same registrations `start-worker.ts` makes, once per process, so a neighbour file can go first. */
+function ensureWorkerRegistrations(): void {
+  if (eventHandlerRegistry.find("accounting.postPayments") === undefined) {
+    registerAccountingAndExpenseHandlers();
+  }
+  if (eventHandlerRegistry.find("report.summarize") === undefined) {
+    registerReportEventHandlers(harness.clock);
+  }
+  if (jobRegistry.find("booking.expireHolds") === undefined) {
+    registerBookingScheduledJobs({
+      clock: harness.clock,
+      orgConfig: buildOrgConfig(),
+      manifests: MODULE_MANIFESTS,
+      depositCheck: buildBookingDepositCheckAdapter(),
+      audit: buildAuditRecorder(harness.clock),
+    });
+  }
+}
+
 async function grantAllCommerceModules(organizationId: string): Promise<void> {
   const modulesToGrant = [
     MODULE_KEY.WEBSITE,
@@ -155,6 +246,8 @@ async function grantAllCommerceModules(organizationId: string): Promise<void> {
     MODULE_KEY.BOOKING,
     MODULE_KEY.ENROLLMENT,
     MODULE_KEY.CREDIT,
+    MODULE_KEY.ACCOUNTING,
+    MODULE_KEY.REPORT,
   ];
   for (const moduleKey of modulesToGrant) {
     await writeModuleOverride({
@@ -244,6 +337,14 @@ function productSelection(
   };
 }
 
+function lineTotalOf(quoted: PublicQuoteResponse, selectionId: string): number {
+  const line = requirePresent(
+    quoted.lines.find((row) => row.selectionId === selectionId),
+    `quote line ${selectionId}`,
+  );
+  return line.total.amount;
+}
+
 async function publishPlanOffering(
   actor: ApiActor,
   organizationId: string,
@@ -257,10 +358,10 @@ async function publishPlanOffering(
       maxFreezeDaysPerYear: 30,
       startRule: "ANY_DATE",
       autoRenewDefault: false,
-      admissionFee: money(1000),
-      securityDeposit: money(2000),
+      admissionFee: money(PLAN_ADMISSION_FEE),
+      securityDeposit: money(PLAN_SECURITY_DEPOSIT),
     },
-    variants: [{ name: "Standard", price: money(5000), unitKey: "SESSION" }],
+    variants: [{ name: "Standard", price: money(PLAN_RECURRING_FEE), unitKey: "SESSION" }],
   });
   expect(created.status, JSON.stringify(created.body)).toBe(201);
   const offering = created.body.data as {
@@ -308,15 +409,16 @@ function outboxRows(organizationId: string, type: string) {
   );
 }
 
+function pendingOutboxCount(organizationId: string): Promise<number> {
+  return runInOrganizationContext(organizationId, () =>
+    models({})
+      .get<OutboxEventDocument>(OUTBOX_EVENT_MODEL_NAME)
+      .countDocuments({ organizationId, status: OUTBOX_STATUS.PENDING }),
+  );
+}
+
 function buildPaymentStack() {
-  const registry = buildModuleRegistry();
-  const orgConfig = buildOrgConfigService({
-    registry,
-    clock: harness.clock,
-    ...buildOrganizationConfigPorts(),
-    ...buildResolvedConfigSources(registry),
-    templates: buildIndustryTemplateReader(harness.clock),
-  });
+  const orgConfig = buildOrgConfig();
   const audit = buildAuditRecorder(harness.clock);
   const timeZone = buildOrganizationTimezoneReader();
   const unitOfWork = new MongoUnitOfWork();
@@ -357,7 +459,7 @@ async function buildMixedCatalog(shop: ShopWorld): Promise<MixedCatalog> {
   const product = await publishOffering(shop, {
     kind: "PRODUCT",
     name: "Cotton T-Shirt",
-    priceAmount: 2500,
+    priceAmount: PRODUCT_UNIT_PRICE,
     stockComponents: [{ inventoryItemId: itemId, quantity: 1 }],
   });
 
@@ -375,7 +477,7 @@ async function buildMixedCatalog(shop: ShopWorld): Promise<MixedCatalog> {
     rateUnit: "HOUR",
     minUnits: 1,
     resourceTypeKeys: ["STYLIST"],
-    unitPriceAmount: 3000,
+    unitPriceAmount: RENTAL_UNIT_PRICE,
   });
   const rentalResourceId = await createHall(harness, shop.actor, {
     organizationId: shop.organizationId,
@@ -387,13 +489,11 @@ async function buildMixedCatalog(shop: ShopWorld): Promise<MixedCatalog> {
 
   const eventOffering = await publishBookableEvent(shop.actor, shop.organizationId, {
     name: "Baking Masterclass",
-    unitPriceAmount: 4000,
+    unitPriceAmount: EVENT_UNIT_PRICE,
   });
   const eventVariantId = variantOf(eventOffering);
   const eventSessionId = await createEventSession(shop, eventOffering, eventVariantId, 10);
-
   const plan = await publishPlanOffering(shop.actor, shop.organizationId);
-
   const service = variantOf(serviceOffering);
   const rental = variantOf(rentalOffering);
 
@@ -401,14 +501,10 @@ async function buildMixedCatalog(shop: ShopWorld): Promise<MixedCatalog> {
     product: { offeringId: product.offeringId, variantId: product.variantId },
     service: { offeringId: serviceOffering.offeringId, variantId: service },
     rental: { offeringId: rentalOffering.offeringId, variantId: rental },
-    event: {
-      offeringId: eventOffering.offeringId,
-      variantId: eventVariantId,
-      eventSessionId,
-    },
+    event: { offeringId: eventOffering.offeringId, variantId: eventVariantId, eventSessionId },
     plan,
     selections: [
-      productSelection(product, 2),
+      productSelection(product, PRODUCT_QUANTITY),
       {
         selectionId: "sel-service",
         selection: {
@@ -458,6 +554,217 @@ async function buildMixedCatalog(shop: ShopWorld): Promise<MixedCatalog> {
   };
 }
 
+function assertMixedQuoteTotals(quoted: PublicQuoteResponse): void {
+  expect(quoted.lines).toHaveLength(5);
+  expect(lineTotalOf(quoted, "sel-product")).toBe(PRODUCT_UNIT_PRICE * PRODUCT_QUANTITY);
+  expect(lineTotalOf(quoted, "sel-service")).toBe(SERVICE_UNIT_PRICE);
+  expect(lineTotalOf(quoted, "sel-rental")).toBe(RENTAL_UNIT_PRICE);
+  expect(lineTotalOf(quoted, "sel-event")).toBe(EVENT_UNIT_PRICE);
+  expect(lineTotalOf(quoted, "sel-plan")).toBe(PLAN_RECURRING_FEE);
+  expect(quoted.total.amount).toBe(MIXED_QUOTE_TOTAL);
+  expect(quoted.total.currency).toBe(CURRENCY_CODE.BDT);
+}
+
+async function dispatchUntilOrgQuiet(organizationId: string, queue: RecordingQueue): Promise<void> {
+  const dispatcher = new OutboxDispatcher({
+    queue,
+    registry: eventHandlerRegistry,
+    clock: systemClock,
+  });
+  for (let round = 0; round < 40; round += 1) {
+    if ((await pendingOutboxCount(organizationId)) === 0) return;
+    const handled = await dispatcher.dispatchBatch();
+    if (handled === 0) return;
+  }
+}
+
+/**
+ * Production path: OutboxDispatcher claims rows (ADR-090), enqueues one job per handler, then
+ * `runEventHandler` is the worker's exactly-once runner. A second pass must be a no-op.
+ */
+async function dispatchAndDeliverThisOrg(organizationId: string): Promise<readonly EventJobData[]> {
+  const queue = new RecordingQueue();
+  await dispatchUntilOrgQuiet(organizationId, queue);
+  const ours = queue.jobs.filter((job) => job.organizationId === organizationId);
+  await processOrganizationOutbox(organizationId);
+  for (const job of ours) {
+    expect(await runEventHandler(job, eventHandlerRegistry, ALWAYS_EFFECTIVE)).toBe(
+      "ALREADY_PROCESSED",
+    );
+  }
+  return ours;
+}
+
+function rowForCheckout(
+  rows: readonly OutboxEventDocument[],
+  checkoutId: string,
+): OutboxEventDocument {
+  return requirePresent(
+    rows.find((row) => (row.payload as { checkoutId?: string }).checkoutId === checkoutId),
+    "checkout.created outbox row",
+  );
+}
+
+function rowForRequest(
+  rows: readonly OutboxEventDocument[],
+  field: "orderId" | "enrollmentId",
+  requestId: string,
+): OutboxEventDocument {
+  return requirePresent(
+    rows.find((row) => (row.payload as Record<string, string | undefined>)[field] === requestId),
+    `${field} outbox row`,
+  );
+}
+
+async function assertOutboxDelivery(
+  shop: ShopWorld,
+  checkout: CheckoutResponse,
+  jobs: readonly EventJobData[],
+): Promise<void> {
+  const createdRows = await outboxRows(shop.organizationId, WEBSITE_EVENT_TYPE.CHECKOUT_CREATED);
+  const createdRow = rowForCheckout(createdRows, checkout.checkoutId);
+  expect(createdRow.organizationId).toBe(shop.organizationId);
+  expect(createdRow.status).toBe(OUTBOX_STATUS.DISPATCHED);
+  expect(eventHandlerRegistry.handlersFor(createdRow)).toHaveLength(0);
+  expect(jobs.filter((job) => job.eventId === createdRow.eventId)).toHaveLength(0);
+
+  const orderLink = requirePresent(
+    checkout.requests.find((link) => link.requestType === "ORDER"),
+    "order link",
+  );
+  const placedRows = await outboxRows(shop.organizationId, SALES_EVENT_TYPE.ORDER_PLACED);
+  const placedRow = rowForRequest(placedRows, "orderId", orderLink.requestId);
+  expect(placedRow.status).toBe(OUTBOX_STATUS.DISPATCHED);
+  expect(placedRow.organizationId).toBe(shop.organizationId);
+  expect(eventHandlerRegistry.handlersFor(placedRow).length).toBeGreaterThan(0);
+  const placedJobs = jobs.filter((job) => job.eventId === placedRow.eventId);
+  expect(placedJobs.length).toBeGreaterThan(0);
+  const placedJob = requirePresent(placedJobs[0], "order.placed handler job");
+  expect(placedJob.type).toBe(SALES_EVENT_TYPE.ORDER_PLACED);
+  expect(placedJob.organizationId).toBe(shop.organizationId);
+  expect(placedJob.handlerKey.length).toBeGreaterThan(0);
+}
+
+async function assertReportsAndAccounting(
+  shop: ShopWorld,
+  checkout: CheckoutResponse,
+): Promise<void> {
+  const orderLink = requirePresent(
+    checkout.requests.find((link) => link.requestType === "ORDER"),
+    "order link",
+  );
+  const bookingLinks = checkout.requests.filter((link) => link.requestType === "BOOKING");
+  const enrollmentLink = requirePresent(
+    checkout.requests.find((link) => link.requestType === "ENROLLMENT"),
+    "enrollment link",
+  );
+  expect(enrollmentLink.paymentRequired.amount).toBe(PLAN_UPFRONT);
+  expect(enrollmentLink.paymentRequired.currency).toBe(CURRENCY_CODE.BDT);
+
+  const order = await runInOrganizationContext(shop.organizationId, () =>
+    buildOrderSnapshotReader().read(asId(orderLink.requestId)),
+  );
+  expect(order?.status).toBe("PLACED");
+  expect(order?.totals.grandTotal.amount).toBe(orderLink.paymentRequired.amount);
+
+  const bookings = await runInOrganizationContext(shop.organizationId, () =>
+    Promise.all(
+      bookingLinks.map((link) => new MongoBookingRepository().findById(asId(link.requestId))),
+    ),
+  );
+  expect(bookings.map((booking) => booking?.status)).toEqual([
+    BOOKING_STATUS.CONFIRMED,
+    BOOKING_STATUS.CONFIRMED,
+    BOOKING_STATUS.CONFIRMED,
+  ]);
+
+  const ordersReport = await shop.actor.call("get", `/orgs/${shop.organizationId}/orders`);
+  expect(ordersReport.status).toBe(200);
+  const orderRow = requirePresent(
+    (ordersReport.body.data as readonly { orderId: string; grandTotal: { amount: number } }[]).find(
+      (row) => row.orderId === orderLink.requestId,
+    ),
+    "orders report row",
+  );
+  expect(orderRow.grandTotal.amount).toBe(orderLink.paymentRequired.amount);
+
+  const bookingsReport = await shop.actor.call("get", `/orgs/${shop.organizationId}/bookings`);
+  expect(bookingsReport.status).toBe(200);
+  const reportedBookingIds = (bookingsReport.body.data as readonly { bookingId: string }[]).map(
+    (row) => row.bookingId,
+  );
+  expect(bookingLinks.every((link) => reportedBookingIds.includes(link.requestId))).toBe(true);
+
+  const enrollmentsReport = await shop.actor.call(
+    "get",
+    `/orgs/${shop.organizationId}/enrollments`,
+  );
+  expect(enrollmentsReport.status).toBe(200);
+  expect(
+    (enrollmentsReport.body.data as readonly { enrollmentId: string }[]).some(
+      (row) => row.enrollmentId === enrollmentLink.requestId,
+    ),
+  ).toBe(true);
+}
+
+function winnerOfRace(resA: Response, resB: Response, loserCode: string): Response {
+  expect([resA.status, resB.status].filter((status) => status === 201)).toHaveLength(1);
+  const loser = resA.status === 201 ? resB : resA;
+  expect(loser.status).toBe(409);
+  expect(loser.body.error.code).toBe(loserCode);
+  return resA.status === 201 ? resA : resB;
+}
+
+async function slotUsedByBucket(
+  organizationId: string,
+  resourceId: string,
+  startsAt: string,
+  blockedEndsAt: string,
+): Promise<Map<number, number>> {
+  return runInOrganizationContext(organizationId, () =>
+    new MongoResourceSlotUsageRepository().readUsedByBucket({
+      organizationId: asId<OrganizationId>(organizationId),
+      resourceId: asId<ResourceId>(resourceId),
+      startsAt: new Date(startsAt),
+      blockedEndsAt: new Date(blockedEndsAt),
+    }),
+  );
+}
+
+function maxSlotUsed(used: Map<number, number>): number {
+  return Math.max(0, ...used.values());
+}
+
+async function eventSeatsSold(organizationId: string, eventSessionId: string): Promise<number> {
+  const session = await runInOrganizationContext(organizationId, () =>
+    new MongoEventSessionRepository().findById(asId<EventSessionId>(eventSessionId)),
+  );
+  return session?.toProps().seatsSold ?? -1;
+}
+
+async function readCheckoutDetail(
+  shop: ShopWorld,
+  checkoutId: string,
+  cookies: Record<string, string>,
+): Promise<CheckoutDetailResponse> {
+  const response = await callStorefront(harness.app, {
+    method: "get",
+    organizationId: shop.organizationId,
+    suffix: `/checkouts/${checkoutId}`,
+    cookies,
+  });
+  expect(response.status, JSON.stringify(response.body)).toBe(200);
+  return response.body.data as CheckoutDetailResponse;
+}
+
+async function runExpireHoldsJob(): Promise<void> {
+  const expireJob = requirePresent(jobRegistry.find("booking.expireHolds"), "booking.expireHolds");
+  const expiryClock = {
+    now: () => new Date(harness.clock.now().getTime() + 60 * 60_000),
+  };
+  await runScheduledJob(expireJob, { clock: expiryClock, effectiveness: ALWAYS_EFFECTIVE });
+}
+
 describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
   it("quote and checkout all five kinds together, then dispatch the real outbox and read the accounting and report surfaces", async () => {
     const shop = await commerceShop();
@@ -465,8 +772,7 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
     const guest = await newGuest(shop.organizationId);
 
     const quoted = await quote(shop, guest, catalog.selections);
-    expect(quoted.lines).toHaveLength(5);
-    expect(quoted.total.amount).toBeGreaterThan(0);
+    assertMixedQuoteTotals(quoted);
 
     const response = await submitCheckout(shop, guest, quoted.quoteId, {
       name: "Bashir Ahmed",
@@ -475,76 +781,15 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
     expect(response.status, JSON.stringify(response.body)).toBe(201);
     const checkout = response.body.data as CheckoutResponse;
     expect(checkout.requests).toHaveLength(5);
-
-    const orderLink = checkout.requests.find((link) => link.requestType === "ORDER");
-    expect(orderLink).toBeDefined();
-    expect(orderLink?.status).toBe("PLACED");
-    const bookingLinks = checkout.requests.filter((link) => link.requestType === "BOOKING");
-    expect(bookingLinks).toHaveLength(3);
-    const enrollmentLink = checkout.requests.find((link) => link.requestType === "ENROLLMENT");
-    expect(enrollmentLink?.status).toBe("PENDING");
-
-    const createdRows = await outboxRows(shop.organizationId, WEBSITE_EVENT_TYPE.CHECKOUT_CREATED);
-    expect(
-      createdRows.some(
-        (row) => (row.payload as { checkoutId: string }).checkoutId === checkout.checkoutId,
-      ),
-    ).toBe(true);
-
-    const queue = new RecordingQueue();
-    const dispatcher = new OutboxDispatcher({
-      queue,
-      registry: eventHandlerRegistry,
-      clock: systemClock,
-    });
-    const handled = await dispatcher.dispatchBatch();
-    expect(handled).toBeGreaterThanOrEqual(1);
-    const dispatched = await outboxRows(shop.organizationId, WEBSITE_EVENT_TYPE.CHECKOUT_CREATED);
-    expect(dispatched.every((row) => row.status === "DISPATCHED")).toBe(true);
-
-    const orderReader = buildOrderSnapshotReader();
-    const order = await runInOrganizationContext(shop.organizationId, () =>
-      orderReader.read(asId(requirePresent(orderLink, "order link").requestId)),
+    expect(checkout.requests.find((link) => link.requestType === "ORDER")?.status).toBe("PLACED");
+    expect(checkout.requests.filter((link) => link.requestType === "BOOKING")).toHaveLength(3);
+    expect(checkout.requests.find((link) => link.requestType === "ENROLLMENT")?.status).toBe(
+      "PENDING",
     );
-    expect(order?.status).toBe("PLACED");
-    expect(order?.totals.grandTotal.amount).toBe(orderLink?.paymentRequired.amount);
 
-    const bookings = await runInOrganizationContext(shop.organizationId, () =>
-      Promise.all(
-        bookingLinks.map((link) => new MongoBookingRepository().findById(asId(link.requestId))),
-      ),
-    );
-    expect(bookings.map((booking) => booking?.status)).toEqual([
-      BOOKING_STATUS.CONFIRMED,
-      BOOKING_STATUS.CONFIRMED,
-      BOOKING_STATUS.CONFIRMED,
-    ]);
-
-    const ordersReport = await shop.actor.call("get", `/orgs/${shop.organizationId}/orders`);
-    expect(ordersReport.status).toBe(200);
-    expect(
-      (ordersReport.body.data as readonly { orderId: string }[]).some(
-        (row) => row.orderId === orderLink?.requestId,
-      ),
-    ).toBe(true);
-
-    const bookingsReport = await shop.actor.call("get", `/orgs/${shop.organizationId}/bookings`);
-    expect(bookingsReport.status).toBe(200);
-    const reportedBookingIds = (bookingsReport.body.data as readonly { bookingId: string }[]).map(
-      (row) => row.bookingId,
-    );
-    expect(bookingLinks.every((link) => reportedBookingIds.includes(link.requestId))).toBe(true);
-
-    const enrollmentsReport = await shop.actor.call(
-      "get",
-      `/orgs/${shop.organizationId}/enrollments`,
-    );
-    expect(enrollmentsReport.status).toBe(200);
-    expect(
-      (enrollmentsReport.body.data as readonly { enrollmentId: string }[]).some(
-        (row) => row.enrollmentId === enrollmentLink?.requestId,
-      ),
-    ).toBe(true);
+    const jobs = await dispatchAndDeliverThisOrg(shop.organizationId);
+    await assertOutboxDelivery(shop, checkout, jobs);
+    await assertReportsAndAccounting(shop, checkout);
   });
 
   it("lets exactly one guest win the last product unit", async () => {
@@ -558,21 +803,20 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
       stockComponents: [{ inventoryItemId: itemId, quantity: 1 }],
     });
     const selection = [productSelection(product, 1, "sel-last-stock")];
-
     const guestA = await newGuest(shop.organizationId);
     const guestB = await newGuest(shop.organizationId);
     const [quoteA, quoteB] = await Promise.all([
       quote(shop, guestA, selection),
       quote(shop, guestB, selection),
     ]);
-
     const [resA, resB] = await Promise.all([
       submitCheckout(shop, guestA, quoteA.quoteId, { name: "Buyer A", phone: "+8801700000002" }),
       submitCheckout(shop, guestB, quoteB.quoteId, { name: "Buyer B", phone: "+8801700000003" }),
     ]);
-
-    expect([resA.status, resB.status].filter((status) => status === 201)).toHaveLength(1);
-    expect([resA.status, resB.status].filter((status) => status !== 201)).toEqual([409]);
+    winnerOfRace(resA, resB, ERROR_CODE.INSUFFICIENT_STOCK);
+    const level = await levelOf(shop, itemId);
+    expect(level.onHand).toBe(1);
+    expect(level.reserved).toBe(1);
   });
 
   it("lets exactly one guest win the last event seat", async () => {
@@ -596,21 +840,18 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
         customFields: {},
       },
     ];
-
     const guestA = await newGuest(shop.organizationId);
     const guestB = await newGuest(shop.organizationId);
     const [quoteA, quoteB] = await Promise.all([
       quote(shop, guestA, selection),
       quote(shop, guestB, selection),
     ]);
-
     const [resA, resB] = await Promise.all([
       submitCheckout(shop, guestA, quoteA.quoteId, { name: "Audience 1", phone: "+8801700000004" }),
       submitCheckout(shop, guestB, quoteB.quoteId, { name: "Audience 2", phone: "+8801700000005" }),
     ]);
-
-    expect([resA.status, resB.status].filter((status) => status === 201)).toHaveLength(1);
-    expect([resA.status, resB.status].filter((status) => status !== 201)).toEqual([409]);
+    winnerOfRace(resA, resB, ERROR_CODE.SLOT_UNAVAILABLE);
+    expect(await eventSeatsSold(shop.organizationId, eventSessionId)).toBe(1);
   });
 
   it("lets exactly one guest win an overlapping rental on the same hall", async () => {
@@ -644,28 +885,29 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
         customFields: {},
       },
     ];
-
     const guestA = await newGuest(shop.organizationId);
     const guestB = await newGuest(shop.organizationId);
     const [quoteA, quoteB] = await Promise.all([
       quote(shop, guestA, selection),
       quote(shop, guestB, selection),
     ]);
-
     const [resA, resB] = await Promise.all([
       submitCheckout(shop, guestA, quoteA.quoteId, { name: "Renter A", phone: "+8801700000006" }),
       submitCheckout(shop, guestB, quoteB.quoteId, { name: "Renter B", phone: "+8801700000007" }),
     ]);
-
-    expect([resA.status, resB.status].filter((status) => status === 201)).toHaveLength(1);
-    expect([resA.status, resB.status].filter((status) => status !== 201)).toEqual([409]);
+    winnerOfRace(resA, resB, ERROR_CODE.SLOT_UNAVAILABLE);
+    expect(
+      maxSlotUsed(
+        await slotUsedByBucket(shop.organizationId, hallId, SUNDAY_RENTAL_START, SUNDAY_RENTAL_END),
+      ),
+    ).toBe(1);
   });
 
   it("confirms a deposit-paid hold and expires an unpaid hold once through the real worker", async () => {
     const shop = await commerceShop();
     await setSetting(shop, BOOKING_DEPOSIT_REQUIRED_SETTING_KEY, DEPOSIT_REQUIRED.FIXED);
-    await setSetting(shop, BOOKING_DEPOSIT_VALUE_SETTING_KEY, 1000);
-    await setSetting(shop, BOOKING_HOLD_MINUTES_SETTING_KEY, 15);
+    await setSetting(shop, BOOKING_DEPOSIT_VALUE_SETTING_KEY, DEPOSIT_MINOR);
+    await setSetting(shop, BOOKING_HOLD_MINUTES_SETTING_KEY, HOLD_MINUTES);
     const serviceOffering = await publishBookableService(shop.actor, shop.organizationId);
     const hallId = await createHall(harness, shop.actor, {
       organizationId: shop.organizationId,
@@ -704,12 +946,16 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
     expect(paidBooking.requestType).toBe("BOOKING");
     expect(paidBooking.status).toBe(BOOKING_STATUS.HELD);
     expect(paidBooking.holdExpiresAt).toBeDefined();
+    const payableBefore = requirePresent(
+      (await readCheckoutDetail(shop, paidCheckout.checkoutId, guestPaid)).requests[0],
+      "paid tracking request",
+    ).paymentRequired.amount;
 
     const guestUnpaid = await newGuest(shop.organizationId);
     const unpaidQuote = await quote(
       shop,
       guestUnpaid,
-      selectionAt("2026-11-01T05:30:00.000Z", "sel-unpaid"),
+      selectionAt(UNPAID_HOLD_START, "sel-unpaid"),
     );
     const unpaidResponse = await submitCheckout(shop, guestUnpaid, unpaidQuote.quoteId, {
       name: "Client Unpaid",
@@ -722,7 +968,7 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
     );
     expect(unpaidBooking.status).toBe(BOOKING_STATUS.HELD);
 
-    const { unitOfWork, receivePayment } = buildPaymentStack();
+    const { receivePayment } = buildPaymentStack();
     const bookingRepo = new MongoBookingRepository();
     const paidBookingRow = await runInOrganizationContext(shop.organizationId, () =>
       bookingRepo.findById(asId(paidBooking.requestId)),
@@ -733,12 +979,12 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
         organizationId: asId(shop.organizationId),
         locationId: asId(shop.locationId),
         method: PAYMENT_METHOD.CASH,
-        amount: { amount: 1000, currency: CURRENCY_CODE.BDT },
+        amount: { amount: DEPOSIT_MINOR, currency: CURRENCY_CODE.BDT },
         allocations: [
           {
             requestType: PAYMENT_REQUEST_TYPE.BOOKING,
             requestId: paidBooking.requestId,
-            amount: { amount: 1000, currency: CURRENCY_CODE.BDT },
+            amount: { amount: DEPOSIT_MINOR, currency: CURRENCY_CODE.BDT },
           },
         ],
         contactId: paidBookingRow?.contactId ?? null,
@@ -750,28 +996,57 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
       bookingRepo.findById(asId(paidBooking.requestId)),
     );
     expect(confirmed?.status).toBe(BOOKING_STATUS.CONFIRMED);
-
-    const expireJob = buildExpireHoldsJob({
-      bookings: bookingRepo,
-      slots: new MongoResourceSlotUsageRepository(),
-      sessions: new MongoEventSessionRepository(),
-      unitOfWork,
-      events: kernelEventPublisher,
-      clock: harness.clock,
-    });
-    const futureDate = new Date(harness.clock.now().getTime() + 60 * 60_000);
-    await runInOrganizationContext(shop.organizationId, () =>
-      expireJob.run(shop.organizationId, futureDate),
+    const summary = await runInOrganizationContext(shop.organizationId, () =>
+      new MongoPaymentSummaryRepository().findByRequest(
+        asId(shop.organizationId),
+        PAYMENT_REQUEST_TYPE.BOOKING,
+        paidBooking.requestId,
+      ),
     );
+    expect(summary?.allocated.amount).toBe(DEPOSIT_MINOR);
+    const payableAfter = requirePresent(
+      (await readCheckoutDetail(shop, paidCheckout.checkoutId, guestPaid)).requests[0],
+      "paid tracking after deposit",
+    ).paymentRequired.amount;
+    expect(payableAfter).toBe(payableBefore - DEPOSIT_MINOR);
 
+    await runExpireHoldsJob();
     const stillConfirmed = await runInOrganizationContext(shop.organizationId, () =>
       bookingRepo.findById(asId(paidBooking.requestId)),
     );
     expect(stillConfirmed?.status).toBe(BOOKING_STATUS.CONFIRMED);
-    const expired = await runInOrganizationContext(shop.organizationId, () =>
+    const expiredOnce = await runInOrganizationContext(shop.organizationId, () =>
       bookingRepo.findById(asId(unpaidBooking.requestId)),
     );
-    expect(expired?.status).toBe(BOOKING_STATUS.EXPIRED);
+    expect(expiredOnce?.status).toBe(BOOKING_STATUS.EXPIRED);
+    expect(
+      maxSlotUsed(
+        await slotUsedByBucket(shop.organizationId, hallId, UNPAID_HOLD_START, UNPAID_HOLD_END),
+      ),
+    ).toBe(0);
+    expect(
+      maxSlotUsed(
+        await slotUsedByBucket(
+          shop.organizationId,
+          hallId,
+          SUNDAY_SERVICE_START,
+          SERVICE_START_END,
+        ),
+      ),
+    ).toBe(1);
+
+    const versionAfterFirst = requirePresent(expiredOnce, "expired booking").version;
+    await runExpireHoldsJob();
+    const expiredTwice = await runInOrganizationContext(shop.organizationId, () =>
+      bookingRepo.findById(asId(unpaidBooking.requestId)),
+    );
+    expect(expiredTwice?.status).toBe(BOOKING_STATUS.EXPIRED);
+    expect(expiredTwice?.version).toBe(versionAfterFirst);
+    expect(
+      maxSlotUsed(
+        await slotUsedByBucket(shop.organizationId, hallId, UNPAID_HOLD_START, UNPAID_HOLD_END),
+      ),
+    ).toBe(0);
   });
 
   it("claims a guest checkout into a verified account over real OTP sign-in and revokes guest access", async () => {
@@ -875,6 +1150,82 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
         (row) => (row.payload as { checkoutId: string }).checkoutId === checkout.checkoutId,
       ),
     ).toBe(true);
+  });
+
+  it("submits a signed-in checkout and replays the same Idempotency-Key", async () => {
+    const shop = await commerceShop();
+    const itemId = await addInventoryItem(shop, "Notebook");
+    await receiveStock(shop, [{ inventoryItemId: itemId, quantity: 5, unitCostAmount: 50 }]);
+    const product = await publishOffering(shop, {
+      kind: "PRODUCT",
+      name: "Notebook",
+      priceAmount: 900,
+      stockComponents: [{ inventoryItemId: itemId, quantity: 1 }],
+    });
+    await enableCustomerLogin(shop.world, shop.organizationId);
+    const signedIn = await signInCustomer(harness, shop.organizationId);
+    const cookies = asCustomerCookies(signedIn.session);
+    const quoted = await quote(shop, cookies, [productSelection(product, 1, "sel-signed-in")]);
+    const idempotencyKey = newId();
+    const first = await submitCheckout(
+      shop,
+      cookies,
+      quoted.quoteId,
+      { name: "Signed In", phone: `+88${signedIn.phone}` },
+      idempotencyKey,
+    );
+    expect(first.status, JSON.stringify(first.body)).toBe(201);
+    const firstCheckout = first.body.data as CheckoutResponse;
+    const replay = await submitCheckout(
+      shop,
+      cookies,
+      quoted.quoteId,
+      { name: "Signed In", phone: `+88${signedIn.phone}` },
+      idempotencyKey,
+    );
+    expect(replay.status, JSON.stringify(replay.body)).toBe(201);
+    expect((replay.body.data as CheckoutResponse).checkoutId).toBe(firstCheckout.checkoutId);
+  });
+
+  it("refuses a guest cookie from another organization and a location not on the public list", async () => {
+    const shop = await commerceShop();
+    const itemId = await addInventoryItem(shop, "Pen");
+    await receiveStock(shop, [{ inventoryItemId: itemId, quantity: 5, unitCostAmount: 10 }]);
+    const product = await publishOffering(shop, {
+      kind: "PRODUCT",
+      name: "Pen",
+      priceAmount: 300,
+      stockComponents: [{ inventoryItemId: itemId, quantity: 1 }],
+    });
+    const guestA = await newGuest(shop.organizationId);
+    const crossOrg = await callStorefront(harness.app, {
+      method: "post",
+      organizationId: shop.world.organizationB,
+      suffix: "/quotes",
+      body: {
+        locationId: shop.world.locationB1,
+        selections: [productSelection(product, 1, "sel-cross-org")],
+        fulfillment: { method: "PICKUP" },
+      },
+      cookies: guestA,
+    });
+    expect(crossOrg.status).toBe(401);
+    expect(crossOrg.body.error.code).toBe(ERROR_CODE.UNAUTHENTICATED);
+
+    await setSetting(shop, WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY, [shop.locationId]);
+    const foreignLocation = await callStorefront(harness.app, {
+      method: "post",
+      organizationId: shop.organizationId,
+      suffix: "/quotes",
+      body: {
+        locationId: shop.world.locationA2,
+        selections: [productSelection(product, 1, "sel-foreign-location")],
+        fulfillment: { method: "PICKUP" },
+      },
+      cookies: guestA,
+    });
+    expect(foreignLocation.status).toBe(400);
+    expect(foreignLocation.body.error.code).toBe(ERROR_CODE.CHECKOUT_LOCATION_MISMATCH);
   });
 
   it("keeps the Track M directory storefront reads working", async () => {
