@@ -48,7 +48,6 @@ import {
 } from "../../../kernel/events/outbox-event.schema.js";
 import { jobRegistry, runScheduledJob } from "../../../kernel/jobs/index.js";
 import { runInOrganizationContext } from "../../../kernel/tenancy/index.js";
-import { systemClock } from "../../../kernel/time/index.js";
 import { registerAccountingAndExpenseHandlers } from "../../../routes/accounting-event-handlers.js";
 import { buildBookingDepositCheckAdapter } from "../../../routes/booking-deposit-adapter.js";
 import { MODULE_MANIFESTS, buildModuleRegistry } from "../../../routes/module-registry.js";
@@ -400,21 +399,16 @@ async function createEventSession(
   );
 }
 
+function platformOutbox() {
+  return models({}).get<OutboxEventDocument>(OUTBOX_EVENT_MODEL_NAME);
+}
+
 function outboxRows(organizationId: string, type: string) {
-  return runInOrganizationContext(organizationId, () =>
-    models({})
-      .get<OutboxEventDocument>(OUTBOX_EVENT_MODEL_NAME)
-      .find({ organizationId, type })
-      .lean<OutboxEventDocument[]>(),
-  );
+  return platformOutbox().find({ organizationId, type }).lean<OutboxEventDocument[]>();
 }
 
 function pendingOutboxCount(organizationId: string): Promise<number> {
-  return runInOrganizationContext(organizationId, () =>
-    models({})
-      .get<OutboxEventDocument>(OUTBOX_EVENT_MODEL_NAME)
-      .countDocuments({ organizationId, status: OUTBOX_STATUS.PENDING }),
-  );
+  return platformOutbox().countDocuments({ organizationId, status: OUTBOX_STATUS.PENDING });
 }
 
 function buildPaymentStack() {
@@ -565,17 +559,31 @@ function assertMixedQuoteTotals(quoted: PublicQuoteResponse): void {
   expect(quoted.total.currency).toBe(CURRENCY_CODE.BDT);
 }
 
+/**
+ * `claimNextEvent` is global and skips rows whose `nextAttemptAt` / `lockedUntil` is still ahead of
+ * `clock.now()`. A retry backoff of 5 s would otherwise make `dispatchBatch` return 0 while this
+ * org's `checkout.created` stayed PENDING. The catch-up clock is the in-process equivalent of the
+ * worker waiting for the next tick.
+ */
+const DISPATCH_CATCH_UP_MS = 24 * 60 * 60 * 1000;
+
 async function dispatchUntilOrgQuiet(organizationId: string, queue: RecordingQueue): Promise<void> {
   const dispatcher = new OutboxDispatcher({
     queue,
     registry: eventHandlerRegistry,
-    clock: systemClock,
+    clock: { now: () => new Date(Date.now() + DISPATCH_CATCH_UP_MS) },
+    batchSize: 200,
   });
-  for (let round = 0; round < 40; round += 1) {
-    if ((await pendingOutboxCount(organizationId)) === 0) return;
+  for (let round = 0; round < 80; round += 1) {
     const handled = await dispatcher.dispatchBatch();
-    if (handled === 0) return;
+    if ((await pendingOutboxCount(organizationId)) === 0) return;
+    if (handled === 0) {
+      throw new Error(
+        `outbox dispatcher claimed nothing while events stay PENDING for ${organizationId}`,
+      );
+    }
   }
+  throw new Error(`outbox still PENDING for ${organizationId} after dispatch rounds`);
 }
 
 /**
