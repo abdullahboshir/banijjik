@@ -5,12 +5,8 @@ import {
   OFFERING_KIND,
   SEQUENCE_KEY,
 } from "@banijjik/contracts";
-import {
-  ORDER_SOURCE,
-  SALES_ADVANCE_REQUIRED,
-  SALES_EVENT_TYPE,
-  type FulfillmentMethod,
-} from "@banijjik/contracts/sales";
+import { ORDER_SOURCE, SALES_ADVANCE_REQUIRED, SALES_EVENT_TYPE } from "@banijjik/contracts/sales";
+import type { DeliveryAddress } from "@banijjik/contracts/sales/delivery";
 import type {
   CheckoutFulfillment,
   CheckoutRecipientSnapshot,
@@ -33,7 +29,13 @@ import { orderNeedsLine, recordNotFound } from "../domain/errors.js";
 import { Order } from "../domain/order.entity.js";
 import type { SalesDependencies } from "./sales-dependencies.js";
 import { quoteAndPrepare } from "./sales-quote-lines.js";
-import { formatOrderNumber, orderOrderingKey, stockInputOf } from "./sales-transition-shared.js";
+import {
+  assertAddressAllowedForMethod,
+  formatOrderNumber,
+  isDeliveryFulfillment,
+  orderOrderingKey,
+  stockInputOf,
+} from "./sales-transition-shared.js";
 import type { OrderLineInput, PreparedLines } from "./sales-line-preparation.js";
 
 function extractLineInputs(selections: readonly CheckoutSelection[]): OrderLineInput[] {
@@ -176,13 +178,38 @@ async function executePlaceTransaction(params: PlaceExecutionParams): Promise<Or
   });
 }
 
+function mappedCheckoutAddress(fulfillment: CheckoutFulfillment): DeliveryAddress | null {
+  if (fulfillment.address === undefined) return null;
+  return {
+    recipientName: fulfillment.address.recipientName,
+    phoneE164: fulfillment.address.phone,
+    addressLine: fulfillment.address.addressLine,
+    districtCode: fulfillment.address.districtCode,
+    areaCode: fulfillment.address.areaCode,
+    postalCode: fulfillment.address.postalCode ?? null,
+  };
+}
+
+function deliveryAddressOf(fulfillment: CheckoutFulfillment): DeliveryAddress | null {
+  if (!isDeliveryFulfillment(fulfillment.method)) return null;
+  return mappedCheckoutAddress(fulfillment);
+}
+
+function assertStorefrontPlaceReady(
+  prepared: PreparedLines,
+  fulfillment: CheckoutFulfillment,
+): void {
+  if (prepared.lines.length === 0) throw orderNeedsLine();
+  assertAddressAllowedForMethod(fulfillment.method, mappedCheckoutAddress(fulfillment));
+}
+
 function createStorefrontDraft(params: {
   readonly organizationId: OrganizationId;
   readonly locationId: LocationId;
   readonly contactId: ContactId;
   readonly checkoutId: string;
   readonly recipient: CheckoutRecipientSnapshot;
-  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly fulfillment: CheckoutFulfillment;
   readonly prepared: PreparedLines;
   readonly now: Date;
   readonly timeZone: string;
@@ -192,7 +219,8 @@ function createStorefrontDraft(params: {
     organizationId: params.organizationId,
     locationId: params.locationId,
     contactId: params.contactId,
-    fulfillment: { method: params.fulfillmentMethod },
+    fulfillment: { method: params.fulfillment.method },
+    deliveryAddress: deliveryAddressOf(params.fulfillment),
     lines: params.prepared.lines,
     totals: params.prepared.totals,
     businessDate: businessDateOf(params.now, params.timeZone),
@@ -242,10 +270,7 @@ async function handlePlaceStorefrontOrder(
     locationId,
     lines: lineInputs,
   });
-
-  if (prepared.lines.length === 0) {
-    throw orderNeedsLine();
-  }
+  assertStorefrontPlaceReady(prepared, input.fulfillment);
 
   const draft = createStorefrontDraft({
     organizationId,
@@ -253,7 +278,7 @@ async function handlePlaceStorefrontOrder(
     contactId,
     checkoutId: context.checkoutId,
     recipient: input.recipient,
-    fulfillmentMethod: input.fulfillment.method,
+    fulfillment: input.fulfillment,
     prepared,
     now,
     timeZone,

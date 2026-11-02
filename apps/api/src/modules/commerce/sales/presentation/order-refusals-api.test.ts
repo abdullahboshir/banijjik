@@ -1,4 +1,5 @@
 import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
+import { SALES_DELIVERY_RULE_KEY } from "@banijjik/contracts/sales/delivery";
 import type { Response } from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startCatalogApi, worldFor } from "../../../../test-support/catalog-world.js";
@@ -167,10 +168,12 @@ describe("the sales refusals", () => {
     const item = await counterItemOf(shop, "Refusal tea");
 
     for (const method of ["COURIER", "OWN_RIDER"]) {
-      const refused = await callDraft(shop, bodyOf(shop, item, { fulfillmentMethod: method }));
-      expectRefused(refused, 422, "BUSINESS_RULE", {
-        ruleKey: SALES_RULE_KEY.FULFILLMENT_METHOD_UNSUPPORTED,
-        method,
+      const drafted = await callDraft(shop, bodyOf(shop, item, { fulfillmentMethod: method }));
+      expect(drafted.status).toBe(201);
+      expect(drafted.body.data.fulfillment.method).toBe(method);
+      expect(drafted.body.data.delivery).toMatchObject({ address: null, deliveryAttemptCount: 0 });
+      expectRefused(await callPlace(shop, drafted.body.data as OrderRef), 422, "BUSINESS_RULE", {
+        ruleKey: SALES_DELIVERY_RULE_KEY.DELIVERY_ADDRESS_REQUIRED,
       });
     }
     const refusedInstant = await callInstant(
@@ -181,7 +184,31 @@ describe("the sales refusals", () => {
       ruleKey: SALES_RULE_KEY.FULFILLMENT_METHOD_UNSUPPORTED,
       method: "COURIER",
     });
-    expect(await listOrders(shop)).toEqual([]);
+    expectRefused(
+      await callDraft(shop, bodyOf(shop, item, { fulfillmentMethod: "INSTANT" })),
+      422,
+      "BUSINESS_RULE",
+      { ruleKey: SALES_RULE_KEY.FULFILLMENT_METHOD_UNSUPPORTED, method: "INSTANT" },
+    );
+    expectRefused(
+      await callDraft(
+        shop,
+        bodyOf(shop, item, {
+          fulfillmentMethod: "PICKUP",
+          deliveryAddress: {
+            recipientName: "Rahim",
+            phoneE164: "+8801712345678",
+            addressLine: "House 1",
+            districtCode: "dhaka",
+            areaCode: "dhanmondi",
+            postalCode: null,
+          },
+        }),
+      ),
+      422,
+      "BUSINESS_RULE",
+      { ruleKey: SALES_DELIVERY_RULE_KEY.ADDRESS_NOT_ALLOWED_FOR_METHOD, method: "PICKUP" },
+    );
   });
 
   it("refuses to place a draft that has no lines", async () => {

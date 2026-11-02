@@ -5,6 +5,10 @@ import {
   type OfferingKind,
 } from "@banijjik/contracts";
 import { SALES_RULE_KEY, type SalesRuleKey } from "@banijjik/contracts/sales";
+import {
+  SALES_DELIVERY_RULE_KEY,
+  type SalesDeliveryRuleKey,
+} from "@banijjik/contracts/sales/delivery";
 
 export { DomainRuleError };
 
@@ -21,7 +25,7 @@ export function invalidTransition(currentStatus: string): DomainRuleError {
 }
 
 export function salesRuleError(
-  ruleKey: SalesRuleKey,
+  ruleKey: SalesRuleKey | SalesDeliveryRuleKey,
   code: ErrorCode = ERROR_CODE.BUSINESS_RULE,
   details: Readonly<Record<string, unknown>> = {},
 ): DomainRuleError {
@@ -68,4 +72,42 @@ export function performerNotAtLocation(memberId: string): DomainRuleError {
 /** Packing is a workflow step organizations turn on or off with `sales.usePacking`. */
 export function packingDisabled(): DomainRuleError {
   return salesRuleError(SALES_RULE_KEY.PACKING_DISABLED);
+}
+
+export function deliveryAddressRequired(): DomainRuleError {
+  return salesRuleError(SALES_DELIVERY_RULE_KEY.DELIVERY_ADDRESS_REQUIRED);
+}
+
+export function addressNotAllowedForMethod(method: string): DomainRuleError {
+  return salesRuleError(
+    SALES_DELIVERY_RULE_KEY.ADDRESS_NOT_ALLOWED_FOR_METHOD,
+    ERROR_CODE.BUSINESS_RULE,
+    { method },
+  );
+}
+
+export function deliveryMethodNotCompletable(method: string): DomainRuleError {
+  return salesRuleError(
+    SALES_DELIVERY_RULE_KEY.DELIVERY_METHOD_NOT_COMPLETABLE,
+    ERROR_CODE.BUSINESS_RULE,
+    { method },
+  );
+}
+
+export function deliveryZoneUnavailable(areaCode: string): DomainRuleError {
+  return salesRuleError(
+    SALES_DELIVERY_RULE_KEY.DELIVERY_ZONE_UNAVAILABLE,
+    ERROR_CODE.BUSINESS_RULE,
+    {
+      areaCode,
+    },
+  );
+}
+
+export function deliveryZoneCurrencyMismatch(areaCode: string): DomainRuleError {
+  return salesRuleError(
+    SALES_DELIVERY_RULE_KEY.DELIVERY_ZONE_CURRENCY_MISMATCH,
+    ERROR_CODE.BUSINESS_RULE,
+    { areaCode },
+  );
 }

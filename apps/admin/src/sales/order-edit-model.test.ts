@@ -39,6 +39,7 @@ function orderWith(overrides: Partial<OrderResponse>): OrderResponse {
     note: null,
     orderDiscount: { type: MANUAL_DISCOUNT_TYPE.PERCENT, value: 1000 },
     customFields: {},
+    delivery: null,
     version: 3,
     createdAt: TIMESTAMP,
     updatedAt: TIMESTAMP,

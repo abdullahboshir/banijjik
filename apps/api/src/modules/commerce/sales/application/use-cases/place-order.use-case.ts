@@ -127,6 +127,7 @@ export class PlaceOrderUseCase {
       totals: ctx.prepared.totals,
       approval,
       hasStockLines: ctx.prepared.trackedLines.length > 0,
+      deliveryZoneId: ctx.draft.deliveryZoneId,
       actor: { actorUserId: ctx.input.actorUserId, now: ctx.now },
     });
     const persisted = await this.dependencies.orders.update(transitioned, ctx.input.body.version);

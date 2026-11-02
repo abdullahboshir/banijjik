@@ -1,4 +1,5 @@
 import {
+  FULFILLMENT_METHOD,
   ORDER_CANCELLABLE_STATUSES,
   ORDER_EDITABLE_STATUSES,
   ORDER_RETURN_STATUS,
@@ -7,16 +8,19 @@ import {
   type OrderApproval,
   type OrderStatus,
 } from "@banijjik/contracts/sales";
-import { invalidTransition } from "./errors.js";
-import type {
-  NewOrderInput,
-  OrderContentChanges,
-  OrderLineProps,
-  OrderProps,
-  OrderTransitionActor,
+import {
+  deliveryAddressRequired,
+  deliveryMethodNotCompletable,
+  invalidTransition,
+} from "./errors.js";
+import {
+  draftOrderProps,
+  type NewOrderInput,
+  type OrderContentChanges,
+  type OrderLineProps,
+  type OrderProps,
+  type OrderTransitionActor,
 } from "./order-types.js";
-
-const INITIAL_VERSION = 1;
 
 /** `null` clears an optional value, `undefined` keeps it. */
 function cleared<Value>(change: Value | null | undefined, current: Value | null): Value | null {
@@ -26,6 +30,10 @@ function cleared<Value>(change: Value | null | undefined, current: Value | null)
 
 function assertStatus(status: OrderStatus, allowed: readonly OrderStatus[]): void {
   if (!allowed.includes(status)) throw invalidTransition(status);
+}
+
+function isDeliveryMethod(method: OrderProps["fulfillment"]["method"]): boolean {
+  return method === FULFILLMENT_METHOD.COURIER || method === FULFILLMENT_METHOD.OWN_RIDER;
 }
 
 /**
@@ -43,6 +51,12 @@ export class Order implements OrderProps {
   readonly lines: readonly OrderLineProps[];
   readonly totals: OrderProps["totals"];
   readonly fulfillment: OrderProps["fulfillment"];
+  readonly deliveryAddress: OrderProps["deliveryAddress"];
+  readonly deliveryZoneId: OrderProps["deliveryZoneId"];
+  readonly shippedAt: OrderProps["shippedAt"];
+  readonly firstShipment: OrderProps["firstShipment"];
+  readonly currentDeliveryAttemptId: OrderProps["currentDeliveryAttemptId"];
+  readonly deliveryAttemptCount: OrderProps["deliveryAttemptCount"];
   readonly businessDate: string;
   readonly source: OrderProps["source"];
   readonly approval: OrderApproval | null;
@@ -73,6 +87,12 @@ export class Order implements OrderProps {
     this.lines = props.lines;
     this.totals = props.totals;
     this.fulfillment = props.fulfillment;
+    this.deliveryAddress = props.deliveryAddress;
+    this.deliveryZoneId = props.deliveryZoneId;
+    this.shippedAt = props.shippedAt;
+    this.firstShipment = props.firstShipment;
+    this.currentDeliveryAttemptId = props.currentDeliveryAttemptId;
+    this.deliveryAttemptCount = props.deliveryAttemptCount;
     this.businessDate = props.businessDate;
     this.source = props.source;
     this.approval = props.approval;
@@ -95,36 +115,7 @@ export class Order implements OrderProps {
 
   /** A DRAFT: no number, no invoice and no stock effect yet. */
   static createDraft(input: NewOrderInput): Order {
-    return new Order({
-      orderId: input.orderId,
-      organizationId: input.organizationId,
-      orderNumber: null,
-      invoiceNumber: null,
-      locationId: input.locationId,
-      contactId: input.contactId,
-      status: ORDER_STATUS.DRAFT,
-      lines: input.lines,
-      totals: input.totals,
-      fulfillment: input.fulfillment,
-      businessDate: input.businessDate,
-      source: input.source,
-      approval: null,
-      note: input.note,
-      orderDiscount: input.orderDiscount,
-      cancelReason: null,
-      customFields: input.customFields,
-      posSessionId: input.posSessionId,
-      checkoutId: input.checkoutId ?? null,
-      recipient: input.recipient ?? null,
-      hasStockLines: input.hasStockLines,
-      returnStatus: ORDER_RETURN_STATUS.NONE,
-      completedAt: null,
-      version: INITIAL_VERSION,
-      createdAt: input.now,
-      updatedAt: input.now,
-      createdByUserId: input.createdByUserId,
-      updatedByUserId: input.createdByUserId,
-    });
+    return new Order(draftOrderProps(input));
   }
 
   static restore(props: OrderProps): Order {
@@ -143,6 +134,12 @@ export class Order implements OrderProps {
       lines: this.lines,
       totals: this.totals,
       fulfillment: this.fulfillment,
+      deliveryAddress: this.deliveryAddress,
+      deliveryZoneId: this.deliveryZoneId,
+      shippedAt: this.shippedAt,
+      firstShipment: this.firstShipment,
+      currentDeliveryAttemptId: this.currentDeliveryAttemptId,
+      deliveryAttemptCount: this.deliveryAttemptCount,
       businessDate: this.businessDate,
       source: this.source,
       approval: this.approval,
@@ -175,11 +172,22 @@ export class Order implements OrderProps {
     actor: OrderTransitionActor,
   ): Order {
     this.assertEditable();
+    const fulfillment = {
+      method: changes.fulfillment?.method ?? this.fulfillment.method,
+    };
+    const pickupOrInstant =
+      fulfillment.method === FULFILLMENT_METHOD.PICKUP ||
+      fulfillment.method === FULFILLMENT_METHOD.INSTANT;
     return new Order({
       ...this,
       contactId: cleared(changes.contactId, this.contactId),
       lines: changes.lines ?? this.lines,
       totals: changes.totals ?? this.totals,
+      fulfillment,
+      deliveryAddress: pickupOrInstant
+        ? null
+        : cleared(changes.deliveryAddress, this.deliveryAddress),
+      deliveryZoneId: pickupOrInstant ? null : cleared(changes.deliveryZoneId, this.deliveryZoneId),
       orderDiscount: cleared(changes.orderDiscount, this.orderDiscount),
       note: cleared(changes.note, this.note),
       customFields: changes.customFields ?? this.customFields,
@@ -198,15 +206,21 @@ export class Order implements OrderProps {
     readonly totals: OrderProps["totals"];
     readonly approval: OrderApproval | null;
     readonly hasStockLines: boolean;
+    readonly deliveryZoneId?: string | null;
     readonly actor: OrderTransitionActor;
   }): Order {
     assertStatus(this.status, [ORDER_STATUS.DRAFT]);
+    if (isDeliveryMethod(this.fulfillment.method) && this.deliveryAddress === null) {
+      throw deliveryAddressRequired();
+    }
     return new Order({
       ...this,
       orderNumber: input.orderNumber,
       contactId: input.contactId,
       lines: input.lines,
       totals: input.totals,
+      deliveryZoneId:
+        input.deliveryZoneId === undefined ? this.deliveryZoneId : input.deliveryZoneId,
       approval: input.approval,
       hasStockLines: input.hasStockLines,
       status: ORDER_STATUS.PLACED,
@@ -235,6 +249,9 @@ export class Order implements OrderProps {
     readonly actor: OrderTransitionActor;
   }): Order {
     assertStatus(this.status, [ORDER_STATUS.CONFIRMED, ORDER_STATUS.PACKED]);
+    if (isDeliveryMethod(this.fulfillment.method)) {
+      throw deliveryMethodNotCompletable(this.fulfillment.method);
+    }
     return this.completedWith(input);
   }
 

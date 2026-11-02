@@ -89,6 +89,7 @@ function orderWithOneLine(soldQuantity: number, returnedQuantity: number): Order
     note: null,
     orderDiscount: null,
     customFields: {},
+    delivery: null,
     version: 3,
     createdAt: TIMESTAMP,
     updatedAt: TIMESTAMP,

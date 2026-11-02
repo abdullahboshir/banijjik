@@ -1,6 +1,7 @@
 import { defineEnum } from "../define-enum.js";
 import type { OfferingKind } from "../modules/offering-kind.js";
 import type { ApprovalAction, ManualDiscount, Money } from "../pricing/pricing-contracts.js";
+import type { OrderDeliveryResponse } from "./sales-delivery-contracts.js";
 import type { OrderReturnStatus } from "./sales-return-contracts.js";
 
 /**
@@ -56,13 +57,15 @@ export const ORDER_LIMIT_COUNTED_STATUSES: readonly OrderStatus[] = [
 export const ORDER_SOURCE = defineEnum(["ADMIN", "STOREFRONT", "BOT", "API", "POS"]);
 export type OrderSource = (typeof ORDER_SOURCE)[keyof typeof ORDER_SOURCE];
 
-/** INSTANT and PICKUP are served by card 3.5a; COURIER and OWN_RIDER are declared and refused. */
+/** INSTANT is the counter sale; PICKUP, COURIER and OWN_RIDER are staff drafts (COD S1c). */
 export const FULFILLMENT_METHOD = defineEnum(["INSTANT", "PICKUP", "COURIER", "OWN_RIDER"]);
 export type FulfillmentMethod = (typeof FULFILLMENT_METHOD)[keyof typeof FULFILLMENT_METHOD];
 
 export const FULFILLMENT_METHODS_THIS_CARD: readonly FulfillmentMethod[] = [
   FULFILLMENT_METHOD.INSTANT,
   FULFILLMENT_METHOD.PICKUP,
+  FULFILLMENT_METHOD.COURIER,
+  FULFILLMENT_METHOD.OWN_RIDER,
 ];
 
 /** Derived from payment allocations and refunds. */
@@ -216,6 +219,11 @@ export interface OrderResponse {
   /** What the seller entered for the whole order; an edit re-quotes from it (ADR-131). */
   readonly orderDiscount: ManualDiscount | null;
   readonly customFields: Readonly<Record<string, unknown>>;
+  /**
+   * Null for PICKUP/INSTANT. Every COURIER/OWN_RIDER order returns the object; unknown facts
+   * are null/0 so a legacy row still serializes before ship exists (COD S1c).
+   */
+  readonly delivery: OrderDeliveryResponse | null;
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;

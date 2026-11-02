@@ -86,6 +86,7 @@ function orderWith(
     note: null,
     orderDiscount: null,
     customFields: {},
+    delivery: null,
     version: 3,
     createdAt: TIMESTAMP,
     updatedAt: TIMESTAMP,

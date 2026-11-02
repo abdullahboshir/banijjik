@@ -5,9 +5,11 @@ import {
   FULFILLMENT_METHOD,
   ORDER_STATUS,
   SALES_EVENT_TYPE,
+  type FulfillmentMethod,
   type OrderApproval,
   type OrderResponse,
 } from "@banijjik/contracts/sales";
+import type { DeliveryAddress } from "@banijjik/contracts/sales/delivery";
 import { asId, type ContactId, type OrderId } from "@banijjik/ids";
 import { contactPhoneRequired, orderNeedsLine, recordNotFound } from "../../domain/errors.js";
 import { Order } from "../../domain/order.entity.js";
@@ -18,6 +20,9 @@ import type { SalesDependencies } from "../sales-dependencies.js";
 import type { OrderLineInput, PreparedLines } from "../sales-line-preparation.js";
 import { quoteAndPrepare } from "../sales-quote-lines.js";
 import {
+  assertAddressAllowedForMethod,
+  assertDeliveryAddressPresent,
+  isDeliveryFulfillment,
   assertLocationAllowed,
   orderOrderingKey,
   stockInputOf,
@@ -35,6 +40,8 @@ export interface UpdateBody {
   readonly contactId?: string | null | undefined;
   readonly lines?: readonly OrderLineInput[] | undefined;
   readonly orderDiscount?: ManualDiscount | null | undefined;
+  readonly fulfillmentMethod?: FulfillmentMethod | undefined;
+  readonly deliveryAddress?: DeliveryAddress | null | undefined;
   readonly approvalToken?: string | undefined;
   readonly note?: string | null | undefined;
   readonly customFields?: Readonly<Record<string, unknown>> | undefined;
@@ -62,6 +69,7 @@ export class UpdateOrderUseCase {
     if (existing === undefined) throw recordNotFound();
     assertLocationAllowed(existing.locationId, input.allowedLocationIds);
     existing.assertEditable();
+    this.assertDeliveryEdit(existing, input.body);
     const contactId = await this.contactChange(input.body.contactId);
     const quoteChanged = input.body.lines !== undefined || input.body.orderDiscount !== undefined;
     const settings = await this.dependencies.settings.read(input.organizationId);
@@ -135,6 +143,18 @@ export class UpdateOrderUseCase {
     const contact = await this.dependencies.contacts.findActive(nextContactId);
     if (contact === undefined) throw recordNotFound();
     if (contact.phoneE164 === null) throw contactPhoneRequired(nextContactId);
+  }
+
+  /**
+   * D2: a DRAFT may switch to COURIER/OWN_RIDER with no address yet; a PLACED or CONFIRMED
+   * order must keep a non-null address. Pickup/instant may not carry one.
+   */
+  private assertDeliveryEdit(existing: Order, body: UpdateBody): void {
+    const nextMethod = body.fulfillmentMethod ?? existing.fulfillment.method;
+    const nextAddress = nextDeliveryAddressOf(existing, body, nextMethod);
+    assertAddressAllowedForMethod(nextMethod, nextAddress);
+    if (existing.status === ORDER_STATUS.DRAFT) return;
+    assertDeliveryAddressPresent(nextMethod, nextAddress);
   }
 
   private async contactChange(
@@ -220,6 +240,12 @@ export class UpdateOrderUseCase {
       ...(input.body.orderDiscount === undefined
         ? {}
         : { orderDiscount: input.body.orderDiscount }),
+      ...(input.body.fulfillmentMethod === undefined
+        ? {}
+        : { fulfillment: { method: input.body.fulfillmentMethod } }),
+      ...(input.body.deliveryAddress === undefined
+        ? {}
+        : { deliveryAddress: input.body.deliveryAddress }),
       ...(input.body.note === undefined ? {} : { note: input.body.note }),
       ...(input.body.customFields === undefined ? {} : { customFields: input.body.customFields }),
       ...(approval === undefined ? {} : { approval }),
@@ -255,4 +281,15 @@ export class UpdateOrderUseCase {
       );
     }
   }
+}
+
+function nextDeliveryAddressOf(
+  existing: Order,
+  body: UpdateBody,
+  nextMethod: FulfillmentMethod,
+): DeliveryAddress | null {
+  if (!isDeliveryFulfillment(nextMethod)) {
+    return body.deliveryAddress === undefined ? null : body.deliveryAddress;
+  }
+  return body.deliveryAddress === undefined ? existing.deliveryAddress : body.deliveryAddress;
 }
