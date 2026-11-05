@@ -471,6 +471,7 @@
   "permission.sales.order.update": "অর্ডার সম্পাদনা করা",
   "permission.sales.order.confirm": "অর্ডার কনফার্ম করা",
   "permission.sales.order.cancel": "অর্ডার বাতিল করা",
+  "permission.sales.deliveryZone.manage": "ডেলিভারি জোন পরিচালনা করা",
   "errors.kind_needs_booking": "এই অফারিংয়ের জন্য অর্ডার নয়, বুকিং দরকার।",
   "errors.fulfillment_method_unsupported": "এই ব্যবসা সেই ফুলফিলমেন্ট পদ্ধতি নেয় না।",
   "errors.advance_needs_payments": "অগ্রিম নেওয়ার জন্য পেমেন্ট মডিউল দরকার।",

@@ -5,10 +5,12 @@ import {
 } from "@banijjik/contracts/sales/delivery";
 import { z } from "zod";
 import { versionSchema } from "../organization/organization-fields.js";
+import { MAX_PAGE_SIZE, paginationQuerySchema } from "../pagination.js";
 import { phoneE164Schema } from "../phone.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+const DEFAULT_ZONE_PAGE_SIZE = 50;
 const RECIPIENT_NAME_MAX = 100;
 const ADDRESS_LINE_MAX = 250;
 const AREA_CODE_MAX = 50;
@@ -66,6 +68,15 @@ export const updateDeliveryZoneRequestSchema = z.strictObject({
   status: z.enum(DELIVERY_ZONE_STATUS).optional(),
 });
 
+export const deliveryZoneListQuerySchema = paginationQuerySchema.extend({
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_ZONE_PAGE_SIZE),
+});
+
+/** Not strict: the tenant mount also puts `organizationId` on `req.params`. */
+export const deliveryZoneIdParamsSchema = z.object({
+  deliveryZoneId: uuidV7Schema,
+});
+
 const courierDispatchSchema = z.strictObject({
   method: z.literal("COURIER"),
   consignmentId: uuidV7Schema,
@@ -98,5 +109,7 @@ export const deliveryFailedRequestSchema = z
 export type DeliveryAddressBody = z.infer<typeof deliveryAddressSchema>;
 export type CreateDeliveryZoneBody = z.infer<typeof createDeliveryZoneRequestSchema>;
 export type UpdateDeliveryZoneBody = z.infer<typeof updateDeliveryZoneRequestSchema>;
+export type DeliveryZoneListQuery = z.infer<typeof deliveryZoneListQuerySchema>;
+export type DeliveryZoneIdParams = z.infer<typeof deliveryZoneIdParamsSchema>;
 export type ShipOrderBody = z.infer<typeof shipOrderRequestSchema>;
 export type DeliveryFailedBody = z.infer<typeof deliveryFailedRequestSchema>;

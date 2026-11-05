@@ -61,6 +61,7 @@ const OWNER_SETTINGS_TAIL = [
   "settings.terms",
   "website.pages",
   "website.domains",
+  "sales.deliveryZones",
   "settings.modules",
   "customField.fields",
 ] as const;

@@ -5,6 +5,7 @@ import {
   OFFERING_KIND,
   PERMISSION_KEY,
   SEQUENCE_KEY,
+  SETTINGS_TOPIC,
   SURFACE,
   permissionDefinition,
 } from "@banijjik/contracts";
@@ -51,6 +52,7 @@ export const salesManifest = defineModule({
     permissionDefinition(PERMISSION_KEY.SALES_RETURN_READ),
     permissionDefinition(PERMISSION_KEY.SALES_RETURN_CREATE),
     permissionDefinition(PERMISSION_KEY.SALES_RETURN_REVERSE),
+    permissionDefinition(PERMISSION_KEY.SALES_DELIVERY_ZONE_MANAGE),
   ],
   routes: {
     admin: ["/orgs/:organizationId/orders", "/orgs/:organizationId/sales"],
@@ -75,6 +77,17 @@ export const salesManifest = defineModule({
       iconKey: "receipt",
       permissionKey: PERMISSION_KEY.SALES_RETURN_READ,
       order: 10,
+    },
+    {
+      menuKey: "sales.deliveryZones",
+      surface: SURFACE.ADMIN,
+      groupKey: "settings",
+      labelTermKey: "menu.sales.deliveryZones",
+      path: "settings/delivery-zones",
+      iconKey: "truck",
+      permissionKey: PERMISSION_KEY.SALES_DELIVERY_ZONE_MANAGE,
+      order: 62,
+      settingsTopicKey: SETTINGS_TOPIC.SALES,
     },
   ],
   settings: [

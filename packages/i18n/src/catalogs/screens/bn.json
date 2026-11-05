@@ -1814,6 +1814,7 @@
   "commission.mine.empty": "আপনার কোনো কমিশন নেই।",
   "menu.sales.orders": "অর্ডার",
   "menu.sales.returns": "ফেরত",
+  "menu.sales.deliveryZones": "ডেলিভারি জোন",
   "menu.pos.register": "ক্যাশ কাউন্টার (POS)",
   "pos.title": "ক্যাশ কাউন্টার",
   "pos.pair.title": "এই কাউন্টার যুক্ত করুন",

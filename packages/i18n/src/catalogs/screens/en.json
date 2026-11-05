@@ -1814,6 +1814,7 @@
   "commission.mine.empty": "You have no commission yet.",
   "menu.sales.orders": "Orders",
   "menu.sales.returns": "Returns",
+  "menu.sales.deliveryZones": "Delivery zones",
   "menu.pos.register": "Till (POS)",
   "pos.title": "Till",
   "pos.pair.title": "Pair this till",
