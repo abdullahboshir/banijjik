@@ -314,3 +314,5 @@ export function buildStorefrontOrganizationReader(): StorefrontOrganizationReade
 export function buildOrganizationLimitLock(): OrganizationLimitLock {
   return new MongoOrganizationLimitLock();
 }
+
+export { MongoMemberRepository } from "./infrastructure/mongo-member.repository.js";

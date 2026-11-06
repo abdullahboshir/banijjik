@@ -150,6 +150,12 @@ export const PERMISSION_KEY = {
   COURIER_SETTLEMENT_READ: "courier.settlement.read",
   COURIER_SETTLEMENT_RECORD: "courier.settlement.record",
   COURIER_SETTLEMENT_REVERSE: "courier.settlement.reverse",
+  DELIVERY_ASSIGNMENT_READ: "delivery.assignment.read",
+  DELIVERY_ASSIGNMENT_CREATE: "delivery.assignment.create",
+  DELIVERY_ASSIGNMENT_UPDATE: "delivery.assignment.update",
+  DELIVERY_HANDOVER_READ: "delivery.handover.read",
+  DELIVERY_HANDOVER_RECORD: "delivery.handover.record",
+  DELIVERY_HANDOVER_REVERSE: "delivery.handover.reverse",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];

@@ -16,6 +16,7 @@ import { PRICING_EVENT_TYPE } from "../pricing/pricing-event-type.js";
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 import { WEBSITE_EVENT_TYPE } from "../website/website-event-type.js";
 import { COURIER_EVENT_TYPE } from "../courier/courier-contracts.js";
+import { DELIVERY_EVENT_TYPE } from "../delivery/delivery-contracts.js";
 import { POS_EVENT_TYPE } from "../pos/pos-event-type.js";
 import { SETTINGS_EVENT_TYPE } from "../settings/settings-event-type.js";
 import { EVENT_TYPE } from "./event-type.js";
@@ -59,6 +60,7 @@ describe("event types", () => {
       ...Object.values(POS_EVENT_TYPE),
       ...Object.values(ENROLLMENT_EVENT_TYPE),
       ...Object.values(COURIER_EVENT_TYPE),
+      ...Object.values(DELIVERY_EVENT_TYPE),
     ].sort();
 
     expect(Object.values(EVENT_TYPE).sort()).toEqual(expected);

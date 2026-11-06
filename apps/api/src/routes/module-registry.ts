@@ -1,5 +1,6 @@
 import { smsManifest } from "../modules/integration/sms/index.js";
 import { courierManifest } from "../modules/integration/courier/index.js";
+import { deliveryManifest } from "../modules/commerce/delivery/index.js";
 import { enrollmentManifest } from "../modules/commerce/enrollment/index.js";
 import { websiteManifest } from "../modules/commerce/website/index.js";
 import type { ModuleManifest } from "@banijjik/contracts";
@@ -65,6 +66,7 @@ export const MODULE_MANIFESTS: readonly ModuleManifest[] = [
   reportManifest,
   smsManifest,
   courierManifest,
+  deliveryManifest,
 ];
 
 /**

@@ -1,4 +1,5 @@
 import { registerCourierModels } from "../modules/integration/courier/index.js";
+import { registerDeliveryModels } from "../modules/commerce/delivery/index.js";
 import { registerSmsModels } from "../modules/integration/sms/index.js";
 import { registerEnrollmentModels } from "../modules/commerce/enrollment/index.js";
 import { SYSTEM_REASON, TOKEN_AUDIENCE, type ModuleManifest } from "@banijjik/contracts";
@@ -140,6 +141,7 @@ export function registerModuleModels(): void {
   registerReportModels();
   registerSmsModels();
   registerCourierModels();
+  registerDeliveryModels();
   registerSettingsModels();
   registerFileModels();
 }
