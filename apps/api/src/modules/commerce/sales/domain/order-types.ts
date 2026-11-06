@@ -6,8 +6,10 @@ import type {
   FirstShipmentPostingFacts,
 } from "@banijjik/contracts/sales/delivery";
 import {
+  FULFILLMENT_METHOD,
   ORDER_RETURN_STATUS,
   ORDER_STATUS,
+  type FulfillmentMethod,
   type Money,
   type OrderApproval,
   type OrderFulfillment,
@@ -19,6 +21,12 @@ import {
 } from "@banijjik/contracts/sales";
 import type { CheckoutRecipientSnapshot } from "@banijjik/contracts/website";
 import type { ContactId, LocationId, OrderId, OrganizationId, UserId } from "@banijjik/ids";
+import {
+  deliveryAddressRequired,
+  deliveryMethodNotCompletable,
+  dispatchMethodMismatch,
+  invalidTransition,
+} from "./errors.js";
 
 /**
  * A stored line. `manualDiscount` is kept outside the response snapshot so an edit can re-quote
@@ -182,4 +190,54 @@ export function draftOrderProps(input: NewOrderInput): OrderProps {
     createdByUserId: input.createdByUserId,
     updatedByUserId: input.createdByUserId,
   };
+}
+
+/** `null` clears an optional value, `undefined` keeps it. */
+export function cleared<Value>(change: Value | null | undefined, current: Value | null): Value | null {
+  if (change === undefined) return current;
+  return change;
+}
+
+/** NONE before any return, FULL once every unit of every line came back, PARTIAL otherwise. */
+export function returnStatusOfLines(lines: readonly OrderLineProps[]): OrderProps["returnStatus"] {
+  const returned = lines.reduce((total, line) => total + line.returnedQuantity, 0);
+  if (returned === 0) return ORDER_RETURN_STATUS.NONE;
+  const everyLineFull = lines.every((line) => line.returnedQuantity >= line.quantity);
+  return everyLineFull ? ORDER_RETURN_STATUS.FULL : ORDER_RETURN_STATUS.PARTIAL;
+}
+
+export function lineKey(line: { readonly offeringId: string; readonly variantId: string }): string {
+  return `${line.offeringId}:${line.variantId}`;
+}
+
+export function assertStatus(status: OrderStatus, allowed: readonly OrderStatus[]): void {
+  if (!allowed.includes(status)) throw invalidTransition(status);
+}
+
+export function isDeliveryMethod(method: string): boolean {
+  return method === FULFILLMENT_METHOD.COURIER || method === FULFILLMENT_METHOD.OWN_RIDER;
+}
+
+export function assertDeliveryFulfillable(order: OrderProps): void {
+  if (isDeliveryMethod(order.fulfillment.method) && order.deliveryAddress === null) {
+    throw deliveryAddressRequired();
+  }
+}
+
+export function assertNotDelivery(method: string): void {
+  if (isDeliveryMethod(method)) {
+    throw deliveryMethodNotCompletable(method);
+  }
+}
+
+export function assertDeliveryDispatch(order: OrderProps, dispatchMethod: FulfillmentMethod): void {
+  if (!isDeliveryMethod(order.fulfillment.method)) {
+    throw deliveryMethodNotCompletable(order.fulfillment.method);
+  }
+  if (dispatchMethod !== order.fulfillment.method) {
+    throw dispatchMethodMismatch(order.fulfillment.method, dispatchMethod);
+  }
+  if (order.deliveryAddress === null) {
+    throw deliveryAddressRequired();
+  }
 }

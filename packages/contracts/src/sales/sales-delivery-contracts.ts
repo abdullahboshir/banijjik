@@ -103,7 +103,7 @@ export const MAX_DELIVERY_FAIL_NOTE_LENGTH = 200;
 export interface DeliveryFailedRequest {
   readonly version: number;
   readonly reasonKey: DeliveryFailReasonKey;
-  readonly note?: string;
+  readonly note?: string | undefined;
 }
 
 export interface FirstShipmentPostingFacts {

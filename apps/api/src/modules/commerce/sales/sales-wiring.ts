@@ -69,10 +69,18 @@ import { SalesExchangeController } from "./presentation/sales-exchange.controlle
 import { ManageDeliveryZonesUseCase } from "./application/use-cases/manage-delivery-zones.use-case.js";
 import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
 import { MongoDeliveryZoneRepository } from "./infrastructure/mongo-delivery-zone.repository.js";
+import { MongoDeliveryAttemptRepository } from "./infrastructure/mongo-delivery-attempt.repository.js";
 import {
   DeliveryZoneHttpController,
   type DeliveryZoneController,
 } from "./presentation/delivery-zone-tenant.router.js";
+import { FailDeliveryUseCase } from "./application/use-cases/fail-delivery.use-case.js";
+import { ListDeliveryAttemptsUseCase } from "./application/use-cases/list-delivery-attempts.use-case.js";
+import { ReshipOrderUseCase } from "./application/use-cases/ship-order.use-cases.js";
+import {
+  SalesFulfillmentHttpController,
+  type SalesFulfillmentController,
+} from "./presentation/sales-fulfillment-tenant.router.js";
 
 /**
  * The ports this module cannot build itself: pricing's quoter, inventory's ledger, iam's
@@ -126,6 +134,7 @@ export function buildSalesDependencies(ports: SalesTenantPorts): SalesDependenci
     performers: ports.performers,
     kinds: ports.kinds,
     deliveryZones: new MongoDeliveryZoneRepository(),
+    deliveryAttempts: new MongoDeliveryAttemptRepository(),
   };
 }
 
@@ -176,6 +185,17 @@ export function buildDeliveryZoneController(ports: SalesTenantPorts): DeliveryZo
   return new DeliveryZoneHttpController(
     new ManageDeliveryZonesUseCase(buildSalesDependencies(ports)),
   );
+}
+
+export function buildSalesFulfillmentController(
+  ports: SalesTenantPorts,
+): SalesFulfillmentController {
+  const dependencies = buildSalesDependencies(ports);
+  return new SalesFulfillmentHttpController({
+    fail: new FailDeliveryUseCase(dependencies),
+    reship: new ReshipOrderUseCase(dependencies),
+    list: new ListDeliveryAttemptsUseCase(dependencies),
+  });
 }
 
 export function buildSalesController(dependencies: SalesDependencies): OrderController {

@@ -21,6 +21,7 @@ import type {
   SalesUnitOfWork,
 } from "./ports/sales-ports.js";
 import type { DeliveryZoneRepository } from "./ports/delivery-zone.repository.js";
+import type { DeliveryAttemptRepository } from "./ports/delivery-attempt.repository.js";
 
 /** Everything an order use case needs; routes build the adapters, tests build fakes. */
 export interface SalesDependencies {
@@ -45,6 +46,7 @@ export interface SalesDependencies {
   readonly performers: SalesPerformerReader;
   readonly kinds: SalesKindReader;
   readonly deliveryZones: DeliveryZoneRepository;
+  readonly deliveryAttempts: DeliveryAttemptRepository;
 }
 
 /**

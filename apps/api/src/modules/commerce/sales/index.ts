@@ -18,6 +18,7 @@ import {
   buildSalesController,
   buildSalesDependencies,
   buildSalesExchangeController,
+  buildSalesFulfillmentController,
   buildSalesJobDependencies,
   buildSalesReturnController,
   buildSalesReturnDependencies,
@@ -38,6 +39,20 @@ import { buildSalesTenantRouter } from "./presentation/order-tenant.router.js";
 import { buildSalesExchangeTenantRouter } from "./presentation/sales-exchange-tenant.router.js";
 import { buildSalesReturnTenantRouter } from "./presentation/sales-return-tenant.router.js";
 import { buildDeliveryZoneTenantRouter } from "./presentation/delivery-zone-tenant.router.js";
+import { buildSalesFulfillmentTenantRouter } from "./presentation/sales-fulfillment-tenant.router.js";
+import {
+  ShipOrderUseCase,
+  ReshipOrderUseCase,
+  type ShipOrderInput,
+} from "./application/use-cases/ship-order.use-cases.js";
+import {
+  FailDeliveryUseCase,
+  type FailDeliveryInput,
+} from "./application/use-cases/fail-delivery.use-case.js";
+import {
+  ListDeliveryAttemptsUseCase,
+  type ListDeliveryAttemptsInput,
+} from "./application/use-cases/list-delivery-attempts.use-case.js";
 import {
   buildInstantSaleService,
   type InstantSaleInput,
@@ -47,7 +62,17 @@ import {
 
 export { salesManifest } from "./module.manifest.js";
 export { registerSalesModels } from "./infrastructure/register-sales-models.js";
-export { buildDeliveryZoneController, buildSalesController, buildSalesDependencies };
+export {
+  buildDeliveryZoneController,
+  buildSalesController,
+  buildSalesDependencies,
+  buildSalesFulfillmentController,
+  ShipOrderUseCase,
+  ReshipOrderUseCase,
+  FailDeliveryUseCase,
+  ListDeliveryAttemptsUseCase,
+};
+export type { ShipOrderInput, FailDeliveryInput, ListDeliveryAttemptsInput };
 export { buildStorefrontOrderCommands } from "./application/storefront-order-commands.js";
 export { resolveDeliveryFee } from "./application/delivery-fee.js";
 export type { PublicOrderCommands } from "@banijjik/contracts/website";
@@ -76,6 +101,13 @@ export function buildSalesRouter(dependencies: SalesTenantRouterDependencies): R
   router.use(
     buildDeliveryZoneTenantRouter({
       controller: buildDeliveryZoneController(dependencies),
+      permission: dependencies.permission,
+      idempotency: dependencies.idempotency,
+    }),
+  );
+  router.use(
+    buildSalesFulfillmentTenantRouter({
+      controller: buildSalesFulfillmentController(dependencies),
       permission: dependencies.permission,
       idempotency: dependencies.idempotency,
     }),

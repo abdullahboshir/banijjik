@@ -115,6 +115,8 @@ export const AUDIT_ACTION = {
   ORDER_CONFIRMED: "sales.order.confirmed",
   ORDER_UPDATED: "sales.order.updated",
   ORDER_PACKED: "sales.order.packed",
+  ORDER_SHIPPED: "sales.order.shipped",
+  ORDER_DELIVERY_FAILED: "sales.order.deliveryFailed",
   ORDER_COMPLETED: "sales.order.completed",
   ORDER_CANCELLED: "sales.order.cancelled",
   SALES_RETURN_CREATED: "sales.return.created",

@@ -2,39 +2,28 @@ import {
   FULFILLMENT_METHOD,
   ORDER_CANCELLABLE_STATUSES,
   ORDER_EDITABLE_STATUSES,
-  ORDER_RETURN_STATUS,
   ORDER_STATUS,
+  type FulfillmentMethod,
   type Money,
   type OrderApproval,
   type OrderStatus,
 } from "@banijjik/contracts/sales";
+import type { FirstShipmentPostingFacts } from "@banijjik/contracts/sales/delivery";
 import {
-  deliveryAddressRequired,
-  deliveryMethodNotCompletable,
-  invalidTransition,
-} from "./errors.js";
-import {
+  assertDeliveryDispatch,
+  assertDeliveryFulfillable,
+  assertNotDelivery,
+  assertStatus,
+  cleared,
   draftOrderProps,
+  lineKey,
+  returnStatusOfLines,
   type NewOrderInput,
   type OrderContentChanges,
   type OrderLineProps,
   type OrderProps,
   type OrderTransitionActor,
 } from "./order-types.js";
-
-/** `null` clears an optional value, `undefined` keeps it. */
-function cleared<Value>(change: Value | null | undefined, current: Value | null): Value | null {
-  if (change === undefined) return current;
-  return change;
-}
-
-function assertStatus(status: OrderStatus, allowed: readonly OrderStatus[]): void {
-  if (!allowed.includes(status)) throw invalidTransition(status);
-}
-
-function isDeliveryMethod(method: OrderProps["fulfillment"]["method"]): boolean {
-  return method === FULFILLMENT_METHOD.COURIER || method === FULFILLMENT_METHOD.OWN_RIDER;
-}
 
 /**
  * One sale, from a draft without a number to a completed order with a frozen quote (09 §5.5).
@@ -113,7 +102,6 @@ export class Order implements OrderProps {
     this.updatedByUserId = props.updatedByUserId;
   }
 
-  /** A DRAFT: no number, no invoice and no stock effect yet. */
   static createDraft(input: NewOrderInput): Order {
     return new Order(draftOrderProps(input));
   }
@@ -123,82 +111,35 @@ export class Order implements OrderProps {
   }
 
   toProps(): OrderProps {
-    return {
-      orderId: this.orderId,
-      organizationId: this.organizationId,
-      orderNumber: this.orderNumber,
-      invoiceNumber: this.invoiceNumber,
-      locationId: this.locationId,
-      contactId: this.contactId,
-      status: this.status,
-      lines: this.lines,
-      totals: this.totals,
-      fulfillment: this.fulfillment,
-      deliveryAddress: this.deliveryAddress,
-      deliveryZoneId: this.deliveryZoneId,
-      shippedAt: this.shippedAt,
-      firstShipment: this.firstShipment,
-      currentDeliveryAttemptId: this.currentDeliveryAttemptId,
-      deliveryAttemptCount: this.deliveryAttemptCount,
-      businessDate: this.businessDate,
-      source: this.source,
-      approval: this.approval,
-      note: this.note,
-      orderDiscount: this.orderDiscount,
-      cancelReason: this.cancelReason,
-      customFields: this.customFields,
-      posSessionId: this.posSessionId,
-      checkoutId: this.checkoutId,
-      recipient: this.recipient,
-      hasStockLines: this.hasStockLines,
-      returnStatus: this.returnStatus,
-      completedAt: this.completedAt,
-      version: this.version,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      createdByUserId: this.createdByUserId,
-      updatedByUserId: this.updatedByUserId,
-    };
+    return { ...this };
   }
 
-  /** DRAFT, PLACED and CONFIRMED may be edited; a completed or cancelled order never changes. */
   assertEditable(): void {
     assertStatus(this.status, ORDER_EDITABLE_STATUSES);
   }
 
-  /** PATCH: the caller has already re-quoted; this only replaces the stored content. */
-  applyEdit(
-    changes: OrderContentChanges & { readonly approval?: OrderApproval | null },
-    actor: OrderTransitionActor,
-  ): Order {
+  applyEdit(changes: OrderContentChanges, actor: OrderTransitionActor): Order {
     this.assertEditable();
-    const fulfillment = {
-      method: changes.fulfillment?.method ?? this.fulfillment.method,
-    };
-    const pickupOrInstant =
-      fulfillment.method === FULFILLMENT_METHOD.PICKUP ||
-      fulfillment.method === FULFILLMENT_METHOD.INSTANT;
+    const isPickup =
+      changes.fulfillment?.method === FULFILLMENT_METHOD.PICKUP ||
+      changes.fulfillment?.method === FULFILLMENT_METHOD.INSTANT;
     return new Order({
       ...this,
       contactId: cleared(changes.contactId, this.contactId),
+      note: cleared(changes.note, this.note),
+      orderDiscount: cleared(changes.orderDiscount, this.orderDiscount),
       lines: changes.lines ?? this.lines,
       totals: changes.totals ?? this.totals,
-      fulfillment,
-      deliveryAddress: pickupOrInstant
-        ? null
-        : cleared(changes.deliveryAddress, this.deliveryAddress),
-      deliveryZoneId: pickupOrInstant ? null : cleared(changes.deliveryZoneId, this.deliveryZoneId),
-      orderDiscount: cleared(changes.orderDiscount, this.orderDiscount),
-      note: cleared(changes.note, this.note),
-      customFields: changes.customFields ?? this.customFields,
-      approval: cleared(changes.approval, this.approval),
+      fulfillment: changes.fulfillment ?? this.fulfillment,
+      deliveryAddress: isPickup ? null : cleared(changes.deliveryAddress, this.deliveryAddress),
+      deliveryZoneId: isPickup ? null : cleared(changes.deliveryZoneId, this.deliveryZoneId),
+      approval: this.approval,
       hasStockLines: changes.hasStockLines ?? this.hasStockLines,
       updatedAt: actor.now,
       updatedByUserId: actor.actorUserId,
     });
   }
 
-  /** DRAFT becomes PLACED with its number and the freshly quoted content. */
   place(input: {
     readonly orderNumber: string;
     readonly contactId: OrderProps["contactId"];
@@ -210,17 +151,14 @@ export class Order implements OrderProps {
     readonly actor: OrderTransitionActor;
   }): Order {
     assertStatus(this.status, [ORDER_STATUS.DRAFT]);
-    if (isDeliveryMethod(this.fulfillment.method) && this.deliveryAddress === null) {
-      throw deliveryAddressRequired();
-    }
+    assertDeliveryFulfillable(this);
     return new Order({
       ...this,
       orderNumber: input.orderNumber,
       contactId: input.contactId,
       lines: input.lines,
       totals: input.totals,
-      deliveryZoneId:
-        input.deliveryZoneId === undefined ? this.deliveryZoneId : input.deliveryZoneId,
+      deliveryZoneId: input.deliveryZoneId === undefined ? this.deliveryZoneId : input.deliveryZoneId,
       approval: input.approval,
       hasStockLines: input.hasStockLines,
       status: ORDER_STATUS.PLACED,
@@ -239,26 +177,58 @@ export class Order implements OrderProps {
     return this.moved(ORDER_STATUS.PACKED, actor);
   }
 
-  /**
-   * CONFIRMED or PACKED becomes COMPLETED: the invoice number arrives and every line receives the
-   * average cost read by the inventory module at this moment.
-   */
+  ship(input: {
+    readonly attemptId: string;
+    readonly dispatchMethod: FulfillmentMethod;
+    readonly firstShipment: FirstShipmentPostingFacts;
+    readonly actor: OrderTransitionActor;
+  }): Order {
+    assertStatus(this.status, [ORDER_STATUS.CONFIRMED, ORDER_STATUS.PACKED]);
+    assertDeliveryDispatch(this, input.dispatchMethod);
+    return new Order({
+      ...this,
+      status: ORDER_STATUS.SHIPPED,
+      shippedAt: this.shippedAt ?? input.actor.now,
+      firstShipment: this.firstShipment ?? input.firstShipment,
+      currentDeliveryAttemptId: input.attemptId,
+      deliveryAttemptCount: this.deliveryAttemptCount + 1,
+      updatedAt: input.actor.now,
+      updatedByUserId: input.actor.actorUserId,
+    });
+  }
+
+  failDelivery(actor: OrderTransitionActor): Order {
+    assertStatus(this.status, [ORDER_STATUS.SHIPPED]);
+    return this.moved(ORDER_STATUS.DELIVERY_FAILED, actor);
+  }
+
+  reship(input: {
+    readonly attemptId: string;
+    readonly dispatchMethod: FulfillmentMethod;
+    readonly actor: OrderTransitionActor;
+  }): Order {
+    assertStatus(this.status, [ORDER_STATUS.DELIVERY_FAILED]);
+    assertDeliveryDispatch(this, input.dispatchMethod);
+    return new Order({
+      ...this,
+      status: ORDER_STATUS.SHIPPED,
+      currentDeliveryAttemptId: input.attemptId,
+      deliveryAttemptCount: this.deliveryAttemptCount + 1,
+      updatedAt: input.actor.now,
+      updatedByUserId: input.actor.actorUserId,
+    });
+  }
+
   complete(input: {
     readonly invoiceNumber: string;
     readonly unitCosts: ReadonlyMap<string, Money | null>;
     readonly actor: OrderTransitionActor;
   }): Order {
     assertStatus(this.status, [ORDER_STATUS.CONFIRMED, ORDER_STATUS.PACKED]);
-    if (isDeliveryMethod(this.fulfillment.method)) {
-      throw deliveryMethodNotCompletable(this.fulfillment.method);
-    }
+    assertNotDelivery(this.fulfillment.method);
     return this.completedWith(input);
   }
 
-  /**
-   * The instant path: a PLACED order completes straight away, without confirm or pack
-   * (ADR-131). Only the instant sale reaches COMPLETED from PLACED.
-   */
   completeInstant(input: {
     readonly invoiceNumber: string;
     readonly unitCosts: ReadonlyMap<string, Money | null>;
@@ -287,7 +257,6 @@ export class Order implements OrderProps {
     });
   }
 
-  /** DRAFT, PLACED, CONFIRMED and PACKED may be cancelled; the caller releases the reservation. */
   cancel(input: { readonly reason: string; readonly actor: OrderTransitionActor }): Order {
     assertStatus(this.status, ORDER_CANCELLABLE_STATUSES);
     return new Order({
@@ -299,11 +268,6 @@ export class Order implements OrderProps {
     });
   }
 
-  /**
-   * A return on a COMPLETED order: the caller has checked the quantities and computed the lines'
-   * new returned quantities. Only the lines and the return status change; money lives in the
-   * return and the payment summary (plan 3.5b decision 7).
-   */
   recordReturn(input: {
     readonly lines: readonly OrderLineProps[];
     readonly actor: OrderTransitionActor;
@@ -327,15 +291,4 @@ export class Order implements OrderProps {
     });
   }
 }
-
-/** NONE before any return, FULL once every unit of every line came back, PARTIAL otherwise. */
-export function returnStatusOfLines(lines: readonly OrderLineProps[]): OrderProps["returnStatus"] {
-  const returned = lines.reduce((total, line) => total + line.returnedQuantity, 0);
-  if (returned === 0) return ORDER_RETURN_STATUS.NONE;
-  const everyLineFull = lines.every((line) => line.returnedQuantity >= line.quantity);
-  return everyLineFull ? ORDER_RETURN_STATUS.FULL : ORDER_RETURN_STATUS.PARTIAL;
-}
-
-export function lineKey(line: { readonly offeringId: string; readonly variantId: string }): string {
-  return `${line.offeringId}:${line.variantId}`;
-}
+export { lineKey, returnStatusOfLines };

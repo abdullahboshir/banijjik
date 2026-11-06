@@ -111,3 +111,14 @@ export function deliveryZoneCurrencyMismatch(areaCode: string): DomainRuleError 
     { areaCode },
   );
 }
+
+export function dispatchMethodMismatch(
+  expected: string,
+  actual: string,
+): DomainRuleError {
+  return salesRuleError(
+    SALES_DELIVERY_RULE_KEY.DISPATCH_METHOD_MISMATCH,
+    ERROR_CODE.BUSINESS_RULE,
+    { expected, actual },
+  );
+}

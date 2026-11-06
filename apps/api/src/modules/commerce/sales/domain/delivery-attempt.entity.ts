@@ -23,7 +23,7 @@ export interface NewDeliveryAttemptInput {
 
 export interface FailDeliveryAttemptInput {
   readonly reasonKey: DeliveryFailReasonKey;
-  readonly note?: string;
+  readonly note?: string | undefined;
   readonly actorUserId: UserId;
   readonly now: Date;
 }

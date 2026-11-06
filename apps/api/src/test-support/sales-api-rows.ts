@@ -50,6 +50,7 @@ export interface OrderRow {
   readonly note: string | null;
   readonly orderDiscount: { type: string; value: number } | null;
   readonly approval: { readonly approverMemberId: string; readonly action: string } | null;
+  readonly delivery?: import("@banijjik/contracts/sales/delivery").OrderDeliveryResponse | null;
   readonly version: number;
 }
 
