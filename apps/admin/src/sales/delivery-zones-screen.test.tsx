@@ -17,12 +17,17 @@ vi.mock("./order-api", () => ({
 
 const SAMPLE_ZONE: DeliveryZone = {
   deliveryZoneId: "0190f0a0-0000-7000-8000-000000000001",
+  organizationId: "0190f0a0-0000-7000-8000-000000000002",
   zoneKey: "dhaka-inside",
   name: { en: "Inside Dhaka", bn: "ঢাকার ভেতরে" },
   areaCodes: ["dhk-gulshan", "dhk-banani"],
   fee: { currency: CURRENCY_CODE.BDT, amount: 6000 },
   status: "ACTIVE",
   version: 1,
+  createdAt: new Date("2026-11-06T00:00:00.000Z"),
+  updatedAt: new Date("2026-11-06T00:00:00.000Z"),
+  createdByUserId: "0190f0a0-0000-7000-8000-000000000003",
+  updatedByUserId: "0190f0a0-0000-7000-8000-000000000003",
 };
 
 function renderScreen(zones: readonly DeliveryZone[] = [SAMPLE_ZONE], canManage = true) {
