@@ -72,6 +72,7 @@ import {
   type SitePublicationPayload,
 } from "../website/index.js";
 import { POS_EVENT_TYPE, type PosRegisterClosedPayload } from "../pos/pos-event-type.js";
+import { COURIER_EVENT_TYPE } from "../courier/courier-contracts.js";
 
 export interface JournalPostedPayload {
   readonly journalEntryId: string;
@@ -236,6 +237,19 @@ export interface EventPayloadMap {
   readonly [WEBSITE_EVENT_TYPE.CHECKOUT_CREATED]: CheckoutCreatedPayload;
   readonly [WEBSITE_EVENT_TYPE.CHECKOUT_CLAIMED]: CheckoutClaimedPayload;
   readonly [POS_EVENT_TYPE.REGISTER_CLOSED]: PosRegisterClosedPayload;
+  readonly [COURIER_EVENT_TYPE.CONSIGNMENT_CREATED]: ConsignmentEventPayload;
+  readonly [COURIER_EVENT_TYPE.CONSIGNMENT_CANCELLED]: ConsignmentEventPayload;
+  readonly [COURIER_EVENT_TYPE.SETTLEMENT_RECORDED]: CourierSettlementEventPayload;
+  readonly [COURIER_EVENT_TYPE.SETTLEMENT_REVERSED]: CourierSettlementEventPayload;
+}
+
+export interface ConsignmentEventPayload {
+  readonly consignmentId: string;
+}
+
+export interface CourierSettlementEventPayload {
+  readonly courierSettlementId: string;
+  readonly reversesCourierSettlementId?: string | undefined;
 }
 
 export interface GuestSessionCreatedPayload {

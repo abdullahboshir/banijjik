@@ -16,6 +16,7 @@ import { PRICING_EVENT_TYPE } from "../pricing/pricing-event-type.js";
 import { SALES_EVENT_TYPE } from "../sales/sales-event-type.js";
 import { SETTINGS_EVENT_TYPE } from "../settings/settings-event-type.js";
 import { WEBSITE_EVENT_TYPE } from "../website/website-event-type.js";
+import { COURIER_EVENT_TYPE } from "../courier/courier-contracts.js";
 
 /** Every domain event type. A module adds its own constant object here when it starts to emit (card 1.5b). */
 export const EVENT_TYPE = Object.freeze({
@@ -38,6 +39,7 @@ export const EVENT_TYPE = Object.freeze({
   ...SALES_EVENT_TYPE,
   ...WEBSITE_EVENT_TYPE,
   ...POS_EVENT_TYPE,
+  ...COURIER_EVENT_TYPE,
 } as const);
 
 export type EventType = (typeof EVENT_TYPE)[keyof typeof EVENT_TYPE];

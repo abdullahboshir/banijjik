@@ -17,6 +17,7 @@ export const APPROVAL_ACTION = defineEnum([
   "CREDIT_ADJUSTMENT",
   "CREDIT_PURCHASE_VERIFY",
   "MANUAL_JOURNAL",
+  "COURIER_SETTLEMENT_REVERSAL",
 ]);
 export type ApprovalAction = (typeof APPROVAL_ACTION)[keyof typeof APPROVAL_ACTION];
 

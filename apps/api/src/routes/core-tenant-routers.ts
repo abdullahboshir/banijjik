@@ -1,6 +1,7 @@
 import { buildEnrollmentTenantRouter } from "./enrollment-tenant-router.js";
 import { buildWebsiteAdminRouter } from "../modules/commerce/website/index.js";
 import { createMongoHostClaims } from "../modules/platform/operations/index.js";
+import { buildCourierTenantModuleRouter } from "./courier-tenant-router.js";
 import { buildSmsTenantModuleRouter } from "./sms-adapters.js";
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { AppConfig } from "../config/index.js";
@@ -88,6 +89,7 @@ export interface CoreTenantRouters {
   readonly posRouter: Router;
   readonly reportRouter: Router;
   readonly smsRouter: Router;
+  readonly courierRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -218,7 +220,7 @@ function websiteAdminRouterOf(input: CoreTenantRouterInput): Router {
 /** Routers of the `integration/*` modules (card M.9 on). */
 function buildIntegrationTenantRouters(
   input: CoreTenantRouterInput,
-): Pick<CoreTenantRouters, "smsRouter"> {
+): Pick<CoreTenantRouters, "smsRouter" | "courierRouter"> {
   return {
     smsRouter: buildSmsTenantModuleRouter({
       config: input.config,
@@ -228,6 +230,15 @@ function buildIntegrationTenantRouters(
       permission: input.permission,
       rateLimiter: input.rateLimiter,
       audit: input.audit,
+    }),
+    courierRouter: buildCourierTenantModuleRouter({
+      clock: input.clock,
+      audit: input.audit,
+      permission: input.permission,
+      permissions: input.permissions,
+      idempotency: input.idempotency,
+      orgConfig: input.orgConfig,
+      manifests: input.manifests,
     }),
   };
 }

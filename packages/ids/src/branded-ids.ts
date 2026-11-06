@@ -55,6 +55,8 @@ export type SiteDomainId = Id<"SiteDomain">;
 export type DomainOperationId = Id<"DomainOperation">;
 export type WebsiteTemplateId = Id<"WebsiteTemplate">;
 export type WebsiteTemplateRevisionId = Id<"WebsiteTemplateRevision">;
+export type ConsignmentId = Id<"Consignment">;
+export type CourierSettlementId = Id<"CourierSettlement">;
 
 export class InvalidIdError extends Error {
   constructor() {

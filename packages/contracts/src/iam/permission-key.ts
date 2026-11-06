@@ -144,6 +144,12 @@ export const PERMISSION_KEY = {
   SMS_LOG_READ: "sms.log.read",
   SMS_GATEWAY_READ: "sms.gateway.read",
   SMS_CREDENTIAL_UPDATE: "sms.credential.update",
+  COURIER_CONSIGNMENT_READ: "courier.consignment.read",
+  COURIER_CONSIGNMENT_CREATE: "courier.consignment.create",
+  COURIER_CONSIGNMENT_CANCEL: "courier.consignment.cancel",
+  COURIER_SETTLEMENT_READ: "courier.settlement.read",
+  COURIER_SETTLEMENT_RECORD: "courier.settlement.record",
+  COURIER_SETTLEMENT_REVERSE: "courier.settlement.reverse",
 } as const;
 
 export type PermissionKey = (typeof PERMISSION_KEY)[keyof typeof PERMISSION_KEY];
