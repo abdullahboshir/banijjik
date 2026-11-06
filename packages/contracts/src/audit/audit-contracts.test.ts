@@ -3,7 +3,7 @@ import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "./audit-action.js";
 
 describe("audit vocabulary", () => {
   it("includes the four custom-domain lifecycle actions", () => {
-    expect(Object.values(AUDIT_ACTION)).toHaveLength(152);
+    expect(Object.values(AUDIT_ACTION)).toHaveLength(156);
     expect(Object.values(AUDIT_ACTION)).toEqual(
       expect.arrayContaining([
         "website.domain.created",
@@ -85,6 +85,8 @@ describe("audit vocabulary", () => {
       "smsGatewaySetting",
       "consignment",
       "courierSettlement",
+      "deliveryAssignment",
+      "riderCashHandover",
     ]);
   });
 });

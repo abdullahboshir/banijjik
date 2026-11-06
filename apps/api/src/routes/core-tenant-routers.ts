@@ -2,6 +2,7 @@ import { buildEnrollmentTenantRouter } from "./enrollment-tenant-router.js";
 import { buildWebsiteAdminRouter } from "../modules/commerce/website/index.js";
 import { createMongoHostClaims } from "../modules/platform/operations/index.js";
 import { buildCourierTenantModuleRouter } from "./courier-tenant-router.js";
+import { buildDeliveryTenantModuleRouter } from "./delivery-tenant-router.js";
 import { buildSmsTenantModuleRouter } from "./sms-adapters.js";
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { AppConfig } from "../config/index.js";
@@ -90,6 +91,7 @@ export interface CoreTenantRouters {
   readonly reportRouter: Router;
   readonly smsRouter: Router;
   readonly courierRouter: Router;
+  readonly deliveryRouter: Router;
 }
 
 function buildPlatformCoreRouters(
@@ -160,6 +162,7 @@ function buildCommerceTenantRouters(
   | "salesRouter"
   | "posRouter"
   | "reportRouter"
+  | "deliveryRouter"
 > {
   const shared = {
     clock: input.clock,
@@ -193,6 +196,7 @@ function buildCommerceTenantRouters(
     reportRouter: buildReportTenantRouter(shared),
     enrollmentRouter: buildEnrollmentTenantRouter(shared),
     websiteRouter: websiteAdminRouterOf(input),
+    deliveryRouter: buildDeliveryTenantModuleRouter(shared),
   };
 }
 

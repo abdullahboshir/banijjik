@@ -73,6 +73,7 @@ import {
 } from "../website/index.js";
 import { POS_EVENT_TYPE, type PosRegisterClosedPayload } from "../pos/pos-event-type.js";
 import { COURIER_EVENT_TYPE } from "../courier/courier-contracts.js";
+import { DELIVERY_EVENT_TYPE } from "../delivery/delivery-contracts.js";
 
 export interface JournalPostedPayload {
   readonly journalEntryId: string;
@@ -241,6 +242,19 @@ export interface EventPayloadMap {
   readonly [COURIER_EVENT_TYPE.CONSIGNMENT_CANCELLED]: ConsignmentEventPayload;
   readonly [COURIER_EVENT_TYPE.SETTLEMENT_RECORDED]: CourierSettlementEventPayload;
   readonly [COURIER_EVENT_TYPE.SETTLEMENT_REVERSED]: CourierSettlementEventPayload;
+  readonly [DELIVERY_EVENT_TYPE.ASSIGNMENT_CREATED]: DeliveryAssignmentEventPayload;
+  readonly [DELIVERY_EVENT_TYPE.ASSIGNMENT_UPDATED]: DeliveryAssignmentEventPayload;
+  readonly [DELIVERY_EVENT_TYPE.HANDOVER_RECORDED]: RiderCashHandoverEventPayload;
+  readonly [DELIVERY_EVENT_TYPE.HANDOVER_REVERSED]: RiderCashHandoverEventPayload;
+}
+
+export interface DeliveryAssignmentEventPayload {
+  readonly deliveryAssignmentId: string;
+}
+
+export interface RiderCashHandoverEventPayload {
+  readonly riderCashHandoverId: string;
+  readonly reversesRiderCashHandoverId?: string | undefined;
 }
 
 export interface ConsignmentEventPayload {

@@ -299,3 +299,4 @@ export type { TermChangedPayload, TermsResponse } from "./settings/settings-cont
 export type { TermTextSource, UpdateSettingsRequest } from "./settings/settings-contracts.js";
 export type { Money } from "./pricing/pricing-contracts.js";
 export * from "./courier/index.js";
+export * from "./delivery/index.js";

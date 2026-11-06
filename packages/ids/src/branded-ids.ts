@@ -57,6 +57,8 @@ export type WebsiteTemplateId = Id<"WebsiteTemplate">;
 export type WebsiteTemplateRevisionId = Id<"WebsiteTemplateRevision">;
 export type ConsignmentId = Id<"Consignment">;
 export type CourierSettlementId = Id<"CourierSettlement">;
+export type DeliveryAssignmentId = Id<"DeliveryAssignment">;
+export type RiderCashHandoverId = Id<"RiderCashHandover">;
 
 export class InvalidIdError extends Error {
   constructor() {

@@ -67,6 +67,10 @@
       "types": "./dist/courier/index.d.ts",
       "default": "./dist/courier/index.js"
     },
+    "./delivery": {
+      "types": "./dist/delivery/index.d.ts",
+      "default": "./dist/delivery/index.js"
+    },
     "./sales": {
       "types": "./dist/sales/index.d.ts",
       "default": "./dist/sales/index.js"

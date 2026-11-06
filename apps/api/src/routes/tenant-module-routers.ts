@@ -50,6 +50,7 @@ function laterModuleRouters(
     coreRouters.reportRouter,
     coreRouters.smsRouter,
     coreRouters.courierRouter,
+    coreRouters.deliveryRouter,
     ...probeRouters,
   ];
 }
