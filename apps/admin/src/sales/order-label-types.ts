@@ -68,6 +68,14 @@ export interface OrderDetailLabels {
   readonly historyEmpty: string;
   readonly actionsTitle: string;
   readonly deleteDescription: string;
+  readonly deliveryAddress: string;
+  readonly recipientName: string;
+  readonly recipientPhone: string;
+  readonly addressLine: string;
+  readonly districtCode: string;
+  readonly areaCode: string;
+  readonly postalCode: string;
+  readonly deliveryZone: string;
 }
 
 export interface OrderActionLabels {
@@ -120,6 +128,13 @@ export interface OrderNewLabels {
   readonly noLinesToPlace: string;
   readonly invalidLine: string;
   readonly openDraft: string;
+  readonly deliveryAddress: string;
+  readonly recipientName: string;
+  readonly recipientPhone: string;
+  readonly addressLine: string;
+  readonly districtCode: string;
+  readonly areaCode: string;
+  readonly postalCode: string;
 }
 
 export interface OrderLineLabels {

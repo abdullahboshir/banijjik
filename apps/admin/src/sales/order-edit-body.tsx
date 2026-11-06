@@ -4,6 +4,7 @@ import { newId } from "@banijjik/ids";
 import { Button, ContactLinkInput, FormField, Textarea } from "@banijjik/ui";
 import type { ReactElement } from "react";
 import { LazyOrderQuotePanel } from "./lazy-order-quote-panel";
+import { NewOrderDeliveryFields } from "./new-order-delivery-fields";
 import { OrderDiscountFields } from "./order-discount-fields";
 import { searchContactChoices } from "./order-contact";
 import type { OrderEditSheetProps } from "./order-edit-sheet";
@@ -37,6 +38,33 @@ function EditContactField(props: BodyProps): ReactElement {
         disabled={form.isSaving}
       />
     </FormField>
+  );
+}
+
+function EditDeliveryAddressFields(props: BodyProps): ReactElement | null {
+  const { form, labels, order } = props;
+  const isDelivery =
+    order.fulfillment.method === "COURIER" || order.fulfillment.method === "OWN_RIDER";
+  if (!isDelivery) return null;
+
+  const onAddressField = (field: string, value: string) => {
+    const cur = form.values.deliveryAddress ?? {
+      recipientName: "",
+      phone: "",
+      addressLine: "",
+      districtCode: "dhaka",
+      areaCode: "",
+      postalCode: "",
+    };
+    form.setValues({ deliveryAddress: { ...cur, [field]: value } });
+  };
+  return (
+    <NewOrderDeliveryFields
+      address={form.values.deliveryAddress}
+      labels={labels}
+      isSaving={form.isSaving}
+      onChange={onAddressField}
+    />
   );
 }
 
@@ -110,6 +138,7 @@ function EditForm(props: BodyProps): ReactElement {
   return (
     <>
       <EditContactField {...props} />
+      <EditDeliveryAddressFields {...props} />
       <EditLines {...props} />
       <OrderDiscountFields
         idPrefix="edit-order"

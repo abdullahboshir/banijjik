@@ -49,6 +49,23 @@ describe("callStorefront error code", () => {
     expect(failed.errorCode).toBe("CHECKOUT_PRICE_CHANGED");
     expect(succeeded.errorCode).toBeUndefined();
   });
+
+  it("reads error.details.ruleKey into ruleKey on a business rule error", async () => {
+    stubFetch(
+      jsonResponse(422, {
+        error: {
+          code: "BUSINESS_RULE",
+          messageKey: "errors.delivery_zone_unavailable",
+          details: { ruleKey: "DELIVERY_ZONE_UNAVAILABLE" },
+        },
+      }),
+    );
+
+    const failed = await callStorefront("POST", "/quote");
+
+    expect(failed.errorCode).toBe("BUSINESS_RULE");
+    expect(failed.ruleKey).toBe("DELIVERY_ZONE_UNAVAILABLE");
+  });
 });
 
 describe("requestQuote guest session bootstrap", () => {

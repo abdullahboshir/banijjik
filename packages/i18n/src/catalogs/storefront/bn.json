@@ -181,6 +181,7 @@
   "storefront.cart.proceedToCheckout": "চেকআউট করুন",
   "storefront.cart.quoteLoading": "মূল্য আপডেট করা হচ্ছে...",
   "storefront.cart.quoteError": "মূল্য নির্ধারণ করা যায়নি। আইটেম যাচাই করে পুনরায় চেষ্টা করুন।",
+  "storefront.cart.deliveryZoneUnavailable": "এই এলাকায় ডেলিভারি উপলব্ধ নেই। অনুগ্রহ করে পিকআপ নির্বাচন করুন অথবা অন্য এলাকা বেছে নিন।",
   "storefront.cart.guestCheckoutDisabled": "এই দোকানে অতিথি হিসেবে অর্ডার করা বন্ধ আছে। অর্ডার করতে সাইন ইন করুন।",
   "storefront.checkout.title": "চেকআউট",
   "storefront.checkout.contactTitle": "যোগাযোগের তথ্য",

@@ -1,11 +1,14 @@
 import type { CurrencyCode } from "@banijjik/contracts";
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import {
+  FULFILLMENT_METHOD,
   INSTANT_ORDER_APPROVAL_SUBJECT,
   orderApprovalSubject,
   type FulfillmentMethod,
 } from "@banijjik/contracts/sales";
+import type { DeliveryAddress } from "@banijjik/contracts/sales/delivery";
 import type { ContactLinkValue } from "@banijjik/ui";
+import { normalizePhoneToE164 } from "@banijjik/validation";
 import type { OrderCreateBody, OrderLineInputBody } from "@banijjik/validation/sales";
 import { createOrder, instantOrder, placeOrder, quoteOrder } from "./order-api";
 import type { OrderApprovalFlow } from "./order-approval";
@@ -18,9 +21,19 @@ import {
   type OrderLineDraft,
 } from "./order-lines";
 
+export interface AdminDeliveryAddress {
+  readonly recipientName: string;
+  readonly phone: string;
+  readonly addressLine: string;
+  readonly districtCode: string;
+  readonly areaCode: string;
+  readonly postalCode?: string | null;
+}
+
 export interface NewOrderValues {
   readonly locationId: string;
   readonly fulfillment: FulfillmentMethod;
+  readonly deliveryAddress?: AdminDeliveryAddress | null;
   readonly contact: ContactLinkValue | null;
   readonly lines: readonly OrderLineDraft[];
   readonly discountType: DiscountTypeChoice;
@@ -48,8 +61,29 @@ export interface SubmitContext {
   readonly openOrder: (orderId: string) => void;
 }
 
+function resolveDeliveryAddressPayload(
+  fulfillment: FulfillmentMethod,
+  address: AdminDeliveryAddress | null | undefined,
+): DeliveryAddress | undefined {
+  const isDelivery =
+    fulfillment === FULFILLMENT_METHOD.COURIER ||
+    fulfillment === FULFILLMENT_METHOD.OWN_RIDER;
+  if (!isDelivery || !address || !address.recipientName.trim()) {
+    return undefined;
+  }
+  return {
+    recipientName: address.recipientName.trim(),
+    phoneE164: normalizePhoneToE164(address.phone) ?? address.phone.trim(),
+    addressLine: address.addressLine.trim(),
+    districtCode: address.districtCode.trim(),
+    areaCode: address.areaCode.trim(),
+    postalCode: address.postalCode?.trim() || null,
+  };
+}
+
 function createBodyOf(context: SubmitContext): OrderCreateBody {
   const { values, contactId, orderDiscount } = context;
+  const deliveryAddress = resolveDeliveryAddressPayload(values.fulfillment, values.deliveryAddress);
   return {
     locationId: values.locationId,
     lines: [...context.lineInputs],
@@ -57,6 +91,7 @@ function createBodyOf(context: SubmitContext): OrderCreateBody {
     note: values.note.trim(),
     ...(contactId === undefined ? {} : { contactId }),
     ...(orderDiscount === undefined ? {} : { orderDiscount }),
+    ...(deliveryAddress === undefined ? {} : { deliveryAddress }),
   };
 }
 

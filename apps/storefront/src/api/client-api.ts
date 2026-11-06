@@ -17,6 +17,8 @@ export interface ClientResult<Data> {
   readonly fields: readonly FieldProblem[];
   /** `error.code` of a failed answer; undefined on success or without an error envelope. */
   readonly errorCode?: string | undefined;
+  /** `error.details.ruleKey` when the server returns a business rule error; undefined otherwise. */
+  readonly ruleKey?: string | undefined;
 }
 
 export interface ClientCallOptions {
@@ -30,13 +32,21 @@ const NO_FIELDS: readonly FieldProblem[] = [];
 interface ErrorEnvelope {
   readonly error?: {
     readonly code?: unknown;
-    readonly details?: { readonly fields?: readonly FieldProblem[] };
+    readonly details?: {
+      readonly fields?: readonly FieldProblem[];
+      readonly ruleKey?: unknown;
+    };
   };
 }
 
 function errorCodeOf(json: unknown): string | undefined {
   const code = (json as ErrorEnvelope | undefined)?.error?.code;
   return typeof code === "string" ? code : undefined;
+}
+
+function ruleKeyOf(json: unknown): string | undefined {
+  const ruleKey = (json as ErrorEnvelope | undefined)?.error?.details?.ruleKey;
+  return typeof ruleKey === "string" ? ruleKey : undefined;
 }
 
 function fieldsOf(json: unknown): readonly FieldProblem[] {
@@ -79,5 +89,6 @@ export async function callStorefront<Data>(
     data,
     fields: fieldsOf(json),
     errorCode: errorCodeOf(json),
+    ruleKey: ruleKeyOf(json),
   };
 }

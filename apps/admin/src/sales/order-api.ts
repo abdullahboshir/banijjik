@@ -7,6 +7,11 @@ import type {
   SalesPerformerResponse,
 } from "@banijjik/contracts/sales";
 import type {
+  CreateDeliveryZoneRequest,
+  DeliveryZone,
+  UpdateDeliveryZoneRequest,
+} from "@banijjik/contracts/sales/delivery";
+import type {
   OrderCancelBody,
   OrderCreateBody,
   OrderInstantBody,
@@ -232,4 +237,56 @@ export async function searchProducts(
     ),
   );
   return mergeOfferingSearchByName(groups);
+}
+
+export interface DeliveryZoneListPage {
+  readonly items: readonly DeliveryZone[];
+  readonly page: number;
+  readonly limit: number;
+  readonly hasNext: boolean;
+}
+
+export async function listDeliveryZones(
+  organizationId: string,
+  page = 1,
+  limit = 50,
+): Promise<DeliveryZoneListPage> {
+  const result = await apiFetch<
+    DeliveryZone[],
+    { page?: number; limit?: number; hasNext?: boolean }
+  >(`/orgs/${organizationId}/sales/delivery-zones?page=${page}&limit=${limit}`);
+  return {
+    items: result.data,
+    page: result.meta?.page ?? page,
+    limit: result.meta?.limit ?? limit,
+    hasNext: result.meta?.hasNext ?? false,
+  };
+}
+
+export async function createDeliveryZone(
+  organizationId: string,
+  body: CreateDeliveryZoneRequest,
+): Promise<DeliveryZone> {
+  const result = await apiFetch<DeliveryZone>(`/orgs/${organizationId}/sales/delivery-zones`, {
+    method: "POST",
+    body,
+    idempotencyKey: newId(),
+  });
+  return result.data;
+}
+
+export async function updateDeliveryZone(
+  organizationId: string,
+  deliveryZoneId: string,
+  body: UpdateDeliveryZoneRequest,
+): Promise<DeliveryZone> {
+  const result = await apiFetch<DeliveryZone>(
+    `/orgs/${organizationId}/sales/delivery-zones/${deliveryZoneId}`,
+    {
+      method: "PATCH",
+      body,
+      idempotencyKey: newId(),
+    },
+  );
+  return result.data;
 }

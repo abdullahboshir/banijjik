@@ -1,10 +1,15 @@
+import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
 import type { CheckoutResponse } from "@banijjik/contracts/website";
 import { describe, expect, it } from "vitest";
 import type { ClientResult } from "../api/client-api";
 import { quoteErrorKeyOf, SUBMIT_OUTCOME, submitOutcomeOf } from "./checkout-outcome";
 
-function failure(status: number, errorCode?: string): ClientResult<CheckoutResponse> {
-  return { ok: false, status, data: undefined, fields: [], errorCode };
+function failure(
+  status: number,
+  errorCode?: string,
+  ruleKey?: string,
+): ClientResult<CheckoutResponse> {
+  return { ok: false, status, data: undefined, fields: [], errorCode, ruleKey };
 }
 
 describe("submitOutcomeOf", () => {
@@ -42,6 +47,22 @@ describe("submitOutcomeOf", () => {
 });
 
 describe("quoteErrorKeyOf", () => {
+  it("maps zone unavailable rule key to storefront.cart.deliveryZoneUnavailable", () => {
+    expect(
+      quoteErrorKeyOf(
+        failure(422, "BUSINESS_RULE", SALES_RULE_KEY.DELIVERY_ZONE_UNAVAILABLE),
+      ),
+    ).toBe("storefront.cart.deliveryZoneUnavailable");
+  });
+
+  it("maps other business rule errors to the generic quote error", () => {
+    expect(
+      quoteErrorKeyOf(
+        failure(422, "BUSINESS_RULE", SALES_RULE_KEY.FULFILLMENT_METHOD_UNSUPPORTED),
+      ),
+    ).toBe("storefront.cart.quoteError");
+  });
+
   it("maps guest-checkout-off and rate-limit codes to their own keys", () => {
     expect(quoteErrorKeyOf(failure(403, "WEBSITE_GUEST_CHECKOUT_DISABLED"))).toBe(
       "storefront.cart.guestCheckoutDisabled",

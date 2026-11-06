@@ -144,6 +144,7 @@ export function CartView(props: CartViewProps): ReactElement {
           <CartFulfillmentOptions
             fulfillmentMethod={q.method}
             deliveryAddress={q.address}
+            quoteError={q.quoteError}
             t={t}
             onMethodChange={q.handleMethodChange}
             onAddressChange={q.handleAddressChange}

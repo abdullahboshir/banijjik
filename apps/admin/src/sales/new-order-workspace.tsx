@@ -21,6 +21,7 @@ import { LazyOrderQuotePanel } from "./lazy-order-quote-panel";
 import { LazyOrderApprovalDialog } from "./lazy-order-approval-dialog";
 import { searchContactChoices } from "./order-contact";
 import { OrderDiscountFields } from "./order-discount-fields";
+import { NewOrderDeliveryFields } from "./new-order-delivery-fields";
 import type { OrderLabels } from "./order-labels";
 import { OrderLinesEditor } from "./order-lines-editor";
 import { emptyOrderLine } from "./order-lines";
@@ -29,6 +30,8 @@ import { useNewOrderForm, type NewOrderForm } from "./use-new-order-form";
 const FULFILLMENT_CHOICES: readonly FulfillmentMethod[] = [
   FULFILLMENT_METHOD.PICKUP,
   FULFILLMENT_METHOD.INSTANT,
+  FULFILLMENT_METHOD.COURIER,
+  FULFILLMENT_METHOD.OWN_RIDER,
 ];
 
 export interface NewOrderWorkspaceProps {
@@ -50,42 +53,59 @@ function ignoreQuote(): void {
   // The panel owns the display; the submit actions take a fresh quote for the approval amount.
 }
 
-function WhereAndWho(props: SectionProps): ReactElement {
+function LocationAndFulfillmentFields(props: SectionProps): ReactElement {
   const { form, labels } = props;
   return (
+    <div className="grid gap-3 md:grid-cols-2">
+      <FormField label={labels.newOrder.location} htmlFor="order-location" required>
+        <Select
+          id="order-location"
+          value={form.values.locationId}
+          disabled={form.isSaving}
+          onChange={(event) => form.setValues({ locationId: event.target.value })}
+        >
+          {props.locations.map((location) => (
+            <option key={location.locationId} value={location.locationId}>
+              {location.name}
+            </option>
+          ))}
+        </Select>
+      </FormField>
+      <FormField label={labels.newOrder.fulfillment} htmlFor="order-fulfillment">
+        <Select
+          id="order-fulfillment"
+          value={form.values.fulfillment}
+          disabled={form.isSaving}
+          onChange={(event) =>
+            form.setValues({ fulfillment: event.target.value as FulfillmentMethod })
+          }
+        >
+          {FULFILLMENT_CHOICES.map((method) => (
+            <option key={method} value={method}>
+              {labels.fulfillment[method]}
+            </option>
+          ))}
+        </Select>
+      </FormField>
+    </div>
+  );
+}
+
+function WhereAndWho(props: SectionProps): ReactElement {
+  const { form, labels } = props;
+  const onAddressField = (field: string, value: string) => {
+    const cur = form.values.deliveryAddress ?? {
+      recipientName: "", phone: "", addressLine: "", districtCode: "dhaka", areaCode: "", postalCode: "",
+    };
+    form.setValues({ deliveryAddress: { ...cur, [field]: value } });
+  };
+  const isDelivery =
+    form.values.fulfillment === FULFILLMENT_METHOD.COURIER ||
+    form.values.fulfillment === FULFILLMENT_METHOD.OWN_RIDER;
+
+  return (
     <PageSection title={labels.newOrder.title}>
-      <div className="grid gap-3 md:grid-cols-2">
-        <FormField label={labels.newOrder.location} htmlFor="order-location" required>
-          <Select
-            id="order-location"
-            value={form.values.locationId}
-            disabled={form.isSaving}
-            onChange={(event) => form.setValues({ locationId: event.target.value })}
-          >
-            {props.locations.map((location) => (
-              <option key={location.locationId} value={location.locationId}>
-                {location.name}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-        <FormField label={labels.newOrder.fulfillment} htmlFor="order-fulfillment">
-          <Select
-            id="order-fulfillment"
-            value={form.values.fulfillment}
-            disabled={form.isSaving}
-            onChange={(event) =>
-              form.setValues({ fulfillment: event.target.value as FulfillmentMethod })
-            }
-          >
-            {FULFILLMENT_CHOICES.map((method) => (
-              <option key={method} value={method}>
-                {labels.fulfillment[method]}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-      </div>
+      <LocationAndFulfillmentFields {...props} />
       <FormField
         label={labels.newOrder.contact}
         htmlFor="order-contact"
@@ -101,6 +121,14 @@ function WhereAndWho(props: SectionProps): ReactElement {
           disabled={form.isSaving}
         />
       </FormField>
+      {isDelivery ? (
+        <NewOrderDeliveryFields
+          address={form.values.deliveryAddress}
+          labels={labels}
+          isSaving={form.isSaving}
+          onChange={onAddressField}
+        />
+      ) : null}
     </PageSection>
   );
 }
@@ -198,10 +226,7 @@ export function NewOrderWorkspace(props: NewOrderWorkspaceProps): ReactElement {
       title={labels.newOrder.title}
       subtitle={labels.newOrder.subtitle}
       actions={
-        <Link
-          href={`/${props.orgSlug}/orders`}
-          className="inline-flex min-h-11 items-center text-body text-brand"
-        >
+        <Link href={`/${props.orgSlug}/orders`} className="inline-flex min-h-11 items-center text-body text-brand">
           {labels.newOrder.back}
         </Link>
       }
@@ -221,9 +246,7 @@ export function NewOrderWorkspace(props: NewOrderWorkspaceProps): ReactElement {
         />
       ) : null}
       {form.errorMessage ? (
-        <p role="alert" className="text-body text-danger">
-          {form.errorMessage}
-        </p>
+        <p role="alert" className="text-body text-danger">{form.errorMessage}</p>
       ) : null}
       <SubmitActions {...sectionProps} />
       {form.approval.isOpen ? (

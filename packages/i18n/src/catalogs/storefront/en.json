@@ -181,6 +181,7 @@
   "storefront.cart.proceedToCheckout": "Proceed to checkout",
   "storefront.cart.quoteLoading": "Updating price quote...",
   "storefront.cart.quoteError": "Could not calculate price quote. Please check items and try again.",
+  "storefront.cart.deliveryZoneUnavailable": "Delivery is not available to this area. Please select store pickup or choose another area.",
   "storefront.cart.guestCheckoutDisabled": "Guest ordering is off for this shop. Sign in to place an order.",
   "storefront.checkout.title": "Checkout",
   "storefront.checkout.contactTitle": "Contact Information",

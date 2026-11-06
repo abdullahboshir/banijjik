@@ -12,6 +12,30 @@ function dateTimeText(value: string, locale: Locale, timeZone: string): string {
   }).format(new Date(value));
 }
 
+function deliverySummaryRows(
+  order: OrderResponse,
+  labels: OrderLabels,
+): readonly { readonly label: string; readonly value: string }[] {
+  const delivery = order.delivery;
+  if (!delivery) return [];
+  const rows: { readonly label: string; readonly value: string }[] = [];
+  if (delivery.address) {
+    const addr = delivery.address;
+    const postal = addr.postalCode ? ` - ${addr.postalCode}` : "";
+    rows.push({
+      label: labels.detail.deliveryAddress,
+      value: `${addr.recipientName} (${addr.phoneE164}), ${addr.addressLine}, ${addr.areaCode}, ${addr.districtCode}${postal}`,
+    });
+  }
+  if (delivery.deliveryZoneId) {
+    rows.push({
+      label: labels.detail.deliveryZone,
+      value: delivery.deliveryZoneId,
+    });
+  }
+  return rows;
+}
+
 export function SummarySection(props: {
   readonly order: OrderResponse;
   readonly locationName: string;
@@ -19,33 +43,19 @@ export function SummarySection(props: {
   readonly timeZone: string;
   readonly labels: OrderLabels;
 }): ReactElement {
-  const { order } = props;
+  const { order, labels } = props;
   const rows: readonly { readonly label: string; readonly value: string }[] = [
-    {
-      label: props.labels.detail.invoice,
-      value: order.invoiceNumber ?? props.labels.detail.noInvoice,
-    },
-    { label: props.labels.detail.location, value: props.locationName },
-    {
-      label: props.labels.detail.contact,
-      value: order.contactName ?? props.labels.detail.noContact,
-    },
-    {
-      label: props.labels.detail.fulfillment,
-      value: props.labels.fulfillment[order.fulfillment.method],
-    },
-    { label: props.labels.detail.source, value: props.labels.source[order.source] },
-    {
-      label: props.labels.detail.created,
-      value: dateTimeText(order.createdAt, props.locale, props.timeZone),
-    },
-    {
-      label: props.labels.detail.updated,
-      value: dateTimeText(order.updatedAt, props.locale, props.timeZone),
-    },
+    { label: labels.detail.invoice, value: order.invoiceNumber ?? labels.detail.noInvoice },
+    { label: labels.detail.location, value: props.locationName },
+    { label: labels.detail.contact, value: order.contactName ?? labels.detail.noContact },
+    { label: labels.detail.fulfillment, value: labels.fulfillment[order.fulfillment.method] },
+    { label: labels.detail.source, value: labels.source[order.source] },
+    { label: labels.detail.created, value: dateTimeText(order.createdAt, props.locale, props.timeZone) },
+    { label: labels.detail.updated, value: dateTimeText(order.updatedAt, props.locale, props.timeZone) },
+    ...deliverySummaryRows(order, labels),
   ];
   return (
-    <PageSection title={props.labels.detail.summary}>
+    <PageSection title={labels.detail.summary}>
       <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map((row) => (
           <div key={row.label} className="flex flex-col gap-1">
@@ -55,7 +65,7 @@ export function SummarySection(props: {
         ))}
         {order.note === null ? null : (
           <div className="flex flex-col gap-1 sm:col-span-2 lg:col-span-3">
-            <dt className="text-caption text-secondary">{props.labels.detail.note}</dt>
+            <dt className="text-caption text-secondary">{labels.detail.note}</dt>
             <dd className="min-w-0 whitespace-pre-wrap break-words text-body text-primary">
               {order.note}
             </dd>

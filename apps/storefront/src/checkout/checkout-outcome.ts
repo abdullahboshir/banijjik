@@ -1,4 +1,5 @@
 import { ERROR_CODE } from "@banijjik/contracts";
+import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
 import type { CheckoutResponse } from "@banijjik/contracts/website";
 import type { ClientResult } from "../api/client-api";
 
@@ -38,6 +39,9 @@ export function submitOutcomeOf(result: ClientResult<CheckoutResponse>): SubmitO
 
 /** The storefront message key that explains a failed quote. */
 export function quoteErrorKeyOf(result: ClientResult<unknown>): string {
+  if (result.ruleKey === SALES_RULE_KEY.DELIVERY_ZONE_UNAVAILABLE) {
+    return "storefront.cart.deliveryZoneUnavailable";
+  }
   if (result.errorCode === ERROR_CODE.WEBSITE_GUEST_CHECKOUT_DISABLED) {
     return "storefront.cart.guestCheckoutDisabled";
   }

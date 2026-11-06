@@ -107,12 +107,14 @@ function DeliveryAddressFields({
 export function CartFulfillmentOptions({
   fulfillmentMethod,
   deliveryAddress,
+  quoteError,
   t,
   onMethodChange,
   onAddressChange,
 }: {
   readonly fulfillmentMethod: "PICKUP" | "COURIER" | "OWN_RIDER";
   readonly deliveryAddress: CartDeliveryAddress;
+  readonly quoteError?: string | null;
   readonly t: Translator["t"];
   readonly onMethodChange: (m: "PICKUP" | "COURIER" | "OWN_RIDER") => void;
   readonly onAddressChange: (field: keyof CartDeliveryAddress, val: string) => void;
@@ -147,7 +149,17 @@ export function CartFulfillmentOptions({
       </div>
 
       {fulfillmentMethod !== "PICKUP" ? (
-        <DeliveryAddressFields address={deliveryAddress} t={t} onChange={onAddressChange} />
+        <>
+          <DeliveryAddressFields address={deliveryAddress} t={t} onChange={onAddressChange} />
+          {quoteError ? (
+            <div
+              role="alert"
+              className="rounded-md border border-danger/30 bg-danger/5 p-3 text-small text-danger"
+            >
+              {quoteError}
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

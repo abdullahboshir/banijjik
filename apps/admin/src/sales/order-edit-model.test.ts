@@ -97,4 +97,72 @@ describe("order edit body", () => {
     expect(body.contactId).toBe("contact-2");
     expect(body.note).toBe("leave at the gate");
   });
+
+  it("sends deliveryAddress when changed and normalizes local phone", () => {
+    const courierOrder = orderWith({
+      fulfillment: { method: "COURIER" },
+      delivery: {
+        address: {
+          recipientName: "Rahim",
+          phoneE164: "+8801712345678",
+          addressLine: "Road 1",
+          districtCode: "dhaka",
+          areaCode: "dhanmondi",
+          postalCode: "1205",
+        },
+        deliveryZoneId: "zone-1",
+        shippedAt: null,
+        currentDeliveryAttemptId: null,
+        deliveryAttemptCount: 0,
+        firstShipment: null,
+      },
+    });
+
+    // Unchanged address leaves it out
+    const unchanged = updateBodyOf({
+      order: courierOrder,
+      values: {
+        ...UNCHANGED,
+        deliveryAddress: {
+          recipientName: "Rahim",
+          phone: "01712345678",
+          addressLine: "Road 1",
+          districtCode: "dhaka",
+          areaCode: "dhanmondi",
+          postalCode: "1205",
+        },
+      },
+      lineInputs: [LINE_INPUT],
+      contactId: "contact-1",
+      nextDiscount: { type: MANUAL_DISCOUNT_TYPE.PERCENT, value: 1000 },
+    });
+    expect(unchanged.deliveryAddress).toBeUndefined();
+
+    // Changed address sends normalized E.164 phone
+    const changed = updateBodyOf({
+      order: courierOrder,
+      values: {
+        ...UNCHANGED,
+        deliveryAddress: {
+          recipientName: "Karim",
+          phone: "01812345678",
+          addressLine: "Road 2",
+          districtCode: "dhaka",
+          areaCode: "gulshan",
+          postalCode: "1212",
+        },
+      },
+      lineInputs: [LINE_INPUT],
+      contactId: "contact-1",
+      nextDiscount: { type: MANUAL_DISCOUNT_TYPE.PERCENT, value: 1000 },
+    });
+    expect(changed.deliveryAddress).toEqual({
+      recipientName: "Karim",
+      phoneE164: "+8801812345678",
+      addressLine: "Road 2",
+      districtCode: "dhaka",
+      areaCode: "gulshan",
+      postalCode: "1212",
+    });
+  });
 });

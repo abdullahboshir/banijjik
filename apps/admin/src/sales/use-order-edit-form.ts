@@ -38,11 +38,22 @@ export interface OrderEditForm {
 
 function initialValues(props: OrderEditSheetProps): EditValues {
   const discount = discountToText(props.order.orderDiscount);
+  const addr = props.order.delivery?.address;
   return {
     contact: props.order.contactId,
     discountType: discount.type,
     discountText: discount.text,
     note: props.order.note ?? "",
+    deliveryAddress: addr
+      ? {
+          recipientName: addr.recipientName,
+          phone: addr.phoneE164,
+          addressLine: addr.addressLine,
+          districtCode: addr.districtCode,
+          areaCode: addr.areaCode,
+          postalCode: addr.postalCode,
+        }
+      : null,
   };
 }
 

@@ -1,3 +1,4 @@
 export { createServerApiFetch } from "./server-api-fetch.js";
 export type { ServerApi, ServerApiConfig, ServerApiRequestOptions } from "./server-api-fetch.js";
 export { LOCALE_COOKIE_NAME, getLocale, resolveLocale } from "./get-locale.js";
+export { buildSessionRenewalPath, buildSignInPath, safeNextPath } from "./safe-next-path.js";

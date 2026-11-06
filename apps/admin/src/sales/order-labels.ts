@@ -22,7 +22,6 @@ import type {
   OrderHistoryLabels,
   OrderLabels,
 } from "./order-label-types";
-
 export type {
   OrderListLabels,
   OrderDetailLabels,
@@ -36,7 +35,7 @@ export type {
   OrderEditLabels,
   OrderHistoryLabels,
   OrderLabels,
-} from "./order-label-types";
+};
 
 function listLabelsOf(t: T): OrderListLabels {
   return {
@@ -102,6 +101,14 @@ function detailLabelsOf(t: T): OrderDetailLabels {
     historyEmpty: t("orders.detail.historyEmpty"),
     actionsTitle: t("orders.detail.actions"),
     deleteDescription: t("orders.detail.deleteDescription"),
+    deliveryAddress: t("orders.detail.deliveryAddress"),
+    recipientName: t("orders.detail.recipientName"),
+    recipientPhone: t("orders.detail.recipientPhone"),
+    addressLine: t("orders.detail.addressLine"),
+    districtCode: t("orders.detail.districtCode"),
+    areaCode: t("orders.detail.areaCode"),
+    postalCode: t("orders.detail.postalCode"),
+    deliveryZone: t("orders.detail.deliveryZone"),
   };
 }
 
@@ -160,6 +167,13 @@ function newOrderLabelsOf(t: T): OrderNewLabels {
     noLinesToPlace: t("orders.new.noLinesToPlace"),
     invalidLine: t("orders.new.invalidLine"),
     openDraft: t("orders.new.openDraft"),
+    deliveryAddress: t("orders.new.deliveryAddress"),
+    recipientName: t("orders.new.recipientName"),
+    recipientPhone: t("orders.new.recipientPhone"),
+    addressLine: t("orders.new.addressLine"),
+    districtCode: t("orders.new.districtCode"),
+    areaCode: t("orders.new.areaCode"),
+    postalCode: t("orders.new.postalCode"),
   };
 }
 
@@ -244,21 +258,16 @@ function contactLabelsOf(t: T): OrderContactLabels {
 
 function editLabelsOf(t: T): OrderEditLabels {
   return {
-    title: t("orders.edit.title"),
-    subtitle: t("orders.edit.subtitle"),
-    save: t("orders.edit.save"),
-    success: t("orders.edit.success"),
-    close: t("orders.edit.close"),
-    noLines: t("orders.edit.noLines"),
+    title: t("orders.edit.title"), subtitle: t("orders.edit.subtitle"),
+    save: t("orders.edit.save"), success: t("orders.edit.success"),
+    close: t("orders.edit.close"), noLines: t("orders.edit.noLines"),
   };
 }
 
 function historyLabelsOf(t: T): OrderHistoryLabels {
   return {
-    title: t("orders.detail.history"),
-    empty: t("orders.detail.historyEmpty"),
-    system: t("orders.history.system"),
-    actions: buildHistoryActions(t),
+    title: t("orders.detail.history"), empty: t("orders.detail.historyEmpty"),
+    system: t("orders.history.system"), actions: buildHistoryActions(t),
   };
 }
 

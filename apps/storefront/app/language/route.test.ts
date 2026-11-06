@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.doMock("@banijjik/web-client/server", () => ({ LOCALE_COOKIE_NAME: "locale" }));
-const { GET } = await import("./route");
+vi.mock("server-only", () => ({}));
+import { GET } from "./route";
 
 function request(input: {
   readonly search?: string;

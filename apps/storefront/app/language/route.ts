@@ -1,6 +1,5 @@
 import { DEFAULT_LOCALE, isSupportedLocale } from "@banijjik/i18n";
-import { LOCALE_COOKIE_NAME } from "@banijjik/web-client/server";
-import { safeNextPath } from "@banijjik/web-client";
+import { LOCALE_COOKIE_NAME, safeNextPath } from "@banijjik/web-client/server";
 import { NextResponse, type NextRequest } from "next/server";
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
