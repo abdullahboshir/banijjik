@@ -1,8 +1,40 @@
 import { STOCK_SOURCE_TYPE } from "@banijjik/contracts/inventory";
-import type { FulfillmentMethod } from "@banijjik/contracts/sales";
+import { FULFILLMENT_METHOD, type FulfillmentMethod } from "@banijjik/contracts/sales";
+import type { DeliveryAddress } from "@banijjik/contracts/sales/delivery";
 import type { OrderId } from "@banijjik/ids";
-import { fulfillmentMethodUnsupported, locationForbidden } from "../domain/errors.js";
+import {
+  addressNotAllowedForMethod,
+  deliveryAddressRequired,
+  fulfillmentMethodUnsupported,
+  locationForbidden,
+} from "../domain/errors.js";
 import type { StockLedgerReserveInput } from "./ports/sales-ports.js";
+
+const COUNTER_DRAFT_METHODS: readonly FulfillmentMethod[] = [
+  FULFILLMENT_METHOD.PICKUP,
+  FULFILLMENT_METHOD.COURIER,
+  FULFILLMENT_METHOD.OWN_RIDER,
+];
+
+export function isDeliveryFulfillment(method: string): boolean {
+  return method === FULFILLMENT_METHOD.COURIER || method === FULFILLMENT_METHOD.OWN_RIDER;
+}
+
+export function assertAddressAllowedForMethod(
+  method: FulfillmentMethod,
+  address: DeliveryAddress | null | undefined,
+): void {
+  if (address != null && !isDeliveryFulfillment(method)) {
+    throw addressNotAllowedForMethod(method);
+  }
+}
+
+export function assertDeliveryAddressPresent(
+  method: FulfillmentMethod,
+  address: DeliveryAddress | null,
+): void {
+  if (isDeliveryFulfillment(method) && address === null) throw deliveryAddressRequired();
+}
 
 export function assertLocationAllowed(
   locationId: string,
@@ -14,17 +46,20 @@ export function assertLocationAllowed(
 }
 
 /**
- * The method of the order, or the business rule. A draft hands over by pickup and a counter sale
- * hands over now, so each path serves exactly one method; COURIER and OWN_RIDER stay declared
- * until Phase 5 (plan decision 1).
+ * A draft serves pickup or delivery; an instant sale serves INSTANT only. Admin create refuses
+ * INSTANT (`FULFILLMENT_METHOD_UNSUPPORTED`); the instant path refuses every other method.
  */
 export function resolveFulfillmentMethod(
   requested: FulfillmentMethod | undefined,
   served: FulfillmentMethod,
 ): FulfillmentMethod {
-  if (requested === undefined) return served;
-  if (requested !== served) throw fulfillmentMethodUnsupported(requested);
-  return requested;
+  const method = requested ?? served;
+  if (served === FULFILLMENT_METHOD.INSTANT) {
+    if (method !== FULFILLMENT_METHOD.INSTANT) throw fulfillmentMethodUnsupported(method);
+    return method;
+  }
+  if (!COUNTER_DRAFT_METHODS.includes(method)) throw fulfillmentMethodUnsupported(method);
+  return method;
 }
 
 export function formatOrderNumber(value: number): string {

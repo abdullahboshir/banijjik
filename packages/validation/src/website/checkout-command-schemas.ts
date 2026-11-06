@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { phoneE164Schema } from "../phone.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 import { paginationQuerySchema } from "../pagination.js";
 
@@ -72,7 +73,7 @@ export const checkoutRecipientSnapshotSchema = z
 export const checkoutDeliveryAddressSchema = z
   .object({
     recipientName: z.string().trim().min(1).max(100),
-    phone: z.string().trim().min(1).max(30),
+    phone: phoneE164Schema,
     addressLine: z.string().trim().min(1).max(250),
     districtCode: z.string().trim().min(1).max(50),
     areaCode: z.string().trim().min(1).max(50),

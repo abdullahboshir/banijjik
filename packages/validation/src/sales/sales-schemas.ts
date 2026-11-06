@@ -14,6 +14,7 @@ import {
 } from "../organization/organization-fields.js";
 import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
+import { deliveryAddressSchema } from "./sales-delivery-schemas.js";
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const MIN_VERSION = 1;
@@ -51,6 +52,7 @@ export const orderCreateRequestSchema = z.strictObject({
   lines: orderLinesSchema.default([]),
   orderDiscount: manualDiscountSchema.optional(),
   fulfillmentMethod: z.enum(FULFILLMENT_METHOD).optional(),
+  deliveryAddress: deliveryAddressSchema.nullable().optional(),
   note: noteSchema,
   customFields: customFieldValuesRequestSchema.optional(),
 });
@@ -64,6 +66,8 @@ export const orderUpdateRequestSchema = z.strictObject({
   contactId: uuidV7Schema.nullable().optional(),
   lines: orderLinesSchema.optional(),
   orderDiscount: manualDiscountSchema.nullable().optional(),
+  fulfillmentMethod: z.enum(FULFILLMENT_METHOD).optional(),
+  deliveryAddress: deliveryAddressSchema.nullable().optional(),
   approvalToken: z.string().min(1).optional(),
   note: noteSchema,
   customFields: customFieldValuesRequestSchema.optional(),

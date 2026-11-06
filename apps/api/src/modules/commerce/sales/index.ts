@@ -49,6 +49,7 @@ export { salesManifest } from "./module.manifest.js";
 export { registerSalesModels } from "./infrastructure/register-sales-models.js";
 export { buildDeliveryZoneController, buildSalesController, buildSalesDependencies };
 export { buildStorefrontOrderCommands } from "./application/storefront-order-commands.js";
+export { resolveDeliveryFee } from "./application/delivery-fee.js";
 export type { PublicOrderCommands } from "@banijjik/contracts/website";
 export type { SalesJobPorts, SalesTenantPorts, SalesTenantRouterDependencies };
 

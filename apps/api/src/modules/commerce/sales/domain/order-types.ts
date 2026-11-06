@@ -2,14 +2,20 @@ import type { OfferingKind } from "@banijjik/contracts";
 import type { StockComponent } from "@banijjik/contracts/catalog";
 import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import type {
-  Money,
-  OrderApproval,
-  OrderFulfillment,
-  OrderLineModifierSnapshot,
-  OrderSource,
-  OrderReturnStatus,
-  OrderStatus,
-  OrderTotals,
+  DeliveryAddress,
+  FirstShipmentPostingFacts,
+} from "@banijjik/contracts/sales/delivery";
+import {
+  ORDER_RETURN_STATUS,
+  ORDER_STATUS,
+  type Money,
+  type OrderApproval,
+  type OrderFulfillment,
+  type OrderLineModifierSnapshot,
+  type OrderSource,
+  type OrderReturnStatus,
+  type OrderStatus,
+  type OrderTotals,
 } from "@banijjik/contracts/sales";
 import type { CheckoutRecipientSnapshot } from "@banijjik/contracts/website";
 import type { ContactId, LocationId, OrderId, OrganizationId, UserId } from "@banijjik/ids";
@@ -55,6 +61,12 @@ export interface OrderProps {
   readonly lines: readonly OrderLineProps[];
   readonly totals: OrderTotals;
   readonly fulfillment: OrderFulfillment;
+  readonly deliveryAddress: DeliveryAddress | null;
+  readonly deliveryZoneId: string | null;
+  readonly shippedAt: Date | null;
+  readonly firstShipment: FirstShipmentPostingFacts | null;
+  readonly currentDeliveryAttemptId: string | null;
+  readonly deliveryAttemptCount: number;
   readonly businessDate: string;
   readonly source: OrderSource;
   readonly approval: OrderApproval | null;
@@ -93,6 +105,9 @@ export interface NewOrderInput {
   readonly locationId: LocationId;
   readonly contactId: ContactId | null;
   readonly fulfillment: OrderFulfillment;
+  /** Optional so instant/PICKUP callers stay unchanged; Order.createDraft fills null. */
+  readonly deliveryAddress?: DeliveryAddress | null;
+  readonly deliveryZoneId?: string | null;
   readonly lines: readonly OrderLineProps[];
   readonly totals: OrderTotals;
   readonly businessDate: string;
@@ -116,9 +131,55 @@ export interface OrderContentChanges {
   readonly note?: string | null;
   readonly customFields?: Readonly<Record<string, unknown>>;
   readonly hasStockLines?: boolean;
+  /** Built from the PATCH body's `fulfillmentMethod` as `{ method }`. */
+  readonly fulfillment?: OrderFulfillment;
+  readonly deliveryAddress?: DeliveryAddress | null;
+  readonly deliveryZoneId?: string | null;
 }
 
 export interface OrderTransitionActor {
   readonly actorUserId: UserId | null;
   readonly now: Date;
+}
+
+const INITIAL_VERSION = 1;
+
+/** Defaults the five delivery facts and the DRAFT status so `Order.createDraft` stays small. */
+export function draftOrderProps(input: NewOrderInput): OrderProps {
+  return {
+    orderId: input.orderId,
+    organizationId: input.organizationId,
+    orderNumber: null,
+    invoiceNumber: null,
+    locationId: input.locationId,
+    contactId: input.contactId,
+    status: ORDER_STATUS.DRAFT,
+    lines: input.lines,
+    totals: input.totals,
+    fulfillment: input.fulfillment,
+    deliveryAddress: input.deliveryAddress ?? null,
+    deliveryZoneId: input.deliveryZoneId ?? null,
+    shippedAt: null,
+    firstShipment: null,
+    currentDeliveryAttemptId: null,
+    deliveryAttemptCount: 0,
+    businessDate: input.businessDate,
+    source: input.source,
+    approval: null,
+    note: input.note,
+    orderDiscount: input.orderDiscount,
+    cancelReason: null,
+    customFields: input.customFields,
+    posSessionId: input.posSessionId,
+    checkoutId: input.checkoutId ?? null,
+    recipient: input.recipient ?? null,
+    hasStockLines: input.hasStockLines,
+    returnStatus: ORDER_RETURN_STATUS.NONE,
+    completedAt: null,
+    version: INITIAL_VERSION,
+    createdAt: input.now,
+    updatedAt: input.now,
+    createdByUserId: input.createdByUserId,
+    updatedByUserId: input.createdByUserId,
+  };
 }

@@ -1,11 +1,7 @@
 import { CURRENCY_CODE } from "@banijjik/contracts";
 import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import { ORDER_STATUS } from "@banijjik/contracts/sales";
-import {
-  WEBSITE_DELIVERY_CHARGE_SETTING_KEY,
-  type CheckoutSelection,
-  type StorefrontCommandContext,
-} from "@banijjik/contracts/website";
+import type { CheckoutSelection, StorefrontCommandContext } from "@banijjik/contracts/website";
 import { asId, newId, type OrganizationId } from "@banijjik/ids";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runInOrganizationContext } from "../kernel/tenancy/index.js";
@@ -22,7 +18,6 @@ import {
   levelOf,
   publishOffering,
   receiveStock,
-  setSetting,
   shopOf,
 } from "../test-support/sales-api-world.js";
 import { buildModuleRegistry, MODULE_MANIFESTS } from "./module-registry.js";
@@ -100,9 +95,22 @@ describe("storefront commerce composition (Card 4.3 A5A)", () => {
     };
   }
 
-  it("prices selections with the real quoter and adds the configured delivery charge", async () => {
+  it("prices selections with the real quoter and adds the zone delivery charge", async () => {
     const { shop, product, orgConfig, commerce } = await setup();
     const selections = [selectionOf(product)];
+    const created = await shop.actor.callWith({
+      method: "post",
+      path: `/orgs/${shop.organizationId}/sales/delivery-zones`,
+      idempotencyKey: newId(),
+      body: {
+        zoneKey: `zone-${newId().slice(-12)}`,
+        name: { bn: "ঢাকা", en: "Dhaka" },
+        areaCodes: ["dhanmondi"],
+        feeMinor: DELIVERY_CHARGE,
+        status: "ACTIVE",
+      },
+    });
+    expect(created.status).toBe(201);
 
     const pickup = await runInOrganizationContext(shop.organizationId, () =>
       commerce.catalogQuoter.priceSelections({
@@ -120,20 +128,33 @@ describe("storefront commerce composition (Card 4.3 A5A)", () => {
     });
     expect(pickup.lines[0]?.discount.amount).toBe(0);
     expect(pickup.lines[0]?.tax.amount).toBe(0);
+    expect(pickup.lines[0]?.amountRequiredBeforeConfirmation.amount).toBe(0);
     expect(pickup.total.amount).toBe(RICE_PRICE * 2);
     expect(pickup.deliveryCharge.amount).toBe(0);
 
-    await setSetting(shop, WEBSITE_DELIVERY_CHARGE_SETTING_KEY, DELIVERY_CHARGE);
+    const settings = await shop.actor.call("get", `/orgs/${shop.organizationId}/settings`);
+    expect(settings.status).toBe(200);
+    expect(settings.body.data.settings).not.toHaveProperty("website.deliveryCharge");
 
     const courier = await runInOrganizationContext(shop.organizationId, () =>
       commerce.catalogQuoter.priceSelections({
         organizationId: shop.organizationId,
         locationId: shop.locationId,
         selections,
-        fulfillment: { method: "COURIER" },
+        fulfillment: {
+          method: "COURIER",
+          address: {
+            recipientName: "Rahim",
+            phone: "01711111111",
+            addressLine: "House 12",
+            districtCode: "dhaka",
+            areaCode: "dhanmondi",
+          },
+        },
       }),
     );
 
+    expect(courier.lines[0]?.amountRequiredBeforeConfirmation.amount).toBe(0);
     expect(courier.deliveryCharge).toEqual({
       amount: DELIVERY_CHARGE,
       currency: CURRENCY_CODE.BDT,
@@ -163,6 +184,7 @@ describe("storefront commerce composition (Card 4.3 A5A)", () => {
         selections: [selectionOf(product)],
         recipient: { name: "Storefront Guest", phoneE164: "+8801711111111" },
         fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
       }),
     );
 

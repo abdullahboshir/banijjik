@@ -12,6 +12,8 @@ import {
   type OrderStatus,
 } from "@banijjik/contracts/sales";
 import { Schema } from "mongoose";
+import type { DeliveryAddressDocument, FirstShipmentDocument } from "./order-delivery-schema.js";
+import { deliveryEmbedSchemas } from "./order-delivery-schema.js";
 import {
   auditFields,
   domainIdField,
@@ -115,6 +117,12 @@ export interface OrderDocument {
   checkoutId: string | null;
   /** Verified recipient snapshot when submitted via customer checkout (card 4.3). */
   recipient: RecipientDocument | null;
+  deliveryAddress?: DeliveryAddressDocument | null;
+  deliveryZoneId?: string | null;
+  shippedAt?: Date | null;
+  firstShipment?: FirstShipmentDocument | null;
+  currentDeliveryAttemptId?: string | null;
+  deliveryAttemptCount?: number;
   returnStatus: OrderReturnStatus;
   completedAt: Date | null;
   version: number;
@@ -223,6 +231,8 @@ const recipientSchema = new Schema<RecipientDocument>(
   SUB_SCHEMA_OPTIONS,
 );
 
+const { deliveryAddressSubSchema, firstShipmentSchema } = deliveryEmbedSchemas(moneySchema);
+
 export const orderSchema = new Schema<OrderDocument>(
   {
     ...domainIdField("orderId"),
@@ -246,6 +256,12 @@ export const orderSchema = new Schema<OrderDocument>(
     posSessionId: { type: String, default: null },
     checkoutId: { type: String, default: null },
     recipient: { type: recipientSchema, default: null },
+    deliveryAddress: { type: deliveryAddressSubSchema, default: null },
+    deliveryZoneId: { type: String, default: null },
+    shippedAt: { type: Date, default: null },
+    firstShipment: { type: firstShipmentSchema, default: null },
+    currentDeliveryAttemptId: { type: String, default: null },
+    deliveryAttemptCount: { type: Number, required: true, default: 0 },
     completedAt: { type: Date, default: null },
     returnStatus: {
       type: String,

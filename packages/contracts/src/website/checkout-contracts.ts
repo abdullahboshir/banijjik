@@ -102,6 +102,7 @@ export interface PublicOrderCommands {
       readonly selections: readonly CheckoutSelection[];
       readonly recipient: CheckoutRecipientSnapshot;
       readonly fulfillment: CheckoutFulfillment;
+      readonly expectedDeliveryChargeMinor: number;
       readonly notes?: string;
     },
   ): Promise<CheckoutRequestLink>;
@@ -170,11 +171,6 @@ export type CheckoutPrincipal =
 
 export const WEBSITE_CHECKOUT_ENABLED_SETTING_KEY = "website.checkoutEnabled";
 export const WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY = "website.publicLocationIds";
-/**
- * Flat delivery fee in the organization currency's minor units (card 4.3 A5A). COD part S1
- * replaces it with a DeliveryZone fee quoted by destination.
- */
-export const WEBSITE_DELIVERY_CHARGE_SETTING_KEY = "website.deliveryCharge";
 
 export const STOREFRONT_CHECKOUT_PER_WINDOW = 10;
 export const STOREFRONT_CHECKOUT_WINDOW_SECONDS = 600;

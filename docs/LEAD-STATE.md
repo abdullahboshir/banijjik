@@ -16,7 +16,8 @@ Last updated: 2026-11-02 by Cursor Auto (lead merge) — `origin/main` = `eb6e1d
 - **4.3 V** merged (2026-11-02): API commerce scenarios only; storefront taken from V0/main at join `32bcfa64`; docs `8e67c94d`.
 - **4.3 COD S1a** merged (2026-11-02): delivery-zone/attempt data. Code `e2a6bcfd`; T1 R2 PASS `2f46701a`; CI [41398058318](https://github.com/abdullahboshir/banijjik/actions/runs/41398058318) success.
 - **4.3 COD S1b** merged (2026-11-02): delivery-zone API (no UI). Code `83d96e85`; T1 R1 PASS `f9b619c4`; CI [41402885747](https://github.com/abdullahboshir/banijjik/actions/runs/41402885747) success. JS budget still 180.
-- **Folded 4.6 acceptance plan** merged (2026-11-02, docs-only): `docs/plans/4.3-4.6-acceptance.md` at `38d5b01e`. Checks 1, 2, 3, 5 remain; check 4 dropped as proven on V. File-disjoint from COD S1c.
+- **4.3 COD S1c & S1d** completed (2026-11-06, single main gate): S1c order delivery state (T1 R2 PASS `docs/handoffs/4.3-cod-s1c-review-R2.md`); S1d zone-priced delivery fee backend (T1 R2 PASS `docs/handoffs/4.3-cod-s1d-review-R2.md`, handoff `docs/handoffs/4.3-cod-s1d.md`, 137/137 tests passing locally).
+- **Folded 4.6 acceptance plan** merged (2026-11-02, docs-only): `docs/plans/4.3-4.6-acceptance.md` at `38d5b01e`. Checks 1, 2, 3, 5 remain; check 4 dropped as proven on V. File-disjoint from COD S1c/S1d.
 - COD-S1 refresh v11 + T1 plan-check PASS on main (`docs/plans/4.3-COD-S1-refresh.md`, `docs/handoffs/4.3-cod-s1-plan-check.md`). Last LEAD-STATE save before this one: `7c257ae3`.
 - 4.1 and 4.2 complete. 4.4 A1 + A1D merged; **4.4 rest not started.** 4.5 not started. Phase 4 is not complete.
 - API tests run on a fixed calendar (`apps/api/src/test-support/fixed-calendar.setup.ts`, start 2026-10-31T08:00Z, real speed); test mongod has `ttlMonitorEnabled=false`.

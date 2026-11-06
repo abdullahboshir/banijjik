@@ -4,6 +4,7 @@ import type { OrderId, UserId } from "@banijjik/ids";
 import { nextSequenceValue } from "../../../../../kernel/sequence/index.js";
 import {
   advanceNeedsPayments,
+  deliveryMethodNotCompletable,
   invalidTransition,
   packingDisabled,
   recordNotFound,
@@ -15,6 +16,7 @@ import type { SalesDependencies, SalesJobDependencies } from "../sales-dependenc
 import {
   assertLocationAllowed,
   formatInvoiceNumber,
+  isDeliveryFulfillment,
   orderOrderingKey,
   stockInputOf,
 } from "../sales-transition-shared.js";
@@ -132,6 +134,9 @@ export class CompleteOrderUseCase {
     const order = await loadTransitionOrder(this.dependencies, input);
     if (order.status !== ORDER_STATUS.CONFIRMED && order.status !== ORDER_STATUS.PACKED) {
       throw invalidTransition(order.status);
+    }
+    if (isDeliveryFulfillment(order.fulfillment.method)) {
+      throw deliveryMethodNotCompletable(order.fulfillment.method);
     }
     const settings = await this.dependencies.settings.read(input.organizationId);
     const now = this.dependencies.clock.now();

@@ -1,4 +1,13 @@
-import type { OrderListItem, OrderResponse } from "@banijjik/contracts/sales";
+import {
+  FULFILLMENT_METHOD,
+  type OrderListItem,
+  type OrderResponse,
+} from "@banijjik/contracts/sales";
+import type {
+  FirstShipmentPostingFacts,
+  FirstShipmentResponse,
+  OrderDeliveryResponse,
+} from "@banijjik/contracts/sales/delivery";
 import type { Order } from "../domain/order.entity.js";
 import { derivePaymentStatus, type PaymentTotals } from "../domain/payment-status.js";
 import type { OrderLineProps, OrderProps } from "../domain/order-types.js";
@@ -51,6 +60,7 @@ export function toOrderResponse(order: Order, paymentTotals: PaymentTotals): Ord
     note: props.note,
     orderDiscount: props.orderDiscount ?? null,
     customFields: props.customFields,
+    delivery: deliveryResponseOf(props),
     version: props.version,
     createdAt: props.createdAt.toISOString(),
     updatedAt: props.updatedAt.toISOString(),
@@ -71,5 +81,36 @@ export function toOrderListItem(input: {
     grandTotal: row.grandTotal,
     paymentStatus: derivePaymentStatus(row.grandTotal, input.paymentTotals),
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function deliveryResponseOf(order: OrderProps): OrderDeliveryResponse | null {
+  const method = order.fulfillment.method;
+  if (method !== FULFILLMENT_METHOD.COURIER && method !== FULFILLMENT_METHOD.OWN_RIDER) {
+    return null;
+  }
+  return {
+    address: order.deliveryAddress,
+    deliveryZoneId: order.deliveryZoneId,
+    shippedAt: order.shippedAt === null ? null : order.shippedAt.toISOString(),
+    currentDeliveryAttemptId: order.currentDeliveryAttemptId,
+    deliveryAttemptCount: order.deliveryAttemptCount,
+    firstShipment: firstShipmentResponseOf(order.firstShipment),
+  };
+}
+
+function firstShipmentResponseOf(
+  facts: FirstShipmentPostingFacts | null,
+): FirstShipmentResponse | null {
+  if (facts === null) return null;
+  return {
+    shipmentEventId: facts.shipmentEventId,
+    deliveryAttemptId: facts.deliveryAttemptId,
+    shippedAt: facts.shippedAt.toISOString(),
+    businessDate: facts.businessDate,
+    netRevenue: facts.netRevenue,
+    taxTotal: facts.taxTotal,
+    deliveryIncome: facts.deliveryIncome,
+    netPaidAtShipment: facts.netPaidAtShipment,
   };
 }

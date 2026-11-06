@@ -28,6 +28,8 @@ export interface OrderLineInput {
 export interface PreparedLines {
   readonly lines: readonly OrderLineProps[];
   readonly totals: OrderTotals;
+  /** The zone priced into totals.deliveryCharge; null for pickup/instant. */
+  readonly deliveryZoneId: string | null;
   /** The lines that draw stock; only these reach the StockLedger. */
   readonly trackedLines: readonly {
     readonly offeringId: string;
@@ -52,16 +54,38 @@ export interface PreparedLines {
   readonly priceOverrideReductionTotal: Money;
 }
 
+/**
+ * Fee-free quote totals. Private to this module except via `quoteTotalsOf`, so the only add
+ * point stays `withDeliveryFee` (D3).
+ */
 function toTotals(quote: QuoteResponse): OrderTotals {
   const { totals } = quote;
   return {
     subtotal: totals.subtotal,
     discountTotal: totals.discountTotal,
     taxTotal: totals.taxTotal,
-    // The delivery charge input stays 0 until fulfillment methods arrive (plan decision 3).
     deliveryCharge: { amount: 0, currency: totals.grandTotal.currency },
     grandTotal: totals.grandTotal,
     roundingAdjustment: totals.roundingAdjustment,
+  };
+}
+
+export function quoteTotalsOf(quote: QuoteResponse): OrderTotals {
+  return toTotals(quote);
+}
+
+/**
+ * The single fee-add point (D3). Integer minor units; the quote never carries delivery.
+ * Currencies already match: `resolveDeliveryFee` refused a mismatch.
+ */
+export function withDeliveryFee(totals: OrderTotals, fee: Money): OrderTotals {
+  return {
+    ...totals,
+    deliveryCharge: fee,
+    grandTotal: {
+      amount: totals.grandTotal.amount + fee.amount,
+      currency: totals.grandTotal.currency,
+    },
   };
 }
 
@@ -163,6 +187,7 @@ export function prepareOrderLines(input: {
   return {
     lines,
     totals: toTotals(input.quote),
+    deliveryZoneId: null,
     trackedLines,
     costLines,
     approvalsRequired: input.quote.approvalsRequired,

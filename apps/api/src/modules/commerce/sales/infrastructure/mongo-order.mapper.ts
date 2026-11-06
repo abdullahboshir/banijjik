@@ -9,6 +9,10 @@ import {
 } from "@banijjik/ids";
 import type { CurrencyCode } from "@banijjik/contracts";
 import type {
+  DeliveryAddress,
+  FirstShipmentPostingFacts,
+} from "@banijjik/contracts/sales/delivery";
+import type {
   Money,
   OrderApproval,
   OrderLineModifierSnapshot,
@@ -19,6 +23,7 @@ import type { ManualDiscount } from "@banijjik/contracts/pricing";
 import { Order } from "../domain/order.entity.js";
 import type { OrderLineProps, OrderProps } from "../domain/order-types.js";
 import type { OrderListRow } from "../application/ports/sales-ports.js";
+import type { DeliveryAddressDocument, FirstShipmentDocument } from "./order-delivery-schema.js";
 import type {
   ApprovalDocument,
   ManualDiscountDocument,
@@ -65,6 +70,64 @@ function approvalOf(row: ApprovalDocument | null): OrderApproval | null {
   return { approverMemberId: row.approverMemberId, approvedAt: row.approvedAt, action: row.action };
 }
 
+function deliveryAddressOf(
+  row: DeliveryAddressDocument | null | undefined,
+): DeliveryAddress | null {
+  if (row === null || row === undefined) return null;
+  return {
+    recipientName: row.recipientName,
+    phoneE164: row.phoneE164,
+    addressLine: row.addressLine,
+    districtCode: row.districtCode,
+    areaCode: row.areaCode,
+    postalCode: row.postalCode ?? null,
+  };
+}
+
+function firstShipmentDocumentOf(
+  facts: FirstShipmentPostingFacts | null,
+): FirstShipmentDocument | null {
+  if (facts === null) return null;
+  return {
+    shipmentEventId: facts.shipmentEventId,
+    deliveryAttemptId: facts.deliveryAttemptId,
+    shippedAt: facts.shippedAt,
+    businessDate: facts.businessDate,
+    lines: facts.lines.map((line) => ({
+      orderLineId: line.orderLineId,
+      quantity: line.quantity,
+      unitCostSnapshot: line.unitCostSnapshot,
+      lineNetTotal: line.lineNetTotal,
+    })),
+    netRevenue: facts.netRevenue,
+    taxTotal: facts.taxTotal,
+    deliveryIncome: facts.deliveryIncome,
+    netPaidAtShipment: facts.netPaidAtShipment,
+  };
+}
+
+function firstShipmentOf(
+  row: FirstShipmentDocument | null | undefined,
+): FirstShipmentPostingFacts | null {
+  if (row === null || row === undefined) return null;
+  return {
+    shipmentEventId: row.shipmentEventId,
+    deliveryAttemptId: row.deliveryAttemptId,
+    shippedAt: row.shippedAt,
+    businessDate: row.businessDate,
+    lines: row.lines.map((line) => ({
+      orderLineId: line.orderLineId,
+      quantity: line.quantity,
+      unitCostSnapshot: line.unitCostSnapshot === null ? null : moneyOf(line.unitCostSnapshot),
+      lineNetTotal: moneyOf(line.lineNetTotal),
+    })),
+    netRevenue: moneyOf(row.netRevenue),
+    taxTotal: moneyOf(row.taxTotal),
+    deliveryIncome: moneyOf(row.deliveryIncome),
+    netPaidAtShipment: moneyOf(row.netPaidAtShipment),
+  };
+}
+
 function lineOf(row: OrderLineDocument): OrderLineProps {
   return {
     orderLineId: row.orderLineId,
@@ -95,6 +158,27 @@ function lineOf(row: OrderLineDocument): OrderLineProps {
   };
 }
 
+function deliveryStateOf(
+  row: OrderDocument,
+): Pick<
+  OrderProps,
+  | "deliveryAddress"
+  | "deliveryZoneId"
+  | "shippedAt"
+  | "firstShipment"
+  | "currentDeliveryAttemptId"
+  | "deliveryAttemptCount"
+> {
+  return {
+    deliveryAddress: deliveryAddressOf(row.deliveryAddress),
+    deliveryZoneId: row.deliveryZoneId ?? null,
+    shippedAt: row.shippedAt ?? null,
+    firstShipment: firstShipmentOf(row.firstShipment),
+    currentDeliveryAttemptId: row.currentDeliveryAttemptId ?? null,
+    deliveryAttemptCount: row.deliveryAttemptCount ?? 0,
+  };
+}
+
 export function toOrder(row: OrderDocument): Order {
   return Order.restore({
     orderId: asId<OrderId>(row.orderId),
@@ -120,6 +204,7 @@ export function toOrder(row: OrderDocument): Order {
     recipient: row.recipient
       ? { name: row.recipient.name, phoneE164: row.recipient.phoneE164 }
       : null,
+    ...deliveryStateOf(row),
     returnStatus: row.returnStatus ?? ORDER_RETURN_STATUS.NONE,
     completedAt: row.completedAt ?? null,
     version: row.version,
@@ -187,6 +272,12 @@ function mutableFieldsOf(props: OrderProps): MutableOrderFields {
     recipient: props.recipient
       ? { name: props.recipient.name, phoneE164: props.recipient.phoneE164 }
       : null,
+    deliveryAddress: props.deliveryAddress,
+    deliveryZoneId: props.deliveryZoneId,
+    shippedAt: props.shippedAt,
+    firstShipment: firstShipmentDocumentOf(props.firstShipment),
+    currentDeliveryAttemptId: props.currentDeliveryAttemptId,
+    deliveryAttemptCount: props.deliveryAttemptCount,
     returnStatus: props.returnStatus,
     completedAt: props.completedAt,
     createdAt: props.createdAt,

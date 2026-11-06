@@ -11,6 +11,7 @@ import {
   type OrderSource,
   type OrderTotals,
 } from "@banijjik/contracts/sales";
+import type { DeliveryAddress } from "@banijjik/contracts/sales/delivery";
 import type { CheckoutRecipientSnapshot } from "@banijjik/contracts/website";
 import {
   asId,
@@ -24,10 +25,12 @@ import {
 import { recordNotFound } from "../../domain/errors.js";
 import { businessDateOf } from "../../domain/business-date.js";
 import { Order } from "../../domain/order.entity.js";
+import type { NewOrderInput } from "../../domain/order-types.js";
 import type { SalesDependencies } from "../sales-dependencies.js";
 import type { OrderLineInput, PreparedLines } from "../sales-line-preparation.js";
 import { quoteAndPrepare } from "../sales-quote-lines.js";
 import {
+  assertAddressAllowedForMethod,
   assertLocationAllowed,
   orderOrderingKey,
   resolveFulfillmentMethod,
@@ -79,6 +82,7 @@ export interface OrderBodyBase {
   readonly contactId?: string | undefined;
   readonly orderDiscount?: ManualDiscount | undefined;
   readonly fulfillmentMethod?: FulfillmentMethod | undefined;
+  readonly deliveryAddress?: DeliveryAddress | null | undefined;
   readonly note?: string | null | undefined;
   readonly customFields?: Readonly<Record<string, unknown>> | undefined;
   readonly approvalToken?: string | undefined;
@@ -108,13 +112,15 @@ export class CreateOrderUseCase {
   private async draftOf(input: CreateOrderInput, contactId: ContactId | null): Promise<Order> {
     const now = this.dependencies.clock.now();
     const timeZone = await this.dependencies.timeZone.read(input.organizationId);
-    const prepared = await this.quoteBody(input);
+    const fulfillment = draftFulfillmentOf(input.body);
+    const prepared = await this.quoteBody(input, fulfillment);
     const totals =
       prepared?.totals ??
       emptyTotalsOf(await this.dependencies.currency.read(input.organizationId));
     return this.buildDraftEntity({
       input,
       contactId,
+      fulfillment,
       prepared,
       totals,
       businessDate: businessDateOf(now, timeZone),
@@ -125,37 +131,41 @@ export class CreateOrderUseCase {
   private buildDraftEntity(params: {
     input: CreateOrderInput;
     contactId: ContactId | null;
+    fulfillment: {
+      readonly method: FulfillmentMethod;
+      readonly deliveryAddress: DeliveryAddress | null;
+    };
     prepared: PreparedLines | undefined;
     totals: OrderTotals;
     businessDate: string;
     now: Date;
   }): Order {
-    const { input, contactId, prepared, totals, businessDate, now } = params;
     return Order.createDraft({
       orderId: newId<OrderId>(),
-      organizationId: input.organizationId,
-      locationId: asId<LocationId>(input.body.locationId),
-      contactId,
-      fulfillment: {
-        method: resolveFulfillmentMethod(input.body.fulfillmentMethod, FULFILLMENT_METHOD.PICKUP),
-      },
-      lines: prepared?.lines ?? [],
-      totals,
-      businessDate,
-      source: input.body.source ?? ORDER_SOURCE.ADMIN,
-      note: input.body.note ?? null,
-      orderDiscount: input.body.orderDiscount ?? null,
-      customFields: input.body.customFields ?? {},
-      hasStockLines: Boolean(prepared && prepared.trackedLines.length > 0),
+      organizationId: params.input.organizationId,
+      locationId: asId<LocationId>(params.input.body.locationId),
+      contactId: params.contactId,
+      fulfillment: { method: params.fulfillment.method },
+      deliveryAddress: params.fulfillment.deliveryAddress,
+      deliveryZoneId: params.prepared?.deliveryZoneId ?? null,
+      lines: params.prepared?.lines ?? [],
+      totals: params.totals,
+      businessDate: params.businessDate,
+      ...optionalDraftBodyOf(params.input.body),
+      hasStockLines: Boolean(params.prepared && params.prepared.trackedLines.length > 0),
       posSessionId: null,
-      checkoutId: input.body.checkoutId ?? null,
-      recipient: input.body.recipient ?? null,
-      createdByUserId: input.actorUserId,
-      now,
+      createdByUserId: params.input.actorUserId,
+      now: params.now,
     });
   }
 
-  private async quoteBody(input: CreateOrderInput): Promise<PreparedLines | undefined> {
+  private async quoteBody(
+    input: CreateOrderInput,
+    fulfillment: {
+      readonly method: FulfillmentMethod;
+      readonly deliveryAddress: DeliveryAddress | null;
+    },
+  ): Promise<PreparedLines | undefined> {
     if (input.body.lines.length === 0) return undefined;
     return quoteAndPrepare(this.dependencies, {
       allowedKinds: [OFFERING_KIND.PRODUCT],
@@ -163,6 +173,7 @@ export class CreateOrderUseCase {
       locationId: input.body.locationId,
       lines: input.body.lines,
       orderDiscount: input.body.orderDiscount,
+      delivery: { method: fulfillment.method, address: fulfillment.deliveryAddress },
     });
   }
 
@@ -182,4 +193,30 @@ export class CreateOrderUseCase {
       });
     });
   }
+}
+
+function draftFulfillmentOf(body: OrderBodyBase): {
+  readonly method: FulfillmentMethod;
+  readonly deliveryAddress: DeliveryAddress | null;
+} {
+  const method = resolveFulfillmentMethod(body.fulfillmentMethod, FULFILLMENT_METHOD.PICKUP);
+  const deliveryAddress = body.deliveryAddress ?? null;
+  assertAddressAllowedForMethod(method, deliveryAddress);
+  return { method, deliveryAddress };
+}
+
+function optionalDraftBodyOf(
+  body: OrderBodyBase,
+): Pick<
+  NewOrderInput,
+  "source" | "note" | "orderDiscount" | "customFields" | "checkoutId" | "recipient"
+> {
+  return {
+    source: body.source ?? ORDER_SOURCE.ADMIN,
+    note: body.note ?? null,
+    orderDiscount: body.orderDiscount ?? null,
+    customFields: body.customFields ?? {},
+    checkoutId: body.checkoutId ?? null,
+    recipient: body.recipient ?? null,
+  };
 }

@@ -1,9 +1,10 @@
 import { ERROR_CODE, type ModuleManifest } from "@banijjik/contracts";
 import type { Money, QuoteLineResult } from "@banijjik/contracts/pricing";
-import {
-  WEBSITE_DELIVERY_CHARGE_SETTING_KEY,
-  type CheckoutSelection,
-  type PublicQuoteLine,
+import type { DeliveryAddress } from "@banijjik/contracts/sales/delivery";
+import type {
+  CheckoutFulfillment,
+  CheckoutSelection,
+  PublicQuoteLine,
 } from "@banijjik/contracts/website";
 import { asId, type OrganizationId } from "@banijjik/ids";
 import type { AuditRecorder } from "../kernel/audit/index.js";
@@ -11,13 +12,13 @@ import { AppError } from "../kernel/http/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildDefaultCatalogQuoteReader } from "../modules/commerce/catalog/index.js";
 import { buildPriceQuoter } from "../modules/commerce/pricing/index.js";
+import { buildDeliveryZoneRepository, resolveDeliveryFee } from "../modules/commerce/sales/index.js";
 import type {
   CatalogQuoteReaderPort,
   OrgStorefrontConfigReader,
   PricedSelectionsResult,
   StorefrontOrganizationConfig,
 } from "../modules/commerce/website/index.js";
-import { buildSettingsResolver } from "../modules/core/settings/index.js";
 import type { OrgConfigService } from "../modules/platform/entitlement/index.js";
 import {
   buildOrganizationPricingContext,
@@ -30,14 +31,6 @@ export interface StorefrontPricingInput {
   readonly orgConfig: OrgConfigService;
   readonly manifests: readonly ModuleManifest[];
   readonly orgConfigReader: OrgStorefrontConfigReader;
-}
-
-function isDelivery(fulfillment: { method: string; kind?: string }): boolean {
-  return (
-    fulfillment.method === "COURIER" ||
-    fulfillment.method === "OWN_RIDER" ||
-    fulfillment.kind === "DELIVERY"
-  );
 }
 
 function isPublicLocation(config: StorefrontOrganizationConfig, locationId: string): boolean {
@@ -69,21 +62,29 @@ function zero(currency: Money["currency"]): Money {
   return { amount: 0, currency };
 }
 
+function deliveryAddressOf(fulfillment: CheckoutFulfillment): DeliveryAddress | null {
+  if (fulfillment.address === undefined) return null;
+  return {
+    recipientName: fulfillment.address.recipientName,
+    phoneE164: fulfillment.address.phone,
+    addressLine: fulfillment.address.addressLine,
+    districtCode: fulfillment.address.districtCode,
+    areaCode: fulfillment.address.areaCode,
+    postalCode: fulfillment.address.postalCode ?? null,
+  };
+}
+
 /**
  * Prices storefront selections through the same server quoter as sales and POS (tax classes,
- * promotions, org currency, rounding). Delivery uses the temporary flat `website.deliveryCharge`
- * setting until COD part S1 quotes a DeliveryZone fee. The upfront amount is 0 here: the real
- * payable comes from the module command at submit (card 4.3 A5A, owner decision 2026-10-31).
+ * promotions, org currency, rounding). Delivery uses `resolveDeliveryFee` (D3). The upfront
+ * amount is 0 here: the real payable comes from the module command at submit.
  */
 export function buildStorefrontCatalogQuoter(
   input: StorefrontPricingInput,
 ): CatalogQuoteReaderPort {
   const settings = buildPricingSettingsReader(input);
   const organization = buildOrganizationPricingContext();
-  const websiteSettings = buildSettingsResolver({
-    orgConfig: input.orgConfig,
-    manifests: input.manifests,
-  });
+  const deliveryZones = buildDeliveryZoneRepository();
 
   return {
     priceSelections: async (request): Promise<PricedSelectionsResult> => {
@@ -110,21 +111,23 @@ export function buildStorefrontCatalogQuoter(
       const lines = quote.lines.map((priced, index) =>
         toPublicQuoteLine(priced, request.selections[index], currency),
       );
-
-      const deliveryCharge = await readDeliveryCharge({
-        organizationId: request.organizationId,
-        currency,
-        applies: isDelivery(request.fulfillment),
-        websiteSettings,
-      });
+      const priced = await resolveDeliveryFee(
+        { deliveryZones },
+        {
+          organizationId: asId<OrganizationId>(request.organizationId),
+          method: request.fulfillment.method,
+          address: deliveryAddressOf(request.fulfillment),
+          currency,
+        },
+      );
 
       return {
         lines,
         total: {
-          amount: quote.totals.grandTotal.amount + deliveryCharge.amount,
+          amount: quote.totals.grandTotal.amount + priced.fee.amount,
           currency,
         },
-        deliveryCharge,
+        deliveryCharge: priced.fee,
         configVersion: config.configVersion,
       };
     },
@@ -147,19 +150,4 @@ function toPublicQuoteLine(
     total: priced.lineNetTotal,
     amountRequiredBeforeConfirmation: zero(currency),
   };
-}
-
-async function readDeliveryCharge(input: {
-  readonly organizationId: string;
-  readonly currency: Money["currency"];
-  readonly applies: boolean;
-  readonly websiteSettings: ReturnType<typeof buildSettingsResolver>;
-}): Promise<Money> {
-  if (!input.applies) return zero(input.currency);
-  const resolved = await input.websiteSettings.resolve(input.organizationId, {
-    keys: [WEBSITE_DELIVERY_CHARGE_SETTING_KEY],
-  });
-  const value = resolved.get(WEBSITE_DELIVERY_CHARGE_SETTING_KEY)?.value;
-  const amount = typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : 0;
-  return { amount, currency: input.currency };
 }

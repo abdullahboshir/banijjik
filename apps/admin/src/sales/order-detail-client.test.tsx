@@ -86,6 +86,7 @@ function orderWith(status: OrderStatus): OrderResponse {
     note: null,
     orderDiscount: null,
     customFields: {},
+    delivery: null,
     version: 1,
     createdAt: TIMESTAMP,
     updatedAt: TIMESTAMP,
