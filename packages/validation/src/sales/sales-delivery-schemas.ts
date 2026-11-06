@@ -106,6 +106,18 @@ export const deliveryFailedRequestSchema = z
     context.addIssue({ code: "custom", path: ["note"] });
   });
 
+export const receiveRtsRequestSchema = z.strictObject({
+  version: versionSchema,
+  reasonKey: z.string().trim().max(100).optional(),
+  restockDisposition: z.enum(["RESTOCK", "RETURN_DAMAGED"]).optional(),
+  note: z.string().trim().max(500).optional(),
+});
+
+export const deliverOrderRequestSchema = z.strictObject({
+  version: versionSchema,
+  note: z.string().trim().max(500).optional(),
+});
+
 export type DeliveryAddressBody = z.infer<typeof deliveryAddressSchema>;
 export type CreateDeliveryZoneBody = z.infer<typeof createDeliveryZoneRequestSchema>;
 export type UpdateDeliveryZoneBody = z.infer<typeof updateDeliveryZoneRequestSchema>;
@@ -113,3 +125,5 @@ export type DeliveryZoneListQuery = z.infer<typeof deliveryZoneListQuerySchema>;
 export type DeliveryZoneIdParams = z.infer<typeof deliveryZoneIdParamsSchema>;
 export type ShipOrderBody = z.infer<typeof shipOrderRequestSchema>;
 export type DeliveryFailedBody = z.infer<typeof deliveryFailedRequestSchema>;
+export type ReceiveRtsBody = z.infer<typeof receiveRtsRequestSchema>;
+export type DeliverOrderBody = z.infer<typeof deliverOrderRequestSchema>;

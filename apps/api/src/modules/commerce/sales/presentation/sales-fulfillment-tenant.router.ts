@@ -4,16 +4,22 @@ import { asId, type OrderId } from "@banijjik/ids";
 import { paginationQuerySchema, type PaginationQuery } from "@banijjik/validation";
 import { orderIdParamsSchema } from "@banijjik/validation/sales";
 import {
+  deliverOrderRequestSchema,
   deliveryFailedRequestSchema,
+  receiveRtsRequestSchema,
   shipOrderRequestSchema,
+  type DeliverOrderBody,
   type DeliveryFailedBody,
+  type ReceiveRtsBody,
   type ShipOrderBody,
 } from "@banijjik/validation/sales/delivery";
 import { Router, type RequestHandler } from "express";
 import { readTenantCaller, type PermissionMiddlewareFactory } from "../../../../kernel/access/index.js";
 import { sendData, validate } from "../../../../kernel/http/index.js";
+import type { DeliverOrderUseCase } from "../application/use-cases/deliver-order.use-case.js";
 import type { FailDeliveryUseCase } from "../application/use-cases/fail-delivery.use-case.js";
 import type { ListDeliveryAttemptsUseCase } from "../application/use-cases/list-delivery-attempts.use-case.js";
+import type { ReceiveRtsUseCase } from "../application/use-cases/receive-rts.use-case.js";
 import type { ReshipOrderUseCase } from "../application/use-cases/ship-order.use-cases.js";
 
 function toDeliveryAttemptResponse(attempt: DeliveryAttempt) {
@@ -40,6 +46,8 @@ function toDeliveryAttemptResponse(attempt: DeliveryAttempt) {
 export interface SalesFulfillmentController {
   readonly failDelivery: RequestHandler;
   readonly reshipOrder: RequestHandler;
+  readonly receiveRts: RequestHandler;
+  readonly deliverOrder: RequestHandler;
   readonly listDeliveryAttempts: RequestHandler;
 }
 
@@ -54,6 +62,8 @@ export class SalesFulfillmentHttpController implements SalesFulfillmentControlle
     private readonly useCases: {
       readonly fail: FailDeliveryUseCase;
       readonly reship: ReshipOrderUseCase;
+      readonly receiveRts: ReceiveRtsUseCase;
+      readonly deliver: DeliverOrderUseCase;
       readonly list: ListDeliveryAttemptsUseCase;
     },
   ) {}
@@ -74,6 +84,38 @@ export class SalesFulfillmentHttpController implements SalesFulfillmentControlle
           reasonKey: body.reasonKey,
           ...(body.note === undefined ? {} : { note: body.note }),
         },
+      }),
+    );
+  };
+
+  readonly receiveRts: RequestHandler = async (_request, response) => {
+    const caller = readTenantCaller();
+    const params = response.locals["validated"].params as { readonly orderId: string };
+    const body = response.locals["validated"].body as ReceiveRtsBody;
+    sendData(
+      response,
+      await this.useCases.receiveRts.execute({
+        organizationId: caller.organizationId,
+        allowedLocationIds: caller.allowedLocationIds,
+        actorUserId: caller.actorUserId,
+        orderId: asId<OrderId>(params.orderId),
+        body,
+      }),
+    );
+  };
+
+  readonly deliverOrder: RequestHandler = async (_request, response) => {
+    const caller = readTenantCaller();
+    const params = response.locals["validated"].params as { readonly orderId: string };
+    const body = response.locals["validated"].body as DeliverOrderBody;
+    sendData(
+      response,
+      await this.useCases.deliver.execute({
+        organizationId: caller.organizationId,
+        allowedLocationIds: caller.allowedLocationIds,
+        actorUserId: caller.actorUserId,
+        orderId: asId<OrderId>(params.orderId),
+        body,
       }),
     );
   };
@@ -123,6 +165,22 @@ export function buildSalesFulfillmentTenantRouter(
     validate({ params: orderIdParamsSchema, body: deliveryFailedRequestSchema }),
     idempotency,
     controller.failDelivery,
+  );
+
+  router.post(
+    "/orders/:orderId/rts",
+    permission(PERMISSION_KEY.SALES_ORDER_UPDATE),
+    validate({ params: orderIdParamsSchema, body: receiveRtsRequestSchema }),
+    idempotency,
+    controller.receiveRts,
+  );
+
+  router.post(
+    "/orders/:orderId/deliver",
+    permission(PERMISSION_KEY.SALES_ORDER_UPDATE),
+    validate({ params: orderIdParamsSchema, body: deliverOrderRequestSchema }),
+    idempotency,
+    controller.deliverOrder,
   );
 
   router.post(

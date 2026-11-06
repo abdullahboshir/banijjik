@@ -43,6 +43,7 @@ export class Order implements OrderProps {
   readonly deliveryAddress: OrderProps["deliveryAddress"];
   readonly deliveryZoneId: OrderProps["deliveryZoneId"];
   readonly shippedAt: OrderProps["shippedAt"];
+  readonly deliveredAt: OrderProps["deliveredAt"];
   readonly firstShipment: OrderProps["firstShipment"];
   readonly currentDeliveryAttemptId: OrderProps["currentDeliveryAttemptId"];
   readonly deliveryAttemptCount: OrderProps["deliveryAttemptCount"];
@@ -79,6 +80,7 @@ export class Order implements OrderProps {
     this.deliveryAddress = props.deliveryAddress;
     this.deliveryZoneId = props.deliveryZoneId;
     this.shippedAt = props.shippedAt;
+    this.deliveredAt = props.deliveredAt ?? null;
     this.firstShipment = props.firstShipment;
     this.currentDeliveryAttemptId = props.currentDeliveryAttemptId;
     this.deliveryAttemptCount = props.deliveryAttemptCount;
@@ -202,6 +204,22 @@ export class Order implements OrderProps {
     return this.moved(ORDER_STATUS.DELIVERY_FAILED, actor);
   }
 
+  deliver(actor: OrderTransitionActor): Order {
+    assertStatus(this.status, [ORDER_STATUS.SHIPPED]);
+    return new Order({
+      ...this,
+      status: ORDER_STATUS.DELIVERED,
+      deliveredAt: this.deliveredAt ?? actor.now,
+      updatedAt: actor.now,
+      updatedByUserId: actor.actorUserId,
+    });
+  }
+
+  receiveRts(actor: OrderTransitionActor): Order {
+    assertStatus(this.status, [ORDER_STATUS.DELIVERY_FAILED]);
+    return this.moved(ORDER_STATUS.RETURNED_TO_SENDER, actor);
+  }
+
   reship(input: {
     readonly attemptId: string;
     readonly dispatchMethod: FulfillmentMethod;
@@ -272,7 +290,7 @@ export class Order implements OrderProps {
     readonly lines: readonly OrderLineProps[];
     readonly actor: OrderTransitionActor;
   }): Order {
-    assertStatus(this.status, [ORDER_STATUS.COMPLETED]);
+    assertStatus(this.status, [ORDER_STATUS.COMPLETED, ORDER_STATUS.DELIVERED]);
     return new Order({
       ...this,
       lines: input.lines,

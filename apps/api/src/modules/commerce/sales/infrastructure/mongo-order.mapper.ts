@@ -165,6 +165,7 @@ function deliveryStateOf(
   | "deliveryAddress"
   | "deliveryZoneId"
   | "shippedAt"
+  | "deliveredAt"
   | "firstShipment"
   | "currentDeliveryAttemptId"
   | "deliveryAttemptCount"
@@ -173,6 +174,7 @@ function deliveryStateOf(
     deliveryAddress: deliveryAddressOf(row.deliveryAddress),
     deliveryZoneId: row.deliveryZoneId ?? null,
     shippedAt: row.shippedAt ?? null,
+    deliveredAt: row.deliveredAt ?? null,
     firstShipment: firstShipmentOf(row.firstShipment),
     currentDeliveryAttemptId: row.currentDeliveryAttemptId ?? null,
     deliveryAttemptCount: row.deliveryAttemptCount ?? 0,
@@ -275,6 +277,7 @@ function mutableFieldsOf(props: OrderProps): MutableOrderFields {
     deliveryAddress: props.deliveryAddress,
     deliveryZoneId: props.deliveryZoneId,
     shippedAt: props.shippedAt,
+    deliveredAt: props.deliveredAt,
     firstShipment: firstShipmentDocumentOf(props.firstShipment),
     currentDeliveryAttemptId: props.currentDeliveryAttemptId,
     deliveryAttemptCount: props.deliveryAttemptCount,

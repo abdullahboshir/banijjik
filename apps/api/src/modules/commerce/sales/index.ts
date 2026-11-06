@@ -50,6 +50,14 @@ import {
   type FailDeliveryInput,
 } from "./application/use-cases/fail-delivery.use-case.js";
 import {
+  ReceiveRtsUseCase,
+  type ReceiveRtsInput,
+} from "./application/use-cases/receive-rts.use-case.js";
+import {
+  DeliverOrderUseCase,
+  type DeliverOrderInput,
+} from "./application/use-cases/deliver-order.use-case.js";
+import {
   ListDeliveryAttemptsUseCase,
   type ListDeliveryAttemptsInput,
 } from "./application/use-cases/list-delivery-attempts.use-case.js";
@@ -70,9 +78,17 @@ export {
   ShipOrderUseCase,
   ReshipOrderUseCase,
   FailDeliveryUseCase,
+  ReceiveRtsUseCase,
+  DeliverOrderUseCase,
   ListDeliveryAttemptsUseCase,
 };
-export type { ShipOrderInput, FailDeliveryInput, ListDeliveryAttemptsInput };
+export type {
+  ShipOrderInput,
+  FailDeliveryInput,
+  ReceiveRtsInput,
+  DeliverOrderInput,
+  ListDeliveryAttemptsInput,
+};
 export { buildStorefrontOrderCommands } from "./application/storefront-order-commands.js";
 export { resolveDeliveryFee } from "./application/delivery-fee.js";
 export type { PublicOrderCommands } from "@banijjik/contracts/website";

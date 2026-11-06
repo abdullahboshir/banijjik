@@ -65,9 +65,11 @@ async function assertWindowOpen(input: {
   const timeZone = await input.dependencies.timeZone.read(input.organizationId);
   const settings = await input.dependencies.settings.read(input.organizationId);
   const completedDate =
-    input.order.completedAt === null
-      ? input.order.businessDate
-      : businessDateOf(input.order.completedAt, timeZone);
+    input.order.status === ORDER_STATUS.DELIVERED
+      ? businessDateOf(input.order.deliveredAt ?? input.order.updatedAt, timeZone)
+      : input.order.completedAt === null
+        ? input.order.businessDate
+        : businessDateOf(input.order.completedAt, timeZone);
   const open = isReturnWindowOpen({
     completedBusinessDate: completedDate,
     todayBusinessDate: input.today,
@@ -132,7 +134,9 @@ export async function prepareSalesReturn(
   },
 ): Promise<PreparedSalesReturn> {
   const order = await loadReturnableOrder(dependencies, input.orderId, input.allowedLocationIds);
-  if (order.status !== ORDER_STATUS.COMPLETED) throw orderNotReturnable(order.status);
+  if (order.status !== ORDER_STATUS.COMPLETED && order.status !== ORDER_STATUS.DELIVERED) {
+    throw orderNotReturnable(order.status);
+  }
   const today = await todayAt(dependencies, input.organizationId);
   await assertWindowOpen({ dependencies, order, organizationId: input.organizationId, today });
   const { plan, settlement } = await quoteReturn(dependencies, input, order);

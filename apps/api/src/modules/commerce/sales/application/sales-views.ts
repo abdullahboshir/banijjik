@@ -93,6 +93,7 @@ function deliveryResponseOf(order: OrderProps): OrderDeliveryResponse | null {
     address: order.deliveryAddress,
     deliveryZoneId: order.deliveryZoneId,
     shippedAt: order.shippedAt === null ? null : order.shippedAt.toISOString(),
+    deliveredAt: order.deliveredAt === null || order.deliveredAt === undefined ? null : order.deliveredAt.toISOString(),
     currentDeliveryAttemptId: order.currentDeliveryAttemptId,
     deliveryAttemptCount: order.deliveryAttemptCount,
     firstShipment: firstShipmentResponseOf(order.firstShipment),

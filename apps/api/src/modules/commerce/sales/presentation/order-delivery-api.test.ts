@@ -44,6 +44,7 @@ const EMPTY_DELIVERY = {
   address: null,
   deliveryZoneId: null,
   shippedAt: null,
+  deliveredAt: null,
   currentDeliveryAttemptId: null,
   deliveryAttemptCount: 0,
   firstShipment: null,

@@ -3,9 +3,11 @@ import { newId } from "@banijjik/ids";
 import { describe, expect, it } from "vitest";
 import {
   createDeliveryZoneRequestSchema,
+  deliverOrderRequestSchema,
   deliveryAddressSchema,
   deliveryFailedRequestSchema,
   deliveryZoneListQuerySchema,
+  receiveRtsRequestSchema,
   shipOrderRequestSchema,
 } from "./sales-delivery-schemas.js";
 
@@ -83,5 +85,37 @@ describe("deliveryFailedRequestSchema", () => {
       reasonKey: SALES_DELIVERY_FAIL_REASON.OTHER,
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("receiveRtsRequestSchema", () => {
+  it("parses valid RTS request with disposition", () => {
+    const parsed = receiveRtsRequestSchema.parse({
+      version: 2,
+      reasonKey: "CUSTOMER_UNAVAILABLE",
+      restockDisposition: "RESTOCK",
+      note: "Customer rejected after 3 attempts",
+    });
+    expect(parsed.version).toBe(2);
+    expect(parsed.restockDisposition).toBe("RESTOCK");
+  });
+
+  it("refuses invalid restock disposition", () => {
+    const result = receiveRtsRequestSchema.safeParse({
+      version: 1,
+      restockDisposition: "DISCARD",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("deliverOrderRequestSchema", () => {
+  it("parses valid deliver order request", () => {
+    const parsed = deliverOrderRequestSchema.parse({
+      version: 3,
+      note: "Delivered to reception",
+    });
+    expect(parsed.version).toBe(3);
+    expect(parsed.note).toBe("Delivered to reception");
   });
 });

@@ -127,6 +127,7 @@ export interface OrderDeliveryResponse {
   readonly address: DeliveryAddress | null;
   readonly deliveryZoneId: string | null;
   readonly shippedAt: string | null;
+  readonly deliveredAt: string | null;
   readonly currentDeliveryAttemptId: string | null;
   readonly deliveryAttemptCount: number;
   /** Immutable first-ship snapshot, read-only; null until the first ship. */
@@ -142,4 +143,16 @@ export interface FirstShipmentResponse {
   readonly taxTotal: Money;
   readonly deliveryIncome: Money;
   readonly netPaidAtShipment: Money;
+}
+
+export interface ReceiveRtsRequest {
+  readonly version: number;
+  readonly reasonKey?: string | undefined;
+  readonly restockDisposition?: "RESTOCK" | "RETURN_DAMAGED" | undefined;
+  readonly note?: string | undefined;
+}
+
+export interface DeliverOrderRequest {
+  readonly version: number;
+  readonly note?: string | undefined;
 }

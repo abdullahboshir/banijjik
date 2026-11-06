@@ -223,6 +223,8 @@ export interface EventPayloadMap {
   readonly [SALES_EVENT_TYPE.ORDER_PACKED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_SHIPPED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_DELIVERY_FAILED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_DELIVERED]: OrderEventPayload;
+  readonly [SALES_EVENT_TYPE.ORDER_RETURNED_TO_SENDER]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_COMPLETED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.ORDER_CANCELLED]: OrderEventPayload;
   readonly [SALES_EVENT_TYPE.SALES_RETURN_CREATED]: SalesReturnEventPayload;

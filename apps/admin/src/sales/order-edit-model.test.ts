@@ -112,6 +112,7 @@ describe("order edit body", () => {
         },
         deliveryZoneId: "zone-1",
         shippedAt: null,
+        deliveredAt: null,
         currentDeliveryAttemptId: null,
         deliveryAttemptCount: 0,
         firstShipment: null,

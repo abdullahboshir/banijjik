@@ -64,7 +64,7 @@ function assertReversible(record: SalesReturnRecord, order: Order): void {
   if (record.exchangeOrderId !== null) {
     throw salesRuleError(SALES_RULE_KEY.SALES_RETURN_EXCHANGE_NOT_REVERSIBLE);
   }
-  if (order.status !== ORDER_STATUS.COMPLETED) {
+  if (order.status !== ORDER_STATUS.COMPLETED && order.status !== ORDER_STATUS.DELIVERED) {
     throw salesRuleError(SALES_RULE_KEY.SALES_RETURN_REVERSE_ORDER_NOT_COMPLETED);
   }
 }

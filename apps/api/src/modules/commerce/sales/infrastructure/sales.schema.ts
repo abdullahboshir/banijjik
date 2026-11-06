@@ -120,6 +120,7 @@ export interface OrderDocument {
   deliveryAddress?: DeliveryAddressDocument | null;
   deliveryZoneId?: string | null;
   shippedAt?: Date | null;
+  deliveredAt?: Date | null;
   firstShipment?: FirstShipmentDocument | null;
   currentDeliveryAttemptId?: string | null;
   deliveryAttemptCount?: number;
@@ -259,6 +260,7 @@ export const orderSchema = new Schema<OrderDocument>(
     deliveryAddress: { type: deliveryAddressSubSchema, default: null },
     deliveryZoneId: { type: String, default: null },
     shippedAt: { type: Date, default: null },
+    deliveredAt: { type: Date, default: null },
     firstShipment: { type: firstShipmentSchema, default: null },
     currentDeliveryAttemptId: { type: String, default: null },
     deliveryAttemptCount: { type: Number, required: true, default: 0 },

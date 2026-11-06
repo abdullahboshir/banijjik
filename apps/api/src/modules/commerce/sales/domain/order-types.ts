@@ -72,6 +72,7 @@ export interface OrderProps {
   readonly deliveryAddress: DeliveryAddress | null;
   readonly deliveryZoneId: string | null;
   readonly shippedAt: Date | null;
+  readonly deliveredAt: Date | null;
   readonly firstShipment: FirstShipmentPostingFacts | null;
   readonly currentDeliveryAttemptId: string | null;
   readonly deliveryAttemptCount: number;
@@ -168,6 +169,7 @@ export function draftOrderProps(input: NewOrderInput): OrderProps {
     deliveryAddress: input.deliveryAddress ?? null,
     deliveryZoneId: input.deliveryZoneId ?? null,
     shippedAt: null,
+    deliveredAt: null,
     firstShipment: null,
     currentDeliveryAttemptId: null,
     deliveryAttemptCount: 0,

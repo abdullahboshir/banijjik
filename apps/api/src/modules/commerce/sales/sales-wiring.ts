@@ -76,6 +76,8 @@ import {
 } from "./presentation/delivery-zone-tenant.router.js";
 import { FailDeliveryUseCase } from "./application/use-cases/fail-delivery.use-case.js";
 import { ListDeliveryAttemptsUseCase } from "./application/use-cases/list-delivery-attempts.use-case.js";
+import { DeliverOrderUseCase } from "./application/use-cases/deliver-order.use-case.js";
+import { ReceiveRtsUseCase } from "./application/use-cases/receive-rts.use-case.js";
 import { ReshipOrderUseCase } from "./application/use-cases/ship-order.use-cases.js";
 import {
   SalesFulfillmentHttpController,
@@ -194,6 +196,8 @@ export function buildSalesFulfillmentController(
   return new SalesFulfillmentHttpController({
     fail: new FailDeliveryUseCase(dependencies),
     reship: new ReshipOrderUseCase(dependencies),
+    receiveRts: new ReceiveRtsUseCase(dependencies),
+    deliver: new DeliverOrderUseCase(dependencies),
     list: new ListDeliveryAttemptsUseCase(dependencies),
   });
 }
