@@ -297,3 +297,5 @@ export type { SettingValueSource, TermLocaleValue } from "./settings/settings-co
 export type { SettingsResponse, TermChange } from "./settings/settings-contracts.js";
 export type { TermChangedPayload, TermsResponse } from "./settings/settings-contracts.js";
 export type { TermTextSource, UpdateSettingsRequest } from "./settings/settings-contracts.js";
+export type { Money } from "./pricing/pricing-contracts.js";
+export * from "./courier/index.js";

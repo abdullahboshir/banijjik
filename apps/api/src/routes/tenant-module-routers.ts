@@ -49,6 +49,7 @@ function laterModuleRouters(
     coreRouters.posRouter,
     coreRouters.reportRouter,
     coreRouters.smsRouter,
+    coreRouters.courierRouter,
     ...probeRouters,
   ];
 }
