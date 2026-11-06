@@ -77,6 +77,10 @@ export class PlaceOrderUseCase {
       locationId: draft.locationId,
       lines: lineInputsOf(draft),
       orderDiscount: draft.orderDiscount ?? undefined,
+      delivery: {
+        method: draft.fulfillment.method,
+        address: draft.deliveryAddress,
+      },
     });
     if (prepared.lines.length === 0) throw orderNeedsLine();
     if (draft.fulfillment.method === FULFILLMENT_METHOD.PICKUP) {
@@ -127,7 +131,7 @@ export class PlaceOrderUseCase {
       totals: ctx.prepared.totals,
       approval,
       hasStockLines: ctx.prepared.trackedLines.length > 0,
-      deliveryZoneId: ctx.draft.deliveryZoneId,
+      deliveryZoneId: ctx.prepared.deliveryZoneId,
       actor: { actorUserId: ctx.input.actorUserId, now: ctx.now },
     });
     const persisted = await this.dependencies.orders.update(transitioned, ctx.input.body.version);

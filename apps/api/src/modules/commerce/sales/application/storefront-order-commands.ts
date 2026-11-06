@@ -1,11 +1,8 @@
 import {
-  AUDIT_ACTION,
-  AUDIT_ENTITY_TYPE,
-  LIMIT_KEY,
+  ERROR_CODE,
   OFFERING_KIND,
-  SEQUENCE_KEY,
 } from "@banijjik/contracts";
-import { ORDER_SOURCE, SALES_ADVANCE_REQUIRED, SALES_EVENT_TYPE } from "@banijjik/contracts/sales";
+import { ORDER_SOURCE } from "@banijjik/contracts/sales";
 import type { DeliveryAddress } from "@banijjik/contracts/sales/delivery";
 import type {
   CheckoutFulfillment,
@@ -23,20 +20,18 @@ import {
   type OrderId,
   type OrganizationId,
 } from "@banijjik/ids";
-import { nextSequenceValue } from "../../../../kernel/sequence/index.js";
-import { businessDateOf, businessMonthKeyOf } from "../domain/business-date.js";
+import { AppError } from "../../../../kernel/http/index.js";
+import { businessDateOf } from "../domain/business-date.js";
 import { orderNeedsLine, recordNotFound } from "../domain/errors.js";
 import { Order } from "../domain/order.entity.js";
 import type { SalesDependencies } from "./sales-dependencies.js";
 import { quoteAndPrepare } from "./sales-quote-lines.js";
 import {
   assertAddressAllowedForMethod,
-  formatOrderNumber,
   isDeliveryFulfillment,
-  orderOrderingKey,
-  stockInputOf,
 } from "./sales-transition-shared.js";
 import type { OrderLineInput, PreparedLines } from "./sales-line-preparation.js";
+import { executePlaceTransaction } from "./storefront-order-execution.js";
 
 function extractLineInputs(selections: readonly CheckoutSelection[]): OrderLineInput[] {
   const productSelections = selections.filter((sel) => sel.selection.kind === "PRODUCT");
@@ -53,128 +48,6 @@ function extractLineInputs(selections: readonly CheckoutSelection[]): OrderLineI
       quantity: sel.selection.quantity,
       modifierOptionIds: [...sel.selection.modifierOptionIds],
     };
-  });
-}
-
-interface PlaceExecutionParams {
-  readonly dependencies: SalesDependencies;
-  readonly organizationId: OrganizationId;
-  readonly locationId: LocationId;
-  readonly contactId: ContactId;
-  readonly draft: Order;
-  readonly prepared: PreparedLines;
-  readonly now: Date;
-  readonly timeZone: string;
-}
-
-interface ReserveStockParams {
-  readonly dependencies: SalesDependencies;
-  readonly organizationId: OrganizationId;
-  readonly locationId: LocationId;
-  readonly orderId: OrderId;
-  readonly lines: PreparedLines["trackedLines"];
-  readonly allowNegativeStock: boolean;
-}
-
-async function reserveStock(params: ReserveStockParams): Promise<void> {
-  if (params.lines.length === 0) return;
-  await params.dependencies.stock.reserve(
-    stockInputOf({
-      organizationId: params.organizationId,
-      locationId: params.locationId,
-      actorUserId: null,
-      orderId: params.orderId,
-      lines: params.lines,
-      allowNegativeStock: params.allowNegativeStock,
-    }),
-  );
-}
-
-async function handleAutoConfirmation(
-  dependencies: SalesDependencies,
-  transitioned: Order,
-  now: Date,
-): Promise<Order> {
-  const confirmed = transitioned.confirm({ actorUserId: null, now });
-  await dependencies.orders.update(confirmed, transitioned.version);
-  await dependencies.events.publish(
-    SALES_EVENT_TYPE.ORDER_CONFIRMED,
-    { orderId: confirmed.orderId },
-    { orderingKey: orderOrderingKey(confirmed.orderId) },
-  );
-  await dependencies.audit.record({
-    action: AUDIT_ACTION.ORDER_CONFIRMED,
-    entityType: AUDIT_ENTITY_TYPE.order,
-    entityId: confirmed.orderId,
-    changes: {},
-  });
-  return confirmed;
-}
-
-async function executePlaceTransaction(params: PlaceExecutionParams): Promise<Order> {
-  const { dependencies, organizationId, locationId, contactId, draft, prepared, now, timeZone } =
-    params;
-  const settings = await dependencies.settings.read(organizationId);
-
-  return dependencies.unitOfWork.run(async () => {
-    const counted = (await dependencies.counter.increment(businessMonthKeyOf(now, timeZone))) - 1;
-    await dependencies.limits.assertBelow(LIMIT_KEY.ORDERS_PER_MONTH, counted);
-
-    const orderNumber = formatOrderNumber(
-      await nextSequenceValue({
-        organizationId,
-        sequenceKey: SEQUENCE_KEY.ORDER,
-      }),
-    );
-
-    await reserveStock({
-      dependencies,
-      organizationId,
-      locationId,
-      orderId: draft.orderId,
-      lines: prepared.trackedLines,
-      allowNegativeStock: settings.allowNegativeStock,
-    });
-
-    const transitioned = draft.place({
-      orderNumber,
-      contactId,
-      lines: prepared.lines,
-      totals: prepared.totals,
-      approval: null,
-      hasStockLines: prepared.trackedLines.length > 0,
-      actor: { actorUserId: null, now },
-    });
-
-    await dependencies.orders.insert(transitioned);
-
-    await dependencies.payments.initializeSummary({
-      organizationId,
-      orderId: transitioned.orderId,
-      contactId: transitioned.contactId,
-      locationId: transitioned.locationId,
-      total: transitioned.totals.grandTotal,
-      now,
-    });
-
-    await dependencies.events.publish(
-      SALES_EVENT_TYPE.ORDER_PLACED,
-      { orderId: transitioned.orderId },
-      { orderingKey: orderOrderingKey(transitioned.orderId) },
-    );
-
-    await dependencies.audit.record({
-      action: AUDIT_ACTION.ORDER_PLACED,
-      entityType: AUDIT_ENTITY_TYPE.order,
-      entityId: transitioned.orderId,
-      changes: { orderNumber: { to: transitioned.orderNumber } },
-    });
-
-    if (settings.autoConfirm && settings.advanceRequired === SALES_ADVANCE_REQUIRED.NONE) {
-      return handleAutoConfirmation(dependencies, transitioned, now);
-    }
-
-    return transitioned;
   });
 }
 
@@ -203,6 +76,17 @@ function assertStorefrontPlaceReady(
   assertAddressAllowedForMethod(fulfillment.method, mappedCheckoutAddress(fulfillment));
 }
 
+function assertExpectedDeliveryCharge(
+  prepared: PreparedLines,
+  expectedDeliveryChargeMinor: number,
+): void {
+  if (prepared.totals.deliveryCharge.amount === expectedDeliveryChargeMinor) return;
+  throw new AppError({
+    code: ERROR_CODE.CHECKOUT_PRICE_CHANGED,
+    messageKey: "errors.checkout_price_changed",
+  });
+}
+
 function createStorefrontDraft(params: {
   readonly organizationId: OrganizationId;
   readonly locationId: LocationId;
@@ -221,6 +105,7 @@ function createStorefrontDraft(params: {
     contactId: params.contactId,
     fulfillment: { method: params.fulfillment.method },
     deliveryAddress: deliveryAddressOf(params.fulfillment),
+    deliveryZoneId: params.prepared.deliveryZoneId,
     lines: params.prepared.lines,
     totals: params.prepared.totals,
     businessDate: businessDateOf(params.now, params.timeZone),
@@ -244,6 +129,7 @@ interface PlaceCommandInput {
   readonly selections: readonly CheckoutSelection[];
   readonly recipient: CheckoutRecipientSnapshot;
   readonly fulfillment: CheckoutFulfillment;
+  readonly expectedDeliveryChargeMinor: number;
 }
 
 async function handlePlaceStorefrontOrder(
@@ -269,8 +155,13 @@ async function handlePlaceStorefrontOrder(
     organizationId,
     locationId,
     lines: lineInputs,
+    delivery: {
+      method: input.fulfillment.method,
+      address: deliveryAddressOf(input.fulfillment),
+    },
   });
   assertStorefrontPlaceReady(prepared, input.fulfillment);
+  assertExpectedDeliveryCharge(prepared, input.expectedDeliveryChargeMinor);
 
   const draft = createStorefrontDraft({
     organizationId,

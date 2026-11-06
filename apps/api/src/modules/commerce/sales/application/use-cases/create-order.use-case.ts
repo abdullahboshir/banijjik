@@ -112,13 +112,15 @@ export class CreateOrderUseCase {
   private async draftOf(input: CreateOrderInput, contactId: ContactId | null): Promise<Order> {
     const now = this.dependencies.clock.now();
     const timeZone = await this.dependencies.timeZone.read(input.organizationId);
-    const prepared = await this.quoteBody(input);
+    const fulfillment = draftFulfillmentOf(input.body);
+    const prepared = await this.quoteBody(input, fulfillment);
     const totals =
       prepared?.totals ??
       emptyTotalsOf(await this.dependencies.currency.read(input.organizationId));
     return this.buildDraftEntity({
       input,
       contactId,
+      fulfillment,
       prepared,
       totals,
       businessDate: businessDateOf(now, timeZone),
@@ -129,19 +131,23 @@ export class CreateOrderUseCase {
   private buildDraftEntity(params: {
     input: CreateOrderInput;
     contactId: ContactId | null;
+    fulfillment: {
+      readonly method: FulfillmentMethod;
+      readonly deliveryAddress: DeliveryAddress | null;
+    };
     prepared: PreparedLines | undefined;
     totals: OrderTotals;
     businessDate: string;
     now: Date;
   }): Order {
-    const fulfillment = draftFulfillmentOf(params.input.body);
     return Order.createDraft({
       orderId: newId<OrderId>(),
       organizationId: params.input.organizationId,
       locationId: asId<LocationId>(params.input.body.locationId),
       contactId: params.contactId,
-      fulfillment: { method: fulfillment.method },
-      deliveryAddress: fulfillment.deliveryAddress,
+      fulfillment: { method: params.fulfillment.method },
+      deliveryAddress: params.fulfillment.deliveryAddress,
+      deliveryZoneId: params.prepared?.deliveryZoneId ?? null,
       lines: params.prepared?.lines ?? [],
       totals: params.totals,
       businessDate: params.businessDate,
@@ -153,7 +159,13 @@ export class CreateOrderUseCase {
     });
   }
 
-  private async quoteBody(input: CreateOrderInput): Promise<PreparedLines | undefined> {
+  private async quoteBody(
+    input: CreateOrderInput,
+    fulfillment: {
+      readonly method: FulfillmentMethod;
+      readonly deliveryAddress: DeliveryAddress | null;
+    },
+  ): Promise<PreparedLines | undefined> {
     if (input.body.lines.length === 0) return undefined;
     return quoteAndPrepare(this.dependencies, {
       allowedKinds: [OFFERING_KIND.PRODUCT],
@@ -161,6 +173,7 @@ export class CreateOrderUseCase {
       locationId: input.body.locationId,
       lines: input.body.lines,
       orderDiscount: input.body.orderDiscount,
+      delivery: { method: fulfillment.method, address: fulfillment.deliveryAddress },
     });
   }
 

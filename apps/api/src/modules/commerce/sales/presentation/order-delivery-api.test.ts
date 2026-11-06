@@ -18,7 +18,7 @@ import {
   addInventoryItem,
   cancelOrder,
   confirmOrder,
-  draftOrder,
+  draftOrder as baseDraftOrder,
   getOrder,
   levelOf,
   ordersPath,
@@ -110,6 +110,38 @@ function patchCall(shop: SalesShop, orderId: string, body: object): Promise<Resp
 
 function placeCall(shop: SalesShop, orderId: string, version: number): Promise<Response> {
   return shop.actor.call("post", ordersPath(shop.organizationId, `/${orderId}/place`), { version });
+}
+
+async function ensureZones(shop: SalesShop): Promise<void> {
+  const created = await shop.actor.callWith({
+    method: "post",
+    path: `/orgs/${shop.organizationId}/sales/delivery-zones`,
+    idempotencyKey: newId(),
+    body: {
+      zoneKey: `zone-${newId().slice(-12)}`,
+      name: { bn: "ঢাকা", en: "Dhaka" },
+      areaCodes: [DHAKA_ADDRESS.areaCode, "gulshan", "mirpur"],
+      feeMinor: 0,
+      status: "ACTIVE",
+    },
+  });
+  if (created.status !== 201 && created.status !== 409) {
+    expect(created.status).toBe(201);
+  }
+}
+
+async function draftOrder(
+  shop: SalesShop,
+  body: Parameters<typeof baseDraftOrder>[1],
+): Promise<OrderRow> {
+  const method = (body as { fulfillmentMethod?: string }).fulfillmentMethod;
+  if (method === "COURIER" || method === "OWN_RIDER") {
+    const area = (body as { deliveryAddress?: { areaCode?: string } }).deliveryAddress?.areaCode;
+    if (typeof area === "string" && area.trim().length > 0) {
+      await ensureZones(shop);
+    }
+  }
+  return baseDraftOrder(shop, body);
 }
 
 describe("order delivery state, address and complete guard", () => {

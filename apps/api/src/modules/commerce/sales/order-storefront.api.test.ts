@@ -1,4 +1,4 @@
-import { LIMIT_KEY, type LimitKey } from "@banijjik/contracts";
+import { ERROR_CODE, LIMIT_KEY, type LimitKey } from "@banijjik/contracts";
 import {
   ORDER_STATUS,
   SALES_ADVANCE_REQUIRED_SETTING_KEY,
@@ -133,6 +133,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
       fulfillment: {
         method: "PICKUP",
       },
+      expectedDeliveryChargeMinor: 0,
     });
 
     expect(link.requestType).toBe("ORDER");
@@ -180,6 +181,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
         ],
         recipient: { name: "User 1", phoneE164: "+8801711111111" },
         fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
       },
     );
 
@@ -207,6 +209,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
         ],
         recipient: { name: "User 2", phoneE164: "+8801722222222" },
         fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
       },
     );
 
@@ -252,6 +255,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
           phoneE164: "+8801999999999",
         },
         fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
       },
     );
 
@@ -289,6 +293,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
         ],
         recipient: { name: "Summary Test", phoneE164: "+8801733333333" },
         fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
       },
     );
 
@@ -336,6 +341,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
         ],
         recipient: { name: "Auto Confirm", phoneE164: "+8801744444444" },
         fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
       },
     );
 
@@ -372,6 +378,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
         ],
         recipient: { name: "Advance Req", phoneE164: "+8801755555555" },
         fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
       },
     );
 
@@ -406,6 +413,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
         ],
         recipient: { name: "Checkout Id Lookup", phoneE164: "+8801766666666" },
         fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
       },
     );
 
@@ -444,6 +452,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
           ],
           recipient: { name: "Out of Stock", phoneE164: "+8801777777777" },
           fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
         },
       ),
     ).rejects.toThrow();
@@ -477,6 +486,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
           ],
           recipient: { name: "Nonexistent", phoneE164: "+8801788888888" },
           fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
         },
       ),
     ).rejects.toThrow();
@@ -522,6 +532,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
             ],
             recipient: { name: "Limit Test", phoneE164: "+8801799999999" },
             fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
           },
         ),
       ).rejects.toThrow("ORDER_LIMIT_REACHED");
@@ -559,6 +570,7 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
           ],
           recipient: { name: "Cross Org", phoneE164: "+8801700000002" },
           fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
         },
       ),
     ).rejects.toThrow();
@@ -599,11 +611,131 @@ describe("PublicOrderCommands.place (Storefront Order Adapter)", () => {
             ],
             recipient: { name: "Rollback Test", phoneE164: "+8801700000003" },
             fulfillment: { method: "PICKUP" },
+        expectedDeliveryChargeMinor: 0,
           },
         ),
       ).rejects.toThrow("STOCK_RESERVATION_SIMULATED_FAILURE");
     } finally {
       stockWithMock.reserve = originalReserve;
     }
+  });
+
+  it("places a COURIER order priced from the active zone covering the address", async () => {
+    const { shop, product, contactId, commands, deps } = await setupShop("courier-zone");
+    const feeMinor = 800;
+    const created = await shop.actor.callWith({
+      method: "post",
+      path: `/orgs/${shop.organizationId}/sales/delivery-zones`,
+      idempotencyKey: newId(),
+      body: {
+        zoneKey: `zone-${newId().slice(-12)}`,
+        name: { bn: "ঢাকা", en: "Dhaka" },
+        areaCodes: ["dhanmondi"],
+        feeMinor,
+        status: "ACTIVE",
+      },
+    });
+    expect(created.status).toBe(201);
+
+    const link = await commands.place(
+      {
+        organizationId: shop.organizationId,
+        locationId: shop.locationId,
+        contactId,
+        checkoutId: newId(),
+        actorUserId: null,
+      },
+      {
+        selections: [
+          {
+            selectionId: "sel-courier",
+            selection: {
+              kind: "PRODUCT",
+              offeringId: product.offeringId,
+              variantId: product.variantId,
+              quantity: 1,
+              modifierOptionIds: [],
+            },
+            customFields: {},
+          },
+        ],
+        recipient: { name: "Courier Guest", phoneE164: "+8801711111111" },
+        fulfillment: {
+          method: "COURIER",
+          address: {
+            recipientName: "Courier Guest",
+            phone: "+8801711111111",
+            addressLine: "House 12",
+            districtCode: "dhaka",
+            areaCode: "dhanmondi",
+          },
+        },
+        expectedDeliveryChargeMinor: feeMinor,
+      },
+    );
+
+    expect(link.paymentRequired.amount).toBe(RICE_PRICE + feeMinor);
+    const order = await runInOrganizationContext(shop.organizationId, () =>
+      deps.orders.findById(asId(link.requestId)),
+    );
+    expect(order?.totals.deliveryCharge.amount).toBe(feeMinor);
+    expect(order?.totals.grandTotal.amount).toBe(RICE_PRICE + feeMinor);
+    expect(order?.deliveryZoneId).toBe(created.body.data.deliveryZoneId);
+  });
+
+  it("refuses storefront place when the expected delivery charge no longer matches", async () => {
+    const { shop, product, contactId, commands } = await setupShop("fee-mismatch");
+    const created = await shop.actor.callWith({
+      method: "post",
+      path: `/orgs/${shop.organizationId}/sales/delivery-zones`,
+      idempotencyKey: newId(),
+      body: {
+        zoneKey: `zone-${newId().slice(-12)}`,
+        name: { bn: "ঢাকা", en: "Dhaka" },
+        areaCodes: ["dhanmondi"],
+        feeMinor: 800,
+        status: "ACTIVE",
+      },
+    });
+    expect(created.status).toBe(201);
+
+    await expect(
+      commands.place(
+        {
+          organizationId: shop.organizationId,
+          locationId: shop.locationId,
+          contactId,
+          checkoutId: newId(),
+          actorUserId: null,
+        },
+        {
+          selections: [
+            {
+              selectionId: "sel-mismatch",
+              selection: {
+                kind: "PRODUCT",
+                offeringId: product.offeringId,
+                variantId: product.variantId,
+                quantity: 1,
+                modifierOptionIds: [],
+              },
+              customFields: {},
+            },
+          ],
+          recipient: { name: "Mismatch Guest", phoneE164: "+8801711111111" },
+          fulfillment: {
+            method: "COURIER",
+            address: {
+              recipientName: "Mismatch Guest",
+              phone: "+8801711111111",
+              addressLine: "House 12",
+              districtCode: "dhaka",
+              areaCode: "dhanmondi",
+            },
+          },
+          expectedDeliveryChargeMinor: 500,
+        },
+      ),
+    ).rejects.toMatchObject({ code: ERROR_CODE.CHECKOUT_PRICE_CHANGED });
   });
 });

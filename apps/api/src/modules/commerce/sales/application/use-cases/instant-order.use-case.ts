@@ -107,6 +107,7 @@ export class InstantOrderUseCase {
       locationId: input.body.locationId,
       lines: input.body.lines,
       orderDiscount: input.body.orderDiscount,
+      delivery: { method: FULFILLMENT_METHOD.PICKUP, address: null },
     });
     const ownerExempt =
       settings.discountOwnerWithoutApproval && (await this.dependencies.owner.isOwner());

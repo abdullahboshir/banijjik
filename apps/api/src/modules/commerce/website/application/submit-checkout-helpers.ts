@@ -161,6 +161,7 @@ export async function executeCommands(input: {
       selections: products,
       recipient: { name: body.contact.name, phoneE164: body.contact.phone },
       fulfillment: quote.input.fulfillment,
+      expectedDeliveryChargeMinor: quote.pricedSnapshot.deliveryCharge.amount,
     });
     links.push(orderLink);
   }
