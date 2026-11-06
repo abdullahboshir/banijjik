@@ -191,7 +191,15 @@ async function bootStack(stops: Stop[]): Promise<StorefrontStack> {
   stops.push(killServer(storefront));
   // Any answer proves the storefront is serving: a request without a business host gets its 404 page.
   await waitUntilAnswers(storefront, `${STOREFRONT_ORIGIN}/sign-in`, () => true);
-  const browser = await puppeteer.launch({ executablePath: chromePath(), headless: true });
+  const browser = await puppeteer.launch({
+    executablePath: chromePath(),
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      `--host-resolver-rules=MAP *.${BASE_DOMAIN} 127.0.0.1, MAP ${BASE_DOMAIN} 127.0.0.1`,
+    ],
+  });
   stops.push(async () => {
     await browser.close();
   });

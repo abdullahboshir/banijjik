@@ -1,7 +1,18 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PublicOfferingDetailResponse } from "@banijjik/contracts/catalog";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cartStore } from "../checkout/cart-store";
 import { fetchAvailability } from "./availability-api";
+import { ServiceBookingSelector } from "./service-booking-selector";
+import { translatorFor } from "../i18n/client-translator";
+import { todayDateString } from "./service-booking-fields";
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
 
 function createMockOffering(
   overrides: Partial<PublicOfferingDetailResponse>,
@@ -74,46 +85,96 @@ describe("Part B2: Offering Kind Selectors and Availability", () => {
       expect(walkInOffering.publicCustomFields["bookingMode"]).toBe("WALK_IN_ONLY");
     });
 
-    it("adds scheduled SERVICE selection using the availability slot startsAt unchanged", () => {
+    it("adds scheduled SERVICE selection using the availability slot startsAt unchanged", async () => {
       const scheduledOffering = createMockOffering({
         kind: "SERVICE",
         publicCustomFields: {
           resources: [{ resourceId: "staff-karim", name: "Karim (Stylist)" }],
         },
       });
-      const date = "2026-11-08";
-      const hardcodedClockSlot = "10:00";
-      const apiStartsAt = "2026-11-08T03:00:00.000Z";
-      expect(apiStartsAt).not.toBe(new Date(`${date}T${hardcodedClockSlot}:00.000Z`).toISOString());
-
-      const res = cartStore.addItem({
-        locationId: "loc-dhaka",
-        selection: {
-          kind: "SERVICE",
-          offeringId: scheduledOffering.offeringId,
-          variantId: "var-1",
-          startsAt: apiStartsAt,
-          resourceIds: ["staff-karim"],
+      const date = todayDateString();
+      const apiStartsAt = `${date}T04:00:00.000Z`;
+      const apiSecondStartsAt = `${date}T05:00:00.000Z`;
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            data: {
+              offeringId: scheduledOffering.offeringId,
+              variantId: "var-1",
+              locationId: "loc-dhaka",
+              days: [
+                {
+                  date,
+                  slots: [
+                    {
+                      startsAt: apiStartsAt,
+                      endsAt: `${date}T04:30:00.000Z`,
+                      resourceIds: ["staff-karim"],
+                    },
+                    {
+                      startsAt: apiSecondStartsAt,
+                      endsAt: `${date}T05:30:00.000Z`,
+                      resourceIds: ["staff-karim"],
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      );
+      const callback = vi.fn(
+        (input: { variantId: string; startsAt: string; resourceIds: readonly string[] }) => {
+          cartStore.addItem({
+            locationId: "loc-dhaka",
+            selection: {
+              kind: "SERVICE",
+              offeringId: scheduledOffering.offeringId,
+              variantId: input.variantId,
+              startsAt: input.startsAt,
+              resourceIds: input.resourceIds,
+            },
+            display: {
+              offeringName: scheduledOffering.name,
+              variantName: scheduledOffering.variants[0]?.name ?? scheduledOffering.name,
+              unitPrice: scheduledOffering.startingPrice,
+              mediaUrl: null,
+              kind: "SERVICE",
+            },
+          });
         },
-        display: {
-          offeringName: scheduledOffering.name,
-          variantName: scheduledOffering.variants[0]?.name ?? scheduledOffering.name,
-          unitPrice: scheduledOffering.startingPrice,
-          mediaUrl: null,
-          kind: "SERVICE",
-        },
+      );
+      render(
+        <ServiceBookingSelector
+          organizationId="org-123"
+          locationId="loc-dhaka"
+          offering={scheduledOffering}
+          locale="en"
+          t={translatorFor("en").t}
+          onBookService={callback}
+        />,
+      );
+      await screen.findByRole("option", { name: apiSecondStartsAt });
+      const requestUrl = new URL(String(fetchSpy.mock.calls[0]?.[0]), "https://salon.localhost");
+      expect(requestUrl.pathname).toContain("/api/v1/storefront/orgs/org-123/availability");
+      expect(requestUrl.searchParams.get("offeringId")).toBe(scheduledOffering.offeringId);
+      expect(requestUrl.searchParams.get("variantId")).toBe("var-1");
+      expect(requestUrl.searchParams.get("locationId")).toBe("loc-dhaka");
+      expect(requestUrl.searchParams.get("startDate")).toBe(date);
+      expect(requestUrl.searchParams.get("endDate")).toBe(date);
+      fireEvent.change(screen.getByDisplayValue(apiStartsAt), {
+        target: { value: apiSecondStartsAt },
       });
-
-      expect(res.ok).toBe(true);
+      fireEvent.click(screen.getByRole("button", { name: "Reserve Booking" }));
+      await waitFor(() => expect(callback).toHaveBeenCalledOnce());
+      expect(callback.mock.calls[0]?.[0].startsAt).toBe(apiSecondStartsAt);
       const items = cartStore.getState().items;
       expect(items.length).toBe(1);
       expect(items[0]?.selection.kind).toBe("SERVICE");
       if (items[0]?.selection.kind === "SERVICE") {
-        expect(items[0].selection.startsAt).toBe(apiStartsAt);
-        expect(items[0].selection.startsAt).not.toBe(
-          new Date(`${date}T${hardcodedClockSlot}:00.000Z`).toISOString(),
-        );
-        expect(items[0].selection.resourceIds).toEqual(["staff-karim"]);
+        expect(items[0].selection.startsAt).toBe(apiSecondStartsAt);
+        expect(items[0].selection.resourceIds).toEqual([]);
       }
     });
   });

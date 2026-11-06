@@ -91,6 +91,7 @@ import type { ApiActor, TwoOrganizations } from "../../../test-support/two-organ
 import {
   MongoEventSessionRepository,
   MongoResourceSlotUsageRepository,
+  BOOKING_MODEL_NAME,
   buildOrganizationTimezoneReader,
   MongoBookingRepository,
   registerBookingScheduledJobs,
@@ -105,6 +106,7 @@ import {
 } from "../payment/index.js";
 import { buildOrgConfigService } from "../../platform/entitlement/index.js";
 import { buildIndustryTemplateReader } from "../../platform/industry/index.js";
+import { CHECKOUT_MODEL_NAME } from "./infrastructure/checkout.schema.js";
 
 registerIamApiModels();
 
@@ -299,6 +301,31 @@ async function quote(
   });
   expect(response.status, JSON.stringify(response.body)).toBe(201);
   return response.body.data as PublicQuoteResponse;
+}
+
+async function serviceAvailability(
+  shop: ShopWorld,
+  service: { readonly offeringId: string; readonly variantId: string },
+  locationId: string,
+): Promise<Response> {
+  return callStorefront(harness.app, {
+    method: "get",
+    organizationId: shop.organizationId,
+    suffix: "/availability",
+    query: {
+      offeringId: service.offeringId,
+      variantId: service.variantId,
+      locationId,
+      startDate: "2026-11-01",
+      endDate: "2026-11-01",
+    },
+  });
+}
+
+async function tenantDocumentCount(organizationId: string, modelName: string): Promise<number> {
+  return runInOrganizationContext(organizationId, () =>
+    models({}).get(modelName).countDocuments({ organizationId }),
+  );
 }
 
 async function submitCheckout(
@@ -1193,6 +1220,203 @@ describe("Storefront Commerce Scenarios (Card 4.3 Part V)", () => {
     );
     expect(replay.status, JSON.stringify(replay.body)).toBe(201);
     expect((replay.body.data as CheckoutResponse).checkoutId).toBe(firstCheckout.checkoutId);
+  });
+
+  it("rejects a foreign guest cookie for SERVICE quotes and checkout on a configured second tenant", async () => {
+    const shopA = await commerceShop();
+    const shopB = await commerceShop();
+    const serviceOffering = await publishBookableService(shopB.actor, shopB.organizationId);
+    const resourceId = await createHall(harness, shopB.actor, {
+      organizationId: shopB.organizationId,
+      locationId: shopB.locationId,
+      offeringIds: [serviceOffering.offeringId],
+      capacity: 1,
+      name: "Tenant B Stylist",
+    });
+    const service = {
+      offeringId: serviceOffering.offeringId,
+      variantId: variantOf(serviceOffering),
+    };
+    const selection: CheckoutSelection[] = [
+      {
+        selectionId: "sel-service-foreign-guest",
+        selection: {
+          kind: "SERVICE",
+          ...service,
+          startsAt: SUNDAY_SERVICE_START,
+          resourceIds: [resourceId],
+        },
+        customFields: {},
+      },
+    ];
+    const guestA = await newGuest(shopA.organizationId);
+    const guestB = await newGuest(shopB.organizationId);
+    const ownQuote = await quote(shopB, guestB, selection);
+    const foreignQuote = await callStorefront(harness.app, {
+      method: "post",
+      organizationId: shopB.organizationId,
+      suffix: "/quotes",
+      body: {
+        locationId: shopB.locationId,
+        selections: selection,
+        fulfillment: { method: "PICKUP" },
+      },
+      cookies: guestA,
+    });
+    expect(foreignQuote.status).toBe(401);
+    expect(foreignQuote.body.error.code).toBe(ERROR_CODE.UNAUTHENTICATED);
+
+    const foreignSubmit = await submitCheckout(shopB, guestA, ownQuote.quoteId, {
+      name: "Foreign Guest",
+      phone: "+8801700000101",
+    });
+    expect(foreignSubmit.status).toBe(401);
+    expect(foreignSubmit.body.error.code).toBe(ERROR_CODE.UNAUTHENTICATED);
+  });
+
+  it("refuses SERVICE quotes and saved quote submissions after its location leaves the public list", async () => {
+    const shop = await commerceShop();
+    const serviceOffering = await publishBookableService(shop.actor, shop.organizationId);
+    const resourceId = await createHall(harness, shop.actor, {
+      organizationId: shop.organizationId,
+      locationId: shop.locationId,
+      offeringIds: [serviceOffering.offeringId],
+      capacity: 1,
+      name: "Public List Stylist",
+    });
+    const locationB = shop.world.locationA2;
+    const service = {
+      offeringId: serviceOffering.offeringId,
+      variantId: variantOf(serviceOffering),
+    };
+    const selection: CheckoutSelection[] = [
+      {
+        selectionId: "sel-service-location-revoked",
+        selection: {
+          kind: "SERVICE",
+          ...service,
+          startsAt: SUNDAY_SERVICE_START,
+          resourceIds: [resourceId],
+        },
+        customFields: {},
+      },
+    ];
+    await setSetting(shop, WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY, [shop.locationId, locationB]);
+    const guest = await newGuest(shop.organizationId);
+    const validQuote = await quote(shop, guest, selection);
+    const usageBefore = await slotUsedByBucket(
+      shop.organizationId,
+      resourceId,
+      SUNDAY_SERVICE_START,
+      SERVICE_START_END,
+    );
+    const bookingsBefore = await tenantDocumentCount(shop.organizationId, BOOKING_MODEL_NAME);
+    const checkoutsBefore = await tenantDocumentCount(shop.organizationId, CHECKOUT_MODEL_NAME);
+
+    const publicListUpdated = await shop.actor.call(
+      "patch",
+      `/orgs/${shop.organizationId}/settings`,
+      {
+        items: [
+          { settingKey: WEBSITE_PUBLIC_LOCATION_IDS_SETTING_KEY, value: [locationB], version: 1 },
+        ],
+      },
+    );
+    expect(publicListUpdated.status, JSON.stringify(publicListUpdated.body)).toBe(200);
+    const newQuote = await callStorefront(harness.app, {
+      method: "post",
+      organizationId: shop.organizationId,
+      suffix: "/quotes",
+      body: {
+        locationId: shop.locationId,
+        selections: selection,
+        fulfillment: { method: "PICKUP" },
+      },
+      cookies: guest,
+    });
+    expect(newQuote.status).toBe(400);
+    expect(newQuote.body.error.code).toBe(ERROR_CODE.CHECKOUT_LOCATION_MISMATCH);
+
+    const savedQuoteSubmit = await submitCheckout(
+      shop,
+      guest,
+      validQuote.quoteId,
+      { name: "Location Change", phone: "+8801700000102" },
+      newId(),
+    );
+    expect(savedQuoteSubmit.status).toBe(400);
+    expect(savedQuoteSubmit.body.error.code).toBe(ERROR_CODE.CHECKOUT_LOCATION_MISMATCH);
+    expect(await tenantDocumentCount(shop.organizationId, BOOKING_MODEL_NAME)).toBe(bookingsBefore);
+    expect(await tenantDocumentCount(shop.organizationId, CHECKOUT_MODEL_NAME)).toBe(
+      checkoutsBefore,
+    );
+    expect(
+      await slotUsedByBucket(
+        shop.organizationId,
+        resourceId,
+        SUNDAY_SERVICE_START,
+        SERVICE_START_END,
+      ),
+    ).toEqual(usageBefore);
+  });
+
+  it("replays a capacity-one SERVICE checkout once and removes its held slot from availability", async () => {
+    const shop = await commerceShop();
+    await setSetting(shop, BOOKING_DEPOSIT_REQUIRED_SETTING_KEY, DEPOSIT_REQUIRED.FIXED);
+    await setSetting(shop, BOOKING_DEPOSIT_VALUE_SETTING_KEY, DEPOSIT_MINOR);
+    await setSetting(shop, BOOKING_HOLD_MINUTES_SETTING_KEY, HOLD_MINUTES);
+    const serviceOffering = await publishBookableService(shop.actor, shop.organizationId);
+    const resourceId = await createHall(harness, shop.actor, {
+      organizationId: shop.organizationId,
+      locationId: shop.locationId,
+      offeringIds: [serviceOffering.offeringId],
+      capacity: 1,
+      name: "Replay Stylist",
+    });
+    const service = {
+      offeringId: serviceOffering.offeringId,
+      variantId: variantOf(serviceOffering),
+    };
+    const availableBefore = await serviceAvailability(shop, service, shop.locationId);
+    expect(availableBefore.status).toBe(200);
+    const startsAt = String(availableBefore.body.data.days[0]?.slots[0]?.startsAt ?? "");
+    expect(startsAt).not.toBe("");
+    const selection: CheckoutSelection[] = [
+      {
+        selectionId: "sel-service-replay",
+        selection: { kind: "SERVICE", ...service, startsAt, resourceIds: [resourceId] },
+        customFields: {},
+      },
+    ];
+    const guest = await newGuest(shop.organizationId);
+    const quoted = await quote(shop, guest, selection);
+    const key = newId();
+    const contact = { name: "Replay Client", phone: "+8801700000103" };
+    const first = await submitCheckout(shop, guest, quoted.quoteId, contact, key);
+    const replay = await submitCheckout(shop, guest, quoted.quoteId, contact, key);
+    expect(first.status, JSON.stringify(first.body)).toBe(201);
+    expect(replay.status, JSON.stringify(replay.body)).toBe(201);
+    expect(replay.body.data).toEqual(first.body.data);
+    const checkout = first.body.data as CheckoutResponse;
+    const booking = requirePresent(checkout.requests[0], "replayed booking");
+    expect(booking.status).toBe(BOOKING_STATUS.HELD);
+    expect(booking.holdExpiresAt).toBeDefined();
+    expect(checkout.checkoutId).toBe((replay.body.data as CheckoutResponse).checkoutId);
+    expect((replay.body.data as CheckoutResponse).requests[0]?.requestId).toBe(booking.requestId);
+    expect(await tenantDocumentCount(shop.organizationId, CHECKOUT_MODEL_NAME)).toBe(1);
+    expect(await tenantDocumentCount(shop.organizationId, BOOKING_MODEL_NAME)).toBe(1);
+    expect(
+      maxSlotUsed(
+        await slotUsedByBucket(shop.organizationId, resourceId, startsAt, SERVICE_START_END),
+      ),
+    ).toBe(1);
+
+    const availableAfter = await serviceAvailability(shop, service, shop.locationId);
+    expect(availableAfter.status).toBe(200);
+    const remainingSlots = (
+      availableAfter.body.data.days as readonly { slots: readonly { startsAt: string }[] }[]
+    ).flatMap((day) => day.slots);
+    expect(remainingSlots.some((slot) => slot.startsAt === startsAt)).toBe(false);
   });
 
   it("refuses a guest cookie from another organization and a location not on the public list", async () => {
