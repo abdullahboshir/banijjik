@@ -52,9 +52,12 @@ function orderFactsReader(orders: OrderRepository): ReportSourceReader["readOrde
     if (order === undefined) return undefined;
     const { totals } = order;
     return {
+      orderId: order.orderId,
       locationId: order.locationId,
       currency: totals.grandTotal.currency,
       completedAt: order.completedAt,
+      shippedAt: order.shippedAt,
+      firstShipmentBusinessDate: order.firstShipment?.businessDate ?? null,
       subtotal: totals.subtotal.amount,
       discountTotal: totals.discountTotal.amount,
       taxTotal: totals.taxTotal.amount,

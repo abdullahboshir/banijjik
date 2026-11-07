@@ -61,10 +61,15 @@ async function summarizeEvent(
   const eventType = envelope.type as EventType;
   const pending = incrementOf(eventType, context);
   if (pending === undefined) return;
+  const increment = await pending;
+  const hasDeltas =
+    Object.values(increment.counterDeltas).some((d) => d !== undefined && d !== 0) ||
+    increment.methodDelta !== undefined;
+  if (!hasDeltas) return;
   await dependencies.summaries.applyIncrement({
     organizationId,
     currency: context.organizationCurrency,
-    increment: await pending,
+    increment,
   });
 }
 
@@ -78,11 +83,13 @@ async function buildIncrementContext(
   const organizationCurrency = await dependencies.settings.currencyOf(organizationId);
   if (organizationCurrency === undefined) throw reportSourceMissing("organization.currency");
   return {
+    organizationId,
     subjectId: subjectIdOf(envelope),
     occurredAt: new Date(envelope.occurredAt),
     timeZone,
     organizationCurrency,
     reader: dependencies.reader,
+    markers: dependencies.markers,
   };
 }
 

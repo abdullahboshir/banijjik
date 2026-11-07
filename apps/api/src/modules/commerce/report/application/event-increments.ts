@@ -3,15 +3,17 @@ import type { ReportCounter, ReportMethodCounter } from "@banijjik/contracts/rep
 import { businessDateOf } from "../domain/business-date.js";
 import { reportCurrencyMismatch, reportSourceMissing } from "../domain/errors.js";
 import type { MethodDelta, SummaryIncrement } from "../domain/summary-increment.js";
-import type { ReportSourceReader } from "./ports/report-ports.js";
+import type { ReportEventMarkerRepository, ReportSourceReader } from "./ports/report-ports.js";
 
 /** What one handled event adds to the daily row it belongs to (plan 3.10 decision 4). */
 export interface IncrementContext {
+  readonly organizationId: string;
   readonly subjectId: string;
   readonly occurredAt: Date;
   readonly timeZone: string;
   readonly organizationCurrency: string;
   readonly reader: ReportSourceReader;
+  readonly markers?: ReportEventMarkerRepository;
 }
 
 type IncrementBuilder = (context: IncrementContext) => Promise<SummaryIncrement>;
@@ -22,6 +24,9 @@ type PaymentDirection = "IN" | "REFUND" | "REVERSAL";
 export const REPORT_SUBJECT_KEY: Readonly<Record<string, string>> = {
   [EVENT_TYPE.ORDER_COMPLETED]: "orderId",
   [EVENT_TYPE.ORDER_CANCELLED]: "orderId",
+  [EVENT_TYPE.ORDER_SHIPPED]: "orderId",
+  [EVENT_TYPE.ORDER_RETURNED_TO_SENDER]: "orderId",
+  [EVENT_TYPE.ORDER_DELIVERY_LOSS_CLOSED]: "orderId",
   [EVENT_TYPE.SALES_RETURN_CREATED]: "salesReturnId",
   [EVENT_TYPE.SALES_RETURN_REVERSED]: "salesReturnId",
   [EVENT_TYPE.BOOKING_COMPLETED]: "bookingId",
@@ -82,6 +87,49 @@ const orderCompleted: IncrementBuilder = async (context) => {
 const orderCancelled: IncrementBuilder = async (context) => {
   const order = await requireOrder(context);
   return countedOn(order.locationId, eventDateOf(context), { ordersCancelled: 1 });
+};
+
+const orderShipped: IncrementBuilder = async (context) => {
+  const order = await requireOrder(context);
+  const businessDate =
+    order.firstShipmentBusinessDate ??
+    (order.shippedAt ? businessDateOf(order.shippedAt, context.timeZone) : eventDateOf(context));
+
+  if (context.markers) {
+    const isFirstShipment = await context.markers.recordIfNew({
+      organizationId: context.organizationId,
+      eventId: `order-shipped:${order.orderId ?? context.subjectId}`,
+      appliedAt: context.occurredAt,
+    });
+    if (!isFirstShipment) {
+      return countedOn(order.locationId, businessDate, {});
+    }
+  }
+
+  return countedOn(order.locationId, businessDate, {
+    ordersCompleted: 1,
+    grossSales: order.subtotal,
+    discountTotal: order.discountTotal,
+    taxTotal: order.taxTotal,
+    deliveryCharges: order.deliveryCharge,
+    netSales: order.grandTotal,
+  });
+};
+
+const orderReturnedToSender: IncrementBuilder = async (context) => {
+  const order = await requireOrder(context);
+  return countedOn(order.locationId, eventDateOf(context), {
+    returnsCount: 1,
+    returnsValue: order.grandTotal,
+  });
+};
+
+const orderDeliveryLossClosed: IncrementBuilder = async (context) => {
+  const order = await requireOrder(context);
+  return countedOn(order.locationId, eventDateOf(context), {
+    returnsCount: 1,
+    returnsValue: order.grandTotal,
+  });
 };
 
 async function requireSalesReturn(context: IncrementContext) {
@@ -195,6 +243,9 @@ const expenseVoided: IncrementBuilder = async (context) => {
 const BUILDERS: Readonly<Partial<Record<EventType, IncrementBuilder>>> = {
   [EVENT_TYPE.ORDER_COMPLETED]: orderCompleted,
   [EVENT_TYPE.ORDER_CANCELLED]: orderCancelled,
+  [EVENT_TYPE.ORDER_SHIPPED]: orderShipped,
+  [EVENT_TYPE.ORDER_RETURNED_TO_SENDER]: orderReturnedToSender,
+  [EVENT_TYPE.ORDER_DELIVERY_LOSS_CLOSED]: orderDeliveryLossClosed,
   [EVENT_TYPE.SALES_RETURN_CREATED]: salesReturnCreated,
   [EVENT_TYPE.SALES_RETURN_REVERSED]: salesReturnReversed,
   [EVENT_TYPE.BOOKING_COMPLETED]: bookingCompleted,

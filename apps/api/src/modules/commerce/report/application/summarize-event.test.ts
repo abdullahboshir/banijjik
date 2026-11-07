@@ -179,6 +179,97 @@ describe("the summarize handler", () => {
     expect(harness.summaries.increments).toHaveLength(1);
   });
 
+  it("a shipped delivery order counts on its first shipment business date, and reshipment is idempotent", async () => {
+    const harness = harnessWith();
+    harness.sources.orders.set(
+      "order-ship-1",
+      orderFact({
+        completedAt: null,
+        shippedAt: new Date("2026-10-25T08:00:00.000Z"),
+        firstShipmentBusinessDate: "2026-10-25",
+      }),
+    );
+
+    // Initial shipment attempt 1
+    await harness.deliver({
+      eventId: "event-ship-1",
+      type: EVENT_TYPE.ORDER_SHIPPED,
+      payload: { orderId: "order-ship-1" },
+    });
+
+    expect(harness.summaries.increments).toEqual([
+      {
+        locationId: "loc-1",
+        businessDate: "2026-10-25",
+        counterDeltas: {
+          ordersCompleted: 1,
+          grossSales: 10_000,
+          discountTotal: 500,
+          taxTotal: 750,
+          deliveryCharges: 200,
+          netSales: 10_450,
+        },
+        methodDelta: undefined,
+      },
+    ]);
+
+    // Reshipment attempt 2 with a new eventId
+    await harness.deliver({
+      eventId: "event-ship-2",
+      type: EVENT_TYPE.ORDER_SHIPPED,
+      payload: { orderId: "order-ship-1" },
+    });
+
+    // Should NOT duplicate the increment
+    expect(harness.summaries.increments).toHaveLength(1);
+  });
+
+  it("an RTS order increments returns count and returns value on the event's business date", async () => {
+    const harness = harnessWith();
+    harness.sources.orders.set("order-rts-1", orderFact({ grandTotal: 10_450 }));
+
+    await harness.deliver({
+      eventId: "event-rts-1",
+      type: EVENT_TYPE.ORDER_RETURNED_TO_SENDER,
+      payload: { orderId: "order-rts-1" },
+      occurredAt: "2026-10-25T10:00:00.000Z",
+    });
+
+    expect(harness.summaries.increments).toEqual([
+      {
+        locationId: "loc-1",
+        businessDate: "2026-10-25",
+        counterDeltas: {
+          returnsCount: 1,
+          returnsValue: 10_450,
+        },
+      },
+    ]);
+  });
+
+  it("a closed delivery loss increments returns count and returns value", async () => {
+    const harness = harnessWith();
+    harness.sources.orders.set("order-loss-1", orderFact({ grandTotal: 10_450 }));
+
+    await harness.deliver({
+      eventId: "event-loss-1",
+      type: EVENT_TYPE.ORDER_DELIVERY_LOSS_CLOSED,
+      payload: { orderId: "order-loss-1" },
+      occurredAt: "2026-10-25T11:00:00.000Z",
+    });
+
+    expect(harness.summaries.increments).toEqual([
+      {
+        locationId: "loc-1",
+        businessDate: "2026-10-25",
+        counterDeltas: {
+          returnsCount: 1,
+          returnsValue: 10_450,
+        },
+      },
+    ]);
+  });
+
   it("two parallel deliveries count once", async () => {
     const harness = harnessWith();
     harness.sources.orders.set("order-1", orderFact());

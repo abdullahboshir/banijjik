@@ -3,9 +3,12 @@ import type { SummaryIncrement } from "../../domain/summary-increment.js";
 
 /** An order's figures, read through the sales module's index (plan 3.10 decision 5). */
 export interface OrderFact {
+  readonly orderId?: string;
   readonly locationId: string;
   readonly currency: string;
   readonly completedAt: Date | null;
+  readonly shippedAt?: Date | null;
+  readonly firstShipmentBusinessDate?: string | null;
   readonly subtotal: number;
   readonly discountTotal: number;
   readonly taxTotal: number;
