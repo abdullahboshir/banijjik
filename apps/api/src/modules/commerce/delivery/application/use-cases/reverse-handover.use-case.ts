@@ -85,7 +85,7 @@ export class ReverseRiderCashHandoverUseCase {
           riderCashHandoverId: persisted.riderCashHandoverId,
           reversesRiderCashHandoverId: original.riderCashHandoverId,
         },
-        { orderingKey: persisted.riderCashHandoverId },
+        { orderingKey: `riderHandover:${persisted.riderCashHandoverId}` },
       );
 
       await this.dependencies.audit.record({

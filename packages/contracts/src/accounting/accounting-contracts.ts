@@ -27,6 +27,7 @@ export const JOURNAL_SOURCE_TYPE = defineEnum([
   "STOCK",
   "RETURN",
   "COURIER",
+  "DELIVERY",
   "SALES_RETURN",
   "MANUAL",
   "COMMISSION",
@@ -82,6 +83,10 @@ export const POSTING_KEY = defineEnum([
   "reversal_order_cost",
   "delivery_loss",
   "delivery_loss_recovery",
+  "courier_settlement",
+  "reversal_courier_settlement",
+  "rider_handover",
+  "reversal_rider_handover",
 ]);
 export type PostingKey =
   (typeof POSTING_KEY)[keyof typeof POSTING_KEY] | `manual:${string}` | `reversal:${string}`;
@@ -106,6 +111,10 @@ export function reversalPostingKeyFor(originalKey: PostingKey): PostingKey {
       return POSTING_KEY.reversal_order_advance_settle;
     case POSTING_KEY.order_cost:
       return POSTING_KEY.reversal_order_cost;
+    case POSTING_KEY.courier_settlement:
+      return POSTING_KEY.reversal_courier_settlement;
+    case POSTING_KEY.rider_handover:
+      return POSTING_KEY.reversal_rider_handover;
     default:
       return POSTING_KEY.reversal;
   }

@@ -6,6 +6,8 @@ import { buildPostBookingsHandler } from "./handlers/post-bookings.handler.js";
 import { buildPostPaymentsHandler } from "./handlers/post-payments.handler.js";
 import { buildPostOrdersHandler } from "./handlers/post-orders.handler.js";
 import { buildPostStockHandler } from "./handlers/post-stock.handler.js";
+import { buildPostCourierSettlementsHandler } from "./handlers/post-courier-settlements.handler.js";
+import { buildPostRiderHandoversHandler } from "./handlers/post-rider-handovers.handler.js";
 import type { BookingPostingSource } from "./ports/booking-posting-source.js";
 import type { PaymentPostingSource } from "./ports/payment-posting-source.js";
 import type { OrderPostingSource } from "./ports/order-posting-source.js";
@@ -69,5 +71,29 @@ describe("accounting ORDERED posting handlers", () => {
     expect(handler.handlerKey).toBe("accounting.postStock");
     expect(handler.eventType).toBe(INVENTORY_EVENT_TYPE.STOCK_SOURCE_RECORDED);
     expect(handler.ordering).toBe("UNORDERED");
+  });
+
+  it("postCourierSettlements handles courier settlement and reversal on courierSettlement stream", () => {
+    const handler = buildPostCourierSettlementsHandler({
+      courierSettlements: { readCourierSettlement: async () => undefined },
+      posting,
+    });
+    expect(handler.handlerKey).toBe("accounting.postCourierSettlements");
+    expect(handler.ordering).toBe("ORDERED");
+    expect(handler.streamPrefixes).toEqual(["courierSettlement:"]);
+    expect(handler.eventType).toBe(EVENT_TYPE.SETTLEMENT_RECORDED);
+    expect(handler.alsoHandles).toEqual([EVENT_TYPE.SETTLEMENT_REVERSED]);
+  });
+
+  it("postRiderHandovers handles rider cash handover and reversal on riderHandover stream", () => {
+    const handler = buildPostRiderHandoversHandler({
+      riderHandovers: { readRiderHandover: async () => undefined },
+      posting,
+    });
+    expect(handler.handlerKey).toBe("accounting.postRiderHandovers");
+    expect(handler.ordering).toBe("ORDERED");
+    expect(handler.streamPrefixes).toEqual(["riderHandover:"]);
+    expect(handler.eventType).toBe(EVENT_TYPE.HANDOVER_RECORDED);
+    expect(handler.alsoHandles).toEqual([EVENT_TYPE.HANDOVER_REVERSED]);
   });
 });

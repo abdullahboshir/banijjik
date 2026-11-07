@@ -1350,6 +1350,7 @@
   "bookkeeping.sourceSTOCK": "Stock",
   "bookkeeping.sourceRETURN": "Return",
   "bookkeeping.sourceCOURIER": "Courier",
+  "bookkeeping.sourceDELIVERY": "Delivery",
   "bookkeeping.sourceMANUAL": "Manual",
   "bookkeeping.sourceCOMMISSION": "Staff commission",
   "bookkeeping.sourceENROLLMENT": "Enrollment",

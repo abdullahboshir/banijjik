@@ -101,7 +101,7 @@ export class RecordCourierSettlementUseCase {
       await this.dependencies.events.publish(
         COURIER_EVENT_TYPE.SETTLEMENT_RECORDED,
         { courierSettlementId: persisted.courierSettlementId },
-        { orderingKey: persisted.courierSettlementId },
+        { orderingKey: `courierSettlement:${persisted.courierSettlementId}` },
       );
 
       await this.dependencies.audit.record({
