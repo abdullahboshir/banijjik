@@ -24,6 +24,20 @@ export function invalidTransition(currentStatus: string): DomainRuleError {
   return new DomainRuleError({ code: ERROR_CODE.INVALID_TRANSITION, details: { currentStatus } });
 }
 
+export function deliveryLossAlreadyClosed(): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.CONFLICT,
+    messageKey: "sales.delivery_loss_already_closed",
+  });
+}
+
+export function deliveryLossMismatch(messageKey: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey,
+  });
+}
+
 export function salesRuleError(
   ruleKey: SalesRuleKey | SalesDeliveryRuleKey,
   code: ErrorCode = ERROR_CODE.BUSINESS_RULE,

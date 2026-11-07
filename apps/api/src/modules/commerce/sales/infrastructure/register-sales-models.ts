@@ -6,6 +6,14 @@ import {
   deliveryAttemptSchema,
 } from "./delivery-attempt.schema.js";
 import {
+  DELIVERY_LOSS_CLOSURE_COLLECTION_NAME,
+  DELIVERY_LOSS_CLOSURE_MODEL_NAME,
+  DELIVERY_LOSS_RECOVERY_COLLECTION_NAME,
+  DELIVERY_LOSS_RECOVERY_MODEL_NAME,
+  deliveryLossClosureSchema,
+  deliveryLossRecoverySchema,
+} from "./delivery-loss.schema.js";
+import {
   DELIVERY_ZONE_COLLECTION_NAME,
   DELIVERY_ZONE_MODEL_NAME,
   deliveryZoneSchema,
@@ -60,5 +68,19 @@ export function registerSalesModels(): void {
     collectionName: DELIVERY_ATTEMPT_COLLECTION_NAME,
     schema: deliveryAttemptSchema,
     tenancy: MODEL_TENANCY.ORGANIZATION,
+  });
+  registerModel({
+    ...tenant,
+    modelName: DELIVERY_LOSS_CLOSURE_MODEL_NAME,
+    collectionName: DELIVERY_LOSS_CLOSURE_COLLECTION_NAME,
+    schema: deliveryLossClosureSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
+  });
+  registerModel({
+    ...tenant,
+    modelName: DELIVERY_LOSS_RECOVERY_MODEL_NAME,
+    collectionName: DELIVERY_LOSS_RECOVERY_COLLECTION_NAME,
+    schema: deliveryLossRecoverySchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
   });
 }

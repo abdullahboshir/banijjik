@@ -2153,6 +2153,7 @@
   "orders.status.COMPLETED": "Completed",
   "orders.status.DELIVERY_FAILED": "Delivery failed",
   "orders.status.RETURNED_TO_SENDER": "Returned to sender",
+  "orders.status.DELIVERY_LOSS_CLOSED": "Delivery loss closed",
   "orders.status.CANCELLED": "Cancelled",
   "orders.fulfillment.INSTANT": "Instant",
   "orders.fulfillment.PICKUP": "Pickup",

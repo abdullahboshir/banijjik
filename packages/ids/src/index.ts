@@ -56,4 +56,6 @@ export type {
   CourierSettlementId,
   DeliveryAssignmentId,
   RiderCashHandoverId,
+  DeliveryLossClosureId,
+  DeliveryLossRecoveryId,
 } from "./branded-ids.js";

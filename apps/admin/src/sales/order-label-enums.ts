@@ -26,6 +26,7 @@ export function buildStatuses(t: T): Readonly<Record<OrderStatus, string>> {
     [ORDER_STATUS.COMPLETED]: t("orders.status.COMPLETED"),
     [ORDER_STATUS.DELIVERY_FAILED]: t("orders.status.DELIVERY_FAILED"),
     [ORDER_STATUS.RETURNED_TO_SENDER]: t("orders.status.RETURNED_TO_SENDER"),
+    [ORDER_STATUS.DELIVERY_LOSS_CLOSED]: t("orders.status.DELIVERY_LOSS_CLOSED"),
     [ORDER_STATUS.CANCELLED]: t("orders.status.CANCELLED"),
   };
 }

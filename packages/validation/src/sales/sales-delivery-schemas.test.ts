@@ -8,6 +8,8 @@ import {
   deliveryFailedRequestSchema,
   deliveryZoneListQuerySchema,
   receiveRtsRequestSchema,
+  reconcileDeliveryLossRequestSchema,
+  recoverDeliveryLossRequestSchema,
   shipOrderRequestSchema,
 } from "./sales-delivery-schemas.js";
 
@@ -117,5 +119,75 @@ describe("deliverOrderRequestSchema", () => {
     });
     expect(parsed.version).toBe(3);
     expect(parsed.note).toBe("Delivered to reception");
+  });
+});
+
+describe("reconcileDeliveryLossRequestSchema", () => {
+  it("parses valid loss reconciliation with lost units", () => {
+    const parsed = reconcileDeliveryLossRequestSchema.parse({
+      expectedVersion: 2,
+      reasonKey: "LOST_IN_TRANSIT",
+      approvalToken: "tok-123",
+      lines: [
+        {
+          orderLineId: newId(),
+          restockQuantity: 1,
+          damagedQuantity: 0,
+          lostQuantity: 1,
+        },
+      ],
+    });
+    expect(parsed.expectedVersion).toBe(2);
+    expect(parsed.lines).toHaveLength(1);
+  });
+
+  it("refuses reconciliation when 0 units are lost", () => {
+    const result = reconcileDeliveryLossRequestSchema.safeParse({
+      expectedVersion: 2,
+      reasonKey: "LOST_IN_TRANSIT",
+      approvalToken: "tok-123",
+      lines: [
+        {
+          orderLineId: newId(),
+          restockQuantity: 2,
+          damagedQuantity: 0,
+          lostQuantity: 0,
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("recoverDeliveryLossRequestSchema", () => {
+  it("parses valid physical recovery request", () => {
+    const parsed = recoverDeliveryLossRequestSchema.parse({
+      expectedVersion: 1,
+      approvalToken: "tok-456",
+      lines: [
+        {
+          orderLineId: newId(),
+          restockQuantity: 1,
+          damagedQuantity: 0,
+        },
+      ],
+    });
+    expect(parsed.expectedVersion).toBe(1);
+    expect(parsed.lines).toHaveLength(1);
+  });
+
+  it("refuses recovery with 0 recovered units", () => {
+    const result = recoverDeliveryLossRequestSchema.safeParse({
+      expectedVersion: 1,
+      approvalToken: "tok-456",
+      lines: [
+        {
+          orderLineId: newId(),
+          restockQuantity: 0,
+          damagedQuantity: 0,
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
   });
 });
