@@ -1,5 +1,13 @@
 import type { Translator } from "@banijjik/i18n";
 import {
+  attemptsCardLabelsOf,
+  attemptLabelsOf,
+  lossLabelsOf,
+  rtsLabelsOf,
+  shipLabelsOf,
+} from "./fulfillment/fulfillment-labels";
+import { newOrderLabelsOf } from "./order-label-builders";
+import {
   buildCancelReasons,
   buildFulfillment,
   buildHistoryActions,
@@ -22,6 +30,7 @@ import type {
   OrderHistoryLabels,
   OrderLabels,
 } from "./order-label-types";
+
 export type {
   OrderListLabels,
   OrderDetailLabels,
@@ -124,6 +133,12 @@ function actionsLabelsOf(t: T): OrderActionLabels {
     receivePayment: t("orders.detail.receivePayment"),
     close: t("orders.action.close"),
     save: t("orders.action.save"),
+    ship: t("orders.action.ship"),
+    failAttempt: t("orders.action.failAttempt"),
+    reship: t("orders.action.reship"),
+    rts: t("orders.action.rts"),
+    reconcileLoss: t("orders.action.reconcileLoss"),
+    recoverLoss: t("orders.action.recoverLoss"),
   };
 }
 
@@ -139,41 +154,6 @@ function cancelDialogLabelsOf(t: T): OrderCancelLabels {
     submit: t("orders.cancel.submit"),
     keep: t("orders.cancel.keep"),
     success: t("orders.cancel.success"),
-  };
-}
-
-function newOrderLabelsOf(t: T): OrderNewLabels {
-  return {
-    title: t("orders.new.title"),
-    subtitle: t("orders.new.subtitle"),
-    back: t("orders.new.back"),
-    location: t("orders.new.location"),
-    locationRequired: t("orders.new.locationRequired"),
-    fulfillment: t("orders.new.fulfillment"),
-    contact: t("orders.new.contact"),
-    contactHint: t("orders.new.contactHint"),
-    note: t("orders.new.note"),
-    orderDiscount: t("orders.new.orderDiscount"),
-    lines: t("orders.new.lines"),
-    addLine: t("orders.new.addLine"),
-    emptyLines: t("orders.new.emptyLines"),
-    saveDraft: t("orders.new.saveDraft"),
-    place: t("orders.new.place"),
-    complete: t("orders.new.complete"),
-    draftSaved: t("orders.new.draftSaved"),
-    placed: t("orders.new.placed"),
-    completed: t("orders.new.completed"),
-    failed: t("orders.new.failed"),
-    noLinesToPlace: t("orders.new.noLinesToPlace"),
-    invalidLine: t("orders.new.invalidLine"),
-    openDraft: t("orders.new.openDraft"),
-    deliveryAddress: t("orders.new.deliveryAddress"),
-    recipientName: t("orders.new.recipientName"),
-    recipientPhone: t("orders.new.recipientPhone"),
-    addressLine: t("orders.new.addressLine"),
-    districtCode: t("orders.new.districtCode"),
-    areaCode: t("orders.new.areaCode"),
-    postalCode: t("orders.new.postalCode"),
   };
 }
 
@@ -284,6 +264,11 @@ export function orderLabelsOf(t: T): OrderLabels {
     contact: contactLabelsOf(t),
     edit: editLabelsOf(t),
     history: historyLabelsOf(t),
+    ship: shipLabelsOf(t),
+    attempt: attemptLabelsOf(t),
+    rts: rtsLabelsOf(t),
+    loss: lossLabelsOf(t),
+    attempts: attemptsCardLabelsOf(t),
     status: buildStatuses(t),
     paymentStatus: buildPaymentStatuses(t),
     fulfillment: buildFulfillment(t),

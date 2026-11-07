@@ -23,6 +23,7 @@ import {
   type OrderResponse,
   type SalesPerformerResponse,
 } from "@banijjik/contracts/sales";
+import type { DeliveryAttempt } from "@banijjik/contracts/sales/delivery";
 import { DetailHeader, EmptyState, MoneyText, StatusBadge, currencySymbolOf } from "@banijjik/ui";
 import type { Locale } from "@banijjik/i18n";
 import Link from "next/link";
@@ -45,40 +46,26 @@ import { commissionEnabledOf, performerNamesOf } from "./order-performer-names";
 import { returnLabelsOf, type ReturnLabels } from "./return-labels";
 import { isWithinReturnWindow, todayInTimeZone } from "./return-model";
 
-const DUES_PAGE_LIMIT = 100;
-const AUDIT_PAGE_LIMIT = 50;
+const DUES_PAGE_LIMIT = 100, AUDIT_PAGE_LIMIT = 50;
 
-function resolveAllowedMethods(
-  settingsResult: SettingsResponse | null | undefined,
-): readonly PaymentMethod[] {
-  const paymentSetting = settingsResult?.settings[PAYMENT_METHODS_SETTING_KEY];
-  if (
-    paymentSetting?.value &&
-    Array.isArray(paymentSetting.value) &&
-    paymentSetting.value.length > 0
-  ) {
-    return paymentSetting.value as readonly PaymentMethod[];
-  }
-  return PAYMENT_METHODS_DEFAULT;
+function resolveAllowedMethods(s: SettingsResponse | null | undefined): readonly PaymentMethod[] {
+  const v = s?.settings[PAYMENT_METHODS_SETTING_KEY]?.value;
+  return Array.isArray(v) && v.length > 0 ? (v as readonly PaymentMethod[]) : PAYMENT_METHODS_DEFAULT;
 }
 
-function resolveUsePacking(settingsResult: SettingsResponse | null | undefined): boolean {
-  const value = settingsResult?.settings[SALES_USE_PACKING_SETTING_KEY]?.value;
-  return typeof value === "boolean" ? value : SALES_USE_PACKING_DEFAULT;
+function resolveUsePacking(s: SettingsResponse | null | undefined): boolean {
+  const v = s?.settings[SALES_USE_PACKING_SETTING_KEY]?.value;
+  return typeof v === "boolean" ? v : SALES_USE_PACKING_DEFAULT;
 }
 
-/**
- * The receive sheet's amount. Without a dues row the full price is safe only for an UNPAID order;
- * for any other status it offers nothing, so the shop never takes the price twice (3.8 rule).
- */
 function resolveRemainingDue(order: OrderResponse, dueItem: DueItemResponse | undefined): number {
   if (dueItem) return dueItem.due.amount;
   return order.paymentStatus === PAYMENT_STATUS.UNPAID ? order.totals.grandTotal.amount : 0;
 }
 
-function resolveReturnWindowDays(settingsResult: SettingsResponse | null | undefined): number {
-  const value = settingsResult?.settings[SALES_RETURN_WINDOW_DAYS_SETTING_KEY]?.value;
-  return typeof value === "number" ? value : SALES_RETURN_WINDOW_DAYS_DEFAULT;
+function resolveReturnWindowDays(s: SettingsResponse | null | undefined): number {
+  const v = s?.settings[SALES_RETURN_WINDOW_DAYS_SETTING_KEY]?.value;
+  return typeof v === "number" ? v : SALES_RETURN_WINDOW_DAYS_DEFAULT;
 }
 
 function resolvePermissions(
@@ -86,17 +73,15 @@ function resolvePermissions(
   canWrite: boolean,
   locationId: string,
 ): OrderDetailPermissions {
-  const atLocation = (key: Parameters<typeof holdsPermissionAt>[1]): boolean =>
+  const at = (key: Parameters<typeof holdsPermissionAt>[1]): boolean =>
     canWrite && holdsPermissionAt(permissions, key, locationId);
   return {
-    canUpdate: atLocation(PERMISSION_KEY.SALES_ORDER_UPDATE),
-    canConfirm: atLocation(PERMISSION_KEY.SALES_ORDER_CONFIRM),
-    canCancel: atLocation(PERMISSION_KEY.SALES_ORDER_CANCEL),
-    canReceive: atLocation(PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE),
-    canReturn: atLocation(PERMISSION_KEY.SALES_RETURN_CREATE),
-    canExchange:
-      atLocation(PERMISSION_KEY.SALES_RETURN_CREATE) &&
-      atLocation(PERMISSION_KEY.SALES_ORDER_CREATE),
+    canUpdate: at(PERMISSION_KEY.SALES_ORDER_UPDATE),
+    canConfirm: at(PERMISSION_KEY.SALES_ORDER_CONFIRM),
+    canCancel: at(PERMISSION_KEY.SALES_ORDER_CANCEL),
+    canReceive: at(PERMISSION_KEY.PAYMENT_PAYMENT_RECEIVE),
+    canReturn: at(PERMISSION_KEY.SALES_RETURN_CREATE),
+    canExchange: at(PERMISSION_KEY.SALES_RETURN_CREATE) && at(PERMISSION_KEY.SALES_ORDER_CREATE),
   };
 }
 
@@ -118,32 +103,40 @@ async function loadOrderDetailReads(access: OrgAccess, order: OrderResponse) {
     PERMISSION_KEY.AUDIT_LOG_READ,
   );
   const commissionOn = commissionEnabledOf(access.config);
-  const [lookups, settingsResult, duesResult, auditResult, performersResult] = await Promise.all([
-    loadCatalogLookups(access),
-    fetchBusinessResourceIfAllowed<SettingsResponse>(
-      `/orgs/${organizationId}/settings?keys=${PAYMENT_METHODS_SETTING_KEY},${SALES_USE_PACKING_SETTING_KEY},${SALES_RETURN_WINDOW_DAYS_SETTING_KEY}&location=${order.locationId}`,
-    ),
-    order.contactId === null
-      ? Promise.resolve(undefined)
-      : fetchBusinessResourceIfAllowed<DueItemResponse[]>(
-          `/orgs/${organizationId}/dues?contactId=${order.contactId}&requestType=${PAYMENT_REQUEST_TYPE.ORDER}&locationId=${order.locationId}&limit=${DUES_PAGE_LIMIT}`,
-        ),
-    canReadAudit
-      ? fetchBusinessResourceIfAllowed<AuditLogSummary[]>(
-          `/orgs/${organizationId}/audit-logs?entityType=order&entityId=${order.orderId}&limit=${AUDIT_PAGE_LIMIT}`,
-        )
-      : Promise.resolve(undefined),
-    commissionOn
-      ? fetchBusinessResourceIfAllowed<SalesPerformerResponse[]>(
-          `/orgs/${organizationId}/sales/performers?locationId=${order.locationId}`,
-        )
-      : Promise.resolve(undefined),
-  ]);
+  const isDelivery = order.fulfillment.method === "COURIER" || order.fulfillment.method === "OWN_RIDER";
+  const [lookups, settingsResult, duesResult, auditResult, performersResult, attemptsResult] =
+    await Promise.all([
+      loadCatalogLookups(access),
+      fetchBusinessResourceIfAllowed<SettingsResponse>(
+        `/orgs/${organizationId}/settings?keys=${PAYMENT_METHODS_SETTING_KEY},${SALES_USE_PACKING_SETTING_KEY},${SALES_RETURN_WINDOW_DAYS_SETTING_KEY}&location=${order.locationId}`,
+      ),
+      order.contactId === null
+        ? Promise.resolve(undefined)
+        : fetchBusinessResourceIfAllowed<DueItemResponse[]>(
+            `/orgs/${organizationId}/dues?contactId=${order.contactId}&requestType=${PAYMENT_REQUEST_TYPE.ORDER}&locationId=${order.locationId}&limit=${DUES_PAGE_LIMIT}`,
+          ),
+      canReadAudit
+        ? fetchBusinessResourceIfAllowed<AuditLogSummary[]>(
+            `/orgs/${organizationId}/audit-logs?entityType=order&entityId=${order.orderId}&limit=${AUDIT_PAGE_LIMIT}`,
+          )
+        : Promise.resolve(undefined),
+      commissionOn
+        ? fetchBusinessResourceIfAllowed<SalesPerformerResponse[]>(
+            `/orgs/${organizationId}/sales/performers?locationId=${order.locationId}`,
+          )
+        : Promise.resolve(undefined),
+      isDelivery
+        ? fetchBusinessResourceIfAllowed<DeliveryAttempt[]>(
+            `/orgs/${organizationId}/sales/orders/${order.orderId}/delivery-attempts`,
+          )
+        : Promise.resolve(undefined),
+    ]);
   return {
     lookups,
     settingsResult,
     duesResult,
     auditResult,
+    attemptsResult,
     performerNames: performerNamesOf(performersResult),
     commissionOn,
   };
@@ -152,12 +145,8 @@ async function loadOrderDetailReads(access: OrgAccess, order: OrderResponse) {
 type Translator = Awaited<ReturnType<typeof getTranslator>>;
 type OrderDetailReads = Awaited<ReturnType<typeof loadOrderDetailReads>>;
 
-function unitLabelsOf(translator: Translator): Record<string, string> {
-  const unitLabels: Record<string, string> = {};
-  for (const unitKey of Object.values(UNIT_KEY)) {
-    unitLabels[unitKey] = orderUnitLabel(translator, unitKey);
-  }
-  return unitLabels;
+function unitLabelsOf(t: Translator): Record<string, string> {
+  return Object.fromEntries(Object.values(UNIT_KEY).map((k) => [k, orderUnitLabel(t, k)]));
 }
 
 function OrderDetailClientSlot(props: {
@@ -197,6 +186,7 @@ function OrderDetailClientSlot(props: {
         todayInTimeZone(access.timeZone),
       )}
       returnLabels={returnLabelsOf(translator.t)}
+      deliveryAttempts={reads.attemptsResult}
     />
   );
 }

@@ -25,6 +25,12 @@ export interface OrderActionBarProps {
   readonly exchangeAvailable: boolean;
   readonly exchangeLabel: string;
   readonly onExchange: () => void;
+  readonly onShip?: () => void;
+  readonly onFailAttempt?: () => void;
+  readonly onReship?: () => void;
+  readonly onRts?: () => void;
+  readonly onReconcileLoss?: () => void;
+  readonly onRecoverLoss?: () => void;
 }
 
 function TransitionButtons(props: OrderActionBarProps): ReactElement {
@@ -49,6 +55,36 @@ function TransitionButtons(props: OrderActionBarProps): ReactElement {
       {flags.canComplete ? (
         <Button isLoading={actions.isSaving} onClick={() => void actions.complete()}>
           {labels.actions.complete}
+        </Button>
+      ) : null}
+      {flags.canShip && props.onShip ? (
+        <Button isLoading={actions.isSaving} onClick={props.onShip}>
+          {labels.actions.ship}
+        </Button>
+      ) : null}
+      {flags.canFailAttempt && props.onFailAttempt ? (
+        <Button variant="secondary" disabled={actions.isSaving} onClick={props.onFailAttempt}>
+          {labels.actions.failAttempt}
+        </Button>
+      ) : null}
+      {flags.canReship && props.onReship ? (
+        <Button isLoading={actions.isSaving} onClick={props.onReship}>
+          {labels.actions.reship}
+        </Button>
+      ) : null}
+      {flags.canRts && props.onRts ? (
+        <Button variant="secondary" disabled={actions.isSaving} onClick={props.onRts}>
+          {labels.actions.rts}
+        </Button>
+      ) : null}
+      {flags.canReconcileLoss && props.onReconcileLoss ? (
+        <Button variant="danger" disabled={actions.isSaving} onClick={props.onReconcileLoss}>
+          {labels.actions.reconcileLoss}
+        </Button>
+      ) : null}
+      {flags.canRecoverLoss && props.onRecoverLoss ? (
+        <Button variant="secondary" disabled={actions.isSaving} onClick={props.onRecoverLoss}>
+          {labels.actions.recoverLoss}
         </Button>
       ) : null}
     </>

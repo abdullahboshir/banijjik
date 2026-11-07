@@ -89,6 +89,12 @@ export interface OrderActionLabels {
   readonly receivePayment: string;
   readonly close: string;
   readonly save: string;
+  readonly ship: string;
+  readonly failAttempt: string;
+  readonly reship: string;
+  readonly rts: string;
+  readonly reconcileLoss: string;
+  readonly recoverLoss: string;
 }
 
 export interface OrderCancelLabels {
@@ -217,6 +223,73 @@ export interface OrderHistoryLabels {
   readonly actions: Readonly<Record<string, string>>;
 }
 
+export interface OrderShipLabels {
+  readonly title: string;
+  readonly reshipTitle: string;
+  readonly method: string;
+  readonly courier: string;
+  readonly rider: string;
+  readonly consignmentId: string;
+  readonly consignmentPlaceholder: string;
+  readonly assignmentId: string;
+  readonly assignmentPlaceholder: string;
+  readonly submit: string;
+  readonly reshipSubmit: string;
+  readonly success: string;
+  readonly reshipSuccess: string;
+}
+
+export interface DeliveryAttemptLabels {
+  readonly title: string;
+  readonly reason: string;
+  readonly reasonPlaceholder: string;
+  readonly reasons: {
+    readonly customerUnreachable: string;
+    readonly incorrectAddress: string;
+    readonly customerRescheduled: string;
+    readonly cashNotReady: string;
+    readonly other: string;
+  };
+  readonly note: string;
+  readonly notePlaceholder: string;
+  readonly submit: string;
+  readonly success: string;
+}
+
+export interface OrderRtsLabels {
+  readonly title: string;
+  readonly description: string;
+  readonly reason: string;
+  readonly disposition: string;
+  readonly restock: string;
+  readonly damaged: string;
+  readonly submit: string;
+  readonly success: string;
+}
+
+export interface DeliveryLossLabels {
+  readonly closeTitle: string;
+  readonly closeDescription: string;
+  readonly recoverTitle: string;
+  readonly recoverDescription: string;
+  readonly lost: string;
+  readonly restock: string;
+  readonly damaged: string;
+  readonly submitClose: string;
+  readonly submitRecover: string;
+  readonly successClose: string;
+  readonly successRecover: string;
+}
+
+export interface DeliveryAttemptsCardLabels {
+  readonly title: string;
+  readonly empty: string;
+  readonly ordinal: string;
+  readonly started: string;
+  readonly failed: string;
+  readonly method: string;
+}
+
 export interface OrderLabels {
   readonly list: OrderListLabels;
   readonly detail: OrderDetailLabels;
@@ -229,6 +302,11 @@ export interface OrderLabels {
   readonly contact: OrderContactLabels;
   readonly edit: OrderEditLabels;
   readonly history: OrderHistoryLabels;
+  readonly ship: OrderShipLabels;
+  readonly attempt: DeliveryAttemptLabels;
+  readonly rts: OrderRtsLabels;
+  readonly loss: DeliveryLossLabels;
+  readonly attempts: DeliveryAttemptsCardLabels;
   readonly status: Readonly<Record<OrderStatus, string>>;
   readonly paymentStatus: Readonly<Record<PaymentStatus, string>>;
   readonly fulfillment: Readonly<Record<FulfillmentMethod, string>>;
