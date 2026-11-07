@@ -37,7 +37,14 @@ import {
   buildEntitlementPlatformRouter,
   buildModuleOverrideLister,
 } from "../modules/platform/entitlement/index.js";
-import { buildOperationsRouters } from "../modules/platform/operations/index.js";
+import {
+  buildOperationsRouters,
+  buildReconciliationRouter,
+  MongoReconciliationCursorRepository,
+  ReconciliationController,
+  RunReconciliationUseCase,
+} from "../modules/platform/operations/index.js";
+import { buildReconciliationSourceScanner } from "./reconciliation-adapters.js";
 import { buildPackagePlatformRouter } from "../modules/platform/package/index.js";
 import {
   buildIndustryPlatformRouter,
@@ -228,6 +235,15 @@ function buildPlatformRouter(input: PlatformRouterInput): Router {
   const operations = buildOperationsRouters({ permission: platformPermission, platformAudit });
   router.use("/event-dead-letters", operations.deadLetters);
   router.use("/dead-outbox-events", operations.deadOutbox);
+  const reconciliationUseCase = new RunReconciliationUseCase({
+    scanner: buildReconciliationSourceScanner(),
+    cursors: new MongoReconciliationCursorRepository(),
+  });
+  const reconciliationController = new ReconciliationController(reconciliationUseCase);
+  router.use(
+    "/reconciliation",
+    buildReconciliationRouter(reconciliationController, platformPermission),
+  );
   router.use(buildPlatformAuditRouter({ permission: platformPermission }));
   router.use(buildIamPlatformMeRouter());
   mountSmsPlatformRouter({ router, input, clock, platformAudit });

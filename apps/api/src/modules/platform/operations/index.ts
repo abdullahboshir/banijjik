@@ -47,6 +47,15 @@ export {
   type DomainOperationAction,
 } from "./domain/domain-operation.entity.js";
 export { createDomainProvider } from "./infrastructure/cloudflare-domain-provider.js";
+export { MongoReconciliationCursorRepository } from "./infrastructure/mongo-reconciliation.repository.js";
+export { RunReconciliationUseCase } from "./application/use-cases/run-reconciliation.use-case.js";
+export { ReconciliationController } from "./presentation/reconciliation.controller.js";
+export { buildReconciliationRouter } from "./presentation/reconciliation.router.js";
+export type {
+  ReconciliationCursorRepository,
+  ReconciliationSourceScanner,
+  ScanSourcesInput,
+} from "./application/reconciliation-ports.js";
 export function createMongoDomainOperations(): DomainOperationRepository {
   return new MongoDomainOperationRepository();
 }

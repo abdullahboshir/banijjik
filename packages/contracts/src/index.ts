@@ -214,6 +214,17 @@ export {
   type PlatformDeadLetter,
   type PlatformDeadOutboxEvent,
 } from "./platform/event-dead-letter.js";
+export {
+  RECONCILIATION_ITEM_STATUS,
+  RECONCILIATION_SOURCE_TYPE,
+  type PlatformReconciliationQuery,
+  type PlatformReconciliationRunBody,
+  type ReconciliationDiscrepancyItem,
+  type ReconciliationItemStatus,
+  type ReconciliationResponse,
+  type ReconciliationSourceType,
+  type ReconciliationSummary,
+} from "./platform/reconciliation-contracts.js";
 export type {
   PlatformChangePackageRequest,
   PlatformExtendTrialRequest,

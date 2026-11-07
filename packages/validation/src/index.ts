@@ -97,6 +97,12 @@ export {
   type PlatformEventDeadLetterListQuery,
   type PlatformEventSkipBody,
 } from "./platform/event-schemas.js";
+export {
+  platformReconciliationQuerySchema,
+  platformReconciliationRunRequestSchema,
+  type PlatformReconciliationQuery,
+  type PlatformReconciliationRunBody,
+} from "./platform/reconciliation-schemas.js";
 export { maskIdentifier } from "./text/mask-identifier.js";
 export {
   platformOperatorCreateRequestSchema,
