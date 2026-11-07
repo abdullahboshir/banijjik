@@ -134,3 +134,35 @@ export function recordNotFound(): DomainRuleError {
 export function locationForbidden(): DomainRuleError {
   return new DomainRuleError({ code: ERROR_CODE.LOCATION_FORBIDDEN });
 }
+
+export function collectionClaimActiveError(paymentId: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.CONFLICT,
+    messageKey: "payment.collection_claim_active",
+    details: { paymentId },
+  });
+}
+
+export function collectionClaimNotOpenError(paymentId: string, state: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.CONFLICT,
+    messageKey: "payment.collection_claim_not_open",
+    details: { paymentId, state },
+  });
+}
+
+export function collectionClaimNotFoundError(paymentId: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.NOT_FOUND,
+    messageKey: "payment.collection_claim_not_found",
+    details: { paymentId },
+  });
+}
+
+export function collectionClaimMismatchError(message: string): DomainRuleError {
+  return new DomainRuleError({
+    code: ERROR_CODE.BUSINESS_RULE,
+    messageKey: "payment.collection_claim_mismatch",
+    details: { message },
+  });
+}

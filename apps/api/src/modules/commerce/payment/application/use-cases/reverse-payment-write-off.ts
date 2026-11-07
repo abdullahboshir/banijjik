@@ -6,10 +6,11 @@ import {
   type PaymentAllocation,
   type PaymentWriteOff,
 } from "@banijjik/contracts/payment";
-import type { OrganizationId } from "@banijjik/ids";
+import type { OrganizationId, PaymentId, UserId } from "@banijjik/ids";
 import type { AuditRecorder } from "../../../../../kernel/audit/index.js";
 import type { OrgConfigService } from "../../../../platform/entitlement/index.js";
-import { paymentReversalHasRefundError } from "../../domain/errors.js";
+import { collectionClaimActiveError, paymentReversalHasRefundError } from "../../domain/errors.js";
+import type { CollectionClaimRepository } from "../ports/collection-claim.repository.js";
 import type { PaymentSummaryRepository } from "../ports/payment-repositories.js";
 
 export interface RestoreAllocationsDependencies {
@@ -133,5 +134,33 @@ export async function recordWriteOffAudits(
         currency: { to: writeOff.amount.currency },
       },
     });
+  }
+}
+
+export async function assertCollectionClaimReversible(
+  claimsRepo: CollectionClaimRepository | undefined,
+  organizationId: OrganizationId,
+  paymentId: PaymentId,
+): Promise<void> {
+  if (!claimsRepo) return;
+  const claim = await claimsRepo.findByPaymentId(organizationId, paymentId);
+  if (claim && claim.state === "CLAIMED") {
+    throw collectionClaimActiveError(paymentId);
+  }
+}
+
+export async function updateClaimOnReversal(args: {
+  readonly claimsRepo: CollectionClaimRepository | undefined;
+  readonly organizationId: OrganizationId;
+  readonly paymentId: PaymentId;
+  readonly actorUserId: UserId | null;
+  readonly now: Date;
+}): Promise<void> {
+  const { claimsRepo, organizationId, paymentId, actorUserId, now } = args;
+  if (!claimsRepo) return;
+  const claim = await claimsRepo.findByPaymentId(organizationId, paymentId);
+  if (claim && claim.state === "OPEN") {
+    const updatedClaim = claim.reverse(actorUserId, now);
+    await claimsRepo.update(updatedClaim, claim.version);
   }
 }

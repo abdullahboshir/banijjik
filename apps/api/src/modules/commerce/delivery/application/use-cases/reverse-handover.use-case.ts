@@ -6,7 +6,13 @@ import {
 } from "@banijjik/contracts";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
 import type { ReverseRiderCashHandoverBody } from "@banijjik/validation/delivery";
-import type { OrganizationId, RiderCashHandoverId, UserId } from "@banijjik/ids";
+import {
+  asId,
+  type OrganizationId,
+  type PaymentId,
+  type RiderCashHandoverId,
+  type UserId,
+} from "@banijjik/ids";
 import { AppError } from "../../../../../kernel/http/index.js";
 import { handoverAlreadyReversed } from "../../domain/errors.js";
 import { RiderCashHandover } from "../../domain/rider-cash-handover.entity.js";
@@ -31,7 +37,10 @@ export class ReverseRiderCashHandoverUseCase {
       throw new AppError({ code: ERROR_CODE.NOT_FOUND, messageKey: "errors.handover_not_found" });
     }
     if (original.reversesRiderCashHandoverId !== null) {
-      throw new AppError({ code: ERROR_CODE.BUSINESS_RULE, messageKey: "errors.cannot_reverse_a_reversal" });
+      throw new AppError({
+        code: ERROR_CODE.BUSINESS_RULE,
+        messageKey: "errors.cannot_reverse_a_reversal",
+      });
     }
 
     const existingReversal = await this.dependencies.handovers.findByReversalId(
@@ -58,6 +67,17 @@ export class ReverseRiderCashHandoverUseCase {
       });
 
       const persisted = await this.dependencies.handovers.insert(reversal);
+
+      if (this.dependencies.payments.releaseCollections) {
+        await this.dependencies.payments.releaseCollections({
+          organizationId: input.organizationId,
+          paymentIds: original.paymentIds.map((id) => asId<PaymentId>(id)),
+          carrierMethod: "RIDER_CASH",
+          referenceId: original.riderCashHandoverId,
+          actorUserId: input.actorUserId,
+          now,
+        });
+      }
 
       await this.dependencies.events.publish(
         DELIVERY_EVENT_TYPE.HANDOVER_REVERSED,

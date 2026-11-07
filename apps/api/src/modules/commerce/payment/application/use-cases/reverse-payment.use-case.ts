@@ -36,6 +36,7 @@ import {
   paymentReversalHasRefundError,
   storeCreditConflictError,
 } from "../../domain/errors.js";
+import type { CollectionClaimRepository } from "../ports/collection-claim.repository.js";
 import { businessDateOf } from "../../domain/timezone.js";
 import type {
   ContactStoreCreditPort,
@@ -47,8 +48,10 @@ import type {
 } from "../ports/payment-repositories.js";
 import { formatPaymentNumber, toPaymentResponse } from "./payment-view.js";
 import {
+  assertCollectionClaimReversible,
   recordWriteOffAudits,
   restoreAllocationsForReversal,
+  updateClaimOnReversal,
 } from "./reverse-payment-write-off.js";
 
 export interface ReversePaymentInput {
@@ -113,6 +116,7 @@ export interface ReversePaymentDependencies {
   readonly audit: AuditRecorder;
   readonly clock: Clock;
   readonly timeZone: TimezoneReader;
+  readonly collectionClaims?: CollectionClaimRepository | undefined;
   readonly orgConfig: OrgConfigService;
 }
 
@@ -235,6 +239,11 @@ async function validateReversalEligibility(
     );
     if (summary && summary.refunded.amount > 0) throw paymentReversalHasRefundError();
   }
+  await assertCollectionClaimReversible(
+    deps.collectionClaims,
+    input.organizationId,
+    input.paymentId,
+  );
   return original;
 }
 
@@ -289,6 +298,13 @@ export class ReversePaymentUseCase {
         original,
         reversalPayment,
         creditEntryId,
+      });
+      await updateClaimOnReversal({
+        claimsRepo: deps.collectionClaims,
+        organizationId: input.organizationId,
+        paymentId: input.paymentId,
+        actorUserId: input.actorUserId,
+        now,
       });
       return toPaymentResponse(reversalPayment);
     });

@@ -39,6 +39,29 @@ export type PaymentRequestType = (typeof PAYMENT_REQUEST_TYPE)[keyof typeof PAYM
 export const PAYMENT_STATUS = defineEnum(["UNPAID", "PARTIAL", "PAID", "REFUNDED"]);
 export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 
+export const COLLECTION_CLAIM_STATE = defineEnum(["OPEN", "CLAIMED", "REVERSED"]);
+export type CollectionClaimState =
+  (typeof COLLECTION_CLAIM_STATE)[keyof typeof COLLECTION_CLAIM_STATE];
+
+export interface CollectionClaimCarrierInfo {
+  readonly method: "COD_COURIER" | "RIDER_CASH";
+  readonly carrierReference: string;
+}
+
+export interface CollectionClaimResponse {
+  readonly collectionClaimId: string;
+  readonly organizationId: string;
+  readonly paymentId: string;
+  readonly orderId: string;
+  readonly carrier: CollectionClaimCarrierInfo;
+  readonly state: CollectionClaimState;
+  readonly generation: number;
+  readonly claimedByReference: string | null;
+  readonly version: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 export const PAYMENT_LIFECYCLE_STAGE = defineEnum(["BEGIN", "END"]);
 export type PaymentLifecycleStage =
   (typeof PAYMENT_LIFECYCLE_STAGE)[keyof typeof PAYMENT_LIFECYCLE_STAGE];

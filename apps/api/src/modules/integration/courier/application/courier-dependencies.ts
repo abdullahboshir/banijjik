@@ -1,16 +1,30 @@
 import type { Money } from "@banijjik/contracts/courier";
-import type { CourierSettlementId, LocationId, OrderId, OrganizationId, PaymentId, UserId } from "@banijjik/ids";
+import type {
+  CourierSettlementId,
+  LocationId,
+  OrderId,
+  OrganizationId,
+  PaymentId,
+  UserId,
+} from "@banijjik/ids";
 import type { PermissionMiddlewareFactory } from "../../../../kernel/access/index.js";
 import type { AuditRecorder } from "../../../../kernel/audit/index.js";
 import type { Clock } from "../../../../kernel/time/index.js";
-import type { ConsignmentRepository, CourierSettlementRepository } from "../domain/courier-repository.js";
+import type {
+  ConsignmentRepository,
+  CourierSettlementRepository,
+} from "../domain/courier-repository.js";
 
 export interface CourierUnitOfWork {
   run<Result>(work: () => Promise<Result>): Promise<Result>;
 }
 
 export interface CourierEventPublisher {
-  publish(type: string, payload: unknown, options?: { readonly orderingKey?: string }): Promise<void>;
+  publish(
+    type: string,
+    payload: unknown,
+    options?: { readonly orderingKey?: string },
+  ): Promise<void>;
 }
 
 export interface CourierOrderPort {
@@ -44,6 +58,22 @@ export interface CourierPaymentPort {
     organizationId: OrganizationId,
     paymentIds: readonly PaymentId[],
   ) => Promise<readonly { readonly paymentId: PaymentId; readonly amount: Money }[]>;
+  readonly claimCollections?: (input: {
+    readonly organizationId: OrganizationId;
+    readonly paymentIds: readonly PaymentId[];
+    readonly carrierMethod: "COD_COURIER";
+    readonly referenceId: string;
+    readonly actorUserId: UserId | null;
+    readonly now: Date;
+  }) => Promise<void>;
+  readonly releaseCollections?: (input: {
+    readonly organizationId: OrganizationId;
+    readonly paymentIds: readonly PaymentId[];
+    readonly carrierMethod: "COD_COURIER";
+    readonly referenceId: string;
+    readonly actorUserId: UserId | null;
+    readonly now: Date;
+  }) => Promise<void>;
 }
 
 export interface CourierApprovalPort {

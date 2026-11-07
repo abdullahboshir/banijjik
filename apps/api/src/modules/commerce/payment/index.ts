@@ -48,6 +48,22 @@ import { MongoPaymentSummaryRepository } from "./infrastructure/mongo-payment-su
 import { MongoStoreCreditRepository } from "./infrastructure/mongo-store-credit.repository.js";
 import { buildRequestAdvanceReader } from "./infrastructure/request-advance.reader.js";
 import { registerPaymentModels } from "./infrastructure/register-payment-models.js";
+import { CollectionClaim } from "./domain/collection-claim.entity.js";
+import {
+  CollectCodUseCase,
+  type CollectCodInput,
+  type CollectCodResult,
+} from "./application/use-cases/collect-cod.use-case.js";
+import {
+  ClaimCollectionsUseCase,
+  type ClaimCollectionsInput,
+} from "./application/use-cases/claim-collections.use-case.js";
+import {
+  ReleaseCollectionsUseCase,
+  type ReleaseCollectionsInput,
+} from "./application/use-cases/release-collections.use-case.js";
+import { MongoCollectionClaimRepository } from "./infrastructure/mongo-collection-claim.repository.js";
+import type { CollectionClaimRepository } from "./application/ports/collection-claim.repository.js";
 export { paymentManifest } from "./module.manifest.js";
 import { PaymentController } from "./presentation/payment.controller.js";
 import { buildPaymentTenantRouter } from "./presentation/payment-tenant.router.js";
@@ -76,6 +92,16 @@ export {
   buildRequestAdvanceReader,
   settleBookingTermination,
   toPaymentResponse,
+  CollectionClaim,
+  CollectCodUseCase,
+  ClaimCollectionsUseCase,
+  ReleaseCollectionsUseCase,
+  MongoCollectionClaimRepository,
+  type CollectCodInput,
+  type CollectCodResult,
+  type ClaimCollectionsInput,
+  type ReleaseCollectionsInput,
+  type CollectionClaimRepository,
   type RequestReader,
   type RequestReadSnapshot,
   type RequestPaymentLifecycle,
@@ -113,12 +139,15 @@ function resolvePaymentRepos(repos?: {
   storeCredit?: StoreCreditRepository;
   summaries?: PaymentSummaryRepository;
   contactStoreCredit?: ContactStoreCreditPort;
+  collectionClaims?: CollectionClaimRepository;
 }) {
+  const r = repos ?? {};
   return {
-    payments: repos?.payments ?? new MongoPaymentRepository(),
-    storeCredit: repos?.storeCredit ?? new MongoStoreCreditRepository(),
-    summaries: repos?.summaries ?? new MongoPaymentSummaryRepository(),
-    contactStoreCredit: repos?.contactStoreCredit ?? new MongoContactStoreCreditAdapter(),
+    payments: r.payments ?? new MongoPaymentRepository(),
+    storeCredit: r.storeCredit ?? new MongoStoreCreditRepository(),
+    summaries: r.summaries ?? new MongoPaymentSummaryRepository(),
+    contactStoreCredit: r.contactStoreCredit ?? new MongoContactStoreCreditAdapter(),
+    collectionClaims: r.collectionClaims ?? new MongoCollectionClaimRepository(),
   };
 }
 
@@ -129,9 +158,11 @@ export function buildPaymentController(
     storeCredit?: StoreCreditRepository;
     summaries?: PaymentSummaryRepository;
     contactStoreCredit?: ContactStoreCreditPort;
+    collectionClaims?: CollectionClaimRepository;
   },
 ): PaymentController {
-  const { payments, storeCredit, summaries, contactStoreCredit } = resolvePaymentRepos(repos);
+  const { payments, storeCredit, summaries, contactStoreCredit, collectionClaims } =
+    resolvePaymentRepos(repos);
   const unitOfWork = new MongoUnitOfWork();
 
   const useCaseDeps = {
@@ -139,6 +170,7 @@ export function buildPaymentController(
     storeCredit,
     summaries,
     contactStoreCredit,
+    collectionClaims,
     requestReaders: deps.requestReaders,
     lifecycles: deps.lifecycles,
     unitOfWork,
@@ -244,6 +276,7 @@ export function buildRefundPaymentUseCase(input: {
     orgConfig: input.orgConfig,
   });
 }
+
 export {
   buildPaymentSessionReader,
   type PaymentSessionReader,
@@ -272,3 +305,9 @@ export function buildReceivePaymentUseCase(input: {
     orgConfig: input.orgConfig,
   });
 }
+
+export {
+  buildCollectCodUseCase,
+  buildClaimCollectionsUseCase,
+  buildReleaseCollectionsUseCase,
+} from "./infrastructure/cod-collection-factories.js";

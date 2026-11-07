@@ -1,5 +1,6 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import {
+  FULFILLMENT_METHOD,
   ORDER_STATUS,
   SALES_EVENT_TYPE,
   type OrderResponse,
@@ -9,10 +10,7 @@ import type { OrderId, OrganizationId, UserId } from "@banijjik/ids";
 import { invalidTransition, recordNotFound } from "../../domain/errors.js";
 import type { Order } from "../../domain/order.entity.js";
 import type { SalesDependencies } from "../sales-dependencies.js";
-import {
-  assertLocationAllowed,
-  orderOrderingKey,
-} from "../sales-transition-shared.js";
+import { assertLocationAllowed, orderOrderingKey } from "../sales-transition-shared.js";
 import { toOrderResponse } from "../sales-views.js";
 
 export interface DeliverOrderInput {
@@ -47,21 +45,8 @@ export class DeliverOrderUseCase {
     const delivered = await this.dependencies.unitOfWork.run(async () => {
       const updated = order.deliver({ actorUserId: input.actorUserId, now });
       const persisted = await this.dependencies.orders.update(updated, input.body.version);
-
-      await this.dependencies.events.publish(
-        SALES_EVENT_TYPE.ORDER_DELIVERED,
-        { orderId: persisted.orderId },
-        { orderingKey: orderOrderingKey(persisted.orderId) },
-      );
-      await this.dependencies.audit.record({
-        action: AUDIT_ACTION.ORDER_DELIVERED,
-        entityType: AUDIT_ENTITY_TYPE.order,
-        entityId: persisted.orderId,
-        changes: {
-          status: { to: ORDER_STATUS.DELIVERED },
-          ...(input.body.note ? { note: { to: input.body.note } } : {}),
-        },
-      });
+      await this.collectCodForDelivery(persisted, input, now);
+      await this.publishDeliveryEffects(persisted, input.body.note);
       return persisted;
     });
 
@@ -69,5 +54,66 @@ export class DeliverOrderUseCase {
       delivered,
       await this.dependencies.payments.readTotals(delivered.orderId),
     );
+  }
+
+  private async collectCodForDelivery(
+    persisted: Order,
+    input: DeliverOrderInput,
+    now: Date,
+  ): Promise<void> {
+    if (
+      persisted.fulfillment.method !== FULFILLMENT_METHOD.COURIER &&
+      persisted.fulfillment.method !== FULFILLMENT_METHOD.OWN_RIDER
+    ) {
+      return;
+    }
+    if (!this.dependencies.payments.collectCod) return;
+
+    const attempt = persisted.currentDeliveryAttemptId
+      ? await this.dependencies.deliveryAttempts.findById(
+          input.organizationId,
+          persisted.currentDeliveryAttemptId,
+        )
+      : undefined;
+
+    const carrier =
+      persisted.fulfillment.method === FULFILLMENT_METHOD.COURIER
+        ? {
+            method: "COD_COURIER" as const,
+            consignmentId: attempt?.consignmentId ?? persisted.orderId,
+          }
+        : {
+            method: "RIDER_CASH" as const,
+            deliveryAssignmentId: attempt?.deliveryAssignmentId ?? persisted.orderId,
+          };
+
+    await this.dependencies.payments.collectCod({
+      organizationId: input.organizationId,
+      orderId: persisted.orderId,
+      locationId: persisted.locationId,
+      contactId: persisted.contactId,
+      expectedOrderVersion: persisted.version,
+      deliveryCompletionId: persisted.orderId,
+      carrier,
+      actorUserId: input.actorUserId,
+      now,
+    });
+  }
+
+  private async publishDeliveryEffects(persisted: Order, note?: string | null): Promise<void> {
+    await this.dependencies.events.publish(
+      SALES_EVENT_TYPE.ORDER_DELIVERED,
+      { orderId: persisted.orderId },
+      { orderingKey: orderOrderingKey(persisted.orderId) },
+    );
+    await this.dependencies.audit.record({
+      action: AUDIT_ACTION.ORDER_DELIVERED,
+      entityType: AUDIT_ENTITY_TYPE.order,
+      entityId: persisted.orderId,
+      changes: {
+        status: { to: ORDER_STATUS.DELIVERED },
+        ...(note ? { note: { to: note } } : {}),
+      },
+    });
   }
 }

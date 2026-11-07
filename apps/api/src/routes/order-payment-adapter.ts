@@ -1,20 +1,16 @@
 import { DomainRuleError, ERROR_CODE } from "@banijjik/contracts";
-import { BOOKING_TERMINATION_MODE, CANCEL_FEE_MODE } from "@banijjik/contracts/booking";
 import { type Money, PAYMENT_METHOD, PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import { SALES_RULE_KEY } from "@banijjik/contracts/sales";
 import { asId, type OrderId } from "@banijjik/ids";
 import type { AuditRecorder } from "../kernel/audit/index.js";
-import { kernelEventPublisher } from "../kernel/events/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import {
+  buildCollectCodUseCase,
   buildRefundPaymentUseCase,
   buildReceivePaymentUseCase,
   findStoreCreditEntryIdOfPayment,
-  MongoContactStoreCreditAdapter,
-  MongoPaymentRepository,
   MongoPaymentSummaryRepository,
-  MongoStoreCreditRepository,
-  settleRequestTermination,
+  type CollectCodUseCase,
   type ReceivePaymentUseCase,
   type RefundPaymentUseCase,
 } from "../modules/commerce/payment/index.js";
@@ -31,7 +27,7 @@ import {
 } from "../modules/core/organization/index.js";
 import { buildApprovalVerifier } from "../modules/core/iam/index.js";
 import { buildPaymentRequestReaders } from "./payment-request-readers.js";
-import { activeOrganizationId, ruleError } from "./order-payment-rules.js";
+import { activeOrganizationId, ruleError, terminateOrderPayment } from "./order-payment-rules.js";
 import { paymentTimezoneReader } from "./payment-timezone-reader.js";
 
 /** All repository calls join the caller's active Mongo session. */
@@ -39,6 +35,7 @@ class OrderPaymentAdapter implements OrderPaymentPort {
   constructor(
     private readonly refunds: RefundPaymentUseCase,
     private readonly receives: ReceivePaymentUseCase,
+    private readonly cod: CollectCodUseCase,
   ) {}
 
   private readonly summaries = new MongoPaymentSummaryRepository();
@@ -252,40 +249,15 @@ class OrderPaymentAdapter implements OrderPaymentPort {
       });
       return;
     }
-    if (input.contactId === null)
-      throw ruleError(
-        SALES_RULE_KEY.ORDER_CANCEL_NEEDS_CONTACT,
-        "errors.order_cancel_needs_contact",
-      );
-    await settleRequestTermination(
-      {
-        summaries: this.summaries,
-        payments: new MongoPaymentRepository(),
-        storeCredits: new MongoStoreCreditRepository(),
-        contactStoreCredit: new MongoContactStoreCreditAdapter(),
-        events: kernelEventPublisher,
-        timeZone: {
-          read: async (organizationId) => {
-            const timezone = await this.timezones.read(organizationId);
-            if (!timezone) throw new DomainRuleError({ code: ERROR_CODE.NOT_FOUND });
-            return timezone;
-          },
-        },
-      },
-      {
-        ...input,
-        contactId: input.contactId,
-        requestId: input.orderId,
-        requestType: PAYMENT_REQUEST_TYPE.ORDER,
-        startsAt: input.now,
-        depositRequired: paid,
-        priceTotal: paid,
-        mode: BOOKING_TERMINATION_MODE.CANCEL,
-        freeCancelHours: 0,
-        feeMode: CANCEL_FEE_MODE.NONE,
-        feePercent: 0,
-      },
+    await terminateOrderPayment(
+      { summaries: this.summaries, timezones: this.timezones },
+      input,
+      paid,
     );
+  }
+
+  async collectCod(input: Parameters<NonNullable<OrderPaymentPort["collectCod"]>>[0]) {
+    return this.cod.execute(input);
   }
 }
 
@@ -299,22 +271,25 @@ export function buildOrderPaymentAdapter(
   dependencies: OrderPaymentAdapterDependencies,
 ): OrderPaymentPort {
   const timezones = buildOrganizationTimezoneReader();
+  const tzReader = paymentTimezoneReader(timezones);
   const refunds = buildRefundPaymentUseCase({
     requestReaders: buildPaymentRequestReaders(),
     approvals: buildApprovalVerifier({ audit: dependencies.audit, clock: dependencies.clock }),
     orgConfig: dependencies.orgConfig,
     audit: dependencies.audit,
     clock: dependencies.clock,
-    timeZone: paymentTimezoneReader(timezones),
+    timeZone: tzReader,
   });
-  return new OrderPaymentAdapter(
-    refunds,
-    buildReceivePaymentUseCase({
-      requestReaders: buildPaymentRequestReaders(),
-      orgConfig: dependencies.orgConfig,
-      audit: dependencies.audit,
-      clock: dependencies.clock,
-      timeZone: paymentTimezoneReader(timezones),
-    }),
-  );
+  const receives = buildReceivePaymentUseCase({
+    requestReaders: buildPaymentRequestReaders(),
+    orgConfig: dependencies.orgConfig,
+    audit: dependencies.audit,
+    clock: dependencies.clock,
+    timeZone: tzReader,
+  });
+  const cod = buildCollectCodUseCase({
+    audit: dependencies.audit,
+    timeZone: tzReader,
+  });
+  return new OrderPaymentAdapter(refunds, receives, cod);
 }

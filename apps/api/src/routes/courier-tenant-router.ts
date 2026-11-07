@@ -1,7 +1,7 @@
 import type { ModuleManifest } from "@banijjik/contracts";
 import type { Money } from "@banijjik/contracts/courier";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
-import { asId, type OrderId, type OrganizationId, type PaymentId, type UserId } from "@banijjik/ids";
+import type { OrderId, OrganizationId, PaymentId } from "@banijjik/ids";
 import type { RequestHandler, Router } from "express";
 import type { PermissionGate, PermissionMiddlewareFactory } from "../kernel/access/index.js";
 import type { AuditRecorder } from "../kernel/audit/index.js";
@@ -9,12 +9,17 @@ import { MongoUnitOfWork } from "../kernel/db/index.js";
 import { kernelEventPublisher } from "../kernel/events/index.js";
 import type { Clock } from "../kernel/time/index.js";
 import { buildApprovalVerifier } from "../modules/core/iam/index.js";
-import { MongoPaymentRepository } from "../modules/commerce/payment/index.js";
 import {
+  MongoCollectionClaimRepository,
+  MongoPaymentRepository,
+  buildClaimCollectionsUseCase,
+  buildReleaseCollectionsUseCase,
+} from "../modules/commerce/payment/index.js";
+import {
+  buildSalesDependencies,
   MongoOrderRepository,
   ShipOrderUseCase,
 } from "../modules/commerce/sales/index.js";
-import { buildSalesDependencies } from "../modules/commerce/sales/sales-wiring.js";
 import {
   buildCourierTenantRouter,
   MongoConsignmentRepository,
@@ -68,6 +73,9 @@ function buildOrderAdapter(input: CourierModuleRouterInput): CourierOrderPort {
 
 function buildPaymentAdapter(): CourierPaymentPort {
   const payments = new MongoPaymentRepository();
+  const claims = new MongoCollectionClaimRepository();
+  const claimCollections = buildClaimCollectionsUseCase(claims);
+  const releaseCollections = buildReleaseCollectionsUseCase(claims);
   return {
     async findPaymentsByIds(organizationId: OrganizationId, paymentIds: readonly PaymentId[]) {
       const results: { readonly paymentId: PaymentId; readonly amount: Money }[] = [];
@@ -78,6 +86,12 @@ function buildPaymentAdapter(): CourierPaymentPort {
         }
       }
       return results;
+    },
+    async claimCollections(claimInput) {
+      await claimCollections.execute(claimInput);
+    },
+    async releaseCollections(releaseInput) {
+      await releaseCollections.execute(releaseInput);
     },
   };
 }

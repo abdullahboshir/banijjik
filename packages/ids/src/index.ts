@@ -58,4 +58,5 @@ export type {
   RiderCashHandoverId,
   DeliveryLossClosureId,
   DeliveryLossRecoveryId,
+  CollectionClaimId,
 } from "./branded-ids.js";
