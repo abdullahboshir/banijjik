@@ -1,6 +1,7 @@
 import {
   ACCEPTED_PAYMENT_METHODS,
   PAYMENT_DIRECTION,
+  PAYMENT_METHOD,
   PAYMENT_REQUEST_TYPE,
   STORE_CREDIT_DIRECTION,
 } from "@banijjik/contracts/payment";
@@ -10,6 +11,7 @@ import { paginationQuerySchema } from "../pagination.js";
 import { uuidV7Schema } from "../uuid-v7.schema.js";
 
 const acceptedMethodValues = ACCEPTED_PAYMENT_METHODS as readonly [string, ...string[]];
+const paymentMethodValues = Object.values(PAYMENT_METHOD) as [string, ...string[]];
 const requestTypeValues = Object.values(PAYMENT_REQUEST_TYPE) as [string, ...string[]];
 const directionValues = Object.values(PAYMENT_DIRECTION) as [string, ...string[]];
 const storeCreditDirectionValues = Object.values(STORE_CREDIT_DIRECTION) as [string, ...string[]];
@@ -88,7 +90,7 @@ export const paymentIdParamsSchema = z.object({
 export const listPaymentsQuerySchema = paginationQuerySchema.extend({
   locationId: uuidV7Schema.optional(),
   contactId: uuidV7Schema.optional(),
-  method: z.enum(acceptedMethodValues).optional(),
+  method: z.enum(paymentMethodValues).optional(),
   direction: z.enum(directionValues).optional(),
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),

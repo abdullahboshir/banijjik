@@ -16,6 +16,7 @@ import {
   buildStockPostingSourceAdapter,
 } from "../modules/commerce/inventory/index.js";
 import {
+  buildDeliveryLossRepository,
   buildOrderPostingSourceAdapter,
   buildOrderRepository,
   buildSalesReturnPostingSourceAdapter,
@@ -46,6 +47,7 @@ export function registerAccountingAndExpenseHandlers(): void {
       orders: buildOrderRepository(),
       advances: buildRequestAdvanceReader(),
       inventory: buildInventoryPostingSourceAdapter(),
+      deliveryLosses: buildDeliveryLossRepository(),
     }),
     salesReturns: buildSalesReturnPostingSourceAdapter({
       returns: buildSalesReturnRepository(),
