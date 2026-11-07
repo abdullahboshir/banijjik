@@ -62,6 +62,18 @@ import {
   type ListDeliveryAttemptsInput,
 } from "./application/use-cases/list-delivery-attempts.use-case.js";
 import {
+  ReconcileDeliveryLossUseCase,
+  type ReconcileDeliveryLossInput,
+} from "./application/use-cases/reconcile-delivery-loss.use-case.js";
+import {
+  RecoverDeliveryLossUseCase,
+  type RecoverDeliveryLossInput,
+} from "./application/use-cases/recover-delivery-loss.use-case.js";
+import {
+  GetDeliveryLossUseCase,
+  type GetDeliveryLossInput,
+} from "./application/use-cases/get-delivery-loss.use-case.js";
+import {
   buildInstantSaleService,
   type InstantSaleInput,
   type InstantSaleService,
@@ -81,6 +93,9 @@ export {
   ReceiveRtsUseCase,
   DeliverOrderUseCase,
   ListDeliveryAttemptsUseCase,
+  ReconcileDeliveryLossUseCase,
+  RecoverDeliveryLossUseCase,
+  GetDeliveryLossUseCase,
 };
 export type {
   ShipOrderInput,
@@ -88,6 +103,9 @@ export type {
   ReceiveRtsInput,
   DeliverOrderInput,
   ListDeliveryAttemptsInput,
+  ReconcileDeliveryLossInput,
+  RecoverDeliveryLossInput,
+  GetDeliveryLossInput,
 };
 export { buildStorefrontOrderCommands } from "./application/storefront-order-commands.js";
 export { resolveDeliveryFee } from "./application/delivery-fee.js";

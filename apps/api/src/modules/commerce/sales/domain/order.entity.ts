@@ -220,6 +220,11 @@ export class Order implements OrderProps {
     return this.moved(ORDER_STATUS.RETURNED_TO_SENDER, actor);
   }
 
+  reconcileDeliveryLoss(actor: OrderTransitionActor): Order {
+    assertStatus(this.status, [ORDER_STATUS.DELIVERY_FAILED]);
+    return this.moved(ORDER_STATUS.DELIVERY_LOSS_CLOSED, actor);
+  }
+
   reship(input: {
     readonly attemptId: string;
     readonly dispatchMethod: FulfillmentMethod;

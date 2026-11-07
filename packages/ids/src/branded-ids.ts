@@ -59,6 +59,8 @@ export type ConsignmentId = Id<"Consignment">;
 export type CourierSettlementId = Id<"CourierSettlement">;
 export type DeliveryAssignmentId = Id<"DeliveryAssignment">;
 export type RiderCashHandoverId = Id<"RiderCashHandover">;
+export type DeliveryLossClosureId = Id<"DeliveryLossClosure">;
+export type DeliveryLossRecoveryId = Id<"DeliveryLossRecovery">;
 
 export class InvalidIdError extends Error {
   constructor() {

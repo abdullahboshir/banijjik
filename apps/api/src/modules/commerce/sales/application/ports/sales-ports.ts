@@ -286,7 +286,7 @@ export interface SalesUnitOfWork {
 export interface OrderEventPublisher {
   publish(
     type: string,
-    payload: { readonly orderId: string },
+    payload: { readonly orderId: string } & Readonly<Record<string, unknown>>,
     options: { readonly orderingKey: string },
   ): Promise<void>;
 }

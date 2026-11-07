@@ -2153,6 +2153,7 @@
   "orders.status.COMPLETED": "সম্পন্ন",
   "orders.status.DELIVERY_FAILED": "ডেলিভারি ব্যর্থ",
   "orders.status.RETURNED_TO_SENDER": "ফেরত এসেছে",
+  "orders.status.DELIVERY_LOSS_CLOSED": "ডেলিভারি ক্ষতি হিসেবে বন্ধ",
   "orders.status.CANCELLED": "বাতিল",
   "orders.fulfillment.INSTANT": "তাৎক্ষণিক",
   "orders.fulfillment.PICKUP": "দোকান থেকে নেওয়া",

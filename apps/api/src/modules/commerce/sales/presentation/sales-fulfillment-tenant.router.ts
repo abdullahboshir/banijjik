@@ -7,10 +7,14 @@ import {
   deliverOrderRequestSchema,
   deliveryFailedRequestSchema,
   receiveRtsRequestSchema,
+  reconcileDeliveryLossRequestSchema,
+  recoverDeliveryLossRequestSchema,
   shipOrderRequestSchema,
   type DeliverOrderBody,
   type DeliveryFailedBody,
   type ReceiveRtsBody,
+  type ReconcileDeliveryLossBody,
+  type RecoverDeliveryLossBody,
   type ShipOrderBody,
 } from "@banijjik/validation/sales/delivery";
 import { Router, type RequestHandler } from "express";
@@ -20,6 +24,9 @@ import type { DeliverOrderUseCase } from "../application/use-cases/deliver-order
 import type { FailDeliveryUseCase } from "../application/use-cases/fail-delivery.use-case.js";
 import type { ListDeliveryAttemptsUseCase } from "../application/use-cases/list-delivery-attempts.use-case.js";
 import type { ReceiveRtsUseCase } from "../application/use-cases/receive-rts.use-case.js";
+import type { ReconcileDeliveryLossUseCase } from "../application/use-cases/reconcile-delivery-loss.use-case.js";
+import type { RecoverDeliveryLossUseCase } from "../application/use-cases/recover-delivery-loss.use-case.js";
+import type { GetDeliveryLossUseCase } from "../application/use-cases/get-delivery-loss.use-case.js";
 import type { ReshipOrderUseCase } from "../application/use-cases/ship-order.use-cases.js";
 
 function toDeliveryAttemptResponse(attempt: DeliveryAttempt) {
@@ -49,6 +56,9 @@ export interface SalesFulfillmentController {
   readonly receiveRts: RequestHandler;
   readonly deliverOrder: RequestHandler;
   readonly listDeliveryAttempts: RequestHandler;
+  readonly closeDeliveryLoss: RequestHandler;
+  readonly recoverDeliveryLoss: RequestHandler;
+  readonly getDeliveryLoss: RequestHandler;
 }
 
 export interface SalesFulfillmentRouterDependencies {
@@ -65,6 +75,9 @@ export class SalesFulfillmentHttpController implements SalesFulfillmentControlle
       readonly receiveRts: ReceiveRtsUseCase;
       readonly deliver: DeliverOrderUseCase;
       readonly list: ListDeliveryAttemptsUseCase;
+      readonly closeLoss: ReconcileDeliveryLossUseCase;
+      readonly recoverLoss: RecoverDeliveryLossUseCase;
+      readonly getLoss: GetDeliveryLossUseCase;
     },
   ) {}
 
@@ -151,6 +164,51 @@ export class SalesFulfillmentHttpController implements SalesFulfillmentControlle
       meta: { page: query.page, limit: query.limit, hasNext: page.hasNext },
     });
   };
+
+  readonly closeDeliveryLoss: RequestHandler = async (_request, response) => {
+    const caller = readTenantCaller();
+    const params = response.locals["validated"].params as { readonly orderId: string };
+    const body = response.locals["validated"].body as ReconcileDeliveryLossBody;
+    sendData(
+      response,
+      await this.useCases.closeLoss.execute({
+        organizationId: caller.organizationId,
+        allowedLocationIds: caller.allowedLocationIds,
+        actorUserId: caller.actorUserId,
+        orderId: asId<OrderId>(params.orderId),
+        body,
+      }),
+    );
+  };
+
+  readonly recoverDeliveryLoss: RequestHandler = async (_request, response) => {
+    const caller = readTenantCaller();
+    const params = response.locals["validated"].params as { readonly orderId: string };
+    const body = response.locals["validated"].body as RecoverDeliveryLossBody;
+    sendData(
+      response,
+      await this.useCases.recoverLoss.execute({
+        organizationId: caller.organizationId,
+        allowedLocationIds: caller.allowedLocationIds,
+        actorUserId: caller.actorUserId,
+        orderId: asId<OrderId>(params.orderId),
+        body,
+      }),
+    );
+  };
+
+  readonly getDeliveryLoss: RequestHandler = async (_request, response) => {
+    const caller = readTenantCaller();
+    const params = response.locals["validated"].params as { readonly orderId: string };
+    sendData(
+      response,
+      await this.useCases.getLoss.execute({
+        organizationId: caller.organizationId,
+        allowedLocationIds: caller.allowedLocationIds,
+        orderId: asId<OrderId>(params.orderId),
+      }),
+    );
+  };
 }
 
 export function buildSalesFulfillmentTenantRouter(
@@ -196,6 +254,29 @@ export function buildSalesFulfillmentTenantRouter(
     permission(PERMISSION_KEY.SALES_ORDER_READ),
     validate({ params: orderIdParamsSchema, query: paginationQuerySchema }),
     controller.listDeliveryAttempts,
+  );
+
+  router.post(
+    "/orders/:orderId/delivery-loss/close",
+    permission(PERMISSION_KEY.SALES_ORDER_UPDATE),
+    validate({ params: orderIdParamsSchema, body: reconcileDeliveryLossRequestSchema }),
+    idempotency,
+    controller.closeDeliveryLoss,
+  );
+
+  router.post(
+    "/orders/:orderId/delivery-loss/recover",
+    permission(PERMISSION_KEY.SALES_ORDER_UPDATE),
+    validate({ params: orderIdParamsSchema, body: recoverDeliveryLossRequestSchema }),
+    idempotency,
+    controller.recoverDeliveryLoss,
+  );
+
+  router.get(
+    "/orders/:orderId/delivery-loss",
+    permission(PERMISSION_KEY.SALES_ORDER_READ),
+    validate({ params: orderIdParamsSchema }),
+    controller.getDeliveryLoss,
   );
 
   return router;

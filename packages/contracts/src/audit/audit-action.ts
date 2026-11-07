@@ -119,6 +119,8 @@ export const AUDIT_ACTION = {
   ORDER_DELIVERY_FAILED: "sales.order.deliveryFailed",
   ORDER_DELIVERED: "sales.order.delivered",
   ORDER_RETURNED_TO_SENDER: "sales.order.returned",
+  ORDER_DELIVERY_LOSS_CLOSED: "sales.order.lossClosed",
+  DELIVERY_LOSS_RECOVERED: "sales.deliveryLoss.recovered",
   ORDER_COMPLETED: "sales.order.completed",
   ORDER_CANCELLED: "sales.order.cancelled",
   SALES_RETURN_CREATED: "sales.return.created",
@@ -217,6 +219,8 @@ export const AUDIT_ENTITY_TYPE = defineEnum([
   "courierSettlement",
   "deliveryAssignment",
   "riderCashHandover",
+  "deliveryLossClosure",
+  "deliveryLossRecovery",
 ]);
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];
 

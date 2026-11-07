@@ -156,3 +156,85 @@ export interface DeliverOrderRequest {
   readonly version: number;
   readonly note?: string | undefined;
 }
+
+export interface DeliveryLossLineInput {
+  readonly orderLineId: string;
+  readonly restockQuantity: number;
+  readonly damagedQuantity: number;
+  readonly lostQuantity: number;
+}
+
+export interface ReconcileDeliveryLossRequest {
+  readonly expectedVersion: number;
+  readonly reasonKey: string;
+  readonly approvalToken: string;
+  readonly evidenceFileIds?: readonly string[] | undefined;
+  readonly lines: readonly DeliveryLossLineInput[];
+}
+
+export interface RecoverDeliveryLossLineInput {
+  readonly orderLineId: string;
+  readonly restockQuantity: number;
+  readonly damagedQuantity: number;
+}
+
+export interface RecoverDeliveryLossRequest {
+  readonly expectedVersion: number;
+  readonly approvalToken: string;
+  readonly lines: readonly RecoverDeliveryLossLineInput[];
+}
+
+export interface DeliveryLossClosureLineResponse {
+  readonly orderLineId: string;
+  readonly offeringId: string;
+  readonly variantId: string;
+  readonly inventoryItemId: string | null;
+  readonly shippedQuantity: number;
+  readonly restockQuantity: number;
+  readonly damagedQuantity: number;
+  readonly lostQuantity: number;
+  readonly recoveredQuantity: number;
+  readonly lostCost: Money;
+}
+
+export interface DeliveryLossClosureResponse {
+  readonly deliveryLossClosureId: string;
+  readonly organizationId: string;
+  readonly orderId: string;
+  readonly locationId: string;
+  readonly firstShipmentEventId: string | null;
+  readonly reasonKey: string;
+  readonly evidenceFileIds: readonly string[];
+  readonly lines: readonly DeliveryLossClosureLineResponse[];
+  readonly totalLostCost: Money;
+  readonly approvalSnapshot: {
+    readonly approverMemberId: string;
+    readonly action: string;
+  };
+  readonly createdAt: string;
+}
+
+export interface DeliveryLossRecoveryLineResponse {
+  readonly orderLineId: string;
+  readonly offeringId: string;
+  readonly variantId: string;
+  readonly inventoryItemId: string | null;
+  readonly restockQuantity: number;
+  readonly damagedQuantity: number;
+  readonly recoveredCost: Money;
+}
+
+export interface DeliveryLossRecoveryResponse {
+  readonly deliveryLossRecoveryId: string;
+  readonly organizationId: string;
+  readonly deliveryLossClosureId: string;
+  readonly orderId: string;
+  readonly locationId: string;
+  readonly lines: readonly DeliveryLossRecoveryLineResponse[];
+  readonly totalRecoveredCost: Money;
+  readonly approvalSnapshot: {
+    readonly approverMemberId: string;
+    readonly action: string;
+  };
+  readonly createdAt: string;
+}

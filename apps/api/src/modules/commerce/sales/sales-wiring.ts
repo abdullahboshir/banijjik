@@ -70,6 +70,7 @@ import { ManageDeliveryZonesUseCase } from "./application/use-cases/manage-deliv
 import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
 import { MongoDeliveryZoneRepository } from "./infrastructure/mongo-delivery-zone.repository.js";
 import { MongoDeliveryAttemptRepository } from "./infrastructure/mongo-delivery-attempt.repository.js";
+import { MongoDeliveryLossRepository } from "./infrastructure/mongo-delivery-loss.repository.js";
 import {
   DeliveryZoneHttpController,
   type DeliveryZoneController,
@@ -78,6 +79,9 @@ import { FailDeliveryUseCase } from "./application/use-cases/fail-delivery.use-c
 import { ListDeliveryAttemptsUseCase } from "./application/use-cases/list-delivery-attempts.use-case.js";
 import { DeliverOrderUseCase } from "./application/use-cases/deliver-order.use-case.js";
 import { ReceiveRtsUseCase } from "./application/use-cases/receive-rts.use-case.js";
+import { ReconcileDeliveryLossUseCase } from "./application/use-cases/reconcile-delivery-loss.use-case.js";
+import { RecoverDeliveryLossUseCase } from "./application/use-cases/recover-delivery-loss.use-case.js";
+import { GetDeliveryLossUseCase } from "./application/use-cases/get-delivery-loss.use-case.js";
 import { ReshipOrderUseCase } from "./application/use-cases/ship-order.use-cases.js";
 import {
   SalesFulfillmentHttpController,
@@ -137,6 +141,7 @@ export function buildSalesDependencies(ports: SalesTenantPorts): SalesDependenci
     kinds: ports.kinds,
     deliveryZones: new MongoDeliveryZoneRepository(),
     deliveryAttempts: new MongoDeliveryAttemptRepository(),
+    deliveryLosses: new MongoDeliveryLossRepository(),
   };
 }
 
@@ -199,6 +204,9 @@ export function buildSalesFulfillmentController(
     receiveRts: new ReceiveRtsUseCase(dependencies),
     deliver: new DeliverOrderUseCase(dependencies),
     list: new ListDeliveryAttemptsUseCase(dependencies),
+    closeLoss: new ReconcileDeliveryLossUseCase(dependencies),
+    recoverLoss: new RecoverDeliveryLossUseCase(dependencies),
+    getLoss: new GetDeliveryLossUseCase(dependencies),
   });
 }
 

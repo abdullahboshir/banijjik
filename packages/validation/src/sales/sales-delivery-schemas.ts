@@ -118,6 +118,58 @@ export const deliverOrderRequestSchema = z.strictObject({
   note: z.string().trim().max(500).optional(),
 });
 
+export const deliveryLossLineInputSchema = z.strictObject({
+  orderLineId: uuidV7Schema,
+  restockQuantity: z.number().int().min(0).max(MAX_SAFE),
+  damagedQuantity: z.number().int().min(0).max(MAX_SAFE),
+  lostQuantity: z.number().int().min(0).max(MAX_SAFE),
+});
+
+export const reconcileDeliveryLossRequestSchema = z
+  .strictObject({
+    expectedVersion: versionSchema,
+    reasonKey: z.string().trim().min(1).max(100),
+    approvalToken: z.string().trim().min(1),
+    evidenceFileIds: z.array(uuidV7Schema).max(10).optional(),
+    lines: z.array(deliveryLossLineInputSchema).min(1).max(100),
+  })
+  .superRefine((body, context) => {
+    const totalLost = body.lines.reduce((sum, line) => sum + line.lostQuantity, 0);
+    if (totalLost <= 0) {
+      context.addIssue({
+        code: "custom",
+        message: "at least one unit must be lost to close loss",
+        path: ["lines"],
+      });
+    }
+  });
+
+export const recoverDeliveryLossLineInputSchema = z.strictObject({
+  orderLineId: uuidV7Schema,
+  restockQuantity: z.number().int().min(0).max(MAX_SAFE),
+  damagedQuantity: z.number().int().min(0).max(MAX_SAFE),
+});
+
+export const recoverDeliveryLossRequestSchema = z
+  .strictObject({
+    expectedVersion: versionSchema,
+    approvalToken: z.string().trim().min(1),
+    lines: z.array(recoverDeliveryLossLineInputSchema).min(1).max(100),
+  })
+  .superRefine((body, context) => {
+    const totalRecovered = body.lines.reduce(
+      (sum, line) => sum + line.restockQuantity + line.damagedQuantity,
+      0,
+    );
+    if (totalRecovered <= 0) {
+      context.addIssue({
+        code: "custom",
+        message: "at least one unit must be recovered",
+        path: ["lines"],
+      });
+    }
+  });
+
 export type DeliveryAddressBody = z.infer<typeof deliveryAddressSchema>;
 export type CreateDeliveryZoneBody = z.infer<typeof createDeliveryZoneRequestSchema>;
 export type UpdateDeliveryZoneBody = z.infer<typeof updateDeliveryZoneRequestSchema>;
@@ -127,3 +179,5 @@ export type ShipOrderBody = z.infer<typeof shipOrderRequestSchema>;
 export type DeliveryFailedBody = z.infer<typeof deliveryFailedRequestSchema>;
 export type ReceiveRtsBody = z.infer<typeof receiveRtsRequestSchema>;
 export type DeliverOrderBody = z.infer<typeof deliverOrderRequestSchema>;
+export type ReconcileDeliveryLossBody = z.infer<typeof reconcileDeliveryLossRequestSchema>;
+export type RecoverDeliveryLossBody = z.infer<typeof recoverDeliveryLossRequestSchema>;

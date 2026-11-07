@@ -4,10 +4,13 @@ import {
   type OrderResponse,
 } from "@banijjik/contracts/sales";
 import type {
+  DeliveryLossClosureResponse,
+  DeliveryLossRecoveryResponse,
   FirstShipmentPostingFacts,
   FirstShipmentResponse,
   OrderDeliveryResponse,
 } from "@banijjik/contracts/sales/delivery";
+import type { DeliveryLossClosure, DeliveryLossRecovery } from "../domain/delivery-loss.entity.js";
 import type { Order } from "../domain/order.entity.js";
 import { derivePaymentStatus, type PaymentTotals } from "../domain/payment-status.js";
 import type { OrderLineProps, OrderProps } from "../domain/order-types.js";
@@ -113,5 +116,58 @@ function firstShipmentResponseOf(
     taxTotal: facts.taxTotal,
     deliveryIncome: facts.deliveryIncome,
     netPaidAtShipment: facts.netPaidAtShipment,
+  };
+}
+
+export function toDeliveryLossClosureResponse(
+  closure: DeliveryLossClosure,
+): DeliveryLossClosureResponse {
+  return {
+    deliveryLossClosureId: closure.deliveryLossClosureId,
+    organizationId: closure.organizationId,
+    orderId: closure.orderId,
+    locationId: closure.locationId,
+    firstShipmentEventId: closure.firstShipmentEventId,
+    reasonKey: closure.reasonKey,
+    evidenceFileIds: closure.evidenceFileIds,
+    lines: closure.lines.map((l) => ({
+      orderLineId: l.orderLineId,
+      offeringId: l.offeringId,
+      variantId: l.variantId,
+      inventoryItemId: l.inventoryItemId,
+      shippedQuantity: l.shippedQuantity,
+      restockQuantity: l.restockQuantity,
+      damagedQuantity: l.damagedQuantity,
+      lostQuantity: l.lostQuantity,
+      recoveredQuantity: l.recoveredQuantity,
+      lostCost: { amount: l.lostCostAmount, currency: closure.totalLostCost.currency },
+    })),
+    totalLostCost: closure.totalLostCost,
+    approvalSnapshot: closure.approvalSnapshot,
+    createdAt: closure.createdAt.toISOString(),
+  };
+}
+
+export function toDeliveryLossRecoveryResponse(
+  recovery: DeliveryLossRecovery,
+): DeliveryLossRecoveryResponse {
+  return {
+    deliveryLossRecoveryId: recovery.deliveryLossRecoveryId,
+    organizationId: recovery.organizationId,
+    deliveryLossClosureId: recovery.deliveryLossClosureId,
+    orderId: recovery.orderId,
+    locationId: recovery.locationId,
+    lines: recovery.lines.map((l) => ({
+      orderLineId: l.orderLineId,
+      offeringId: l.offeringId,
+      variantId: l.variantId,
+      inventoryItemId: l.inventoryItemId,
+      restockQuantity: l.restockQuantity,
+      damagedQuantity: l.damagedQuantity,
+      recoveredCost: { amount: l.recoveredCostAmount, currency: recovery.totalRecoveredCost.currency },
+    })),
+    totalRecoveredCost: recovery.totalRecoveredCost,
+    approvalSnapshot: recovery.approvalSnapshot,
+    createdAt: recovery.createdAt.toISOString(),
   };
 }
