@@ -50,12 +50,18 @@ describe("accounting ORDERED posting handlers", () => {
     ]);
   });
 
-  it("postOrders handles sales.order.completed on order stream", () => {
+  it("postOrders handles sales.order.completed on order stream and alsoHandles shipment, RTS and loss", () => {
     const handler = buildPostOrdersHandler({ orders, posting });
     expect(handler.handlerKey).toBe("accounting.postOrders");
     expect(handler.eventType).toBe(EVENT_TYPE.ORDER_COMPLETED);
     expect(handler.ordering).toBe("ORDERED");
     expect(handler.streamPrefixes).toEqual(["order:"]);
+    expect(handler.alsoHandles).toEqual([
+      EVENT_TYPE.ORDER_SHIPPED,
+      EVENT_TYPE.ORDER_RETURNED_TO_SENDER,
+      EVENT_TYPE.ORDER_DELIVERY_LOSS_CLOSED,
+      EVENT_TYPE.DELIVERY_LOSS_RECOVERED,
+    ]);
   });
 
   it("postStock handles inventory.stockSource.recorded UNORDERED", () => {

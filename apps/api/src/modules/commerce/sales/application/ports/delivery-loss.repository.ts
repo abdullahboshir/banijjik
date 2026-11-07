@@ -1,5 +1,6 @@
 import type {
   DeliveryLossClosureId,
+  DeliveryLossRecoveryId,
   OrderId,
   OrganizationId,
 } from "@banijjik/ids";
@@ -17,6 +18,10 @@ export interface DeliveryLossRepository {
     deliveryLossClosureId: DeliveryLossClosureId,
   ): Promise<DeliveryLossClosure | null>;
   createRecovery(recovery: DeliveryLossRecovery): Promise<DeliveryLossRecovery>;
+  findRecoveryById(
+    organizationId: OrganizationId,
+    deliveryLossRecoveryId: DeliveryLossRecoveryId,
+  ): Promise<DeliveryLossRecovery | null>;
   listRecoveries(
     organizationId: OrganizationId,
     deliveryLossClosureId: DeliveryLossClosureId,

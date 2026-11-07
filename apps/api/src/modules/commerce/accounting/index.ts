@@ -56,7 +56,11 @@ export type {
   BookingPostingSnapshot,
   ExpensePostingSnapshot,
 } from "./domain/posting-rules.js";
-export type { OrderPostingSnapshot } from "./domain/order-posting-rules.js";
+export type {
+  DeliveryLossPostingFacts,
+  DeliveryLossRecoveryPostingFacts,
+  OrderPostingSnapshot,
+} from "./domain/order-posting-rules.js";
 export type {
   StockMovementPostingLine,
   StockPostingSnapshot,

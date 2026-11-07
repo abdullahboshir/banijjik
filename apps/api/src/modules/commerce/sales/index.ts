@@ -5,7 +5,17 @@ import { PAYMENT_REQUEST_TYPE } from "@banijjik/contracts/payment";
 import { STOCK_MOVEMENT_REASON } from "@banijjik/contracts/inventory";
 import type { RequestAdvanceReader } from "../payment/index.js";
 import { movementValue, type InventoryPostingSource } from "../inventory/index.js";
-import type { OrderPostingSnapshot, OrderPostingSource } from "../accounting/index.js";
+import type { DeliveryLossRepository } from "./application/ports/delivery-loss.repository.js";
+import { MongoDeliveryLossRepository } from "./infrastructure/mongo-delivery-loss.repository.js";
+import type {
+  DeliveryLossPostingFacts,
+  DeliveryLossRecoveryPostingFacts,
+  OrderPostingSnapshot,
+  OrderPostingSource,
+} from "../accounting/index.js";
+import { ORDER_STATUS } from "@banijjik/contracts/sales";
+import { getRequestContext } from "../../../kernel/context/index.js";
+import type { DeliveryLossRecoveryId, OrganizationId } from "@banijjik/ids";
 import { MongoOrderRepository } from "./infrastructure/mongo-order.repositories.js";
 import { MongoSalesReturnRepository } from "./infrastructure/mongo-sales-return.repository.js";
 import { MongoDeliveryZoneRepository } from "./infrastructure/mongo-delivery-zone.repository.js";
@@ -211,6 +221,83 @@ export interface OrderPostingSourcePorts {
   readonly orders: OrderRepository;
   readonly advances: RequestAdvanceReader;
   readonly inventory: InventoryPostingSource;
+  readonly deliveryLosses?: DeliveryLossRepository;
+}
+
+export { MongoDeliveryLossRepository };
+export function buildDeliveryLossRepository(): DeliveryLossRepository {
+  return new MongoDeliveryLossRepository();
+}
+
+async function resolveDeliveryLossFacts(
+  ports: OrderPostingSourcePorts,
+  order: import("./domain/order.entity.js").Order,
+  currency: import("@banijjik/contracts").CurrencyCode,
+): Promise<DeliveryLossPostingFacts | null> {
+  if (order.status !== ORDER_STATUS.DELIVERY_LOSS_CLOSED || !ports.deliveryLosses) {
+    return null;
+  }
+  const closure = await ports.deliveryLosses.findClosureByOrderId(
+    order.organizationId,
+    order.orderId,
+  );
+  if (!closure) return null;
+
+  const restockCostAmount = closure.lines.reduce((sum, l) => {
+    const unitCost = l.lostQuantity > 0 ? Math.round(l.lostCostAmount / l.lostQuantity) : 0;
+    return sum + unitCost * l.restockQuantity;
+  }, 0);
+  const damagedCostAmount = closure.lines.reduce((sum, l) => {
+    const unitCost = l.lostQuantity > 0 ? Math.round(l.lostCostAmount / l.lostQuantity) : 0;
+    return sum + unitCost * l.damagedQuantity;
+  }, 0);
+
+  return {
+    deliveryLossClosureId: closure.deliveryLossClosureId,
+    businessDate: order.businessDate,
+    restockCost: { amount: restockCostAmount, currency },
+    damagedCost: { amount: damagedCostAmount, currency },
+    totalLostCost: closure.totalLostCost,
+  };
+}
+
+async function resolveDeliveryLossRecoveryFacts(
+  ports: OrderPostingSourcePorts,
+  recoveryId: string,
+): Promise<DeliveryLossRecoveryPostingFacts | undefined> {
+  if (!ports.deliveryLosses) return undefined;
+  const { organizationId } = getRequestContext();
+  if (!organizationId) return undefined;
+
+  const recovery = await ports.deliveryLosses.findRecoveryById(
+    asId<OrganizationId>(organizationId),
+    asId<DeliveryLossRecoveryId>(recoveryId),
+  );
+  if (!recovery) return undefined;
+
+  const order = await ports.orders.findById(recovery.orderId);
+  const currency = recovery.totalRecoveredCost.currency;
+  const restockCostAmount = recovery.lines.reduce((sum, l) => {
+    const totalQty = l.restockQuantity + l.damagedQuantity;
+    const unitCost = totalQty > 0 ? Math.round(l.recoveredCostAmount / totalQty) : 0;
+    return sum + unitCost * l.restockQuantity;
+  }, 0);
+  const damagedCostAmount = recovery.lines.reduce((sum, l) => {
+    const totalQty = l.restockQuantity + l.damagedQuantity;
+    const unitCost = totalQty > 0 ? Math.round(l.recoveredCostAmount / totalQty) : 0;
+    return sum + unitCost * l.damagedQuantity;
+  }, 0);
+
+  return {
+    deliveryLossRecoveryId: recovery.deliveryLossRecoveryId,
+    deliveryLossClosureId: recovery.deliveryLossClosureId,
+    orderId: recovery.orderId,
+    businessDate: order?.businessDate ?? new Date().toISOString().slice(0, 10),
+    locationId: recovery.locationId,
+    restockCost: { amount: restockCostAmount, currency },
+    damagedCost: { amount: damagedCostAmount, currency },
+    totalRecoveredCost: recovery.totalRecoveredCost,
+  };
 }
 
 export function buildOrderPostingSourceAdapter(ports: OrderPostingSourcePorts): OrderPostingSource {
@@ -234,9 +321,11 @@ export function buildOrderPostingSourceAdapter(ports: OrderPostingSourcePorts): 
 
       const saleMovements = movements.filter((m) => m.reason === STOCK_MOVEMENT_REASON.SALE);
       const cogsAmount = saleMovements.reduce((sum, m) => sum + movementValue(m), 0);
+      const deliveryLoss = await resolveDeliveryLossFacts(ports, order, currency);
 
       return {
         orderId: order.orderId,
+        status: order.status,
         businessDate: order.businessDate,
         locationId: order.locationId,
         totals: order.totals,
@@ -252,7 +341,14 @@ export function buildOrderPostingSourceAdapter(ports: OrderPostingSourcePorts): 
         },
         advancesToSettle: { amount: heldAdvance.amount, currency },
         cogs: { amount: cogsAmount, currency },
+        deliveryLoss,
       };
+    },
+
+    async readDeliveryLossRecovery(
+      recoveryId: string,
+    ): Promise<DeliveryLossRecoveryPostingFacts | undefined> {
+      return resolveDeliveryLossRecoveryFacts(ports, recoveryId);
     },
   };
 }

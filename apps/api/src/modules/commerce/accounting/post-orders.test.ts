@@ -1,4 +1,5 @@
 import { EVENT_TYPE } from "@banijjik/contracts";
+import { SALES_EVENT_TYPE } from "@banijjik/contracts/sales";
 import {
   JOURNAL_SOURCE_TYPE,
   POSTING_KEY,
@@ -57,6 +58,7 @@ interface Scene {
   readonly organizationId: OrganizationId;
   readonly locationId: string;
   readonly orders: Map<string, OrderPostingSnapshot>;
+  readonly recoveries: Map<string, import("./domain/order-posting-rules.js").DeliveryLossRecoveryPostingFacts>;
   readonly handler: ReturnType<typeof buildPostOrdersHandler>;
   readonly accounts: MongoAccountRepository;
   readonly journals: MongoJournalRepository;
@@ -66,8 +68,10 @@ interface Scene {
 async function newScene(): Promise<Scene> {
   const organizationId = asId<OrganizationId>(newId());
   const orders = new Map<string, OrderPostingSnapshot>();
+  const recoveries = new Map<string, import("./domain/order-posting-rules.js").DeliveryLossRecoveryPostingFacts>();
   const orderSource: OrderPostingSource = {
     readOrder: async (orderId) => orders.get(orderId),
+    readDeliveryLossRecovery: async (id) => recoveries.get(id),
   };
   const accounts = new MongoAccountRepository();
   const journals = new MongoJournalRepository();
@@ -91,6 +95,7 @@ async function newScene(): Promise<Scene> {
     organizationId,
     locationId: newId(),
     orders,
+    recoveries,
     handler: buildPostOrdersHandler({ orders: orderSource, posting }),
     accounts,
     journals,
@@ -98,10 +103,10 @@ async function newScene(): Promise<Scene> {
   };
 }
 
-function envelopeOf(scene: Scene, orderId: string) {
+function envelopeOf(scene: Scene, orderId: string, type: string = EVENT_TYPE.ORDER_COMPLETED) {
   return {
     eventId: newId(),
-    type: EVENT_TYPE.ORDER_COMPLETED,
+    type,
     version: 1,
     occurredAt: NOW.toISOString(),
     organizationId: scene.organizationId,
@@ -110,9 +115,25 @@ function envelopeOf(scene: Scene, orderId: string) {
   } as const;
 }
 
-function handleEvent(scene: Scene, orderId: string) {
+function handleEvent(scene: Scene, orderId: string, type: string = EVENT_TYPE.ORDER_COMPLETED) {
   return withOrganizationContext(scene.organizationId, () =>
-    withTransaction(() => scene.handler.handle(envelopeOf(scene, orderId))),
+    withTransaction(() => scene.handler.handle(envelopeOf(scene, orderId, type))),
+  );
+}
+
+function handleRecoveryEvent(scene: Scene, recoveryId: string, orderId: string) {
+  return withOrganizationContext(scene.organizationId, () =>
+    withTransaction(() =>
+      scene.handler.handle({
+        eventId: newId(),
+        type: SALES_EVENT_TYPE.DELIVERY_LOSS_RECOVERED,
+        version: 1,
+        occurredAt: NOW.toISOString(),
+        organizationId: scene.organizationId,
+        actorUserId: null,
+        payload: { deliveryLossRecoveryId: recoveryId, orderId },
+      } as unknown as Parameters<typeof scene.handler.handle>[0]),
+    ),
   );
 }
 
@@ -571,5 +592,263 @@ describe("accounting postOrders handler", () => {
       }),
     );
     expect(revEntry).toBeDefined();
+  });
+
+  it("sales.order.shipped posts revenue, advance settle and COGS on first shipment; reshipment does not duplicate", async () => {
+    const scene = await newScene();
+    const orderId = newId();
+
+    scene.orders.set(orderId, {
+      orderId,
+      businessDate: BUSINESS_DATE,
+      locationId: scene.locationId,
+      totals: {
+        subtotal: bdt(2000),
+        discountTotal: bdt(200),
+        taxTotal: bdt(100),
+        deliveryCharge: bdt(120),
+        grandTotal: bdt(2020),
+        roundingAdjustment: bdt(0),
+      },
+      advancesToSettle: bdt(500),
+      serviceGoods: bdt(0),
+      cogs: bdt(1200),
+    });
+
+    // 1. First shipment
+    await handleEvent(scene, orderId, SALES_EVENT_TYPE.ORDER_SHIPPED);
+
+    const rev = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.order_revenue,
+      }),
+    );
+    expect(rev).toBeDefined();
+
+    const adv = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.order_advance_settle,
+      }),
+    );
+    expect(adv).toBeDefined();
+
+    const cogs = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.order_cost,
+      }),
+    );
+    expect(cogs).toBeDefined();
+
+    // 2. Reshipment (attempt 2)
+    await handleEvent(scene, orderId, SALES_EVENT_TYPE.ORDER_SHIPPED);
+
+    // Assert entries count unchanged
+    const all = await withOrganizationContext(scene.organizationId, () =>
+      models({}).get("JournalEntry").find({ sourceType: JOURNAL_SOURCE_TYPE.ORDER, sourceId: orderId }),
+    );
+    expect(all).toHaveLength(3);
+
+    // Assert trial balance is balanced
+    const tb = await withOrganizationContext(scene.organizationId, () =>
+      scene.trialBalance.execute(scene.organizationId, BUSINESS_DATE),
+    );
+    expect(tb.balances).toBe(true);
+    expect(tb.debitTotal.amount).toBe(tb.creditTotal.amount);
+  });
+
+  it("sales.order.returned (RTS) reverses revenue, advances and COGS with mirrored reversals", async () => {
+    const scene = await newScene();
+    const orderId = newId();
+
+    scene.orders.set(orderId, {
+      orderId,
+      businessDate: BUSINESS_DATE,
+      locationId: scene.locationId,
+      totals: {
+        subtotal: bdt(1500),
+        discountTotal: bdt(0),
+        taxTotal: bdt(75),
+        deliveryCharge: bdt(60),
+        grandTotal: bdt(1635),
+        roundingAdjustment: bdt(0),
+      },
+      advancesToSettle: bdt(300),
+      serviceGoods: bdt(0),
+      cogs: bdt(900),
+    });
+
+    // 1. Shipped first
+    await handleEvent(scene, orderId, SALES_EVENT_TYPE.ORDER_SHIPPED);
+
+    // 2. RTS received
+    await handleEvent(scene, orderId, SALES_EVENT_TYPE.ORDER_RETURNED_TO_SENDER);
+
+    const revReversal = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.reversal_order_revenue,
+      }),
+    );
+    expect(revReversal).toBeDefined();
+
+    const advReversal = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.reversal_order_advance_settle,
+      }),
+    );
+    expect(advReversal).toBeDefined();
+
+    const cogsReversal = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.reversal_order_cost,
+      }),
+    );
+    expect(cogsReversal).toBeDefined();
+
+    // Trial balance must balance exactly to zero net effects
+    const tb = await withOrganizationContext(scene.organizationId, () =>
+      scene.trialBalance.execute(scene.organizationId, BUSINESS_DATE),
+    );
+    expect(tb.balances).toBe(true);
+    expect(tb.debitTotal.amount).toBe(tb.creditTotal.amount);
+  });
+
+  it("sales.order.lossClosed reverses revenue and advances, restocks received COGS, and reclasses lost COGS to DAMAGE_LOSS", async () => {
+    const scene = await newScene();
+    const orderId = newId();
+
+    scene.orders.set(orderId, {
+      orderId,
+      businessDate: BUSINESS_DATE,
+      locationId: scene.locationId,
+      totals: {
+        subtotal: bdt(2000),
+        discountTotal: bdt(0),
+        taxTotal: bdt(0),
+        deliveryCharge: bdt(100),
+        grandTotal: bdt(2100),
+        roundingAdjustment: bdt(0),
+      },
+      advancesToSettle: bdt(400),
+      serviceGoods: bdt(0),
+      cogs: bdt(1000),
+      deliveryLoss: {
+        deliveryLossClosureId: newId(),
+        businessDate: BUSINESS_DATE,
+        restockCost: bdt(500),
+        damagedCost: bdt(200),
+        totalLostCost: bdt(300),
+      },
+    });
+
+    // 1. Shipped
+    await handleEvent(scene, orderId, SALES_EVENT_TYPE.ORDER_SHIPPED);
+
+    // 2. Loss closed
+    await handleEvent(scene, orderId, SALES_EVENT_TYPE.ORDER_DELIVERY_LOSS_CLOSED);
+
+    // Revenue and advances reversed
+    const revRev = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.reversal_order_revenue,
+      }),
+    );
+    expect(revRev).toBeDefined();
+
+    const advRev = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.reversal_order_advance_settle,
+      }),
+    );
+    expect(advRev).toBeDefined();
+
+    // Received units COGS reversal (500 restock + 200 damaged = 700)
+    const receivedCogsRev = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.reversal_order_cost,
+      }),
+    );
+    expect(receivedCogsRev).toBeDefined();
+    expect(receivedCogsRev?.lines.find((l) => l.accountCode === SYSTEM_ACCOUNT_CODE.INVENTORY)?.debit.amount).toBe(500);
+    expect(receivedCogsRev?.lines.find((l) => l.accountCode === SYSTEM_ACCOUNT_CODE.INVENTORY_DAMAGED)?.debit.amount).toBe(200);
+    expect(receivedCogsRev?.lines.find((l) => l.accountCode === SYSTEM_ACCOUNT_CODE.COGS)?.credit.amount).toBe(700);
+
+    // Lost units reclassed to DAMAGE_LOSS (300)
+    const lossReclass = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.delivery_loss,
+      }),
+    );
+    expect(lossReclass).toBeDefined();
+    expect(lossReclass?.lines.find((l) => l.accountCode === SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS)?.debit.amount).toBe(300);
+    expect(lossReclass?.lines.find((l) => l.accountCode === SYSTEM_ACCOUNT_CODE.COGS)?.credit.amount).toBe(300);
+
+    // Total COGS net balance should be 0 (1000 debited originally, 700 + 300 credited)
+    const tb = await withOrganizationContext(scene.organizationId, () =>
+      scene.trialBalance.execute(scene.organizationId, BUSINESS_DATE),
+    );
+    expect(tb.balances).toBe(true);
+    expect(tb.debitTotal.amount).toBe(tb.creditTotal.amount);
+    const cogsRow = tb.accounts.find((a) => a.accountCode === SYSTEM_ACCOUNT_CODE.COGS);
+    expect(cogsRow?.balance.amount ?? 0).toBe(0);
+
+    const damageLossRow = tb.accounts.find((a) => a.accountCode === SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS);
+    expect(damageLossRow?.balance.amount).toBe(300);
+  });
+
+  it("sales.deliveryLoss.recovered debits inventory and credits DAMAGE_LOSS", async () => {
+    const scene = await newScene();
+    const orderId = newId();
+    const recoveryId = newId();
+
+    scene.recoveries.set(recoveryId, {
+      deliveryLossRecoveryId: recoveryId,
+      deliveryLossClosureId: newId(),
+      orderId,
+      businessDate: BUSINESS_DATE,
+      locationId: scene.locationId,
+      restockCost: bdt(200),
+      damagedCost: bdt(100),
+      totalRecoveredCost: bdt(300),
+    });
+
+    await handleRecoveryEvent(scene, recoveryId, orderId);
+
+    const recoveryJournal = await withOrganizationContext(scene.organizationId, () =>
+      scene.journals.findBySource({
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: recoveryId,
+        postingKey: POSTING_KEY.delivery_loss_recovery,
+      }),
+    );
+    expect(recoveryJournal).toBeDefined();
+    expect(recoveryJournal?.lines.find((l) => l.accountCode === SYSTEM_ACCOUNT_CODE.INVENTORY)?.debit.amount).toBe(200);
+    expect(recoveryJournal?.lines.find((l) => l.accountCode === SYSTEM_ACCOUNT_CODE.INVENTORY_DAMAGED)?.debit.amount).toBe(100);
+    expect(recoveryJournal?.lines.find((l) => l.accountCode === SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS)?.credit.amount).toBe(300);
+
+    const tb = await withOrganizationContext(scene.organizationId, () =>
+      scene.trialBalance.execute(scene.organizationId, BUSINESS_DATE),
+    );
+    expect(tb.balances).toBe(true);
+    expect(tb.debitTotal.amount).toBe(tb.creditTotal.amount);
   });
 });
