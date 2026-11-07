@@ -20,8 +20,28 @@ function entry(
   return input;
 }
 
+export interface DeliveryLossPostingFacts {
+  readonly deliveryLossClosureId: string;
+  readonly businessDate: string;
+  readonly restockCost: Money;
+  readonly damagedCost: Money;
+  readonly totalLostCost: Money;
+}
+
+export interface DeliveryLossRecoveryPostingFacts {
+  readonly deliveryLossRecoveryId: string;
+  readonly deliveryLossClosureId: string;
+  readonly orderId: string;
+  readonly businessDate: string;
+  readonly locationId: string | null;
+  readonly restockCost: Money;
+  readonly damagedCost: Money;
+  readonly totalRecoveredCost: Money;
+}
+
 export interface OrderPostingSnapshot {
   readonly orderId: string;
+  readonly status?: string;
   readonly businessDate: string;
   readonly locationId: string | null;
   readonly totals: {
@@ -35,6 +55,7 @@ export interface OrderPostingSnapshot {
   readonly advancesToSettle: Money;
   readonly cogs: Money;
   readonly serviceGoods: Money;
+  readonly deliveryLoss?: DeliveryLossPostingFacts | null;
 }
 
 function buildDebitLines(
@@ -151,4 +172,92 @@ export function draftOrderCompleted(snapshot: OrderPostingSnapshot): DraftJourna
   }
 
   return drafts;
+}
+
+export function draftDeliveryLoss(snapshot: OrderPostingSnapshot): DraftJournalEntry[] {
+  const { orderId, locationId, deliveryLoss } = snapshot;
+  if (!deliveryLoss) return [];
+
+  const { businessDate, restockCost, damagedCost, totalLostCost } = deliveryLoss;
+  const drafts: DraftJournalEntry[] = [];
+  const receivedCostAmount = restockCost.amount + damagedCost.amount;
+
+  if (receivedCostAmount > 0) {
+    const lines: DraftJournalLine[] = [];
+    if (restockCost.amount > 0) {
+      lines.push(debit(SYSTEM_ACCOUNT_CODE.INVENTORY, restockCost));
+    }
+    if (damagedCost.amount > 0) {
+      lines.push(debit(SYSTEM_ACCOUNT_CODE.INVENTORY_DAMAGED, damagedCost));
+    }
+    lines.push(
+      credit(SYSTEM_ACCOUNT_CODE.COGS, {
+        amount: receivedCostAmount,
+        currency: restockCost.currency,
+      }),
+    );
+    drafts.push(
+      entry({
+        businessDate,
+        locationId,
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.reversal_order_cost,
+        lines,
+      }),
+    );
+  }
+
+  if (totalLostCost.amount > 0) {
+    drafts.push(
+      entry({
+        businessDate,
+        locationId,
+        sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+        sourceId: orderId,
+        postingKey: POSTING_KEY.delivery_loss,
+        lines: [
+          debit(SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS, totalLostCost),
+          credit(SYSTEM_ACCOUNT_CODE.COGS, totalLostCost),
+        ],
+      }),
+    );
+  }
+
+  return drafts;
+}
+
+export function draftDeliveryLossRecovery(
+  recovery: DeliveryLossRecoveryPostingFacts,
+): DraftJournalEntry[] {
+  const {
+    deliveryLossRecoveryId,
+    businessDate,
+    locationId,
+    restockCost,
+    damagedCost,
+    totalRecoveredCost,
+  } = recovery;
+
+  if (totalRecoveredCost.amount <= 0) return [];
+
+  const lines: DraftJournalLine[] = [];
+  if (restockCost.amount > 0) {
+    lines.push(debit(SYSTEM_ACCOUNT_CODE.INVENTORY, restockCost));
+  }
+  if (damagedCost.amount > 0) {
+    lines.push(debit(SYSTEM_ACCOUNT_CODE.INVENTORY_DAMAGED, damagedCost));
+  }
+  lines.push(credit(SYSTEM_ACCOUNT_CODE.DAMAGE_LOSS, totalRecoveredCost));
+
+  return [
+    entry({
+      businessDate,
+      locationId,
+      sourceType: JOURNAL_SOURCE_TYPE.ORDER,
+      sourceId: deliveryLossRecoveryId,
+      postingKey: POSTING_KEY.delivery_loss_recovery,
+      lines,
+    }),
+  ];
 }

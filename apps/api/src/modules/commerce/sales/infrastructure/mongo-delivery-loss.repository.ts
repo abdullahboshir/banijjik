@@ -217,6 +217,20 @@ export class MongoDeliveryLossRepository implements DeliveryLossRepository {
     return toRecovery(created);
   }
 
+  async findRecoveryById(
+    organizationId: OrganizationId,
+    deliveryLossRecoveryId: DeliveryLossRecoveryId,
+  ): Promise<DeliveryLossRecovery | null> {
+    const doc = await recoveryModel()
+      .findOne(
+        { organizationId, deliveryLossRecoveryId },
+        {},
+        sessionOption(getActiveSession()),
+      )
+      .lean<DeliveryLossRecoveryDocument | null>();
+    return doc ? toRecovery(doc) : null;
+  }
+
   async listRecoveries(
     organizationId: OrganizationId,
     deliveryLossClosureId: DeliveryLossClosureId,
