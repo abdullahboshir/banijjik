@@ -24,7 +24,10 @@ import {
   type CommissionEventContext,
 } from "./accrual-shared.js";
 import { reconcileSource } from "./reconcile-sources.js";
-import { reconcileOrderLinesByReturn } from "./reconcile-returns.js";
+import {
+  reconcileOrderLinesByReturn,
+  reverseOrderLinesCommission,
+} from "./reconcile-returns.js";
 
 export type {
   AccrualDependencies,
@@ -205,8 +208,9 @@ export async function accrueCompletedBooking(
 }
 
 /**
- * `sales.order.completed`: one accrual per performed line (plan 3.11 Refresh C). Each line has its
- * own unique sequence 1, so a replay writes nothing. A line without a performer earns nothing.
+ * `sales.order.completed` or `sales.order.shipped`: one accrual per performed line (plan 3.11 Refresh C,
+ * card 4.3 COD I2). Each line has its own unique sequence 1, so a replay or reshipment writes nothing.
+ * A line without a performer earns nothing.
  */
 export async function accrueCompletedOrder(
   dependencies: AccrualDependencies,
@@ -215,11 +219,31 @@ export async function accrueCompletedOrder(
   return dependencies.unitOfWork.run(async () => {
     await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.ORDER_LINE, input.orderId);
     const order = await dependencies.orders.readOrder(input.orderId);
-    if (order === undefined || order.status !== ORDER_STATUS.COMPLETED) return NOTHING_DONE;
+    if (
+      order === undefined ||
+      (order.status !== ORDER_STATUS.COMPLETED &&
+        order.status !== ORDER_STATUS.SHIPPED &&
+        order.status !== ORDER_STATUS.DELIVERED)
+    ) {
+      return NOTHING_DONE;
+    }
     const accrued = await accrueOrderLines(dependencies, order, input.context);
     // A return that committed before this accrual is applied to it now (plan 3.5b amendment 2).
     const reconciled = await reconcileOrderLinesByReturn(dependencies, order, input.context);
     return addResults(accrued, reconciled);
+  });
+}
+
+/**
+ * `sales.order.returned` or `sales.order.lossClosed`: reverses all accrued order lines commission down to 0.
+ */
+export async function reverseOrderCommission(
+  dependencies: AccrualDependencies,
+  input: { readonly orderId: string; readonly context: CommissionEventContext },
+): Promise<AccrualResult> {
+  return dependencies.unitOfWork.run(async () => {
+    await dependencies.marks.touch(COMMISSION_SOURCE_TYPE.ORDER_LINE, input.orderId);
+    return reverseOrderLinesCommission(dependencies, input.orderId, input.context);
   });
 }
 

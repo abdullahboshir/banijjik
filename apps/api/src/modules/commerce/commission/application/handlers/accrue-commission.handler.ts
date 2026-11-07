@@ -6,6 +6,7 @@ import {
   accrueCompletedOrder,
   accrueSalesReturn,
   reconcilePaymentSources,
+  reverseOrderCommission,
   type AccrualDependencies,
   type CommissionEventContext,
 } from "../accrue-commission.js";
@@ -45,6 +46,9 @@ export function buildAccrueCommissionHandler(
     eventType: EVENT_TYPE.BOOKING_COMPLETED,
     alsoHandles: [
       EVENT_TYPE.ORDER_COMPLETED,
+      EVENT_TYPE.ORDER_SHIPPED,
+      EVENT_TYPE.ORDER_RETURNED_TO_SENDER,
+      EVENT_TYPE.ORDER_DELIVERY_LOSS_CLOSED,
       EVENT_TYPE.SALES_RETURN_CREATED,
       EVENT_TYPE.SALES_RETURN_REVERSED,
       EVENT_TYPE.PAYMENT_REFUNDED,
@@ -53,8 +57,21 @@ export function buildAccrueCommissionHandler(
     ordering: "UNORDERED",
     async handle(envelope) {
       const context = contextOf(envelope);
-      if (envelope.type === EVENT_TYPE.ORDER_COMPLETED) {
+      if (
+        envelope.type === EVENT_TYPE.ORDER_COMPLETED ||
+        envelope.type === EVENT_TYPE.ORDER_SHIPPED
+      ) {
         await accrueCompletedOrder(dependencies, {
+          orderId: readStringField(envelope.payload, "orderId"),
+          context,
+        });
+        return;
+      }
+      if (
+        envelope.type === EVENT_TYPE.ORDER_RETURNED_TO_SENDER ||
+        envelope.type === EVENT_TYPE.ORDER_DELIVERY_LOSS_CLOSED
+      ) {
+        await reverseOrderCommission(dependencies, {
           orderId: readStringField(envelope.payload, "orderId"),
           context,
         });

@@ -88,3 +88,49 @@ async function reconcileLedgerOfReturn(input: {
   await publishRecorded(dependencies, adjustment);
   return { ...NOTHING_DONE, adjustments: 1 };
 }
+
+/**
+ * Reverses all accrued order lines commission down to 0 on RTS or Delivery Loss closure.
+ */
+export async function reverseOrderLinesCommission(
+  dependencies: AccrualDependencies,
+  orderId: string,
+  context: CommissionEventContext,
+): Promise<AccrualResult> {
+  const entries = await dependencies.entries.listBySource(
+    COMMISSION_SOURCE_TYPE.ORDER_LINE,
+    orderId,
+  );
+  let result = NOTHING_DONE;
+  for (const ledgerEntries of groupByLedger(entries)) {
+    const accrual = ledgerEntries.find((entry) => entry.sequence === 1);
+    if (accrual === undefined) continue;
+    const currency = accrual.amount.currency;
+    const currentNet = sumOf(ledgerEntries, currency);
+    if (currentNet.amount <= 0) continue;
+    const timeZone = await dependencies.timezones.read(context.organizationId);
+    const adjustment = newRefundAdjustmentEntry({
+      organizationId: context.organizationId,
+      memberId: accrual.memberId,
+      locationId: accrual.locationId,
+      sourceType: accrual.sourceType,
+      sourceId: accrual.sourceId,
+      sourceLineId: accrual.sourceLineId,
+      sourceNumber: accrual.sourceNumber,
+      sequence: Math.max(...ledgerEntries.map((entry) => entry.sequence)) + 1,
+      amount: { amount: -currentNet.amount, currency },
+      base: accrual.base,
+      sourceGrossTotal: accrual.sourceGrossTotal,
+      refundedTotalSeen: { amount: 0, currency },
+      ruleSnapshot: accrual.ruleSnapshot,
+      businessDate: businessDateOf(context.occurredAt, timeZone),
+      now: dependencies.clock.now(),
+      actorUserId: context.actorUserId,
+    });
+    const outcome = await dependencies.entries.insertIfAbsent(adjustment);
+    if (outcome === "exists") throw new Error("commission sequence taken by a parallel reconcile");
+    await publishRecorded(dependencies, adjustment);
+    result = addResults(result, { ...NOTHING_DONE, adjustments: 1 });
+  }
+  return result;
+}

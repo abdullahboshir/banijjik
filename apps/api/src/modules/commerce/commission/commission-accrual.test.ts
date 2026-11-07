@@ -577,13 +577,18 @@ interface OrderLineInput {
   readonly tax: number;
 }
 
-function addOrder(scene: Scene, lines: readonly OrderLineInput[], soldQuantity = 1): string {
+function addOrder(
+  scene: Scene,
+  lines: readonly OrderLineInput[],
+  soldQuantity = 1,
+  status: (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS] = ORDER_STATUS.COMPLETED,
+): string {
   const orderId = newId();
   scene.orders.set(orderId, {
     orderId,
     orderNumber: "000077",
     locationId: scene.locationId,
-    status: ORDER_STATUS.COMPLETED,
+    status,
     grandTotal: bdt(ORDER_GROSS),
     lines: lines.map((line) => ({
       orderLineId: newId(),
@@ -600,6 +605,18 @@ function addOrder(scene: Scene, lines: readonly OrderLineInput[], soldQuantity =
 
 function orderEnvelope(scene: Scene, orderId: string): HandlerInput {
   return envelope(scene, EVENT_TYPE.ORDER_COMPLETED, { orderId });
+}
+
+function shipEnvelope(scene: Scene, orderId: string): HandlerInput {
+  return envelope(scene, EVENT_TYPE.ORDER_SHIPPED, { orderId });
+}
+
+function rtsEnvelope(scene: Scene, orderId: string): HandlerInput {
+  return envelope(scene, EVENT_TYPE.ORDER_RETURNED_TO_SENDER, { orderId });
+}
+
+function lossClosedEnvelope(scene: Scene, orderId: string): HandlerInput {
+  return envelope(scene, EVENT_TYPE.ORDER_DELIVERY_LOSS_CLOSED, { orderId });
 }
 
 function refundOfOrder(scene: Scene, orderId: string, refundedAmount: number): string {
@@ -832,5 +849,94 @@ describe("commission accrual on performed order lines", () => {
     );
 
     expect(await orderEntriesOf(scene, orderId)).toHaveLength(0);
+  });
+
+  it("accrues commission for performed lines when a delivery order ships (sales.order.shipped)", async () => {
+    const scene = newScene();
+    await runAs(scene, () => addMemberRule(scene));
+    const orderId = addOrder(
+      scene,
+      [{ memberId: scene.memberId, ...FIRST_LINE }],
+      1,
+      ORDER_STATUS.SHIPPED,
+    );
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+
+    await runAs(scene, () => handler.handle(shipEnvelope(scene, orderId)));
+
+    const entries = await orderEntriesOf(scene, orderId);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.amount).toEqual(bdt(10_000));
+  });
+
+  it("reshipment attempt 2 (second sales.order.shipped event) does not duplicate commission", async () => {
+    const scene = newScene();
+    await runAs(scene, () => addMemberRule(scene));
+    const orderId = addOrder(
+      scene,
+      [{ memberId: scene.memberId, ...FIRST_LINE }],
+      1,
+      ORDER_STATUS.SHIPPED,
+    );
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+
+    await runAs(scene, () => handler.handle(shipEnvelope(scene, orderId)));
+    await runAs(scene, () => handler.handle(shipEnvelope(scene, orderId)));
+
+    expect(await orderEntriesOf(scene, orderId)).toHaveLength(1);
+  });
+
+  it("sales.order.returned (RTS) brings the order lines commission to zero", async () => {
+    const scene = newScene();
+    await runAs(scene, () => addMemberRule(scene));
+    const orderId = addOrder(
+      scene,
+      [{ memberId: scene.memberId, ...FIRST_LINE }],
+      1,
+      ORDER_STATUS.SHIPPED,
+    );
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+
+    await runAs(scene, () => handler.handle(shipEnvelope(scene, orderId)));
+    expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(10_000);
+
+    // RTS occurs
+    await runAs(scene, () => handler.handle(rtsEnvelope(scene, orderId)));
+
+    const entries = await orderEntriesOf(scene, orderId);
+    expect(sumOfAmounts(entries)).toBe(0);
+    expect(entries).toHaveLength(2); // 1 accrual + 1 adjustment
+
+    // Replay of RTS is idempotent
+    await runAs(scene, () => handler.handle(rtsEnvelope(scene, orderId)));
+    expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(0);
+    expect(await orderEntriesOf(scene, orderId)).toHaveLength(2);
+  });
+
+  it("sales.order.lossClosed brings the order lines commission to zero", async () => {
+    const scene = newScene();
+    await runAs(scene, () => addMemberRule(scene));
+    const orderId = addOrder(
+      scene,
+      [{ memberId: scene.memberId, ...FIRST_LINE }],
+      1,
+      ORDER_STATUS.SHIPPED,
+    );
+    const handler = buildAccrueCommissionHandler(scene.dependencies);
+
+    await runAs(scene, () => handler.handle(shipEnvelope(scene, orderId)));
+    expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(10_000);
+
+    // Delivery loss closed occurs
+    await runAs(scene, () => handler.handle(lossClosedEnvelope(scene, orderId)));
+
+    const entries = await orderEntriesOf(scene, orderId);
+    expect(sumOfAmounts(entries)).toBe(0);
+    expect(entries).toHaveLength(2); // 1 accrual + 1 adjustment
+
+    // Replay of loss closed is idempotent
+    await runAs(scene, () => handler.handle(lossClosedEnvelope(scene, orderId)));
+    expect(sumOfAmounts(await orderEntriesOf(scene, orderId))).toBe(0);
+    expect(await orderEntriesOf(scene, orderId)).toHaveLength(2);
   });
 });
