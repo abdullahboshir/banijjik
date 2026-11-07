@@ -21,6 +21,10 @@ import { buildPostEnrollmentsHandler } from "./handlers/post-enrollments.handler
 import { buildPostSalesReturnsHandler } from "./handlers/post-sales-returns.handler.js";
 import type { SalesReturnPostingSource } from "./ports/sales-return-posting-source.js";
 import { buildPostStockHandler } from "./handlers/post-stock.handler.js";
+import { buildPostCourierSettlementsHandler } from "./handlers/post-courier-settlements.handler.js";
+import { buildPostRiderHandoversHandler } from "./handlers/post-rider-handovers.handler.js";
+import type { CourierSettlementPostingSource } from "./ports/courier-settlement-posting-source.js";
+import type { RiderHandoverPostingSource } from "./ports/rider-handover-posting-source.js";
 import { buildSeedOnOrganizationCreatedHandler } from "./handlers/seed-on-organization-created.handler.js";
 
 export interface AccountingHandlerDependencies {
@@ -39,6 +43,8 @@ export interface AccountingHandlerDependencies {
   /** Required: a return that is not posted would leave the books short (plan 3.5b decision 9). */
   readonly salesReturns: SalesReturnPostingSource;
   readonly stocks?: StockPostingSource | undefined;
+  readonly courierSettlements?: CourierSettlementPostingSource | undefined;
+  readonly riderHandovers?: RiderHandoverPostingSource | undefined;
   readonly expenses: ExpensePostingSource;
   /** Required: enrollment periods post revenue whenever the enrollment module emits them (card 3.31). */
   readonly enrollments: EnrollmentPeriodPostingSource;
@@ -135,6 +141,22 @@ function registerOptionalHandlers(dependencies: AccountingHandlerDependencies): 
     registerEventHandler(
       buildPostStockHandler({
         stocks: dependencies.stocks,
+        posting: postingOf(dependencies),
+      }),
+    );
+  }
+  if (dependencies.courierSettlements !== undefined) {
+    registerEventHandler(
+      buildPostCourierSettlementsHandler({
+        courierSettlements: dependencies.courierSettlements,
+        posting: postingOf(dependencies),
+      }),
+    );
+  }
+  if (dependencies.riderHandovers !== undefined) {
+    registerEventHandler(
+      buildPostRiderHandoversHandler({
+        riderHandovers: dependencies.riderHandovers,
         posting: postingOf(dependencies),
       }),
     );

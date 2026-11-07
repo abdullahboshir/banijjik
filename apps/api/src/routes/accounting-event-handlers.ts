@@ -24,6 +24,8 @@ import {
 import { systemClock } from "../kernel/time/index.js";
 import { buildEnrollmentPeriodPostingSource } from "../modules/commerce/enrollment/index.js";
 import { buildPaymentRequestReaders } from "./payment-request-readers.js";
+import { buildCourierSettlementPostingSourceAdapter } from "../modules/integration/courier/index.js";
+import { buildRiderHandoverPostingSourceAdapter } from "../modules/commerce/delivery/index.js";
 
 /** Registers accounting, expense, booking and payment event handlers for the worker role. */
 export function registerAccountingAndExpenseHandlers(): void {
@@ -51,6 +53,8 @@ export function registerAccountingAndExpenseHandlers(): void {
       organizationCurrency: (organizationId) => currencies.read(organizationId),
     }),
     stocks: buildStockPostingSourceAdapter({ currencies }),
+    courierSettlements: buildCourierSettlementPostingSourceAdapter(),
+    riderHandovers: buildRiderHandoverPostingSourceAdapter(),
     enrollments: buildEnrollmentPeriodPostingSource(buildRequestAdvanceReader()),
   });
 }

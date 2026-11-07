@@ -75,7 +75,7 @@ export class ReverseCourierSettlementUseCase {
           courierSettlementId: persisted.courierSettlementId,
           reversesCourierSettlementId: original.courierSettlementId,
         },
-        { orderingKey: persisted.courierSettlementId },
+        { orderingKey: `courierSettlement:${persisted.courierSettlementId}` },
       );
 
       await this.dependencies.audit.record({

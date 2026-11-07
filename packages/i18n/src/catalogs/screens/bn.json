@@ -1350,6 +1350,7 @@
   "bookkeeping.sourceSTOCK": "মজুদ",
   "bookkeeping.sourceRETURN": "ফেরত",
   "bookkeeping.sourceCOURIER": "কুরিয়ার",
+  "bookkeeping.sourceDELIVERY": "ডেলিভারি",
   "bookkeeping.sourceMANUAL": "ম্যানুয়াল",
   "bookkeeping.sourceCOMMISSION": "স্টাফ কমিশন",
   "bookkeeping.sourceENROLLMENT": "ভর্তি",

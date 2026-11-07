@@ -122,7 +122,7 @@ export class RecordRiderCashHandoverUseCase {
     await this.dependencies.events.publish(
       DELIVERY_EVENT_TYPE.HANDOVER_RECORDED,
       { riderCashHandoverId: persisted.riderCashHandoverId },
-      { orderingKey: persisted.riderCashHandoverId },
+      { orderingKey: `riderHandover:${persisted.riderCashHandoverId}` },
     );
     await this.dependencies.audit.record({
       action: AUDIT_ACTION.DELIVERY_HANDOVER_RECORDED,

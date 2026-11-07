@@ -21,6 +21,16 @@ import { buildPostOrdersHandler } from "./application/handlers/post-orders.handl
 import { buildPostSalesReturnsHandler } from "./application/handlers/post-sales-returns.handler.js";
 import { buildPostStockHandler } from "./application/handlers/post-stock.handler.js";
 import { buildPostEnrollmentsHandler } from "./application/handlers/post-enrollments.handler.js";
+import { buildPostCourierSettlementsHandler } from "./application/handlers/post-courier-settlements.handler.js";
+import { buildPostRiderHandoversHandler } from "./application/handlers/post-rider-handovers.handler.js";
+import type { CourierSettlementPostingSource } from "./application/ports/courier-settlement-posting-source.js";
+import type { RiderHandoverPostingSource } from "./application/ports/rider-handover-posting-source.js";
+import {
+  draftCourierSettlement,
+  draftRiderHandover,
+  type CourierSettlementPostingSnapshot,
+  type RiderHandoverPostingSnapshot,
+} from "./domain/settlement-posting-rules.js";
 import { registerAccountingEventHandlers } from "./application/register-handlers.js";
 import { catchUpSystemAccounts, seedSystemAccounts } from "./application/seed-system-accounts.js";
 import { GetTrialBalanceUseCase } from "./application/use-cases/get-trial-balance.use-case.js";
@@ -46,6 +56,16 @@ export type {
 export type { SalesReturnPostingSource } from "./application/ports/sales-return-posting-source.js";
 export type { SalesReturnPostingSnapshot } from "./domain/sales-return-posting-rules.js";
 export type { StockPostingSource } from "./application/ports/stock-posting-source.js";
+export type { CourierSettlementPostingSource } from "./application/ports/courier-settlement-posting-source.js";
+export type { RiderHandoverPostingSource } from "./application/ports/rider-handover-posting-source.js";
+export {
+  draftCourierSettlement,
+  draftRiderHandover,
+  type CourierSettlementPostingSnapshot,
+  type RiderHandoverPostingSnapshot,
+} from "./domain/settlement-posting-rules.js";
+export { buildPostCourierSettlementsHandler } from "./application/handlers/post-courier-settlements.handler.js";
+export { buildPostRiderHandoversHandler } from "./application/handlers/post-rider-handovers.handler.js";
 export type { ExpenseAccountWriter } from "./application/ports/expense-account-writer.js";
 export type {
   PaymentAllocationForPosting,
@@ -135,6 +155,8 @@ export interface AccountingEventHandlerInput {
   readonly orders?: OrderPostingSource | undefined;
   readonly salesReturns: SalesReturnPostingSource;
   readonly stocks?: StockPostingSource | undefined;
+  readonly courierSettlements?: CourierSettlementPostingSource | undefined;
+  readonly riderHandovers?: RiderHandoverPostingSource | undefined;
   readonly enrollments: EnrollmentPeriodPostingSource;
 }
 
@@ -154,6 +176,10 @@ export function registerAccountingHandlers(input: AccountingEventHandlerInput): 
     ...(input.orders === undefined ? {} : { orders: input.orders }),
     salesReturns: input.salesReturns,
     ...(input.stocks === undefined ? {} : { stocks: input.stocks }),
+    ...(input.courierSettlements === undefined
+      ? {}
+      : { courierSettlements: input.courierSettlements }),
+    ...(input.riderHandovers === undefined ? {} : { riderHandovers: input.riderHandovers }),
   });
 }
 

@@ -8,6 +8,16 @@ import {
   type CourierInfoResponse,
 } from "./presentation/courier-info.transformer.js";
 import { buildCourierTenantRouter } from "./presentation/courier-tenant.router.js";
+import type {
+  CourierSettlementPostingSource,
+  CourierSettlementPostingSnapshot,
+} from "../../commerce/accounting/index.js";
+import {
+  COURIER_SETTLEMENT_MODEL_NAME,
+  type CourierSettlementDocument,
+} from "./infrastructure/courier.schema.js";
+import { models } from "../../../kernel/db/index.js";
+import { asId, type CourierSettlementId } from "@banijjik/ids";
 
 export { courierManifest } from "./module.manifest.js";
 export { registerCourierModels } from "./infrastructure/register-courier-models.js";
@@ -44,4 +54,33 @@ export function buildCourierInfo(): CourierInfoResponse {
 
 export function buildCourierRouter(dependencies: CourierRouterDependencies): Router {
   return buildCourierTenantRouter(dependencies);
+}
+
+export function buildCourierSettlementPostingSourceAdapter(): CourierSettlementPostingSource {
+  return {
+    async readCourierSettlement(
+      courierSettlementId: string,
+    ): Promise<CourierSettlementPostingSnapshot | undefined> {
+      const doc = await models({})
+        .get<CourierSettlementDocument>(COURIER_SETTLEMENT_MODEL_NAME)
+        .findOne(
+          { courierSettlementId: asId<CourierSettlementId>(courierSettlementId) },
+          { _id: 0 },
+        )
+        .lean<CourierSettlementDocument>();
+      if (!doc) return undefined;
+      return {
+        courierSettlementId: doc.courierSettlementId,
+        organizationId: doc.organizationId,
+        businessDate: doc.businessDate,
+        locationId: null,
+        paymentIds: doc.paymentIds,
+        grossAmount: doc.grossAmount,
+        courierCharges: doc.courierCharges,
+        netReceived: doc.netReceived,
+        receivedVia: doc.receivedVia as CourierSettlementPostingSnapshot["receivedVia"],
+        reversesCourierSettlementId: doc.reversesCourierSettlementId,
+      };
+    },
+  };
 }

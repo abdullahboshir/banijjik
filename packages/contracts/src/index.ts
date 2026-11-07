@@ -130,6 +130,8 @@ export type {
   OrganizationStatusPayload,
   RolePayload,
   UserRegisteredPayload,
+  CourierSettlementEventPayload,
+  RiderCashHandoverEventPayload,
 } from "./events/event-payloads.js";
 export { OUTBOX_STATUS, type OutboxStatus } from "./events/outbox-status.js";
 export { isModuleKey, MODULE_KEY, MODULE_KEY_VALUES } from "./modules/module-key.js";

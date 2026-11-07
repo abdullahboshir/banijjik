@@ -48,6 +48,44 @@ export {
   toDeliveryAssignmentResponse,
   toRiderCashHandoverResponse,
 } from "./presentation/delivery-views.js";
+
+import type {
+  RiderHandoverPostingSource,
+  RiderHandoverPostingSnapshot,
+} from "../accounting/index.js";
+import {
+  RIDER_CASH_HANDOVER_MODEL_NAME,
+  type RiderCashHandoverDocument,
+} from "./infrastructure/delivery.schema.js";
+import { models } from "../../../kernel/db/index.js";
+import { asId, type RiderCashHandoverId } from "@banijjik/ids";
+
+export function buildRiderHandoverPostingSourceAdapter(): RiderHandoverPostingSource {
+  return {
+    async readRiderHandover(
+      riderCashHandoverId: string,
+    ): Promise<RiderHandoverPostingSnapshot | undefined> {
+      const doc = await models({})
+        .get<RiderCashHandoverDocument>(RIDER_CASH_HANDOVER_MODEL_NAME)
+        .findOne(
+          { riderCashHandoverId: asId<RiderCashHandoverId>(riderCashHandoverId) },
+          { _id: 0 },
+        )
+        .lean<RiderCashHandoverDocument>();
+      if (!doc) return undefined;
+      return {
+        riderCashHandoverId: doc.riderCashHandoverId,
+        organizationId: doc.organizationId,
+        locationId: doc.locationId,
+        businessDate: doc.businessDate,
+        paymentIds: doc.paymentIds,
+        amount: doc.amount,
+        receivedVia: doc.receivedVia as RiderHandoverPostingSnapshot["receivedVia"],
+        reversesRiderCashHandoverId: doc.reversesRiderCashHandoverId,
+      };
+    },
+  };
+}
 export type {
   DeliveryApprovalPort,
   DeliveryDependencies,
