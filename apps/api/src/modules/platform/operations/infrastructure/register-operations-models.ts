@@ -10,6 +10,10 @@ import {
   DOMAIN_OPERATION_MODEL_NAME,
   domainOperationSchema,
 } from "./domain-operation.schema.js";
+import {
+  RECONCILIATION_CURSOR_MODEL_NAME,
+  reconciliationCursorSchema,
+} from "./reconciliation.schema.js";
 
 /** Host claims are platform routing data (plan 4.2 decision 4): one global row per host name. */
 export function registerOperationsModels(): void {
@@ -25,6 +29,13 @@ export function registerOperationsModels(): void {
     modelName: DOMAIN_OPERATION_MODEL_NAME,
     collectionName: DOMAIN_OPERATION_COLLECTION_NAME,
     schema: domainOperationSchema,
+    tenancy: MODEL_TENANCY.NONE,
+  });
+  registerModel({
+    database: DATABASE_KIND.PLATFORM,
+    modelName: RECONCILIATION_CURSOR_MODEL_NAME,
+    collectionName: "reconciliation_cursors",
+    schema: reconciliationCursorSchema,
     tenancy: MODEL_TENANCY.NONE,
   });
 }
