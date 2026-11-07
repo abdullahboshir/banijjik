@@ -2,6 +2,7 @@ import {
   ORDER_CANCELLABLE_STATUSES,
   ORDER_EDITABLE_STATUSES,
   ORDER_STATUS,
+  type FulfillmentMethod,
   type OrderStatus,
 } from "@banijjik/contracts/sales";
 
@@ -23,6 +24,12 @@ export interface OrderActionFlags {
   readonly canComplete: boolean;
   readonly canDeleteDraft: boolean;
   readonly canCancel: boolean;
+  readonly canShip: boolean;
+  readonly canFailAttempt: boolean;
+  readonly canReship: boolean;
+  readonly canRts: boolean;
+  readonly canReconcileLoss: boolean;
+  readonly canRecoverLoss: boolean;
   readonly hasActions: boolean;
 }
 
@@ -39,12 +46,21 @@ export function orderActionFlagsOf(
   status: OrderStatus,
   permissions: OrderDetailPermissions,
   usePacking: boolean,
+  fulfillmentMethod?: FulfillmentMethod,
 ): OrderActionFlags {
+  const isDelivery =
+    fulfillmentMethod === "COURIER" || fulfillmentMethod === "OWN_RIDER";
   const canEdit = permissions.canUpdate && ORDER_EDITABLE_STATUSES.includes(status);
   const canPlace = permissions.canUpdate && status === ORDER_STATUS.DRAFT;
   const canConfirm = permissions.canConfirm && status === ORDER_STATUS.PLACED;
   const canPack = permissions.canUpdate && usePacking && status === ORDER_STATUS.CONFIRMED;
-  const canComplete = permissions.canUpdate && isCompletable(status);
+  const canComplete = permissions.canUpdate && isCompletable(status) && !isDelivery;
+  const canShip = permissions.canUpdate && isCompletable(status) && isDelivery;
+  const canFailAttempt = permissions.canUpdate && status === ORDER_STATUS.SHIPPED;
+  const canReship = permissions.canUpdate && status === ORDER_STATUS.DELIVERY_FAILED;
+  const canRts = permissions.canUpdate && status === ORDER_STATUS.DELIVERY_FAILED;
+  const canReconcileLoss = permissions.canUpdate && status === ORDER_STATUS.DELIVERY_FAILED;
+  const canRecoverLoss = permissions.canUpdate && status === ORDER_STATUS.DELIVERY_LOSS_CLOSED;
   const canDeleteDraft = canPlace;
   const canCancel = permissions.canCancel && ORDER_CANCELLABLE_STATUSES.includes(status);
   const hasActions = hasAny([
@@ -55,6 +71,12 @@ export function orderActionFlagsOf(
     canComplete,
     canDeleteDraft,
     canCancel,
+    canShip,
+    canFailAttempt,
+    canReship,
+    canRts,
+    canReconcileLoss,
+    canRecoverLoss,
   ]);
   return {
     canEdit,
@@ -64,6 +86,12 @@ export function orderActionFlagsOf(
     canComplete,
     canDeleteDraft,
     canCancel,
+    canShip,
+    canFailAttempt,
+    canReship,
+    canRts,
+    canReconcileLoss,
+    canRecoverLoss,
     hasActions,
   };
 }
