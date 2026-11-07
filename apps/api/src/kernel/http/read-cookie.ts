@@ -1,4 +1,3 @@
-// @ts-expect-error cookie package lacks type definitions
 import * as cookie from "cookie";
 import type { Request } from "express";
 
