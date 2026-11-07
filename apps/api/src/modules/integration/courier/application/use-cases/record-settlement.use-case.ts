@@ -87,6 +87,17 @@ export class RecordCourierSettlementUseCase {
     return this.dependencies.unitOfWork.run(async () => {
       const persisted = await this.dependencies.courierSettlements.insert(settlement);
 
+      if (this.dependencies.payments.claimCollections) {
+        await this.dependencies.payments.claimCollections({
+          organizationId: input.organizationId,
+          paymentIds,
+          carrierMethod: "COD_COURIER",
+          referenceId: persisted.courierSettlementId,
+          actorUserId: input.actorUserId,
+          now,
+        });
+      }
+
       await this.dependencies.events.publish(
         COURIER_EVENT_TYPE.SETTLEMENT_RECORDED,
         { courierSettlementId: persisted.courierSettlementId },

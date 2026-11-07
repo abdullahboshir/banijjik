@@ -6,9 +6,18 @@ import {
   type Money,
 } from "@banijjik/contracts";
 import type { RecordRiderCashHandoverBody } from "@banijjik/validation/delivery";
-import { asId, type LocationId, type OrganizationId, type PaymentId, type UserId } from "@banijjik/ids";
+import {
+  asId,
+  type LocationId,
+  type OrganizationId,
+  type PaymentId,
+  type UserId,
+} from "@banijjik/ids";
 import { AppError } from "../../../../../kernel/http/index.js";
-import { paymentNotEligibleForHandover, riderCannotApproveOwnHandover } from "../../domain/errors.js";
+import {
+  paymentNotEligibleForHandover,
+  riderCannotApproveOwnHandover,
+} from "../../domain/errors.js";
 import { RiderCashHandover } from "../../domain/rider-cash-handover.entity.js";
 import type { DeliveryDependencies } from "../delivery-dependencies.js";
 
@@ -63,7 +72,10 @@ export class RecordRiderCashHandoverUseCase {
     if (payments.length !== paymentIds.length) {
       const foundSet = new Set(payments.map((p) => p.paymentId));
       const missing = paymentIds.find((id) => !foundSet.has(id));
-      throw paymentNotEligibleForHandover(missing ?? "unknown", "Payment not found in this organization");
+      throw paymentNotEligibleForHandover(
+        missing ?? "unknown",
+        "Payment not found in this organization",
+      );
     }
 
     const locationId = payments[0]?.locationId ?? asId<LocationId>("");
@@ -86,20 +98,37 @@ export class RecordRiderCashHandoverUseCase {
 
     return this.dependencies.unitOfWork.run(async () => {
       const persisted = await this.dependencies.handovers.insert(handover);
-
-      await this.dependencies.events.publish(
-        DELIVERY_EVENT_TYPE.HANDOVER_RECORDED,
-        { riderCashHandoverId: persisted.riderCashHandoverId },
-        { orderingKey: persisted.riderCashHandoverId },
-      );
-      await this.dependencies.audit.record({
-        action: AUDIT_ACTION.DELIVERY_HANDOVER_RECORDED,
-        entityType: AUDIT_ENTITY_TYPE.riderCashHandover,
-        entityId: persisted.riderCashHandoverId,
-        changes: {},
-      });
-
+      await this.postHandoverSideEffects(input, persisted, { paymentIds, now });
       return persisted;
+    });
+  }
+
+  private async postHandoverSideEffects(
+    input: RecordHandoverInput,
+    persisted: RiderCashHandover,
+    opts: { paymentIds: readonly PaymentId[]; now: Date },
+  ): Promise<void> {
+    if (this.dependencies.payments.claimCollections) {
+      await this.dependencies.payments.claimCollections({
+        organizationId: input.organizationId,
+        paymentIds: opts.paymentIds,
+        carrierMethod: "RIDER_CASH",
+        referenceId: persisted.riderCashHandoverId,
+        actorUserId: input.actorUserId,
+        now: opts.now,
+      });
+    }
+
+    await this.dependencies.events.publish(
+      DELIVERY_EVENT_TYPE.HANDOVER_RECORDED,
+      { riderCashHandoverId: persisted.riderCashHandoverId },
+      { orderingKey: persisted.riderCashHandoverId },
+    );
+    await this.dependencies.audit.record({
+      action: AUDIT_ACTION.DELIVERY_HANDOVER_RECORDED,
+      entityType: AUDIT_ENTITY_TYPE.riderCashHandover,
+      entityId: persisted.riderCashHandoverId,
+      changes: {},
     });
   }
 }

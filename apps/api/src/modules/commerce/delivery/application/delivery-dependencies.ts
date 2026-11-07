@@ -20,7 +20,11 @@ export interface DeliveryUnitOfWork {
 }
 
 export interface DeliveryEventPublisher {
-  publish(type: string, payload: unknown, options?: { readonly orderingKey?: string }): Promise<void>;
+  publish(
+    type: string,
+    payload: unknown,
+    options?: { readonly orderingKey?: string },
+  ): Promise<void>;
 }
 
 export interface DeliveryOrderPort {
@@ -65,7 +69,29 @@ export interface DeliveryPaymentPort {
   readonly findPaymentsByIds: (
     organizationId: OrganizationId,
     paymentIds: readonly PaymentId[],
-  ) => Promise<readonly { readonly paymentId: PaymentId; readonly amount: Money; readonly locationId: LocationId }[]>;
+  ) => Promise<
+    readonly {
+      readonly paymentId: PaymentId;
+      readonly amount: Money;
+      readonly locationId: LocationId;
+    }[]
+  >;
+  readonly claimCollections?: (input: {
+    readonly organizationId: OrganizationId;
+    readonly paymentIds: readonly PaymentId[];
+    readonly carrierMethod: "RIDER_CASH";
+    readonly referenceId: string;
+    readonly actorUserId: UserId | null;
+    readonly now: Date;
+  }) => Promise<void>;
+  readonly releaseCollections?: (input: {
+    readonly organizationId: OrganizationId;
+    readonly paymentIds: readonly PaymentId[];
+    readonly carrierMethod: "RIDER_CASH";
+    readonly referenceId: string;
+    readonly actorUserId: UserId | null;
+    readonly now: Date;
+  }) => Promise<void>;
 }
 
 export interface DeliveryApprovalPort {

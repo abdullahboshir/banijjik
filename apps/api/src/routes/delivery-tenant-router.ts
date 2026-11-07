@@ -1,9 +1,4 @@
-import {
-  ALL_LOCATIONS,
-  MEMBER_STATUS,
-  type ModuleManifest,
-  type Money,
-} from "@banijjik/contracts";
+import { ALL_LOCATIONS, MEMBER_STATUS, type ModuleManifest, type Money } from "@banijjik/contracts";
 import { APPROVAL_ACTION } from "@banijjik/contracts/iam";
 import {
   asId,
@@ -30,7 +25,12 @@ import {
   type DeliveryOrderPort,
   type DeliveryPaymentPort,
 } from "../modules/commerce/delivery/index.js";
-import { MongoPaymentRepository } from "../modules/commerce/payment/index.js";
+import {
+  MongoCollectionClaimRepository,
+  MongoPaymentRepository,
+  buildClaimCollectionsUseCase,
+  buildReleaseCollectionsUseCase,
+} from "../modules/commerce/payment/index.js";
 import {
   buildSalesDependencies,
   MongoOrderRepository,
@@ -86,7 +86,8 @@ function buildMemberAdapter(): DeliveryMemberPort {
       const member = await members.findById(asId<MemberId>(memberId));
       if (member === undefined || member.status !== MEMBER_STATUS.ACTIVE) return false;
       return member.assignments.some(
-        (a: { readonly locationId: unknown }) => a.locationId === ALL_LOCATIONS || a.locationId === locationId,
+        (a: { readonly locationId: unknown }) =>
+          a.locationId === ALL_LOCATIONS || a.locationId === locationId,
       );
     },
     async findMemberIdForUser(_orgId, userId) {
@@ -98,6 +99,9 @@ function buildMemberAdapter(): DeliveryMemberPort {
 
 function buildPaymentAdapter(): DeliveryPaymentPort {
   const payments = new MongoPaymentRepository();
+  const claims = new MongoCollectionClaimRepository();
+  const claimCollections = buildClaimCollectionsUseCase(claims);
+  const releaseCollections = buildReleaseCollectionsUseCase(claims);
   return {
     async findPaymentsByIds(organizationId: OrganizationId, paymentIds: readonly PaymentId[]) {
       const results: {
@@ -116,6 +120,12 @@ function buildPaymentAdapter(): DeliveryPaymentPort {
         }
       }
       return results;
+    },
+    async claimCollections(claimInput) {
+      await claimCollections.execute(claimInput);
+    },
+    async releaseCollections(releaseInput) {
+      await releaseCollections.execute(releaseInput);
     },
   };
 }

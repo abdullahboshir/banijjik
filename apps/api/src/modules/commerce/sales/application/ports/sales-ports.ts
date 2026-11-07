@@ -243,6 +243,19 @@ export interface OrderPaymentPort {
     actorUserId: UserId | null;
     now: Date;
   }): Promise<void>;
+  collectCod?(input: {
+    readonly organizationId: OrganizationId;
+    readonly orderId: OrderId;
+    readonly locationId: LocationId;
+    readonly contactId: ContactId | null;
+    readonly expectedOrderVersion: number;
+    readonly deliveryCompletionId: string;
+    readonly carrier:
+      | { readonly method: "COD_COURIER"; readonly consignmentId: string }
+      | { readonly method: "RIDER_CASH"; readonly deliveryAssignmentId: string };
+    readonly actorUserId: UserId;
+    readonly now: Date;
+  }): Promise<{ readonly paymentId: string | null }>;
 }
 
 export interface SettleReturnInput {

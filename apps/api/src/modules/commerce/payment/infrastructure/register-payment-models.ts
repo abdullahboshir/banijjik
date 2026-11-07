@@ -7,6 +7,11 @@ import {
   PAYMENT_SUMMARY_MODEL_NAME,
 } from "./payment-summary.schema.js";
 import {
+  collectionClaimSchema,
+  COLLECTION_CLAIM_COLLECTION_NAME,
+  COLLECTION_CLAIM_MODEL_NAME,
+} from "./collection-claim.schema.js";
+import {
   storeCreditEntrySchema,
   STORE_CREDIT_ENTRY_COLLECTION_NAME,
   STORE_CREDIT_ENTRY_MODEL_NAME,
@@ -35,5 +40,12 @@ export function registerPaymentModels(): void {
     collectionName: PAYMENT_SUMMARY_COLLECTION_NAME,
     schema: paymentSummarySchema,
     tenancy: MODEL_TENANCY.ORGANIZATION_AND_LOCATION,
+  });
+  registerModel({
+    database: DATABASE_KIND.TENANT,
+    modelName: COLLECTION_CLAIM_MODEL_NAME,
+    collectionName: COLLECTION_CLAIM_COLLECTION_NAME,
+    schema: collectionClaimSchema,
+    tenancy: MODEL_TENANCY.ORGANIZATION,
   });
 }

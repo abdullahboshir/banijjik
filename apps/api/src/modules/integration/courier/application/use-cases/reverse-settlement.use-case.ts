@@ -1,6 +1,12 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from "@banijjik/contracts";
 import { COURIER_EVENT_TYPE } from "@banijjik/contracts/courier";
-import type { CourierSettlementId, OrganizationId, UserId } from "@banijjik/ids";
+import {
+  asId,
+  type CourierSettlementId,
+  type OrganizationId,
+  type PaymentId,
+  type UserId,
+} from "@banijjik/ids";
 import { CourierSettlement } from "../../domain/courier-settlement.entity.js";
 import { courierSettlementNotFound, settlementAlreadyReversed } from "../../domain/errors.js";
 import type { CourierDependencies } from "../courier-dependencies.js";
@@ -51,6 +57,17 @@ export class ReverseCourierSettlementUseCase {
       });
 
       const persisted = await this.dependencies.courierSettlements.insert(reversal);
+
+      if (this.dependencies.payments.releaseCollections) {
+        await this.dependencies.payments.releaseCollections({
+          organizationId: input.organizationId,
+          paymentIds: original.paymentIds.map((id) => asId<PaymentId>(id)),
+          carrierMethod: "COD_COURIER",
+          referenceId: original.courierSettlementId,
+          actorUserId: input.actorUserId,
+          now,
+        });
+      }
 
       await this.dependencies.events.publish(
         COURIER_EVENT_TYPE.SETTLEMENT_REVERSED,
